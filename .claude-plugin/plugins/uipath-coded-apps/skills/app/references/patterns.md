@@ -200,11 +200,43 @@ The **embed** URL inserts `embed_/` after the origin:
 https://cloud.uipath.com/embed_/{orgName}/{tenantName}/actions_/current-task/tasks/{taskId}
 ```
 
-### URL helper function
+### API-to-Cloud URL mapping
+
+**CRITICAL:** The API base URL (`VITE_UIPATH_BASE_URL`) and the cloud UI URL use different hostnames. You must map correctly when constructing task URLs:
+
+| API URL | Cloud UI URL |
+|---------|-------------|
+| `https://api.uipath.com` | `https://cloud.uipath.com` |
+| `https://staging.api.uipath.com` | `https://staging.uipath.com` |
+| `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
+
+**NEVER use naive string replacement** like `baseUrl.replace('api.', 'cloud.')` — this breaks for staging/alpha (produces `staging.cloud.uipath.com` which is wrong).
+
+Add this helper to `src/utils/formatters.ts`:
+
+```typescript
+/** Maps an API base URL to the corresponding cloud UI URL */
+export function apiToCloudUrl(apiBaseUrl: string): string {
+  try {
+    const url = new URL(apiBaseUrl);
+    // "api.uipath.com" → "cloud.uipath.com"
+    // "staging.api.uipath.com" → "staging.uipath.com"
+    // "alpha.api.uipath.com" → "alpha.uipath.com"
+    let cloudHost = url.hostname.replace('api.uipath.com', 'uipath.com');
+    if (cloudHost === 'uipath.com') cloudHost = 'cloud.uipath.com';
+    return `${url.protocol}//${cloudHost}`;
+  } catch {
+    return apiBaseUrl;
+  }
+}
+```
+
+### URL helper functions
 
 Create `src/utils/formatters.ts` (or add to existing):
 
 ```typescript
+/** Converts a standard Action Center URL to an embeddable iframe URL */
 export const getEmbedTaskUrl = (taskUrl: string): string => {
   try {
     const url = new URL(taskUrl);
@@ -218,19 +250,30 @@ export const getEmbedTaskUrl = (taskUrl: string): string => {
     return taskUrl;
   }
 };
+
+/** Constructs a standard Action Center task URL from components */
+export function buildTaskUrl(taskId: number | string): string {
+  const baseUrl = import.meta.env.VITE_UIPATH_BASE_URL || '';
+  const org = import.meta.env.VITE_UIPATH_ORG_NAME || '';
+  const tenant = import.meta.env.VITE_UIPATH_TENANT_NAME || '';
+  const cloudHost = apiToCloudUrl(baseUrl);
+  return `${cloudHost}/${org}/${tenant}/actions_/current-task/tasks/${taskId}`;
+}
 ```
 
 ### Getting the task link
 
-The action center task link comes from **execution history** of a process instance. When an execution step is a "User Task" (HITL), the `attributes` field contains `actionCenterTaskLink`:
+The **preferred** source for a task link is the `actionCenterTaskLink` field from **execution history**. When an execution step is a "User Task" (HITL), the `attributes` JSON contains this link.
+
+**IMPORTANT — match by `elementId`, not by scanning all entries.** Execution history may contain multiple HITL tasks. Always match the specific entry using its `elementId` from BPMN XML or from execution state:
 
 ```typescript
 import { ProcessInstances } from '@uipath/uipath-typescript/maestro-processes';
 
-// Fetch execution history for the instance
+// Fetch execution history — always pass folderKey for correct results
 const history = await processInstances.getExecutionHistory(instanceId, folderKey);
 
-// Find the user task entry
+// Find the SPECIFIC user task entry by elementId
 const userTaskEntry = history.find(entry => {
   const attrs = typeof entry.attributes === 'string'
     ? JSON.parse(entry.attributes)
@@ -239,13 +282,26 @@ const userTaskEntry = history.find(entry => {
 });
 
 // Extract the task link
+let taskLink: string | null = null;
 if (userTaskEntry) {
   const attrs = typeof userTaskEntry.attributes === 'string'
     ? JSON.parse(userTaskEntry.attributes)
     : userTaskEntry.attributes;
-  const taskLink = attrs?.actionCenterTaskLink; // e.g., "https://cloud.uipath.com/org/tenant/actions_/current-task/tasks/12345"
+  taskLink = attrs?.actionCenterTaskLink ?? null;
+}
+
+// Fallback: construct URL using buildTaskUrl (only if you have the task ID)
+if (!taskLink && taskId) {
+  taskLink = buildTaskUrl(taskId);
 }
 ```
+
+**When `actionCenterTaskLink` is NOT available:**
+- The execution history entry doesn't exist yet (task just created)
+- The process is a case instance and execution history may not include action center links
+- The entry exists but has no `actionCenterTaskLink` in attributes
+
+In these cases, use `buildTaskUrl(taskId)` as a fallback. **Do NOT construct the URL manually** — always use the `apiToCloudUrl` + `buildTaskUrl` helpers to ensure correct environment mapping.
 
 ### iframe component
 
@@ -280,5 +336,7 @@ export const TaskEmbed = ({ taskLink, onClose }: TaskEmbedProps) => (
 
 - **No extra auth needed**: The iframe loads from the same UiPath domain, so the user's existing browser session handles authentication automatically.
 - **`embed_/` prefix is required**: Without it, the action center page renders with full navigation chrome. The embed URL gives a clean, frameable view.
-- **Task link source**: The `actionCenterTaskLink` is only available in execution history entries where the activity type is a "User Task". Parse the BPMN XML or check `attributes.elementId` to identify these steps.
+- **Task link source**: Prefer `actionCenterTaskLink` from execution history (matched by `elementId`). Fall back to `buildTaskUrl(taskId)` only when history doesn't have a link.
+- **Always pass `folderKey`** to `getExecutionHistory()` — omitting it may return empty results or incorrect data.
+- **Use `apiToCloudUrl()`** — never manually convert API URLs to cloud URLs with string replacement.
 - **Use a modal overlay**: Render the iframe in a modal (like the example above) so the user can close it and return to the app.

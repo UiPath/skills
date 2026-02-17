@@ -1,21 +1,73 @@
 ---
-description: Use when the user asks to create a new UiPath web app, build a React dashboard with UiPath data, add UiPath SDK services (@uipath/uipath-typescript) to an existing React project, or deploy a coded app to UiPath Cloud. Covers project scaffolding, OAuth authentication, SDK service integration (Entities, Tasks, Processes, Assets, Queues, Buckets, Maestro), pagination, polling, BPMN rendering etc.
+description: Use when the user asks to create a new UiPath web app, build a React dashboard with UiPath data, add UiPath SDK services (@uipath/uipath-typescript) to an existing React project, or deploy a coded app to UiPath Cloud. Covers project scaffolding, OAuth authentication, SDK service integration (Entities, Tasks, Processes, Assets, Queues, Buckets, Maestro), pagination, polling, BPMN rendering, and deployment via UiPath CLI.
 ---
 
-# Creating UiPath Coded Apps from scratch
+# Creating UiPath Coded Apps
 
 ## 1. Project Initialization
 
-Before running the setup script, collect **all** configuration from the user in a single `AskUserQuestion` call. Ask these 4 questions together:
+### Step 1: Ask for environment, org, tenant, and whether they have a client ID
 
-1. **Organization name** (header: "Org name") — UiPath org name. No predefined options; user types their value via "Other".
-2. **Tenant name** (header: "Tenant") — UiPath tenant name. No predefined options; user types their value via "Other".
-3. **Client ID** (header: "Client ID") — OAuth client ID. No predefined options; user types their value via "Other".
-4. **Environment** (header: "Environment") — options: `cloud` (default, recommended), `alpha`, `staging`, or custom URL via "Other".
+Use a **single** `AskUserQuestion` call with exactly these 4 questions:
 
-For questions 1-3, provide two dummy options (e.g., placeholder examples) so the user is prompted to select "Other" and type their actual value. For question 4, provide the 3 named environments as options.
+```
+Question 1:
+  question: "Which UiPath environment?"
+  header: "Environment"
+  options:
+    - label: "cloud (Recommended)"   description: "Production — cloud.uipath.com"
+    - label: "staging"               description: "Staging — staging.uipath.com"
+    - label: "alpha"                 description: "Alpha — alpha.uipath.com"
+  multiSelect: false
 
-Once you have all values, determine which OAuth scopes are needed based on the services the app will use (see OAuth Scopes section), then run the setup script.
+Question 2:
+  question: "What is your UiPath organization name?"
+  header: "Org name"
+  options:
+    - label: "I'll type it"   description: "Select Other and type your org name"
+    - label: "Find from browser"   description: "I'm logged into UiPath — read org from URL"
+  multiSelect: false
+
+Question 3:
+  question: "What is your UiPath tenant name?"
+  header: "Tenant"
+  options:
+    - label: "DefaultTenant"   description: "Most common default tenant name"
+    - label: "I'll type it"   description: "Select Other and type your tenant name"
+  multiSelect: false
+
+Question 4:
+  question: "Do you have an existing OAuth client ID for this app?"
+  header: "Client ID"
+  options:
+    - label: "Yes, I'll provide it"   description: "I already have a client ID — select Other and paste it"
+    - label: "No, create one for me"  description: "Use browser automation to create one in UiPath admin"
+  multiSelect: false
+```
+
+### Step 2: Resolve the org name
+
+**If user typed their org name or selected "Other":** Use the value they provided.
+
+**If user selected "Find from browser":** Use Playwright MCP to check the current browser tab. Navigate to the UiPath cloud host for the chosen environment (e.g., `https://staging.uipath.com`). Take a `browser_snapshot` — if the user is logged in, the URL or page content will contain the org name. Extract it from the URL path (it's the first segment after the domain: `https://staging.uipath.com/{orgName}/...`).
+
+### Step 3: Get or create the client ID
+
+**If the user provided a client ID** (selected "Other" and pasted it): Use it directly.
+
+**If the user chose "No, create one for me":** First determine which OAuth scopes are needed based on the services the app will use (read `references/oauth-scopes.md`). Then use Playwright MCP browser automation to create an external application in the UiPath admin portal. Follow the detailed steps in [oauth-client-setup.md](references/oauth-client-setup.md).
+
+The browser automation will:
+1. Navigate to `https://{cloud-host}/{orgName}/portal_/admin/external-apps/oauth`
+2. Click "Add application"
+3. Set app name, select "Non-Confidential application"
+4. Add the required OAuth scopes
+5. Enter the redirect URI (`http://localhost:5173`)
+6. Click "Add" and extract the generated Application ID (client ID)
+
+### Step 4: Run setup script
+
+Once you have all values (org, tenant, client ID, environment, scopes), run the setup script.
 
 **Script paths:** The setup and validate scripts are in this skill's `scripts/` subdirectory. Use the **"Base directory for this skill"** path shown at the top when this skill was loaded — that is the absolute path to this skill's directory.
 
@@ -60,7 +112,7 @@ After setup, validate the project:
 bash <skill-base-dir>/scripts/validate.sh ./<app-name>
 ```
 
-Now you can start building the app for the user's needs. basic structure is already there.
+Customize the `AppContent` component in `src/App.tsx` for the user's needs.
 
 ### Build workflow — start writing immediately
 
@@ -89,16 +141,6 @@ Run this in the background. Wait a few seconds for Vite to start, then check the
 **IMPORTANT — verify the port matches the redirect URI:** Vite may start on a different port than 5173 if that port is busy (e.g., 5174, 5175). Check the actual port in Vite's output. If it differs from `UIPATH_REDIRECT_URI` in `.env`, update `.env` to match (e.g., `UIPATH_REDIRECT_URI=http://localhost:5174`). OAuth will fail silently if the redirect URI doesn't match the running port.
 
 If there are TypeScript or build errors, fix the issues and re-run `npm run dev` until the app starts cleanly. Do not mark the task as complete until the dev server starts successfully.
-
-### Build verification
-
-After you are done with all your changes in the app, always run the build to verify:
-
-```bash
-cd <app-name> && npm run build
-```
-
-This catches errors that `npm run dev` may miss. If there are build errors, fix them and re-run `npm run build` until it completes cleanly. Do not consider the task done until **both** `npm run dev` and `npm run build` succeed without errors.
 
 ## 2. UiPath Services Overview
 
@@ -137,8 +179,9 @@ When using any SDK service method, follow these rules strictly:
 2. **Read the imported interface** to know what fields are available. Only access properties defined in the type. Never guess field names.
 3. **Import option types** for method parameters. Example: `import type { AssetGetAllOptions } from '@uipath/uipath-typescript/assets'`
 4. **Import enums** from the SDK for any field that uses an enum value. Example: `import { TaskPriority, TaskType, TaskStatus } from '@uipath/uipath-typescript/tasks'`
-5. **Method-attached responses**: Some `getById`/`getAll` responses include callable methods. The response type is a union: `EntityGetResponse = RawEntityGetResponse & EntityMethods`. Read the `*Methods` interface to know available instance methods.
-6. **Reference files are your primary source.** The `references/` files in this skill contain all method signatures, types, enums, and fields you need. **Do NOT explore `node_modules` or the SDK source code if the information is already in a reference file.** Only fall back to `node_modules/@uipath/uipath-typescript/` as a last resort when the reference files don't cover something (e.g., a newly added method or an edge case not documented). Check `.d.ts` files for types if you must.
+5. **Use `OperationResponse<T>`** type for mutation results (import from `@uipath/uipath-typescript`). Has shape `{ success: boolean; data: T }`.
+6. **Method-attached responses**: Some `getById`/`getAll` responses include callable methods. The response type is a union: `EntityGetResponse = RawEntityGetResponse & EntityMethods`. Read the `*Methods` interface to know available instance methods.
+7. **Reference files are your primary source.** The `references/` files in this skill contain all method signatures, types, enums, and fields you need. **Do NOT explore `node_modules` or the SDK source code if the information is already in a reference file.** Only fall back to `node_modules/@uipath/uipath-typescript/` as a last resort when the reference files don't cover something (e.g., a newly added method or an edge case not documented). Check `.d.ts` files for types if you must.
 
 ## 5. Anti-Patterns — NEVER Do These
 
@@ -300,7 +343,7 @@ For real-time data updates, process diagram visualization, and embedding HITL ta
 **MANDATORY — read [patterns.md](references/patterns.md)** when building components that need:
 - Auto-refreshing data (polling hook implementation + SDK usage example)
 - BPMN diagram rendering (`bpmn-js` setup, viewer component, fetching XML)
-- Embedding Action Center tasks / HITL ( human in the loop) tasks / action apps inside the app via iframe (embed URL format, task link extraction from execution history, iframe component). these can be associated with and agent/ agentic process (maestro process) / case manaegment instance 
+- Embedding Action Center tasks / HITL tasks / action apps inside the app via iframe (embed URL format, task link extraction from execution history, iframe component)
 
 ## 11. Error Handling
 
@@ -331,6 +374,8 @@ try {
 
 **When determining OAuth scopes:** MANDATORY — read [oauth-scopes.md](references/oauth-scopes.md) first. Do NOT guess scopes.
 
+**Do NOT load** `deployment.md` unless the user asks about deploying. Do NOT load reference files for services the app doesn't use.
+
 | Reference | Services | When to load |
 |-----------|----------|--------------|
 | [data-fabric.md](references/data-fabric.md) | Entities, ChoiceSets | App reads/writes Data Service entities |
@@ -338,4 +383,6 @@ try {
 | [orchestrator.md](references/orchestrator.md) | Assets, Queues, Buckets, Processes | App uses Orchestrator resources or starts processes |
 | [action-center.md](references/action-center.md) | Tasks | App creates, assigns, or completes Action Center tasks |
 | [patterns.md](references/patterns.md) | usePolling hook, BPMN viewer, embedded action tasks | App needs auto-refreshing data, process diagram rendering, or embedded HITL tasks |
+| [deployment.md](references/deployment.md) | UiPath CLI | User asks to deploy the app to UiPath Cloud |
 | [oauth-scopes.md](references/oauth-scopes.md) | All | **Always** — read before setting scopes in setup |
+| [oauth-client-setup.md](references/oauth-client-setup.md) | Playwright browser automation | User doesn't have a client ID and needs one created via UiPath admin portal |
