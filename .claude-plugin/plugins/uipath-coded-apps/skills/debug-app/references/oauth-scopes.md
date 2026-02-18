@@ -2,6 +2,8 @@
 
 This document provides the complete mapping between SDK services/methods and their required OAuth scopes. Use this to determine which scopes an application needs based on the SDK services it uses.
 
+Source: https://uipath.github.io/uipath-typescript/oauth-scopes/
+
 ## Scope Format
 
 Scopes follow a hierarchy:
@@ -35,7 +37,7 @@ import { Buckets } from '@uipath/uipath-typescript/buckets';
 | `getById()` | `OR.Administration` or `OR.Administration.Read` |
 | `getFileMetaData()` | `OR.Administration` or `OR.Administration.Read` |
 | `getReadUri()` | `OR.Administration` or `OR.Administration.Read` |
-| `uploadFile()` | `OR.Administration` |
+| `uploadFile()` | `OR.Administration` or `OR.Administration.Read` |
 
 ### Entities Service (Data Fabric)
 
@@ -48,11 +50,11 @@ import { Entities } from '@uipath/uipath-typescript/entities';
 | `getAll()` | `DataFabric.Schema.Read` |
 | `getById()` | `DataFabric.Schema.Read` |
 | `getAllRecords()` | `DataFabric.Data.Read` |
-| `getRecordById()` | `DataFabric.Data.Read` |
-| `insertRecordById()` | `DataFabric.Data.Write` |
-| `insertRecordsById()` | `DataFabric.Data.Write` |
-| `updateRecordsById()` | `DataFabric.Data.Write` |
-| `deleteRecordsById()` | `DataFabric.Data.Write` |
+| `getRecordById()` / `getRecord()` | `DataFabric.Data.Read` |
+| `insertRecordById()` / `insertRecord()` | `DataFabric.Data.Write` |
+| `insertRecordsById()` / `insertRecords()` | `DataFabric.Data.Write` |
+| `updateRecordsById()` / `updateRecords()` | `DataFabric.Data.Write` |
+| `deleteRecordsById()` / `deleteRecords()` | `DataFabric.Data.Write` |
 | `downloadAttachment()` | `DataFabric.Data.Read` |
 
 **Note:** Data Fabric operations typically need both `DataFabric.Schema.Read` (to discover entities) AND `DataFabric.Data.Read`/`DataFabric.Data.Write` (to access data).
@@ -66,7 +68,7 @@ import { ChoiceSets } from '@uipath/uipath-typescript/entities';
 | Method | Required Scope |
 |--------|---------------|
 | `getAll()` | `DataFabric.Schema.Read` |
-| `getById()` | `DataFabric.Schema.Read` |
+| `getById()` | `DataFabric.Data.Read` |
 
 ### Processes Service
 
@@ -93,12 +95,12 @@ import { ProcessInstances } from '@uipath/uipath-typescript/maestro';
 | `getAll()` | `PIMS` |
 | `getById()` | `PIMS` |
 | `getExecutionHistory()` | `PIMS` |
-| `getBpmn()` | `PIMS` |
+| `getBpmn()` | `OR.Execution.Read` |
+| `getVariables()` | `PIMS` |
+| `getIncidents()` | `PIMS` |
 | `cancel()` | `PIMS` |
 | `pause()` | `PIMS` |
 | `resume()` | `PIMS` |
-| `getVariables()` | `PIMS` |
-| `getIncidents()` | `PIMS` |
 
 ### MaestroProcesses Service
 
@@ -129,15 +131,15 @@ import { CaseInstances } from '@uipath/uipath-typescript/cases';
 
 | Method | Required Scope |
 |--------|---------------|
-| `getAll()` | `PIMS OR.Execution.Read` |
-| `getById()` | `PIMS OR.Execution.Read` |
+| `getAll()` | `PIMS` `OR.Execution.Read` |
+| `getById()` | `PIMS` `OR.Execution.Read` |
 | `close()` | `PIMS` |
 | `pause()` | `PIMS` |
 | `resume()` | `PIMS` |
 | `reopen()` | `PIMS` |
 | `getExecutionHistory()` | `PIMS` |
-| `getStages()` | `PIMS OR.Execution.Read` |
-| `getActionTasks()` | `PIMS` |
+| `getStages()` | `PIMS` `OR.Execution.Read` |
+| `getActionTasks()` | `OR.Tasks` or `OR.Tasks.Read` |
 
 ### Queues Service
 
@@ -161,11 +163,50 @@ import { Tasks } from '@uipath/uipath-typescript/tasks';
 | `getAll()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `getById()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `getUsers()` | `OR.Tasks` or `OR.Tasks.Read` |
+| `getFormTaskById()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `create()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `assign()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `reassign()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `unassign()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `complete()` | `OR.Tasks` or `OR.Tasks.Write` |
+
+### Conversational Agent
+
+Combined scopes needed: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `ConversationalAgents` · `Traces.API`
+
+#### Agents
+
+| Method | Required Scope |
+|--------|---------------|
+| `getAll()` | `OR.Execution` or `OR.Execution.Read` |
+| `getById()` | `OR.Execution` or `OR.Execution.Read` |
+
+#### Conversations
+
+| Method | Required Scope |
+|--------|---------------|
+| `create()` | `OR.Execution`, `OR.Folders`, `OR.Jobs` |
+| `getAll()` | `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read` |
+| `getById()` | `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read` |
+| `updateById()` | `OR.Execution`, `OR.Jobs` |
+| `deleteById()` | `OR.Execution`, `OR.Jobs` |
+| `startSession()` | `OR.Execution`, `OR.Jobs`, `ConversationalAgents` |
+| `uploadAttachment()` | `OR.Execution`, `OR.Jobs` |
+
+#### Exchanges
+
+| Method | Required Scope |
+|--------|---------------|
+| `getAll()` | `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read` |
+| `getById()` | `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read` |
+| `createFeedback()` | `OR.Execution`, `OR.Jobs`, `Traces.API` |
+
+#### Messages
+
+| Method | Required Scope |
+|--------|---------------|
+| `getById()` | `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read` |
+| `getContentPartById()` | `OR.Execution` or `OR.Execution.Read`, `OR.Jobs` or `OR.Jobs.Read` |
 
 ## Quick Scope Builder
 
@@ -183,12 +224,17 @@ DataFabric.Schema.Read DataFabric.Data.Read DataFabric.Data.Write
 
 **Example 3:** App uses Maestro Processes and Case management
 ```
-PIMS
+PIMS OR.Execution.Read OR.Tasks.Read
 ```
 
-**Example 4:** Full-featured app with everything
+**Example 4:** App uses Conversational Agent
 ```
-OR.Assets OR.Administration DataFabric.Schema.Read DataFabric.Data.Read DataFabric.Data.Write PIMS OR.Execution OR.Jobs.Write OR.Queues OR.Tasks
+OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.API
+```
+
+**Example 5:** Full-featured app with everything
+```
+OR.Assets OR.Administration DataFabric.Schema.Read DataFabric.Data.Read DataFabric.Data.Write PIMS OR.Execution OR.Folders OR.Jobs OR.Jobs.Write OR.Queues OR.Tasks ConversationalAgents Traces.API
 ```
 
 ## UiPath External Application Resource Mapping
@@ -197,9 +243,11 @@ When adding scopes in the UiPath Admin UI (External Applications → Edit → "A
 
 | Resource in UI Dropdown | SDK Scopes Under This Resource |
 |---|---|
-| **UiPath.Orchestrator** | `OR.Assets`, `OR.Assets.Read`, `OR.Administration`, `OR.Administration.Read`, `OR.Execution`, `OR.Execution.Read`, `OR.Jobs`, `OR.Jobs.Write`, `OR.Queues`, `OR.Queues.Read`, `OR.Tasks`, `OR.Tasks.Read`, `OR.Tasks.Write` |
+| **UiPath.Orchestrator** | `OR.Assets`, `OR.Assets.Read`, `OR.Administration`, `OR.Administration.Read`, `OR.Execution`, `OR.Execution.Read`, `OR.Folders`, `OR.Jobs`, `OR.Jobs.Read`, `OR.Jobs.Write`, `OR.Queues`, `OR.Queues.Read`, `OR.Tasks`, `OR.Tasks.Read`, `OR.Tasks.Write` |
 | **Data Fabric API** | `DataFabric.Schema.Read`, `DataFabric.Data.Read`, `DataFabric.Data.Write` |
 | **PIMS** | `PIMS` |
+| **ConversationalAgents** | `ConversationalAgents` |
+| **Traces.API** | `Traces.API` |
 
 **Direct edit URL pattern:** `{baseUrl}/{orgName}/portal_/admin/external-apps/oauth/edit/{clientId}`
 
@@ -207,20 +255,24 @@ When adding scopes in the UiPath Admin UI (External Applications → Edit → "A
 
 | Scope | Services |
 |-------|----------|
-| `DataFabric.Data.Read` | Entities (read records, download attachments) |
+| `ConversationalAgents` | Conversations (startSession) |
+| `DataFabric.Data.Read` | Entities (read records, download attachments), ChoiceSets (getById) |
 | `DataFabric.Data.Write` | Entities (insert, update, delete records) |
-| `DataFabric.Schema.Read` | Entities (list/get entities), ChoiceSets |
+| `DataFabric.Schema.Read` | Entities (list/get entities), ChoiceSets (getAll) |
 | `OR.Administration` | Buckets (full access) |
 | `OR.Administration.Read` | Buckets (read-only) |
 | `OR.Assets` | Assets (full access) |
 | `OR.Assets.Read` | Assets (read-only) |
-| `OR.Execution` | Processes (full access to listing) |
-| `OR.Execution.Read` | Processes (read-only listing) |
-| `OR.Jobs` | Processes (start jobs) |
+| `OR.Execution` | Processes (full access), Agents, Conversations, Exchanges, Messages |
+| `OR.Execution.Read` | Processes (read-only), ProcessInstances (getBpmn), CaseInstances (getAll, getById, getStages), Agents (read) |
+| `OR.Folders` | Conversations (create) |
+| `OR.Jobs` | Processes (start jobs), Conversations, Exchanges |
+| `OR.Jobs.Read` | Conversations (read), Exchanges (read), Messages (read) |
 | `OR.Jobs.Write` | Processes (start jobs) |
 | `OR.Queues` | Queues (full access) |
 | `OR.Queues.Read` | Queues (read-only) |
-| `OR.Tasks` | Tasks (full access) |
-| `OR.Tasks.Read` | Tasks (read-only) |
+| `OR.Tasks` | Tasks (full access), CaseInstances (getActionTasks) |
+| `OR.Tasks.Read` | Tasks (read-only), CaseInstances (getActionTasks) |
 | `OR.Tasks.Write` | Tasks (write operations) |
 | `PIMS` | MaestroProcesses, ProcessInstances, Cases, CaseInstances |
+| `Traces.API` | Exchanges (createFeedback) |

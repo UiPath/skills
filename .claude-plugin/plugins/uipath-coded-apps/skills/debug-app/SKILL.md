@@ -159,6 +159,78 @@ Display a brief summary of what you found to the user before proceeding.
 
 ---
 
+## Step 2B: Proactive Scope & Config Validation
+
+**Do NOT wait for errors.** Immediately after gathering context, compare the app's REQUIRED scopes (from SDK service usage in code) against the CONFIGURED scopes (from `.env`). Fix any gaps now, before the user even tries to log in.
+
+### 2B.1: Build the Required Scopes List
+
+From the SDK services found in Step 2.3, build the complete list of required scopes.
+
+**Read `references/oauth-scopes.md`** for the authoritative service-to-scope mapping. Do NOT rely on hardcoded scope tables — always read the reference file to get the current mappings.
+
+```
+Use Read to load: references/oauth-scopes.md (relative to this skill's directory)
+```
+
+For each SDK service found in the app's code, look up the specific methods used and their required scopes from the reference file. Pay attention to:
+- Some services need different scopes for read vs write operations (e.g., `Processes.getAll()` needs `OR.Execution.Read` but `Processes.start()` needs `OR.Jobs.Write`)
+- Some services need multiple scopes simultaneously (e.g., `CaseInstances.getAll()` needs both `PIMS` AND `OR.Execution.Read`)
+- `ProcessInstances.getBpmn()` needs `OR.Execution.Read`, not `PIMS`
+- `CaseInstances.getActionTasks()` needs `OR.Tasks` or `OR.Tasks.Read`, not `PIMS`
+- Conversational Agent services need `OR.Execution`, `OR.Folders`, `OR.Jobs`, `ConversationalAgents`, and `Traces.API`
+
+### 2B.2: Compare Against Configured Scopes
+
+Parse the scope string from the `.env` file (e.g., `VITE_UIPATH_SCOPE="OR.Execution.Read PIMS"`) and compare:
+
+1. Split the configured scope string by spaces to get the list of configured scopes
+2. For each required scope, check if it (or a broader parent scope) is present in the configured list
+   - Example: if `OR.Assets.Read` is required and `OR.Assets` is configured → that's fine (broad scope covers granular)
+   - Example: if `OR.Assets` is required and only `OR.Assets.Read` is configured → NOT sufficient if write operations are used
+3. Identify any **missing scopes** — scopes required by the code but not in the `.env`
+
+### 2B.3: Fix Missing Scopes
+
+If there are missing scopes:
+
+1. **Report the gap to the user:**
+   > **Scope mismatch detected.** Your app uses SDK services that require scopes not currently in your `.env`:
+   > - Code uses: `<service name>` → requires: `<scope>`
+   > - Currently configured: `<current scopes from .env>`
+   > - Missing: `<list of missing scopes>`
+
+2. **Update the `.env` file** — add the missing scopes to the scope string:
+   ```
+   Use Edit to update the SCOPE value in .env to include all required scopes
+   ```
+
+3. **Update the UiPath External Application** (Automated Mode):
+   Follow Step 6D to navigate to UiPath Cloud and add the missing scopes to the External Application. Do this NOW, not later.
+
+   **Manual Mode:** Provide instructions for the user to add scopes manually.
+
+4. **After updating scopes**, restart the dev server yourself (via Bash) so the new `.env` values take effect.
+
+### 2B.4: Also Validate Base URL
+
+While you're checking config, verify the base URL uses the correct API subdomain:
+
+| `.env` Value | Issue | Fix |
+|---|---|---|
+| `https://cloud.uipath.com` | Will cause CORS errors | Change to `https://cloud.api.uipath.com` |
+| `https://staging.uipath.com` | Will cause CORS errors | Change to `https://staging.api.uipath.com` |
+| `https://alpha.uipath.com` | Will cause CORS errors | Change to `https://alpha.api.uipath.com` |
+| `https://cloud.api.uipath.com` | Correct | No change needed |
+| `https://staging.api.uipath.com` | Correct | No change needed |
+| `https://alpha.api.uipath.com` | Correct | No change needed |
+
+If the base URL is wrong, fix it now in the `.env` file.
+
+**IMPORTANT**: Even if the app "loads fine", missing scopes WILL cause failures later when the user tries to use specific SDK features. Always fix proactively.
+
+---
+
 ## Step 3: Clear Browser State (ALWAYS DO THIS FIRST)
 
 **This is critical.** Stale OAuth tokens, cached code verifiers, and old session data cause many authentication failures. Always clear browser state before debugging.
@@ -426,26 +498,7 @@ Based on the decoded error, follow the appropriate diagnosis path:
 
 **Diagnosis steps:**
 
-1. From Step 2, you already know which SDK services the app uses. Map them to required scopes using this table:
-
-   | SDK Service | Required Scopes |
-   |---|---|
-   | `Assets` | `OR.Assets` or `OR.Assets.Read` |
-   | `Buckets` | `OR.Administration` or `OR.Administration.Read` |
-   | `Entities` (read) | `DataFabric.Schema.Read`, `DataFabric.Data.Read` |
-   | `Entities` (write) | `DataFabric.Schema.Read`, `DataFabric.Data.Read`, `DataFabric.Data.Write` |
-   | `ChoiceSets` | `DataFabric.Schema.Read` |
-   | `Processes` (read) | `OR.Execution` or `OR.Execution.Read` |
-   | `Processes` (start) | `OR.Jobs` or `OR.Jobs.Write` |
-   | `ProcessInstances` | `PIMS` |
-   | `MaestroProcesses` | `PIMS` |
-   | `Cases` | `PIMS` |
-   | `CaseInstances` | `PIMS` |
-   | `Queues` | `OR.Queues` or `OR.Queues.Read` |
-   | `Tasks` (read) | `OR.Tasks` or `OR.Tasks.Read` |
-   | `Tasks` (write) | `OR.Tasks` or `OR.Tasks.Write` |
-
-   Refer to `references/oauth-scopes.md` for the complete detailed mapping.
+1. From Step 2, you already know which SDK services the app uses. **Read `references/oauth-scopes.md`** to map each service and its specific methods to the required scopes. Do NOT use hardcoded scope assumptions — always consult the reference file for the authoritative mapping.
 
 2. Compare the REQUIRED scopes (from the table above) with the CONFIGURED scopes (from `.env` file).
 
