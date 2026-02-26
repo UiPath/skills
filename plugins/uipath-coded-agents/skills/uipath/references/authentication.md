@@ -8,13 +8,40 @@ The UiPath CLI supports two authentication modes:
 
 ### 🔓 Interactive Mode (Default - Recommended)
 
-Opens a browser for OAuth authentication where you can select your tenant interactively.
+Opens a browser for OAuth authentication.
 
-```bash
-uv run uipath auth --cloud         # Production environment
-uv run uipath auth --staging       # Staging environment
-uv run uipath auth --alpha         # Alpha environment
-```
+**IMPORTANT — Tenant selection flow:**
+
+The CLI's interactive tenant picker prompts for input that Claude's Bash tool cannot provide, so `--tenant` MUST always be used on the final auth call. Follow this flow:
+
+1. **If the user already specified a tenant**, use it directly:
+   ```bash
+   uv run uipath auth --cloud --tenant MY_TENANT
+   ```
+
+2. **If the user did NOT specify a tenant**, use a two-step flow:
+
+   **Step 1** — Run auth without `--tenant`. This opens the browser for OAuth login, then prints the available tenants and hangs waiting for interactive selection. Use a timeout to capture the tenant list:
+   ```bash
+   uv run uipath auth --cloud
+   ```
+   The output will look like:
+   ```
+   Select tenant:
+     0: TenantA
+     1: TenantB
+     2: TenantC
+   Select tenant number:
+   ```
+   The command will hang at "Select tenant number:" — this is expected. Wait for the tenant list to appear, then cancel the command (Ctrl+C or timeout).
+
+   **Step 2** — Parse ALL tenant names from the output and present them to the user as a numbered list. Show every tenant even if there are many (50+). Do NOT truncate or summarize the list. Ask them to choose one.
+
+   **Step 3** — Run auth again with the selected tenant:
+   ```bash
+   uv run uipath auth --cloud --tenant SELECTED_TENANT
+   ```
+   This second run will reuse the cached browser token and complete without opening the browser again.
 
 ### 🔐 Unattended Mode (For Automation)
 

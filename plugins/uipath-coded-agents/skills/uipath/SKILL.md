@@ -1,6 +1,7 @@
 ---
 description: UiPath Coded Agents assistant - Create, run, and evaluate coded agents
 allowed-tools: Bash, Read, Write, Glob, Grep
+user-invocable: true
 ---
 
 # UiPath Coded Agents Assistant
@@ -29,6 +30,7 @@ Begin your agent development journey with these foundational topics:
   - Project structure overview
 
 - **[Authentication](references/authentication.md)** - Authenticate with UiPath
+  - **Always use `--tenant TENANT_NAME`** on the final auth call. If the user hasn't specified a tenant: (1) run `uv run uipath auth --cloud` first — it opens the browser for login then prints the tenant list and hangs at "Select tenant number:"; (2) cancel the command, parse the tenant names, present them to the user; (3) after the user picks one, run `uv run uipath auth --cloud --tenant SELECTED_TENANT`.
   - Interactive OAuth authentication
   - Unattended client credentials flow
   - Environment configuration
