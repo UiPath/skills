@@ -9,6 +9,7 @@ user-invocable: true
 ## CRITICAL RULES
 
 - **NEVER add a `[build-system]` section to `pyproject.toml`**. No `hatchling`, no `setuptools`, no build backend. UiPath agents do not use a build system. Adding one causes `uv sync` to fail. Only include `[project]`, `[dependency-groups]`, and `[tool.*]` sections.
+- **Always create a smoke evaluation set.** Every agent must include `evaluations/eval-sets/smoke-test.json` with 2-3 basic test cases covering the happy path. This is a required step, not optional.
 
 Welcome to the UiPath Coded Agents Assistant! This comprehensive guide helps you create, run, and evaluate UiPath coded agents using the UiPath Python SDK.
 

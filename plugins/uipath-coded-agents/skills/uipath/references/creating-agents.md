@@ -97,6 +97,14 @@ Run `uv run uipath init`. Doing so will generate:
 - [LlamaIndex Troubleshooting](llamaindex-integration.md#troubleshooting-uipath-init)
 - [OpenAI Agents Troubleshooting](openai-agents-integration.md#troubleshooting-uipath-init)
 
+### Step 5: Create Smoke Evaluation Set
+
+**This step is required.** Every agent must have a basic smoke evaluation set to verify it works. Create `evaluations/eval-sets/smoke-test.json` with 2-3 simple test cases covering the happy path.
+
+See [Evaluation Sets](evaluations/evaluation-sets.md) for the file format and [Evaluators Guide](evaluations/evaluators/README.md) for available evaluators. Choose evaluators based on agent type:
+- **Deterministic agents** → `ExactMatchEvaluator`
+- **LLM/Natural language agents** → `LLMJudgeOutputEvaluator` or `ContainsEvaluator`
+
 ## Generated Template Details
 
 The created agent will include:
