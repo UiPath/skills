@@ -21,6 +21,13 @@ The UiPath Coded Agents enables you to build intelligent automation agents with:
 
 Begin your agent development journey with these foundational topics:
 
+- **[Project Setup](references/setup.md)** - Set up a new agent project
+  - Prerequisites (Python 3.11+, uv)
+  - pyproject.toml configuration
+  - Running `uipath init`
+  - uipath.json structure
+  - Project structure overview
+
 - **[Authentication](references/authentication.md)** - Authenticate with UiPath
   - Interactive OAuth authentication
   - Unattended client credentials flow
@@ -45,6 +52,22 @@ Develop new agents with monitoring and observability built-in:
   - Common use cases
   - Viewing traces in Orchestrator
 
+- **[Agent Patterns](references/agent-patterns.md)** - Implementation patterns by agent type
+  - Simple Direct, SDK Integration, LangGraph Workflow
+  - Human-in-the-Loop, RAG, Chat, Multi-Agent Supervisor
+  - Common building blocks and code examples
+
+### Platform Services
+
+Access UiPath platform capabilities from your agent code:
+
+- **[SDK Services](references/sdk-services.md)** - UiPath SDK API reference
+  - Processes, Jobs, Assets, Queues
+  - Attachments, Buckets, Context Grounding
+  - Documents, Entities, Connections
+  - LLM Gateway, Guardrails
+  - Sync/async patterns and folder targeting
+
 ### Running Agents
 
 Execute and test your agents:
@@ -54,6 +77,17 @@ Execute and test your agents:
   - Interactive input collection
   - Execution and result display
   - Error handling
+
+### Deployment
+
+Package and publish your agents to UiPath Cloud:
+
+- **[Deployment](references/deployment.md)** - Deploy your agents
+  - `uipath pack` - Package into .nupkg
+  - `uipath publish` - Upload to Orchestrator feed
+  - `uipath deploy` - Pack + publish in one step
+  - `uipath invoke` - Execute published agents
+  - Configuration and environment variables
 
 ### Testing & Evaluation
 
@@ -101,21 +135,24 @@ Ensure your agents work correctly with evaluations:
 
 ## Quick Patterns
 
-### Calculator/Deterministic Agents
-Use ExactMatch evaluators for agents that produce deterministic outputs.
-See [Best Practices - Calculator Pattern](references/evaluations/best-practices.md#pattern-1-calculatordeterministic-agents)
+### Implementation Patterns
+Choose the right architecture for your agent:
+- **Simple Direct** — Deterministic logic, no LLM calls → [Pattern](references/agent-patterns.md#simple-direct-agent)
+- **SDK Integration** — Platform service calls (assets, queues, jobs) → [Pattern](references/agent-patterns.md#sdk-integration-agent)
+- **LangGraph Workflow** — Multi-step LLM reasoning with routing → [Pattern](references/agent-patterns.md#langgraph-workflow-agent)
+- **Human-in-the-Loop** — Approval flows with Action Center → [Pattern](references/agent-patterns.md#human-in-the-loop-agent)
+- **RAG** — Knowledge retrieval and Q&A → [Pattern](references/agent-patterns.md#rag-agent)
+- **Chat** — Conversational agents with tools → [Pattern](references/agent-patterns.md#chat-agent)
+- **Multi-Agent Supervisor** — Specialized sub-agents with routing → [Pattern](references/agent-patterns.md#multi-agent-supervisor)
 
-### Natural Language Agents
-Combine LLMJudge and Contains evaluators for semantic validation.
-See [Best Practices - Natural Language Pattern](references/evaluations/best-practices.md#pattern-2-natural-language-agents)
+See [Agent Patterns](references/agent-patterns.md) for full code examples.
 
-### Multi-Step Orchestration Agents
-Use Trajectory and JsonSimilarity evaluators for multi-tool workflows.
-See [Best Practices - Orchestration Pattern](references/evaluations/best-practices.md#pattern-3-multi-step-orchestration-agents)
-
-### API Integration Agents
-Mix JsonSimilarity and ExactMatch for API response validation.
-See [Best Practices - API Integration Pattern](references/evaluations/best-practices.md#pattern-4-api-integration-agents)
+### Evaluation Patterns
+Match your evaluation strategy to your agent type:
+- **Calculator/Deterministic** — ExactMatch evaluators → [Best Practices](references/evaluations/best-practices.md#pattern-1-calculatordeterministic-agents)
+- **Natural Language** — LLMJudge + Contains evaluators → [Best Practices](references/evaluations/best-practices.md#pattern-2-natural-language-agents)
+- **Multi-Step Orchestration** — Trajectory + JsonSimilarity → [Best Practices](references/evaluations/best-practices.md#pattern-3-multi-step-orchestration-agents)
+- **API Integration** — JsonSimilarity + ExactMatch → [Best Practices](references/evaluations/best-practices.md#pattern-4-api-integration-agents)
 
 ## Coded Agents Features
 
@@ -157,10 +194,13 @@ Evaluations are test suites that:
 ## Next Steps
 
 1. **Getting started?**
-   - See [Authentication](references/authentication.md) for setup instructions
+   - See [Project Setup](references/setup.md) for prerequisites and project initialization
+   - See [Authentication](references/authentication.md) for connecting to UiPath
 
 2. **Building your first agent?**
    - Start with [Creating Agents](references/creating-agents.md)
+   - Browse [Agent Patterns](references/agent-patterns.md) to pick the right architecture
+   - Use [SDK Services](references/sdk-services.md) to call platform APIs
    - Learn about [Tracing](references/tracing.md) to add monitoring
    - Then run your first agent using [Running Agents](references/running-agents.md)
 
@@ -168,6 +208,9 @@ Evaluations are test suites that:
    - Start with [Creating Evaluations](references/evaluations/creating-evaluations.md)
    - Review [Best Practices](references/evaluations/best-practices.md) for your agent type
    - Run evaluations with [Running Evaluations](references/evaluations/running-evaluations.md)
+
+4. **Deploying to the cloud?**
+   - See [Deployment](references/deployment.md) for pack, publish, and invoke workflows
 
 # Additional Instructions
 - You MUST ALWAYS read the relevant linked references before making assumptions!
