@@ -8,6 +8,19 @@ Set up a new UiPath coded agent project from scratch.
 - **uv** package manager installed ([docs](https://docs.astral.sh/uv/))
 - UiPath account with access to Orchestrator (for deployment)
 
+## Choose Your Agent Type
+
+| Agent Type | Config File | Entrypoint | Key Dependency | Integration Guide |
+|---|---|---|---|---|
+| **Simple Function** | `uipath.json` | `main.py` (function) | `uipath` | — |
+| **LangGraph** | `langgraph.json` | `main.py` (compiled StateGraph) | `uipath-langchain` | [Guide](langgraph-integration.md) |
+| **LlamaIndex** | `llama_index.json` | `main.py` (Workflow instance) | `uipath-llamaindex` | [Guide](llamaindex-integration.md) |
+| **OpenAI Agents** | `openai_agents.json` | `main.py` (Agent instance) | `uipath-openai-agents` | [Guide](openai-agents-integration.md) |
+
+Each integration guide is **self-contained** — it covers project structure, dependencies, input/output patterns, `uipath init`, and complete examples. For LangGraph, LlamaIndex, or OpenAI Agents, read the integration guide directly.
+
+The rest of this page covers the **common setup steps** shared by all agent types, plus details specific to **simple function agents**.
+
 ## Creating a New Project
 
 ### 1. Create Project Directory
@@ -16,33 +29,28 @@ Set up a new UiPath coded agent project from scratch.
 mkdir my-agent && cd my-agent
 ```
 
-### 2. Set Up pyproject.toml
+### 2. Scaffold with `uipath new`
 
-Use the official template from skill assets if `pyproject.toml` doesn't exist. Replace `{AGENT_NAME}` and `{AGENT_DESCRIPTION}` with actual values:
+If there is **no existing agent code**, use `uipath new` to scaffold the project. It generates `main.py`, `pyproject.toml`, and the integration-specific config file based on which integration package is installed.
 
-```toml
-[project]
-name = "my-agent"
-version = "0.1.0"
-description = "UiPath Coded Agent - Describe what your agent does"
-requires-python = ">=3.11"
-
-dependencies = [
-    "uipath>=2.9.9,<2.10.0",
-    "pydantic>=2.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
-]
-
-[tool.setuptools]
-py-modules = ["main"]
+```bash
+uv run uipath new my-agent
 ```
+
+**What it generates per integration:**
+
+| Integration | Generated Files | Template Content |
+|---|---|---|
+| Simple (base) | `main.py`, `pyproject.toml`, `uipath.json` | Dataclass-based echo function |
+| LangGraph | `main.py`, `pyproject.toml`, `langgraph.json` | StateGraph with UiPathChat LLM |
+| LlamaIndex | `main.py`, `pyproject.toml`, `llama_index.json` | Workflow with StartEvent/StopEvent |
+| OpenAI Agents | `main.py`, `pyproject.toml`, `openai_agents.json`, `AGENTS.md` | Agent with UiPathChatOpenAI + tool |
+
+**Which template is used** depends on which integration package is installed. If `uipath-langchain` is installed, you get a LangGraph scaffold. If none of the integration packages are installed, you get the base scaffold.
+
+> **Skip this step** if the project already has `main.py` or `graph.py` with agent code. `uipath new` is only for starting from scratch.
+
+After scaffolding, modify the generated `main.py` to implement your actual agent logic.
 
 ### 3. Install Dependencies
 
@@ -66,9 +74,13 @@ uv run uipath auth --alpha
 
 See [Authentication](authentication.md) for details on authentication modes.
 
-## Defining Input/Output Models
+## Simple Function Agent Details
 
-Every agent requires Pydantic `Input` and `Output` models in its entrypoint file (e.g., `main.py`):
+The sections below are specific to **simple function agents** (no LLM framework). For LangGraph, LlamaIndex, or OpenAI Agents, see their respective integration guides.
+
+### Defining Input/Output Models
+
+Every simple function agent requires Pydantic `Input` and `Output` models in `main.py`:
 
 ```python
 from pydantic import BaseModel, Field
@@ -88,6 +100,32 @@ async def main(input: Input) -> Output:
     return Output(answer="Hello!", sources=[])
 ```
 
+### Project Structure
+
+```
+my-agent/
+├── main.py                 # Agent entrypoint with Input/Output models
+├── pyproject.toml          # Python project configuration
+├── uipath.json             # UiPath project configuration
+├── entry-points.json       # Generated entry points with JSON schemas
+├── bindings.json           # Runtime bindings
+├── .env                    # Environment variables
+├── .uipath/                # Internal UiPath files
+│   └── telemetry.json
+└── main.mermaid            # Generated graph diagram
+```
+
+### First-Time Checklist
+
+1. Create project directory
+2. Run `uv run uipath new my-agent` to scaffold (if no code exists)
+3. Run `uv sync` to install dependencies
+4. Verify with `uv run uipath --version`
+5. Authenticate with `uv run uipath auth --alpha` (if needed)
+6. Modify `main.py` with your `Input`, `Output` models and `main` function
+7. Run `uv run uipath init` to generate configuration
+8. Test with `uv run uipath run main '{"query": "test"}'`
+
 ## Running `uipath init`
 
 After creating your entrypoint file, generate project configuration:
@@ -95,6 +133,8 @@ After creating your entrypoint file, generate project configuration:
 ```bash
 uv run uipath init
 ```
+
+This works for **all agent types**. The CLI auto-detects the agent type by checking for config files (`langgraph.json`, `llama_index.json`, `openai_agents.json`) via registered middleware. If none are found, it falls back to simple function agent detection.
 
 ### What It Generates
 
@@ -114,11 +154,11 @@ uv run uipath init
 
 ### When to Re-run
 
-Re-run `uv run uipath init` whenever you modify your `Input` or `Output` Pydantic models to regenerate the JSON schemas in `entry-points.json`.
+Re-run `uv run uipath init` whenever you modify your input/output models to regenerate the JSON schemas in `entry-points.json`.
 
 ## uipath.json Structure
 
-The main project configuration file:
+The main project configuration file (generated by `uipath init`):
 
 ```json
 {
@@ -142,36 +182,11 @@ The main project configuration file:
 - **`packOptions`** - Control which files are included when packaging for deployment
 - **`functions`** - Entrypoint mappings (format: `"file_path:function_name"`)
 
-## Project Structure Overview
-
-A complete agent project looks like:
-
-```
-my-agent/
-├── main.py                 # Agent entrypoint with Input/Output models
-├── pyproject.toml          # Python project configuration
-├── uipath.json             # UiPath project configuration
-├── entry-points.json       # Generated entry points with JSON schemas
-├── bindings.json           # Runtime bindings
-├── .env                    # Environment variables
-├── .uipath/                # Internal UiPath files
-│   └── telemetry.json
-└── main.mermaid            # Generated graph diagram
-```
-
-## First-Time Checklist
-
-1. Create project directory
-2. Set up `pyproject.toml` with UiPath SDK dependency
-3. Run `uv sync` to install dependencies
-4. Verify with `uv run uipath --version`
-5. Authenticate with `uv run uipath auth --alpha` (if needed)
-6. Create `main.py` with `Input`, `Output` models and a `main` function
-7. Run `uv run uipath init` to generate configuration
-8. Test with `uv run uipath run main '{"query": "test"}'`
-
 ## Next Steps
 
-- **Build your agent**: See [Creating Agents](creating-agents.md) for the full development workflow
+- **Simple function agent?** See [Creating Agents](creating-agents.md) for the full workflow
+- **LangGraph agent?** See [LangGraph Integration](langgraph-integration.md)
+- **LlamaIndex agent?** See [LlamaIndex Integration](llamaindex-integration.md)
+- **OpenAI Agents?** See [OpenAI Agents Integration](openai-agents-integration.md)
 - **Run your agent**: See [Running Agents](running-agents.md) to execute and test
 - **Deploy**: See [Deployment](deployment.md) to publish to UiPath Cloud

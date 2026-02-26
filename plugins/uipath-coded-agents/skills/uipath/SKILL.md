@@ -44,6 +44,28 @@ Develop new agents with monitoring and observability built-in:
   - Agent implementation
   - Entry point generation
 
+- **[LangGraph Integration](references/langgraph-integration.md)** - Build LangGraph agents for UiPath
+  - Project structure (`langgraph.json` vs `uipath.json` functions)
+  - Required dependencies (`uipath-langchain`)
+  - UiPath LLM models (`UiPathAzureChatOpenAI`, `UiPathChat`)
+  - Entrypoint detection and troubleshooting
+  - Complete examples (minimal, LLM + tools, chat agent)
+
+- **[LlamaIndex Integration](references/llamaindex-integration.md)** - Build LlamaIndex agents for UiPath
+  - Project structure (`llama_index.json`, Workflow class)
+  - Required dependencies (`uipath-llamaindex`)
+  - UiPath LLM models (`UiPathOpenAI`)
+  - StartEvent/StopEvent input/output patterns
+  - Context Grounding (RAG), HITL, process invocation
+  - Complete examples (workflow, FunctionAgent)
+
+- **[OpenAI Agents Integration](references/openai-agents-integration.md)** - Build OpenAI Agents for UiPath (lightweight)
+  - Project structure (`openai_agents.json`, Agent class)
+  - Required dependencies (`uipath-openai-agents`)
+  - UiPath LLM models (`UiPathChatOpenAI`)
+  - Agent patterns (tools, structured output, handoffs, context)
+  - Complete examples (simple, tools, multi-agent triage)
+
 - **[Tracing](references/tracing.md)** - Add monitoring and debugging
   - Basic tracing with `@traced()` decorator
   - Custom span names and run types
@@ -163,6 +185,17 @@ Match your evaluation strategy to your agent type:
 - **Evaluation Framework**: Comprehensive testing with multiple evaluator types
 - **Privacy**: Data redaction and sensitive field hiding
 
+## Framework Selection
+
+When the user asks to create an agent **without specifying which framework/integration to use**, you MUST ask them to choose before proceeding. Present these options:
+
+1. **Simple Function** — No framework, plain Python function with `Input`/`Output` models. Best for deterministic logic, SDK calls, no LLM needed.
+2. **LangGraph** — Multi-step workflows with conditional routing, tool use, parallel execution. Best for complex LLM agents.
+3. **LlamaIndex** — Workflow-based agents with RAG, FunctionAgent, Context Grounding. Best for knowledge retrieval and document Q&A.
+4. **OpenAI Agents** — Lightweight agent framework with tools, handoffs, structured output. Best for simple LLM agents and multi-agent triage.
+
+**Do NOT default to any framework.** Wait for the user's choice, then read the corresponding integration guide.
+
 ## Key Concepts
 
 ### Agents
@@ -212,5 +245,16 @@ Evaluations are test suites that:
 4. **Deploying to the cloud?**
    - See [Deployment](references/deployment.md) for pack, publish, and invoke workflows
 
-# Additional Instructions
-- You MUST ALWAYS read the relevant linked references before making assumptions!
+# Instructions for Reading References
+
+- **Read references directly** using the Read tool — do NOT use Task or Explore agents to read them. This avoids duplicate reads.
+- **Read only what you need** based on the user's request:
+  - Creating a simple (non-LLM) agent? Read: `setup.md`, `creating-agents.md`
+  - Creating a LangGraph agent? Read: `langgraph-integration.md` (self-contained — covers project setup, deps, patterns, examples)
+  - Creating a LlamaIndex agent? Read: `llamaindex-integration.md` (self-contained)
+  - Creating an OpenAI Agents agent? Read: `openai-agents-integration.md` (self-contained)
+  - Need UiPath SDK calls in any agent? Read: `sdk-services.md`
+  - Want architecture pattern examples (LangGraph)? Read: `agent-patterns.md`
+  - Setting up evaluations? Read: `evaluations/creating-evaluations.md`, `evaluations/evaluation-sets.md`
+- **Do not read all references upfront.** Read the 2-3 most relevant ones for the task, then proceed. You can always read more later if needed.
+- **Do not re-read files** you have already read in this conversation.

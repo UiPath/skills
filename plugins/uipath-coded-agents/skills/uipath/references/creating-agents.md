@@ -6,10 +6,14 @@ Guide to creating new UiPath agents with AI-powered business logic implementatio
 
 When creating a new agent:
 
-1. **Setup pyproject.toml**:
-   - Use the official `pyproject.toml` template present in skill assets if `pyproject.toml` doesn't exist in the agent directory
-   - Replace `{AGENT_NAME}` with the actual agent name
-   - Replace `{AGENT_DESCRIPTION}` with the agent description you provide
+1. **Scaffold the project** (if no agent code exists yet):
+   ```bash
+   mkdir my-agent && cd my-agent
+   uv run uipath new my-agent
+   ```
+   This generates `main.py`, `pyproject.toml`, and the integration-specific config file. The template depends on which integration package is installed (see [Project Setup](setup.md) for details).
+
+   > **Skip this step** if the project already has agent code (`main.py`, `graph.py`, etc.).
 
 2. **Install dependencies**: Run `uv sync` to install dependencies and create the virtual environment.
 
@@ -33,9 +37,11 @@ Specify:
 
 The schemas should be written as pydantic types.
 
-### Step 2: Generate Template
+### Step 2: Choose Agent Type
 
-The created agent follows this structure:
+#### Simple Function Agent (no LLM framework)
+
+For agents with deterministic logic, SDK calls, or simple processing — use `main.py` with a traced function:
 
 ```python
 from pydantic import BaseModel, Field
@@ -56,11 +62,25 @@ async def main(input: Input) -> Output:
     pass
 ```
 
+#### LangGraph Agent
+
+For multi-step LLM reasoning, conditional routing, or tool-calling with LangChain — use `graph.py` + `langgraph.json`. See the **[LangGraph Integration Guide](langgraph-integration.md)** for project structure, dependencies, LLM models, and complete examples.
+
+#### LlamaIndex Agent
+
+For LlamaIndex-based workflows using `StartEvent`/`StopEvent` events and the `@step` decorator — use `main.py` + `llama_index.json`. See the **[LlamaIndex Integration Guide](llamaindex-integration.md)** for project structure, dependencies, LLM models, and complete examples.
+
+#### OpenAI Agents Agent
+
+For lightweight agents using the OpenAI Agents SDK with tool calling and handoffs — use `main.py` + `openai_agents.json`. See the **[OpenAI Agents Integration Guide](openai-agents-integration.md)** for project structure, dependencies, LLM models, and complete examples.
+
+> **Note:** Each integration guide is self-contained. It covers everything from pyproject.toml to running the agent. You don't need to read this page for integration agents — go directly to the relevant guide.
+
 ### Step 3: Implement Business Logic
 
-Describe your agent's functionality, then implement the main function with:
+Describe your agent's functionality, then implement the main function (or graph nodes) with:
 - Proper error handling
-- UiPath SDK method calls
+- UiPath SDK method calls (see [SDK Services](sdk-services.md))
 - Input validation
 - Output formatting
 
@@ -68,8 +88,14 @@ Describe your agent's functionality, then implement the main function with:
 
 Run `uv run uipath init`. Doing so will generate:
 - `entry-points.json` with JSON schemas
+- `uipath.json` project configuration (if not already present)
+- `bindings.json` runtime bindings
 - Documentation files (AGENTS.md, etc.)
-- Agent structure and metadata
+
+**Note for integration agents:** `uipath init` auto-detects the agent type by checking for config files (`langgraph.json`, `llama_index.json`, `openai_agents.json`) via registered middleware. If you see "No function entrypoints found", ensure the config file exists and the integration package is installed. See the troubleshooting section in your integration guide:
+- [LangGraph Troubleshooting](langgraph-integration.md#troubleshooting-uipath-init)
+- [LlamaIndex Troubleshooting](llamaindex-integration.md#troubleshooting-uipath-init)
+- [OpenAI Agents Troubleshooting](openai-agents-integration.md#troubleshooting-uipath-init)
 
 ## Generated Template Details
 

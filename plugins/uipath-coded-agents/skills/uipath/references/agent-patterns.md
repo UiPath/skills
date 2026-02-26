@@ -2,6 +2,11 @@
 
 Common implementation patterns for building UiPath coded agents, from simple functions to multi-agent orchestrations.
 
+> **Note:** These patterns are general architectural concepts applicable to any integration. The code examples below use **LangGraph** and the **UiPath Python SDK**. The same patterns can be implemented with other frameworks — see their integration guides for framework-specific code:
+> - **[LangGraph Integration](langgraph-integration.md)** — StateGraph, conditional edges, `UiPathAzureChatOpenAI`
+> - **[LlamaIndex Integration](llamaindex-integration.md)** — Workflow, FunctionAgent, `UiPathOpenAI`, Context Grounding RAG
+> - **[OpenAI Agents Integration](openai-agents-integration.md)** — Agent with tools, structured output, handoffs
+
 ## Pattern Overview
 
 | Pattern | When to Use | Key Components |
@@ -103,6 +108,8 @@ async def main(input: Input) -> Output:
 
 Multi-step agent using LangGraph's `StateGraph` with nodes, edges, and conditional routing. Supports LLM-powered decisions.
 
+> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the **[LangGraph Integration Guide](langgraph-integration.md)** for project setup, `langgraph.json` configuration, entrypoint detection, and troubleshooting.
+
 **When to use:** Classification workflows, multi-step reasoning, conditional branching based on LLM output.
 
 ```python
@@ -110,7 +117,7 @@ from pydantic import BaseModel
 from langgraph.graph import START, END, StateGraph, MessagesState
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 
 class GraphInput(BaseModel):
     message: str
@@ -125,7 +132,7 @@ class GraphState(MessagesState):
     confidence: float | None = None
 
 async def classify(state: GraphState) -> Command:
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = UiPathAzureChatOpenAI(max_retries=3)
     result = await llm.ainvoke(state["messages"])
     return Command(update={"label": "urgent", "confidence": 0.95})
 
@@ -267,7 +274,7 @@ Conversational agent with tool access, built using LangGraph's `create_agent()` 
 
 ```python
 from pydantic import BaseModel
-from langchain_openai import ChatOpenAI
+from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 from langchain_tavily import TavilySearch
 from langchain.agents import create_agent
 
@@ -280,7 +287,7 @@ class GraphOutput(BaseModel):
 system_prompt = """You are a helpful assistant that answers questions.
 Use the search tool to find current information when needed."""
 
-llm = ChatOpenAI(model="gpt-4o-mini")
+llm = UiPathAzureChatOpenAI()
 tools = [TavilySearch(max_results=3)]
 graph = create_agent(llm, tools=tools, system_prompt=system_prompt)
 ```
@@ -304,7 +311,7 @@ from typing import Literal
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph, MessagesState
-from langchain_openai import ChatOpenAI
+from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage
 
@@ -331,6 +338,7 @@ def make_supervisor(llm):
         return {"next": response["next"]}
     return supervisor
 
+llm = UiPathAzureChatOpenAI()
 research_agent = create_agent(llm, tools=[search_tool], system_prompt="You research.")
 code_agent = create_agent(llm, tools=[repl_tool], system_prompt="You write code.")
 
@@ -349,7 +357,7 @@ def route_supervisor(state: State) -> str:
         case _: return END
 
 builder = StateGraph(State, input=GraphInput, output=GraphOutput)
-builder.add_node("supervisor", make_supervisor(ChatOpenAI(model="gpt-4o")))
+builder.add_node("supervisor", make_supervisor(UiPathAzureChatOpenAI()))
 builder.add_node("researcher", research_node)
 builder.add_node("coder", code_node)
 builder.add_edge(START, "supervisor")
