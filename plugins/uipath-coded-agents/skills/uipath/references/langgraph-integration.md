@@ -91,13 +91,17 @@ Every LangGraph agent needs these in `pyproject.toml`:
 ```toml
 [project]
 name = "my-agent"
-version = "0.1.0"
+version = "0.0.1"
 description = "My LangGraph agent"
 requires-python = ">=3.11"
-
 dependencies = [
     "uipath",
     "uipath-langchain",
+]
+
+[dependency-groups]
+dev = [
+    "uipath-dev",
 ]
 ```
 

@@ -6,6 +6,10 @@ user-invocable: true
 
 # UiPath Coded Agents Assistant
 
+## CRITICAL RULES
+
+- **NEVER add a `[build-system]` section to `pyproject.toml`**. No `hatchling`, no `setuptools`, no build backend. UiPath agents do not use a build system. Adding one causes `uv sync` to fail. Only include `[project]`, `[dependency-groups]`, and `[tool.*]` sections.
+
 Welcome to the UiPath Coded Agents Assistant! This comprehensive guide helps you create, run, and evaluate UiPath coded agents using the UiPath Python SDK.
 
 ## Overview
