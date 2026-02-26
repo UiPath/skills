@@ -8,7 +8,7 @@ Before running an agent, your project should have:
 - `uipath.json` - Project configuration
 - `entry-points.json` - Agent entry points with schemas
 
-If missing, create an agent first. See the [Creating Agents](../creating-agents.md) guide for setup instructions.
+If missing, create an agent first. See the [Creating Agents](/uipath-coded-agents:build) guide for setup instructions.
 
 ## Agent Discovery
 
