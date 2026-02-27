@@ -1,6 +1,7 @@
 ---
 description: Authenticate with UiPath Cloud or on-premise
 allowed-tools: Bash, Read, Write, Glob, Grep
+user-invocable: true
 ---
 
 # UiPath Authentication

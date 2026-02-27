@@ -4,7 +4,11 @@ Authenticate with UiPath using the UiPath Python CLI. Authentication is required
 
 ## Authentication Modes
 
-The UiPath CLI supports two authentication modes:
+The UiPath CLI supports two main authentication approaches: **Interactive** (OAuth) and **Unattended** (client credentials). Additionally, you can target different UiPath environments:
+
+- **`--cloud`** — Production UiPath Cloud (default)
+- **`--staging`** — Staging environment for testing
+- **`--alpha`** — Alpha/preview features environment
 
 ### 🔓 Interactive Mode (Default - Recommended)
 
@@ -17,6 +21,9 @@ The CLI's interactive tenant picker prompts for input that Claude's Bash tool ca
 1. **If the user already specified a tenant**, use it directly:
    ```bash
    uv run uipath auth --cloud --tenant MY_TENANT
+   # Or use staging/alpha modes:
+   uv run uipath auth --staging --tenant MY_TENANT
+   uv run uipath auth --alpha --tenant MY_TENANT
    ```
 
 2. **If the user did NOT specify a tenant**, use a two-step flow:
@@ -24,6 +31,9 @@ The CLI's interactive tenant picker prompts for input that Claude's Bash tool ca
    **Step 1** — Run auth without `--tenant`. This opens the browser for OAuth login, then prints the available tenants and hangs waiting for interactive selection. Use a timeout to capture the tenant list:
    ```bash
    uv run uipath auth --cloud
+   # Or use staging/alpha modes:
+   uv run uipath auth --staging
+   uv run uipath auth --alpha
    ```
    The output will look like:
    ```
@@ -40,6 +50,9 @@ The CLI's interactive tenant picker prompts for input that Claude's Bash tool ca
    **Step 3** — Run auth again with the selected tenant:
    ```bash
    uv run uipath auth --cloud --tenant SELECTED_TENANT
+   # Or use staging/alpha modes:
+   uv run uipath auth --staging --tenant SELECTED_TENANT
+   uv run uipath auth --alpha --tenant SELECTED_TENANT
    ```
    This second run will reuse the cached browser token and complete without opening the browser again.
 

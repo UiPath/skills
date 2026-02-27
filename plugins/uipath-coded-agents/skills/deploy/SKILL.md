@@ -19,16 +19,17 @@ Deploy your UiPath coded agents to the cloud with pack, publish, and invoke comm
 
 ## Quick Start
 
-```bash
-# 1. Authenticate with UiPath
-uv run uipath auth --alpha
+1. **[Authenticate](/uipath-coded-agents:authentication)** with UiPath
 
-# 2. Deploy to personal workspace
-uv run uipath deploy --my-workspace
+2. Deploy to personal workspace:
+   ```bash
+   uv run uipath deploy --my-workspace
+   ```
 
-# 3. Invoke the published agent
-uv run uipath invoke main '{"query": "What is UiPath?"}'
-```
+3. Invoke the published agent:
+   ```bash
+   uv run uipath invoke <entrypoint> '<json-input>'
+   ```
 
 ## Workflow Commands
 
@@ -53,8 +54,10 @@ uv run uipath deploy --my-workspace
 ### Invoke
 Execute a published agent:
 ```bash
-uv run uipath invoke main '{"query": "test"}'
+uv run uipath invoke <entrypoint> '<json-input>'
 ```
+
+> **Note:** You must learn how to use `run` and `invoke` commands in detail, refer to [Execute Agents](/uipath-coded-agents:execute), before executing agents locally (run) or on cloud (invoke).
 
 ## Next Steps
 

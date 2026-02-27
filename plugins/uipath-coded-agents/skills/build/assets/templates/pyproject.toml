@@ -2,6 +2,7 @@
 name = "{AGENT_NAME}"
 version = "0.0.1"
 description = "{AGENT_DESCRIPTION}"
+authors = [{ name = "Agent Developer" }]
 requires-python = ">=3.11"
 dependencies = [
     "uipath",

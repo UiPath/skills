@@ -72,6 +72,16 @@ Execute and test your agents:
   - Execution and result display
   - Error handling
 
+### Syncing Files
+
+Manage project files across local and remote environments:
+
+- **[File Synchronization](/uipath-coded-agents:file-sync)** - Sync project files to remote storage
+  - `uipath push` - Upload local files to remote
+  - `uipath pull` - Download remote files to local
+  - Bidirectional synchronization
+  - Conflict resolution and overwrites
+
 ### Testing & Evaluation
 
 Ensure your agents work correctly:
@@ -98,6 +108,7 @@ Package and publish your agents to UiPath Cloud:
 
 See the focused skills for quick reference documentation on specific topics:
 - **Agent Patterns** — See [Building Agents](/uipath-coded-agents:build) for implementation patterns
+- **File Syncing** — See [File Synchronization](/uipath-coded-agents:file-sync) for push/pull workflows
 - **Evaluation Strategies** — See [Evaluating Agents](/uipath-coded-agents:evaluate) for best practices by agent type
 - **Framework Guides** — See [LangGraph](/uipath-coded-agents:langgraph), [LlamaIndex](/uipath-coded-agents:llamaindex), or [OpenAI Agents](/uipath-coded-agents:openai-agents) for integration details
 
@@ -173,6 +184,7 @@ This is a comprehensive reference guide. For specific tasks, use the focused ski
 - **`/uipath-coded-agents:authentication`** — Setting up authentication
 - **`/uipath-coded-agents:build`** — Building and configuring agents
 - **`/uipath-coded-agents:execute`** — Running agents
+- **`/uipath-coded-agents:file-sync`** — Syncing files to remote storage
 - **`/uipath-coded-agents:evaluate`** — Testing agents with evaluations
 - **`/uipath-coded-agents:deploy`** — Deploying agents to Orchestrator
 

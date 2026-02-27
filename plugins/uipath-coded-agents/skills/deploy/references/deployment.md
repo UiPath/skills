@@ -110,7 +110,7 @@ If no flag is specified, the CLI displays an interactive menu to select the targ
 
 ### Authentication
 
-Requires these environment variables (set via `uv run uipath auth`):
+See [Authentication Setup](/uipath-coded-agents:authentication) to configure these environment variables:
 - `UIPATH_URL` - Base URL of your UiPath instance
 - `UIPATH_ACCESS_TOKEN` - Bearer token for authorization
 
@@ -150,53 +150,9 @@ uv run uipath deploy ./my-agent --my-workspace
 
 ---
 
-## Invoke
+## Execute
 
-Execute a published agent in your personal workspace.
-
-```bash
-uv run uipath invoke [entrypoint] [input]
-```
-
-### Arguments
-
-| Argument | Description |
-|----------|-------------|
-| `entrypoint` | Entry point path to invoke (optional) |
-| `input` | JSON input data (default: `{}`) |
-
-### Options
-
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--file` | `-f` | JSON file for input (overrides positional input) |
-
-### Examples
-
-```bash
-# Invoke with inline input
-uv run uipath invoke main '{"query": "What is UiPath?"}'
-
-# Invoke with input from file
-uv run uipath invoke main --file input.json
-
-# Invoke default entrypoint
-uv run uipath invoke
-```
-
-### What It Does
-
-1. Reads `pyproject.toml` for project name and version
-2. Looks up the published release in your personal workspace
-3. Starts a job with the provided input
-4. Returns a monitoring URL to track execution
-
-### Output
-
-```
-Job started successfully!
-Monitor your job here: https://cloud.uipath.com/...
-```
+To run and test your published agent, see [Execute Agents](/uipath-coded-agents:execute).
 
 ---
 
@@ -219,23 +175,28 @@ Monitor your job here: https://cloud.uipath.com/...
 | `UIPATH_ACCESS_TOKEN` | publish, deploy, invoke | Bearer token for API auth |
 | `UIPATH_FOLDER_PATH` | optional | Default folder context |
 
-These are set automatically by `uv run uipath auth`.
+These are set automatically by [Authentication Setup](/uipath-coded-agents:authentication).
 
 ## Typical Deployment Flow
 
-```bash
-# 1. Authenticate
-uv run uipath auth --alpha
+1. **[Authenticate](/uipath-coded-agents:authentication)** with UiPath
 
-# 2. Test locally
-uv run uipath run main '{"query": "test"}'
+2. Test locally:
+   ```bash
+   uv run uipath run main '<input-json>'
+   ```
 
-# 3. Deploy to personal workspace
-uv run uipath deploy --my-workspace
+3. Deploy to personal workspace:
+   ```bash
+   uv run uipath deploy --my-workspace
+   ```
 
-# 4. Invoke the published agent
-uv run uipath invoke main '{"query": "What is UiPath?"}'
-```
+4. Invoke the published agent:
+   ```bash
+   uv run uipath invoke main '<input-json>'
+   ```
+
+> **Note:** You must learn how to use `run` and `invoke` commands in detail, refer to [Execute Agents](/uipath-coded-agents:execute), before executing agents locally (run) or on cloud (invoke).
 
 ## Next Steps
 

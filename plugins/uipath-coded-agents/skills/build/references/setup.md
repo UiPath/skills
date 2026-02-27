@@ -87,13 +87,7 @@ uv run uipath --version
 
 ### 5. Authenticate
 
-If your agent needs UiPath Cloud access:
-
-```bash
-uv run uipath auth --alpha
-```
-
-See [Authentication](authentication.md) for details on authentication modes.
+See [Authentication Setup](/uipath-coded-agents:authentication) if your agent needs UiPath Cloud access.
 
 ## Simple Function Agent Details
 
@@ -142,10 +136,10 @@ my-agent/
 2. Run `uv run uipath new my-agent` to scaffold (if no code exists)
 3. Run `uv sync` to install dependencies
 4. Verify with `uv run uipath --version`
-5. Authenticate with `uv run uipath auth --alpha` (if needed)
+5. [Authenticate](/uipath-coded-agents:authentication) if needed
 6. Modify `main.py` with your `Input`, `Output` models and `main` function
 7. Run `uv run uipath init` to generate configuration
-8. Test with `uv run uipath run main '{"query": "test"}'`
+8. [Test](/uipath-coded-agents:execute) with `uv run uipath run main '{"query": "test"}'`
 
 ## Running `uipath init`
 

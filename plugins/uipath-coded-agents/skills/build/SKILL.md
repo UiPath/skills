@@ -1,6 +1,7 @@
 ---
 description: Build UiPath coded agents with Pydantic models and tracing
 allowed-tools: Bash, Read, Write, Glob, Grep
+user-invocable: true
 ---
 
 # Building UiPath Agents

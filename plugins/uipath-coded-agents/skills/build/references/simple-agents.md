@@ -19,10 +19,7 @@ When creating a new agent:
 
 3. **Verify SDK**: Verify the UiPath SDK is available using `uv run uipath --version`.
 
-4. **Authentication** (if needed): If any command requires authentication, run:
-   ```bash
-   uv run uipath auth --alpha
-   ```
+4. **[Authentication](/uipath-coded-agents:authentication)** (if needed): If any command requires authentication, run the auth command.
 
 All subsequent commands will be executed using `uv run` to ensure they run within the project's virtual environment.
 

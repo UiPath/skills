@@ -1,6 +1,7 @@
 ---
 description: Run UiPath coded agents with schema-driven inputs
 allowed-tools: Bash, Read, Write, Glob, Grep
+user-invocable: true
 ---
 
 # Running UiPath Agents
