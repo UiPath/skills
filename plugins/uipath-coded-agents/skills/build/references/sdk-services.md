@@ -516,6 +516,5 @@ except Exception as e:
 
 ## Next Steps
 
-- **Set up a project**: See [Project Setup](setup.md) for prerequisites and initialization
-- **Build an agent**: See [Creating Agents](creating-agents.md) to use these services in your agent
+- **Set up a project**: See [Project Setup](setup.md) for set up new or existing agent projects
 - **Deploy**: See [Deployment](deployment.md) to publish your agent to UiPath Cloud

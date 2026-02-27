@@ -239,7 +239,6 @@ uv run uipath invoke main '{"query": "What is UiPath?"}'
 
 ## Next Steps
 
-- **Set up a project**: See [Project Setup](setup.md) for prerequisites
-- **Build an agent**: See [Creating Agents](creating-agents.md) for development workflow
-- **Test locally**: See [Running Agents](running-agents.md) before deploying
-- **Add evaluations**: See [Evaluations](evaluations.md) to validate agent quality
+- **Set up a project**: See [Project Setup](/uipath-coded-agents:build) for setting up new or existing agent projects
+- **Test locally**: See [Running Agents](/uipath-coded-agents:execute) before deploying
+- **Add evaluations**: See [Evaluating Agents](/uipath-coded-agents:evaluate) to validate agent quality

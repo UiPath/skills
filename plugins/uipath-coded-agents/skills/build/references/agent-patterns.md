@@ -7,6 +7,18 @@ Common implementation patterns for building UiPath coded agents, from simple fun
 > - **[LlamaIndex Integration](llamaindex-integration.md)** — Workflow, FunctionAgent, `UiPathOpenAI`, Context Grounding RAG
 > - **[OpenAI Agents Integration](openai-agents-integration.md)** — Agent with tools, structured output, handoffs
 
+## ⚠️ Before You Start: Setup Required
+
+**IMPORTANT:** Before implementing any agent pattern, you must first set up your project directory and install dependencies. This is a prerequisite for all agent types.
+
+See the **[Project Setup Guide](setup.md)** for:
+- Creating a new project directory
+- Scaffolding with `uv run uipath new`
+- Installing dependencies with `uv sync`
+- Defining Input/Output Pydantic models
+- Configuring your agent with `uv run uipath init`
+- Testing your agent with `uv run uipath run`
+
 ## Pattern Overview
 
 | Pattern | When to Use | Key Components |
@@ -391,7 +403,7 @@ These patterns appear across all agent types:
 
 ## Next Steps
 
-- **[Creating Agents](creating-agents.md)** — Step-by-step guide to scaffold a new agent
+- **[Project Setup](setup.md)** — Set up new or existing agent projects
 - **[SDK Services](sdk-services.md)** — Full API reference for all UiPath platform services
 - **[Tracing](tracing.md)** — Configure monitoring, privacy, and custom spans
-- **[Best Practices](evaluations/best-practices.md)** — Evaluation patterns matched to each agent type
+

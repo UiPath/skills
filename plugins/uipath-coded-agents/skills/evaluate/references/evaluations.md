@@ -68,6 +68,69 @@ evaluations/
     └── llm-judge-semantic-similarity.json
 ```
 
+## Evaluator Setup & Registration
+
+### Creating Evaluator Files
+
+Evaluators must be created in `evaluations/evaluators/` directory. Each evaluator file defines:
+- **id** - Unique identifier (referenced in `evaluatorRefs` in eval sets)
+- **evaluatorTypeId** - Built-in evaluator type (e.g., `uipath-exact-match`)
+- **evaluatorConfig** - Type-specific configuration
+
+The evaluator's `id` field **must match** what you reference in your evaluation set's `evaluatorRefs` array.
+
+For configuration examples for each evaluator type, see:
+- **[Exact Match Evaluator](evaluations/evaluators/output-based/exact-match.md)** - Deterministic outputs
+- **[Contains Evaluator](evaluations/evaluators/output-based/contains.md)** - Keyword validation
+- **[JSON Similarity Evaluator](evaluations/evaluators/output-based/json-similarity.md)** - JSON structures
+- **[LLM Judge Output Evaluator](evaluations/evaluators/output-based/llm-judge-output.md)** - Semantic matching
+- **[Trajectory Evaluator](evaluations/evaluators/trajectory-based/trajectory.md)** - Execution flow validation
+
+### Evaluator Discovery
+
+Evaluators are **auto-discovered** from the `evaluations/evaluators/` directory:
+1. Place evaluator JSON files in `evaluations/evaluators/`
+2. The `id` field in the file must match `evaluatorRefs` in your eval sets
+3. When you run `uv run uipath eval`, the framework loads all evaluators automatically
+
+### Reference by ID
+
+In your evaluation sets, reference evaluators by their `id`:
+```json
+{
+  "evaluatorRefs": ["ExactMatchEvaluator", "JsonSimilarityEvaluator"],
+  "evaluations": [...]
+}
+```
+
+### Built-in Evaluator Types
+
+Available `evaluatorTypeId` values:
+- `uipath-exact-match` → ExactMatchEvaluator
+- `uipath-contains` → ContainsEvaluator
+- `uipath-json-similarity` → JsonSimilarityEvaluator
+- `uipath-llm-judge-output` → LLMJudgeOutputEvaluator
+- `uipath-trajectory` → TrajectoryEvaluator
+
+See [Evaluators Guide](evaluations/evaluators/README.md) for configuration options for each type.
+
+## Quick-Start Examples
+
+### Calculator/Deterministic Agent
+
+**Step 1: Set up evaluator**
+
+Create `evaluations/evaluators/exact-match.json` by following the [Exact Match Evaluator guide](evaluations/evaluators/output-based/exact-match.md).
+
+**Step 2: Create evaluation set**
+
+Create `evaluations/eval-sets/calculator-tests.json` by following the [Evaluation Sets guide](evaluations/evaluation-sets.md). Reference `ExactMatchEvaluator` in the `evaluatorRefs` array.
+
+**Step 3: Run evaluations**
+```bash
+uv run uipath eval main evaluations/eval-sets/calculator-tests.json --workers 4
+```
+
 ## Common Patterns at a Glance
 
 ### Calculator/Deterministic Agents

@@ -4,18 +4,23 @@ Comprehensive reference guide for creating, running, and evaluating UiPath coded
 
 ## Quick Start
 
-### Access the Documentation
+### Access the Skills
+
+The UiPath Coded Agents plugin provides 4 focused skills:
 
 ```bash
-# Open the comprehensive SDK reference
-/uipath-coded-agents:uipath
-```
+# 1. Set up authentication
+/uipath-coded-agents:authentication
 
-This skill provides detailed documentation on:
-- **Authentication** - Authenticate with UiPath Cloud or on-premise
-- **Building Agents** - Create agents with Pydantic models and add monitoring
-- **Running Agents** - Execute agents with interactive input collection
-- **Evaluations** - Comprehensive testing framework with multiple evaluator types
+# 2. Build your agent
+/uipath-coded-agents:build
+
+# 3. Run your agent
+/uipath-coded-agents:execute
+
+# 4. Test your agent
+/uipath-coded-agents:evaluate
+```
 
 ## Features
 
@@ -25,32 +30,35 @@ This skill provides detailed documentation on:
 - **🧪 Testing Framework**: Multiple evaluator types (output-based and trajectory-based)
 - **📊 Monitoring**: Automatic tracing with `@traced()` decorator
 
-## Main Skill
+## Skills Overview
 
-| Skill | Description |
-|-------|-------------|
-| `/uipath-coded-agents:uipath` | Complete SDK reference with all documentation |
+| Skill | Description | Purpose |
+|-------|-------------|---------|
+| `/uipath-coded-agents:authentication` | Authenticate with UiPath Cloud or on-premise | Setup and manage authentication |
+| `/uipath-coded-agents:build` | Build UiPath coded agents with Pydantic models and tracing | Create agents with monitoring |
+| `/uipath-coded-agents:execute` | Run UiPath coded agents with schema-driven inputs | Execute and test agents |
+| `/uipath-coded-agents:evaluate` | Test and evaluate UiPath coded agents | Comprehensive testing framework |
+
 ## Documentation Structure
 
-The `/uipath-coded-agents:uipath` skill provides organized reference documentation:
-
-### Getting Started
-- **[Authentication](references/authentication.md)** - Set up UiPath authentication
+### Authentication
+- **[Authentication Guide](skills/authentication/references/authentication.md)** - Set up UiPath authentication
 
 ### Building Agents
-- **[Creating Agents](references/creating-agents.md)** - Build agents with Pydantic models
-- **[Tracing](references/tracing.md)** - Add monitoring and debugging with `@traced()`
+- **[Creating Agents Guide](skills/build/references/creating-agents.md)** - Build agents with Pydantic models
+- **[Tracing Guide](skills/build/references/tracing.md)** - Add monitoring and debugging with `@traced()`
+- **[pyproject.toml Template](skills/build/assets/templates/pyproject.toml)** - Project template
 
 ### Running Agents
-- **[Running Agents](references/running-agents.md)** - Execute agents with inputs
+- **[Running Agents Guide](skills/execute/references/running-agents.md)** - Execute agents with inputs
 
 ### Testing & Evaluation
-- **[Evaluations](references/evaluations.md)** - Comprehensive testing overview
-- **[Creating Evaluations](references/evaluations/creating-evaluations.md)** - Design test cases
-- **[Evaluators Guide](references/evaluations/evaluators/README.md)** - All evaluator types
-- **[Evaluation Sets](references/evaluations/evaluation-sets.md)** - Test file structure
-- **[Running Evaluations](references/evaluations/running-evaluations.md)** - Execute tests
-- **[Best Practices](references/evaluations/best-practices.md)** - Patterns and optimization
+- **[Evaluations Overview](skills/evaluate/references/evaluations.md)** - Comprehensive testing framework
+- **[Creating Evaluations](skills/evaluate/references/evaluations/creating-evaluations.md)** - Design test cases
+- **[Evaluators Guide](skills/evaluate/references/evaluations/evaluators/README.md)** - All evaluator types
+- **[Evaluation Sets](skills/evaluate/references/evaluations/evaluation-sets.md)** - Test file structure
+- **[Running Evaluations](skills/evaluate/references/evaluations/running-evaluations.md)** - Execute tests
+- **[Best Practices](skills/evaluate/references/evaluations/best-practices.md)** - Patterns and optimization
 
 ## Example Workflow
 
@@ -89,11 +97,13 @@ my-agent-project/
 
 ## Getting Started
 
-1. **Review the documentation** by running `/uipath-coded-agents:uipath`
-2. **Create an agent** using the CLI: `uv run uipath init` and `uv run uipath create-agent`
+1. **Set up authentication** with `/uipath-coded-agents:authentication`
+2. **Build your agent** using `/uipath-coded-agents:build`
+   - Review the Creating Agents guide
+   - Use the pyproject.toml template
 3. **Implement your business logic** in the generated `main.py`
-4. **Test your agent** by running it with `uv run uipath run`
-5. **Create evaluations** to validate agent behavior
+4. **Run your agent** with `/uipath-coded-agents:execute`
+5. **Create evaluations** to validate agent behavior using `/uipath-coded-agents:evaluate`
 6. **Deploy** to UiPath Cloud or on-premise
 
 ## Common Issues
@@ -116,7 +126,7 @@ Verify your project setup:
 
 ### Authentication issues
 
-Review the [Authentication](references/authentication.md) guide for:
+Use `/uipath-coded-agents:authentication` and review the guide for:
 - Setting environment variables (UIPATH_URL)
 - Using different authentication modes
 - Handling proxy configurations
@@ -125,8 +135,8 @@ Review the [Authentication](references/authentication.md) guide for:
 
 - **[UiPath Python SDK Docs](https://uipath.github.io/uipath-python/)** - Official documentation
 - **[UiPath Platform](https://www.uipath.com/)** - Main UiPath website
-- **[Evaluation Framework](references/evaluations.md)** - Comprehensive testing guide
-- **[Best Practices](references/evaluations/best-practices.md)** - Agent patterns and optimization
+- **[Evaluation Framework](skills/evaluate/references/evaluations.md)** - Comprehensive testing guide
+- **[Best Practices](skills/evaluate/references/evaluations/best-practices.md)** - Agent patterns and optimization
 
 ## Support
 
