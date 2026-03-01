@@ -1,19 +1,12 @@
 ---
 description: Build LangGraph agents with StateGraph, conditional routing, and UiPath integration
 allowed-tools: Bash, Read, Write, Glob, Grep
+user-invocable: true
 ---
 
 # LangGraph Integration
 
 Build multi-step agents using LangGraph's StateGraph with nodes, edges, and conditional routing.
-
-## Overview
-
-LangGraph provides a framework for building agents with:
-- StateGraph for defining agent workflows
-- Nodes and edges for multi-step reasoning
-- Conditional routing based on state
-- Integration with UiPath platform services
 
 ## Documentation
 
@@ -42,6 +35,7 @@ This generates:
 
 - Requires `uipath-langchain` dependency
 - Uses `langgraph.json` for configuration (not `uipath.json`)
+- StateGraph for defining workflows with nodes, edges, and conditional routing
 - Supports stateful workflows with checkpointing
 - Integrates with UiPath services via UiPathAzureChatOpenAI
 - Automatic tracing for Orchestrator observability
@@ -54,8 +48,3 @@ This generates:
 4. Use conditional routing for multi-step logic
 5. Test with [Running Agents](/uipath-coded-agents:execute)
 6. Evaluate with [Evaluating Agents](/uipath-coded-agents:evaluate)
-
-## Next Steps
-
-- Ready to build? See [Building Agents](/uipath-coded-agents:build)
-- Need help running your agent? See [Executing Agents](/uipath-coded-agents:execute)

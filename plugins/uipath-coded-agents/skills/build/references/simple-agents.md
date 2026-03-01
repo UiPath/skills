@@ -4,24 +4,7 @@ Guide to creating new UiPath agents with AI-powered business logic implementatio
 
 ## Initial Setup
 
-When creating a new agent:
-
-1. **Scaffold the project** (if no agent code exists yet):
-   ```bash
-   mkdir my-agent && cd my-agent
-   uv run uipath new my-agent
-   ```
-   This generates `main.py`, `pyproject.toml`, and the integration-specific config file. The template depends on which integration package is installed (see [Project Setup](setup.md) for details).
-
-   > **Skip this step** if the project already has agent code (`main.py`, `graph.py`, etc.).
-
-2. **Install dependencies**: Run `uv sync` to install dependencies and create the virtual environment.
-
-3. **Verify SDK**: Verify the UiPath SDK is available using `uv run uipath --version`.
-
-4. **[Authentication](/uipath-coded-agents:authentication)** (if needed): If any command requires authentication, run the auth command.
-
-All subsequent commands will be executed using `uv run` to ensure they run within the project's virtual environment.
+Follow the [Project Setup Guide](setup.md) to create your project directory, scaffold with `uipath new`, install dependencies, and authenticate. All subsequent commands use `uv run` to run within the project's virtual environment.
 
 ## Workflow
 
@@ -61,15 +44,15 @@ async def main(input: Input) -> Output:
 
 #### LangGraph Agent
 
-For multi-step LLM reasoning, conditional routing, or tool-calling with LangChain — use `graph.py` + `langgraph.json`. See the **[LangGraph Integration Guide](langgraph-integration.md)** for project structure, dependencies, LLM models, and complete examples.
+For multi-step LLM reasoning, conditional routing, or tool-calling with LangChain — use `graph.py` + `langgraph.json`. See the **[LangGraph Integration Guide](/uipath-coded-agents:langgraph)** for project structure, dependencies, LLM models, and complete examples.
 
 #### LlamaIndex Agent
 
-For LlamaIndex-based workflows using `StartEvent`/`StopEvent` events and the `@step` decorator — use `main.py` + `llama_index.json`. See the **[LlamaIndex Integration Guide](llamaindex-integration.md)** for project structure, dependencies, LLM models, and complete examples.
+For LlamaIndex-based workflows using `StartEvent`/`StopEvent` events and the `@step` decorator — use `main.py` + `llama_index.json`. See the **[LlamaIndex Integration Guide](/uipath-coded-agents:llamaindex)** for project structure, dependencies, LLM models, and complete examples.
 
 #### OpenAI Agents Agent
 
-For lightweight agents using the OpenAI Agents SDK with tool calling and handoffs — use `main.py` + `openai_agents.json`. See the **[OpenAI Agents Integration Guide](openai-agents-integration.md)** for project structure, dependencies, LLM models, and complete examples.
+For lightweight agents using the OpenAI Agents SDK with tool calling and handoffs — use `main.py` + `openai_agents.json`. See the **[OpenAI Agents Integration Guide](/uipath-coded-agents:openai-agents)** for project structure, dependencies, LLM models, and complete examples.
 
 > **Note:** Each integration guide is self-contained. It covers everything from pyproject.toml to running the agent. You don't need to read this page for integration agents — go directly to the relevant guide.
 
@@ -83,16 +66,7 @@ Describe your agent's functionality, then implement the main function (or graph 
 
 ### Step 4: Generate Entry Points
 
-Run `uv run uipath init`. Doing so will generate:
-- `entry-points.json` with JSON schemas
-- `uipath.json` project configuration (if not already present)
-- `bindings.json` runtime bindings
-- Documentation files (AGENTS.md, etc.)
-
-**Note for integration agents:** `uipath init` auto-detects the agent type by checking for config files (`langgraph.json`, `llama_index.json`, `openai_agents.json`) via registered middleware. If you see "No function entrypoints found", ensure the config file exists and the integration package is installed. See the troubleshooting section in your integration guide:
-- [LangGraph Troubleshooting](langgraph-integration.md#troubleshooting-uipath-init)
-- [LlamaIndex Troubleshooting](llamaindex-integration.md#troubleshooting-uipath-init)
-- [OpenAI Agents Troubleshooting](openai-agents-integration.md#troubleshooting-uipath-init)
+Run `uv run uipath init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
 
 ### Step 5: Create Smoke Evaluation Set
 
@@ -145,4 +119,4 @@ The created agent will include:
 - Input/output fields are strongly typed with Pydantic
 - The agent works globally and can call any UiPath SDK services
 - Generated `entry-points.json` enables integration with UiPath Cloud
-- If you require authentication at any point, use `uv run uipath auth` to authenticate with UiPath. See the [Authentication guide](../authentication.md) for details.
+- If you require authentication at any point, use `uv run uipath auth` to authenticate with UiPath. See the [Authentication guide](/uipath-coded-agents:authentication) for details.

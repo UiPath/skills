@@ -17,45 +17,29 @@ Deploy your UiPath coded agents to the cloud with pack, publish, and invoke comm
   - `uipath invoke` - Execute published agents
   - Configuration and environment variables
 
-## Quick Start
+## Workflow Commands
 
 1. **[Authenticate](/uipath-coded-agents:authentication)** with UiPath
 
-2. Deploy to personal workspace:
+2. **Pack** your project into a `.nupkg` file:
+   ```bash
+   uv run uipath pack
+   ```
+
+3. **Publish** to a UiPath feed:
+   ```bash
+   uv run uipath publish --my-workspace
+   ```
+
+4. Or use **Deploy** (shorthand for pack + publish):
    ```bash
    uv run uipath deploy --my-workspace
    ```
 
-3. Invoke the published agent:
+5. **Invoke** the published agent:
    ```bash
    uv run uipath invoke <entrypoint> '<json-input>'
    ```
-
-## Workflow Commands
-
-### Pack
-Package your project into a `.nupkg` file:
-```bash
-uv run uipath pack
-```
-
-### Publish
-Upload a packaged project to a UiPath feed:
-```bash
-uv run uipath publish --my-workspace
-```
-
-### Deploy
-Shorthand for pack + publish:
-```bash
-uv run uipath deploy --my-workspace
-```
-
-### Invoke
-Execute a published agent:
-```bash
-uv run uipath invoke <entrypoint> '<json-input>'
-```
 
 > **Note:** You must learn how to use `run` and `invoke` commands in detail, refer to [Execute Agents](/uipath-coded-agents:execute), before executing agents locally (run) or on cloud (invoke).
 

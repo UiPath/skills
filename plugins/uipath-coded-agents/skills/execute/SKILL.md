@@ -8,14 +8,6 @@ user-invocable: true
 
 Execute your UiPath coded agents with interactive input collection and result display.
 
-## Overview
-
-Learn how to:
-- Discover and select agents
-- Collect inputs based on agent schemas
-- Execute agents
-- Handle results and errors
-
 ## Documentation
 
 - **[Running Agents Guide](references/running-agents.md)** - Execute your agents
@@ -27,11 +19,10 @@ Learn how to:
 
 ## Quick Start
 
-The Running Agents guide shows how to:
-1. Discover available agents in your project
-2. Interactively collect inputs matching your agent's schema
-3. Execute the agent
-4. View and work with results
+1. Discover available agents in your project via `entry-points.json`
+2. Collect inputs matching your agent's schema
+3. Execute with `uv run uipath run <entrypoint> '<json-input>'`
+4. View structured results
 
 ## Workflow
 
@@ -40,10 +31,5 @@ The Running Agents guide shows how to:
 3. Use this guide to run your agent
 4. Test comprehensively with [Evaluating Agents](/uipath-coded-agents:evaluate)
 
-## Next Steps
-
-- Want to test your agent systematically? See [Evaluating Agents](/uipath-coded-agents:evaluate)
-- Need to add monitoring? See [Building Agents](/uipath-coded-agents:build) for tracing
-
 ## Additional Instructions
-- If you are unsure about usage, read the linked authentication reference before making assumptions.
+- If you are unsure about usage, read the linked running agents reference before making assumptions.

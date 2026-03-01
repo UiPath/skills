@@ -8,14 +8,6 @@ user-invocable: true
 
 Create robust, type-safe UiPath coded agents with monitoring and observability built-in.
 
-## Overview
-
-Learn how to build agents with:
-- Type-safe agent definitions using Pydantic models
-- Project setup with pyproject.toml
-- Automatic tracing for monitoring and debugging
-- Integration with UiPath Orchestrator
-
 ## Documentation
 
 ### Project Setup
@@ -53,16 +45,15 @@ For detailed integration guides, see the dedicated skills:
   - Basic tracing with `@traced()` decorator
   - Custom span names and run types
   - Data protection and privacy
-  - Integration patterns
-  - Common use cases
   - Viewing traces in Orchestrator
 
 ## Quick Start Template
 
-A template `pyproject.toml` is available in the assets to help you bootstrap your project:
-- Dependencies configuration
-- Package metadata
-- Build system setup
+A template `pyproject.toml` is available in the assets to help you bootstrap your project.
+
+**After copying the template**, replace the placeholder values:
+- `{AGENT_NAME}` — your agent's package name (e.g., `my-invoice-agent`)
+- `{AGENT_DESCRIPTION}` — a short description of what your agent does
 
 ## Post-Init Cleanup
 
@@ -72,15 +63,6 @@ Therefore, this is the only acceptable way to run init:
 ```
 `uv run uipath init && rm CLAUDE.md && rm -rf .agent .claude`
 ```
-
-## Workflow
-
-1. Set up your project with [Project Setup](references/setup.md)
-2. Review [Agent Patterns](references/agent-patterns.md) for common patterns and use cases
-3. Define your input and output schemas using Pydantic models
-4. Implement your agent logic (refer to [SDK Services](references/sdk-services.md) for API reference)
-5. Add tracing with `@traced()` decorator for monitoring
-6. Test your agent with [Running Agents](/uipath-coded-agents:execute)
 
 ## Next Steps
 

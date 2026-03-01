@@ -179,24 +179,12 @@ These are set automatically by [Authentication Setup](/uipath-coded-agents:authe
 
 ## Typical Deployment Flow
 
-1. **[Authenticate](/uipath-coded-agents:authentication)** with UiPath
+1. [Authenticate](/uipath-coded-agents:authentication) with UiPath
+2. Test locally: `uv run uipath run main '<input-json>'`
+3. Deploy: `uv run uipath deploy --my-workspace`
+4. Invoke published agent: `uv run uipath invoke main '<input-json>'`
 
-2. Test locally:
-   ```bash
-   uv run uipath run main '<input-json>'
-   ```
-
-3. Deploy to personal workspace:
-   ```bash
-   uv run uipath deploy --my-workspace
-   ```
-
-4. Invoke the published agent:
-   ```bash
-   uv run uipath invoke main '<input-json>'
-   ```
-
-> **Note:** You must learn how to use `run` and `invoke` commands in detail, refer to [Execute Agents](/uipath-coded-agents:execute), before executing agents locally (run) or on cloud (invoke).
+> **Note:** See [Execute Agents](/uipath-coded-agents:execute) for details on the `run` and `invoke` commands.
 
 ## Next Steps
 

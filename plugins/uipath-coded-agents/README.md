@@ -6,7 +6,7 @@ Comprehensive reference guide for creating, running, and evaluating UiPath coded
 
 ### Access the Skills
 
-The UiPath Coded Agents plugin provides 4 focused skills:
+The UiPath Coded Agents plugin provides focused skills for every stage of development:
 
 ```bash
 # 1. Set up authentication
@@ -20,6 +20,15 @@ The UiPath Coded Agents plugin provides 4 focused skills:
 
 # 4. Test your agent
 /uipath-coded-agents:evaluate
+
+# 5. Deploy your agent
+/uipath-coded-agents:deploy
+
+# 6. Sync project files
+/uipath-coded-agents:file-sync
+
+# 7. Overview and navigation
+/uipath-coded-agents:uipath
 ```
 
 ## Features
@@ -38,6 +47,9 @@ The UiPath Coded Agents plugin provides 4 focused skills:
 | `/uipath-coded-agents:build` | Build UiPath coded agents with Pydantic models and tracing | Create agents with monitoring |
 | `/uipath-coded-agents:execute` | Run UiPath coded agents with schema-driven inputs | Execute and test agents |
 | `/uipath-coded-agents:evaluate` | Test and evaluate UiPath coded agents | Comprehensive testing framework |
+| `/uipath-coded-agents:deploy` | Deploy agents to UiPath Orchestrator | Pack, publish, and invoke agents |
+| `/uipath-coded-agents:file-sync` | Sync project files between local and remote | Push/pull bidirectional sync |
+| `/uipath-coded-agents:uipath` | Overview and navigation hub | Framework selection and guidance |
 
 ## Documentation Structure
 
@@ -45,7 +57,7 @@ The UiPath Coded Agents plugin provides 4 focused skills:
 - **[Authentication Guide](skills/authentication/references/authentication.md)** - Set up UiPath authentication
 
 ### Building Agents
-- **[Creating Agents Guide](skills/build/references/creating-agents.md)** - Build agents with Pydantic models
+- **[Creating Agents Guide](skills/build/references/simple-agents.md)** - Build agents with Pydantic models
 - **[Tracing Guide](skills/build/references/tracing.md)** - Add monitoring and debugging with `@traced()`
 - **[pyproject.toml Template](skills/build/assets/templates/pyproject.toml)** - Project template
 
@@ -90,7 +102,7 @@ my-agent-project/
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.11+
 - `uv` (package manager) - https://docs.astral.sh/uv/
 - Claude Code CLI
 - UiPath SDK (installed automatically via `uv sync`)

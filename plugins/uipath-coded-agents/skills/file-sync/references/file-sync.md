@@ -289,15 +289,7 @@ uv run uipath push
 | `UIPATH_ACCESS_TOKEN` | Yes | Bearer token for authentication | Set by `uv run uipath auth` |
 | `UIPATH_TENANT_NAME` | Optional | Your tenant identifier | Set by `uv run uipath auth` |
 
-**Recommended:** Add your project ID to `.env` file in your project root:
-
-```env
-UIPATH_PROJECT_ID=your-project-id
-UIPATH_URL=https://your-instance.uipath.com
-UIPATH_TENANT_NAME=your-tenant
-```
-
-The `UIPATH_URL`, `UIPATH_ACCESS_TOKEN`, and `UIPATH_TENANT_NAME` are set automatically by `uv run uipath auth`. The `UIPATH_PROJECT_ID` must be set manually in `.env` or as an environment variable.
+See [Environment Setup](#environment-setup) above for how to set these.
 
 ---
 

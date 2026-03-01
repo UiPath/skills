@@ -167,35 +167,35 @@ See [Best Practices](evaluations/best-practices.md#pattern-4-api-integration-age
 
 ## Key Concepts
 
-### Evaluation Scoring
+All evaluators return numeric scores: **1.0** (perfect pass), **0.5-0.9** (partial success), **0.0** (failure). Results also include justification, execution metrics, and complete traces.
 
-All evaluators return numeric scores:
-- **1.0** - Perfect pass
-- **0.5-0.9** - Partial success (for similarity-based evaluators)
-- **0.0** - Complete failure
+For detailed guidance on test case organization, schema validation, and scoring interpretation, see [Creating Evaluations](evaluations/creating-evaluations.md) and [Running Evaluations](evaluations/running-evaluations.md).
 
-Results also include justification, execution metrics, and complete traces.
+## Mocking External Calls with `@mockable()`
 
-### Test Case Organization
+Sometimes your agent calls external APIs or functions. The `@mockable()` decorator enables mocking during evaluations so you can test agent logic without making real external calls.
 
-Organize tests by scenario:
-- **Happy Path Tests** - Normal operations with typical inputs
-- **Edge Case Tests** - Boundary values, empty/null values, large datasets
-- **Error Scenario Tests** - Invalid inputs, missing fields, error handling
+### Using `@mockable()`
 
-See [Creating Evaluations](evaluations/creating-evaluations.md#organizing-test-cases)
+Apply `@mockable()` to any function that calls an external service. Define `example_calls` to provide deterministic return values during evaluations:
 
-### Schema Validation
+```python
+from uipath.testing import mockable
 
-Evaluations are validated against:
-- Agent's input schema from `entry-points.json`
-- Agent's output schema from `entry-points.json`
-- Required field constraints
-- Type compatibility
+@mockable(example_calls=[
+    {"args": {"query": "weather in NYC"}, "return_value": {"temp": 72, "condition": "sunny"}},
+    {"args": {"query": "weather in London"}, "return_value": {"temp": 55, "condition": "cloudy"}},
+])
+def fetch_weather(query: str) -> dict:
+    """In production, calls a real weather API. During evaluations, returns mock data."""
+    return call_weather_api(query)
+```
 
-## Mocking External Calls
-
-Sometimes your agent calls external APIs or functions. You can mock these:
+**Key points:**
+- `example_calls` — list of dicts with `args` (input matching) and `return_value` (mock output)
+- During evaluations, if the function is called with matching args, the mock return value is used
+- During normal execution (`uv run uipath run`), the real function runs as usual
+- Combine with `@traced()` for both observability and testability
 
 ### Function Mocking
 Mock specific function calls with return values or exceptions.
@@ -207,28 +207,9 @@ See [Evaluation Sets](evaluations/evaluation-sets.md#mocking-strategies) for det
 
 ## Integration with UiPath Cloud
 
-Results can be:
-- Reported to UiPath Cloud for monitoring
-- Integrated with CI/CD pipelines
-- Compared with previous runs
-- Used for performance tracking
+Results can be reported to UiPath Cloud for monitoring, integrated with CI/CD pipelines, compared with previous runs, and used for performance tracking. See [Running Evaluations](evaluations/running-evaluations.md) for details.
 
-## Best Practices
-
-✅ **Do:**
-- Use multiple evaluators for comprehensive validation
-- Mix output-based and trajectory-based evaluators for complex agents
-- Create separate eval sets for different scenarios (happy path, edge cases, errors)
-- Use trajectory evaluators for agents with multiple steps/tools
-- Use LLM evaluators for natural language or fuzzy matching scenarios
-- Start with ExactMatch for deterministic outputs, then add LLM evaluators for flexibility
-
-❌ **Don't:**
-- Use only ExactMatch for natural language outputs
-- Forget to test edge cases and error scenarios
-- Use trajectory evaluators when output-based is sufficient
-- Set too strict criteria early in development
-- Skip schema validation during test creation
+For comprehensive best practices, patterns by agent type, and optimization tips, see [Best Practices](evaluations/best-practices.md).
 
 ## Additional Resources
 

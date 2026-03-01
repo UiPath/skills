@@ -55,36 +55,18 @@ The evaluation framework provides:
 
 ### Best Practices
 - **[Evaluation Best Practices](references/evaluations/best-practices.md)** - Patterns and optimization
-  - Best practices for evaluation design
-  - Common patterns by agent type:
-    - Calculator/Deterministic agents
-    - Natural language agents
-    - Multi-step orchestration agents
-    - API integration agents
+  - Common patterns by agent type (Calculator, NLP, Orchestration, API)
   - Test organization strategies
   - Performance optimization
 
-
 ## Workflow
 
-1. Build your agent with [Building Agents](/uipath-coded-agents:build) — review [Agent Patterns](/uipath-coded-agents:build#agent-patterns) for your use case
+1. Build your agent with [Building Agents](/uipath-coded-agents:build)
 2. Test it manually with [Running Agents](/uipath-coded-agents:execute)
 3. Design evaluation test cases with [Creating Evaluations](references/evaluations/creating-evaluations.md)
 4. Select appropriate evaluators from [Evaluators Guide](references/evaluations/evaluators/README.md)
 5. Run evaluations and analyze results with [Running Evaluations](references/evaluations/running-evaluations.md)
 
-## Next Steps
-
-1. **Getting started with evaluation?**
-   - Start with [Creating Evaluations](references/evaluations/creating-evaluations.md)
-   - Review [Best Practices](references/evaluations/best-practices.md) for your agent type
-
-2. **Ready to run tests?**
-   - Use [Running Evaluations](references/evaluations/running-evaluations.md)
-
-3. **Need to understand evaluators?**
-   - See [Evaluators Guide](references/evaluations/evaluators/README.md)
-
 ## Additional Instructions
 - For project setup and agent patterns, see [Building Agents](/uipath-coded-agents:build)
-- If you are unsure about usage, read the linked authentication reference before making assumptions.
+- If you are unsure about usage, read the linked evaluation references before making assumptions.

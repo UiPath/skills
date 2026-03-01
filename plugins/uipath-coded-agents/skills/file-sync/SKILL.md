@@ -14,7 +14,8 @@ Synchronize your UiPath project files between local development environments and
   - `uipath push` - Upload local files to remote storage
   - `uipath pull` - Download remote files to local environment
   - Bidirectional synchronization
-  - Handling conflicts and overwrites
+  - Conflict resolution and overwrites
+  - Common workflows and troubleshooting
 
 ## Quick Start
 
@@ -40,87 +41,14 @@ Synchronize your UiPath project files between local development environments and
    uv run uipath push
    ```
 
-## Workflow Commands
+## Command Reference
 
-### Pull
+| Command | Purpose | Key Options |
+|---------|---------|-------------|
+| `uv run uipath pull` | Download remote files to local | `--overwrite` |
+| `uv run uipath push` | Upload local files to remote | `--overwrite`, `--nolock`, `--ignore-resources` |
 
-Download remote project files to your local environment:
-
-```bash
-uv run uipath pull
-```
-
-**Options:**
-- `--overwrite` - Automatically replace conflicting local files without confirmation
-
-**Requirements:**
-- `UIPATH_PROJECT_ID` must be set in `.env` file or as environment variable
-
-### Push
-
-Upload local project files to remote storage, syncing your local structure with the remote:
-
-```bash
-uv run uipath push
-```
-
-**Options:**
-- `--nolock` - Skip `uv lock` during sync
-- `--overwrite` - Bypass confirmation prompts for overwriting remote files
-- `--ignore-resources` - Skip resource imports during push
-
-**What It Does:**
-1. Updates existing files that have changed
-2. Uploads new files
-3. Deletes remote files that no longer exist locally
-
-**Requirements:**
-- `UIPATH_PROJECT_ID` must be set in `.env` file or as environment variable
-
-## Bidirectional Synchronization
-
-The push and pull commands enable seamless bidirectional sync:
-
-```
-Local Project ↔ Remote Storage (Studio Web)
-    ↓              ↑
-  push          pull
-    ↑              ↓
-```
-
-## Common Workflows
-
-### Clone a Remote Project Locally
-
-Create `.env` file with:
-```env
-UIPATH_PROJECT_ID=<project-id>
-```
-
-Then pull:
-```bash
-uv run uipath pull
-```
-
-### Sync Local Changes to Remote
-
-```bash
-uv run uipath push
-```
-
-### Force Overwrite Remote Files
-
-```bash
-uv run uipath push --overwrite
-```
-
-### Merge Remote Changes (with Overwrite Protection)
-
-```bash
-uv run uipath pull
-# Review changes, then push your local state
-uv run uipath push --overwrite
-```
+> **Note:** Push mirrors local to remote — it updates, uploads new files, and **deletes** remote files not present locally. See the [File Sync Guide](references/file-sync.md) for details on conflict resolution and common workflows.
 
 ## Next Steps
 

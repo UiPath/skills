@@ -97,3 +97,41 @@ Or add to a `.env` file in your project directory.
 The CLI respects proxy settings via:
 - `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` environment variables
 - `REQUESTS_CA_BUNDLE` for custom CA certificates
+
+## Troubleshooting
+
+### Browser Does Not Open
+
+**Symptom:** Running `uv run uipath auth --cloud` does not open a browser window.
+
+**Solutions:**
+- Ensure you have a default browser configured on your system
+- Try running the command from a standard terminal (not inside a remote SSH session or container)
+- Use unattended mode with `--client-id` and `--client-secret` as an alternative
+
+### Token Expired / "Unauthorized" Errors
+
+**Symptom:** Commands fail with "Unauthorized" or "401" after previously working.
+
+**Solutions:**
+- Re-run `uv run uipath auth --cloud --tenant YOUR_TENANT` to refresh the token
+- Use `--force` (`-f`) flag to force a new token: `uv run uipath auth --cloud --tenant YOUR_TENANT -f`
+- Check that `UIPATH_URL` and `UIPATH_ACCESS_TOKEN` environment variables are not stale in your `.env` file
+
+### Tenant Not Found / Mismatch
+
+**Symptom:** `--tenant MY_TENANT` fails with "tenant not found" or returns no results.
+
+**Solutions:**
+- Run `uv run uipath auth --cloud` without `--tenant` first to see the full tenant list
+- Verify the tenant name is spelled exactly as shown in the list (case-sensitive)
+- Ensure your UiPath account has access to the target tenant
+
+### Client Credentials Flow Fails
+
+**Symptom:** Unattended authentication with `--client-id` / `--client-secret` returns errors.
+
+**Solutions:**
+- Verify the client ID and secret are correct and not expired
+- Check that the `--base-url` points to the correct UiPath instance
+- Ensure the external application has the required scopes configured in UiPath

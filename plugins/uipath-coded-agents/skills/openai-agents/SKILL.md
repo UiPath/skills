@@ -1,20 +1,12 @@
 ---
 description: Build OpenAI Agents with tools, structured output, and handoffs
 allowed-tools: Bash, Read, Write, Glob, Grep
+user-invocable: true
 ---
 
 # OpenAI Agents Integration
 
 Build lightweight agents using OpenAI's Agents framework with tools and structured output.
-
-## Overview
-
-OpenAI Agents provides a streamlined framework for building agents with:
-- Agent class from OpenAI SDK
-- Tool definitions and automatic tool calling
-- Structured output with Pydantic models
-- Handoff patterns for multi-agent workflows
-- Integration with UiPath platform services
 
 ## Documentation
 
@@ -44,8 +36,7 @@ This generates:
 
 - Requires `uipath-openai-agents` dependency
 - Uses `openai_agents.json` for configuration (not `uipath.json`)
-- Lightweight and focused on agent execution
-- Supports tool calling and structured output
+- Lightweight with tool calling, structured output, and handoff patterns
 - Integrates with UiPath services
 - Note: Does not support Human-in-the-Loop or state persistence — use LangGraph/LlamaIndex for those features
 
@@ -57,8 +48,3 @@ This generates:
 4. Configure tool handlers and structured output
 5. Test with [Running Agents](/uipath-coded-agents:execute)
 6. Evaluate with [Evaluating Agents](/uipath-coded-agents:evaluate)
-
-## Next Steps
-
-- Ready to build? See [Building Agents](/uipath-coded-agents:build)
-- Need help running your agent? See [Executing Agents](/uipath-coded-agents:execute)

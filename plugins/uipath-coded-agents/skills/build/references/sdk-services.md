@@ -460,10 +460,85 @@ embeddings = sdk.llm_openai.embeddings(
 
 ## Guardrails
 
-Evaluate guardrails on input data.
+Evaluate guardrails on input data to enforce safety and compliance policies.
 
 ```python
-result = sdk.guardrails.evaluate(...)
+# Evaluate a guardrail on a prompt
+result = sdk.guardrails.evaluate(
+    guardrail_name="ContentSafety",
+    data={"prompt": "User message to validate"},
+    folder_path="MyFolder"
+)
+
+# Async variant
+result = await sdk.guardrails.evaluate_async(
+    guardrail_name="ContentSafety",
+    data={"prompt": "User message to validate"}
+)
+```
+
+---
+
+## Tasks
+
+Action Center task management for human-in-the-loop workflows.
+
+```python
+# Create a task
+task = sdk.tasks.create(
+    title="Review document",
+    data={"document_id": "doc-123"},
+    app_name="DocumentReview",
+    assignee="reviewer@company.com"
+)
+
+# Retrieve a task
+task = sdk.tasks.retrieve(task_key="task-key-123")
+```
+
+---
+
+## AgentHub
+
+List available LLM models and invoke system agents.
+
+```python
+# List available LLM models
+models = sdk.agenthub.list_models()
+
+# Invoke a system agent
+result = sdk.agenthub.invoke(
+    agent_name="system-agent",
+    input_data={"query": "Help me with this task"}
+)
+```
+
+---
+
+## MCP
+
+List and retrieve Model Context Protocol (MCP) servers.
+
+```python
+# List available MCP servers
+servers = sdk.mcp.list()
+
+# Retrieve a specific MCP server
+server = sdk.mcp.retrieve(name="my-mcp-server")
+```
+
+---
+
+## Resource Catalog
+
+Search and list tenant or folder resources.
+
+```python
+# Search for resources
+resources = sdk.resource_catalog.search(query="invoice processing")
+
+# List resources in a folder
+resources = sdk.resource_catalog.list(folder_path="Finance")
 ```
 
 ---

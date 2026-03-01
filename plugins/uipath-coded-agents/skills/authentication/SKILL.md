@@ -6,29 +6,16 @@ user-invocable: true
 
 # UiPath Authentication
 
-Learn how to authenticate with UiPath Cloud or on-premise deployments.
-
-## Getting Started
-
-Before building and running UiPath coded agents, you need to set up authentication with your UiPath environment.
+Set up authentication with UiPath Cloud or on-premise deployments before building and running agents.
 
 ## Documentation
 
 - **[Authentication Guide](references/authentication.md)** - Complete authentication setup
-  - Interactive authentication
+  - Interactive OAuth authentication
   - Unattended client credentials flow
   - Environment configuration
-  - Network settings
+  - Network and proxy settings
   - Troubleshooting
-
-## Quick Reference
-
-The authentication guide covers:
-- Setting up environment variables
-- Configuring UiPath Cloud or on-premise URLs
-- Using OAuth for interactive authentication
-- Using client credentials for unattended execution
-- Network and proxy configuration
 
 ## Next Steps
 

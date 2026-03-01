@@ -3,9 +3,9 @@
 Common implementation patterns for building UiPath coded agents, from simple functions to multi-agent orchestrations.
 
 > **Note:** These patterns are general architectural concepts applicable to any integration. The code examples below use **LangGraph** and the **UiPath Python SDK**. The same patterns can be implemented with other frameworks — see their integration guides for framework-specific code:
-> - **[LangGraph Integration](langgraph-integration.md)** — StateGraph, conditional edges, `UiPathAzureChatOpenAI`
-> - **[LlamaIndex Integration](llamaindex-integration.md)** — Workflow, FunctionAgent, `UiPathOpenAI`, Context Grounding RAG
-> - **[OpenAI Agents Integration](openai-agents-integration.md)** — Agent with tools, structured output, handoffs
+> - **[LangGraph Integration](/uipath-coded-agents:langgraph)** — StateGraph, conditional edges, `UiPathAzureChatOpenAI`
+> - **[LlamaIndex Integration](/uipath-coded-agents:llamaindex)** — Workflow, FunctionAgent, `UiPathOpenAI`, Context Grounding RAG
+> - **[OpenAI Agents Integration](/uipath-coded-agents:openai-agents)** — Agent with tools, structured output, handoffs
 
 ## ⚠️ Before You Start: Setup Required
 
@@ -120,7 +120,7 @@ async def main(input: Input) -> Output:
 
 Multi-step agent using LangGraph's `StateGraph` with nodes, edges, and conditional routing. Supports LLM-powered decisions.
 
-> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the **[LangGraph Integration Guide](langgraph-integration.md)** for project setup, `langgraph.json` configuration, entrypoint detection, and troubleshooting.
+> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the **[LangGraph Integration Guide](/uipath-coded-agents:langgraph)** for project setup, `langgraph.json` configuration, entrypoint detection, and troubleshooting.
 
 **When to use:** Classification workflows, multi-step reasoning, conditional branching based on LLM output.
 
@@ -262,7 +262,7 @@ async def main(input: Input) -> Output:
     docs = await vectorstore.asimilarity_search_with_score(
         query=input.query, k=input.k
     )
-    answer = chain.invoke(input.query)
+    answer = await chain.ainvoke(input.query)
 
     return Output(
         answer=answer,
@@ -288,7 +288,7 @@ Conversational agent with tool access, built using LangGraph's `create_agent()` 
 from pydantic import BaseModel
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 from langchain_tavily import TavilySearch
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent
 
 class GraphInput(BaseModel):
     question: str
@@ -301,13 +301,13 @@ Use the search tool to find current information when needed."""
 
 llm = UiPathAzureChatOpenAI()
 tools = [TavilySearch(max_results=3)]
-graph = create_agent(llm, tools=tools, system_prompt=system_prompt)
+graph = create_react_agent(llm, tools=tools, prompt=system_prompt)
 ```
 
 **Key points:**
-- `create_agent()` handles the agent loop (reason → act → observe) automatically
+- `create_react_agent()` handles the agent loop (reason → act → observe) automatically
 - Pass any LangChain-compatible tools in the `tools` list
-- The system prompt guides agent behavior and tool usage
+- The `prompt` parameter guides agent behavior and tool usage
 - Supports any LangChain chat model (OpenAI, Anthropic, Azure, etc.)
 
 ---
@@ -324,7 +324,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph, MessagesState
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 
 members = ["researcher", "coder"]
@@ -351,8 +351,8 @@ def make_supervisor(llm):
     return supervisor
 
 llm = UiPathAzureChatOpenAI()
-research_agent = create_agent(llm, tools=[search_tool], system_prompt="You research.")
-code_agent = create_agent(llm, tools=[repl_tool], system_prompt="You write code.")
+research_agent = create_react_agent(llm, tools=[search_tool], prompt="You research.")
+code_agent = create_react_agent(llm, tools=[repl_tool], prompt="You write code.")
 
 async def research_node(state: State):
     result = await research_agent.ainvoke(state)
@@ -383,7 +383,7 @@ graph = builder.compile()
 - The supervisor uses `with_structured_output(Router)` to decide which worker to call
 - Workers return results as `HumanMessage` with a `name` so the supervisor can track who responded
 - Workers loop back to the supervisor, which decides the next step or finishes
-- Each worker is a full `create_agent()` with its own tools and system prompt
+- Each worker is a full `create_react_agent()` with its own tools and prompt
 
 ---
 
