@@ -1,5 +1,5 @@
 ---
-description: Test and evaluate UiPath coded agents
+description: Build and evaluate UiPath coded agent evaluations
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---

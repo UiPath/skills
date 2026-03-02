@@ -1,5 +1,5 @@
 ---
-description: Build UiPath coded agents with Pydantic models and tracing
+description: Setup and build UiPath coded agents with UiPath SDK services, agent patterns, tracing and best  practices
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---

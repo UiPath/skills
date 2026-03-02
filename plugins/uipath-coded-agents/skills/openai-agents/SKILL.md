@@ -1,5 +1,5 @@
 ---
-description: Build OpenAI Agents with tools, structured output, and handoffs
+description: Build UiPath OpenAI Agents with tools, structured output, and handoffs
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---

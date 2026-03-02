@@ -126,27 +126,68 @@ Use UiPath's LLM libraries instead of raw `langchain_openai.ChatOpenAI`. These r
 
 ### UiPathAzureChatOpenAI (Passthrough)
 
+Drop-in replacement for LangChain's `ChatOpenAI` that routes through UiPath's passthrough endpoint (Azure OpenAI API format). No API keys needed — usage consumes Agent Units from your UiPath account.
+
 ```python
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 
-llm = UiPathAzureChatOpenAI(max_retries=3)
+llm = UiPathAzureChatOpenAI(
+    model="gpt-4.1-mini-2025-04-14",
+    temperature=0.7,
+    max_tokens=4000,
+    timeout=30,
+    max_retries=2
+)
 ```
 
-- Routes through UiPath's passthrough endpoint (Azure OpenAI API format)
+**Supported Models:**
+- `gpt-4`, `gpt-4-turbo-2024-04-09`
+- `gpt-4o-2024-05-13`, `gpt-4o-mini-2024-07-18`
+- `gpt-4.1-mini-2025-04-14` (recommended)
+- And others available in your UiPath instance
+
+**Features:**
 - No API key needed — uses UiPath authentication
 - Supports streaming, structured output, and tool calling
+- Integrates seamlessly with LangChain agents and RAG
 
 ### UiPathChat (Normalized)
+
+Versatile model class supporting multiple vendors through UiPath's normalized LLM Gateway API. Ideal for multi-vendor strategies.
 
 ```python
 from uipath_langchain.chat.models import UiPathChat
 
-llm = UiPathChat(model="gpt-4o-mini")
+llm = UiPathChat(
+    model="gpt-4o-2024-11-20",
+    temperature=0.5,
+    max_tokens=2000
+)
 ```
 
-- Routes through UiPath's normalized LLM Gateway API
-- Supports multiple model providers (OpenAI, Anthropic, Google, AWS)
+**Supported Models Include:**
+- **OpenAI**: `gpt-4o-2024-11-20`, `o3-mini-2025-01-31`
+- **Anthropic**: `anthropic.claude-3-5-sonnet-20240620-v1:0`
+- **Google**: `gemini-2.0-flash-001`
+- **AWS & Others**: Additional models based on your region and account
+
+**Features:**
+- Supports multiple model providers
 - Custom streaming headers for compatibility
+- Flexible model switching for cost/quality optimization
+- Regional availability may vary by data residency requirements
+
+### Configuration Parameters
+
+Both models support these configuration options:
+
+- `temperature` (0-1): Controls randomness vs. determinism (default: 0.7)
+- `max_tokens`: Maximum response length (default varies by model)
+- `timeout`: API request timeout in seconds
+- `max_retries`: Number of retries on transient failures (default: 2)
+- `top_p`: Nucleus sampling parameter for diversity
+- `frequency_penalty`: Reduce token repetition
+- `presence_penalty`: Encourage new topics
 
 ### Structured Output
 
@@ -164,6 +205,15 @@ structured_llm = llm.with_structured_output(Analysis)
 result = await structured_llm.ainvoke("Analyze: I love this product!")
 # result is an Analysis instance
 ```
+
+### Model Selection Guide
+
+| Use Case | Recommended Model | Class |
+|----------|-------------------|-------|
+| Cost-conscious, general tasks | `gpt-4o-mini` or `gpt-4.1-mini-2025-04-14` | UiPathAzureChatOpenAI |
+| Complex reasoning, state-of-the-art | `gpt-4o` or `o3-mini` | UiPathChat or UiPathAzureChatOpenAI |
+| Multi-vendor flexibility | Any vendor model | UiPathChat |
+| Specialized domains (e.g., code) | Claude variants | UiPathChat |
 
 ---
 
@@ -419,6 +469,21 @@ The `uipath-langchain` package provides UiPath-specific LangChain tools:
 ## Next Steps
 
 - **[Agent Patterns](agent-patterns.md)** — Architecture patterns with full code examples
+- **[Context Grounding](context-grounding.md)** — Ground LLM responses in organization data with semantic search
+
+### Pause and Resume Workflows
+
+These guides use the interrupt/resume pattern to pause agent execution for external work:
+
+- **[Interrupt and Resume Patterns](interrupt-resume.md)** — Conceptual overview of pausing and resuming agents
+  - How the mechanism works
+  - Choosing the right interrupt model
+  - Design principles and best practices
+- **[Human-in-the-Loop](human-in-the-loop.md)** — Pause for human intervention and approval workflows
+- **[Process Invocation](process-invocation.md)** — Pause to delegate RPA automation and monitor job execution
+
+### Deployment and Operations
+
 - **[SDK Services](sdk-services.md)** — Use UiPath platform services in your graph nodes
 - **[Tracing](tracing.md)** — Advanced tracing for helper functions outside the graph
 - **[Deployment](deployment.md)** — Package and publish your LangGraph agent
