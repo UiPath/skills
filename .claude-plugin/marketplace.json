@@ -17,6 +17,19 @@
       "repository": "https://github.com/uipath/uipath-python",
       "license": "MIT",
       "keywords": ["uipath", "automation", "rpa", "agent", "evaluation"]
+    },
+    {
+      "name": "uipath-coded-workflows",
+      "source": "./plugins/uipath-coded-workflows",
+      "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath coded automation workflows",
+      "version": "0.0.1",
+      "author": {
+        "name": "UiPath"
+      },
+      "homepage": "https://github.com/uipath/uipath-python",
+      "repository": "https://github.com/uipath/uipath-python",
+      "license": "MIT",
+      "keywords": ["uipath", "automation", "rpa", "code", "workflow"]
     }
   ]
 }

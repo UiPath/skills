@@ -1,0 +1,5 @@
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\bin\Release\net8.0\InspectPackage.dll
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\bin\Release\net8.0\InspectPackage.deps.json
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\bin\Release\net8.0\InspectPackage.runtimeconfig.json
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\bin\Release\net8.0\InspectPackage.pdb
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\bin\Release\net8.0\System.Reflection.MetadataLoadContext.dll

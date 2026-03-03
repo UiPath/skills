@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "AKi7sy0y77E=",
+  "success": true,
+  "projectFilePath": "C:\\dev\\Studio\\RpaTool\\.claude\\skills\\uipath-coded-workflow\\scripts\\inspect-package\\InspectPackage.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ana.radu\\.nuget\\packages\\system.collections.immutable\\8.0.0\\system.collections.immutable.8.0.0.nupkg.sha512",
+    "C:\\Users\\ana.radu\\.nuget\\packages\\system.reflection.metadata\\8.0.0\\system.reflection.metadata.8.0.0.nupkg.sha512",
+    "C:\\Users\\ana.radu\\.nuget\\packages\\system.reflection.metadataloadcontext\\8.0.0\\system.reflection.metadataloadcontext.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

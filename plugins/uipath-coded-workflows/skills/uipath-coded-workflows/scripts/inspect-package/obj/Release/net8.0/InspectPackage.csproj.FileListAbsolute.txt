@@ -1,0 +1,16 @@
+C:\dev\Studio\Output\bin\Release\net8.0\InspectPackage.deps.json
+C:\dev\Studio\Output\bin\Release\net8.0\InspectPackage.runtimeconfig.json
+C:\dev\Studio\Output\bin\Release\net8.0\InspectPackage.dll
+C:\dev\Studio\Output\bin\Release\net8.0\InspectPackage.pdb
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.csproj.AssemblyReference.cache
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.GeneratedMSBuildEditorConfig.editorconfig
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.AssemblyInfoInputs.cache
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.AssemblyInfo.cs
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.csproj.CoreCompileInputs.cache
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.sourcelink.json
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectP.9F84B7B9.Up2Date
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.dll
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\refint\InspectPackage.dll
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.pdb
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\InspectPackage.genruntimeconfig.cache
+C:\dev\Studio\RpaTool\.claude\skills\uipath-coded-workflow\scripts\inspect-package\obj\Release\net8.0\ref\InspectPackage.dll

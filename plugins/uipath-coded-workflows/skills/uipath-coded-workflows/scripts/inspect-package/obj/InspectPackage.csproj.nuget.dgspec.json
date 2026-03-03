@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\dev\\Studio\\RpaTool\\.claude\\skills\\uipath-coded-workflow\\scripts\\inspect-package\\InspectPackage.csproj": {}
+  },
+  "projects": {
+    "C:\\dev\\Studio\\RpaTool\\.claude\\skills\\uipath-coded-workflow\\scripts\\inspect-package\\InspectPackage.csproj": {
+      "version": "26.0.0-dev",
+      "restore": {
+        "projectUniqueName": "C:\\dev\\Studio\\RpaTool\\.claude\\skills\\uipath-coded-workflow\\scripts\\inspect-package\\InspectPackage.csproj",
+        "projectName": "InspectPackage",
+        "projectPath": "C:\\dev\\Studio\\RpaTool\\.claude\\skills\\uipath-coded-workflow\\scripts\\inspect-package\\InspectPackage.csproj",
+        "packagesPath": "C:\\Users\\ana.radu\\.nuget\\packages\\",
+        "outputPath": "C:\\dev\\Studio\\RpaTool\\.claude\\skills\\uipath-coded-workflow\\scripts\\inspect-package\\obj\\",
+        "projectStyle": "PackageReference",
+        "CentralPackageTransitivePinningEnabled": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\dev\\Studio\\NuGet.Config",
+          "C:\\Users\\ana.radu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Users\\ana.radu\\OneDrive - UiPath\\Documents\\libraries": {},
+          "https://nuget.pkg.github.com/OWNER/index.json": {},
+          "https://pkgs.dev.azure.com/uipath/Public.Feeds/_packaging/UiPath-Official/nuget/v3/index.json": {},
+          "https://pkgs.dev.azure.com/uipath/Public.Feeds/_packaging/UiPath-Official/nuget/v3/index.json": {},
+          "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json": {},
+          "https://uipath.pkgs.visualstudio.com/_packaging/nuget-packages/nuget/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "noWarn": [
+            "NU1507",
+            "NU5048",
+            "NU5104",
+            "NU5118",
+            "NU5125"
+          ],
+          "warnAsError": [
+            "NU1605"
+          ],
+          "warnNotAsError": [
+            "NU1901",
+            "NU1902",
+            "NU1903",
+            "NU1904"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "System.Reflection.MetadataLoadContext": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.418/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
