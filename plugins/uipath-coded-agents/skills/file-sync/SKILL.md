@@ -1,5 +1,5 @@
 ---
-description: Sync project files between local and remote storage using push and pull
+description: Sync project files between local and remote storage (studio web) using push and pull
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---

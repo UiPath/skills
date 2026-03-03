@@ -56,6 +56,66 @@ For lightweight agents using the OpenAI Agents SDK with tool calling and handoff
 
 > **Note:** Each integration guide is self-contained. It covers everything from pyproject.toml to running the agent. You don't need to read this page for integration agents — go directly to the relevant guide.
 
+## LLM Usage
+
+The **UiPath LLM Gateway** provides access to Large Language Model capabilities for conversational AI, structured data extraction, and semantic search. It supports both OpenAI-compatible and UiPath's normalized API formats.
+
+### Service Options
+
+**UiPathOpenAIService** — For direct OpenAI API compatibility:
+```python
+from uipath.llm_gateway import UiPathOpenAIService
+
+service = UiPathOpenAIService()
+response = await service.chat_completions(messages=[
+    {"role": "system", "content": "You are helpful."},
+    {"role": "user", "content": "What is AI?"}
+])
+```
+
+**UiPathLlmChatService** — For advanced enterprise features (tool calling, function calling):
+```python
+from uipath.llm_gateway import UiPathLlmChatService
+
+service = UiPathLlmChatService()
+response = await service.chat_completions(messages=messages)
+```
+
+### Structured Output with Pydantic
+
+Extract structured data using Pydantic models:
+
+```python
+from pydantic import BaseModel
+
+class Country(BaseModel):
+    name: str
+    capital: str
+
+response = await service.chat_completions(
+    messages=messages,
+    response_format=Country
+)
+```
+
+### Text Embeddings
+
+Generate embeddings for semantic search:
+
+```python
+embedding = await service.embeddings("Hello, world!")
+```
+
+### Configuration
+
+Control LLM behavior with these parameters:
+- `temperature` (0-1): Controls randomness vs. determinism
+- `max_tokens`: Response length limit (default: 4096)
+- `top_p` and `top_k`: Diversity controls
+- `frequency_penalty` and `presence_penalty`: Token repetition management
+
+For detailed information, see the [UiPath LLM Gateway documentation](https://uipath.github.io/uipath-python/core/llm_gateway/).
+
 ### Step 3: Implement Business Logic
 
 Describe your agent's functionality, then implement the main function (or graph nodes) with:

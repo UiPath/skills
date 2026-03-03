@@ -2,6 +2,13 @@
 
 Complete reference for all platform services available through the UiPath Python SDK.
 
+> **Note**: While you can use these services directly, UiPath provides specialized integration frameworks with recommended patterns:
+> - **[LangGraph Integration](/uipath-coded-agents:langgraph)** - Multi-step workflows, conditional routing, process coordination, interrupts, and human-in-the-loop patterns
+> - **[OpenAI Agents Integration](/uipath-coded-agents:openai-agents)** - Agentic workflows with function calling, tool use, and autonomous decision-making
+> - **[LlamaIndex Integration](/uipath-coded-agents:llamaindex)** - RAG-powered agents, semantic search, and document processing workflows
+>
+> These frameworks provide higher-level abstractions and best practices for common agent patterns.
+
 ## SDK Initialization
 
 ```python
@@ -68,6 +75,8 @@ job = await sdk.processes.invoke_async(
     input_arguments={"param1": "value1"}
 )
 ```
+
+> **Using LangGraph?** For conditional process invocation and multi-step workflows, see [LangGraph Integration](/uipath-coded-agents:langgraph) which provides specialized patterns for routing, interrupts, and process coordination.
 
 ---
 
@@ -285,6 +294,8 @@ sdk.context_grounding.ingest_data(index=index)
 sdk.context_grounding.delete_index(index=index)
 ```
 
+> **Using LlamaIndex?** For advanced RAG workflows, document chunking strategies, and context retrieval patterns, see [LlamaIndex Integration](/uipath-coded-agents:llamaindex) which provides specialized tools for semantic search and document processing.
+
 ---
 
 ## Documents
@@ -431,6 +442,8 @@ response = sdk.llm.chat_completions(
     tool_choice="auto"
 )
 ```
+
+> **Using OpenAI Agents?** For agentic patterns with tool use, handoffs, and autonomous decision-making, see [OpenAI Agents Integration](/uipath-coded-agents:openai-agents) which provides specialized agent orchestration with function calling.
 
 ---
 
