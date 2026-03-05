@@ -26,7 +26,9 @@ class TurnMetrics:
     turn: int
     input_tokens: int
     output_tokens: int
-    is_interruption: bool
+    cache_creation_tokens: int = 0
+    cache_read_tokens: int = 0
+    is_interruption: bool = False
     skills_invoked: list[str] = field(default_factory=list)
 
 

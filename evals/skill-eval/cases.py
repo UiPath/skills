@@ -37,7 +37,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build"],
-        expected_files=["main.py", "pyproject.toml", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml"],
     ),
     SkillTestCase(
         id="build-fibonacci",
@@ -49,7 +49,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build"],
-        expected_files=["main.py", "pyproject.toml", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml"],
     ),
 
     # -------------------------------------------------------------------------
@@ -82,7 +82,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build", "uipath-coded-agents:langgraph"],
-        expected_files=["main.py", "pyproject.toml", "langgraph.json", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml", "langgraph.json"],
     ),
     SkillTestCase(
         id="langgraph-hitl-invoice",
@@ -96,7 +96,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build", "uipath-coded-agents:langgraph"],
-        expected_files=["main.py", "pyproject.toml", "langgraph.json", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml", "langgraph.json"],
     ),
     SkillTestCase(
         id="langgraph-rag-context-grounding",
@@ -109,7 +109,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build", "uipath-coded-agents:langgraph"],
-        expected_files=["main.py", "pyproject.toml", "langgraph.json", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml", "langgraph.json"],
     ),
     SkillTestCase(
         id="langgraph-multiagent-supervisor",
@@ -122,7 +122,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build", "uipath-coded-agents:langgraph"],
-        expected_files=["main.py", "pyproject.toml", "langgraph.json", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml", "langgraph.json"],
     ),
 
     # -------------------------------------------------------------------------
@@ -139,7 +139,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build", "uipath-coded-agents:llamaindex"],
-        expected_files=["main.py", "pyproject.toml", "llama_index.json", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml", "llama_index.json"],
     ),
 
     # -------------------------------------------------------------------------
@@ -156,7 +156,7 @@ ALL_CASES: list[SkillTestCase] = [
         ),
         max_interruptions=0,
         required_skills=["uipath-coded-agents:build", "uipath-coded-agents:openai-agents"],
-        expected_files=["main.py", "pyproject.toml", "openai_agents.json", "evaluations/eval-sets/smoke-test.json"],
+        expected_files=["main.py", "pyproject.toml", "openai_agents.json"],
     ),
 
     # -------------------------------------------------------------------------

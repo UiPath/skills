@@ -49,22 +49,56 @@ async def run_case(case: SkillTestCase, workdir: Path) -> SkillEvalResult:
     raw_lines: list[str] = []
     error_msg = ""
 
+    # Track per-message state — each API call streams multiple events with the same
+    # message ID (one per content block). We deduplicate by ID and flush when the ID changes.
+    seen_message_id: str | None = None
     current_turn_interruption = False
     current_turn_skills: list[str] = []
     current_turn_input = 0
     current_turn_output = 0
+    current_turn_cache_creation = 0
+    current_turn_cache_read = 0
     turn_number = 0
 
+    def flush_turn() -> None:
+        nonlocal turn_number, current_turn_interruption, current_turn_skills
+        nonlocal current_turn_input, current_turn_output
+        nonlocal current_turn_cache_creation, current_turn_cache_read
+        if seen_message_id is None:
+            return
+        turns.append(TurnMetrics(
+            turn=turn_number,
+            input_tokens=current_turn_input,
+            output_tokens=current_turn_output,
+            cache_creation_tokens=current_turn_cache_creation,
+            cache_read_tokens=current_turn_cache_read,
+            is_interruption=current_turn_interruption,
+            skills_invoked=list(current_turn_skills),
+        ))
+        turn_number += 1
+        current_turn_interruption = False
+        current_turn_skills = []
+        current_turn_input = 0
+        current_turn_output = 0
+        current_turn_cache_creation = 0
+        current_turn_cache_read = 0
+
     try:
+        # Strip CLAUDECODE so the subprocess isn't blocked as a nested session
+        env = {k: v for k, v in __import__("os").environ.items() if k != "CLAUDECODE"}
+
         proc = await asyncio.create_subprocess_exec(
             "claude",
             "--print",
+            "--verbose",
             "--output-format", "stream-json",
             "--allowedTools", "all",
+            "--dangerously-skip-permissions",
             "-p", case.prompt,
             cwd=str(workdir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            env=env,
         )
 
         stdout_bytes, stderr_bytes = await asyncio.wait_for(
@@ -92,9 +126,17 @@ async def run_case(case: SkillTestCase, workdir: Path) -> SkillEvalResult:
                 continue
 
             message = event.get("message", {})
-            usage = message.get("usage", {})
-            current_turn_input = usage.get("input_tokens", 0)
-            current_turn_output = usage.get("output_tokens", 0)
+            msg_id = message.get("id")
+
+            # New API response — flush the previous turn first
+            if msg_id != seen_message_id:
+                flush_turn()
+                seen_message_id = msg_id
+                usage = message.get("usage", {})
+                current_turn_input = usage.get("input_tokens", 0)
+                current_turn_output = usage.get("output_tokens", 0)
+                current_turn_cache_creation = usage.get("cache_creation_input_tokens", 0)
+                current_turn_cache_read = usage.get("cache_read_input_tokens", 0)
 
             for block in message.get("content", []):
                 if block.get("type") != "tool_use":
@@ -104,22 +146,11 @@ async def run_case(case: SkillTestCase, workdir: Path) -> SkillEvalResult:
                     interruption_count += 1
                     current_turn_interruption = True
                 elif name == "Skill":
-                    skill_name = block.get("input", {}).get("name", "unknown")
+                    skill_name = block.get("input", {}).get("skill", "unknown")
                     current_turn_skills.append(skill_name)
                     all_skills_invoked.append(skill_name)
 
-            turns.append(TurnMetrics(
-                turn=turn_number,
-                input_tokens=current_turn_input,
-                output_tokens=current_turn_output,
-                is_interruption=current_turn_interruption,
-                skills_invoked=list(current_turn_skills),
-            ))
-            turn_number += 1
-            current_turn_interruption = False
-            current_turn_skills = []
-            current_turn_input = 0
-            current_turn_output = 0
+        flush_turn()  # flush the last turn
 
     except asyncio.TimeoutError:
         error_msg = f"Timed out after {CASE_TIMEOUT}s"
@@ -128,8 +159,13 @@ async def run_case(case: SkillTestCase, workdir: Path) -> SkillEvalResult:
     except Exception as exc:  # noqa: BLE001
         error_msg = str(exc)
 
-    # Check expected files
-    missing_files = [f for f in case.expected_files if not (workdir / f).exists()]
+    # Check expected files — Claude may create a project subdirectory, so search
+    # recursively for each filename anywhere under the workdir.
+    all_files = {p.name for p in workdir.rglob("*") if p.is_file()}
+    missing_files = [
+        f for f in case.expected_files
+        if Path(f).name not in all_files
+    ]
     task_success = len(missing_files) == 0
 
     # Check required skills
@@ -191,6 +227,8 @@ def result_to_dict(r: SkillEvalResult) -> dict:
             {
                 "turn": t.turn,
                 "input_tokens": t.input_tokens,
+                "cache_creation_tokens": t.cache_creation_tokens,
+                "cache_read_tokens": t.cache_read_tokens,
                 "output_tokens": t.output_tokens,
                 "is_interruption": t.is_interruption,
                 "skills_invoked": t.skills_invoked,
