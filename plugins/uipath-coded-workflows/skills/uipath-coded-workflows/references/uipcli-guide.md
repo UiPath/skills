@@ -6,58 +6,15 @@ This guide covers using the `rpa-tool` CLI for creating, managing, building, and
 
 The `rpa-tool` is a standalone CLI that communicates with UiPath Studio over named pipes (IPC).
 
-> **This guide may not list every available command.** The tool evolves faster than this document. Before assuming a command doesn't exist, run `rpa-tool --help` to see the full list of commands, and `rpa-tool <command> --help` to see all flags for a specific command.
+> **Installation is automatic.** Do NOT attempt to install `rpa-tool` manually or instruct the user to install it.
+
+> **This guide may not list every available command.** The tool evolves faster than this document, or users may have an older version of Studio with missing implementations. Best practice is to query the service using `rpa-tool --help` to see the full list of commands, and `rpa-tool <command> --help` to see all flags for a specific command.
 
 | Category | Commands |
 |----------|----------|
 | **Static** | `list-instances`, `start-studio` |
 | **Local tools** | `create-project`, `open-project`, `run-file`, `validate`, `get-manual-test-cases`, `get-manual-test-steps` |
 | **Dynamic (IPC)** | `indicate-application`, `indicate-element`, plus additional commands discovered from a running Studio instance |
-
----
-
-## Prerequisites and Setup
-
-### 1. Install Bun
-
-Bun is the runtime used to build and run the rpa-tool. Install it if not already present:
-```bash
-powershell -c "irm bun.sh/install.ps1 | iex"
-```
-
-### 2. Install dependencies
-
-```bash
-cd RpaTool/rpa-tool
-bun install
-```
-
-### 3. Build the tool
-
-```bash
-cd RpaTool/rpa-tool
-bun run build
-```
-
-This produces two ESM bundles in `dist/`:
-- `dist/tool.js` — plugin entry for the UiPath CLI
-- `dist/index.js` — standalone CLI entry
-
-### 4. Register the global command
-
-```bash
-cd RpaTool/rpa-tool
-bun link
-```
-
-After this, `rpa-tool` is available as a global command from any directory.
-
-### 5. Verify installation
-
-```bash
-rpa-tool --help
-rpa-tool list-instances
-```
 
 ---
 
@@ -90,7 +47,7 @@ Every `rpa-tool` invocation accepts these flags:
 3. **Dev build** — If working from a Studio source tree, use the build output directory (e.g. `<repo-root>\Output\bin\Debug`).
 4. **Run without this parameter** — If none of the above resolves, run the command without the parameter and let the `rpa-tool` decide which Studio to use.
 
-> **IMPORTANT** When encountering the error `"Studio X.X.X does not have interop support"` it means the auto-detected Studio is too old — passing `--studio-dir "<STUDIO_DIR>"` explicitly resolves this.
+> **IMPORTANT** When encountering the error `"Studio X.X.X does not have interop support"` it means the auto-detected Studio is too old — in this case you should stop making calls to `rpa-tool` and inform the user that it should update to the latest Studio version available.
 
 ---
 

@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-rpa-tool.sh\"",
+            "timeout": 120,
+            "once": true,
+            "statusMessage": "Checking rpa-tool installation..."
+          }
+        ]
+      }
+    ]
+  }
+}
