@@ -1,20 +1,10 @@
 # RPA Tool Guide
 
-This guide covers using the `rpa-tool` CLI for creating, managing, building, and running UiPath coded workflow projects via Studio IPC.
-
-## Overview
-
-The `rpa-tool` is a standalone CLI that communicates with UiPath Studio over named pipes (IPC).
+CLI reference for `rpa-tool` — communicates with UiPath Studio over named pipes (IPC).
 
 > **Installation is automatic.** Do NOT attempt to install `rpa-tool` manually or instruct the user to install it.
 
-> **This guide may not list every available command.** The tool evolves faster than this document, or users may have an older version of Studio with missing implementations. Best practice is to query the service using `rpa-tool --help` to see the full list of commands, and `rpa-tool <command> --help` to see all flags for a specific command.
-
-| Category | Commands |
-|----------|----------|
-| **Static** | `list-instances`, `start-studio` |
-| **Local tools** | `create-project`, `open-project`, `run-file`, `validate`, `get-manual-test-cases`, `get-manual-test-steps` |
-| **Dynamic (IPC)** | `indicate-application`, `indicate-element`, plus additional commands discovered from a running Studio instance |
+> **This guide may not list every available command.** Run `rpa-tool --help` for the full list, and `rpa-tool <command> --help` for all flags on a specific command.
 
 ---
 
@@ -25,59 +15,28 @@ Every `rpa-tool` invocation accepts these flags:
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--project-dir <path>` | Project directory to match against running Studio instances | Current working directory |
-| `--studio-dir <path>` | Path to Studio installation directory (for starting a new instance) | Auto-detected |
+| `--studio-dir <path>` | Path to Studio installation directory | Auto-detected (see below) |
 | `--timeout <seconds>` | Timeout in seconds for Studio resolution | `300` |
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--format <format>` | Output format: `json`, `table`, `yaml`, `plain` | `table` |
 
-> **IMPORTANT: Always use `--format json`** when calling rpa-tool commands programmatically. The default `table` format pads columns to match the widest value, which can produce extremely large output (100KB+) for commands like `run-file`. JSON is compact and machine-readable.
+> **Always use `--format json`** when calling `rpa-tool` programmatically. The `table` format pads columns and can produce extremely large output (100KB+). JSON is compact and machine-readable.
 
----
+### STUDIO_DIR Resolution
 
-## Variable Resolution Guide
+`--studio-dir` is optional — omit it by default and let `rpa-tool` auto-detect Studio. Only provide it explicitly if auto-detection fails, using the first match:
 
-**Two types of variables in this skill:**
+1. Environment variable `UIPATH_STUDIO_DIR` if set.
+2. Default install: `C:\Program Files\UiPath\Studio` (or `x86` variant) if `UiPathStudio.exe` exists there.
+3. Dev build: Studio source tree build output (e.g. `<repo-root>\Output\bin\Debug`).
 
-### **Type 1: STUDIO_DIR — UiPath Studio Installation Directory**
+> **Error `"Studio X.X.X does not have interop support"`** means the detected Studio is too old. Stop calling `rpa-tool` and inform the user to update Studio.
 
-`STUDIO_DIR` is the path to the UiPath Studio installation directory. Resolve it using one of these methods (first match wins):
+### PROJECT_DIR Resolution
 
-1. **Environment variable** — If `UIPATH_STUDIO_DIR` is set, use its value.
-2. **Default install location** — Check `C:\Program Files\UiPath\Studio` (or `C:\Program Files (x86)\UiPath\Studio`). If `UiPathStudio.exe` exists there, use that path.
-3. **Dev build** — If working from a Studio source tree, use the build output directory (e.g. `<repo-root>\Output\bin\Debug`).
-4. **Run without this parameter** — If none of the above resolves, run the command without the parameter and let the `rpa-tool` decide which Studio to use.
+`--project-dir` defaults to the current working directory. When the project is elsewhere, pass the absolute path to the folder containing `project.json`.
 
-> **IMPORTANT** When encountering the error `"Studio X.X.X does not have interop support"` it means the auto-detected Studio is too old — in this case you should stop making calls to `rpa-tool` and inform the user that it should update to the latest Studio version available.
-
----
-
-### **Type 2: YOU MUST RESOLVE (LLM responsibility)**
-
-These variables YOU must determine before execution:
-
-#### `PROJECT_DIR` - UiPath Project Directory
-
-The absolute path to the root folder of a UiPath project (the folder that contains `project.json`).
-
-See **SKILL.md → Quick Start → Step 0** for the full resolution logic (detect from running Studio, explicit path, project name, fallback to cwd).
-
-**Example**: `C:\Projects\MyAutomation`
-
-#### `WORKFLOW_NAME` - Name of the C# Workflow File
-
-The filename (with `.cs` extension) of the coded workflow to create or reference.
-
-**Step 1 — Determine the name** (use the first rule that matches):
-1. **User provided a name** — Use it directly. Append `.cs` if the user omitted the extension.
-2. **User described what the workflow does** — Derive a descriptive PascalCase name from the description (e.g., "process invoices" → `ProcessInvoices.cs`, "send email report" → `SendEmailReport.cs`).
-3. **Neither name nor description given** — Infer a name from the workflow logic you are about to implement.
-
-**Step 2 — Validate the name**:
-- Must end with `.cs`.
-- Must use PascalCase (e.g., `MyWorkflow.cs`, not `my_workflow.cs` or `myWorkflow.cs`).
-- Must be unique within the project folder — check for existing files with the same name before creating.
-
-**Example**: `ProcessSalesData.cs`
+See **SKILL.md -> Quick Start -> Step 0** for the full resolution logic.
 
 ---
 
@@ -88,22 +47,22 @@ The filename (with `.cs` extension) of the coded workflow to create or reference
 List running UiPath Studio instances and their IPC status.
 
 ```bash
-rpa-tool list-instances [--format <format>]
+rpa-tool list-instances --format json
 ```
 
-**Options:**
-- `--format` — Output format: `table` (default), `json`, `yaml`, `plain`
+No command-specific options.
 
 ---
 
 ### start-studio
 
-Ensure a Studio instance is running. Triggers the resolution waterfall:
-1. Match by project directory — reuse if available, wait if busy
-2. Use an idle instance (no project, available)
-3. Start a new Studio instance — poll until available
+Ensure a Studio instance is running. Resolution waterfall:
+1. Match by `--project-dir` — reuse if available, wait if busy
+2. Use an idle instance (no project loaded)
+3. Start a new instance via `--studio-dir` — poll until available
+
 ```bash
-rpa-tool start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool start-studio --project-dir "<PROJECT_DIR>" --format json
 ```
 
 ---
@@ -113,20 +72,19 @@ rpa-tool start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" 
 Create a new UiPath project from a template.
 
 ```bash
-rpa-tool create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" [--template-id <TEMPLATE>] [--description "<DESC>"] [--expression-language <LANG>] [--target-framework <FW>] --format json
+rpa-tool create-project --name "<NAME>" --location "<PARENT_DIR>" --format json
 ```
 
-**Parameters:**
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `--name` | Yes | — | Name of the project |
 | `--location` | Yes | — | Parent directory where the project folder will be created |
-| `--template-id` | No | `BlankTemplate` | Template: `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` |
+| `--template-id` | No | `BlankTemplate` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` |
 | `--description` | No | — | Project description |
 | `--expression-language` | No | — | `VisualBasic` or `CSharp` |
 | `--target-framework` | No | — | `Legacy`, `Windows`, or `Portable` |
 
-**Example response (JSON):**
+**Example response:**
 ```json
 {
   "Result": "Success",
@@ -139,33 +97,70 @@ rpa-tool create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "
 
 ### open-project
 
-Open an existing UiPath project in Studio. Use this when you need to explicitly open a project that isn't already loaded — for example, after creating a new project with `create-project`, or when switching to a different project directory. Most other commands (like `validate`, `run-file`) automatically resolve a Studio instance, so `open-project` is only needed when you want to ensure a specific project is open in Studio's UI.
+Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance, so this is rarely required.
 
 ```bash
-rpa-tool open-project --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool open-project --project-dir "<PROJECT_DIR>" --format json
 ```
+
+No command-specific options.
+
+---
+
+### validate
+
+Validate a file or the entire project. Forces Studio to re-analyze the code.
+
+```bash
+rpa-tool validate --project-dir "<PROJECT_DIR>" --format json
+rpa-tool validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
+```
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--file-path` | No | — | File to validate (relative to project directory). If omitted, validates the whole project. |
+
+**Example response — clean:**
+```json
+{
+  "Result": "Success",
+  "Code": "ToolResult",
+  "Data": { "status": "Valid", "errors": [] }
+}
+```
+
+**Example response — with errors:**
+```json
+{
+  "Result": "Success",
+  "Code": "ToolResult",
+  "Data": {
+    "status": "Valid",
+    "errors": [
+      { "file": "SendEmail.cs", "description": "; expected", "code": "CS1002", "severity": "Error" }
+    ]
+  }
+}
+```
+
+- `errors` — empty array means the project compiles cleanly
+- Each error: `file` (relative path), `description`, `code` (e.g. `CS0103`), `severity` (`"Error"`, `"Warning"`)
 
 ---
 
 ### run-file
 
-Run a workflow or coded file using Studio. This is the primary way to execute a workflow.
+Run a workflow file using Studio.
 
 ```bash
-rpa-tool run-file --file-path "<FILE_PATH>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
-**Parameters:**
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--file-path` | Yes | Path to the `.cs` workflow file to run |
 
-**Example:**
-```bash
-rpa-tool run-file --file-path "ProcessData.cs" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
-```
-
-**Example response (JSON):**
+**Example response:**
 ```json
 {
   "Result": "Success",
@@ -176,77 +171,21 @@ rpa-tool run-file --file-path "ProcessData.cs" --project-dir "<PROJECT_DIR>" --s
 }
 ```
 
-**Interpreting the result:**
 - `Data.runResult` is a **JSON string** (not an object) — parse it to get `Output` and `HasErrors`
-- `HasErrors: false` + `Result: "Success"` = workflow ran successfully
-- `HasErrors: true` = runtime error occurred; the `Output` field contains the error details
-- The `Output` field contains the Studio execution log (workflow logs, timing info)
-
----
-
-### validate
-
-Validates a file or the entire project. Forces Studio to re-analyze the code and returns a JSON result with validation status and any errors found.
-
-```bash
-rpa-tool validate [--file-path "<FILE_PATH>"] --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
-```
-
-**Parameters:**
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `--file-path` | No | — | Relative path of the file to validate (relative to project directory). If omitted, validates the whole project. |
-
-**Usage:**
-- After editing code, run `validate` to get accurate, up-to-date compilation results in a single call
-- Can target a single file for faster feedback: `--file-path "MyWorkflow.cs"`
-- Use in the validation loop: edit → validate → fix errors → validate again → repeat until clean (max 5 attempts)
-
-**Example response — no errors (JSON):**
-```json
-{
-  "Result": "Success",
-  "Code": "ToolResult",
-  "Data": {
-    "status": "Valid",
-    "errors": []
-  }
-}
-```
-
-**Example response — with errors (JSON):**
-```json
-{
-  "Result": "Success",
-  "Code": "ToolResult",
-  "Data": {
-    "status": "Valid",
-    "errors": [
-      {
-        "file": "SendEmail.cs",
-        "description": "; expected",
-        "code": "CS1002",
-        "severity": "Error"
-      }
-    ]
-  }
-}
-```
-
-**Interpreting the result:**
-- `Data.status` — validation status (e.g. `"Valid"`)
-- `Data.errors` — array of compilation errors; empty array means the project compiles cleanly
-- Each error has: `file` (relative path), `description` (error message), `code` (e.g. `CS0103`), `severity` (e.g. `"Error"`, `"Warning"`)
+- `HasErrors: false` = workflow ran successfully
+- `HasErrors: true` = runtime error; details in `Output`
 
 ---
 
 ### get-manual-test-cases
 
-Get manual test cases from Test Manager (returns unautomated test case IDs).
+Get unautomated test case IDs from Test Manager.
 
 ```bash
-rpa-tool get-manual-test-cases --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool get-manual-test-cases --project-dir "<PROJECT_DIR>" --format json
 ```
+
+No command-specific options.
 
 ---
 
@@ -255,34 +194,34 @@ rpa-tool get-manual-test-cases --project-dir "<PROJECT_DIR>" --studio-dir "<STUD
 Get steps for specific test cases from Test Manager.
 
 ```bash
-rpa-tool get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --format json
 ```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--test-case-ids` | Yes | Comma-separated test case IDs |
 
 ---
 
 ### indicate-application
 
-Indicate an application window on screen using Studio's visual indicator. Creates a new **Screen** entry in the Object Repository under the specified AppVersion. The command opens Studio's indicator UI — the user must point at the application window to capture it.
+Open Studio's visual indicator for the user to point at an application window. Creates a **Screen** entry in the Object Repository under the specified AppVersion.
 
 ```bash
-rpa-tool indicate-application --name "<SCREEN_NAME>" --parent-id "<APP_VERSION_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool indicate-application --name "<SCREEN_NAME>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
-**Parameters:**
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--name` | No | Name for the new screen (e.g. `"LoginScreen"`, `"Dashboard"`). Recommended. |
-| `--parent-id` | No** | Reference ID of the **AppVersion** (from `.objects/<AppShortId>/<AppVersionShortId>/.metadata`). Prefer this over `--parent-name`. |
-| `--parent-name` | No** | Alternative to `--parent-id` — matches by **AppVersion name** (e.g. `"1.0.0"`), NOT the App display name. Unreliable if AppVersion names are non-unique. |
-| `--activity-class-name` | No | The activity class name for the application (e.g. `"UiPath.UIAutomationNext.UI.App"`) |
-| `--description` | No | Optional description for the screen |
+| `--name` | No (recommended) | Name for the new screen (e.g. `"LoginScreen"`, `"Dashboard"`) |
+| `--parent-id` | No | AppVersion reference ID (from `.objects/<AppShortId>/<AppVersionShortId>/.metadata`). Prefer over `--parent-name`. |
+| `--parent-name` | No | AppVersion name (e.g. `"1.0.0"`). Unreliable if names are non-unique. |
+| `--activity-class-name` | No | Activity class (e.g. `"UiPath.UIAutomationNext.UI.App"`) |
+| `--description` | No | Description for the screen |
 
-*`indicate-application` has no strictly required parameters — all are optional. However, `--name` is strongly recommended.
-**When no App exists in `.objects/`, omit both `--parent-id` and `--parent-name` — the command creates the App + AppVersion automatically. When adding a screen to an existing App, provide `--parent-id` with the AppVersion reference (prefer over `--parent-name`).
+When no App exists in `.objects/`, omit `--parent-id` and `--parent-name` — the command creates App + AppVersion automatically. When adding to an existing App, provide `--parent-id` with the **AppVersion** reference (not the App reference from `ObjectRepository.cs`).
 
-> **`--parent-id` vs `--parent-name`:** Use `--parent-id` with the **AppVersion** reference, not the App reference. The App `_reference` field in `ObjectRepository.cs` is the App reference — read `.objects/<AppShortId>/<AppVersionShortId>/.metadata` to get the AppVersion reference.
-
-**Example response (JSON):**
+**Example response:**
 ```json
 {
   "Result": "Success",
@@ -291,30 +230,27 @@ rpa-tool indicate-application --name "<SCREEN_NAME>" --parent-id "<APP_VERSION_R
 }
 ```
 
-After the user completes the indication, Studio regenerates `ObjectRepository.cs`. Re-read it to get the actual descriptor path before writing workflow code.
+After indication, Studio regenerates `ObjectRepository.cs`. Re-read it to get the descriptor path before writing workflow code.
 
 ---
 
 ### indicate-element
 
-Indicate a UI element on screen using Studio's visual indicator. Creates a new **Element** entry under an existing Screen in the Object Repository. The screen must already exist before adding elements to it.
+Open Studio's visual indicator for the user to point at a UI element. Creates an **Element** entry under an existing Screen. The screen must already exist.
 
 ```bash
-rpa-tool indicate-element --name "<ELEMENT_NAME>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+rpa-tool indicate-element --name "<ELEMENT_NAME>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
-**Parameters:**
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--name` | Yes | Name for the new element (e.g. `"UsernameField"`, `"LoginButton"`) |
-| `--parent-id` | Yes* | Reference ID of the parent screen (from `ObjectRepository.cs` screen's `Reference` field, or from the `indicate-application` result) |
-| `--parent-name` | Yes* | Alternative to `--parent-id` — matches by screen name. Works reliably for screens since screen names are unique and meaningful. |
-| `--activity-class-name` | Yes | The activity class name for the element — use the interaction type: `"TypeInto"`, `"Click"`, `"GetText"`, etc. |
-| `--description` | No | Optional description for the element |
+| `--name` | Yes | Name for the element (e.g. `"UsernameField"`, `"LoginButton"`) |
+| `--parent-id` | One required | Screen reference ID (from `ObjectRepository.cs` or `indicate-application` result) |
+| `--parent-name` | One required | Alternative — matches by screen name |
+| `--activity-class-name` | Yes | Interaction type: `"TypeInto"`, `"Click"`, `"GetText"`, etc. |
+| `--description` | No | Description for the element |
 
-*One of `--parent-id` or `--parent-name` is required.
-
-**Example response (JSON):**
+**Example response:**
 ```json
 {
   "Result": "Success",
@@ -323,33 +259,4 @@ rpa-tool indicate-element --name "<ELEMENT_NAME>" --parent-id "<SCREEN_REFERENCE
 }
 ```
 
-After the user completes the indication, Studio regenerates `ObjectRepository.cs`. Re-read it to find the new descriptor path (e.g. `Descriptors.App.Screen.ElementName`) — Studio may normalize the name you requested.
-
----
-
-## Build and Execution Workflow
-
-### Standard Workflow
-
-1. **Validate the file** (forces re-analysis and returns errors in one call)
-   ```bash
-   rpa-tool validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
-   ```
-   - Check the JSON response for errors. If errors exist, fix and re-validate until clean.
-
-2. **Run the workflow**
-   ```bash
-   rpa-tool run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
-   ```
-
-3. **Inspect the result**
-   - Parse `Data.runResult` (it's a JSON string) to get `Output` and `HasErrors`
-   - `HasErrors: false` = success; `HasErrors: true` = runtime error (details in `Output`)
-
-### Iterative Development (Fix -> Validate -> Run Loop)
-
-1. **Make code changes** (Edit tool)
-2. **Validate the file**: `rpa-tool validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json`
-3. If errors: fix and go back to step 2
-4. **Run the workflow**: `rpa-tool run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json`
-5. **Repeat** until workflow succeeds
+After indication, Studio regenerates `ObjectRepository.cs`. Re-read it to find the new descriptor path (e.g. `Descriptors.App.Screen.ElementName`) — Studio may normalize the name.
