@@ -87,10 +87,10 @@ Every `rpa-tool` invocation accepts these flags:
 
 1. **Environment variable** — If `UIPATH_STUDIO_DIR` is set, use its value.
 2. **Default install location** — Check `C:\Program Files\UiPath\Studio` (or `C:\Program Files (x86)\UiPath\Studio`). If `UiPathStudio.exe` exists there, use that path.
-3. **Dev build** — If working from a Studio source tree, use the build output directory (e.g. `<repo-root>\Output\bin\Debug`).
-4. **Run without this parameter** — If none of the above resolves, run the command without the parameter and let the `rpa-tool` decide which Studio to use.
+3. **Run without this parameter** — Try running the command without `--studio-dir` and let `rpa-tool` auto-detect.
+4. **ASK THE USER** — If auto-detection fails (version too old, not found, etc.), **immediately ask the user** where their Studio build is. Do NOT search the filesystem. The user knows where their build is (e.g., a dev build at `dev4/Studio/Output/bin/Debug` or a custom install path).
 
-> **IMPORTANT** When encountering the error `"Studio X.X.X does not have interop support"` it means the auto-detected Studio is too old — passing `--studio-dir "<STUDIO_DIR>"` explicitly resolves this.
+> **IMPORTANT** When encountering the error `"Studio X.X.X does not have interop support"` or `"Requires Studio 26.2+"`, the auto-detected Studio is too old — ask the user for the path to a newer build, then pass `--studio-dir "<STUDIO_DIR>"` explicitly.
 
 ---
 
