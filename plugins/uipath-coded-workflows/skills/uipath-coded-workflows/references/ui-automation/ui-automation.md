@@ -77,20 +77,24 @@ Without this, you get `CS0103: The name 'Descriptors' does not exist in the curr
 
 **How to identify UILibrary packages:** Look in `project.json` → `dependencies` for packages whose names follow the pattern `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation` (e.g. `MyCompany.SalesApp.UILibrary`, `MultipleApps.Descriptors`). These are custom libraries that expose `Descriptors.*` classes for a specific application. If no such package is listed, skip to Step 3.
 
-**Discovery approach — try the inspect-package tool first, fall back to local cache:**
+**Discovery approach — inspect the UILibrary package:**
 
 ```bash
-# Try 1: Inspect the UI Library package listed in project.json
-dotnet <TOOL_DLL> <UILibraryPackageName> <Version>
+# Inspect the UI Library package listed in project.json
+rpa-tool inspect-package --package-name <UILibraryPackageName> --package-version <Version>
 ```
 
 Look for a `Descriptors` class or types ending in `Descriptor` / `ScreenDescriptor` / `ElementDescriptor` in the output.
 
-If the inspect-package tool fails (404 — package is on a private/local feed), **fall back to the local NuGet cache**:
+The tool automatically checks the local NuGet cache (`~/.nuget/packages/`) if the package cannot be downloaded. If the package is already cached locally (e.g. from a private feed), you can also inspect the `.nupkg` file directly:
 
 ```bash
-# Try 2: Find the package in the local NuGet cache
-# The package is already restored since it's in project.json dependencies
+rpa-tool inspect-package --nupkg-path "$HOME/.nuget/packages/<package-name-lowercase>/<version>/<package-name-lowercase>.<version>.nupkg"
+```
+
+If the tool still cannot locate the package, **fall back to reading metadata files manually**:
+
+```bash
 find "$HOME/.nuget/packages/<package-name-lowercase>/<version>" -name ".metadata" -exec cat {} \;
 ```
 
@@ -107,7 +111,7 @@ To find the exact C# descriptor accessor paths (e.g. `Descriptors.UiPath_Banking
 - If the library exposes the descriptor you need → **add the package to `project.json`** (if not already present), add the corresponding `using` statement, and use the descriptor.
 - If there is no usable selector/descriptor in any library → proceed to Step 3.
 
-See [inspect-package-tool-guide.md](../inspect-package-tool-guide.md) for full usage.
+See [inspect-package-tool-guide.md](../inspect-package-tool-guide.md) for full CLI usage and examples.
 
 ---
 
