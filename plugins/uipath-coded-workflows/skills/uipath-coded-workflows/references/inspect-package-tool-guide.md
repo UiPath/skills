@@ -2,59 +2,53 @@
 
 Use this when the static reference files (`references/<service>/examples.md`) don't cover an API, when the user has a different package version, or when you need ground-truth method signatures.
 
-## Tool Location
+## How to Run
 
-**Relative to skill directory:** `scripts/inspect-package/`
+The inspect-package tool is built into the UiPath CLI. No separate build step is needed.
 
-## Before First Use: Build the Tool
+### Inspect a package from a NuGet feed
 
-The build script auto-detects whether a build is needed:
-
-Resolve `SKILL_DIR` — the absolute path to this skill's root directory (the folder containing `SKILL.md`). Determine it by searching upward from this file or by using the skill's known location in the project (e.g. `.claude/skills/uipath-coded-workflow/`).
-
-**macOS / Linux:**
 ```bash
-bash "$SKILL_DIR/scripts/inspect-package/build.sh"
+rpa-tool inspect-package --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
 ```
 
-**Windows:**
-```powershell
-powershell -File "$SKILL_DIR\scripts\inspect-package\build.ps1"
-```
-
-## Usage
-
-**Step 1: Set TOOL_DLL variable** (relative to `SKILL_DIR`)
-
-**macOS / Linux:**
+Or with `uipcli`:
 ```bash
-TOOL_DLL="$SKILL_DIR/scripts/inspect-package/bin/Release/net7.0/InspectPackage.dll"
+uipcli rpa inspect-package --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
 ```
 
-**Windows:**
-```powershell
-$TOOL_DLL="$SKILL_DIR\scripts\inspect-package\bin\Release\net7.0\InspectPackage.dll"
-```
+When `--feed-url` is omitted, the tool downloads from the UiPath Official feed first and falls back to nuget.org.
 
-**Step 2: Run the tool**
+### Inspect a local .nupkg file
+
 ```bash
-dotnet <TOOL_DLL> <PackageName> <Version> [FeedUrl]
+rpa-tool inspect-package --nupkg-path <path/to/package.nupkg>
 ```
+
+Or with `uipcli`:
+```bash
+uipcli rpa inspect-package --nupkg-path <path/to/package.nupkg>
+```
+
+Use this when the package is already cached locally (e.g. from a private feed) or when you have a `.nupkg` file on disk.
 
 ## Examples
 
 ```bash
-# Inspect Excel activities
-dotnet $TOOL_DLL UiPath.Excel.Activities 3.3.1
+# Inspect Excel activities from UiPath feed
+rpa-tool inspect-package --package-name UiPath.Excel.Activities --package-version 3.3.1
 
 # Inspect a specific version the user has
-dotnet $TOOL_DLL UiPath.System.Activities 25.12.2
+rpa-tool inspect-package --package-name UiPath.System.Activities --package-version 25.12.2
 
 # Inspect from a custom feed
-dotnet $TOOL_DLL MyPackage 1.0.0 https://my-feed/v3/index.json
+rpa-tool inspect-package --package-name MyPackage --package-version 1.0.0 --feed-url https://my-feed/v3/index.json
 
 # Inspect third-party package from nuget.org
-dotnet $TOOL_DLL CsvHelper 33.0.1
+rpa-tool inspect-package --package-name CsvHelper --package-version 33.0.1
+
+# Inspect a local .nupkg file directly
+rpa-tool inspect-package --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
 ```
 
 ## Finding the Latest Stable Version
@@ -93,11 +87,12 @@ Replace `<package-name-lowercase>` with the package ID in lowercase (e.g. `uipat
 
 ## Output
 
-Structured markdown listing all public types, methods, properties, and enums from the package DLLs. Diagnostic messages go to stderr; only the markdown report goes to stdout.
+Structured markdown listing all public types, methods, properties, enums, delegates, and events from the package DLLs. The tool performs framework-aware DLL selection and recursive dependency resolution (up to depth 2).
 
 ## Requirements & Notes
 
-- Requires `dotnet` SDK 7.0+ on the machine
+- Requires `rpa-tool` or `uipcli` to be available on PATH
 - Downloads from the UiPath Official feed first, then falls back to nuget.org — so it works with **any** NuGet package, not just UiPath ones
+- The tool automatically checks the local NuGet cache at `~/.nuget/packages/` when a package cannot be downloaded
+- For local `.nupkg` files (e.g. packages from private feeds already cached locally), use `--nupkg-path` to skip the download entirely
 - Some packages are metapackages with no DLLs (e.g. `Humanizer`). If you get "No DLLs found", try the `.Core` sub-package (e.g. `Humanizer.Core`)
-- DLLs with missing transitive dependencies will show a load error — this is expected and harmless; the public API assemblies load fine
