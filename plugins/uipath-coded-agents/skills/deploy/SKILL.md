@@ -1,50 +1,54 @@
 ---
-description: Deploy UiPath coded agents to Orchestrator - pack, publish, and invoke
+name: deploy
+description: Deploy UiPath coded agents to Orchestrator. Handles packaging into .nupkg, publishing to feeds, the combined deploy command, and invoking published agents in the cloud. Use when the user says "deploy my agent", "publish to Orchestrator", "pack my agent", or "ship it to production".
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
-# Deploying UiPath Agents
+# Deploy UiPath Agents
 
-Deploy your UiPath coded agents to the cloud with pack, publish, and invoke commands.
+Package, publish, and invoke your agents in UiPath Cloud.
+
+## Quick Reference
+
+```bash
+# Pack + publish in one command
+uv run uipath deploy --my-workspace
+
+# Or step by step
+uv run uipath pack
+uv run uipath publish --my-workspace
+
+# Invoke published agent — use entrypoint name from entry-points.json, NOT project name
+uv run uipath invoke <ENTRYPOINT> '{"query": "test"}'
+```
 
 ## Documentation
 
-- **[Deployment Guide](references/deployment.md)** - Complete deployment workflow
-  - `uipath pack` - Package into .nupkg
-  - `uipath publish` - Upload to Orchestrator feed
-  - `uipath deploy` - Pack + publish in one step
-  - `uipath invoke` - Execute published agents
-  - Configuration and environment variables
+- **[Deployment Guide](references/deployment.md)** — Complete deployment workflow
+  - `uipath pack` — Package into .nupkg with validation
+  - `uipath publish` — Upload to Orchestrator feed (--my-workspace, --tenant, --folder)
+  - `uipath deploy` — Combined pack + publish
+  - `uipath invoke` — Execute published agents in cloud
+  - Pack options (`packOptions` in `uipath.json`)
+  - Configuration files and environment variables
 
-## Workflow Commands
+## Prerequisites
 
-1. **[Authenticate](/uipath-coded-agents:authentication)** with UiPath
+- Authentication configured — if not authenticated, use the [Auth skill](/uipath-coded-agents:auth) first
+- `entry-points.json` exists (run `uv run uipath init`)
+- `pyproject.toml` has `name`, `version`, `description`, `authors`
 
-2. **Pack** your project into a `.nupkg` file:
-   ```bash
-   uv run uipath pack
-   ```
+## Troubleshooting
 
-3. **Publish** to a UiPath feed:
-   ```bash
-   uv run uipath publish --my-workspace
-   ```
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` section |
+| `Pack failed: missing fields` | `pyproject.toml` incomplete | Ensure `name`, `version`, `description`, and `authors` are all set |
+| `Version already exists` | Same version already published | Bump the patch version in `pyproject.toml` before re-deploying |
+| `401 Unauthorized` | Auth expired or not configured | Re-run `uv run uipath auth --cloud --tenant <TENANT>` |
 
-4. Or use **Deploy** (shorthand for pack + publish):
-   ```bash
-   uv run uipath deploy --my-workspace
-   ```
+## Additional Instructions
 
-5. **Invoke** the published agent:
-   ```bash
-   uv run uipath invoke <entrypoint> '<json-input>'
-   ```
-
-> **Note:** You must learn how to use `run` and `invoke` commands in detail, refer to [Execute Agents](/uipath-coded-agents:execute), before executing agents locally (run) or on cloud (invoke).
-
-## Next Steps
-
-- **Building your first agent?** See [Building Agents](/uipath-coded-agents:build)
-- **Need help with authentication?** See [Authentication Setup](/uipath-coded-agents:authentication)
-- **Want to test before deploying?** See [Running Agents](/uipath-coded-agents:execute) and [Evaluating Agents](/uipath-coded-agents:evaluate)
+- Read the [deployment reference](references/deployment.md) for details on pack options and feed selection.
+- Always test locally with `uv run uipath run <ENTRYPOINT>` before deploying.

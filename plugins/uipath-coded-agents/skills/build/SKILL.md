@@ -1,73 +1,57 @@
 ---
-description: Setup and build UiPath coded agents with UiPath SDK services, agent patterns, tracing and best  practices
-allowed-tools: Bash, Read, Write, Glob, Grep
+name: build
+description: Build UiPath coded agents with framework-specific patterns. Covers simple functions, LangGraph, LlamaIndex, and OpenAI Agents including SDK services, tracing, interrupts, RAG, and multi-agent orchestration. Use when the user has an existing project and says "implement the agent logic", "write the agent code", "add tools to my agent", or "modify the agent".
+allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
 
-# Building UiPath Agents
+# Build UiPath Agents
 
-Create robust, type-safe UiPath coded agents with monitoring and observability built-in.
+Implement agent logic using UiPath SDK and framework-specific patterns.
 
-## Documentation
+## Reference Lookup
 
-### Project Setup
-- **[Project Setup Guide](references/setup.md)** - Set up new or existing agent projects
-  - Prerequisites and environment setup
-  - Choose your agent type (Simple, LangGraph, LlamaIndex, OpenAI)
-  - Create and scaffold projects
-  - Configure dependencies
+Read **only** the reference matching the selected framework. Do NOT load other framework references.
 
-### Framework-Specific Guides
-For detailed integration guides, see the dedicated skills:
-- **[LangGraph Integration](/uipath-coded-agents:langgraph)** - Multi-step agents with StateGraph
-- **[LlamaIndex Integration](/uipath-coded-agents:llamaindex)** - Event-driven agents with RAG
-- **[OpenAI Agents Integration](/uipath-coded-agents:openai-agents)** - Lightweight tool-using agents
+| Framework | Reference |
+|-----------|-----------|
+| Simple Function | `references/simple-agents.md` + `references/agent-patterns.md` |
+| LangGraph | `references/langgraph-integration.md` |
+| LlamaIndex | `references/llamaindex-integration.md` |
+| OpenAI Agents | `references/openai-agents-integration.md` |
 
-### Agent Patterns
-- **[Agent Patterns](references/agent-patterns.md)** - Common implementation patterns
-  - Simple Direct Agent
-  - SDK Integration Agent
-  - LangGraph Workflow Agent
-  - Human-in-the-Loop Agent
-  - RAG Agent
-  - Chat Agent
-  - Multi-Agent Supervisor
+Load capability references **only if the task requires them** — do not preload:
 
-### SDK Services
-- **[SDK Services Reference](references/sdk-services.md)** - Full API reference
-  - SDK initialization
-  - All available platform services
-  - Async usage patterns
-  - Error handling
+| Capability | Reference | Load when... |
+|------------|-----------|-------------|
+| RPA process invocation | `references/process-invocation.md` | agent invokes UiPath processes/jobs |
+| Human approval / interrupt | `references/human-in-the-loop.md` | agent needs human-in-the-loop or pause/resume |
+| RAG / context grounding | `references/context-grounding.md` | agent searches organization documents |
+| Platform API calls | `references/sdk-services.md` | agent uses UiPath platform services directly |
+| Tracing / monitoring | `references/tracing.md` | agent needs custom tracing (Simple Function only — LangGraph traces automatically) |
 
-### Monitoring & Tracing
-- **[Tracing Guide](references/tracing.md)** - Add monitoring and debugging
-  - Basic tracing with `@traced()` decorator
-  - Custom span names and run types
-  - Data protection and privacy
-  - Viewing traces in Orchestrator
+## Framework Reference
 
-## Quick Start Template
+| Framework | Config File | Key Dependency | Entry Point |
+|-----------|------------|----------------|-------------|
+| Simple Function | `uipath.json` | `uipath` | `main.py` function |
+| LangGraph | `langgraph.json` | `uipath-langchain` | `main.py` compiled StateGraph |
+| LlamaIndex | `llama_index.json` | `uipath-llamaindex` | `main.py` Workflow instance |
+| OpenAI Agents | `openai_agents.json` | `uipath-openai-agents` | `main.py` Agent instance |
 
-A template `pyproject.toml` is available in the assets to help you bootstrap your project.
+## Troubleshooting
 
-**After copying the template**, replace the placeholder values:
-- `{AGENT_NAME}` — your agent's package name (e.g., `my-invoice-agent`)
-- `{AGENT_DESCRIPTION}` — a short description of what your agent does
-
-## Post-Init Cleanup
-
-After running `uv run uipath init`, you'll see generated `CLAUDE.md`, `.claude` and `.agent/` files. Since the plugin provides comprehensive documentation, you can safely delete these:
-
-Therefore, this is the only acceptable way to run init:
-```
-`uv run uipath init && rm CLAUDE.md && rm -rf .agent .claude`
-```
-
-## Next Steps
-
-- Ready to run your agent? See [Executing Agents](/uipath-coded-agents:execute)
-- Want to test your agent? See [Evaluating Agents](/uipath-coded-agents:evaluate)
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `'dict' has no attribute '...'` | `with_structured_output()` returns a dict, not a Pydantic model | Access results with `result['key']` dict syntax, not `result.key` attribute access |
+| `ImportError: Could not import <package>` | External tool package not in `pyproject.toml` | Add all third-party tool packages to dependencies: `uv add <package>` |
+| Agent returns empty output | Entry point not wired correctly | Verify `main.py` exports the correct object (compiled graph, Workflow, Agent) |
+| `TypeError` on Input/Output | Schema mismatch after code change | Re-run `uv run uipath init` to regenerate `entry-points.json` |
 
 ## Additional Instructions
-- You MUST ALWAYS read the relevant linked references before making assumptions!
+
+- **Select a framework before writing any code.** Infer from the prompt if possible (tools/orchestration → LangGraph, RAG → LlamaIndex, simple LLM → OpenAI Agents, no LLM → Simple Function). If ambiguous, ask the user to choose.
+- **Read ONLY the single framework reference** for the selected framework before writing code. Do NOT read other framework references or capability references unless the task explicitly requires that capability.
+- **NEVER instantiate LLM clients at module level.** `uipath init` imports your Python file to introspect schemas — module-level `UiPathAzureChatOpenAI()`, `UiPathChat()`, or `UiPathChatOpenAI()` will fail because auth may not have happened yet. Always create LLM instances inside functions or graph nodes, never at the top level of the module.
+- LangGraph agents get tracing automatically — no `@traced()` needed on graph nodes.
+- Simple function agents require `@traced()` on the `main` function.

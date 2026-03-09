@@ -110,7 +110,7 @@ If no flag is specified, the CLI displays an interactive menu to select the targ
 
 ### Authentication
 
-See [Authentication Setup](/uipath-coded-agents:authentication) to configure these environment variables:
+Authentication configures these environment variables:
 - `UIPATH_URL` - Base URL of your UiPath instance
 - `UIPATH_ACCESS_TOKEN` - Bearer token for authorization
 
@@ -152,7 +152,7 @@ uv run uipath deploy ./my-agent --my-workspace
 
 ## Execute
 
-To run and test your published agent, see [Execute Agents](/uipath-coded-agents:execute).
+To run and test your published agent, use `uv run uipath invoke <entrypoint> '<json-input>'`. This is async — it returns a monitoring URL immediately. There is NO `--wait` flag.
 
 ---
 
@@ -175,19 +175,26 @@ To run and test your published agent, see [Execute Agents](/uipath-coded-agents:
 | `UIPATH_ACCESS_TOKEN` | publish, deploy, invoke | Bearer token for API auth |
 | `UIPATH_FOLDER_PATH` | optional | Default folder context |
 
-These are set automatically by [Authentication Setup](/uipath-coded-agents:authentication).
+These are set automatically by `uv run uipath auth`.
+
+## Version Bumping
+
+Publishing fails with `409 Package already exists` if the version was already published. **Before re-deploying, bump the patch version** in `pyproject.toml`:
+
+```toml
+[project]
+version = "0.0.2"  # was 0.0.1
+```
+
+On re-deploy, always increment the patch number (e.g., `0.0.1` → `0.0.2` → `0.0.3`). Only bump minor/major for breaking or feature changes.
 
 ## Typical Deployment Flow
 
-1. [Authenticate](/uipath-coded-agents:authentication) with UiPath
+1. Authenticate with `uv run uipath auth --cloud --tenant <TENANT>`
 2. Test locally: `uv run uipath run main '<input-json>'`
-3. Deploy: `uv run uipath deploy --my-workspace`
-4. Invoke published agent: `uv run uipath invoke main '<input-json>'`
+3. Bump version in `pyproject.toml` if re-deploying
+4. Deploy: `uv run uipath deploy --my-workspace`
+5. Invoke published agent: `uv run uipath invoke main '<input-json>'`
 
-> **Note:** See [Execute Agents](/uipath-coded-agents:execute) for details on the `run` and `invoke` commands.
+> **Note:** Use `uv run uipath run` for local testing and `uv run uipath invoke` for cloud execution.
 
-## Next Steps
-
-- **Set up a project**: See [Project Setup](/uipath-coded-agents:build) for setting up new or existing agent projects
-- **Test locally**: See [Running Agents](/uipath-coded-agents:execute) before deploying
-- **Add evaluations**: See [Evaluating Agents](/uipath-coded-agents:evaluate) to validate agent quality

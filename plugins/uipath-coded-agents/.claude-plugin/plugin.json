@@ -1,12 +1,12 @@
 {
   "name": "uipath-coded-agents",
   "version": "0.0.1",
-  "description": "Create, run, and evaluate UiPath coded agents with AI-powered assistance",
+  "description": "End-to-end toolkit for UiPath coded agents: scaffold projects, authenticate with UiPath Cloud, build agents using LangGraph/LlamaIndex/OpenAI Agents SDK, run locally or in the cloud, evaluate with built-in evaluators, deploy to Orchestrator, and sync with Studio Web",
   "author": {
     "name": "UiPath"
   },
   "license": "MIT",
-  "homepage": "https://github.com/UiPath/uipath-claude-plugins",
-  "repository": "https://github.com/UiPath/uipath-claude-plugins",
-  "keywords": ["uipath", "automation", "rpa", "agent", "evaluation"]
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": "https://github.com/UiPath/skills",
+  "keywords": ["uipath", "automation", "rpa", "agent", "coded-agent", "evaluation", "orchestrator", "langgraph", "llamaindex", "openai-agents", "deploy", "scaffold"]
 }

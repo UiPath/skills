@@ -1,72 +1,92 @@
 ---
-description: Build and evaluate UiPath coded agent evaluations
+name: evaluate
+description: Create and run evaluations for UiPath coded agents. Handles evaluator setup, test case design, evaluation execution with uipath eval, and result analysis. Supports ExactMatch, Contains, JsonSimilarity, LLMJudge, Trajectory, ToolCall, and Classification evaluators. Use when the user says "evaluate my agent", "run evals", "create test cases", or "test agent quality".
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
-# Evaluating UiPath Agents
+# Evaluate UiPath Agents
 
-Design and run comprehensive tests for your UiPath coded agents using the evaluation framework.
+Design and run tests for your agents using the UiPath evaluation framework.
 
-## Overview
+## Prerequisites
 
-The evaluation framework provides:
-- Multiple evaluator types (output-based and trajectory-based)
-- Test case organization and schema validation
-- Mocking capabilities for external dependencies
-- Performance analysis and metrics
+- Authentication configured — if not authenticated, use the [Auth skill](/uipath-coded-agents:auth) first
+- `UIPATH_PROJECT_ID` set in `.env` (agent must be pushed to Studio Web before running evals)
+- `entry-points.json` exists (run `uv run uipath init`)
+
+## Quick Reference
+
+```bash
+# Run evaluations — ENTRYPOINT is the name from entry-points.json, NOT the project name
+uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --workers 4
+
+# With output file
+uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --output-file results.json
+```
 
 ## Documentation
 
-### Framework Overview
-- **[Evaluations Overview](references/evaluations.md)** - Framework introduction
-  - Output-based evaluators for result validation
-  - Trajectory-based evaluators for execution flow analysis
-  - Test case organization
-  - Mocking external dependencies
+- **[Evaluators Reference](references/evaluators.md)** — All evaluator types, configs, scoring, and `evaluatorTypeId` values
+- **[Evaluation Sets](references/evaluation-sets.md)** — Test case file format, mocking strategies, and examples
+- **[Creating Evaluations](references/creating-evaluations.md)** — Test case design and organization
+- **[Running Evaluations](references/running-evaluations.md)** — Command options, score interpretation, troubleshooting
+- **[Best Practices](references/best-practices.md)** — Patterns by agent type, CI/CD integration
 
-### Creating Tests
-- **[Creating Evaluations](references/evaluations/creating-evaluations.md)** - Design test cases
-  - Define evaluation scenarios
-  - Collect test inputs and expected outputs
-  - Organize by scenario type
-  - Schema validation
+## File Structure
 
-### Evaluator Types
-- **[Evaluators Guide](references/evaluations/evaluators/README.md)** - Understand evaluator types
-  - Output-based evaluators: ExactMatch, JsonSimilarity, LLMJudgeOutput, Contains
-  - Trajectory-based evaluators: Trajectory
-  - Custom evaluators
-  - Evaluator selection guide
+```
+evaluations/
+├── eval-sets/
+│   └── smoke-test.json              # Test cases
+└── evaluators/
+    └── llm-judge-trajectory.json    # Evaluator config (REQUIRED)
+```
 
-### Test Organization
-- **[Evaluation Sets](references/evaluations/evaluation-sets.md)** - Structure your tests
-  - Evaluation set file format
-  - Test case schema
-  - Mocking strategies
-  - Complete examples
+**Every evaluator referenced in `evaluatorRefs` must have a matching config file in `evaluations/evaluators/`.** The `id` field in the config must match the `evaluatorRefs` value exactly.
 
-### Execution & Analysis
-- **[Running Evaluations](references/evaluations/running-evaluations.md)** - Execute and analyze
-  - Running test suites
-  - Understanding results
-  - Performance analysis
-  - Troubleshooting
+Example `evaluations/evaluators/llm-judge-trajectory.json`:
+```json
+{
+  "version": "1.0",
+  "id": "LLMJudgeTrajectoryEvaluator",
+  "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+  "evaluatorConfig": {
+    "name": "LLMJudgeTrajectoryEvaluator",
+    "defaultEvaluationCriteria": {
+      "expectedAgentBehavior": "Agent should process the input and return a response."
+    }
+  }
+}
+```
 
-### Best Practices
-- **[Evaluation Best Practices](references/evaluations/best-practices.md)** - Patterns and optimization
-  - Common patterns by agent type (Calculator, NLP, Orchestration, API)
-  - Test organization strategies
-  - Performance optimization
+## Mocking External Calls
 
-## Workflow
+Apply `@mockable()` to functions that call external services:
 
-1. Build your agent with [Building Agents](/uipath-coded-agents:build)
-2. Test it manually with [Running Agents](/uipath-coded-agents:execute)
-3. Design evaluation test cases with [Creating Evaluations](references/evaluations/creating-evaluations.md)
-4. Select appropriate evaluators from [Evaluators Guide](references/evaluations/evaluators/README.md)
-5. Run evaluations and analyze results with [Running Evaluations](references/evaluations/running-evaluations.md)
+```python
+from uipath.testing import mockable
+
+@mockable(example_calls=[
+    {"args": {"query": "weather in NYC"}, "return_value": {"temp": 72, "condition": "sunny"}},
+])
+def fetch_weather(query: str) -> dict:
+    return call_weather_api(query)
+```
+
+During evaluations, matching args return the mock value. During normal execution, the real function runs.
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `typing.Any must be a subclass of BaseEvaluatorConfig` | Invalid `evaluatorTypeId` in evaluator JSON | Check `references/evaluators.md` for valid evaluator type IDs |
+| `target_output_key: Input should be a valid string` | ContainsEvaluator missing required config | Set `"target_output_key"` to the output field name in the evaluator JSON |
+| `UIPATH_PROJECT_ID not found` | Agent not pushed to Studio Web | Run `uv run uipath push` first — set `UIPATH_PROJECT_ID=<id>` in `.env` |
+| All scores are 0 | Mock data missing or wrong args | Check `@mockable()` `example_calls` match the args used in eval set inputs |
 
 ## Additional Instructions
-- For project setup and agent patterns, see [Building Agents](/uipath-coded-agents:build)
-- If you are unsure about usage, read the linked evaluation references before making assumptions.
+
+- Read [Evaluators Reference](references/evaluators.md) first to choose the right evaluator.
+- Read [Evaluation Sets](references/evaluation-sets.md) for file format before creating test cases.
+- Evaluators are auto-discovered from `evaluations/evaluators/` — the `id` field must match `evaluatorRefs` in eval sets.

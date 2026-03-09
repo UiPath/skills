@@ -2,10 +2,7 @@
 
 Common implementation patterns for building UiPath coded agents, from simple functions to multi-agent orchestrations.
 
-> **Note:** These patterns are general architectural concepts applicable to any integration. The code examples below use **LangGraph** and the **UiPath Python SDK**. The same patterns can be implemented with other frameworks — see their integration guides for framework-specific code:
-> - **[LangGraph Integration](/uipath-coded-agents:langgraph)** — StateGraph, conditional edges, `UiPathAzureChatOpenAI`
-> - **[LlamaIndex Integration](/uipath-coded-agents:llamaindex)** — Workflow, FunctionAgent, `UiPathOpenAI`, Context Grounding RAG
-> - **[OpenAI Agents Integration](/uipath-coded-agents:openai-agents)** — Agent with tools, structured output, handoffs
+> **Note:** These patterns are general architectural concepts. The code examples use **LangGraph** and the **UiPath Python SDK**. The same patterns apply to LlamaIndex and OpenAI Agents — see their respective integration references.
 
 ## ⚠️ Before You Start: Setup Required
 
@@ -120,7 +117,7 @@ async def main(input: Input) -> Output:
 
 Multi-step agent using LangGraph's `StateGraph` with nodes, edges, and conditional routing. Supports LLM-powered decisions.
 
-> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the **[LangGraph Integration Guide](/uipath-coded-agents:langgraph)** for project setup, `langgraph.json` configuration, entrypoint detection, and troubleshooting.
+> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
 
 **When to use:** Classification workflows, multi-step reasoning, conditional branching based on LLM output.
 
@@ -389,21 +386,7 @@ graph = builder.compile()
 
 ## Common Building Blocks
 
-These patterns appear across all agent types:
-
-**Pydantic models** — Every agent defines `Input` and `Output` (or `GraphInput`/`GraphOutput`) as Pydantic `BaseModel` subclasses. Run `uv run uipath init` after changing them to regenerate schemas.
-
-**`@traced()` decorator** — Apply to your `main` function and key helper functions. LangGraph agents get tracing automatically. See [Tracing](tracing.md) for advanced options.
-
-**`@mockable()` decorator** — Wrap functions that call external services to enable mocking during evaluations. Define `example_calls` for deterministic test behavior.
-
-**Async support** — All patterns support `async def main(...)`. SDK methods have `_async` variants. LangGraph nodes should use `async def` for LLM calls.
-
----
-
-## Next Steps
-
-- **[Project Setup](setup.md)** — Set up new or existing agent projects
-- **[SDK Services](sdk-services.md)** — Full API reference for all UiPath platform services
-- **[Tracing](tracing.md)** — Configure monitoring, privacy, and custom spans
-
+- **Pydantic models** — Every agent defines `Input`/`Output` (or `GraphInput`/`GraphOutput`) as `BaseModel` subclasses. Run `uv run uipath init` after changing them.
+- **`@traced()`** — Apply to `main` and key helpers. LangGraph agents get tracing automatically.
+- **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking.
+- **Async** — All patterns support `async def main(...)`. SDK methods have `_async` variants.

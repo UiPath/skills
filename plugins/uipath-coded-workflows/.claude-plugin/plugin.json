@@ -6,8 +6,8 @@
     "name": "UiPath"
   },
   "license": "MIT",
-  "homepage": "https://github.com/UiPath/uipath-claude-plugins",
-  "repository": "https://github.com/UiPath/uipath-claude-plugins",
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": "https://github.com/UiPath/skills",
   "keywords": ["uipath", "automation", "rpa", "code"],
   "skills": "./skills/",
   "hooks": "./hooks/hooks.json"
