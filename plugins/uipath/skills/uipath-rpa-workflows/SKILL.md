@@ -323,7 +323,24 @@ uipcli rpa find-activities --query "read range" --limit 10 --format json
 **Do NOT use when:**
 - You already know the exact activity to use and its exact fully qualified class name and/or type ID and can directly get the default XAML
 
-### Step 1.5: Resolve Activity Properties
+### Step 1.5: Disambiguate Service / Provider
+
+This step requires `find-activities` results from Step 1.4. **Do NOT ask the user to choose a service or provider based on general knowledge** — only disambiguate based on what the search actually returned.
+
+Review the `find-activities` results and check whether they contain **multiple competing packages or connectors** for the same capability (e.g., email: O365 vs Gmail vs SMTP vs Outlook; storage: OneDrive vs Google Drive vs SharePoint).
+
+**Skip disambiguation** (proceed directly to Step 1.6) when **any** of these are true:
+- The user already specified the provider (e.g., "send email via O365", "use Gmail")
+- Only one package/connector matches the search
+- The project already has a relevant package installed (check `dependencies` in `project.json` from Step 1.1) — prefer reusing what is already there
+
+**When the results show multiple competing options**, ask the user to choose before continuing:
+1. Present the top 2–4 choices from the search results
+2. Mark the recommended option with **(Recommended)** — prefer the option that is already installed, or the most modern/full-featured option
+3. Include a one-line description for each option noting key differences (e.g., modern vs legacy, requires IS connection vs protocol-based, cloud-only vs on-premise)
+4. After the user picks, continue to Step 1.6 using **only the chosen package/connector** — discard the alternatives from consideration
+
+### Step 1.6: Resolve Activity Properties
 
 When you need to insert or edit a specific activity, use `uipcli rpa get-default-activity-xaml` to retrieve the activity's default XAML template, its properties, and the default values. Use it as a starting point for configuring new activities. This default representation is a crucial starting point as it ensures that Studio can properly render and parse the activity.
 
@@ -364,7 +381,7 @@ Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
 
 For more details, see **[jit-custom-types-schema.md](./references/jit-custom-types-schema.md)**
 
-### Step 1.6: Get Current Context
+### Step 1.7: Get Current Context
 
 Before generating, understand reusable elements by combining multiple reads:
 
@@ -386,7 +403,7 @@ This provides:
 - Whether the project is C# or VB (`expressionLanguage` in `project.json`, or check for `Microsoft.VisualBasic` in imports)
 - Available assets, connections, queues, credentials, and other project-level or global-level resources
 
-### Step 1.7: Discover Connector Capabilities (For IS/Connector Workflows)
+### Step 1.8: Discover Connector Capabilities (For IS/Connector Workflows)
 
 When the workflow involves Integration Service connectors (e.g., Salesforce, Jira, ServiceNow), explore the connector's capabilities before writing XAML:
 
@@ -669,6 +686,7 @@ When `uipcli` commands fail, diagnose by error category:
 - Skip searching the examples repository with `uipcli rpa list-workflow-examples`
 - Use incorrect/guessed keys with `uipcli rpa get-workflow-example` (always use keys from list results)
 - Guess activity class names or type IDs (use `uipcli rpa find-activities` to find the exact type ID and FQDN class name first)
+- Ask the user to choose a service provider based on general knowledge — only disambiguate based on actual `find-activities` results (Step 1.5)
 - Skip `uipcli rpa find-activities` when unsure which activity implements a user-described action
 - Guess dynamic activity property names or types without using `uipcli rpa get-default-activity-xaml` with `--activity-type-id`
 - Pass absolute paths to `--file-path` in `get-errors` (must be relative to project directory)
@@ -691,6 +709,7 @@ Before handover, verify:
 - [ ] Relevant examples were retrieved and studied with `uipcli rpa get-workflow-example`
 - [ ] Local project was explored for existing patterns and workflows
 - [ ] Activities were discovered with `uipcli rpa find-activities`
+- [ ] Service/provider disambiguation was handled when `find-activities` returned competing options (Step 1.5)
 - [ ] Started with a safe default XAML structure using `uipcli rpa get-default-activity-xaml` (with correct parameters for dynamic vs non-dynamic)
 - [ ] Activity properties were resolved with `uipcli rpa get-default-activity-xaml` (for dynamic activities custom types, see the "Resolving Dynamic Activity Custom Types" section)
 - [ ] For connector workflows: connections verified with `uipcli is connections list`
