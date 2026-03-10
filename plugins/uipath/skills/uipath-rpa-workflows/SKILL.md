@@ -332,11 +332,10 @@ Review the `find-activities` results and check whether they contain **multiple c
 **Skip disambiguation** (proceed directly to Step 1.6) when **any** of these are true:
 - The user already specified the provider (e.g., "send email via O365", "use Gmail")
 - Only one package/connector matches the search
-- The project already has a relevant package installed (check `dependencies` in `project.json` from Step 1.1) — prefer reusing what is already there
 
 **When the results show multiple competing options**, ask the user to choose before continuing:
 1. Present the top 2–4 choices from the search results
-2. Mark the recommended option with **(Recommended)** — prefer the option that is already installed, or the most modern/full-featured option
+2. Mark the recommended option with **(Recommended)** — prefer the option that is already installed (check `dependencies` in `project.json` from Step 1.1), or the most modern/full-featured option
 3. Include a one-line description for each option noting key differences (e.g., modern vs legacy, requires IS connection vs protocol-based, cloud-only vs on-premise)
 4. After the user picks, continue to Step 1.6 using **only the chosen package/connector** — discard the alternatives from consideration
 
