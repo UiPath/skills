@@ -19,10 +19,10 @@
       "keywords": ["uipath", "automation", "rpa", "agent", "evaluation"]
     },
     {
-      "name": "uipath-coded-workflows",
-      "source": "./plugins/uipath-coded-workflows",
+      "name": "uipath",
+      "source": "./plugins/uipath",
       "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath coded automation workflows",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "author": {
         "name": "UiPath"
       },
