@@ -31,4 +31,37 @@ wheels/
 site
 
 
-**/.claude/*
+# =============================================================================
+# Keep team-shared configurations:
+#   .claude/settings.json - Hooks, permissions (team settings)
+#   .claude/commands/*.md - Slash commands
+#   .claude/agents/*.md - Specialized agents
+#   .claude/skills/**/*.md - Domain knowledge
+#
+# Ignore personal/generated artifacts:
+
+# Testing framework artifacts (analysis/evaluation documents)
+.claude/testing-framework/
+
+# Local overrides (personal settings)
+.claude/settings.local.json
+.claude/*.local.json
+.claude/**/*.local.md
+.claude/**/*local*
+
+# Claude Code cache and temporary files
+.claude/cache/
+.claude/tmp/
+.claude/.cache/
+
+# Session-specific outputs
+.claude/outputs/
+.claude/sessions/
+
+# Personal notes and drafts
+.claude/drafts/
+.claude/notes/
+.claude/**/*.draft.md
+
+# Hook scripts that may contain personal paths
+.claude/hooks/*.local.*
