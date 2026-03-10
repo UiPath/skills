@@ -7,6 +7,12 @@
 set -e
 
 # ── helpers ──────────────────────────────────────────────────────────
+fail() {
+  echo "$1" >&2
+  echo "Please install Node.js from https://nodejs.org and restart your session." >&2
+  exit 2
+}
+
 ensure_npm() {
   command -v npm &> /dev/null && return
 
@@ -48,12 +54,6 @@ ensure_npm() {
     echo "Please restart your terminal, then run: npm install -g @uipath/uipcli" >&2
     exit 2
   fi
-}
-
-fail() {
-  echo "$1" >&2
-  echo "Please install Node.js from https://nodejs.org and restart your session." >&2
-  exit 2
 }
 
 ensure_npm_package() {
