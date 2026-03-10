@@ -325,19 +325,23 @@ uipcli rpa find-activities --query "read range" --limit 10 --format json
 
 ### Step 1.5: Disambiguate Service / Provider
 
-This step requires `find-activities` results from Step 1.4. **Do NOT ask the user to choose a service or provider based on general knowledge** — only disambiguate based on what the search actually returned.
+This step requires `find-activities` results from Step 1.4.
 
-Review the `find-activities` results and check whether they contain **multiple competing packages or connectors** for the same capability (e.g., email: O365 vs Gmail vs SMTP vs Outlook; storage: OneDrive vs Google Drive vs SharePoint).
+When results contain multiple competing packages for the same capability (e.g., O365 vs Gmail vs SMTP for email), determine the correct one using these signals — **do not ask the user unless all signals are ambiguous:**
 
-**Skip disambiguation** (proceed directly to Step 1.6) when **any** of these are true:
-- The user already specified the provider (e.g., "send email via O365", "use Gmail")
-- Only one package/connector matches the search
+**Auto-select** (skip prompting) when **any** of these are true:
+- The user specified the provider (e.g., "send email via O365", "use Gmail")
+- Only one package matches the search
+- The project already has one of the competing packages installed (`dependencies` in `project.json`)
+- The project defines a connection matching one of the options
+- The workflow already uses activities from one of the packages — stay consistent with what's there
+- If packages are legacy/deprecated and it's clear which is the modern one
 
-**When the results show multiple competing options**, ask the user to choose before continuing:
+**Prompt only as a last resort** — when multiple viable options exist and none of the above signals apply:
 1. Present the top 2–4 choices from the search results
-2. Mark the recommended option with **(Recommended)** — prefer the option that is already installed (check `dependencies` in `project.json` from Step 1.1), or the most modern/full-featured option
-3. Include a one-line description for each option noting key differences (e.g., modern vs legacy, requires IS connection vs protocol-based, cloud-only vs on-premise)
-4. After the user picks, continue to Step 1.6 using **only the chosen package/connector** — discard the alternatives from consideration
+2. Mark the recommended option with **(Recommended)** — prefer the most modern/full-featured option
+3. Include a one-line difference for each (e.g., "requires Integration Service connection" vs "protocol-based, works on-premise")
+4. Continue with **only** the chosen package
 
 ### Step 1.6: Resolve Activity Properties
 
@@ -685,7 +689,7 @@ When `uipcli` commands fail, diagnose by error category:
 - Skip searching the examples repository with `uipcli rpa list-workflow-examples`
 - Use incorrect/guessed keys with `uipcli rpa get-workflow-example` (always use keys from list results)
 - Guess activity class names or type IDs (use `uipcli rpa find-activities` to find the exact type ID and FQDN class name first)
-- Ask the user to choose a service provider based on general knowledge — only disambiguate based on actual `find-activities` results (Step 1.5)
+- Ask the user to choose a service provider without first checking project signals (installed packages, connections, existing activities) — auto-select when possible (Step 1.5)
 - Skip `uipcli rpa find-activities` when unsure which activity implements a user-described action
 - Guess dynamic activity property names or types without using `uipcli rpa get-default-activity-xaml` with `--activity-type-id`
 - Pass absolute paths to `--file-path` in `get-errors` (must be relative to project directory)
@@ -708,7 +712,7 @@ Before handover, verify:
 - [ ] Relevant examples were retrieved and studied with `uipcli rpa get-workflow-example`
 - [ ] Local project was explored for existing patterns and workflows
 - [ ] Activities were discovered with `uipcli rpa find-activities`
-- [ ] Service/provider disambiguation was handled when `find-activities` returned competing options (Step 1.5)
+- [ ] Service/provider disambiguation was resolved — auto-selected or prompted when all signals were ambiguous (Step 1.5)
 - [ ] Started with a safe default XAML structure using `uipcli rpa get-default-activity-xaml` (with correct parameters for dynamic vs non-dynamic)
 - [ ] Activity properties were resolved with `uipcli rpa get-default-activity-xaml` (for dynamic activities custom types, see the "Resolving Dynamic Activity Custom Types" section)
 - [ ] For connector workflows: connections verified with `uipcli is connections list`
