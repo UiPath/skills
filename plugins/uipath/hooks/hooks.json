@@ -8,7 +8,7 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uipcli.sh\"",
             "timeout": 120,
             "once": true,
-            "statusMessage": "Checking uipcli installation..."
+            "statusMessage": "Checking uipcli and rpa-tool installation..."
           }
         ]
       }
