@@ -13,7 +13,7 @@ This skill uses `uipcli` CLI commands (via `Bash`) and Claude Code's built-in to
 
 1. **Discovery Before Generation** - Never generate XAML without first understanding project structure and existing patterns
 2. **Search Examples Repository** - Always use `uipcli rpa list-workflow-examples` to find relevant examples, then `uipcli rpa get-workflow-example` to retrieve and study them
-3. **Start Simple, Iterate** - Create minimal working version first, then refine through validation cycles. Take it one step and one activity at a time. Configure on the go based on errors and validation feedback
+3. **Start Simple, Iterate** - Build iteratively, in small increments. Create minimal working version first, then refine through validation cycles. Take it one step (and one activity) at a time. Configure on the go based on errors and validation feedback
 4. **Validate After Every Change** - Never assume success; always check with `uipcli rpa get-errors`
 5. **Fix Errors Methodically** - Categorize errors and fix in order: Package -> Structure -> Type -> Logic
 
@@ -658,6 +658,7 @@ When `uipcli` commands fail, diagnose by error category:
 ## Anti-Patterns
 
 **Never:**
+- Try to generate large, complex workflows in one single go
 - Generate XAML without first checking project structure and existing examples
 - Assume a create/edit succeeded without validating with `uipcli rpa get-errors`
 - Stop iteration loop before reaching 0 errors
@@ -666,7 +667,6 @@ When `uipcli` commands fail, diagnose by error category:
 - Use a non-unique string for replacement that matches multiple locations in the file
 - Create non-XAML workflow files (this skill creates XAML only)
 - Skip searching the examples repository with `uipcli rpa list-workflow-examples`
-- Retrieve example content without first listing available examples
 - Use incorrect/guessed keys with `uipcli rpa get-workflow-example` (always use keys from list results)
 - Guess activity class names or type IDs (use `uipcli rpa find-activities` to find the exact type ID and FQDN class name first)
 - Skip `uipcli rpa find-activities` when unsure which activity implements a user-described action
