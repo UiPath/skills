@@ -1,7 +1,7 @@
 {
   "name": "uipath-rpa-workflows",
   "version": "0.0.1",
-  "description": "UiPath plugin for Claude Code — generate and edit RPA workflows (XAML files) in UiPath Studio Desktop using discovery-first approach with error-driven refinement via uipcli CLI",
+  "description": "UiPath plugin for Claude Code — generate and edit RPA workflows (XAML files) using the `uipcli` CLI and a discovery-first approach with error-driven refinement",
   "author": {
     "name": "UiPath"
   },

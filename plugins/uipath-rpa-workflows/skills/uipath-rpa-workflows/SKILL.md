@@ -1,8 +1,6 @@
 ---
 name: uipath-rpa-workflows
-description: Comprehensive workflow for generating and editing RPA workflows (XAML files) in UiPath Studio Desktop using the uipcli CLI and standard filesystem operations. Use this when users need to create new RPA automations, modify existing workflows, fix XAML errors, or iterate on workflow implementations. Supports discovery-first approach with error-driven refinement.
-icon: FaRobot
-color: "#FA4616"
+description: Comprehensive workflow for generating, editing, testing, and overall working with RPA workflows (XAML files) in UiPath Studio Desktop using the `uipcli` CLI and standard filesystem operations. Use this when users need to create new RPA automations, modify existing workflows, fix XAML errors, iterate, test, or run workflow implementations/projects.
 ---
 
 # RPA Workflow Architect
@@ -15,7 +13,7 @@ This skill uses `uipcli` CLI commands (via `Bash`) and Claude Code's built-in to
 
 1. **Discovery Before Generation** - Never generate XAML without first understanding project structure and existing patterns
 2. **Search Examples Repository** - Always use `uipcli rpa list-workflow-examples` to find relevant examples, then `uipcli rpa get-workflow-example` to retrieve and study them
-3. **Start Simple, Iterate** - Create minimal working version first, then refine through validation cycles
+3. **Start Simple, Iterate** - Create minimal working version first, then refine through validation cycles. Take it one step and one activity at a time. Configure on the go based on errors and validation feedback
 4. **Validate After Every Change** - Never assume success; always check with `uipcli rpa get-errors`
 5. **Fix Errors Methodically** - Categorize errors and fix in order: Package -> Structure -> Type -> Logic
 
