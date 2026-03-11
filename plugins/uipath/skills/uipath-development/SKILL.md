@@ -1,8 +1,8 @@
 ---
 name: uipath-development
-description: UiPath development environment assistant. Covers authentication, Orchestrator management (folders, assets), solution lifecycle (pack, publish, deploy), Integration Service, CLI tools, and general UiPath platform knowledge. Use when the user asks about setting up their environment, managing Orchestrator resources, deploying solutions, or using uipcli commands.
-allowed-tools: Bash, Read, Write, Glob, Grep
-user-invocable: true
+description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets), solution lifecycle (pack, publish, deploy), Integration Service, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service (connectors, connections, activities, resources); User wants to use uipcli CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
+metadata: 
+   allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Development Environment Assistant

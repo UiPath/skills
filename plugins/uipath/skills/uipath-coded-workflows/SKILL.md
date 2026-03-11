@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-workflows
-description: Full coding assistant for UiPath coded automations. Initializes projects, creates/edits/deletes coded workflows and test cases, and manages project configuration. Use when the user wants to create, modify, build, pack, run or work with UiPath coded workflow projects in general.
+description: "Full coding assistant for UiPath coded automations — create, edit, build, pack, run, and debug coded workflows, test cases, and project configuration. TRIGGER when: Coded workflow project detected (project.json with UiPath dependencies AND .cs files with [Workflow]/[TestCase] attributes); User references coded workflows, coded automations, coded test cases, or C#-based UiPath automations; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, queues, API calls, etc.) and a UiPath coded workflow project exists nearby; User asks about UiPath activities or how to use them in code. DO NOT TRIGGER when: User is working with XAML/RPA workflows (use uipath-rpa-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
 ---
 
 # UiPath Coded Workflows Assistant
