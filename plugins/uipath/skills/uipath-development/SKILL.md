@@ -128,7 +128,7 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
-| **Use Integration Service** | [references/integration-service-guide.md](references/integration-service-guide.md) |
+| **Use Integration Service** | [/uipath:uipath-integration-service](/uipath:uipath-integration-service) (dedicated skill with full workflow) |
 | **Manage flow projects** | [references/uipcli-commands.md - Flow](references/uipcli-commands.md) |
 | **Install / manage CLI tools** | [references/uipcli-commands.md - Tools](references/uipcli-commands.md) |
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
@@ -294,5 +294,5 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `orch
 - **[Complete CLI Command Reference](references/uipcli-commands.md)** — Every uipcli command with parameters
 - **[Orchestrator Guide](references/orchestrator-guide.md)** — Concepts, folders, assets, and planned features
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
-- **[Integration Service Guide](references/integration-service-guide.md)** — Connectors, connections, activities, resources
+- **[Integration Service](/uipath:uipath-integration-service)** — Dedicated skill with full workflow, connectors, connections, activities, resources
 - **[Coded Workflows](/uipath-coded-workflows:uipath-coded-workflows)** — Building coded automation projects
