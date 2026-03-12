@@ -1,6 +1,8 @@
 # Activities
 
-Activities are pre-built actions available for each connector. These are the building blocks used in automation workflows. Each activity performs a specific operation (e.g., "Send Message", "Create Issue", "Get Record").
+Activities are pre-built actions available for each connector (e.g., "Send Message", "Create Issue"). They represent specific operations the connector supports.
+
+**Important:** Activities are discoverable via CLI but are executed within UiPath Studio workflows, not directly from `uipcli`. For CLI-executable operations, use [resources](resources.md).
 
 ---
 
@@ -10,9 +12,9 @@ Activities are pre-built actions available for each connector. These are the bui
 uipcli is activities list "<connector-key>" --format json
 ```
 
-> Results are cached locally. If results seem stale or empty, retry **once** with `--refresh`. Run `uipcli is activities list --help` for all available flags.
+> Run `uipcli is activities list --help` for all flags.
 
-This lists **non-trigger activities only** (actions the automation can perform, not event listeners).
+This lists **non-trigger activities only** (actions, not event listeners).
 
 ### Response Fields
 
@@ -28,57 +30,16 @@ This lists **non-trigger activities only** (actions the automation can perform, 
 
 ---
 
-## Activities vs Resources
+## When to Use Activities vs Resources
 
-Activities and resources serve different purposes:
+- **Activities** = named actions (e.g., "Send Email"). Discovered via `is activities list`. Executed in Studio workflows.
+- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources execute <verb>`.
 
-| | Activities | Resources |
-|---|---|---|
-| **What** | Pre-built actions (e.g., "Send Email") | Data objects with CRUD operations (e.g., "Account") |
-| **When** | Use for specific actions the connector supports | Use for generic CRUD on connector objects |
-| **How** | Discovered via `is activities list` | Discovered via `is resources list` |
-| **Execute** | Via workflow activities in Studio | Via `is resources execute <verb>` |
-
-Some connectors have both activities and resources. Others may have only one. Always check both:
+Some connectors have both. Always check both when discovering capabilities:
 
 ```bash
-# Check activities
 uipcli is activities list "<connector-key>" --format json
-
-# Check resources
 uipcli is resources list "<connector-key>" --format json
 ```
 
----
-
-## HTTP Connector Activities
-
-The HTTP connector (`uipath-uipath-http`) has a single activity:
-
-| Activity | Description |
-|---|---|
-| **HTTP Request** | Make a generic HTTP request to any REST API endpoint |
-
-This is used when no native connector exists for the target service. The HTTP Request activity supports all HTTP methods and allows custom headers, query parameters, and request bodies.
-
----
-
-## Examples
-
-### List Salesforce activities
-```bash
-uipcli is activities list "uipath-salesforce-sfdc" --format json
-# Returns: Create Account, Update Contact, Query Records, ...
-```
-
-### List Slack activities
-```bash
-uipcli is activities list "uipath-salesforce-slack" --format json
-# Returns: Send Message, List Channels, Get User, ...
-```
-
-### List Jira activities
-```bash
-uipcli is activities list "uipath-atlassian-jira" --format json
-# Returns: Create Issue, Update Issue, Get Issue, ...
-```
+For HTTP connector activities, see [connectors.md — HTTP Connector Fallback](connectors.md#http-connector-fallback).

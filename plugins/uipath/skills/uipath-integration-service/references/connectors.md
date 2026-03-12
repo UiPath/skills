@@ -1,17 +1,6 @@
 # Connectors
 
-Connectors are pre-built integrations to external applications. Each connector has a unique key (e.g., `uipath-salesforce-sfdc`, `uipath-servicenow-servicenow`).
-
-## Architecture
-
-```
-Integration Service (cloud.uipath.com)
-  └── Connector                     ← Pre-built integration (e.g., Salesforce, SAP)
-        ├── Connection(s)           ← Authenticated session(s) for this connector
-        ├── Activities              ← Pre-built automation actions
-        └── Resources               ← Object types with CRUD operations
-              └── Operations        ← List, Retrieve, Create, Update, Delete, Replace
-```
+Connectors are pre-built integrations to external applications. Each connector has a unique key (e.g., `uipath-salesforce-sfdc`, `uipath-servicenow-servicenow`). A connector contains **connections** (authenticated sessions), **activities** (pre-built actions), and **resources** (object types with CRUD operations).
 
 ---
 
@@ -22,7 +11,7 @@ Integration Service (cloud.uipath.com)
 uipcli is connectors list --filter "salesforce" --format json
 ```
 
-> Results are cached locally. If results seem stale or empty, retry **once** with `--refresh`. Run `uipcli is connectors list --help` for all available flags.
+> Run `uipcli is connectors list --help` for all flags.
 
 ### Response Fields
 

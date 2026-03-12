@@ -9,13 +9,19 @@ metadata:
 
 Interact with external services through UiPath Integration Service — discover connectors, manage connections, explore activities, and execute operations via the `uipcli` CLI. Use `uipcli is <subcommand> --help` to discover available flags and options for any command.
 
+## Prerequisites
+
+- `uipcli` must be authenticated (`uipcli config set`)
+- Correct folder context must be set if using folder-scoped connections (`--folder`)
+
 ## Core Principles
 
-1. **Always follow the workflow** — Connector → Connection → Ping → Activities/Resources → Execute
-2. **Do not make undocumented assumptions** — Always list real data (command output) before using IDs, keys, or names. Never fabricate values.
-3. **Use `--refresh` once if results seem stale or empty** — The `list` subcommands under `is connectors`, `is connections`, `is activities`, and `is resources` cache locally. If results are missing or outdated, retry **once** with `--refresh`. If still empty after refresh, the data genuinely does not exist — do not loop.
-4. **Always ping** — Verify every connection before use, even if it reports "Enabled"
-5. **Prompt, don't assume** — When multiple choices exist, let the user decide
+1. **Always follow the workflow** — Connector → Connection → Ping → Discover → Resolve References → Execute
+2. **Never fabricate IDs or values** — Always list real data (command output) before using IDs, keys, or names. Select from command output only.
+3. **Resolve reference fields before create/update** — Describe output includes `referenceFields` — list the referenced object to get valid IDs before executing.
+4. **Use `--refresh` once if results are unexpected** — The `list` subcommands cache locally. Retry **once** with `--refresh` when: results are empty, a recently created item is missing, or the user says data should exist. If still empty after refresh, inform the user the data does not exist — do not loop.
+5. **Always ping** — Verify every connection before use, even if it reports "Enabled"
+6. **Prompt, don't assume** — When multiple choices exist (connections, reference values), present options and let the user decide. Only auto-select when there is exactly one valid option.
 
 ## CLI Output Format
 
@@ -35,33 +41,50 @@ All `uipcli` commands support `--format <format>` (table, json, yaml, plain).
 | **Work with activities** (discover actions) | [references/activities.md](references/activities.md) |
 | **Work with resources** (CRUD on objects) | [references/resources.md](references/resources.md) |
 
-## Quick Reference: Agent Workflow
+## Workflow
 
+Follow these steps for every task. For decision trees and edge cases, see [references/agent-workflow.md](references/agent-workflow.md).
+
+## Happy-Path Example
+
+```bash
+# 1. Find connector
+uipcli is connectors list --filter "salesforce" --format json
+# → Key: "uipath-salesforce-sfdc"
+
+# 2. Find connection
+uipcli is connections list "uipath-salesforce-sfdc" --format json
+# → Id: "abc-123", IsDefault: Yes, State: Enabled
+
+# 3. Ping
+uipcli is connections ping "abc-123" --format json
+# → Status: Enabled
+
+# 4. Describe the target resource
+uipcli is resources describe "uipath-salesforce-sfdc" "Contact" \
+  --connection-id "abc-123" --operation Create --format json
+# → requiredFields: [LastName], optionalFields: [FirstName, Email, ...], referenceFields: []
+
+# 5. No referenceFields → skip resolution, go straight to execute
+
+# 6. Execute
+uipcli is resources execute create "uipath-salesforce-sfdc" "Contact" \
+  --connection-id "abc-123" --body '{"LastName": "Doe", "FirstName": "Jane"}' --format json
 ```
-Step 1: Find connector     → is connectors list --filter "<vendor>"
-                             (if no native connector found, use the HTTP connector: uipath-uipath-http)
-Step 2: Find connection    → is connections list "<connector-key>"
-                             (prefer default enabled; match by name for HTTP)
-Step 3: Ping connection    → is connections ping "<connection-id>"
-                             (ALWAYS required before any operation)
-Step 4: Discover actions   → is activities list "<connector-key>"
-Step 5: List resources     → is resources list "<connector-key>" --connection-id <id> --operation <op>
-                             (--connection-id for custom objects, --operation to filter by action)
-Step 6: Describe resource  → is resources describe "<connector-key>" "<object>" --connection-id <id> --operation <op>
-                             (--connection-id for custom fields, --operation for relevant field subset)
-Step 7: Resolve references → Check describe output for referenceFields
-                             For each: execute list on the referencedObject to get valid IDs
-Step 8: Execute            → is resources execute <verb> "<connector-key>" "<object>" --connection-id <id>
-```
 
-For the full workflow with decision trees and examples, see [references/agent-workflow.md](references/agent-workflow.md).
+## How to Present Choices
 
-## Critical Rules
+When multiple options exist, present them clearly:
+- **Connections**: "Which connection? 1) Salesforce Prod (default, enabled) 2) Salesforce Dev (enabled)"
+- **Reference fields**: "Which department? 1) Engineering (id: 123) 2) Sales (id: 456)"
+- **No results after refresh**: "No connections found for this connector. Would you like to create one?"
 
-1. **NEVER use a connection without pinging it first.** Even if State shows "Enabled", the token may be expired.
-2. **NEVER fabricate connection IDs, connector keys, or reference field values.** Always list and select from command output.
-3. **ALWAYS resolve reference fields before executing create/update.** Describe output includes `referenceFields` — list the referenced object to get valid IDs.
-4. **If no native connector exists, fall back to the HTTP connector** (`uipath-uipath-http`) and match connection by vendor name.
-5. **If results seem stale or empty, retry once with `--refresh`.** Do not retry more than once — if still empty, the data does not exist.
-6. **If multiple connections exist, prompt the user.** Prefer `IsDefault: Yes`, then first enabled.
-7. **Always use `--format json`** when parsing output programmatically.
+## Error Recovery
+
+| Problem | Recovery |
+|---|---|
+| Ping returns non-enabled | Run `is connections edit <id>` to re-authenticate, then ping again. If still fails, ask user to choose another connection or create new. |
+| List returns empty after `--refresh` | Inform user the data does not exist. Do not retry. Suggest checking permissions or folder context. |
+| Reference field lookup returns empty | Inform user — the referenced object has no records. Ask if they want to create one or use a different value. |
+| Execute fails with validation error | Re-check describe output for required fields. Verify field types and reference IDs are correct. |
+| Connector not found | Fall back to HTTP connector (`uipath-uipath-http`). See [connectors.md](references/connectors.md). |

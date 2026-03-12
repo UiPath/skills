@@ -14,7 +14,7 @@ uipcli is connections list "<connector-key>" --format json
 uipcli is connections list --format json
 ```
 
-> Results are cached locally. If results seem stale or empty, retry **once** with `--refresh`. Run `uipcli is connections list --help` for all available flags (e.g., `--folder-key`, `--connection-id`).
+> Run `uipcli is connections list --help` for all flags.
 
 ### Response Fields
 
@@ -44,80 +44,26 @@ uipcli is connections list --format json
 ### For HTTP Fallback
 
 1. List connections for `uipath-uipath-http`
-2. Look for a connection whose **Name** matches the target vendor
-3. If found → use it
-4. If not found → prompt user to choose from existing or create new
+2. Look for a connection whose **Name** contains the target vendor (case-insensitive substring match, e.g., "Apify" matches "Apify", "Apify - Prod", "My Apify Connection")
+3. If one match → use it. If multiple matches → present options to the user.
+4. If no match → present all existing HTTP connections and ask the user to choose, or offer to create a new one
 
-> **NEVER fabricate connection IDs.** Always list and select from command output.
+> **Note:** Name-based matching is best-effort. If connection names don't follow vendor naming conventions, present all HTTP connections to the user.
 
 ---
 
 ## Create a Connection
 
-Opens an OAuth flow in the browser:
-
 ```bash
 uipcli is connections create "<connector-key>" --format json
-```
-
-For headless environments (prints the auth URL instead of opening a browser):
-```bash
-uipcli is connections create "<connector-key>" --no-browser --format json
-```
-
-**Example:**
-```bash
-# Find the connector key
-uipcli is connectors list --filter "slack" --format json
-# → Key: "uipath-salesforce-slack"
-
-# Create the connection
-uipcli is connections create "uipath-salesforce-slack" --format json
+# Opens OAuth flow in browser. Add --no-browser for headless environments.
 ```
 
 ---
 
-## Ping a Connection (Verify Health)
-
-**Always ping before any operation.** A connection may report "Enabled" but the token may be expired or revoked.
+## Verify & Recover
 
 ```bash
 uipcli is connections ping "<connection-id>" --format json
-```
-
-| Ping Result | Action |
-|---|---|
-| Returns `Enabled` | Connection is healthy. Proceed to use it. |
-| Returns other status or fails | Try re-authenticating, choose different connection, or create new. |
-
----
-
-## Edit a Connection (Re-authenticate)
-
-Re-authenticate an existing connection. Opens the OAuth flow:
-
-```bash
-uipcli is connections edit "<connection-id>" --format json
-```
-
-Use this when:
-- A ping returns non-enabled status
-- The connection's OAuth token has expired
-- The user changed their credentials
-
-After editing, always **ping again** to verify:
-```bash
-uipcli is connections ping "<connection-id>" --format json
-```
-
----
-
-## Connection Lifecycle
-
-```
-List connections
-  ├── Found (enabled) → Ping → Healthy → Use it
-  ├── Found (disabled) → Edit (re-auth) → Ping → Use it
-  ├── Found (multiple) → Prompt user to choose → Ping → Use it
-  └── Not found → Create → Ping → Use it
+uipcli is connections edit "<connection-id>" --format json   # Re-authenticate if ping fails
 ```

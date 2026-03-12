@@ -1,209 +1,83 @@
-# Agent Workflow: Performing Actions on a Service
+# Agent Workflow
 
-This is the definitive guide for how a coding agent should execute Integration Service operations. Follow these steps in order every time the user asks to interact with an external service.
-
-## `--refresh` Rule (applies to all `list` commands)
-
-All `is` list commands (`connectors list`, `connections list`, `activities list`, `resources list`, `resources describe`) cache results locally. If results are missing or seem outdated, retry **once** with `--refresh` to bypass the cache. If still empty after refresh, the data genuinely does not exist — stop and inform the user. Never retry more than once.
-
----
+Follow these steps in order when the user asks to interact with an external service.
 
 ## Step 1: Find the Connector
 
 ```bash
-# Search for the vendor by name (add --refresh if results seem stale or empty)
 uipcli is connectors list --filter "<vendor>" --format json
 ```
 
 | Outcome | Action |
 |---|---|
-| Native connector found (e.g., `uipath-salesforce-sfdc`) | Use it. Proceed to Step 2 with its connector key. |
-| No native connector found | Fall back to HTTP connector (`uipath-uipath-http`). Proceed to Step 2. |
-
-See [connectors.md](connectors.md) for full connector reference.
+| Native connector found | Use its connector key. Proceed to Step 2. |
+| Not found | Fall back to HTTP connector (`uipath-uipath-http`). See [connectors.md](connectors.md). |
 
 ---
 
 ## Step 2: Find a Connection
 
-### For Native Connectors (e.g., Salesforce, Jira, Slack)
-
 ```bash
 uipcli is connections list "<connector-key>" --format json
 ```
 
-**Decision logic:**
+- **Native**: Pick default enabled connection (`IsDefault: Yes`, `State: Enabled`).
+- **HTTP fallback**: Match connection by vendor **Name** (case-insensitive substring).
+- **Multiple**: Present options to the user.
+- **None**: Ask user to create via `is connections create "<connector-key>"`.
 
-```
-Connections exist?
-├── YES
-│   ├── Pick the DEFAULT connection (IsDefault: Yes)
-│   ├── Check if State is "Enabled"
-│   │   ├── Enabled → proceed to Step 3
-│   │   └── Not Enabled → prompt user to choose another enabled connection
-│   └── No connections are enabled → prompt user to create a new one
-└── NO
-    └── Prompt user to create: is connections create "<connector-key>"
-```
-
-### For HTTP Fallback (No Native Connector)
-
-```bash
-uipcli is connections list "uipath-uipath-http" --refresh --format json
-```
-
-```
-Look for a connection whose NAME matches the target vendor
-(e.g., connection named "Apify" for Apify API calls)
-├── Found → use that connection
-└── Not Found
-    └── Prompt user to either:
-        a. Choose from existing HTTP connections
-        b. Create a new one: is connections create "uipath-uipath-http"
-```
-
-> **Critical:** NEVER guess or hallucinate connection IDs or names. Always list connections and select from real data.
-
-See [connections.md](connections.md) for full connection reference.
+See [connections.md](connections.md) for full selection logic and lifecycle.
 
 ---
 
-## Step 3: Verify the Connection (Always Required)
-
-Every connection MUST be pinged before use, regardless of its reported state.
+## Step 3: Ping the Connection
 
 ```bash
 uipcli is connections ping "<connection-id>" --format json
 ```
 
-| Ping Result | Action |
+| Result | Action |
 |---|---|
-| Returns "Enabled" | Connection is healthy. Proceed to Step 4. |
-| Fails or non-enabled | Try re-authenticating: `is connections edit <id>`. If still fails, prompt user to choose a different connection or create new. |
+| `Enabled` | Healthy. Proceed to Step 4. |
+| Fails | Run `is connections edit <id>` to re-authenticate, then ping again. If still fails, ask user to choose another or create new. |
 
 ---
 
-## Step 4: Discover Activities
-
-Once the connection is verified, discover available actions.
+## Step 4: Discover Capabilities
 
 ```bash
 uipcli is activities list "<connector-key>" --format json
 ```
 
-Activities are pre-built actions (e.g., "Send Message" for Slack, "Create Issue" for Jira). Review the list to find the activity matching the user's intent.
-
-For resource-based CRUD operations, also explore resources. **Always pass `--connection-id` and `--operation`** to get accurate results in a single call:
-
-- `--connection-id` — Returns custom objects/fields specific to that connection
-- `--operation` — For `list`: filters to resources supporting that action. For `describe`: returns only the relevant field subset (required/optional) instead of the entire metadata.
-
-Both commands cache results locally. See the `--refresh` rule above if results are stale or empty.
+For resource-based CRUD, also explore resources — **always pass `--connection-id` and `--operation`**:
 
 ```bash
 uipcli is resources list "<connector-key>" \
-  --connection-id "<id>" \
-  --operation <Create|List|Retrieve|Update|Delete|Replace> \
-  --format json
+  --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --format json
 
-uipcli is resources describe "<connector-key>" "<object-name>" \
-  --connection-id "<id>" \
-  --operation Create \
-  --format json
+uipcli is resources describe "<connector-key>" "<object>" \
+  --connection-id "<id>" --operation Create --format json
 ```
 
-See [activities.md](activities.md) and [resources.md](resources.md) for full references.
+See [activities.md](activities.md) and [resources.md](resources.md) for details.
 
 ---
 
-## Important Rules
+## Step 5: Resolve Reference Fields
 
-| Rule | Rationale |
-|---|---|
-| **Use `--refresh` once if results are stale or empty** | All `list` commands cache locally. Retry once with `--refresh`. If still empty, the data does not exist — do not loop. |
-| **Always ping before any operation** | A connection may report "Enabled" but be expired or revoked. |
-| **Never fabricate IDs or names** | Always use values from command output. Fabricated IDs cause silent failures. |
-| **Prompt the user when multiple choices exist** | Don't assume which connection the user wants. Present options. |
-| **Prefer the default connection** | Pick `IsDefault: Yes` first, then first enabled connection. |
+Check describe output for `referenceFields`. **If none exist, skip to Step 6.**
+
+For each reference field: list the referenced object, collect valid IDs, and present options to the user.
+
+See [resources.md — Reference Fields](resources.md#reference-fields-critical) for the resolution workflow and examples.
 
 ---
 
-## Step 5: Resolve Reference Fields (Before Execute)
-
-After describing a resource, check the response for `referenceFields`. These are fields whose values must be looked up from another resource — **never guess or fabricate them**.
-
-```
-referenceFields present?
-├── YES
-│   ├── For EACH reference field:
-│   │   ├── Execute: is resources execute list "<connector-key>" "<referencedObject>" --connection-id <id>
-│   │   ├── Collect the lookupValue (e.g., "id") from results
-│   │   └── If multiple values: present options to user (show name + id)
-│   └── Build request body with resolved values → proceed to Execute
-└── NO
-    └── Build request body from user input → proceed to Execute
-```
-
-> **Critical:** Reference fields like `departmentId`, `contactId`, `accountId` etc. require real IDs from the referenced object. Fabricated IDs will cause silent failures or errors.
-
-See [resources.md — Reference Fields](resources.md#reference-fields-critical) for detailed examples.
-
----
-
-## Complete Example: Salesforce (Native Connector)
+## Step 6: Execute
 
 ```bash
-# Step 1: Find the connector
-uipcli is connectors list --filter "salesforce" --format json
-# → Found: "uipath-salesforce-sfdc"
-
-# Step 2: Find a connection
-uipcli is connections list "uipath-salesforce-sfdc" --refresh --format json
-# → Found: ID "abc-123", IsDefault: Yes, State: Enabled
-
-# Step 3: Verify the connection
-uipcli is connections ping "abc-123" --format json
-# → State: Enabled (healthy)
-
-# Step 4: Discover activities
-uipcli is activities list "uipath-salesforce-sfdc" --format json
-
-# Step 5: List resources (always pass --connection-id and --operation)
-uipcli is resources list "uipath-salesforce-sfdc" \
-  --connection-id "abc-123" --operation Create --format json
-
-# Step 6: Describe the resource to see required fields and references
-uipcli is resources describe "uipath-salesforce-sfdc" "Account" \
-  --connection-id "abc-123" --operation Create --format json
-
-# Step 7: Resolve reference fields (if any in describe output)
-# e.g., if "OwnerId" references "users":
-# uipcli is resources execute list "uipath-salesforce-sfdc" "users" \
-#   --connection-id "abc-123" --format json
-
-# Step 8: Execute with resolved values
-uipcli is resources execute create "uipath-salesforce-sfdc" "Account" \
-  --connection-id "abc-123" \
-  --body '{"Name": "Acme Corp", "Industry": "Technology"}' \
-  --format json
+uipcli is resources execute <verb> "<connector-key>" "<object>" \
+  --connection-id "<id>" --body '{"field": "value"}' --format json
 ```
 
-## Complete Example: Apify (HTTP Fallback)
-
-```bash
-# Step 1: Find the connector
-uipcli is connectors list --filter "apify" --refresh --format json
-# → No native connector found. Fall back to HTTP.
-
-# Step 2: Find an HTTP connection for Apify
-uipcli is connections list "uipath-uipath-http" --refresh --format json
-# → Found: ID "http-001", Name: "Apify", State: Enabled
-
-# Step 3: Verify the connection
-uipcli is connections ping "http-001" --format json
-# → State: Enabled (healthy)
-
-# Step 4: Discover activities
-uipcli is activities list "uipath-uipath-http" --format json
-# → HTTP Request activity available. Use with Apify API endpoints.
-```
+See [resources.md — Execute Operations](resources.md#execute-operations) for the verb table and options.

@@ -18,7 +18,7 @@ uipcli is resources list "<connector-key>" \
   --format json
 ```
 
-> Results are cached locally. If results seem stale or empty, retry **once** with `--refresh`. Run `uipcli is resources list --help` for all available flags.
+> Run `uipcli is resources list --help` for all flags.
 
 ### Response Fields
 
@@ -46,7 +46,7 @@ uipcli is resources describe "<connector-key>" "<object-name>" \
   --format json
 ```
 
-> Results are cached locally when `--operation` is provided. If fields seem stale, retry **once** with `--refresh`. Run `uipcli is resources describe --help` for all available flags.
+> Run `uipcli is resources describe --help` for all flags.
 
 ### Describe Response
 
@@ -66,77 +66,38 @@ When `--operation` is omitted, it returns:
 
 ## Reference Fields (CRITICAL)
 
-Some fields in the describe response have a `reference` section, meaning their value must be looked up from another resource. **You MUST resolve these before executing the main operation.** Never fabricate or guess reference IDs.
+Some fields in the describe response have a `reference` section — their value must be looked up from another resource. For each reference field: list the `referencedObject`, collect the `lookupValue` from results, and present options to the user.
 
-### How Reference Fields Work
-
-A reference field looks like this in the describe output:
+A reference field in the describe output:
 
 ```json
 {
   "field": "departmentId",
-  "displayName": "Department",
-  "description": "ID of the department to which the ticket belongs",
   "referencedObject": "departments",
   "lookupValue": "id",
   "hint": "Resolve by executing: is resources execute list ... \"departments\" ..."
 }
 ```
 
-This means: `departmentId` expects a valid ID from the `departments` resource.
-
-### Resolution Workflow
-
-```
-Step 1: Describe the target resource (e.g., "tickets") with --operation Create
-        → Identify fields with referenceFields in the response
-
-Step 2: For EACH reference field:
-        → Execute: is resources execute list "<connector-key>" "<referencedObject>"
-                   --connection-id <id> --format json
-        → Collect the lookupValue (e.g., "id") from the results
-        → Present options to the user if multiple values exist (show name + id)
-
-Step 3: Build the request body using the resolved reference values
-        → Execute the main operation (e.g., create the ticket)
-```
-
 ### Example: Creating a Zoho Desk Ticket
 
 ```bash
-# 1. Describe the resource to find required fields and references
+# 1. Describe → discover referenceFields: departmentId → "departments", contactId → "contacts"
 uipcli is resources describe "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" --operation Create --format json
-# → requiredFields: ["departmentId", "subject", "contactId"]
-# → referenceFields: [
-#     { field: "departmentId", referencedObject: "departments", lookupValue: "id" },
-#     { field: "contactId", referencedObject: "contacts", lookupValue: "id" }
-#   ]
 
-# 2. Resolve reference: list departments
-uipcli is resources execute list "uipath-zoho-desk" "departments" \
-  --connection-id "<id>" --format json
-# → [{ "id": "1892000000006907", "name": "Engineering" }, ...]
-# → Present to user: "Which department? Engineering (1892000000006907), ..."
+# 2. Resolve references
+uipcli is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
+# → { "id": "1892000000006907", "name": "Engineering" }
+uipcli is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
+# → { "id": "1892000000048009", "name": "John Doe" }
 
-# 3. Resolve reference: list contacts
-uipcli is resources execute list "uipath-zoho-desk" "contacts" \
-  --connection-id "<id>" --format json
-# → [{ "id": "1892000000048009", "name": "John Doe" }, ...]
-
-# 4. Execute with resolved values
+# 3. Execute with resolved IDs
 uipcli is resources execute create "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" \
   --body '{"departmentId": "1892000000006907", "subject": "Bug report", "contactId": "1892000000048009"}' \
   --format json
 ```
-
-### Rules for Reference Fields
-
-1. **ALWAYS check the describe output for referenceFields before executing create/update operations.**
-2. **NEVER fabricate reference IDs.** Always list the referenced object and use real values.
-3. **Present options to the user** when multiple values exist for a reference field.
-4. **Resolve ALL reference fields** before building the request body.
 
 ---
 
@@ -155,119 +116,41 @@ uipcli is resources execute create "uipath-zoho-desk" "tickets" \
 
 ## Execute Operations
 
-All execute commands require `--connection-id`.
-
-### Create a Record
+All execute commands follow this pattern:
 
 ```bash
-uipcli is resources execute create "<connector-key>" "<object-name>" \
+uipcli is resources execute <verb> "<connector-key>" "<object-name>" \
   --connection-id "<CONNECTION_ID>" \
-  --body '{"field1": "value1", "field2": "value2"}' \
+  [--body '{"field": "value"}'] \
+  [--query "key=value&key=value"] \
   --format json
 ```
 
-### List Records
+| Verb | Requires `--body` | Requires `--query` | Use case |
+|---|---|---|---|
+| `create` | Yes | No | Create a new record |
+| `list` | No | Optional (`limit=10&offset=0`) | List multiple records |
+| `get` | No | Yes (`id=<RECORD_ID>`) | Get a single record by ID |
+| `update` | Yes | Yes (`id=<RECORD_ID>`) | Partial update of a record |
+| `replace` | Yes | Yes (`id=<RECORD_ID>`) | Full replacement of a record |
+| `delete` | No | Yes (`id=<RECORD_ID>`) | Delete a record |
+
+Run `uipcli is resources execute --help` for all available options.
+
+---
+
+## Pagination
+
+List operations may return paginated results. Use `--query "limit=50&offset=0"` and increment `offset` by `limit` to page through. Stop when the result set is empty or smaller than the limit.
 
 ```bash
-uipcli is resources execute list "<connector-key>" "<object-name>" \
-  --connection-id "<CONNECTION_ID>" \
-  --format json
-
-# With query parameters (pagination, filtering)
-uipcli is resources execute list "<connector-key>" "<object-name>" \
-  --connection-id "<CONNECTION_ID>" \
-  --query "limit=10&offset=0" \
-  --format json
-```
-
-### Get a Record by ID
-
-```bash
-uipcli is resources execute get "<connector-key>" "<object-name>" \
-  --connection-id "<CONNECTION_ID>" \
-  --query "id=<RECORD_ID>" \
-  --format json
-```
-
-### Update a Record
-
-```bash
-uipcli is resources execute update "<connector-key>" "<object-name>" \
-  --connection-id "<CONNECTION_ID>" \
-  --body '{"field1": "new_value"}' \
-  --query "id=<RECORD_ID>" \
-  --format json
-```
-
-### Replace a Record
-
-```bash
-uipcli is resources execute replace "<connector-key>" "<object-name>" \
-  --connection-id "<CONNECTION_ID>" \
-  --body '{"field1": "value1", "field2": "value2"}' \
-  --query "id=<RECORD_ID>" \
-  --format json
-```
-
-### Delete a Record
-
-```bash
-uipcli is resources execute delete "<connector-key>" "<object-name>" \
-  --connection-id "<CONNECTION_ID>" \
-  --query "id=<RECORD_ID>" \
-  --format json
+uipcli is resources execute list "<connector-key>" "<object>" \
+  --connection-id "<id>" --query "limit=50&offset=0" --format json
+# → next page: --query "limit=50&offset=50"
 ```
 
 ---
 
-## Execute Options
+## HTTP Connector
 
-| Option | Description |
-|---|---|
-| `--connection-id <id>` | Connection ID (**required** for all execute operations) |
-| `--body <json>` | Request body as JSON string (required for create, update, replace) |
-| `--query <params>` | Query parameters as `key=value&key=value` (e.g., `limit=10&offset=0`) |
-
----
-
-## Workflow: Discovering and Executing
-
-```bash
-# 1. List available resources (always pass --connection-id and --operation)
-uipcli is resources list "uipath-salesforce-sfdc" \
-  --connection-id "<id>" --operation Create --format json
-
-# 2. Describe the resource to see required/optional fields
-uipcli is resources describe "uipath-salesforce-sfdc" "Account" \
-  --connection-id "<id>" --operation Create --format json
-
-# 3. Execute the operation
-uipcli is resources execute create "uipath-salesforce-sfdc" "Account" \
-  --connection-id "<id>" \
-  --body '{"Name": "Acme Corp", "Industry": "Technology"}' \
-  --format json
-```
-
----
-
-## HTTP Connector Resources
-
-The HTTP connector (`uipath-uipath-http`) has a single resource: `http-request`.
-
-```bash
-# Make an HTTP request via the HTTP connector
-uipcli is resources execute create "uipath-uipath-http" "http-request" \
-  --connection-id "<CONNECTION_ID>" \
-  --body '{"method": "GET", "url": "https://api.example.com/v2/items", "query": {"limit": "20"}}' \
-  --format json
-```
-
-### HTTP Request Body Fields
-
-| Field | Type | Description |
-|---|---|---|
-| `method` | string | HTTP method: GET, POST, PUT, PATCH, DELETE |
-| `url` | string | Full URL to call |
-| `headers` | object | Optional request headers |
-| `query` | object | Optional query parameters |
-| `body` | object | Optional request body (for POST/PUT/PATCH) |
+The HTTP connector (`uipath-uipath-http`) has a single resource: `http-request`. See [connectors.md — HTTP Connector Fallback](connectors.md#http-connector-fallback) for body fields and usage.
