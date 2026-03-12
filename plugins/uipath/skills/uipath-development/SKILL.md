@@ -15,7 +15,6 @@ Comprehensive guide for setting up and managing UiPath development environments,
 - User wants to **manage Orchestrator folders** (list, create, edit, move, delete)
 - User wants to **manage Orchestrator assets** (list, create, get, delete)
 - User wants to **work with solutions** (create, pack, publish, deploy, activate)
-- User wants to **use Integration Service** (connectors, connections, activities, resources)
 - User asks about **UiPath platform concepts** (tenants, folders, robots, queues, packages)
 - User wants to **install or manage CLI tools** (search, install, upgrade)
 - User wants to set up a **CI/CD pipeline** for UiPath automation projects
@@ -128,10 +127,10 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
-| **Use Integration Service** | [references/integration-service-guide.md](references/integration-service-guide.md) |
 | **Manage flow projects** | [references/uipcli-commands.md - Flow](references/uipcli-commands.md) |
 | **Install / manage CLI tools** | [references/uipcli-commands.md - Tools](references/uipcli-commands.md) |
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
+| **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uipcli-commands.md](references/uipcli-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath-coded-workflows:uipath-coded-workflows](/uipath-coded-workflows:uipath-coded-workflows) |
 
@@ -294,5 +293,5 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `orch
 - **[Complete CLI Command Reference](references/uipcli-commands.md)** — Every uipcli command with parameters
 - **[Orchestrator Guide](references/orchestrator-guide.md)** — Concepts, folders, assets, and planned features
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
-- **[Integration Service Guide](references/integration-service-guide.md)** — Connectors, connections, activities, resources
+- **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
 - **[Coded Workflows](/uipath-coded-workflows:uipath-coded-workflows)** — Building coded automation projects
