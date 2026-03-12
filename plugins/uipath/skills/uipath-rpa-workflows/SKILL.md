@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa-workflows
-description: Comprehensive workflow for generating, editing, testing, and overall working with RPA workflows (XAML files) in UiPath Studio Desktop using the `uipcli` CLI and standard filesystem operations. Use this when users need to create new RPA automations, modify existing workflows, fix XAML errors, iterate, test, or run workflow implementations/projects.
+description: "Generate, edit, test, and run RPA workflows (XAML files) in UiPath Studio Desktop using uipcli CLI and filesystem operations. TRIGGER when: RPA project detected (project.json with UiPath dependencies AND .xaml workflow files); User mentions XAML workflows, RPA workflows, .xaml files, or UiPath Studio Desktop workflows; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, transaction processing, queue items, API calls, etc.) and a UiPath RPA/XAML project exists nearby; User asks about fixing XAML errors or workflow validation issues. DO NOT TRIGGER when: User is working with coded workflows (.cs files with [Workflow]/[TestCase] attributes — use uipath-coded-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
 ---
 
 # RPA Workflow Architect

@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-workflows
-description: Full coding assistant for UiPath coded automations. Initializes projects, creates/edits/deletes coded workflows and test cases, and manages project configuration. Use when the user wants to create, modify, build, pack, run or work with UiPath coded workflow projects in general.
+description: "Full coding assistant for UiPath coded automations — create, edit, build, pack, run, and debug coded workflows, test cases, and project configuration. TRIGGER when: Coded workflow project detected (project.json with UiPath dependencies AND .cs files with [Workflow]/[TestCase] attributes); User references coded workflows, coded automations, coded test cases, or C#-based UiPath automations; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, queues, API calls, etc.) and a UiPath coded workflow project exists nearby; User asks about UiPath activities or how to use them in code. DO NOT TRIGGER when: User is working with XAML/RPA workflows (use uipath-rpa-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
 ---
 
 # UiPath Coded Workflows Assistant
@@ -32,7 +32,7 @@ Before creating or modifying anything, you MUST determine which project to work 
 2. **Project name reference** — The user mentioned a project by name (e.g., "the MyAutomation project") → search the file system for a folder with that name containing a `project.json`.
 3. **Detect from running Studio** — No path or name given → run this command:
    ```bash
-   rpa-tool list-instances --format json
+   uipcli rpa list-instances --format json
    ```
    Parse the JSON response. If `Data` is a non-empty array, each entry has a `ProjectDirectory` field containing the absolute path of the open project. Use it:
    - **One instance** → use its `ProjectDirectory`.
@@ -54,9 +54,9 @@ Before creating or modifying anything, you MUST determine which project to work 
 
 **Creating a new project** (ONLY when no project is open and none exists at cwd or user gives a specific path):
 
-**ALWAYS use `rpa-tool create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually:
+**ALWAYS use `uipcli rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually:
 ```bash
-rpa-tool create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+uipcli rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
 ```
 Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
 
@@ -78,8 +78,8 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
 
 ## Critical Rules
 
-1. **NEVER create a project without first confirming no project already exists.** Follow the Step 0a resolution order above: if the user gave an explicit path or project name, check whether `project.json` exists there. If no path was given, run `rpa-tool list-instances --format json` — if a Studio instance is running with a `ProjectDirectory`, that IS the project. Only create a new project when you have confirmed no existing project matches AND the user explicitly requests creation (or no project exists at cwd). This prevents accidentally creating nested projects or working in the wrong directory.
-2. **Prefer UiPath built-in activities** for Orchestrator integration (`system.GetAsset`, `system.AddQueueItem`), UI automation (`uiAutomation.*`), and document handling (`excel.*`, `word.*`) — these provide reliability, logging, and Studio-level support. **Prefer plain .NET / third-party packages** for pure data transforms, HTTP calls to non-Orchestrator endpoints, parsing, string manipulation, and anything where code is clearly the right tool. When no built-in activity exists, find a well-known NuGet package — inspect it with `rpa-tool inspect-package` (or `uipcli rpa inspect-package`) first, then add it to `project.json`.
+1. **NEVER create a project without first confirming no project already exists.** Follow the Step 0a resolution order above: if the user gave an explicit path or project name, check whether `project.json` exists there. If no path was given, run `uipcli rpa list-instances --format json` — if a Studio instance is running with a `ProjectDirectory`, that IS the project. Only create a new project when you have confirmed no existing project matches AND the user explicitly requests creation (or no project exists at cwd). This prevents accidentally creating nested projects or working in the wrong directory.
+2. **Prefer UiPath built-in activities** for Orchestrator integration (`system.GetAsset`, `system.AddQueueItem`), UI automation (`uiAutomation.*`), and document handling (`excel.*`, `word.*`) — these provide reliability, logging, and Studio-level support. **Prefer plain .NET / third-party packages** for pure data transforms, HTTP calls to non-Orchestrator endpoints, parsing, string manipulation, and anything where code is clearly the right tool. When no built-in activity exists, find a well-known NuGet package — inspect it with `uipcli rpa inspect-package` first, then add it to `project.json`.
 3. **ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files — see below).
 4. **ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method (workflows/test cases only).
 5. **Generate the companion `.cs.json` metadata file** for each `.cs` workflow/test case file (NOT for Coded Source Files). When the project is managed in UiPath Studio, Studio may regenerate these — only create them when scaffolding new files outside Studio.
@@ -92,7 +92,7 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
 12. **ALWAYS ensure required package dependencies are in `project.json`** when using a service. Each service on `CodedWorkflow` requires its corresponding NuGet package — without it you get `CS0103: The name 'xxx' does not exist in the current context`. See the Service-to-Package mapping below.
 13. **Use Coded Source Files for reusable code** — extract models, helper classes, utilities, and shared logic into plain `.cs` files that don't inherit from `CodedWorkflow`. These have NO `.cs.json`, NO entry point, NO fileInfoCollection, and NO `[Workflow]`/`[TestCase]` attribute.
 14. **ALWAYS validate each file until error-free after creating or editing it.** Never consider a file "done" until validation returns no errors. Follow this loop after every create/edit:
-    1. Run `rpa-tool validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json` — this forces Studio to re-analyze the specific file and returns a JSON result with validation status and any errors found
+    1. Run `uipcli rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json` — this forces Studio to re-analyze the specific file and returns a JSON result with validation status and any errors found
     2. If errors exist in the response: read the error messages, fix the code, and go back to step 1
     3. Repeat until validation returns zero errors (max 5 fix attempts)
     4. Only then proceed to run the workflow or report success to the user
@@ -243,5 +243,5 @@ Available reference folders:
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
 2. **Validation status** — whether all files passed validation (or remaining errors if max retries hit)
-3. **How to run** — the `rpa-tool run-file` command to execute the workflow (if applicable)
+3. **How to run** — the `uipcli rpa run-file` command to execute the workflow (if applicable)
 4. **Next steps** — any follow-up actions the user should take (e.g. configure Integration Service connections, add Object Repository elements)

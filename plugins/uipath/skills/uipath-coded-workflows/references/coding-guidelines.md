@@ -83,11 +83,11 @@ using System.Text.RegularExpressions;  // regex
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
 - **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see ui-automation.md) in strict order. Do NOT write any UI code until descriptors are resolved:
   1. Read `ObjectRepository.cs` — use existing descriptors if present
-  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `rpa-tool inspect-package` (or `uipcli rpa inspect-package`). The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
+  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uipcli rpa inspect-package`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use `indicate-application` / `indicate-element` to capture them. `indicate-application` can be called without `--parent-id` or `--parent-name` — when no App exists in `.objects/`, it creates one automatically. No need to ask the user to manually create an App in Studio
   4. UITask (ScreenPlay) is ONLY for when indicated selectors are genuinely brittle/unreliable — NEVER as a first approach
   5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
-- Use `rpa-tool inspect-package` (or `uipcli rpa inspect-package`) for API discovery when documentation is unclear
+- Use `uipcli rpa inspect-package` for API discovery when documentation is unclear
 
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
@@ -98,7 +98,7 @@ using System.Text.RegularExpressions;  // regex
 ### Validation Loop (Critical Rule #14)
 After every create or edit, validate the specific file until clean (max 5 fix attempts):
 ```bash
-rpa-tool validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+uipcli rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
 ```
 - `validate` forces Studio to re-analyze the file AND returns errors in its JSON response — a single command for both
 - If errors are returned: fix the code, then run `validate` again on the same file
@@ -134,13 +134,13 @@ C) <user-driven approach>
 
 ### Project & Code Structure
 
-- Never manually write `project.json` or `project.uiproj` when creating a new project — use `rpa-tool create-project` (Critical Rule #1)
+- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uipcli rpa create-project` (Critical Rule #1)
 - Never generate C# code without first searching for existing .cs files (API Discovery)
 - Never edit files without reading them first
 - Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #4)
 - Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
-- Never guess service method names — verify with existing code or `rpa-tool inspect-package`
+- Never guess service method names — verify with existing code or `uipcli rpa inspect-package`
 
 ### UI Automation
 
@@ -182,15 +182,14 @@ C) <user-driven approach>
 | Issue | Cause | Fix |
 |-------|-------|-----|
 | **"Studio X.X.X does not have interop support"** | Auto-detected Studio is too old (< 26.2) | Always pass `--studio-dir "<STUDIO_DIR>"` pointing to the dev build |
-| **No Studio instances found** | Studio is not running | Run `rpa-tool start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>"` |
+| **No Studio instances found** | Studio is not running | Run `uipcli rpa start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>"` |
 | **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, restart Studio |
 | **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed |
 | **Service property not available** | Missing package dependency | Add required package to project.json dependencies |
 | **Timeout** | Studio took too long to start | Increase timeout: `--timeout 600` |
-| **`rpa-tool` command not found** | Not linked globally | Run `cd RpaTool/rpa-tool && bun run build && bun link` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |
 | **inspect-package cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
-| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `rpa-tool create-project` instead of writing `project.json` manually |
+| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uipcli rpa create-project` instead of writing `project.json` manually |
 | **"No application version found matching parentId=..."** | AppVersion reference is stale (OR was reset/cleared in Studio) or App was never properly created | Re-read `.objects/` metadata to get fresh AppVersion reference. If `.objects/` has no App, call `indicate-application` without `--parent-id` — it creates the App automatically |
 | **`.objects/` has subdirectories but no `.metadata` files** | Corrupted/incomplete App structure from a previous failed or partial creation | Clear the orphan directories and run `indicate-application` without `--parent-id` to create a fresh App |
