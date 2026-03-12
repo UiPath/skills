@@ -4,6 +4,8 @@ Interact with external services through UiPath Integration Service — discover 
 
 > Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline in each reference file.
 
+**In this folder:** [agent-workflow](agent-workflow.md) · [connectors](connectors.md) · [connections](connections.md) · [activities](activities.md) · [resources](resources.md)
+
 ## Prerequisites
 
 - `uipcli` must be authenticated (`uipcli login`)

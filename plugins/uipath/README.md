@@ -11,11 +11,8 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 # RPA workflow architect — generate and edit XAML workflows in UiPath Studio Desktop
 /uipath:uipath-rpa-workflows
 
-# Development environment — authentication, Orchestrator, deployment, CLI tools
+# Development environment — authentication, Orchestrator, deployment, CLI tools, Integration Service
 /uipath:uipath-development
-
-# Integration Service — connect to external services (Salesforce, Jira, Slack, etc.)
-/uipath:uipath-integration-service
 ```
 
 ## Skills
@@ -24,8 +21,7 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 |-------|---------|-------------|
 | **Coded Workflows** | `/uipath:uipath-coded-workflows` | Full coding assistant for creating, editing, validating, and running UiPath coded automation projects (.cs) |
 | **RPA Workflows** | `/uipath:uipath-rpa-workflows` | Generate and edit RPA workflows (XAML) using a discovery-first approach with iterative error-driven refinement |
-| **Development** | `/uipath:uipath-development` | Environment setup, authentication, Orchestrator management, solution lifecycle, and CLI tooling |
-| **Integration Service** | `/uipath:uipath-integration-service` | Interact with external services through UiPath Integration Service — connectors, connections, activities, and resources |
+| **Development** | `/uipath:uipath-development` | Environment setup, authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tooling |
 
 ## Coded Workflows
 
