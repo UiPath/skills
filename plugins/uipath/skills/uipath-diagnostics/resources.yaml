@@ -1,0 +1,56 @@
+# Diagnostic Investigation Resources
+#
+# Single source of truth for all data sources available to diagnostic agents.
+# Agents read this file at startup to discover what's available.
+# Adding a new resource = adding an entry here. No agent file edits needed.
+#
+# available_to: which agent roles can use this resource
+#   triage    — lightweight initial data gathering
+#   generator — hypothesis generation (knowledge sources)
+#   tester    — hypothesis testing (live data + knowledge)
+#   orchestrator — the orchestrator agent (presents findings to user)
+#
+# targets: (optional) list of product/feature domains this resource covers.
+#   Applies to all resource types: tools, endpoints, and paths.
+#   If omitted, the resource covers all domains (general fallback).
+#   If set, agents should prefer this resource when the investigation domain matches.
+#   Routing: match state.json.scope.domain against targets. Use the most specific
+#   resource first; fall back to resources without targets if no match.
+
+tools:
+  - id: uipcli
+    description: >
+      UiPath CLI — the primary tool for interacting with the UiPath platform.
+      Always use --format json for structured, parseable output.
+    available_to: [triage, tester]
+    usage: |
+      Discover available commands by running: uipcli --help-all
+      Drill down with: uipcli <subcommand> --help
+      Some commands support -o, --output <path> to save results directly to a directory.
+
+endpoints:
+  - id: documentation
+    url: https://docs.uipath.com/search#f-language=English
+    query_param: q
+    description: >
+      Documentation and knowledge base search.
+      Also use this to look up user-facing names of settings and fields —
+      search semantically (e.g., "job execution timeout" not "MaxExpectedRunningTimeSeconds")
+      since API property names are usually not directly represented in the docs.
+    available_to: [generator, tester, orchestrator]
+
+paths:
+  - id: references
+    path: references
+    description: >
+      Product guides, CLI reference, and domain knowledge.
+      Primary knowledge source for hypothesis generation and testing.
+    available_to: [generator, tester]
+    usage: |
+      Reference documentation for UiPath products:
+        orchestrator-guide.md         — Orchestrator concepts, architecture, CLI operations
+        integration-service-guide.md  — Connectors, connections, activities, resources
+        solution-guide.md             — Solution lifecycle: create, pack, publish, deploy
+        uipcli-commands.md            — Full CLI command reference (all command groups)
+      Start by reading the guide matching the investigation domain.
+      Cross-reference with uipcli-commands.md for available CLI operations.
