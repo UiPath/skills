@@ -4,8 +4,6 @@ Interact with external services through UiPath Integration Service — discover 
 
 > Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline in each reference file.
 
-**In this folder:** [agent-workflow](agent-workflow.md) · [connectors](connectors.md) · [connections](connections.md) · [activities](activities.md) · [resources](resources.md)
-
 ## Prerequisites
 
 - `uipcli` must be authenticated (`uipcli login`)
@@ -19,34 +17,20 @@ Interact with external services through UiPath Integration Service — discover 
 4. **Use `--refresh` once if results are unexpected** — The `list` subcommands cache locally. Retry **once** with `--refresh` when: results are empty, a recently created item is missing, or the user says data should exist. If still empty after refresh, inform the user the data does not exist — do not loop.
 5. **Always ping** — Verify every connection before use, even if it reports "Enabled"
 6. **Prompt, don't assume** — When multiple choices exist (connections, reference values), present options and let the user decide. Only auto-select when there is exactly one valid option.
-
-## CLI Output Format
-
-All `uipcli is` commands support `--format <format>` (table, json, yaml, plain).
-
-**Always use `--format json`** for commands whose output you need to parse or act on.
+7. **Always use `--format json`** for commands whose output you need to parse or act on.
 
 ---
 
-## Loading Strategy
+## Navigation
 
-- **Always load this file first** — it contains the principles and routing.
-- **Load [agent-workflow.md](agent-workflow.md)** when executing a task that interacts with an external service.
-- **Load on demand by workflow step**:
-  - Step 1 (connector not found) → [connectors.md](connectors.md)
-  - Step 2 (connection selection) → [connections.md](connections.md)
-  - Step 4 (discover activities) → [activities.md](activities.md)
-  - Steps 4–6 (resources) → [resources.md](resources.md)
-
-## Reference Files
-
-| I need to... | Read |
-|---|---|
-| **Execute the full workflow** (step-by-step) | [agent-workflow.md](agent-workflow.md) |
-| **Work with connectors** (find, HTTP fallback) | [connectors.md](connectors.md) |
-| **Work with connections** (select, create, verify) | [connections.md](connections.md) |
-| **Work with activities** (discover actions) | [activities.md](activities.md) |
-| **Work with resources** (describe, resolve references, execute CRUD) | [resources.md](resources.md) |
+| When to load | File | For |
+|---|---|---|
+| Always (first) | This file | Principles, routing, error recovery |
+| Any IS task | [agent-workflow.md](agent-workflow.md) | Step-by-step workflow with checklist |
+| Step 1: connector not found | [connectors.md](connectors.md) | HTTP fallback, connector response fields |
+| Step 2: connection selection | [connections.md](connections.md) | Selection logic (native + HTTP), response fields |
+| Step 4: discover activities | [activities.md](activities.md) | Activity discovery, activities vs resources |
+| Steps 4–6: resources | [resources.md](resources.md) | Describe, resolve references, execute CRUD |
 
 ---
 
@@ -55,7 +39,6 @@ All `uipcli is` commands support `--format <format>` (table, json, yaml, plain).
 When multiple options exist, present them clearly:
 - **Connections**: "Which connection? 1) Salesforce Prod (default, enabled) 2) Salesforce Dev (enabled)"
 - **Reference fields**: "Which department? 1) Engineering (id: 123) 2) Sales (id: 456)"
-- **No results after refresh**: "No connections found for this connector. Would you like to create one?"
 
 ## Error Recovery
 

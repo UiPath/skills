@@ -4,6 +4,14 @@ Resources represent the data objects available through a connector (e.g., Salesf
 
 > Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
 
+## Contents
+- Listing and Describing Resources
+- Response Fields
+- Describe Response
+- Reference Fields (CRITICAL)
+- Execute Operations
+- Pagination
+
 ---
 
 ## Listing and Describing Resources
