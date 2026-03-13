@@ -127,6 +127,7 @@ For detailed information, consult these files (read them on-demand):
 - **[project-structure.md](./references/project-structure.md)** — Project directory layout, project.json schema, common packages
 - **[jit-custom-types-schema.md](./references/jit-custom-types-schema.md)** - How to get JIT custom types of dynamic activities.
 - **[ui-automation.md](./references/ui-automation.md)** — UI Automation (UIA) best practices, rules, and XAML examples. **CRITICAL: read before generating/editing any UI Automation workflows**
+- **[ui-automation-version-notes.md](./references/ui-automation-version-notes.md)** — Version-specific UIA differences (24.10.x vs 25.10+). Read when the installed `UiPath.UIAutomation.Activities` package is below 25.10 — several properties from the main reference don't exist in older versions.
 
 ---
 

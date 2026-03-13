@@ -2,6 +2,8 @@
 
 Comprehensive guide for generating and editing UiPath UIAutomationNext XAML workflows. Covers activity templates, Object Repository integration, interaction patterns, and complete examples with annotated XAML.
 
+**Version note:** This reference targets `UiPath.UIAutomation.Activities` **25.10+**. For packages **below 25.10** (e.g. 24.10.x), several properties documented here do not exist — consult **[ui-automation-version-notes.md](./ui-automation-version-notes.md)** for version-specific differences and always verify with `uipcli rpa get-default-activity-xaml`.
+
 ---
 
 ## Package and Namespace Requirements
@@ -51,10 +53,19 @@ When the Object Repository is empty or missing targets for the workflow, use the
 # Step 1: Indicate the application/screen (user points at the app window)
 uipcli rpa indicate-application --name "MyBankingApp"
 
-# Step 2: Indicate elements within that screen (user points at each element)
-uipcli rpa indicate-element --name "UsernameField" --activity-class-name "UiPath.UIAutomation.Activities.TypeInto" --parent-name "MyBankingApp"
-uipcli rpa indicate-element --name "LoginButton" --activity-class-name "UiPath.UIAutomation.Activities.ClickX" --parent-name "MyBankingApp"
+# Step 2: Read .objects/ to find the Screen reference for use as --parent-id
+# IMPORTANT: --parent-name can fail if duplicate App names exist (e.g. from a failed
+# prior indicate-application call that left an orphan). Always prefer --parent-id.
+
+# Step 3: Indicate elements within that screen (user points at each element)
+uipcli rpa indicate-element --name "UsernameField" --activity-class-name "UiPath.UIAutomation.Activities.TypeInto" --parent-id "<screen-reference>"
+uipcli rpa indicate-element --name "LoginButton" --activity-class-name "UiPath.UIAutomation.Activities.ClickX" --parent-id "<screen-reference>"
 ```
+
+**Indication pitfalls:**
+- `indicate-application` can fail on first call (e.g. project still loading) but still **partially write** to `.objects/`, leaving an orphan App entry with a malformed reference (leading `/` without library prefix). If this happens, delete the orphan folder from `.objects/` and re-run.
+- `indicate-element --parent-name` resolves by name and can match the wrong App if duplicates exist. **Always prefer `--parent-id`** with the Screen reference from `.objects/` metadata.
+- After indication, always re-read `.objects/` to confirm the full hierarchy (App → AppVersion → Screen → Element) was created.
 
 After indication, the `.objects/` directory is populated with metadata and selectors. Proceed to Step 1 below to read them.
 
