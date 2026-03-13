@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "uipath-coded-agents",
-      "source": "./plugins/uipath-coded-agents",
+      "source": "./.claude-plugin/uipath-coded-agents",
       "description": "Create, run, and evaluate UiPath coded agents with AI-powered assistance",
       "version": "0.0.1",
       "author": {
@@ -20,9 +20,9 @@
     },
     {
       "name": "uipath",
-      "source": "./plugins/uipath",
+      "source": "./.claude-plugin/uipath",
       "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath coded automation workflows",
-      "version": "0.0.4",
+      "version": "0.0.6",
       "author": {
         "name": "UiPath"
       },
