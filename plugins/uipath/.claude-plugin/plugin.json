@@ -1,13 +1,13 @@
 {
   "name": "uipath",
   "version": "0.0.6",
-  "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath coded automation workflows",
+  "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath RPA workflows",
   "author": {
     "name": "UiPath"
   },
   "license": "MIT",
   "homepage": "https://github.com/UiPath/skills",
   "repository": "https://github.com/UiPath/skills",
-  "keywords": ["uipath", "automation", "rpa", "code"],
+  "keywords": ["uipath", "automation", "rpa", "workflows", "code", "xaml", "studio"],
   "skills": "./skills/"
 }
