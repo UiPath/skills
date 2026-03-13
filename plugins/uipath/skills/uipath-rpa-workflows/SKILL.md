@@ -173,6 +173,7 @@ uipcli rpa list-instances --format json
 ```bash
 uipcli rpa start-studio
 ```
+If `start-studio` fails with a registry key error, pass `--studio-dir` explicitly pointing to the Studio installation directory.
 
 **If Studio is running but the project is not open:**
 ```bash
@@ -583,7 +584,9 @@ Expect multiple iteration cycles for complex workflows.
 
 ### Step 3.7: Smoke Test (Optional but Recommended)
 
-After reaching 0 errors, optionally run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect:
+**Important:** `get-errors` (Studio validation) and `run-file` (runtime compilation) use different validation paths. Some errors — such as invalid enum values on activity properties — pass Studio validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
+
+After reaching 0 errors, run the workflow to catch runtime errors (wrong credentials, missing files, invalid property values, logic bugs) that static validation cannot detect:
 
 ```bash
 # Run with default arguments:
@@ -656,6 +659,8 @@ uipcli rpa new \
 2. The project root is now `/path/to/parent/directory/MyAutomation/`
 3. Proceed to Phase 1 (Discovery) using the new project root
 
+**Note:** `uipcli rpa new` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+
 ---
 
 ## CLI Error Recovery
@@ -688,7 +693,7 @@ When `uipcli` commands fail, diagnose by error category:
 - Edit or create XAML without reading the appropriate [reference files](./references/) for proper structure, syntax, rules, and patterns
 - Use a non-unique string for replacement that matches multiple locations in the file
 - Create non-XAML workflow files (this skill creates XAML only)
-- Skip searching the examples repository with `uipcli rpa list-workflow-examples`
+- Skip searching the examples repository with `uipcli rpa list-workflow-examples` (if the API is unavailable, fall back to reference docs and `get-default-activity-xaml`)
 - Use incorrect/guessed keys with `uipcli rpa get-workflow-example` (always use keys from list results)
 - Guess activity class names or type IDs (use `uipcli rpa find-activities` to find the exact type ID and FQDN class name first)
 - Ask the user to choose a service provider without first checking project signals (installed packages, connections, existing activities) — auto-select when possible (Step 1.5)

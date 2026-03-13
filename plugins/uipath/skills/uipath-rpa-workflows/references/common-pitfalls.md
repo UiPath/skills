@@ -455,3 +455,11 @@ All `uipcli rpa` commands default to the current working directory as the projec
 ### CLI output format for parsing
 
 Always use `--format json` when you need to parse CLI output programmatically. The default `table` format is human-readable but unreliable for parsing (column alignment varies, long values may be truncated). JSON output is structured and unambiguous.
+
+### DataTable.Select numeric comparisons on Excel-sourced data
+
+When reading Excel data with `ReadRangeX`, column types in the resulting `DataTable` may be `String` even when the Excel cells contain numbers. This causes `DataTable.Select("[Amount] > 1000")` to perform string comparison instead of numeric comparison (e.g., `"4200" < "800"` alphabetically), silently dropping rows.
+
+**Workarounds:**
+- Use LINQ with explicit conversion: `dtData.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
+- Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types
