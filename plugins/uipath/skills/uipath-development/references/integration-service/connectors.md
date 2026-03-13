@@ -45,7 +45,7 @@ The HTTP connector has a single resource: `http-request`.
 
 ```bash
 uipcli is resources execute create "uipath-uipath-http" "http-request" \
-  --connection-id "<CONNECTION_ID>" \
+  --connection-id "<id>" \
   --body '{"method": "GET", "url": "https://api.example.com/v2/resource"}' \
   --format json
 ```

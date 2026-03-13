@@ -2,6 +2,29 @@
 
 Follow these steps in order when the user asks to interact with an external service.
 
+## Contents
+- Progress Checklist
+- Step 1: Find the Connector
+- Step 2: Find a Connection
+- Step 3: Ping the Connection
+- Step 4: Discover Capabilities
+- Step 5: Resolve Reference Fields
+- Step 6: Execute
+- Happy-Path Example
+
+## Progress Checklist
+
+Copy and track progress:
+
+```
+- [ ] Step 1: Find connector (get Key)
+- [ ] Step 2: Find connection (get Id)
+- [ ] Step 3: Ping connection (confirm Enabled)
+- [ ] Step 4: Discover capabilities (resources + activities)
+- [ ] Step 5: Resolve reference fields (if any)
+- [ ] Step 6: Execute operation
+```
+
 ## Step 1: Find the Connector
 
 ```bash

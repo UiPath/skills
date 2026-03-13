@@ -33,6 +33,4 @@ This lists **non-trigger activities only** (actions, not event listeners).
 - **Activities** = named actions (e.g., "Send Email"). Discovered via `is activities list`.
 - **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources execute <verb>`.
 
-Some connectors have both. Always check both when discovering capabilities.
-
 > After listing activities, present the available actions to the user. Activities provide context for what a connector can do — use this to guide which resource operations or workflow actions to pursue.
