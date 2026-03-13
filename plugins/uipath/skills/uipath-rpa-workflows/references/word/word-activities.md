@@ -8,6 +8,24 @@ Word document activity patterns for `UiPath.Word.Activities`. Always get full XA
 
 `UiPath.Word.Activities`
 
+## Namespace Declarations
+
+Word activities use **URI-based XML namespaces**, not CLR-based ones. Using CLR namespaces (e.g., `clr-namespace:UiPath.Word.Activities;assembly=UiPath.Word.Activities`) will cause "Could not find type" errors even when the package is installed.
+
+**Required namespace declarations:**
+
+| Prefix | URI | Purpose |
+|--------|-----|---------|
+| `p` | `http://schemas.uipath.com/workflow/activities/word` | All Word activities (`WordApplicationScope`, `WordAppendText`, etc.) |
+| `ui` | `http://schemas.uipath.com/workflow/activities` | `WordDocument` type used in scope body `ActivityAction`/`DelegateInArgument` |
+
+```xml
+xmlns:p="http://schemas.uipath.com/workflow/activities/word"
+xmlns:ui="http://schemas.uipath.com/workflow/activities"
+```
+
+**CRITICAL:** The `WordDocument` type lives under the `ui:` prefix (`http://schemas.uipath.com/workflow/activities`), NOT under the `p:` Word namespace. This means `ActivityAction x:TypeArguments="ui:WordDocument"`, not `p:WordDocument` or `ui:WordDocument`.
+
 ## WordApplicationScope — Required Scope Container
 
 **ALL Word activities must be nested inside `WordApplicationScope`.** There is no standalone mode.
@@ -21,9 +39,9 @@ Word document activity patterns for `UiPath.Word.Activities`. Always get full XA
     ReadOnly="False"
     SensitivityOperation="None">
   <p:WordApplicationScope.Body>
-    <ActivityAction x:TypeArguments="p1:WordDocument">
+    <ActivityAction x:TypeArguments="ui:WordDocument">
       <ActivityAction.Argument>
-        <DelegateInArgument x:TypeArguments="p1:WordDocument" Name="WordDocumentScope" />
+        <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
       </ActivityAction.Argument>
       <Sequence DisplayName="Do">
         <!-- nested p: Word activities here -->
@@ -120,15 +138,24 @@ Inserts an image into the document.
 
 ### WordInsertDataTable
 
-Inserts a `DataTable` into the Word document as a table.
+Inserts a `DataTable` into the Word document as a formatted table.
 
 ```xml
 <p:WordInsertDataTable
     DataTable="[dtData]"
-    DisplayName="Insert Data Table" />
+    DisplayName="Insert Data Table"
+    InsertRelativeTo="Document"
+    Position="End" />
 ```
 
 - `DataTable` — `System.Data.DataTable` variable to insert
+- `Position` — `Start` (default) or `End`. **CRITICAL: defaults to `Start`**, which inserts at the beginning of the document. Use `Position="End"` to insert after existing content (e.g., after text appended with `WordAppendText`)
+- `InsertRelativeTo` — `Document` (default), `Bookmark`, or `Text`. Controls where the table is placed relative to
+- `Text` — search string when `InsertRelativeTo="Text"`
+- `Bookmark` — bookmark name when `InsertRelativeTo="Bookmark"`
+- `Occurrence` — `All`, `First`, `Last`, or `Specific` (when using Text/Bookmark positioning)
+
+**Formatting tip:** `WordInsertDataTable` calls `.ToString()` on every cell value. For human-readable output, create a **formatted copy** of your DataTable with string columns containing pre-formatted values (e.g., `"$255.76"` instead of raw `255.76`, `"+1.23%"` instead of `0.0123`, `"40.1M"` instead of `40132517`). Column headers are included automatically if they have non-default names.
 
 ### WordSetBookmark
 
@@ -156,6 +183,34 @@ Saves the document under a new file path.
 
 - `FilePath` — new file path (string expression) for the saved copy
 
+## Full Example: Generate Report with Text and Data Table
+
+```xml
+<!-- Delete existing file to start fresh -->
+<ui:Delete DisplayName="Delete existing report" Path="[reportPath]" ContinueOnError="True" />
+
+<p:WordApplicationScope
+    AutoSave="True"
+    CreateNewFile="True"
+    DisplayName="Write report"
+    FilePath="[reportPath]"
+    ReadOnly="False"
+    SensitivityOperation="None">
+  <p:WordApplicationScope.Body>
+    <ActivityAction x:TypeArguments="ui:WordDocument">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Do">
+        <p:WordAppendText DisplayName="Append Summary" NewLine="True" Text="[summaryText]" />
+        <p:WordInsertDataTable DataTable="[dtFormatted]" DisplayName="Insert Data Table"
+            InsertRelativeTo="Document" Position="End" />
+      </Sequence>
+    </ActivityAction>
+  </p:WordApplicationScope.Body>
+</p:WordApplicationScope>
+```
+
 ## Full Example: Replace and Export Workflow
 
 ```xml
@@ -167,9 +222,9 @@ Saves the document under a new file path.
     ReadOnly="False"
     SensitivityOperation="None">
   <p:WordApplicationScope.Body>
-    <ActivityAction x:TypeArguments="p1:WordDocument">
+    <ActivityAction x:TypeArguments="ui:WordDocument">
       <ActivityAction.Argument>
-        <DelegateInArgument x:TypeArguments="p1:WordDocument" Name="WordDocumentScope" />
+        <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
       </ActivityAction.Argument>
       <Sequence DisplayName="Do">
         <p:WordReplaceText
@@ -199,7 +254,11 @@ Saves the document under a new file path.
 | Pattern | Notes |
 |---------|-------|
 | Scope required | ALL Word activities must be inside `WordApplicationScope` — no standalone activities |
-| Scope body type | `ActivityAction x:TypeArguments="p1:WordDocument"` with `DelegateInArgument Name="WordDocumentScope"` |
+| Scope body type | `ActivityAction x:TypeArguments="ui:WordDocument"` — `WordDocument` is under `ui:`, NOT the `p:` Word namespace |
+| URI namespaces required | Use `xmlns:p="http://schemas.uipath.com/workflow/activities/word"` — CLR-based namespaces (`clr-namespace:...`) cause "Could not find type" errors |
+| Fresh file on each run | `CreateNewFile="True"` does NOT overwrite existing files — it appends. Always delete the file first with `ui:Delete` (`ContinueOnError="True"`) before `WordApplicationScope` to avoid stale content accumulation |
+| DataTable position | `WordInsertDataTable` defaults to `Position="Start"` — use `Position="End"` when inserting after other content to avoid collisions |
+| Format DataTable for Word | Create a string-column copy of your DataTable with pre-formatted values (`"$1,234.56"`, `"+2.50%"`, `"40.1M"`) — raw numeric columns produce ugly unreadable output |
 | Template replacement | Use `WordReplaceText` with `ReplaceAll="True"` and placeholder tokens like `{{FieldName}}` |
 | Export to PDF | Use `WordExportToPdf` inside scope; set `ReplaceExisting="True"` to overwrite |
 | Save vs SaveAs | `AutoSave="True"` on scope saves on close; use `WordSaveAs` to save to a different path |

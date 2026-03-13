@@ -29,15 +29,25 @@ Choose the right tool for the job. Using the wrong one creates maintenance pain 
 
 InvokeCode is best suited as a quick escape hatch for simple, self-contained code. When a dedicated activity has unresolvable type issues, missing output properties, or complex configuration that resists XAML-level fixes, a few lines in InvokeCode can solve it in one pass. But if the code grows beyond a handful of lines or needs real dependencies, use a coded workflow instead.
 
-### Critical: Do NOT Set the Language Attribute
+### Language Attribute
 
-The activity infers the language from the project's `expressionLanguage` setting in `project.json`. Do not add a `Language` attribute — it is not part of the default XAML and will cause errors.
+By default, InvokeCode infers the language from the project's `expressionLanguage` setting in `project.json`, so omitting the `Language` attribute is usually fine. However, if you do set it explicitly, use the correct enum values — they differ from `project.json`:
+
+| project.json `expressionLanguage` | InvokeCode `Language` value |
+|-----------------------------------|-----------------------------|
+| `"VisualBasic"` | `"VBNet"` |
+| `"CSharp"` | `"CSharp"` |
+
+**IMPORTANT:** `"VisualBasic"` is NOT a valid `Language` value — it will pass Studio validation but fail at runtime with: *"VisualBasic is not a valid value for NetLanguage"*. This is a known mismatch between project.json naming and the runtime enum.
 
 ```xml
-<!-- WRONG -->
+<!-- WRONG — passes Studio validation but fails at runtime -->
 <ui:InvokeCode Language="VisualBasic" Code="..." />
 
-<!-- CORRECT — language inferred from project -->
+<!-- CORRECT — explicit language -->
+<ui:InvokeCode Language="VBNet" Code="..." />
+
+<!-- ALSO CORRECT — language inferred from project -->
 <ui:InvokeCode Code="..." />
 ```
 
