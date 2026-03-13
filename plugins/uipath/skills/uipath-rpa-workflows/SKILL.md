@@ -64,7 +64,7 @@ Auto-synced from installed packages to `{projectRoot}/.local/docs/packages/{Pack
 | **Edit existing workflow** | `Edit` tool — exact string replacement in `.xaml` files | File path, old_string, new_string |
 | **Get errors** | `Bash`: `uipcli rpa get-errors [--file-path "..."] [--skip-validation] --format json` | `--file-path` (relative to project dir), `--skip-validation` (use cached errors) |
 | **Get JIT type definitions** | `Read` tool on `{projectRoot}/.project/JitCustomTypesSchema.json` | File path |
-| **Install/update packages** | `Bash`: `uipcli rpa install-or-update-packages --packages '[{"id":"...","version":"..."}]'` | `--packages` (JSON array) |
+| **Install/update packages** | `Bash`: `uipcli rpa install-or-update-packages --packages '[{"id":"..."}]'` | `--packages` (JSON array; `version` optional — omit to auto-resolve latest) |
 | **Run workflow** | `Bash`: `uipcli rpa run-file --file-path "..." [--input-arguments '...'] [--log-level ...]` | `--file-path` (required), `--input-arguments` (JSON), `--log-level` |
 
 ### Project Lifecycle Tools
@@ -242,7 +242,11 @@ Analyze:
 
 **This is the most important discovery step.** Installed activity packages may ship structured markdown documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. These docs are generated from activity source code and contain everything needed to configure activities correctly on the first try: properties, types, defaults, enum values, conditional property groups, and working XAML examples.
 
-**Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. If a package you need doesn't have docs, consider updating it to the latest version via `uipcli rpa install-or-update-packages` -- newer releases are more likely to ship documentation. If the package isn't installed at all, install it first.
+**Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When you're confident about which package you need:
+- **Package not installed?** Install it first: `uipcli rpa install-or-update-packages --packages '[{"id":"UiPath.WebAPI.Activities"}]'` — this also syncs docs if the package ships them.
+- **Package installed but no docs?** Update to the latest version: `uipcli rpa install-or-update-packages --packages '[{"id":"UiPath.WebAPI.Activities"}]'` (omit version to get latest) — newer releases are more likely to ship documentation.
+
+Prioritize installing/updating packages early. It unlocks both activity docs and `get-default-activity-xaml` (which also requires the package to be installed).
 
 #### Filesystem Structure (Deterministic)
 
@@ -322,7 +326,8 @@ When docs exist, you typically **don't need** `get-default-activity-xaml` -- the
 | **You know the package, not the activity** | Read `overview.md` to find the right activity, then read its doc. |
 | **You don't know the package** | `ls` to see available packages, or `Grep` across `.local/docs/packages/` for keywords. |
 | **Docs exist but the specific activity isn't documented** | Use docs for other activities in the same package as structural reference, then fall back to `get-default-activity-xaml`. |
-| **No docs for the package** | Package may be outdated -- consider updating to latest version. If still no docs, fall back to `find-activities` (Step 1.4), `get-default-activity-xaml` (Step 1.5), and the examples repository (Step 1.6). |
+| **No docs for the package** | **Update the package first** (`uipcli rpa install-or-update-packages` with latest version) -- this often adds docs. If still no docs after update, fall back to `find-activities` (Step 1.4), `get-default-activity-xaml` (Step 1.5), and the examples repository (Step 1.6). |
+| **Package not installed** | **Install it first** (`uipcli rpa install-or-update-packages`) -- both docs and `get-default-activity-xaml` require the package to be installed. After install, check for docs before proceeding to fallbacks. |
 | **No `.local/docs/` directory at all** | Project may not support this feature yet. Use the full fallback flow starting at Step 1.3. |
 
 ### Step 1.3: Search Current Project
@@ -357,7 +362,7 @@ uipcli rpa find-activities --query "send mail" --limit 10 --format json
 **How search works:**
 - Works similarly to Studio's activity search bar
 - Returns **global** results — not limited to packages currently installed in the project
-- If a useful activity is found that isn't installed, use `uipcli rpa install-or-update-packages` to add it
+- **If a useful activity is found in a package that isn't installed, install it immediately** with `uipcli rpa install-or-update-packages` before proceeding. Installing unlocks both activity docs (if the package ships them) and `get-default-activity-xaml`. After installing, check `.local/docs/packages/{PackageId}/` — docs may now be available, which is a better source than `get-default-activity-xaml`.
 - Tags can be used alongside the query to narrow down results further
 
 **Examples:**
@@ -401,6 +406,8 @@ When results contain multiple competing packages for the same capability (e.g., 
 ### Step 1.6: Resolve Activity Properties (Fallback)
 
 Use `uipcli rpa get-default-activity-xaml` to retrieve the activity's default XAML template when you need the exact Studio-rendered default for a specific activity. This ensures Studio can properly render and parse the activity.
+
+**Prerequisite: the activity's package must be installed.** This command only works for activities whose package is already in the project. If it's not installed, run `uipcli rpa install-or-update-packages` first — and after installing, check for activity docs at `.local/docs/packages/{PackageId}/` before falling back to this command.
 
 **If activity docs exist and contain XAML examples for the activity, prefer using those examples as your starting point** — they often include more context (configured properties, realistic values) than the bare default template.
 
@@ -628,12 +635,13 @@ uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation 
 ```
 Read: file_path="{projectRoot}/project.json"     → check current dependencies
 
-Bash: uipcli rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities", "version": "24.10.6"}]'
+Bash: uipcli rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'
 ```
+
+Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
 
 **If `install-or-update-packages` fails:**
 - **Package not found**: Verify the exact package ID — check spelling, use `uipcli rpa find-activities` to discover the correct package name from an activity's assembly
-- **Version conflict**: Try a different version, or omit the version to get the latest compatible one
 - **Network/feed error**: The user may need to check their NuGet feed configuration in Studio settings
 
 ### Step 3.4: Resolving Dynamic Activity Custom Types
@@ -769,7 +777,7 @@ When `uipcli` commands fail, diagnose by error category:
 | `"connection refused"`, `"EPIPE"`, `"pipe not found"` | Studio IPC not available | Run `uipcli rpa start-studio`, then `uipcli rpa open-project --project-dir "..."` |
 | `"timeout"`, `"ETIMEDOUT"` | Command took too long | Increase timeout: `uipcli rpa --timeout 600 <command>`, or use `--skip-validation` for `get-errors` |
 | `"not authenticated"`, `401`, `403` | Auth required for cloud features | Run `uipcli login` and re-try |
-| `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uipcli rpa find-activities`, try without version for latest |
+| `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uipcli rpa find-activities`; omit `version` to auto-resolve latest |
 | `"project not found"`, `"no project open"` | Wrong project-dir or project not open | Verify `--project-dir` path, run `uipcli rpa open-project` |
 | `"file not found"` in `get-errors` | Wrong `--file-path` (must be relative to project) | Use path relative to project root, not absolute |
 | `"Studio is busy"`, `"operation in progress"` | Studio is processing a previous request | Wait a few seconds and retry the command |
