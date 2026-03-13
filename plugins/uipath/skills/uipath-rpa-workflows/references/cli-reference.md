@@ -2,6 +2,16 @@
 
 Complete reference for all `uipcli` CLI commands and error recovery patterns.
 
+**The CLI is fully self-documenting.** Append `--help` at any level to progressively discover commands, subcommands, and parameters:
+```bash
+uipcli --help                                  # top-level command groups
+uipcli rpa --help                              # all rpa subcommands
+uipcli rpa get-default-activity-xaml --help     # parameters for a specific command
+uipcli is --help                               # Integration Service command groups
+uipcli is connections --help                   # IS connections subcommands
+uipcli is connections list --help              # parameters for a specific IS command
+```
+
 ## Installed Package Activity Documentation (Primary Discovery)
 
 Located at `{projectRoot}/.local/docs/packages/{PackageId}/`. See [Step 1.2](../SKILL.md#step-12-discover-activity-documentation-primary-source) for full details on structure, template, availability, and access patterns.

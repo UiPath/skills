@@ -11,7 +11,7 @@ This skill uses `uipcli` CLI commands (via `Bash`) and Claude Code's built-in to
 
 ## Core Principles
 
-1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. They eliminate guesswork and are more reliable than examples or CLI-retrieved defaults. Always check for them first; everything else is a fallback.
+1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. They eliminate guesswork and are more reliable than examples or CLI-retrieved defaults. Always check for them first; push for package updates if unavailable, or fallback to `get-default-activity-xaml` and/or `get-workflow-example`.
 2. **Know Before You Write** — Never generate XAML blind. Never try to guess properties, types, or configurations. Understand the project structure, what packages are installed, what expression language is used, and what patterns existing workflows follow. The deeper your understanding, the fewer validation cycles you'll need.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file — don't enumerate all packages first. If activity docs give you a complete XAML example, don't also call `get-default-activity-xaml`. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
 4. **Start Minimal, Iterate to Correct** — Build one activity at a time. Write the smallest working XAML, validate with `uipcli rpa get-errors`, fix what breaks, repeat. Start with what you know works (default or example values, configurations). Complex workflows emerge from validated building blocks, not from generating everything at once.
@@ -36,13 +36,24 @@ For the full CLI command reference (all tools, parameters, and error recovery), 
 
 Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
 
+**The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uipcli --help`, `uipcli rpa --help`, `uipcli rpa get-default-activity-xaml --help`, `uipcli is --help`, `uipcli is connections --help`, etc.
+
 ---
 
 ## Supporting References
 
 **Always check installed activity docs first** (`{projectRoot}/.local/docs/packages/`) before using the bundled references below. See [Step 1.2](#step-12-discover-activity-documentation-primary-source).
 
-### Bundled Reference Files
+### Procedural Reference Files
+
+Detailed procedures extracted from the main workflow phases:
+- **[cli-reference.md](./references/cli-reference.md)** — Full `uipcli` CLI command reference guide (all tools, parameters, commands)
+- **[environment-setup.md](./references/environment-setup.md)** — Phase 0 details: project root detection, Studio verification, authentication, and new project creation
+- **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Phase 3 details: package resolution, JIT custom types, focus-activity debugging, iteration loop, smoke testing
+- **[examples-repository.md](./references/examples-repository.md)** — Workflow examples search commands, tag guidelines, and how to study retrieved examples
+- **[connector-capabilities.md](./references/connector-capabilities.md)** — IS connector discovery, resource schema inspection, connection management
+
+### Domain Reference Files
 
 For XAML structure, control flow, and domain-specific patterns not covered by activity docs, consult these files (read them on-demand):
 - **[xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md)** — XAML file anatomy, workflow types, safety rules, common editing operations, reference examples, and ConnectorActivity internals. **CRITICAL: read before generating/creating/editing any XAML.**
@@ -274,9 +285,9 @@ Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
 
 For more details, see **[jit-custom-types-schema.md](./references/jit-custom-types-schema.md)**
 
-### Step 1.7: Search Examples Repository (Last Resort)
+### Step 1.7: Search Examples Repository
 
-Use **only** when activity docs, `find-activities`, and `get-default-activity-xaml` don't provide enough context — or when you need **full end-to-end workflow composition patterns**. See **[references/examples-repository.md](./references/examples-repository.md)** for search commands, tag guidelines, and how to study retrieved examples.
+Use when activity docs, `find-activities`, `get-default-activity-xaml`, and domain-specific [reference](./references/) files don't provide enough context — or when you need **full end-to-end workflow composition patterns**. See **[references/examples-repository.md](./references/examples-repository.md)** for search commands, tag guidelines, and how to study retrieved examples.
 
 ### Step 1.8: Get Current Context (As Needed)
 
@@ -296,7 +307,7 @@ This surfaces variables, arguments, imports, expression language, available conn
 
 ### Step 1.9: Discover Connector Capabilities (For IS/Connector Workflows)
 
-When the workflow involves Integration Service connectors, explore capabilities and manage connections before writing XAML. See **[references/connector-capabilities.md](./references/connector-capabilities.md)** for the full procedure (activity/resource discovery, connection management, schema inspection).
+When the workflow involves Integration Service connectors (dynamic activities), explore capabilities and manage connections before writing XAML. See **[references/connector-capabilities.md](./references/connector-capabilities.md)** for the full procedure (activity/resource discovery, connection management, schema inspection).
 
 ---
 
@@ -313,7 +324,7 @@ Use the `Write` tool to create a new `.xaml` file with proper XAML boilerplate. 
 
 ```
 Write: file_path="{projectRoot}/Workflows/DescriptiveName.xaml"
-       content=<full XAML content with proper headers, namespaces, and body>
+       content=<valid XAML content with proper headers, namespaces, and body>
 ```
 
 **File path inference:**
@@ -366,19 +377,39 @@ uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation 
 
 ### Step 3.2: Categorize and Fix
 
-| Error Category | Indicators | Fix Strategy |
-|----------------|------------|--------------|
-| **Package Errors** | Missing namespace, unknown activity type | `Read` project.json -> `Bash` `uipcli rpa install-or-update-packages` |
-| **Structural Errors** | Invalid XML, missing required properties | `Read` file -> `Edit` the XAML |
-| **Type Errors** | Incorrect property type, invalid value | `Read` JIT schema / `Grep` XAML -> `Edit` the XAML |
-| **Activity Properties Errors** | Unknown dynamic properties, misconfigured activity | `Read` activity docs (`.local/docs/packages/`) for correct properties/types -> or `Bash` `uipcli rpa find-activities` -> `Bash` `uipcli rpa get-default-activity-xaml` -> `Edit` the XAML |
-| **Logic Errors** | Business logic issues, wrong behavior | `Read` file -> `Edit` the XAML |
+**Fix order:** Package → Structure → Type → Activity Properties → Logic. Always fix in this order — higher-category fixes often resolve lower-category errors automatically.
 
-**Fix order:** Package -> Structure -> Type -> Dynamic Activity -> Logic
+**1. Package Errors** — Missing namespace, unknown activity type, unresolved assembly
+- Check `project.json` for current dependencies
+- Install/update the package: `uipcli rpa install-or-update-packages --packages '[{"id":"PackageId"}]'` (omit `version` for latest)
+- After install, activity docs become available at `.local/docs/packages/{PackageId}/` — re-read them to correct property issues downstream
+- If package ID is uncertain, use `uipcli rpa find-activities --query "..."` to discover it
 
-For detailed procedures on package resolution, JIT custom types, focus-activity debugging, the iteration loop, and smoke testing, see **[references/validation-and-fixing.md](./references/validation-and-fixing.md)**.
+**2. Structural Errors** — Invalid XML, malformed elements, missing closing tags
+- `Read` the XAML around the error location → `Edit` to fix XML structure
+- Cross-check against [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) for correct element nesting and namespace declarations
 
-**Core loop:** `get-errors` → identify highest-priority error category → fix → `get-errors` again → repeat until 0 errors. Optionally `run-file` for runtime validation.
+**3. Type Errors** — Wrong property type, invalid cast, type mismatch
+- Check the activity doc at `.local/docs/packages/{PackageId}/activities/{ActivityName}.md` for correct types and enum values
+- For dynamic activities, Integration Service connectors, JIT types: see [jit-custom-types-schema.md](./references/jit-custom-types-schema.md)
+- If docs are unavailable, use `uipcli rpa get-default-activity-xaml` to see the expected default property types
+- Push for package updates if docs are missing, inaccurate, or if `get-default-activity-xaml` cannot resolve
+- If default activity activity XAML is unavailable, check for examples in the examples repository. See [examples-repository](./references/examples-repository.md)
+
+**4. Activity Properties Errors** — Unknown properties, misconfigured conditional groups, missing required fields
+- **Primary:** Read the activity doc — it documents all properties, conditional groups (`Visible When`), valid configurations, and enum values
+- **Fallback:** `uipcli rpa get-default-activity-xaml` for the activity's default XAML template
+- Pay attention to mutually exclusive property groups (OverloadGroups) — setting properties from multiple groups causes errors
+- For IS/dynamic activities, check connection status: `uipcli is connections list <connector-key> --format json`
+
+**5. Logic Errors** — Wrong behavior, incorrect expressions, business logic issues
+- `Read` the XAML to understand current flow → `Edit` to correct
+- Verify expression syntax matches project language (VB.NET vs C#)
+- Use `uipcli rpa run-file` for runtime validation if static checks pass
+
+**When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (see [invoke-code-activities.md](./references/invoke-code-activities.md)).
+
+For detailed procedures (package resolution, JIT types, focus-activity debugging, iteration loop, smoke testing), see **[references/validation-and-fixing.md](./references/validation-and-fixing.md)**.
 
 ---
 
@@ -398,14 +429,6 @@ For detailed procedures on package resolution, JIT custom types, focus-activity 
 
 ---
 
-## Creating New Projects
-
-For new project setup (`uipcli rpa new`), including all parameters, templates, and post-creation steps, see **[references/new-project-setup.md](./references/new-project-setup.md)**.
-
-**Note:** `uipcli rpa new` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
-
----
-
 ## CLI Error Recovery
 
 For CLI error diagnosis and recovery patterns (IPC failures, auth errors, package issues, timeouts), see the **CLI Error Recovery** section in **[references/cli-reference.md](./references/cli-reference.md#cli-error-recovery)**.
@@ -417,12 +440,10 @@ For CLI error diagnosis and recovery patterns (IPC failures, auth errors, packag
 ## Anti-Patterns
 
 **Never** (items not already covered by Core Principles):
-- Generate large, complex workflows in one go — build incrementally
+- Generate large, complex workflows in one go — build incrementally, one activity at a time
 - Assume a create/edit succeeded without validating with `uipcli rpa get-errors`
-- Stop the iteration loop before reaching 0 errors
-- Edit or create XAML without reading the appropriate [reference files](./references/)
-- Use a non-unique `old_string` for `Edit` that matches multiple locations
-- Create non-XAML workflow files (this skill creates XAML only)
+- Stop the iteration loop before correctly rendering all activities
+- Guess properties, types, inputs/outputs, or configurations without checking activity docs, or `get-default-activity-xaml`, or the examples repository, or the appropriate reference files
 - Use incorrect/guessed keys with `uipcli rpa get-workflow-example` (always use keys from list results)
 - Pass absolute paths to `--file-path` in `get-errors` (must be relative to project directory)
 - Ask the user to choose a service provider without first checking project signals — auto-select when possible (Step 1.5)
@@ -441,8 +462,8 @@ Before handover, verify:
 - [ ] Project root is correctly identified and used consistently
 
 **Discovery:**
-- [ ] Activity docs consulted for relevant packages (or confirmed unavailable / package updated)
-- [ ] Activity properties sourced from docs, `find-activities`, or `get-default-activity-xaml` (priority ladder followed)
+- [ ] Activity docs in `{projectRoot}/.local/docs/packages/` consulted for relevant packages (or confirmed unavailable / package updated)
+- [ ] Activity properties sourced from activity docs, `find-activities`, `get-default-activity-xaml`, `get-workflow-example` (priority ladder followed)
 - [ ] Local project explored for existing patterns and conventions
 - [ ] Service/provider disambiguation resolved — auto-selected or prompted only when ambiguous (Step 1.5)
 - [ ] For connector workflows: connections verified with `uipcli is connections list`

@@ -49,3 +49,37 @@ uipcli login
 ```
 
 If you encounter auth errors (401, 403, "not authenticated") during any phase, prompt the user to run `uipcli login` to authenticate against their UiPath Cloud tenant.
+
+## Step 0.4: Creating a New Project
+
+When the user needs a brand-new UiPath project (not just a new workflow in an existing project):
+
+```bash
+uipcli rpa new \
+  --name "MyAutomation" \
+  --location "/path/to/parent/directory" \
+  --template-id "BlankTemplate" \
+  --expression-language "VisualBasic" \
+  --target-framework "Windows" \
+  --description "Automates invoice processing" \
+  --format json
+```
+
+**Note:** `uipcli rpa new` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+
+### Parameters
+
+| Parameter | Options | Default | Notes |
+|-----------|---------|---------|-------|
+| `--name` | Any string | (required) | Project folder name |
+| `--location` | Directory path | (current dir) | Parent directory where project folder is created |
+| `--template-id` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` | `BlankTemplate` | Project template |
+| `--expression-language` | `VisualBasic`, `CSharp` | (template default) | Expression syntax for XAML workflows |
+| `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
+| `--description` | Any string | (none) | Project description in project.json |
+
+### After Creation
+
+1. Open the project in Studio: `uipcli rpa open-project --project-dir "/path/to/MyAutomation"`
+2. The project root is now `/path/to/parent/directory/MyAutomation/`
+3. Proceed to Phase 1 (Discovery) using the new project root

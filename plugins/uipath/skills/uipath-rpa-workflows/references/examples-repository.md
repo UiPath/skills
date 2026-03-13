@@ -23,7 +23,8 @@ uipcli rpa get-workflow-example --key "email-communication/add-new-gmail-emails-
 - Identify the services/integrations the user wants (e.g., "salesforce", "gmail", "jira", "web")
 - Convert to lowercase tags: `["salesforce"]`, `["gmail"]`, `["jira", "confluence"]`
 - Multiple tags use AND logic — all tags must match
-- Common tags: `confluence`, `jira`, `salesforce`, `outlook`, `gmail`, `slack`, `excel`, `sharepoint`, `teams`, `dropbox`, `hubspot`, `zendesk`, `servicenow`
+
+**Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
 
 ## When to Use
 
