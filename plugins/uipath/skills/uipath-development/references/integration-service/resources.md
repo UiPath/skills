@@ -8,8 +8,11 @@ Resources represent the data objects available through a connector (e.g., Salesf
 - Listing and Describing Resources
 - Response Fields
 - Describe Response
+- Describe Failures
 - Reference Fields (CRITICAL)
+- Inferring References Without Describe
 - Execute Operations
+- Read-Only Field Recovery
 - Pagination
 
 ---
@@ -44,6 +47,19 @@ When `--operation` is provided:
 | **metadataFile** | Cached file path with full field details |
 
 When `--operation` is omitted, returns **availableOperations** and a hint to use `--operation` for field-level details.
+
+---
+
+## Describe Failures
+
+Some resources appear in `resources list --operation Create` but return empty `availableOperations` on describe, or fail with "Operation not found". This is a **server-side metadata gap**, not a cache issue — do not retry with `--refresh`.
+
+**Recovery:**
+
+1. **Skip describe entirely** — do not waste calls retrying.
+2. **Infer fields from user context** — use the field names and values the user provided in their request.
+3. **Infer reference fields from naming** — see [Inferring References Without Describe](#inferring-references-without-describe).
+4. **Attempt execute directly** — let the server validate. If a field is rejected, adjust and retry (see [Read-Only Field Recovery](#read-only-field-recovery)).
 
 ---
 
@@ -84,6 +100,31 @@ uipcli is resources execute create "uipath-zoho-desk" "tickets" \
 
 ---
 
+## Inferring References Without Describe
+
+When describe metadata is unavailable (see [Describe Failures](#describe-failures)), infer reference fields from naming conventions:
+
+- Fields ending in **`Id`** (e.g., `PromotionId`, `AccountId`) typically reference the object with the matching base name (`Promotion`, `Account`).
+- List the inferred object to resolve the ID: `is resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --format json`
+- Match the user's value by `Name` or `DisplayName` in the results.
+
+### Example: Coupon → Promotion (no describe available)
+
+```bash
+# User wants: create coupon "XYZ" for promotion "Chandu Test"
+# Infer: PromotionId → list Promotion objects
+uipcli is resources execute list "uipath-salesforce-sfdc" "Promotion" \
+  --connection-id "<id>" --format json
+# → { "Id": "<promotion-id>", "Name": "Summer Sale" }
+
+# Use resolved Id in create
+uipcli is resources execute create "uipath-salesforce-sfdc" "Coupon" \
+  --connection-id "<id>" \
+  --body '{"CouponCode": "SAVE20", "PromotionId": "<promotion-id>"}' --format json
+```
+
+---
+
 ## Execute Operations
 
 | Verb | Description | `--body` | `--query` |
@@ -96,6 +137,21 @@ uipcli is resources execute create "uipath-zoho-desk" "tickets" \
 | `replace` | Full replacement (PUT) | Yes | Yes (`id=<RECORD_ID>`) |
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
+
+---
+
+## Read-Only Field Recovery
+
+Some objects have auto-generated fields that cannot be set on create (e.g., Salesforce `Name` on Coupon, `CaseNumber` on Case). The server returns error `INVALID_FIELD_FOR_INSERT_UPDATE` listing the offending field(s).
+
+**Recovery:**
+
+1. **Parse the error** — extract the field name(s) from `providerMessage.fields`.
+2. **Remove the offending field** from `--body`.
+3. **Find the correct writable field** — the user's intended value often maps to a different field name (e.g., `CouponCode` instead of `Name`). Use domain knowledge or try the most specific field name for the object.
+4. **Retry** the create with corrected fields.
+
+> **Avoid `Name` as a first guess** for specialized Salesforce objects (Coupon, Case, etc.) — it is frequently auto-generated. Prefer object-specific fields like `CouponCode`, `Subject`, `Title`.
 
 ---
 

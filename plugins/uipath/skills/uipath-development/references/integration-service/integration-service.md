@@ -48,4 +48,6 @@ When multiple options exist, present them clearly:
 | List returns empty after `--refresh` | Inform user the data does not exist. Do not retry. Suggest checking permissions or folder context. |
 | Reference field lookup returns empty | Inform user — the referenced object has no records. Ask if they want to create one or use a different value. |
 | Execute fails with validation error | Re-check describe output for required fields. Verify field types and reference IDs are correct. |
+| Describe returns empty `availableOperations` | Metadata gap — do **not** retry with `--refresh`. Skip describe, attempt execute directly. See [resources.md — Describe Failures](resources.md#describe-failures). |
+| Create fails with `INVALID_FIELD_FOR_INSERT_UPDATE` | Field is read-only/auto-generated. Remove it from `--body`, use alternative writable field, and retry. See [resources.md — Read-Only Field Recovery](resources.md#read-only-field-recovery). |
 | Connector not found | Fall back to HTTP connector (`uipath-uipath-http`). See [connectors.md](connectors.md#http-connector-fallback). |

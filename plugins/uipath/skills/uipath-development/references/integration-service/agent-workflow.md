@@ -20,7 +20,7 @@ Copy and track progress:
 - [ ] Step 1: Find connector (get Key)
 - [ ] Step 2: Find connection (get Id)
 - [ ] Step 3: Ping connection (confirm Enabled)
-- [ ] Step 4: Discover capabilities (resources + activities)
+- [ ] Step 4: Discover capabilities (activities first, then resources)
 - [ ] Step 5: Resolve reference fields (if any)
 - [ ] Step 6: Execute operation
 ```
@@ -62,33 +62,45 @@ uipcli is connections ping "<connection-id>" --format json
 
 ## Step 4: Discover Capabilities
 
-Discover resources (CLI-executable CRUD operations):
-
-```bash
-uipcli is resources list "<connector-key>" \
-  --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --format json
-
-uipcli is resources describe "<connector-key>" "<object>" \
-  --connection-id "<id>" --operation Create --format json
-```
-
-**Always pass `--connection-id` and `--operation`** — see [resources.md](resources.md) for why.
-
-Also discover activities (pre-built actions like "Send Email", "HTTP Request"):
+**4a. Check activities first** — activities are pre-built actions (e.g., "Send Email", "Create Invoice") that may directly accomplish the task:
 
 ```bash
 uipcli is activities list "<connector-key>" --format json
 ```
 
-Some connectors have both activities and resources — always check both when discovering capabilities. If the user's task maps to an activity rather than resource CRUD, see [activities.md](activities.md) for details.
+| Outcome | Action |
+|---|---|
+| Matching activity found for the user's task | Use the activity. See [activities.md](activities.md) for details. |
+| No matching activity | Proceed to Step 4b (resources). |
+
+**4b. List resources** — if no activity matches, discover CRUD-capable objects. **Always pass `--connection-id`** to include custom objects, and **`--operation`** to filter to the intended action:
+
+```bash
+uipcli is resources list "<connector-key>" \
+  --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --format json
+```
+
+**4c. Describe the target resource** — get field metadata for the matched object:
+
+```bash
+uipcli is resources describe "<connector-key>" "<object>" \
+  --connection-id "<id>" --operation <operation> --format json
+```
+
+| Describe outcome | Action |
+|---|---|
+| Returns `requiredFields` / `optionalFields` | Use field metadata. Proceed to Step 5. |
+| Returns empty `availableOperations` or "Operation not found" | **Metadata gap** — do not retry with `--refresh`. Skip describe, proceed to Step 5 with inferred fields. See [resources.md — Describe Failures](resources.md#describe-failures). |
+
+See [resources.md](resources.md) for why `--connection-id` and `--operation` are critical.
 
 ## Step 5: Resolve Reference Fields
 
-Check describe output for `referenceFields`. **If none exist, skip to Step 6.**
+**When describe succeeded:** Check output for `referenceFields`. If none exist, skip to Step 6. For each reference field: list the referenced object, collect valid IDs, and present options to the user.
 
-For each reference field: list the referenced object, collect valid IDs, and present options to the user.
+**When describe was unavailable (metadata gap):** Infer references from the user's request — fields ending in `Id` (e.g., `PromotionId`) typically reference the object with the matching base name (`Promotion`). List that object to resolve the ID before executing.
 
-See [resources.md — Reference Fields](resources.md#reference-fields-critical) for the resolution workflow and examples.
+See [resources.md — Reference Fields](resources.md#reference-fields-critical) and [resources.md — Inferring References Without Describe](resources.md#inferring-references-without-describe).
 
 ## Step 6: Execute
 
@@ -116,7 +128,16 @@ uipcli is connections list "uipath-salesforce-sfdc" --format json
 uipcli is connections ping "abc-123" --format json
 # → Status: Enabled
 
-# 4. Describe the target resource
+# 4a. Check activities first
+uipcli is activities list "uipath-salesforce-sfdc" --format json
+# → No matching activity for "create contact" → fall back to resources
+
+# 4b. List resources with operation
+uipcli is resources list "uipath-salesforce-sfdc" \
+  --connection-id "abc-123" --operation Create --format json
+# → includes "Contact"
+
+# 4c. Describe the target resource
 uipcli is resources describe "uipath-salesforce-sfdc" "Contact" \
   --connection-id "abc-123" --operation Create --format json
 # → requiredFields: [LastName], optionalFields: [FirstName, Email, ...], referenceFields: []
