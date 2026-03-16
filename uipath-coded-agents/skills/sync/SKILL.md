@@ -35,7 +35,7 @@ uv run uipath pull --overwrite
 ## Prerequisites
 
 - Authentication configured — if not authenticated, use the [Auth skill](/uipath-coded-agents:auth) first
-- `UIPATH_PROJECT_ID` set in `.env` or environment
+- `UIPATH_PROJECT_ID` set in `.env` or environment — also required by the [Evaluate skill](/uipath-coded-agents:evaluate) when reporting evaluation results to Studio Web (`--report` flag)
 
 ## Troubleshooting
 
