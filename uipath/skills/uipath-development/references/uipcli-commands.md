@@ -479,11 +479,45 @@ uipcli is connections edit "<CONNECTION_ID>" --format json
 
 ### `uipcli is activities list <connector-key>`
 
-List non-trigger activities for a connector.
+List activities for a connector. By default lists non-trigger activities only.
 
 ```bash
 uipcli is activities list "uipath-salesforce" --format json
+uipcli is activities list "uipath-salesforce" --triggers --format json
 ```
+
+| Option | Description |
+|---|---|
+| `--triggers` | List trigger activities only (isTrigger=true) |
+| `--refresh` | Force re-fetch from API, ignoring cache |
+
+### `uipcli is triggers objects <connector-key> <operation>`
+
+List objects available for a trigger operation.
+
+```bash
+uipcli is triggers objects "uipath-salesforce-sfdc" CREATED --format json
+uipcli is triggers objects "uipath-salesforce-sfdc" CREATED --connection-id "<ID>" --format json
+```
+
+| Option | Description |
+|---|---|
+| `--connection-id <id>` | Connection ID (for custom objects) |
+| `--refresh` | Force re-fetch from API, ignoring cache |
+
+### `uipcli is triggers describe <connector-key> <operation> <object-name>`
+
+Get field metadata for a trigger object.
+
+```bash
+uipcli is triggers describe "uipath-salesforce-sfdc" CREATED "AccountHistory" --format json
+uipcli is triggers describe "uipath-salesforce-sfdc" CREATED "AccountHistory" --connection-id "<ID>" --format json
+```
+
+| Option | Description |
+|---|---|
+| `--connection-id <id>` | Connection ID (for custom fields) |
+| `--refresh` | Force re-fetch from API, ignoring cache |
 
 ### `uipcli is resources list <connector-key> [object-name]`
 
