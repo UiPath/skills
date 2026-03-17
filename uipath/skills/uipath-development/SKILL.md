@@ -23,7 +23,7 @@ Comprehensive guide for setting up and managing UiPath development environments,
 
 ## Auth token location
 
-The CLI stores credentials at **`~/.uipcli/.env`** after login:
+The CLI stores credentials at **`~/.uipath/.auth`** after login:
 ```
 UIPATH_URL=https://alpha.uipath.com
 UIPATH_ORG_NAME=my_org
@@ -219,14 +219,14 @@ The typical deployment workflow for a UiPath automation:
 ### Practical Deployment Notes
 
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipcli/.env`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md).
+- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md).
 
 ## Orchestrator REST API (Fallback)
 
 When CLI commands are insufficient, use the Orchestrator REST API directly with the stored access token:
 
 ```bash
-source ~/.uipcli/.env
+source ~/.uipath/.auth
 
 # Upload a .nupkg package
 curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage" \

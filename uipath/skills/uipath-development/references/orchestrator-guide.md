@@ -306,7 +306,7 @@ string invoiceId = item.SpecificContent["InvoiceId"].ToString();
 
 ## REST API Reference
 
-When CLI commands are insufficient or unavailable (e.g., asset management), use the Orchestrator REST API directly. Requires an access token (stored at `~/.uipcli/.env` after login).
+When CLI commands are insufficient or unavailable (e.g., asset management), use the Orchestrator REST API directly. Requires an access token (stored at `~/.uipath/.auth` after login).
 
 ### Authentication Header
 
@@ -375,4 +375,4 @@ curl -G "${BASE}/Releases" \
 | "project is already opened in another Studio instance" | Studio has the project DB locked | `rpa-tool close-project` before packing |
 | "No runtimes configured" (error 2818) | Target folder has no robot machines assigned | Assign machine templates in Orchestrator > Folder Settings > Machines |
 | "Azure CLI is not installed" during `solution pack` | Pack command needs Azure CLI for NuGet feed auth | Install Azure CLI |
-| Token expired | Access token from `~/.uipcli/.env` has expired | Re-run `uip login` |
+| Token expired | Access token from `~/.uipath/.auth` has expired | Re-run `uip login` |

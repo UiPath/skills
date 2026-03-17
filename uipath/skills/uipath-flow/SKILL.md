@@ -21,6 +21,17 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Quick Start
 
+### Step 0 — Resolve the `uip` binary
+
+The `uip` CLI is installed via npm. If `uip` is not on PATH (common in nvm environments), resolve it first:
+
+```bash
+UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
+$UIP --version
+```
+
+Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
+
 ### Step 1 — Check login status
 
 `uip flow debug` and process operations require authentication. `uip flow init`, `validate`, and `registry` commands work without login.
