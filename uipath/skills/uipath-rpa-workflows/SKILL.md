@@ -44,6 +44,35 @@ Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-e
 
 **Always check installed activity docs first** (`{projectRoot}/.local/docs/packages/`) before using the bundled references below. See [Step 1.2](#step-12-discover-activity-documentation-primary-source).
 
+### Determining Package Version for Activity Docs
+
+Activity reference docs are versioned by major.minor under `../../references/activity-docs/{PackageId}/{Major.Minor}/activities/`. **Before reading any activity docs, determine the user's installed version:**
+
+1. **Read `project.json`** in the user's project directory and find the package in the `dependencies` object:
+   ```json
+   {
+     "dependencies": {
+       "UiPath.Excel.Activities": "[3.3.1]",
+       "UiPath.UIAutomation.Activities": "[25.10.21]",
+       "UiPath.System.Activities": "[25.12.2]"
+     }
+   }
+   ```
+2. **Extract major.minor** from the version string — strip the brackets and drop the patch version:
+   - `[3.3.1]` → `3.3`
+   - `[25.10.21]` → `25.10`
+   - `[2.5.10]` → `2.5`
+3. **List available version folders** for the package:
+   ```
+   Glob: pattern="{PackageId}/*" path="../../references/activity-docs/"
+   ```
+4. **Pick the best match:**
+   - If the exact major.minor folder exists (e.g., `3.3/`) → use it
+   - If not, use the **closest available version that doesn't exceed** the installed version (e.g., installed `3.3`, available folders are `3.5/` → use `3.5/` as it's the closest, but note docs may reference newer APIs)
+   - Fall back to the latest available folder if no lower version exists
+
+The version numbers in the links throughout this document represent the latest documented version. Always cross-check with the user's actual installed version when available.
+
 ### Procedural Reference Files
 
 Detailed procedures extracted from the main workflow phases:
@@ -56,21 +85,19 @@ Detailed procedures extracted from the main workflow phases:
 
 For XAML structure, control flow, and domain-specific patterns not covered by activity docs, consult these files (read them on-demand):
 - **[xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md)** — XAML file anatomy, workflow types, safety rules, common editing operations, reference examples, and ConnectorActivity internals. **CRITICAL: read before generating/creating/editing any XAML.**
-- **[invoke-code-activities.md](./references/invoke-code-activities.md)** — An escape hatch for when XAML activities can't be reliably generated or edited. Offers the possibility to integrate VB or C# code snippets as activities, when to use them, and best practices for integrating code into RPA workflows. Useful as a pragmatic fallback when dedicated activities have unresolvable issues and writing code would do it.
-- **[control-flow-activities.md](./references/control-flow-activities.md)** — Core control flow activities with syntax and examples (Assign, If/Else, For Each, While, Try Catch, etc.)
+- **[System activities](../../references/activity-docs/UiPath.System.Activities/25.10/activities/overview.md)** — Core control flow activities (Assign, If/Else, For Each, While, Try Catch, etc.) and code integration (InvokeCode, InvokeWorkflow). Per-activity docs in `../../references/activity-docs/UiPath.System.Activities/25.10/activities/` — includes both control flow and invoke-code patterns. InvokeCode is a pragmatic fallback when dedicated activities have unresolvable issues.
 - **[common-pitfalls.md](./references/common-pitfalls.md)** — Common pitfalls, constraints, scope requirements, property conflicts, gotchas, and issues that should be known before working with RPA workflows, along with strategies to avoid them
-- **[gsuite-activities.md](./references/gsuite/gsuite-activities.md)** — Google Suite activity patterns: Gmail (send, iterate, get newest, download attachments, label/archive/delete/move/mark-read, auto-reply), Google Sheets (read range, write range, write row, create spreadsheet), Google Drive (get file/folder, list files, iterate folder, upload, download), and Google Calendar (create event). Covers triggers for all services and model types (`GmailMessage`, `GDriveRemoteItem`, `GSuiteEventItem`). Read when working with `UiPath.GSuite.Activities`.
-- **[pdf-document-understanding.md](./references/document-understanding/pdf-document-understanding.md)** — PDF utility activities: ExtractPDFText, GetPDFPageCount, SetPDFPassword, MergePDFs, ExtractPDFPageRange, ExtractPDFImages. Also covers the DU pipeline overview. Read when working with PDF utility activities in `UiPath.DocumentUnderstanding.Activities`.
-- **[document-understanding-activities.md](./references/document-understanding/document-understanding-activities.md)** — Document Understanding (DU) pipeline activities for non-PDF inputs: classification (`ClassifyDocument` with ML and generative classifiers), extraction (`ExtractDocumentDataWithDocumentData` with ML and generative extractors), and validation (`ValidateDocumentDataWithDocumentData`, `CreateValidationAction`/`WaitForValidationAction` async pair, `CreateClassificationValidationActionAndWait`). Read when working with `UiPath.DocumentUnderstanding.Activities` for classify/extract/validate workflows.
-- **[word-activities.md](./references/word/word-activities.md)** — Word document activity patterns: WordApplicationScope (required scope), WordReadText, WordAppendText, WordReplaceText, WordExportToPdf, and other Word manipulation activities. Read when working with `UiPath.Word.Activities`.
-- **[powerpoint-activities.md](./references/powerpoint/powerpoint-activities.md)** — PowerPoint presentation activity patterns: PowerPointApplicationScope (required scope), InsertTextInPresentation, FindAndReplaceTextInPresentation, ReplaceShapeWithMedia, ReplaceShapeWithDataTable, InsertSlide, DeleteSlide, CopyPasteSlide, SavePresentationAsPdf, RunMacro, and related activities. Read when working with `UiPath.Presentations.Activities`.
-- **[excel-activities.md](./references/excel/excel-activities.md)** — Excel activity patterns for both modern (`ueab:` with `ExcelApplicationCard`/`ExcelProcessScopeX`) and classic (`ui:` standalone) styles. Covers scope containers, iterators (`ExcelForEachRowX`, `ForEachSheetX`), read/write/cell/format/sort/lookup/pivot/chart/VBA activities, and namespace requirements. Read when working with `UiPath.Excel.Activities`.
-- **[outlook-mail-activities.md](./references/mail/outlook-mail-activities.md)** — Classic Outlook mail activity patterns: namespaces, `GetOutlookMailMessages`, `MoveOutlookMessage`, `SaveMailAttachments`, `SendOutlookMail` (classic `ui:` prefix), modern `OutlookApplicationCard` scope with `ForEachEmailX`, variable type (`System.Net.Mail.MailMessage`), and IS connection pattern. Read when working with `UiPath.Mail.Activities` Outlook activities (not O365).
-- **[msoffice365-outlook-activities.md](./references/mail/msoffice365-outlook-activities.md)** — Office 365 Outlook mail activity patterns: namespaces, `SendMailConnections`, `GetNewestEmail`, `DownloadEmailAttachments`, `NewEmailReceived` trigger, filter expressions, and `Office365Message` type. Read when working with `UiPath.MicrosoftOffice365.Activities`.
+- **[GSuite activities](../../references/activity-docs/UiPath.GSuite.Activities/3.8/activities/overview.md)** — Google Suite activity patterns: Gmail (send, iterate, get newest, download attachments, label/archive/delete/move/mark-read, auto-reply), Google Sheets (read range, write range, write row, create spreadsheet), Google Drive (get file/folder, list files, iterate folder, upload, download), and Google Calendar (create event). Covers triggers for all services and model types (`GmailMessage`, `GDriveRemoteItem`, `GSuiteEventItem`). Read when working with `UiPath.GSuite.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.GSuite.Activities/3.8/activities/`.
+- **[Document Understanding activities](../../references/activity-docs/UiPath.DocumentUnderstanding.Activities/7.0/activities/overview.md)** — Document Understanding (DU) pipeline activities: classification, extraction, validation, and PDF utilities (ExtractPDFText, GetPDFPageCount, SetPDFPassword, MergePDFs, ExtractPDFPageRange, ExtractPDFImages). Read when working with `UiPath.DocumentUnderstanding.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.DocumentUnderstanding.Activities/7.0/activities/`.
+- **[Word activities](../../references/activity-docs/UiPath.Word.Activities/2.5/activities/overview.md)** — Word document activity patterns: WordApplicationScope (required scope), WordReadText, WordAppendText, WordReplaceText, WordExportToPdf, and other Word manipulation activities. Read when working with `UiPath.Word.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.Word.Activities/2.5/activities/`.
+- **[PowerPoint activities](../../references/activity-docs/UiPath.Presentations.Activities/2.5/activities/overview.md)** — PowerPoint presentation activity patterns: PowerPointApplicationScope (required scope), InsertTextInPresentation, FindAndReplaceTextInPresentation, ReplaceShapeWithMedia, ReplaceShapeWithDataTable, InsertSlide, DeleteSlide, CopyPasteSlide, SavePresentationAsPdf, RunMacro, and related activities. Read when working with `UiPath.Presentations.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.Presentations.Activities/2.5/activities/`.
+- **[Excel activities](../../references/activity-docs/UiPath.Excel.Activities/3.5/activities/overview.md)** — Excel activity patterns for both modern (`ueab:` with `ExcelApplicationCard`/`ExcelProcessScopeX`) and classic (`ui:` standalone) styles. Covers scope containers, iterators (`ExcelForEachRowX`, `ForEachSheetX`), read/write/cell/format/sort/lookup/pivot/chart/VBA activities, and namespace requirements. Read when working with `UiPath.Excel.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.Excel.Activities/3.5/activities/`.
+- **[Outlook Mail activities](../../references/activity-docs/UiPath.Mail.Activities/2.8/activities/overview.md)** — Classic Outlook mail activity patterns: namespaces, `GetOutlookMailMessages`, `MoveOutlookMessage`, `SaveMailAttachments`, `SendOutlookMail` (classic `ui:` prefix), modern `OutlookApplicationCard` scope with `ForEachEmailX`, variable type (`System.Net.Mail.MailMessage`), and IS connection pattern. Read when working with `UiPath.Mail.Activities` Outlook activities (not O365). Per-activity docs in `../../references/activity-docs/UiPath.Mail.Activities/2.8/activities/`.
+- **[Office 365 Outlook activities](../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/overview.md)** — Office 365 Outlook mail activity patterns: namespaces, `SendMailConnections`, `GetNewestEmail`, `DownloadEmailAttachments`, `NewEmailReceived` trigger, filter expressions, and `Office365Message` type. Read when working with `UiPath.MicrosoftOffice365.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/`.
 - **[project-structure.md](./references/project-structure.md)** — Project directory layout, project.json schema, common packages
 - **[jit-custom-types-schema.md](./references/jit-custom-types-schema.md)** - How to get JIT custom types of dynamic activities.
-- **[ui-automation.md](./references/ui-automation.md)** — UI Automation (UIA) best practices, rules, and XAML examples. **CRITICAL: read before generating/editing any UI Automation workflows**
-- **[ui-automation-version-notes.md](./references/ui-automation-version-notes.md)** — Version-specific UIA differences (24.10.x vs 25.10+). Read when the installed `UiPath.UIAutomation.Activities` package is below 25.10 — several properties from the main reference don't exist in older versions.
+- **[UI Automation activities](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/activities/overview.md)** — UI Automation (UIA) best practices, rules, and XAML examples. **CRITICAL: read before generating/editing any UI Automation workflows.** Per-activity docs in `../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/activities/`.
+- **[UI Automation version notes](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/activities/version-notes.md)** — Version-specific UIA differences (24.10.x vs 25.10+). Read when the installed `UiPath.UIAutomation.Activities` package is below 25.10 — several properties from the main reference don't exist in older versions.
 
 ---
 
@@ -438,7 +465,7 @@ uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation 
 - Verify expression syntax matches project language (VB.NET vs C#)
 - Use `uipcli rpa run-file` for runtime validation if static checks pass
 
-**When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (see [invoke-code-activities.md](./references/invoke-code-activities.md)).
+**When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (see [InvokeCode.md](../../references/activity-docs/UiPath.System.Activities/25.10/activities/InvokeCode.md)).
 
 For detailed procedures (package resolution, JIT types, focus-activity debugging, iteration loop, smoke testing), see **[references/validation-and-fixing.md](./references/validation-and-fixing.md)**.
 
