@@ -21,43 +21,9 @@ Comprehensive guide for setting up and managing UiPath development environments,
 - User asks **how to deploy** an automation to Orchestrator
 - User wants to **manage flow projects** (init, pack, validate, run jobs, trace)
 
-## Critical: Two CLI Versions
+## Auth token location
 
-There are **two different CLI versions** that may be installed. They have completely different command structures:
-
-| | Legacy CLI (.NET) | New CLI (Node.js/Bun) |
-|---|---|---|
-| **Binary name** | `uipcli` | `uip` |
-| **Install location** | `~/.dotnet/tools/uipcli` | `dev4/uipcli/packages/cli/dist/index.js` |
-| **Version** | v25.10.x | v0.0.x |
-| **Auth** | Inline on every command (`-u`/`-p`, `-I`/`-S`) | Session-based (`login` → token stored at `~/.uipcli/.env`) |
-| **Asset commands** | `asset deploy <csv>` (CSV bulk) | REST API only (assets not yet in `or` tool) |
-| **Pack** | `package pack <path> -o <output>` | `solution pack <path> <output>` |
-| **Deploy** | `package deploy <nupkg> <url> <tenant> -I ... -S ...` | `solution publish <zip>` |
-
-### Detecting which CLI is available
-
-```bash
-# Legacy CLI
-which uipcli && uipcli --version
-
-# New CLI — must be built first
-ls dev4/uipcli/packages/cli/dist/index.js 2>/dev/null
-```
-
-### Building the new CLI (if not built)
-
-```bash
-cd dev4/uipcli
-bun install
-bun run build
-# Then invoke via:
-cd packages/cli && bun run dist/index.js <command> --format json
-```
-
-### Auth token location
-
-The new CLI stores credentials at **`~/.uipcli/.env`** after login:
+The CLI stores credentials at **`~/.uipcli/.env`** after login:
 ```
 UIPATH_URL=https://alpha.uipath.com
 UIPATH_ORG_NAME=my_org
@@ -75,28 +41,25 @@ This token can be reused for direct Orchestrator REST API calls when CLI command
 
 Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
 
-**New CLI (interactive OAuth2):**
+**Interactive login (browser OAuth2):**
 ```bash
-cd dev4/uipcli/packages/cli && bun run dist/index.js login --format json
+uip login --format json
 ```
 
 For a custom authority (e.g., alpha.uipath.com):
 ```bash
-cd dev4/uipcli/packages/cli && bun run dist/index.js login --authority "https://alpha.uipath.com/identity_" --it --format json
+uip login --authority "https://alpha.uipath.com/identity_" --it --format json
 ```
 
 For non-interactive (CI/CD) scenarios, use client credentials:
 ```bash
-cd dev4/uipcli/packages/cli && bun run dist/index.js login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --format json
+uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --format json
 ```
 
 Check login status:
 ```bash
-cd dev4/uipcli/packages/cli && bun run dist/index.js login status --format json
+uip login status --format json
 ```
-
-**Legacy CLI (no session — pass credentials per command):**
-The legacy CLI does not have a `login` command. Auth is passed inline on every command via `-A`, `-I`, `-S`, `--applicationScope`.
 
 ### Step 2 — Select a Tenant
 
@@ -255,9 +218,8 @@ The typical deployment workflow for a UiPath automation:
 
 ### Practical Deployment Notes
 
-- **Studio locks the project database.** If `package pack` fails with "project is already opened in another Studio instance", close the project first: `rpa-tool close-project --project-dir "<DIR>" --format json`
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipcli/.env`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md). Note: Asset management is currently REST API only (not yet in `or` tool).
+- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipcli/.env`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md).
 
 ## Orchestrator REST API (Fallback)
 

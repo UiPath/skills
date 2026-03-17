@@ -95,73 +95,34 @@ uip solution publish ./output/MySolution.1.0.0.zip --tenant "Production" --forma
 
 ---
 
-## Solution Deployment (In Progress)
-
-The following commands are being actively developed and will enable full solution deployment lifecycle:
+## Solution Deployment
 
 ### Deploy a Solution
 
-Deploy supports three input modes:
-
-**From source directory (auto-packs):**
 ```bash
-uip solution deploy --folder "Finance" --format json
-# or with explicit path:
-uip solution deploy --path ./MySolution --folder "Finance" --format json
+uip solution deploy run -n "<deployment-name>" -c "<configuration-key>" [options] --format json
 ```
 
-**From local package:**
-```bash
-uip solution deploy --package ./output/MySolution.1.0.0.zip --folder "Finance" --format json
-```
-
-**From previously uploaded package:**
-```bash
-uip solution deploy --name "MySolution" --version "1.0.0" --folder "Finance" --format json
-```
-
-**Key options:**
-
-| Option | Description |
-|---|---|
-| `--folder <path>` | Target folder path (e.g., "Finance/Invoicing") |
-| `--folder-id <id>` | Target folder ID (alternative to --folder) |
-| `--deployment <name>` | Name of existing deployment to upgrade |
-| `--config <path>` | Configuration file for environment-specific settings |
-| `--version <ver>` | Version override |
-| `--what-if` | Dry-run preview — show what would change without deploying |
-| `--no-pack` | Skip auto-pack step |
-| `--no-build` | Skip auto-build step |
-| `--no-activate` | Deploy without activating |
-
-### Activate a Deployment
-
-```bash
-uip solution activate --deployment "MySolution" --folder "Finance" --format json
-```
+| Option | Description | Default |
+|---|---|---|
+| `-n, --name <name>` | Name for the deployment (required) | -- |
+| `-c, --configuration-key <key>` | Configuration key (required) | -- |
+| `-f, --folder-path <path>` | Fully qualified folder path (e.g. 'Shared') | -- |
+| `-k, --folder-key <guid>` | Installation folder key (GUID) | -- |
+| `--no-force-activate` | Disable force activation | Force activate |
+| `-t, --tenant <name>` | Tenant override | Current tenant |
+| `--poll-interval <ms>` | Polling interval for status | 2000 |
 
 ### Check Deployment Status
 
 ```bash
-uip solution status --deployment "MySolution" --folder "Finance" --format json
+uip solution deploy status "<deployment-key>" --format json
 ```
 
-### List Deployed Solutions
+### List Published Packages
 
 ```bash
-uip solution list --folder "Finance" --format json
-```
-
-### Uninstall a Solution
-
-```bash
-uip solution uninstall --deployment "MySolution" --folder "Finance" --format json
-```
-
-### Download Configuration
-
-```bash
-uip solution download-config --deployment "MySolution" --folder "Finance" --output ./config.json --format json
+uip solution packages list --format json
 ```
 
 ---
@@ -260,54 +221,3 @@ uip solution pack ./MySolution ./output --version "1.1.0" --format json
 uip solution pack ./MySolution ./output --version "2.0.0" --format json
 ```
 
----
-
-## Legacy CLI Pack & Deploy
-
-The legacy `uipcli` (v25.10.x) uses different commands for packing and deploying:
-
-### Pack a Project
-
-```bash
-uipcli package pack "<PROJECT_DIR>" -o "<OUTPUT_DIR>" -v "1.0.0" --traceLevel Information
-```
-
-This produces a `.nupkg` file.
-
-**Important:** Studio locks the project database. If packing fails with "project is already opened in another Studio instance", close the project first:
-```bash
-rpa-tool close-project --project-dir "<PROJECT_DIR>" --format json
-```
-
-### Deploy a Package
-
-```bash
-uipcli package deploy "<NUPKG_PATH>" "<ORCHESTRATOR_URL>" "<TENANT>" \
-  -A "<ORG_NAME>" \
-  -I "<APPLICATION_ID>" \
-  -S "<APPLICATION_SECRET>" \
-  --applicationScope "OR.Folders OR.BackgroundTasks OR.Settings.Read OR.Robots.Read OR.Machines.Read OR.Execution OR.Assets OR.Users.Read OR.Jobs OR.Monitoring" \
-  -o "<FOLDER_NAME>" \
-  --traceLevel Information
-```
-
-### Alternative: REST API Deploy
-
-If legacy CLI auth is not available but you have a token from the new CLI's `~/.uipcli/.env`:
-
-```bash
-source ~/.uipcli/.env
-
-# Upload .nupkg package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -F "file=@./MyProject.1.0.0.nupkg"
-
-# Create process from uploaded package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"Name":"MyProcess","ProcessKey":"MyProject","ProcessVersion":"1.0.0"}'
-```
