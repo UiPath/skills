@@ -85,17 +85,17 @@ Choose the appropriate operation from the Task Navigation table below.
 
 | I need to... | Read these |
 |---|---|
-| **Authenticate / manage tenants** | [references/uipcli-commands.md - Authentication](references/uipcli-commands.md) |
+| **Authenticate / manage tenants** | [references/uip-commands.md - Authentication](references/uip-commands.md) |
 | **Manage Orchestrator folders** | [references/orchestrator-guide.md - Folders](references/orchestrator-guide.md) |
 | **Manage Orchestrator assets** | [references/orchestrator-guide.md - Assets](references/orchestrator-guide.md) |
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
-| **Manage flow projects** | [references/uipcli-commands.md - Flow](references/uipcli-commands.md) |
-| **Install / manage CLI tools** | [references/uipcli-commands.md - Tools](references/uipcli-commands.md) |
+| **Manage flow projects** | [references/uip-commands.md - Flow](references/uip-commands.md) |
+| **Install / manage CLI tools** | [references/uip-commands.md - Tools](references/uip-commands.md) |
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
 | **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
-| **Full CLI command reference** | [references/uipcli-commands.md](references/uipcli-commands.md) |
+| **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath-coded-workflows:uipath-coded-workflows](/uipath-coded-workflows:uipath-coded-workflows) |
 
 ## Resolving UiPath Studio
@@ -253,7 +253,7 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 
 ## References
 
-- **[Complete CLI Command Reference](references/uipcli-commands.md)** — Every `uip` command with parameters
+- **[Complete CLI Command Reference](references/uip-commands.md)** — Every `uip` command with parameters
 - **[Orchestrator Guide](references/orchestrator-guide.md)** — Concepts, folders, assets, and planned features
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
