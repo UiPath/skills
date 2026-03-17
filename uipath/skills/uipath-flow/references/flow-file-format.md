@@ -118,6 +118,12 @@ uip flow registry get <nodeType> --format json
 
 ## Minimal working example — dice roller
 
+Building a flow is a two-step process: write the nodes/edges structure, then populate `definitions` from the registry.
+
+### Step 1 — Write nodes and edges
+
+Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`.
+
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
@@ -168,15 +174,25 @@ uip flow registry get <nodeType> --format json
       "targetPort": "input"
     }
   ],
-  "definitions": [
-    /* copy from: uip flow registry get core.trigger.manual --format json -> Data.Node */,
-    /* copy from: uip flow registry get core.action.script --format json -> Data.Node */,
-    /* copy from: uip flow registry get core.logic.terminate --format json -> Data.Node */
-  ],
+  "definitions": [],
   "bindings": [],
   "variables": {}
 }
 ```
+
+### Step 2 — Populate definitions from the registry
+
+Run one command per node type used in `nodes`. Copy the `Data.Node` object from each response into the `definitions` array.
+
+```bash
+uip flow registry get core.trigger.manual --format json
+uip flow registry get core.action.script --format json
+uip flow registry get core.logic.terminate --format json
+```
+
+The `definitions` array must contain exactly one entry per unique `type` used — not one per node instance. If two nodes share the same type, one definition covers both.
+
+> **Never write definitions by hand.** The registry is the authoritative source; hand-written definitions will fail validation or cause runtime errors.
 
 ## entry-points.json — declaring outputs
 
