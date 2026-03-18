@@ -2,7 +2,7 @@
 
 Connections are authenticated sessions for a specific connector. They store credentials and tokens, and can be shared across automations within a folder.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
 
 ---
 

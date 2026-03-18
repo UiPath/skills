@@ -2,7 +2,7 @@
 
 Resources represent the data objects available through a connector (e.g., Salesforce Account, Contact, Opportunity). Each resource supports a set of CRUD operations.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
 
 ## Contents
 - Listing and Describing Resources
@@ -82,17 +82,17 @@ A reference field in the describe output:
 
 ```bash
 # 1. Describe → discover referenceFields: departmentId → "departments", contactId → "contacts"
-uip is resources describe "uipath-zoho-desk" "tickets" \
+uipcli is resources describe "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" --operation Create --format json
 
 # 2. Resolve references
-uip is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
+uipcli is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
 # → { "id": "1892000000006907", "name": "Engineering" }
-uip is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
+uipcli is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
 # → { "id": "1892000000048009", "name": "John Doe" }
 
 # 3. Execute with resolved IDs
-uip is resources execute create "uipath-zoho-desk" "tickets" \
+uipcli is resources execute create "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" \
   --body '{"departmentId": "1892000000006907", "subject": "Bug report", "contactId": "1892000000048009"}' \
   --format json
@@ -113,12 +113,12 @@ When describe metadata is unavailable (see [Describe Failures](#describe-failure
 ```bash
 # User wants: create coupon "XYZ" for promotion "Chandu Test"
 # Infer: PromotionId → list Promotion objects
-uip is resources execute list "uipath-salesforce-sfdc" "Promotion" \
+uipcli is resources execute list "uipath-salesforce-sfdc" "Promotion" \
   --connection-id "<id>" --format json
 # → { "Id": "<promotion-id>", "Name": "Summer Sale" }
 
 # Use resolved Id in create
-uip is resources execute create "uipath-salesforce-sfdc" "Coupon" \
+uipcli is resources execute create "uipath-salesforce-sfdc" "Coupon" \
   --connection-id "<id>" \
   --body '{"CouponCode": "SAVE20", "PromotionId": "<promotion-id>"}' --format json
 ```
@@ -160,7 +160,7 @@ Some objects have auto-generated fields that cannot be set on create (e.g., Sale
 List operations may return paginated results. Use `--query "limit=50&offset=0"` and increment `offset` by `limit` to page through. Stop when the result set is empty or smaller than the limit.
 
 ```bash
-uip is resources execute list "<connector-key>" "<object>" \
+uipcli is resources execute list "<connector-key>" "<object>" \
   --connection-id "<id>" --query "limit=50&offset=0" --format json
 # → next page: --query "limit=50&offset=50"
 ```

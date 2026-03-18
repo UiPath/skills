@@ -87,11 +87,11 @@ MyProject/
 
 ## Rules
 
-- **Use CLI for dependencies**: Always use `uip rpa install-or-update-packages` to add/update dependencies. Do not manually edit the `dependencies` section of `project.json`.
+- **Use CLI for dependencies**: Always use `uipcli rpa install-or-update-packages` to add/update dependencies. Do not manually edit the `dependencies` section of `project.json`.
 - **Do not edit `.local/` or `.objects/`**: These are cache directories managed by the build system.
 - **`main` entry point**: The default entrypoint that gets run, if not specified otherwise.
-- **`--project-dir` awareness**: All `uip rpa` commands default to the current working directory as the project root. If the CWD is not the project root (e.g., you are in a parent monorepo), pass `--project-dir "{projectRoot}"` explicitly to every `uip rpa` command, or all operations will fail or target the wrong project.
-- **Creating new projects**: Use `uip rpa new --name "ProjectName" --location "/parent/dir"` to create projects. After creation, open the project in Studio: `uip rpa open-project --project-dir "/parent/dir/ProjectName"`.
+- **`--project-dir` awareness**: All `uipcli rpa` commands default to the current working directory as the project root. If the CWD is not the project root (e.g., you are in a parent monorepo), pass `--project-dir "{projectRoot}"` explicitly to every `uipcli rpa` command, or all operations will fail or target the wrong project.
+- **Creating new projects**: Use `uipcli rpa new --name "ProjectName" --location "/parent/dir"` to create projects. After creation, open the project in Studio: `uipcli rpa open-project --project-dir "/parent/dir/ProjectName"`.
 
 ## Common Activity Packages
 

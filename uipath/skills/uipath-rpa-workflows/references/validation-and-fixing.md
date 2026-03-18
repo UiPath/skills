@@ -7,18 +7,18 @@ Detailed procedures for package resolution, dynamic types, debugging, iteration,
 ```
 Read: file_path="{projectRoot}/project.json"     -> check current dependencies
 
-Bash: uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'
+Bash: uipcli rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'
 ```
 
 Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
 
 **If `install-or-update-packages` fails:**
-- **Package not found**: Verify the exact package ID — check spelling, use `uip rpa find-activities` to discover the correct package name from an activity's assembly
+- **Package not found**: Verify the exact package ID — check spelling, use `uipcli rpa find-activities` to discover the correct package name from an activity's assembly
 - **Network/feed error**: The user may need to check their NuGet feed configuration in Studio settings
 
 ## Resolving Dynamic Activity Custom Types
 
-Dynamic activities (e.g., Integration Service connectors) retrieved via `uip rpa get-default-activity-xaml` (with `--activity-type-id`) may use **JIT-compiled custom types** for their input/output properties. After the activity is added to the workflow, when you need to discover the property names and CLR types of these custom entities (e.g., to populate an `Assign` activity targeting a custom type property, or to create a variable of a custom type), read the JIT custom types schema:
+Dynamic activities (e.g., Integration Service connectors) retrieved via `uipcli rpa get-default-activity-xaml` (with `--activity-type-id`) may use **JIT-compiled custom types** for their input/output properties. After the activity is added to the workflow, when you need to discover the property names and CLR types of these custom entities (e.g., to populate an `Assign` activity targeting a custom type property, or to create a variable of a custom type), read the JIT custom types schema:
 
 ```
 Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
@@ -30,10 +30,10 @@ When `get-errors` returns an error referencing a specific activity (by IdRef or 
 
 ```bash
 # Focus a specific activity by its IdRef (from the error output):
-uip rpa focus-activity --activity-id "Assign_1"
+uipcli rpa focus-activity --activity-id "Assign_1"
 
 # Focus all activities sequentially (useful for walkthrough):
-uip rpa focus-activity
+uipcli rpa focus-activity
 ```
 
 This is especially useful when:
@@ -45,11 +45,11 @@ This is especially useful when:
 
 ```
 REPEAT:
-  1. uip rpa get-errors --file-path "path/to/workflow.xaml" --format json
+  1. uipcli rpa get-errors --file-path "path/to/workflow.xaml" --format json
   2. IF 0 errors (or errors cannot be resolved automatically) -> EXIT to Phase 4
   3. Identify highest-priority error category
   4. Apply appropriate fix
-  5. (Optional) Focus the fixed activity: uip rpa focus-activity --activity-id "..."
+  5. (Optional) Focus the fixed activity: uipcli rpa focus-activity --activity-id "..."
   6. GOTO 1
 
 DO NOT stop until all activities are resolved (recognized).
@@ -68,13 +68,13 @@ After reaching 0 errors, optionally run the workflow to catch runtime errors (wr
 
 ```bash
 # Run with default arguments:
-uip rpa run-file --file-path "Workflows/MyWorkflow.xaml" --format json
+uipcli rpa run-file --file-path "Workflows/MyWorkflow.xaml" --format json
 
 # Run with input arguments:
-uip rpa run-file --file-path "Workflows/MyWorkflow.xaml" --input-arguments '{"recipientEmail": "test@example.com", "subject": "Test"}' --format json
+uipcli rpa run-file --file-path "Workflows/MyWorkflow.xaml" --input-arguments '{"recipientEmail": "test@example.com", "subject": "Test"}' --format json
 
 # Run with verbose logging for debugging:
-uip rpa run-file --file-path "Workflows/MyWorkflow.xaml" --log-level Verbose --format json
+uipcli rpa run-file --file-path "Workflows/MyWorkflow.xaml" --log-level Verbose --format json
 ```
 
 **When to run:**

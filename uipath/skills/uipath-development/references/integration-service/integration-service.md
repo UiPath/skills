@@ -1,12 +1,12 @@
 # Integration Service
 
-Interact with external services through UiPath Integration Service — discover connectors, manage connections, and execute operations via the `uip` CLI.
+Interact with external services through UiPath Integration Service — discover connectors, manage connections, and execute operations via the `uipcli` CLI.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline in each reference file.
+> Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline in each reference file.
 
 ## Prerequisites
 
-- `uip` must be authenticated (`uip login`)
+- `uipcli` must be authenticated (`uipcli login`)
 - Correct folder context must be set if using folder-scoped connections (`--folder`)
 
 ## Core Principles

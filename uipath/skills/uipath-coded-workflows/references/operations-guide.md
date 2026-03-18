@@ -4,14 +4,14 @@ Detailed step-by-step procedures for all operations on UiPath coded workflow pro
 
 ## Initialize a New Project
 
-Creates a complete UiPath coded automation project from scratch. **ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
+Creates a complete UiPath coded automation project from scratch. **ALWAYS use `uipcli rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
 
 ### Steps
 
-**1. Create the project with `uip rpa create-project`:**
+**1. Create the project with `uipcli rpa create-project`:**
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+uipcli rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
 ```
 
 **Template options:**
@@ -397,7 +397,7 @@ namespace MyProjectName
 **Workflow order:** Indicate ALL missing screens and elements FIRST, then write the workflow code using real descriptor paths.
 
 📖 **Full procedure with examples** (`.objects/` discovery, AppVersion references, `--parent-id` vs `--parent-name`, CLI flags, end-to-end examples): [ui-automation.md § Finding Descriptors](ui-automation/ui-automation.md)
-📖 **CLI command reference** (`indicate-application`, `indicate-element` parameters and responses): [uip-guide.md](uip-guide.md)
+📖 **CLI command reference** (`indicate-application`, `indicate-element` parameters and responses): [uipcli-guide.md](uipcli-guide.md)
 
 **Key reminders:**
 - Run indicate commands **from the project directory** (cwd must contain `project.json`)
