@@ -76,7 +76,7 @@ uip flow registry get <nodeType> --format json  # full schema for one node type
 
 Before editing the `.flow` file, create a plan and get user approval.
 
-1. **Create `<ProjectName>-plan.md`** in the project directory with:
+1. **Output the plan directly in chat** with:
    - **Goal** -- one-line summary of what the flow does
    - **Nodes** -- numbered list of each step, its node type, and what it does
    - **Connections** -- how nodes connect (which output port to which input port)
