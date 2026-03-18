@@ -1,6 +1,6 @@
 # XAML PowerPoint Presentation Activities
 
-PowerPoint activity patterns for `UiPath.Presentations.Activities`. Always get full XAML from `uipcli rpa get-default-activity-xaml` — this file covers confirmed patterns from real workflows only.
+PowerPoint activity patterns for `UiPath.Presentations.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml` — this file covers confirmed patterns from real workflows only.
 
 **Target:** Windows only (not Cross-platform / Studio Web Portable).
 
@@ -72,4 +72,4 @@ The scope body passes an `IPresentationQuickHandle` as a delegate argument (conv
 | Save vs SaveAs | `AutoSave="True"` on scope saves on close; use `SavePresentationFileAs` to save to a different path/format |
 | Macros | Use `RunMacro` with nested `RunMacroArgument` children for each argument |
 | Windows only | `UiPath.Presentations.Activities` does not support Cross-platform / Studio Web Portable target |
-| Full XAML | Always use `uipcli rpa get-default-activity-xaml` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |

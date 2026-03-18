@@ -6,4 +6,4 @@
 |---------------|
 | `SourceRange`, `Label`, `ExactMatch`, `ColumnIndex="{x:Null}"`, output via `Value` child `OutArgument` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

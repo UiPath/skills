@@ -6,4 +6,4 @@
 |---------------|
 | `PivotTable="[Excel.Sheet(&quot;Sheet1&quot;).PivotTable(&quot;PivotName&quot;)]"`, `NewSourceRange` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

@@ -11,4 +11,4 @@ xmlns:ueabf="clr-namespace:UiPath.Excel.Activities.Business.Filter;assembly=UiPa
 |---------------|
 | `Table="[Excel.Sheet(...).PivotTable(&quot;Name&quot;)]"`, `ColumnName`, `ClearFilter`; child `FilterArgument` uses `ueabf:FilterArgument` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

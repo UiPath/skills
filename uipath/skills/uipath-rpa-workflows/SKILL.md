@@ -1,28 +1,28 @@
 ---
 name: uipath-rpa-workflows
-description: "Generate, edit, test, and run RPA workflows (XAML files) in UiPath Studio Desktop using uipcli CLI and filesystem operations. TRIGGER when: RPA project detected (project.json with UiPath dependencies AND .xaml workflow files); User mentions XAML workflows, RPA workflows, .xaml files, or UiPath Studio Desktop workflows; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, transaction processing, queue items, API calls, etc.) and a UiPath RPA/XAML project exists nearby; User asks about fixing XAML errors or workflow validation issues. DO NOT TRIGGER when: User is working with coded workflows (.cs files with [Workflow]/[TestCase] attributes — use uipath-coded-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
+description: "Generate, edit, test, and run RPA workflows (XAML files) in UiPath Studio Desktop using uip CLI and filesystem operations. TRIGGER when: RPA project detected (project.json with UiPath dependencies AND .xaml workflow files); User mentions XAML workflows, RPA workflows, .xaml files, or UiPath Studio Desktop workflows; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, transaction processing, queue items, API calls, etc.) and a UiPath RPA/XAML project exists nearby; User asks about fixing XAML errors or workflow validation issues. DO NOT TRIGGER when: User is working with coded workflows (.cs files with [Workflow]/[TestCase] attributes — use uipath-coded-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
 ---
 
 # RPA Workflow Architect
 
 Generate and edit RPA workflows using a **discovery-first approach** with **iterative error-driven refinement**. Always understand before acting, start simple, and validate continuously.
 
-This skill uses `uipcli` CLI commands (via `Bash`) and Claude Code's built-in tools (`Read`, `Write`, `Edit`, `Glob`, `Grep`) to interact with UiPath Studio Desktop projects and manage workflow files.
+This skill uses `uip` CLI commands (via `Bash`) and Claude Code's built-in tools (`Read`, `Write`, `Edit`, `Glob`, `Grep`) to interact with UiPath Studio Desktop projects and manage workflow files.
 
 ## Core Principles
 
 1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. They eliminate guesswork and are more reliable than examples or CLI-retrieved defaults. Always check for them first; push for package updates if unavailable, or fallback to `get-default-activity-xaml` and/or `get-workflow-example`.
 2. **Know Before You Write** — Never generate XAML blind. Never try to guess properties, types, or configurations. Understand the project structure, what packages are installed, what expression language is used, and what patterns existing workflows follow. The deeper your understanding, the fewer validation cycles you'll need.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file — don't enumerate all packages first. If activity docs give you a complete XAML example, don't also call `get-default-activity-xaml`. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
-4. **Start Minimal, Iterate to Correct** — Build one activity at a time. Write the smallest working XAML, validate with `uipcli rpa get-errors`, fix what breaks, repeat. Start with what you know works (default or example values, configurations). Complex workflows emerge from validated building blocks, not from generating everything at once.
-5. **Validate After Every Change** — Never assume an edit succeeded. Always confirm with `uipcli rpa get-errors`. Static validation catches most problems; `run-file` catches the rest.
+4. **Start Minimal, Iterate to Correct** — Build one activity at a time. Write the smallest working XAML, validate with `uip rpa get-errors`, fix what breaks, repeat. Start with what you know works (default or example values, configurations). Complex workflows emerge from validated building blocks, not from generating everything at once.
+5. **Validate After Every Change** — Never assume an edit succeeded. Always confirm with `uip rpa get-errors`. Static validation catches most problems; `run-file` catches the rest.
 6. **Fix Errors by Category** — Triage errors in order: Package (missing dependencies) → Structure (invalid XML) → Type (wrong property types) → Activity Properties (misconfigured activity) → Logic (wrong behavior). Fixing in this order avoids cascading false errors.
 
 ---
 
 ## CLI Output Format
 
-All `uipcli` commands support `--format <format>` (table, json, yaml, plain).
+All `uip` commands support `--format <format>` (table, json, yaml, plain).
 
 **Always use `--format json`** for commands whose output you need to parse or act on (e.g., `get-errors`, `find-activities`, `list-workflow-examples`, `is connections list`). JSON output is structured, unambiguous, and avoids table-formatting surprises.
 
@@ -36,7 +36,7 @@ For the full CLI command reference (all tools, parameters, and error recovery), 
 
 Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
 
-**The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uipcli --help`, `uipcli rpa --help`, `uipcli rpa get-default-activity-xaml --help`, `uipcli is --help`, `uipcli is connections --help`, etc.
+**The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uip --help`, `uip rpa --help`, `uip rpa get-default-activity-xaml --help`, `uip is --help`, `uip is connections --help`, etc.
 
 ---
 
@@ -76,7 +76,7 @@ The version numbers in the links throughout this document represent the latest d
 ### Procedural Reference Files
 
 Detailed procedures extracted from the main workflow phases:
-- **[cli-reference.md](./references/cli-reference.md)** — Full `uipcli` CLI command reference guide (all tools, parameters, commands)
+- **[cli-reference.md](./references/cli-reference.md)** — Full `uip` CLI command reference guide (all tools, parameters, commands)
 - **[environment-setup.md](./references/environment-setup.md)** — Phase 0 details: project root detection, Studio verification, authentication, and new project creation
 - **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Phase 3 details: package resolution, JIT custom types, focus-activity debugging, iteration loop, smoke testing
 - **[connector-capabilities.md](./references/connector-capabilities.md)** — IS connector discovery, resource schema inspection, connection management
@@ -118,7 +118,7 @@ If unclear which file to edit, **ask the user** rather than guessing.
 
 Ensure Studio Desktop is running, connected, and targeting the correct project. See **[references/environment-setup.md](./references/environment-setup.md)** for the full setup procedure (project root detection, Studio verification, authentication).
 
-**Quick check:** Find `project.json` to establish `{projectRoot}`, run `uipcli rpa list-instances --format json` to verify Studio, and `uipcli rpa open-project` if needed.
+**Quick check:** Find `project.json` to establish `{projectRoot}`, run `uip rpa list-instances --format json` to verify Studio, and `uip rpa open-project` if needed.
 
 ---
 
@@ -147,8 +147,8 @@ Analyze:
 **This is the most important discovery step.** Installed activity packages may ship structured markdown documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. These docs are generated from activity source code and contain everything needed to configure activities correctly on the first try: properties, types, defaults, enum values, conditional property groups, and working XAML examples.
 
 **Availability:** Docs exist only for **installed packages** and typically only for **newer package versions**. When you're confident about which package you need:
-- **Package not installed?** Install it first: `uipcli rpa install-or-update-packages --packages '[{"id":"UiPath.WebAPI.Activities"}]'` — this also syncs docs if the package ships them.
-- **Package installed but no docs?** Update to the latest version: `uipcli rpa install-or-update-packages --packages '[{"id":"UiPath.WebAPI.Activities"}]'` (omit version to get latest) — newer releases are more likely to ship documentation.
+- **Package not installed?** Install it first: `uip rpa install-or-update-packages --packages '[{"id":"UiPath.WebAPI.Activities"}]'` — this also syncs docs if the package ships them.
+- **Package installed but no docs?** Update to the latest version: `uip rpa install-or-update-packages --packages '[{"id":"UiPath.WebAPI.Activities"}]'` (omit version to get latest) — newer releases are more likely to ship documentation.
 
 Prioritize installing/updating packages early. It unlocks both activity docs and `get-default-activity-xaml` (which also requires the package to be installed).
 
@@ -197,8 +197,8 @@ The filesystem structure is deterministic -- use it to skip unnecessary enumerat
 | **You know the package, not the activity** | `Read` the `overview.md`, then read the identified activity doc. |
 | **You don't know the package** | `Grep` across `.local/docs/packages/` for keywords. |
 | **Docs exist but activity isn't documented** | Use other activity docs in the same package as structural reference, fall back to `get-default-activity-xaml`. |
-| **No docs for the package** | **Update the package first** (`uipcli rpa install-or-update-packages`) -- this often adds docs. If still no docs, fall back to Steps 1.4-1.7. |
-| **Package not installed** | **Install it first** (`uipcli rpa install-or-update-packages`) -- both docs and `get-default-activity-xaml` require it. After install, check for docs before proceeding to fallbacks. |
+| **No docs for the package** | **Update the package first** (`uip rpa install-or-update-packages`) -- this often adds docs. If still no docs, fall back to Steps 1.4-1.7. |
+| **Package not installed** | **Install it first** (`uip rpa install-or-update-packages`) -- both docs and `get-default-activity-xaml` require it. After install, check for docs before proceeding to fallbacks. |
 | **No `.local/docs/` directory at all** | Project may not support this feature yet. Use fallback flow starting at Step 1.3. |
 
 ### Step 1.3: Search Current Project
@@ -217,10 +217,10 @@ Read: file_path="{projectRoot}/ExistingWorkflow.xaml"      → read a relevant e
 
 ### Step 1.4: Discover Activities (When Needed)
 
-Use `uipcli rpa find-activities` when you need to find which activity implements a user-described action, discover activities not covered by installed docs, or get the exact fully qualified class name, type ID, and `isDynamicActivity` flag.
+Use `uip rpa find-activities` when you need to find which activity implements a user-described action, discover activities not covered by installed docs, or get the exact fully qualified class name, type ID, and `isDynamicActivity` flag.
 
 ```bash
-uipcli rpa find-activities --query "send mail" --limit 10 --format json
+uip rpa find-activities --query "send mail" --limit 10 --format json
 ```
 
 **When to use this command:**
@@ -239,13 +239,13 @@ uipcli rpa find-activities --query "send mail" --limit 10 --format json
 **Examples:**
 ```bash
 # Find activities for sending email
-uipcli rpa find-activities --query "send mail" --limit 5 --format json
+uip rpa find-activities --query "send mail" --limit 5 --format json
 
 # Find weather-related activities
-uipcli rpa find-activities --query "get weather" --format json
+uip rpa find-activities --query "get weather" --format json
 
 # Find Excel read activities
-uipcli rpa find-activities --query "read range" --limit 10 --format json
+uip rpa find-activities --query "read range" --limit 10 --format json
 ```
 
 ### Step 1.5: Disambiguate Service / Provider
@@ -272,24 +272,24 @@ When results contain multiple competing packages for the same capability (e.g., 
 
 ### Step 1.6: Resolve Activity Properties (Fallback)
 
-Use `uipcli rpa get-default-activity-xaml` to retrieve the activity's default XAML template. **Requires the package to be installed** (see [Step 1.2](#step-12-discover-activity-documentation-primary-source)). If activity docs exist with XAML examples, prefer those as your starting point -- they're richer than bare defaults.
+Use `uip rpa get-default-activity-xaml` to retrieve the activity's default XAML template. **Requires the package to be installed** (see [Step 1.2](#step-12-discover-activity-documentation-primary-source)). If activity docs exist with XAML examples, prefer those as your starting point -- they're richer than bare defaults.
 
 The command handles both non-dynamic and dynamic activities.
 
 #### For Non-Dynamic Activities
 
 ```bash
-uipcli rpa get-default-activity-xaml --activity-class-name "UiPath.Core.Activities.WriteLine"
+uip rpa get-default-activity-xaml --activity-class-name "UiPath.Core.Activities.WriteLine"
 ```
 
 #### For Dynamic Activities
 
 ```bash
-uipcli is connections list # Find relevant connection ID, if any
-uipcli rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-249b07ac0127" --connection-id "{connectionId}"
+uip is connections list # Find relevant connection ID, if any
+uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-249b07ac0127" --connection-id "{connectionId}"
 
 # Or, if no relevant connection, pass an empty string
-uipcli rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-249b07ac0127" --connection-id ""
+uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-249b07ac0127" --connection-id ""
 ```
 
 **When to use this command:**
@@ -300,8 +300,8 @@ uipcli rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305
 
 **Key parameters:**
 - `--activity-class-name`: For non-dynamic activities. Must be fully qualified (e.g., `UiPath.Core.Activities.WriteLine`)
-- `--activity-type-id`: For dynamic activities. Use `uipcli rpa find-activities` to find the exact type ID
-- `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uipcli is connections list [connector-key]`
+- `--activity-type-id`: For dynamic activities. Use `uip rpa find-activities` to find the exact type ID
+- `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uip is connections list [connector-key]`
 
 **For JIT custom types**, read the schema file:
 
@@ -319,16 +319,16 @@ Use when activity docs, `find-activities`, `get-default-activity-xaml`, and doma
 
 ```bash
 # Search by service tags (AND logic — all tags must match)
-uipcli rpa list-workflow-examples --tags '["web"]' --limit 10 --format json
+uip rpa list-workflow-examples --tags '["web"]' --limit 10 --format json
 
 # Multiple tags narrow down results (AND logic — all tags must match)
-uipcli rpa list-workflow-examples --tags '["jira", "confluence"]' --limit 10 --format json
+uip rpa list-workflow-examples --tags '["jira", "confluence"]' --limit 10 --format json
 
 # Use prefix to filter by category
-uipcli rpa list-workflow-examples --tags '["gmail"]' --prefix "email-communication/" --limit 15 --format json
+uip rpa list-workflow-examples --tags '["gmail"]' --prefix "email-communication/" --limit 15 --format json
 
 # Once you identify relevant examples from the list operation, retrieve XAML content:
-uipcli rpa get-workflow-example --key "email-communication/add-new-gmail-emails-to-keap-as-contacts.xaml"
+uip rpa get-workflow-example --key "email-communication/add-new-gmail-emails-to-keap-as-contacts.xaml"
 ```
 
 **Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
@@ -342,7 +342,7 @@ uipcli rpa get-workflow-example --key "email-communication/add-new-gmail-emails-
 
 ## Studying Retrieved Examples
 
-When studying repository examples from `uipcli rpa get-workflow-example`:
+When studying repository examples from `uip rpa get-workflow-example`:
 - The command returns the full XAML content directly
 - Parse the namespace declarations at the top to identify required packages
 - Examine the exact set of activity configurations, properties, variables, types, and set values. These are valid configurations
@@ -357,8 +357,8 @@ Glob: pattern="**/*" path="{projectRoot}/.objects/"         → explore object r
 Read: file_path="{projectRoot}/.objects/.metadata"          → object repository metadata
 Read: file_path="{projectRoot}/Main.xaml"                   → existing workflow (variables, arguments, imports)
 Glob: pattern="**/*" path="{projectRoot}/.settings/"        → settings profiles
-Bash: uipcli is connections list --format json              → available Integration Service connections
-Bash: uipcli is connectors list --format json               → available connectors
+Bash: uip is connections list --format json              → available Integration Service connections
+Bash: uip is connectors list --format json               → available connectors
 ```
 
 This surfaces variables, arguments, imports, expression language, available connections, and reusable project-level resources.
@@ -416,22 +416,22 @@ Edit: file_path="{projectRoot}/WorkflowToEdit.xaml"
 - This phase repeats until we obtain a 0-error state or errors cannot be resolved automatically.
 - It is acceptable to defer some remaining configuration to the user. Just inform the user about any required manual updates they need to make after generation.
 - If the required activity connection does not exist, reuse any available connection in the project as a placeholder
-- If certain activity properties or arguments are unknown, provide default values (e.g., placeholders, default type values, or use `uipcli rpa get-default-activity-xaml`)
+- If certain activity properties or arguments are unknown, provide default values (e.g., placeholders, default type values, or use `uip rpa get-default-activity-xaml`)
 
 ### Step 3.1: Check for Errors
 
 ```bash
 # Check errors for a specific file (preferred — faster, especially in large projects):
-uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --format json
+uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --format json
 
 # Check errors for the entire project:
-uipcli rpa get-errors --format json
+uip rpa get-errors --format json
 
 # Use cached errors (skip re-validation — faster but may be stale):
-uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --format json
+uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --format json
 ```
 
-**Notes:** `--file-path` must be **relative to the project directory** (e.g., `"Workflows/SendEmail.xaml"`, not absolute). Always prefer `--file-path` for targeted checks (faster). Use `--skip-validation` only for quick cached-error checks. For slow projects, increase timeout: `uipcli rpa --timeout 600 get-errors --file-path "..."`.
+**Notes:** `--file-path` must be **relative to the project directory** (e.g., `"Workflows/SendEmail.xaml"`, not absolute). Always prefer `--file-path` for targeted checks (faster). Use `--skip-validation` only for quick cached-error checks. For slow projects, increase timeout: `uip rpa --timeout 600 get-errors --file-path "..."`.
 
 ### Step 3.2: Categorize and Fix
 
@@ -439,9 +439,9 @@ uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation 
 
 **1. Package Errors** — Missing namespace, unknown activity type, unresolved assembly
 - Check `project.json` for current dependencies
-- Install/update the package: `uipcli rpa install-or-update-packages --packages '[{"id":"PackageId"}]'` (omit `version` for latest)
+- Install/update the package: `uip rpa install-or-update-packages --packages '[{"id":"PackageId"}]'` (omit `version` for latest)
 - After install, activity docs become available at `.local/docs/packages/{PackageId}/` — re-read them to correct property issues downstream
-- If package ID is uncertain, use `uipcli rpa find-activities --query "..."` to discover it
+- If package ID is uncertain, use `uip rpa find-activities --query "..."` to discover it
 
 **2. Structural Errors** — Invalid XML, malformed elements, missing closing tags
 - `Read` the XAML around the error location → `Edit` to fix XML structure
@@ -450,20 +450,20 @@ uipcli rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation 
 **3. Type Errors** — Wrong property type, invalid cast, type mismatch
 - Check the activity doc at `.local/docs/packages/{PackageId}/activities/{ActivityName}.md` for correct types and enum values
 - For dynamic activities, Integration Service connectors, JIT types: see [jit-custom-types-schema.md](./references/jit-custom-types-schema.md)
-- If docs are unavailable, use `uipcli rpa get-default-activity-xaml` to see the expected default property types
+- If docs are unavailable, use `uip rpa get-default-activity-xaml` to see the expected default property types
 - Push for package updates if docs are missing, inaccurate, or if `get-default-activity-xaml` cannot resolve
 - If default activity activity XAML is unavailable, check for examples in the examples repository (`list-workflow-examples` and `get-workflow-example`)
 
 **4. Activity Properties Errors** — Unknown properties, misconfigured conditional groups, missing required fields
 - **Primary:** Read the activity doc — it documents all properties, conditional groups (`Visible When`), valid configurations, and enum values
-- **Fallback:** `uipcli rpa get-default-activity-xaml` for the activity's default XAML template
+- **Fallback:** `uip rpa get-default-activity-xaml` for the activity's default XAML template
 - Pay attention to mutually exclusive property groups (OverloadGroups) — setting properties from multiple groups causes errors
-- For IS/dynamic activities, check connection status: `uipcli is connections list <connector-key> --format json`
+- For IS/dynamic activities, check connection status: `uip is connections list <connector-key> --format json`
 
 **5. Logic Errors** — Wrong behavior, incorrect expressions, business logic issues
 - `Read` the XAML to understand current flow → `Edit` to correct
 - Verify expression syntax matches project language (VB.NET vs C#)
-- Use `uipcli rpa run-file` for runtime validation if static checks pass
+- Use `uip rpa run-file` for runtime validation if static checks pass
 
 **When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (see [InvokeCode.md](../../references/activity-docs/UiPath.System.Activities/25.10/activities/InvokeCode.md)).
 
@@ -499,15 +499,15 @@ For CLI error diagnosis and recovery patterns (IPC failures, auth errors, packag
 
 **Never** (items not already covered by Core Principles):
 - Generate large, complex workflows in one go — build incrementally, one activity at a time
-- Assume a create/edit succeeded without validating with `uipcli rpa get-errors`
+- Assume a create/edit succeeded without validating with `uip rpa get-errors`
 - Stop the iteration loop before correctly rendering all activities
 - Guess properties, types, inputs/outputs, or configurations without checking activity docs, or `get-default-activity-xaml`, or the examples repository, or the appropriate reference files
-- Use incorrect/guessed keys with `uipcli rpa get-workflow-example` (always use keys from list results)
+- Use incorrect/guessed keys with `uip rpa get-workflow-example` (always use keys from list results)
 - Pass absolute paths to `--file-path` in `get-errors` (must be relative to project directory)
 - Ask the user to choose a service provider without first checking project signals — auto-select when possible (Step 1.5)
 - Retry failing CLI commands in a loop without diagnosing the root cause
 - Skip Phase 0 (Studio readiness) — all subsequent phases depend on Studio IPC
-- Use connector/dynamic activities without checking whether a connection exists (`uipcli is connections list`)
+- Use connector/dynamic activities without checking whether a connection exists (`uip is connections list`)
 
 ---
 
@@ -524,7 +524,7 @@ Before handover, verify:
 - [ ] Activity properties sourced from activity docs, `find-activities`, `get-default-activity-xaml`, `get-workflow-example` (priority ladder followed)
 - [ ] Local project explored for existing patterns and conventions
 - [ ] Service/provider disambiguation resolved — auto-selected or prompted only when ambiguous (Step 1.5)
-- [ ] For connector workflows: connections verified with `uipcli is connections list`
+- [ ] For connector workflows: connections verified with `uip is connections list`
 
 **XAML Content Quality:**
 - [ ] VB.NET or C# syntax matches project language (checked existing workflows)

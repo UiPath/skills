@@ -6,4 +6,4 @@
 |---------------|
 | `Range`, `HasHeaders`, `OutTableName`, `TableName="{x:Null}"` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

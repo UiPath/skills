@@ -1,6 +1,6 @@
 # XAML Excel Activities
 
-Excel activity patterns for `UiPath.Excel.Activities`. Always get full XAML from `uipcli rpa get-default-activity-xaml` — this file covers confirmed patterns from real workflows only.
+Excel activity patterns for `UiPath.Excel.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml` — this file covers confirmed patterns from real workflows only.
 
 ## Package
 
@@ -46,7 +46,7 @@ Namespace imports needed in `TextExpression.NamespacesForImplementation`:
 | Handle variable types | `ue:ISheetRef` (InsertSheetX output), `ue:IChartRef` (InsertExcelChartX output) |
 | Classic standalone | No scope — `WorkbookPath` on each activity; set `WorkbookPathResource="{x:Null}"` |
 | `ForEachRow` (classic) | One arg: `DelegateInArgument x:TypeArguments="sd:DataRow" Name="CurrentRow"` |
-| Full XAML | Always use `uipcli rpa get-default-activity-xaml` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |
 
 ## Common Pitfalls
 

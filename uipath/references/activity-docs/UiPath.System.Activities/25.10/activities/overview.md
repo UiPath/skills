@@ -90,4 +90,4 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 - **Direction:** IN (read-only), OUT (write-only), IN/OUT (read-write)
 - **Case Sensitive:** Argument names are case-sensitive
 
-These activities are part of `UiPath.System.Activities` (always installed). You can write them directly **without** calling `uipcli rpa get-default-activity-xaml`. Use the templates as-is — just replace the placeholder expressions with your actual logic.
+These activities are part of `UiPath.System.Activities` (always installed). You can write them directly **without** calling `uip rpa get-default-activity-xaml`. Use the templates as-is — just replace the placeholder expressions with your actual logic.

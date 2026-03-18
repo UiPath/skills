@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensures @uipath/uipcli and @uipath/rpa-tool are installed globally.
+# Ensures @uipath/cli and @uipath/rpa-tool are installed globally.
 # Runs once per session via the SessionStart plugin hook.
 # If npm is missing, attempts to install Node.js first.
 # Supports Windows, macOS, and Linux.
@@ -51,7 +51,7 @@ ensure_npm() {
 
   if ! command -v npm &> /dev/null; then
     echo "Node.js was installed but npm is not yet available in this session." >&2
-    echo "Please restart your terminal, then run: npm install -g @uipath/uipcli" >&2
+    echo "Please restart your terminal, then run: npm install -g @uipath/cli" >&2
     exit 2
   fi
 }
@@ -89,17 +89,17 @@ ensure_npm_package() {
   fi
 }
 
-ensure_uipcli_tool() {
+ensure_uip_tool() {
   local pkg="$1"
-  echo "Installing or updating uipcli tool ($pkg)..." >&2
+  echo "Installing or updating uip tool ($pkg)..." >&2
 
   local output
-  output="$(uipcli tools install "$pkg" 2>&1)"
+  output="$(uip tools install "$pkg" 2>&1)"
 
   if echo "$output" | grep -qi "error"; then
-    echo "Failed to install uipcli tool $pkg:" >&2
+    echo "Failed to install uip tool $pkg:" >&2
     echo "$output" >&2
-    echo "Please run manually: uipcli tools install $pkg" >&2
+    echo "Please run manually: uip tools install $pkg" >&2
     exit 2
   fi
 }
@@ -107,5 +107,5 @@ ensure_uipcli_tool() {
 # ── main ─────────────────────────────────────────────────────────────
 ensure_npm
 ensure_github_packages_registry
-ensure_npm_package @uipath/uipcli
-ensure_uipcli_tool @uipath/rpa-tool
+ensure_npm_package @uipath/cli
+ensure_uip_tool @uipath/rpa-tool

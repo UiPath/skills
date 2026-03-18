@@ -2,14 +2,14 @@
 
 Activities are pre-built actions available for each connector (e.g., "Send Message", "Create Issue"). They represent specific operations the connector supports. Activities include both **actions** (non-trigger) and **triggers** (event listeners).
 
-> Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
 
 ---
 
 ## List Activities (Non-Trigger)
 
 ```bash
-uipcli is activities list "<connector-key>" --format json
+uip is activities list "<connector-key>" --format json
 ```
 
 This lists **non-trigger activities only** (actions, not event listeners).
@@ -17,7 +17,7 @@ This lists **non-trigger activities only** (actions, not event listeners).
 ## List Trigger Activities
 
 ```bash
-uipcli is activities list "<connector-key>" --triggers --format json
+uip is activities list "<connector-key>" --triggers --format json
 ```
 
 The `--triggers` flag filters to **trigger activities only** (`isTrigger=true`). These represent events the connector can fire (e.g., "Record Created", "Record Updated").

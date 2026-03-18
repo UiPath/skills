@@ -6,4 +6,4 @@
 |---------------|
 | `Sheet="[Excel.Sheet(&quot;SheetName&quot;)]"` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

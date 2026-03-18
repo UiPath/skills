@@ -11,4 +11,4 @@ xmlns:ueabc="clr-namespace:UiPath.Excel.Activities.Business.ChartModifications;a
 |---------------|
 | `Range`, `InsertIntoSheet`, `InsertedChart` (output, type `ue:IChartRef`), `ChartCategory`, `ChartType`, `ChartHeight`, `ChartWidth`, `Left`, `Top` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

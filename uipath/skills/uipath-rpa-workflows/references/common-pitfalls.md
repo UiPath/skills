@@ -162,10 +162,10 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
 
 **Connection lifecycle with CLI:**
-- **Discover connections**: `uipcli is connections list [connector-key] --format json` — find existing connection GUIDs
-- **Verify connection health**: `uipcli is connections ping <connection-id>` — check if a connection is still active
-- **Create new connection**: `uipcli is connections create <connector-key>` — opens OAuth flow for user to authenticate
-- **Re-authenticate**: `uipcli is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
+- **Discover connections**: `uip is connections list [connector-key] --format json` — find existing connection GUIDs
+- **Verify connection health**: `uip is connections ping <connection-id>` — check if a connection is still active
+- **Create new connection**: `uip is connections create <connector-key>` — opens OAuth flow for user to authenticate
+- **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
 - If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user they must configure the connection in Studio
 
 ## Deprecated Activities (Do Not Use)
@@ -205,7 +205,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `UiPath.UIAutomation.Activities` | `UiPath.UIAutomationNext.Activities` | Modern UI activities use "Next" namespace |
 | `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
 
-Use `uipcli rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
+Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
 
 ## Portable vs Windows Framework Limitations
 
@@ -246,9 +246,9 @@ Use `uipcli rpa get-default-activity-xaml` to get correct xmlns declarations —
 2. Remove attributes that don't exist in the target version
 3. Cap `Version` attributes to the maximum supported by the target package
 4. Add `<AssemblyReference>netstandard</AssemblyReference>` if type resolution errors persist
-5. Use `uipcli rpa get-errors` to validate after changes
+5. Use `uip rpa get-errors` to validate after changes
 
-**Prevention:** When using `uipcli rpa get-default-activity-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
+**Prevention:** When using `uip rpa get-default-activity-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
 
 ## Expression Language Mismatch
 
@@ -286,7 +286,7 @@ Common validation error: `"The type 'Dictionary<,>' is defined in an assembly th
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uipcli rpa install-or-update-packages`.
+**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages`.
 
 ## Invalid Use of `x:` Prefix for Non-Builtin CLR Types
 
@@ -404,7 +404,7 @@ Flowcharts and State Machines use `x:Name="__ReferenceID0"` and `{x:Reference __
 - `PropertyName="{x:Null}"` explicitly sets a property to null — this is serialized and persisted
 - Omitting a property entirely means "use the default value" — which may or may not be null
 - Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
-- When `uipcli rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
+- When `uip rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
 
 ## Selector Special Characters
 
@@ -446,7 +446,7 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 ### `get-errors --file-path` requires relative paths
 
-The `--file-path` parameter of `uipcli rpa get-errors` must be a path **relative to the project directory**:
+The `--file-path` parameter of `uip rpa get-errors` must be a path **relative to the project directory**:
 - Correct: `--file-path "Workflows/SendEmail.xaml"`
 - Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
 
@@ -454,14 +454,14 @@ Using an absolute path will result in a "file not found" error even if the file 
 
 ### `--project-dir` defaults to CWD
 
-All `uipcli rpa` commands default to the current working directory as the project root. If you are running commands from a parent directory or monorepo root, every command will silently target the wrong location. Always verify the CWD contains `project.json`, or pass `--project-dir` explicitly.
+All `uip rpa` commands default to the current working directory as the project root. If you are running commands from a parent directory or monorepo root, every command will silently target the wrong location. Always verify the CWD contains `project.json`, or pass `--project-dir` explicitly.
 
 ### Studio IPC connection failures
 
-`uipcli rpa` commands communicate with Studio Desktop via IPC. If Studio is not running, not responding, or has no project open, commands will fail with connection errors. Recovery steps:
-1. `uipcli rpa list-instances --format json` — check if Studio is running
-2. `uipcli rpa start-studio` — start Studio if not running
-3. `uipcli rpa open-project --project-dir "..."` — open the project if Studio has no project loaded
+`uip rpa` commands communicate with Studio Desktop via IPC. If Studio is not running, not responding, or has no project open, commands will fail with connection errors. Recovery steps:
+1. `uip rpa list-instances --format json` — check if Studio is running
+2. `uip rpa start-studio` — start Studio if not running
+3. `uip rpa open-project --project-dir "..."` — open the project if Studio has no project loaded
 4. If Studio is running but unresponsive, the user may need to restart it manually
 
 ### CLI output format for parsing

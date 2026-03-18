@@ -113,16 +113,16 @@ Always check the project's expression language before writing expressions:
 
 Mixing expression languages causes build failures.
 
-### Use `uipcli rpa get-default-activity-xaml` Output
-Never construct activity XAML from memory. The `uipcli rpa get-default-activity-xaml` command returns the exact XAML needed for the installed package version, including:
+### Use `uip rpa get-default-activity-xaml` Output
+Never construct activity XAML from memory. The `uip rpa get-default-activity-xaml` command returns the exact XAML needed for the installed package version, including:
 - Correct element names and namespaces
 - Required properties and their types
 - Default values
 - Assembly references to add
 
-Use `uipcli rpa find-activities` to find the activity's fully qualified class name, type ID, and `isDynamicActivity` flag. Then use `uipcli rpa get-default-activity-xaml` with the appropriate parameters.
+Use `uip rpa find-activities` to find the activity's fully qualified class name, type ID, and `isDynamicActivity` flag. Then use `uip rpa get-default-activity-xaml` with the appropriate parameters.
 
-Use `uipcli rpa list-workflow-examples` and `uipcli rpa get-workflow-example` to see example usages of the given activity, in addition to searching existing local `.xaml` files.
+Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` to see example usages of the given activity, in addition to searching existing local `.xaml` files.
 
 ### Preserve Existing Structure
 When editing XAML:
@@ -131,7 +131,7 @@ When editing XAML:
 - Use the `Edit` tool for targeted replacements (match exact `old_string`, replace with `new_string`)
 
 ### Validate After Every Change
-Run `uipcli rpa get-errors` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.
+Run `uip rpa get-errors` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.
 
 ## Common Editing Operations
 
@@ -503,12 +503,12 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
 
 **Key patterns:**
 - `isactr:ConnectorActivity` is the generic IS activity type (`xmlns:isactr="http://schemas.uipath.com/workflow/integration-service-activities/isactr"`)
-- `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uipcli rpa get-default-activity-xaml`
+- `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uip rpa get-default-activity-xaml`
 - `ConnectionId` is the Integration Service connection GUID
 - `UiPathActivityTypeId` identifies the specific connector operation
 - `FieldObjects` define input/output fields with `isactr:FieldObject` elements
 - Output types reference a JIT-generated assembly (e.g., `CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3`)
-- The generated assembly name and namespace imports are connector-specific — always use `uipcli rpa get-default-activity-xaml` output
+- The generated assembly name and namespace imports are connector-specific — always use `uip rpa get-default-activity-xaml` output
 
 ## Property Binding: Attributes vs Child Elements
 
@@ -544,7 +544,7 @@ DisplayName="My Activity" Message="[variable]" Level="Info"
 Properties may exist in one package version but not another. If `get-errors` reports "Could not find member 'PropertyName'":
 1. The property may not exist in the installed package version — remove it
 2. The property may have been renamed between versions — check examples from the same package version
-3. Use `uipcli rpa get-default-activity-xaml` output as the authoritative set of properties for the installed version
+3. Use `uip rpa get-default-activity-xaml` output as the authoritative set of properties for the installed version
 
 ## ConnectorActivity Internals
 
@@ -554,9 +554,9 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 
 | Property | Editable? | Description |
 |----------|-----------|-------------|
-| `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uipcli rpa get-default-activity-xaml` command. Do not parse, modify, or construct manually. |
-| `ConnectionId` | Yes (replace GUID) | Integration Service connection GUID. Use `uipcli is connections list [connector-key]` to discover available connections and their IDs. |
-| `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uipcli rpa get-default-activity-xaml` or `uipcli rpa find-activities`. |
+| `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uip rpa get-default-activity-xaml` command. Do not parse, modify, or construct manually. |
+| `ConnectionId` | Yes (replace GUID) | Integration Service connection GUID. Use `uip is connections list [connector-key]` to discover available connections and their IDs. |
+| `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uip rpa get-default-activity-xaml` or `uip rpa find-activities`. |
 | `DisplayName` | Yes | Human-readable activity name for the designer. |
 
 ### FieldObjects (Input/Output Interface)
@@ -565,7 +565,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 
 | Attribute | Description |
 |-----------|-------------|
-| `Name` | Field identifier (maps to the connector API parameter). Must match exactly what `uipcli rpa get-default-activity-xaml` returns. |
+| `Name` | Field identifier (maps to the connector API parameter). Must match exactly what `uip rpa get-default-activity-xaml` returns. |
 | `Type` | One of: `FieldArgument` (contains an Activity Argument), `FieldLiteral` (contains a literal value), `FilterTreeValue` (filter builder criteria), `None` (empty). |
 
 **What you CAN edit in FieldObjects:**
@@ -576,7 +576,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 - Field `Name` values — these must match the connector API schema exactly.
 - Field `Type` values — these are determined by the connector metadata.
 - Output field structure — the `OutArgument` types reference JIT-generated assemblies.
-- Adding/removing FieldObjects — the set of fields comes from `uipcli rpa get-default-activity-xaml`.
+- Adding/removing FieldObjects — the set of fields comes from `uip rpa get-default-activity-xaml`.
 
 ### JIT-Generated Assemblies
 
@@ -589,13 +589,13 @@ CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3
 These assembly names are:
 - **Unpredictable** — derived from SHA-512 hashes of the type schema
 - **Connection-specific** — different connections produce different hashes
-- **Generated by the runtime** — you cannot create or reference them without `uipcli rpa get-default-activity-xaml`
+- **Generated by the runtime** — you cannot create or reference them without `uip rpa get-default-activity-xaml`
 
-The corresponding namespace imports and assembly references MUST come from `uipcli rpa get-default-activity-xaml` output. Never construct them.
+The corresponding namespace imports and assembly references MUST come from `uip rpa get-default-activity-xaml` output. Never construct them.
 
-### What `uipcli rpa get-default-activity-xaml` Returns for Dynamic Activities
+### What `uip rpa get-default-activity-xaml` Returns for Dynamic Activities
 
-When you call `uipcli rpa get-default-activity-xaml` with `isDynamicActivity: true`, it returns everything needed:
+When you call `uip rpa get-default-activity-xaml` with `isDynamicActivity: true`, it returns everything needed:
 1. The complete `<isactr:ConnectorActivity>` XAML element with `Configuration` blob, `UiPathActivityTypeId`, and `FieldObjects`
 2. All required `xmlns` declarations for the root `<Activity>` element
 3. All required namespace imports and references

@@ -1,16 +1,16 @@
-# UiPath CLI (uipcli) RPA Commands Guide
+# UiPath CLI (uip) RPA Commands Guide
 
-CLI reference for `uipcli rpa` — communicates with UiPath Studio over named pipes (IPC).
+CLI reference for `uip rpa` — communicates with UiPath Studio over named pipes (IPC).
 
-> **Installation is automatic.** Do NOT attempt to install `uipcli` manually or instruct the user to install it.
+> **Installation is automatic.** Do NOT attempt to install `uip` manually or instruct the user to install it.
 
-> **This guide may not list every available command.** Run `uipcli rpa --help` for the full list, and `uipcli rpa <command> --help` for all flags on a specific command.
+> **This guide may not list every available command.** Run `uip rpa --help` for the full list, and `uip rpa <command> --help` for all flags on a specific command.
 
 ---
 
 ## Global Options
 
-Every `uipcli rpa` invocation accepts these flags:
+Every `uip rpa` invocation accepts these flags:
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -20,17 +20,17 @@ Every `uipcli rpa` invocation accepts these flags:
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--format <format>` | Output format: `json`, `table`, `yaml`, `plain` | `table` |
 
-> **Always use `--format json`** when calling `uipcli rpa` commands programmatically. The `table` format pads columns and can produce extremely large output (100KB+). JSON is compact and machine-readable.
+> **Always use `--format json`** when calling `uip rpa` commands programmatically. The `table` format pads columns and can produce extremely large output (100KB+). JSON is compact and machine-readable.
 
 ### STUDIO_DIR Resolution
 
-`--studio-dir` is optional — omit it by default and let `uipcli` auto-detect Studio. Only provide it explicitly if auto-detection fails, using the first match:
+`--studio-dir` is optional — omit it by default and let `uip` auto-detect Studio. Only provide it explicitly if auto-detection fails, using the first match:
 
 1. Environment variable `UIPATH_STUDIO_DIR` if set.
 2. Default install: `C:\Program Files\UiPath\Studio` (or `x86` variant) if `UiPathStudio.exe` exists there.
 3. Dev build: Studio source tree build output (e.g. `<repo-root>\Output\bin\Debug`).
 
-> **Error `"Studio X.X.X does not have interop support"` or `"Requires Studio 26.2+"`** means the detected Studio is too old. Stop calling `uipcli rpa` commands and inform the user to update Studio.
+> **Error `"Studio X.X.X does not have interop support"` or `"Requires Studio 26.2+"`** means the detected Studio is too old. Stop calling `uip rpa` commands and inform the user to update Studio.
 
 ### PROJECT_DIR Resolution
 
@@ -47,7 +47,7 @@ See **SKILL.md -> Quick Start -> Step 0** for the full resolution logic.
 List running UiPath Studio instances and their IPC status.
 
 ```bash
-uipcli rpa list-instances --format json
+uip rpa list-instances --format json
 ```
 
 No command-specific options.
@@ -62,7 +62,7 @@ Ensure a Studio instance is running. Resolution waterfall:
 3. Start a new instance via `--studio-dir` — poll until available
 
 ```bash
-uipcli rpa start-studio --project-dir "<PROJECT_DIR>" --format json
+uip rpa start-studio --project-dir "<PROJECT_DIR>" --format json
 ```
 
 ---
@@ -72,7 +72,7 @@ uipcli rpa start-studio --project-dir "<PROJECT_DIR>" --format json
 Create a new UiPath project from a template.
 
 ```bash
-uipcli rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --format json
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --format json
 ```
 
 | Parameter | Required | Default | Description |
@@ -100,7 +100,7 @@ uipcli rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --format jso
 Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance, so this is rarely required.
 
 ```bash
-uipcli rpa open-project --project-dir "<PROJECT_DIR>" --format json
+uip rpa open-project --project-dir "<PROJECT_DIR>" --format json
 ```
 
 No command-specific options.
@@ -112,8 +112,8 @@ No command-specific options.
 Validate a file or the entire project. Forces Studio to re-analyze the code.
 
 ```bash
-uipcli rpa validate --project-dir "<PROJECT_DIR>" --format json
-uipcli rpa validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa validate --project-dir "<PROJECT_DIR>" --format json
+uip rpa validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Default | Description |
@@ -153,7 +153,7 @@ uipcli rpa validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" 
 Run a workflow file using Studio.
 
 ```bash
-uipcli rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Description |
@@ -182,7 +182,7 @@ uipcli rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" 
 Get unautomated test case IDs from Test Manager.
 
 ```bash
-uipcli rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --format json
+uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --format json
 ```
 
 No command-specific options.
@@ -194,7 +194,7 @@ No command-specific options.
 Get steps for specific test cases from Test Manager.
 
 ```bash
-uipcli rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --format json
+uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Description |
@@ -208,7 +208,7 @@ uipcli rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<P
 Open Studio's visual indicator for the user to point at an application window. Creates a **Screen** entry in the Object Repository under the specified AppVersion.
 
 ```bash
-uipcli rpa indicate-application --name "<SCREEN_NAME>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<SCREEN_NAME>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Description |
@@ -239,7 +239,7 @@ After indication, Studio regenerates `ObjectRepository.cs`. Re-read it to get th
 Open Studio's visual indicator for the user to point at a UI element. Creates an **Element** entry under an existing Screen. The screen must already exist.
 
 ```bash
-uipcli rpa indicate-element --name "<ELEMENT_NAME>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ELEMENT_NAME>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Description |

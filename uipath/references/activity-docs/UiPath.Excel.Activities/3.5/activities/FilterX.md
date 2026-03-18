@@ -11,4 +11,4 @@ xmlns:ueabf="clr-namespace:UiPath.Excel.Activities.Business.Filter;assembly=UiPa
 |---------------|
 | `Range`, `ColumnName`, `HasHeaders`, `ClearFilter`; child `FilterX.FilterArgument` uses `ueabf:FilterArgument` or `ueabf:AdvancedFilterArgument` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

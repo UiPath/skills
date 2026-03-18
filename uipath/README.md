@@ -39,7 +39,7 @@ Build UiPath coded automations in C# with automatic validation and activity refe
 - **[Coding Guidelines](skills/uipath-coded-workflows/references/coding-guidelines.md)** - Using statements, best practices, and common issues
 - **[CodedWorkflow Reference](skills/uipath-coded-workflows/references/codedworkflow-reference.md)** - Base class methods, hooks, and invocation patterns
 - **[UI Automation Guide](skills/uipath-coded-workflows/references/ui-automation/ui-automation.md)** - Object Repository, descriptors, and UI interaction
-- **[UiPath CLI Guide](skills/uipath-coded-workflows/references/uipcli-guide.md)** - Build, pack, and run commands
+- **[UiPath CLI Guide](skills/uipath-coded-workflows/references/uip-guide.md)** - Build, pack, and run commands
 - **[Third-Party Packages](skills/uipath-coded-workflows/references/third-party-packages-guide.md)** - Adding and inspecting NuGet dependencies
 
 ### Activity References
@@ -61,9 +61,9 @@ Build UiPath coded automations in C# with automatic validation and activity refe
 Generate and edit RPA workflows (XAML files) in UiPath Studio Desktop using a discovery-first approach with iterative error-driven refinement.
 
 - **Discovery-First Approach**: Understand project structure and existing patterns before generating XAML
-- **Example-Driven**: Search and study workflow examples via `uipcli rpa list-workflow-examples` and `uipcli rpa get-workflow-example`
-- **Iterative Validation**: Validate after every change with `uipcli rpa get-errors` and fix errors methodically
-- **Activity Search**: Find activities with `uipcli rpa find-activities` and get default XAML templates
+- **Example-Driven**: Search and study workflow examples via `uip rpa list-workflow-examples` and `uip rpa get-workflow-example`
+- **Iterative Validation**: Validate after every change with `uip rpa get-errors` and fix errors methodically
+- **Activity Search**: Find activities with `uip rpa find-activities` and get default XAML templates
 - **UI Automation**: Capture selectors into the Object Repository with indication tools
 
 ### Core Principles
@@ -71,30 +71,30 @@ Generate and edit RPA workflows (XAML files) in UiPath Studio Desktop using a di
 1. **Discovery Before Generation** — Never generate XAML without first understanding project structure
 2. **Search Examples Repository** — Always find and study relevant examples before creating workflows
 3. **Start Simple, Iterate** — Create minimal working version first, then refine
-4. **Validate After Every Change** — Always check with `uipcli rpa get-errors`
+4. **Validate After Every Change** — Always check with `uip rpa get-errors`
 5. **Fix Errors Methodically** — Package → Structure → Type → Logic
 
 ### Key CLI Commands
 
 ```bash
-uipcli rpa list-instances --format json           # Find open Studio projects
-uipcli rpa find-activities --query "..." --format json  # Search for activities
-uipcli rpa list-workflow-examples --tags '["..."]' --format json  # Find examples
-uipcli rpa get-workflow-example --key "..."        # Retrieve example XAML
-uipcli rpa get-errors --format json                # Validate workflow files
-uipcli rpa run-file --file-path "..."              # Run a workflow
+uip rpa list-instances --format json           # Find open Studio projects
+uip rpa find-activities --query "..." --format json  # Search for activities
+uip rpa list-workflow-examples --tags '["..."]' --format json  # Find examples
+uip rpa get-workflow-example --key "..."        # Retrieve example XAML
+uip rpa get-errors --format json                # Validate workflow files
+uip rpa run-file --file-path "..."              # Run a workflow
 ```
 
 ## Requirements
 
 - UiPath Studio Desktop (2025.x+ for coded workflows)
 - .NET 8.0+ (for coded workflows)
-- Node.js (for `uipcli` CLI)
+- Node.js (for `uip` CLI)
 - Claude Code CLI
 
-### Setting up uipcli
+### Setting up uip
 
-The `uipcli` CLI is required for both RPA and coded workflow skills. It is temporarily hosted on **GitHub Packages** during development and will be moved to the public npm registry for public release. Until then, you need to set an authentication token before the plugin can install it automatically.
+The `uip` CLI is required for both RPA and coded workflow skills. It is temporarily hosted on **GitHub Packages** during development and will be moved to the public npm registry for public release. Until then, you need to set an authentication token before the plugin can install it automatically.
 
 Add `GH_NPM_REGISTRY_TOKEN` to your shell profile so it's available on every session:
 

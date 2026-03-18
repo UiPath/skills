@@ -5,10 +5,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uipcli.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.sh\"",
             "timeout": 120,
             "once": true,
-            "statusMessage": "Checking uipcli and rpa-tool installation..."
+            "statusMessage": "Checking uip and rpa-tool installation..."
           }
         ]
       }

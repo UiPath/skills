@@ -11,4 +11,4 @@ xmlns:ueabc="clr-namespace:UiPath.Excel.Activities.Business.ChartModifications;a
 |---------------|
 | `Range` (nested inside `UpdateChartX` body) |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.

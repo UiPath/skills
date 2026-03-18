@@ -8,14 +8,14 @@ The inspect-package tool is built into the UiPath CLI. No separate build step is
 
 ### Inspect a package from a NuGet feed
 ```bash
-uipcli rpa inspect-package --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
+uip rpa inspect-package --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
 ```
 
 When `--feed-url` is omitted, the tool downloads from the UiPath Official feed first and falls back to nuget.org.
 
 ### Inspect a local .nupkg file
 ```bash
-uipcli rpa inspect-package --nupkg-path <path/to/package.nupkg>
+uip rpa inspect-package --nupkg-path <path/to/package.nupkg>
 ```
 
 Use this when the package is already cached locally (e.g. from a private feed) or when you have a `.nupkg` file on disk.
@@ -24,19 +24,19 @@ Use this when the package is already cached locally (e.g. from a private feed) o
 
 ```bash
 # Inspect Excel activities from UiPath feed
-uipcli rpa inspect-package --package-name UiPath.Excel.Activities --package-version 3.3.1
+uip rpa inspect-package --package-name UiPath.Excel.Activities --package-version 3.3.1
 
 # Inspect a specific version the user has
-uipcli rpa inspect-package --package-name UiPath.System.Activities --package-version 25.12.2
+uip rpa inspect-package --package-name UiPath.System.Activities --package-version 25.12.2
 
 # Inspect from a custom feed
-uipcli rpa inspect-package --package-name MyPackage --package-version 1.0.0 --feed-url https://my-feed/v3/index.json
+uip rpa inspect-package --package-name MyPackage --package-version 1.0.0 --feed-url https://my-feed/v3/index.json
 
 # Inspect third-party package from nuget.org
-uipcli rpa inspect-package --package-name CsvHelper --package-version 33.0.1
+uip rpa inspect-package --package-name CsvHelper --package-version 33.0.1
 
 # Inspect a local .nupkg file directly
-uipcli rpa inspect-package --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
+uip rpa inspect-package --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
 ```
 
 ## Finding the Latest Stable Version
@@ -79,7 +79,7 @@ Structured markdown listing all public types, methods, properties, enums, delega
 
 ## Requirements & Notes
 
-- Requires `uipcli` to be available on PATH
+- Requires `uip` to be available on PATH
 - Downloads from the UiPath Official feed first, then falls back to nuget.org — so it works with **any** NuGet package, not just UiPath ones
 - The tool automatically checks the local NuGet cache at `~/.nuget/packages/` when a package cannot be downloaded
 - For local `.nupkg` files (e.g. packages from private feeds already cached locally), use `--nupkg-path` to skip the download entirely

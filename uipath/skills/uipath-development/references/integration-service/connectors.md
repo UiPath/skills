@@ -2,7 +2,7 @@
 
 Connectors are pre-built integrations to external applications. Each connector has a unique key (e.g., `uipath-salesforce-sfdc`, `uipath-servicenow-servicenow`). A connector contains **connections** (authenticated sessions), **activities** (pre-built actions), and **resources** (object types with CRUD operations).
 
-> Full command syntax and options: [uipcli-commands.md — Integration Service](../uipcli-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
 
 ---
 
@@ -24,11 +24,11 @@ When no native connector exists for a vendor, use the HTTP connector (`uipath-ui
 
 ```bash
 # Search for vendor → not found → fall back to HTTP connector
-uipcli is connectors list --filter "apify" --format json
+uip is connectors list --filter "apify" --format json
 # → No connectors found
 
 # List HTTP connections and look for one named after the vendor
-uipcli is connections list "uipath-uipath-http" --format json
+uip is connections list "uipath-uipath-http" --format json
 ```
 
 The HTTP connector supports generic HTTP requests (GET, POST, PUT, PATCH, DELETE) to any REST API. The connection stores the authentication configuration (API keys, OAuth tokens, base URL).
@@ -44,7 +44,7 @@ The HTTP connector supports generic HTTP requests (GET, POST, PUT, PATCH, DELETE
 The HTTP connector has a single resource: `http-request`.
 
 ```bash
-uipcli is resources execute create "uipath-uipath-http" "http-request" \
+uip is resources execute create "uipath-uipath-http" "http-request" \
   --connection-id "<id>" \
   --body '{"method": "GET", "url": "https://api.example.com/v2/resource"}' \
   --format json

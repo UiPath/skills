@@ -6,4 +6,4 @@
 |---------------|
 | `DestinationRange="[Excel.Sheet(s).Range(&quot;B11&quot;)]"`, `Value="[&quot;SUM(B1:B10)&quot;]"` |
 
-Use `uipcli rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml` for full XAML.
