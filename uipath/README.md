@@ -1,6 +1,6 @@
 # UiPath Plugin for Claude Code
 
-Comprehensive UiPath automation plugin for Claude Code — covering coded workflows, RPA workflows (XAML), environment setup, Orchestrator management, and CLI tooling.
+Comprehensive UiPath automation plugin for Claude Code — covering coded workflows, RPA workflows (XAML), UI automation and testing (Servo), environment setup, Orchestrator management, and CLI tooling.
 
 ## Quick Start
 
@@ -13,6 +13,9 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 
 # Development environment — authentication, Orchestrator, deployment, CLI tools, Integration Service
 /uipath:uipath-development
+
+# UI automation & testing — click, type, read, verify, screenshot desktop and browser UIs
+/uipath:uipath-servo
 ```
 
 ## Skills
@@ -22,6 +25,7 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 | **Coded Workflows** | `/uipath:uipath-coded-workflows` | Full coding assistant for creating, editing, validating, and running UiPath coded automation projects (.cs) |
 | **RPA Workflows** | `/uipath:uipath-rpa-workflows` | Generate and edit RPA workflows (XAML) using a discovery-first approach with iterative error-driven refinement |
 | **Development** | `/uipath:uipath-development` | Environment setup, authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tooling |
+| **Servo** | `/uipath:uipath-servo` | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
 
 ## Coded Workflows
 

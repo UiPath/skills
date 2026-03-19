@@ -57,7 +57,7 @@ claude plugin uninstall uipath-coded-agents
 | Plugin | Description | Version |
 |--------|-------------|---------|
 | [**uipath-coded-agents**](./uipath-coded-agents/README.md) | Create, run, and evaluate UiPath coded agents with AI-powered assistance | 0.0.1 |
-| [**uipath**](./uipath/README.md) | UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows | 0.0.7 |
+| [**uipath**](./uipath/README.md) | UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, and UI testing | 0.0.8 |
 
 ## Project Structure
 
@@ -68,7 +68,7 @@ This marketplace contains:
 - **`.claude-plugin/`** - Plugin configuration directory
   - `marketplace.json` - Marketplace definition listing all available plugins
 - **`uipath-coded-agents/`** - UiPath coded agents plugin
-- **`uipath/`** - UiPath workflows plugin
+- **`uipath/`** - UiPath workflows, UI automation, and UI testing plugin
 - **README.md** - This file
 
 ## Getting Help

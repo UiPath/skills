@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensures @uipath/cli and @uipath/rpa-tool are installed globally.
+# Ensures @uipath/cli, @uipath/servo and @uipath/rpa-tool are installed globally.
 # Runs once per session via the SessionStart plugin hook.
 # If npm is missing, attempts to install Node.js first.
 # Supports Windows, macOS, and Linux.
@@ -51,7 +51,7 @@ ensure_npm() {
 
   if ! command -v npm &> /dev/null; then
     echo "Node.js was installed but npm is not yet available in this session." >&2
-    echo "Please restart your terminal, then run: npm install -g @uipath/cli" >&2
+    echo "Please restart your terminal, then run: npm install -g @uipath/cli @uipath/servo" >&2
     exit 2
   fi
 }
@@ -108,4 +108,5 @@ ensure_uip_tool() {
 ensure_npm
 ensure_github_packages_registry
 ensure_npm_package @uipath/cli
+ensure_npm_package @uipath/servo
 ensure_uip_tool @uipath/rpa-tool
