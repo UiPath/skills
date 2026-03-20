@@ -101,4 +101,7 @@ uip resources queue-items set-result 12345 <item-id> \
 
 ## Troubleshooting
 
-If a command fails unexpectedly, try updating the tool: `uip tools install @uipath/resources-tool`. Verify command syntax with `uip resources --help`.
+If a command fails unexpectedly:
+1. Verify the command syntax: `uip resources <command> --help`
+2. Check authentication: `uip login status`
+3. As a last resort, update the tool: `uip tools install @uipath/resources-tool`

@@ -82,53 +82,21 @@ A job is a single execution of a process. Jobs have states:
 
 ## CLI Operations — Folders
 
-### List Folders
+> Use `uip or folders --help` for full option details.
+
+| Command | Description |
+|---------|-------------|
+| `uip or folders list` | List all folders |
+| `uip or folders create <name>` | Create a folder (use `--parent <id>` for nesting) |
+| `uip or folders get <id>` | Get folder details |
+| `uip or folders edit <id>` | Edit folder properties |
+| `uip or folders move <id> <parent-id>` | Move folder |
+| `uip or folders delete <id>` | Delete a folder |
 
 ```bash
 uip or folders list --format json
-```
-
-With OData filter:
-```bash
-uip or folders list --filter "DisplayName eq 'Finance'" --format json
-```
-
-### Create a Folder
-
-```bash
 uip or folders create "Finance" --format json
-
-uip or folders create "Invoicing" --parent 12345 --description "Invoice processing" --format json
-```
-
-### Get Folder Details
-
-```bash
-uip or folders get 12345 --format json
-```
-
-### Get All Folders for Current User
-
-```bash
-uip or folders get-all-for-current-user --take 100 --format json
-```
-
-### Edit a Folder
-
-```bash
-uip or folders edit 12345 --name "Finance Team" --description "Updated description" --format json
-```
-
-### Move a Folder
-
-```bash
-uip or folders move 12345 67890 --format json
-```
-
-### Delete a Folder
-
-```bash
-uip or folders delete 12345 --format json
+uip or folders create "Invoicing" --parent 12345 -d "Invoice processing" --format json
 ```
 
 ---

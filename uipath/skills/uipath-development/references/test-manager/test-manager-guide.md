@@ -73,4 +73,7 @@ uip tm execution retry --execution-id "<EXEC_ID>" --format json
 | HTTP 403 Forbidden | User lacks permissions on the target folder — check folder access in Orchestrator |
 | No attachments found | Test case automation didn't produce screenshots/logs |
 
-> If a command fails unexpectedly, try updating the tool: `uip tools install @uipath/test-manager-tool`. Use `uip tm <command> --help` to verify syntax.
+> If a command fails unexpectedly:
+> 1. Verify the command syntax: `uip tm <command> --help`
+> 2. Check authentication: `uip login status`
+> 3. As a last resort, update the tool: `uip tools install @uipath/test-manager-tool`
