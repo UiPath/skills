@@ -1,0 +1,18 @@
+---
+description: UiPath automation skills for coding agents
+globs:
+alwaysApply: false
+---
+
+# UiPath Skills
+
+This repository contains skills that teach coding agents how to build UiPath automations.
+
+When working on a UiPath project, load the relevant SKILL.md from the `skills/` directory:
+
+- **Coded Workflows**: `skills/official/uipath-coded-workflow/SKILL.md`
+- **RPA (XAML)**: `skills/official/uipath-rpa/uipath-rpa-cli/SKILL.md`
+- **Flow**: `skills/official/uipath-flow/SKILL.md`
+- **Coded Agents**: `skills/official/uipath-coded-agent/` (sub-skills: auth, setup, build, run, evaluate, deploy, sync, bindings)
+- **Development / CLI**: `skills/official/uipath-development/SKILL.md`
+- **UI Automation (experimental)**: `skills/experimental/uipath-servo/SKILL.md`
