@@ -24,6 +24,7 @@ Find the project root by looking for `pyproject.toml` or `uipath.json`. Then loc
 
 1. **All Python source files** — Glob for `**/*.py` in the project root (exclude `.venv/`, `__pycache__/`, `.uipath/`)
 2. **Existing `bindings.json`** — Should be at the project root alongside `pyproject.toml`
+3. **`entry-points.json`** — Should be at the project root. Read it to discover available entrypoints (each has a `uniqueId` and `filePath`). This is needed for entrypoint binding in Step 4.
 
 If `bindings.json` does not exist, create it with the empty skeleton:
 
@@ -63,13 +64,30 @@ Read the current `bindings.json` and compare:
 
 Report the comparison results to the user before making changes.
 
-### Step 4: Update bindings.json
+### Step 4: Resolve Entrypoint Bindings
+
+Each resource can optionally be linked to an entrypoint from `entry-points.json`. This step determines whether to add `EntryPointUniqueId` and/or `EntryPointPath` to each resource's `value` block.
+
+**Rules:**
+- Add **only one** entrypoint field per resource — prefer `EntryPointUniqueId`. Only fall back to `EntryPointPath` if `uniqueId` is not available in the entrypoint definition.
+- The field follows the standard value format: `{ "defaultValue": "...", "isExpression": false, "displayName": "<filePath>" }` — `displayName` is **mandatory** and must be set to the entrypoint's `filePath` value from `entry-points.json`
+- `EntryPointUniqueId` maps to the `uniqueId` field of an entrypoint in `entry-points.json`
+- `EntryPointPath` maps to the `filePath` field of an entrypoint in `entry-points.json`
+
+**Workflow:**
+1. **Single entrypoint** — If `entry-points.json` contains exactly one entrypoint, automatically bind all resources to it. Add `EntryPointUniqueId` (preferred) or `EntryPointPath` (fallback). No need to ask the user.
+2. **Multiple entrypoints** — Use `AskUserQuestion` to ask the user which entrypoint each resource should be bound to. Present the entrypoint names/filePaths as choices. Include a **"None"** option — if the user chooses "None", omit the entrypoint field from that resource's `value`.
+3. **No `entry-points.json`** — Skip entrypoint binding entirely.
+4. **Existing entrypoint fields** — If a resource already has `EntryPointUniqueId`/`EntryPointPath`, preserve them unless the referenced entrypoint no longer exists in `entry-points.json` (flag as stale).
+
+### Step 5: Update bindings.json
 
 After confirming with the user, update `bindings.json`:
 
 - **Add** entries for resources found in code but missing from bindings
 - **Remove** entries that are stale (no longer referenced in code), after user confirmation
 - **Update** entries where values have drifted
+- **Add/update entrypoint fields** per Step 4 resolution
 
 For the exact JSON structure of each resource type, consult `references/bindings-reference.md`. Key rules:
 
@@ -79,14 +97,16 @@ For the exact JSON structure of each resource type, consult `references/bindings
 - `ActivityName` in metadata always uses the `_async` variant name
 - Connection entries use `ConnectionId` instead of `name` and have no `folderPath`
 - The `app` resource type uses the app name as `DisplayLabel`; all others use `"FullName"`
+- Entrypoint fields (`EntryPointUniqueId`, `EntryPointPath`) are optional in any resource's `value` block, but when present must include a `displayName` set to the entrypoint's `filePath` from `entry-points.json`
 
-### Step 5: Verify
+### Step 6: Verify
 
 After writing the updated `bindings.json`:
 
 1. Read it back and validate the JSON is well-formed
 2. Confirm each code resource call has a matching binding entry
 3. Confirm no orphaned entries remain (unless the user chose to keep them)
+4. If entrypoint binding was applied, verify `EntryPointUniqueId` values match valid `uniqueId` entries in `entry-points.json`
 
 ## Reference Files
 
@@ -96,7 +116,8 @@ For detailed bindings.json schema, all eight resource type templates, SDK method
 
 ## Edge Cases
 
-- **Multiple entry points** — Scan all Python files, not just `main.py`. LangGraph agents may define tools in separate modules.
+- **Multiple entry points (code scanning)** — Scan all Python files, not just `main.py`. LangGraph agents may define tools in separate modules.
+- **Multiple entry points (entrypoint binding)** — When `entry-points.json` has multiple entrypoints, ask the user per-resource which entrypoint it belongs to. User can choose "None" to skip entrypoint binding for that resource.
 - **Duplicate resources** — If the same resource (same name + folder) is called multiple times, produce only one binding entry.
 - **No folder_path** — Some asset calls omit `folder_path`. In that case, use an empty string `""` for `folderPath.defaultValue` and construct the key as just `<name>.` (name followed by a dot and empty string).
 - **LangGraph ContextGroundingVectorStore** — `ContextGroundingVectorStore(index_name="...", folder_path="...")` creates an `index` binding with the same structure as `context_grounding.retrieve_async`.

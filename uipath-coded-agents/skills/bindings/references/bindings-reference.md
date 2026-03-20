@@ -382,6 +382,86 @@ server = sdk.mcp.retrieve(slug="mcp_server_slug", folder_path="folder_path")
 
 ---
 
+## Entrypoint Binding
+
+Any resource in `bindings.json` can optionally be linked to an entrypoint defined in `entry-points.json`. This is done by adding `EntryPointUniqueId` and/or `EntryPointPath` to the resource's `value` block.
+
+### entry-points.json Structure
+
+```json
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "agent",
+      "uniqueId": "708b62c7-15f1-46d8-9564-5d03c6a8668f",
+      "type": "agent",
+      "input": { ... },
+      "output": { ... }
+    }
+  ]
+}
+```
+
+Key fields for binding:
+- `uniqueId` — UUID that maps to `EntryPointUniqueId` in the binding
+- `filePath` — path string that maps to `EntryPointPath` in the binding
+
+### Entrypoint Fields in Resource Value
+
+**Preferred — using `EntryPointUniqueId`** (when `uniqueId` is available in entry-points.json):
+```json
+{
+  "resource": "asset",
+  "key": "my_asset.Finance",
+  "value": {
+    "name": { "defaultValue": "my_asset", "isExpression": false, "displayName": "Name" },
+    "folderPath": { "defaultValue": "Finance", "isExpression": false, "displayName": "Folder Path" },
+    "EntryPointUniqueId": {
+      "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f",
+      "isExpression": false,
+      "displayName": "agent"
+    }
+  },
+  "metadata": { "ActivityName": "retrieve_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName" }
+}
+```
+
+**Fallback — using `EntryPointPath`** (only when `uniqueId` is not available):
+```json
+{
+  "resource": "asset",
+  "key": "my_asset.Finance",
+  "value": {
+    "name": { "defaultValue": "my_asset", "isExpression": false, "displayName": "Name" },
+    "folderPath": { "defaultValue": "Finance", "isExpression": false, "displayName": "Folder Path" },
+    "EntryPointPath": {
+      "defaultValue": "agent",
+      "isExpression": false,
+      "displayName": "agent"
+    }
+  },
+  "metadata": { "ActivityName": "retrieve_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName" }
+}
+```
+
+### Rules
+
+- **Add only one field per resource** — prefer `EntryPointUniqueId`. Only use `EntryPointPath` as a fallback if the entrypoint has no `uniqueId`.
+- The field uses the standard value format: `{ "defaultValue": "...", "isExpression": false, "displayName": "<filePath>" }` — `displayName` is **mandatory** and must be set to the entrypoint's `filePath` value from `entry-points.json`.
+- **The field is optional.** If a resource is not bound to any entrypoint, omit it entirely.
+- The field goes inside the `value` object alongside `name`, `folderPath`, `ConnectionId`, etc.
+- For connections, `EntryPointUniqueId`/`EntryPointPath` sits alongside `ConnectionId` in the `value` block.
+
+### When to Add Entrypoint Fields
+
+- **Single entrypoint** in `entry-points.json` — auto-bind all resources. Add `EntryPointUniqueId` (preferred) or `EntryPointPath` (fallback).
+- **Multiple entrypoints** — ask the user per resource. If the user chooses "None", omit the field.
+- **No `entry-points.json`** — skip entrypoint binding entirely.
+
+---
+
 ## SDK Method to Resource Type Mapping
 
 | SDK Property | Methods | Resource Type | Resource Identifier Param | ActivityName |
@@ -451,8 +531,26 @@ asset = await sdk.assets.retrieve_async(asset_name, folder_path=folder)
 
 ## Complete Example
 
-Given this agent code:
+Given this agent code and a single entrypoint in `entry-points.json`:
 
+**entry-points.json:**
+```json
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "agent",
+      "uniqueId": "708b62c7-15f1-46d8-9564-5d03c6a8668f",
+      "type": "agent",
+      "input": { ... },
+      "output": { ... }
+    }
+  ]
+}
+```
+
+**Agent code:**
 ```python
 async def main() -> Response:
     uipath = UiPath()
@@ -467,7 +565,7 @@ async def main() -> Response:
     return Response(...)
 ```
 
-The corresponding bindings.json:
+**The corresponding bindings.json** (with entrypoint binding — single entrypoint with `uniqueId`, so `EntryPointUniqueId` is used):
 
 ```json
 {
@@ -478,7 +576,8 @@ The corresponding bindings.json:
       "key": "my_asset.Finance",
       "value": {
         "name": { "defaultValue": "my_asset", "isExpression": false, "displayName": "Name" },
-        "folderPath": { "defaultValue": "Finance", "isExpression": false, "displayName": "Folder Path" }
+        "folderPath": { "defaultValue": "Finance", "isExpression": false, "displayName": "Folder Path" },
+        "EntryPointUniqueId": { "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f", "isExpression": false, "displayName": "agent" }
       },
       "metadata": { "ActivityName": "retrieve_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName" }
     },
@@ -486,7 +585,8 @@ The corresponding bindings.json:
       "resource": "connection",
       "key": "salesforce_conn",
       "value": {
-        "ConnectionId": { "defaultValue": "salesforce_conn", "isExpression": false, "displayName": "Connection" }
+        "ConnectionId": { "defaultValue": "salesforce_conn", "isExpression": false, "displayName": "Connection" },
+        "EntryPointUniqueId": { "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f", "isExpression": false, "displayName": "agent" }
       },
       "metadata": { "BindingsVersion": "2.2", "Connector": "", "UseConnectionService": "True" }
     },
@@ -495,7 +595,8 @@ The corresponding bindings.json:
       "key": "InvoiceProcessor.Finance/Invoices",
       "value": {
         "name": { "defaultValue": "InvoiceProcessor", "isExpression": false, "displayName": "Name" },
-        "folderPath": { "defaultValue": "Finance/Invoices", "isExpression": false, "displayName": "Folder Path" }
+        "folderPath": { "defaultValue": "Finance/Invoices", "isExpression": false, "displayName": "Folder Path" },
+        "EntryPointUniqueId": { "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f", "isExpression": false, "displayName": "agent" }
       },
       "metadata": { "ActivityName": "invoke_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName" }
     },
@@ -504,7 +605,8 @@ The corresponding bindings.json:
       "key": "my-mcp-server.Shared",
       "value": {
         "name": { "defaultValue": "my-mcp-server", "isExpression": false, "displayName": "Name" },
-        "folderPath": { "defaultValue": "Shared", "isExpression": false, "displayName": "Folder Path" }
+        "folderPath": { "defaultValue": "Shared", "isExpression": false, "displayName": "Folder Path" },
+        "EntryPointUniqueId": { "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f", "isExpression": false, "displayName": "agent" }
       },
       "metadata": { "ActivityName": "retrieve_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName" }
     }

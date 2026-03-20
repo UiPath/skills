@@ -11,18 +11,28 @@ Design and run tests for your agents using the UiPath evaluation framework.
 
 ## Prerequisites
 
-- Authentication configured — if not authenticated, use the [Auth skill](/uipath-coded-agents:auth) first
-- `UIPATH_PROJECT_ID` set in `.env` (agent must be pushed to Studio Web before running evals)
 - `entry-points.json` exists (run `uv run uipath init`)
+
+### Local-only vs Studio Web
+
+Before proceeding, determine whether the user wants to run evaluations **locally only** or also **report evaluation results in Studio Web**:
+
+- **Local-only** — No authentication or `UIPATH_PROJECT_ID` needed. Use `--no-report` flag when running evals. Skip auth checks entirely.
+- **Studio Web** — Required when the user wants to report evaluation results to Studio Web or use `--report`. In this case:
+  - Authentication must be configured — if not authenticated, use the [Auth skill](/uipath-coded-agents:auth) first
+  - `UIPATH_PROJECT_ID` must be set in `.env` — this is obtained by pushing the agent to Studio Web via `uv run uipath push` (see [Sync skill](/uipath-coded-agents:sync))
 
 ## Quick Reference
 
 ```bash
-# Run evaluations — ENTRYPOINT is the name from entry-points.json, NOT the project name
-uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --workers 4
+# Run evaluations locally (no cloud connection needed)
+uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --workers 4
 
 # With output file
-uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --output-file results.json
+uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --output-file results.json
+
+# Report results to Studio Web (requires auth + UIPATH_PROJECT_ID)
+uv run uipath eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --report --workers 4
 ```
 
 ## Documentation
@@ -82,7 +92,7 @@ During evaluations, matching args return the mock value. During normal execution
 |-------|-------|----------|
 | `typing.Any must be a subclass of BaseEvaluatorConfig` | Invalid `evaluatorTypeId` in evaluator JSON | Check `references/evaluators.md` for valid evaluator type IDs |
 | `target_output_key: Input should be a valid string` | ContainsEvaluator missing required config | Set `"target_output_key"` to the output field name in the evaluator JSON |
-| `UIPATH_PROJECT_ID not found` | Agent not pushed to Studio Web | Run `uv run uipath push` first — set `UIPATH_PROJECT_ID=<id>` in `.env` |
+| `UIPATH_PROJECT_ID not found` | Agent not pushed to Studio Web (only needed for `--report`) | Push the agent first with `uv run uipath push` and set `UIPATH_PROJECT_ID=<id>` in `.env`. For local-only evals, use `--no-report` to skip this requirement |
 | All scores are 0 | Mock data missing or wrong args | Check `@mockable()` `example_calls` match the args used in eval set inputs |
 
 ## Additional Instructions

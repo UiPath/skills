@@ -108,8 +108,16 @@ Benefits: Faster re-runs, reproducible results, lower API costs.
 
 ## Integration with UiPath Cloud
 
+To report evaluation results to Studio Web for visualization and tracking, use `--report`. This requires authentication and `UIPATH_PROJECT_ID` set in `.env` (obtained by pushing the agent to Studio Web via `uv run uipath push`).
+
 ```bash
 uv run uipath eval <entrypoint> <eval-file> --report --workers 4
+```
+
+For local-only evaluations (no cloud connection needed), use `--no-report`:
+
+```bash
+uv run uipath eval <entrypoint> <eval-file> --no-report --workers 4
 ```
 
 ## Troubleshooting
