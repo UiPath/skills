@@ -34,7 +34,7 @@ Use the default (table) only when displaying results directly to the user for re
 
 For the full CLI command reference (all tools, parameters, and error recovery), see **[references/cli-reference.md](./references/cli-reference.md)**.
 
-Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
+Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file` (execution and interactive debugging), `list-workflow-examples`, `get-workflow-example`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
 
 **The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uip --help`, `uip rpa --help`, `uip rpa get-default-activity-xaml --help`, `uip is --help`, `uip is connections --help`, etc.
 
@@ -79,6 +79,7 @@ Detailed procedures extracted from the main workflow phases:
 - **[cli-reference.md](./references/cli-reference.md)** — Full `uip` CLI command reference guide (all tools, parameters, commands)
 - **[environment-setup.md](./references/environment-setup.md)** — Phase 0 details: project root detection, Studio verification, authentication, and new project creation
 - **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Phase 3 details: package resolution, JIT custom types, focus-activity debugging, iteration loop, smoke testing
+- **[debugging.md](./references/debugging.md)** — Interactive debugging with `uip rpa run-file`: breakpoints, step-by-step execution, exception investigation, runtime state inspection. Read when you need to go beyond static validation (`get-errors`) to diagnose runtime issues
 - **[connector-capabilities.md](./references/connector-capabilities.md)** — IS connector discovery, resource schema inspection, connection management
 
 ### Domain Reference Files
@@ -464,6 +465,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --f
 - `Read` the XAML to understand current flow → `Edit` to correct
 - Verify expression syntax matches project language (VB.NET vs C#)
 - Use `uip rpa run-file` for runtime validation if static checks pass
+- For complex runtime issues, use **interactive debugging** (`--command StartDebugging`) to step through execution, inspect variables at each point, and pinpoint exactly where logic diverges from expectations. See [debugging.md](./references/debugging.md) for the full debugging workflow
 
 **When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (see [InvokeCode.md](../../references/activity-docs/UiPath.System.Activities/25.10/activities/InvokeCode.md)).
 
@@ -537,6 +539,7 @@ Before handover, verify:
 - [ ] Error handling (Try-Catch) is included where appropriate
 - [ ] `get-errors` returns 0 errors (or remaining errors are documented as user-deferred)
 - [ ] Smoke test with `run-file` considered (if workflow is safe to run)
+- [ ] For runtime failures: interactive debugging used to pinpoint root cause (see [debugging.md](./references/debugging.md))
 
 **User Communication:**
 - [ ] User has been informed of any limitations

@@ -88,3 +88,36 @@ uip rpa run-file --file-path "Workflows/MyWorkflow.xaml" --log-level Verbose --f
 - Compilation errors still exist (fix those first)
 
 If `run-file` reveals runtime errors, analyze the output and loop back to fix them.
+
+## Interactive Debugging (When Smoke Tests Aren't Enough)
+
+When a simple `StartExecution` run fails and the error output doesn't pinpoint the root cause, use **interactive debugging** to step through the workflow and inspect state at each point. This is especially valuable for:
+
+- **Cascading failures** — an early activity produces unexpected output that causes a downstream activity to fail. Stepping through reveals where the data first goes wrong.
+- **API/network issues** — an HTTP request returns an error status code, but the workflow tries to process the response as if it succeeded. Debugging shows the actual response content.
+- **Complex control flow** — loops, conditionals, or Try-Catch blocks that behave differently than expected. Step into scopes to see which branch executes and why.
+- **Null/empty variable issues** — a variable is null when it shouldn't be. Stepping through shows which activity was supposed to populate it and what actually happened.
+
+### Quick Debugging Pattern
+
+```bash
+# 1. Focus on the suspected problem area and set a breakpoint
+uip rpa focus-activity --activity-id "HttpRequest_1"
+uip rpa run-file --file-path "MyWorkflow.xaml" --command ToggleBreakpoint --format json
+
+# 2. Start debugging — runs until the breakpoint
+uip rpa run-file --file-path "MyWorkflow.xaml" --command StartDebugging --format json
+
+# 3. Step through and inspect variables at each step
+uip rpa run-file --file-path "MyWorkflow.xaml" --command StepOver --format json
+
+# 4. If an exception occurs, inspect it and decide:
+#    - ContinueRetry: retry the activity (for transient errors)
+#    - ContinueIgnore: skip the error and continue
+#    - Stop: end session and fix the root cause in XAML
+
+# 5. Always stop the session when done
+uip rpa run-file --file-path "MyWorkflow.xaml" --command Stop --format json
+```
+
+For the full command reference, output format details, and more debugging scenarios, see **[debugging.md](debugging.md)**.
