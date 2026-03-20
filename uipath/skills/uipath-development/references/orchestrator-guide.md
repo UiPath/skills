@@ -181,47 +181,8 @@ uip or folders delete 12345 --format json
 
 ## CLI Operations — Assets
 
-### List Assets in a Folder
-
-```bash
-uip or assets list 12345 --format json
-```
-
-With OData filter:
-```bash
-uip or assets list 12345 --filter "Name eq 'ApiKey'" --count 100 --format json
-```
-
-### Get Asset by ID
-
-```bash
-uip or assets get 12345 67890 --format json
-```
-
-### Create Assets
-
-```bash
-# Text asset
-uip or assets create 12345 "ApiBaseUrl" "https://api.example.com" --format json
-
-# Secret asset
-uip or assets create 12345 "ApiKey" "sk-abc123" --type Secret --format json
-
-# Integer asset
-uip or assets create 12345 "MaxRetries" "3" --type Integer --description "Max retry attempts" --format json
-
-# Credential asset
-uip or assets create 12345 "ServiceAccount" "user:password" --type Credential --format json
-
-# Asset with tags
-uip or assets create 12345 "Timeout" "30" --type Integer --tags "config,performance" --format json
-```
-
-### Delete an Asset
-
-```bash
-uip or assets delete 12345 67890 --format json
-```
+> **Note:** Asset management is handled by the Resources tool, not the Orchestrator tool.
+> Use `uip resources assets` commands instead. See [resources/resources-guide.md](resources/resources-guide.md) for full details.
 
 ---
 
@@ -246,9 +207,9 @@ uip or folders create "Invoicing" --parent 12345 --format json
 uip or folders create "Reporting" --parent 12345 --format json
 
 # 4. Create assets in the folder
-uip or assets create 12345 "ApiBaseUrl" "https://api.example.com" --format json
-uip or assets create 12345 "ApiKey" "sk-production-key" --type Secret --format json
-uip or assets create 12345 "MaxRetries" "3" --type Integer --format json
+uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --format json
+uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --format json
+uip resources assets create 12345 "MaxRetries" "3" --type Integer --format json
 
 # 5. Pack and publish solution
 uip solution pack ./MySolution ./output --version "1.0.0" --format json
@@ -306,7 +267,7 @@ string invoiceId = item.SpecificContent["InvoiceId"].ToString();
 
 ## REST API Reference
 
-When CLI commands are insufficient or unavailable (e.g., asset management), use the Orchestrator REST API directly. Requires an access token (stored at `~/.uip/.env` after login).
+When CLI commands are insufficient or unavailable (e.g., asset management), use the Orchestrator REST API directly. Requires an access token (stored at `~/.uipath/.auth` after login).
 
 ### Authentication Header
 
@@ -375,4 +336,4 @@ curl -G "${BASE}/Releases" \
 | "project is already opened in another Studio instance" | Studio has the project DB locked | `rpa-tool close-project` before packing |
 | "No runtimes configured" (error 2818) | Target folder has no robot machines assigned | Assign machine templates in Orchestrator > Folder Settings > Machines |
 | "Azure CLI is not installed" during `solution pack` | Pack command needs Azure CLI for NuGet feed auth | Install Azure CLI |
-| Token expired | Access token from `~/.uip/.env` has expired | Re-run `uip login` |
+| Token expired | Access token from `~/.uipath/.auth` has expired | Re-run `uip login` |

@@ -708,6 +708,75 @@ uip solution packages list --format json
 
 ---
 
+## Resources (`resources`)
+
+Manage Orchestrator resources: assets, queues, queue items, storage buckets, and bucket files.
+
+> **Full reference:** See [resources/resources-guide.md](resources/resources-guide.md) for complete command details.
+
+| Command | Description |
+|---|---|
+| `uip resources assets list <folder-id>` | List assets in a folder |
+| `uip resources assets get <folder-id> <asset-id>` | Get asset by ID |
+| `uip resources assets create <folder-id> <name> <value>` | Create an asset |
+| `uip resources assets update <folder-id> <asset-id> [value]` | Update an asset |
+| `uip resources assets delete <folder-id> <asset-id>` | Delete an asset |
+| `uip resources queues-create <folder-id> <name>` | Create a queue |
+| `uip resources queues-delete <folder-id> <queue-id>` | Delete a queue |
+| `uip resources queues-add-items <folder-id> <queue-name>` | Add queue item |
+| `uip resources queues-get-item <folder-id> <item-id>` | Get queue item |
+| `uip resources queues-set-result <folder-id> <item-id>` | Set item result |
+| `uip resources queues-delete-item <folder-id> <item-id>` | Delete queue item |
+| `uip resources storage-buckets-list <folder-id>` | List storage buckets |
+| `uip resources storage-buckets-get <folder-id> <bucket-id>` | Get bucket by ID |
+| `uip resources storage-buckets-create <folder-id> <name>` | Create bucket |
+| `uip resources storage-buckets-delete <folder-id> <bucket-id>` | Delete bucket |
+| `uip resources storage-buckets-read-file <folder-id> <bucket-id> <path>` | Download file |
+| `uip resources storage-buckets-write-file <folder-id> <bucket-id> <path>` | Upload file |
+| `uip resources storage-buckets-delete-file <folder-id> <bucket-id> <path>` | Delete file |
+
+---
+
+## Test Manager (`tm`)
+
+Manage test projects, test sets, test cases, executions, and reports.
+
+> **Full reference:** See [test-manager/test-manager-guide.md](test-manager/test-manager-guide.md) for complete command details.
+
+| Command | Description |
+|---|---|
+| `uip tm project list` | List test projects |
+| `uip tm project create` | Create test project |
+| `uip tm project update` | Update project name/description |
+| `uip tm project delete` | Delete a project |
+| `uip tm project set-default-folder` | Set default Orchestrator folder for project |
+| `uip tm project clear-default-folder` | Clear default folder |
+| `uip tm testset list` | List test sets in a project |
+| `uip tm testset create` | Create test set |
+| `uip tm testset update` | Update test set |
+| `uip tm testset delete` | Delete test set |
+| `uip tm testset add-testcases` | Add test cases to a test set |
+| `uip tm testset remove-testcases` | Remove test cases from set (BUGGY) |
+| `uip tm testset list-testcases` | List test cases in a set (BUGGY) |
+| `uip tm testset execute` | Execute a test set |
+| `uip tm testcase create` | Create test case |
+| `uip tm testcase list` | List test cases |
+| `uip tm testcase delete` | Delete a test case |
+| `uip tm testcase update` | Update test case (BUGGY) |
+| `uip tm testcase link-automation` | Link Orchestrator automation to test case |
+| `uip tm testcase unlink-automation` | Unlink automation from test case |
+| `uip tm testcase list-testsets` | List test sets containing a test case (BUGGY) |
+| `uip tm testcase list-automations` | List available test entry points |
+| `uip tm execution retry` | Retry failed execution |
+| `uip tm wait` | Wait for execution to reach terminal state |
+| `uip tm result download` | Download test results |
+| `uip tm report get` | Get execution report |
+| `uip tm attachment download` | Download test attachments |
+
+---
+
+---
+
 ## Planned Commands (Not Yet Available)
 
 These commands are proposed or in development and are **not yet available** in the CLI:
@@ -716,9 +785,6 @@ These commands are proposed or in development and are **not yet available** in t
 
 | Command Group | Commands |
 |---|---|
-| **Assets** | `or assets list`, `or assets create`, `or assets get`, `or assets delete` |
-| **Queues** | `or queues list`, `or queues create`, `or queues delete`, `or queues items add/list/get/set-status` |
-| **Storage Buckets** | `or storage-buckets list`, `create`, `delete`, `upload`, `download` |
 | **Packages** | `or packages list`, `upload`, `download`, `delete` |
 | **Libraries** | `or libraries list`, `upload`, `delete` |
 | **Machines** | `or machines list`, `get` |
@@ -732,7 +798,4 @@ These commands are proposed or in development and are **not yet available** in t
 | Command Group | Description |
 |---|---|
 | **Coded Apps** (`codedapp`) | Create, restore, build, pack app projects |
-| **Test Manager** (`tm`) | Upload results, list/execute test sets, get reports |
 | **API Workflows** (`api-workflow`) | Create, restore, build, pack API workflow projects |
-| **Resources** (`resources`) | Resource management |
-| **DocsAI** (`docsai`) | Documentation AI features |
