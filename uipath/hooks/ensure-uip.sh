@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensures @uipath/cli and @uipath/rpa-tool are installed globally.
+# Ensures @uipath/cli, @uipath/servo and @uipath/rpa-tool are installed globally.
 # Runs once per session via the SessionStart plugin hook.
 # If npm is missing, attempts to install Node.js first.
 # Supports Windows, macOS, and Linux.
@@ -51,7 +51,7 @@ ensure_npm() {
 
   if ! command -v npm &> /dev/null; then
     echo "Node.js was installed but npm is not yet available in this session." >&2
-    echo "Please restart your terminal, then run: npm install -g @uipath/cli" >&2
+    echo "Please restart your terminal, then run: npm install -g @uipath/cli @uipath/servo" >&2
     exit 2
   fi
 }
@@ -79,10 +79,21 @@ ensure_github_packages_registry() {
   npm config set //npm.pkg.github.com/:_authToken "$GH_NPM_REGISTRY_TOKEN"
 }
 
+# npm install -g always re-downloads and re-installs, even if the same version
+# is already present. This is slow for a synchronous session hook and also
+# re-triggers package lifecycle scripts (e.g. servo runs preinstall hooks
+# that should only execute on actual version changes). Check first, install
+# only when needed.
 ensure_npm_package() {
   local pkg="$1"
-  echo "Installing or updating $pkg globally..." >&2
 
+  if npm ls -g "$pkg" --depth=0 &>/dev/null \
+     && [ -z "$(npm outdated -g "$pkg" 2>/dev/null)" ]; then
+    echo "$pkg is already installed and up to date." >&2
+    return
+  fi
+
+  echo "Installing or updating $pkg globally..." >&2
   if ! npm install -g "$pkg" 2>&1; then
     echo "Failed to install $pkg. Please run: npm install -g $pkg" >&2
     exit 2
@@ -108,4 +119,5 @@ ensure_uip_tool() {
 ensure_npm
 ensure_github_packages_registry
 ensure_npm_package @uipath/cli
+ensure_npm_package @uipath/servo
 ensure_uip_tool @uipath/rpa-tool
