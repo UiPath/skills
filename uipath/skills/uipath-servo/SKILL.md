@@ -6,7 +6,7 @@ allowed-tools: Bash(servo:*), Read, Grep
 
 # UI Automation with Servo
 
-Servo is a Windows-only CLI tool. Install: `npm install -g @uipath/servo`
+Servo is a Windows-only CLI tool. Install: `npm install -g @uipath/servo`. Help: `servo --help`.
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ servo screenshot w1
 
 ## Commands
 
-All commands accept `--timeout` (default 30s) and `--visualize` (shows a visual indicator of the target element).
+All commands accept --help`, `--timeout` and `--visualize` (shows a visual indicator of the target element).
 
 Commands that write output files accept `--filename <path>` to override the output file path.
 
@@ -76,7 +76,7 @@ servo screenshot                        # Full desktop screenshot
 servo screenshot w1                     # Window screenshot
 servo screenshot e5                     # Element screenshot
 servo extract-table e5                  # Extract table data as markdown
-servo highlight e5                      # Draw red border (3s)
+servo highlight e5                      # Draw red border
 servo highlight e5 --color Blue --duration 5
 servo selector e5                       # Get UiPath selector string
 ```
@@ -289,6 +289,11 @@ servo click e5 -i ControlApi           # Try a different input method
 **Click lands on wrong spot** -- The click feedback shows screen coordinates. Take a screenshot and check whether those coordinates are visually inside the intended element. If not:
 
 ```bash
+servo highlight e5                               # Highlight the element to see its bounds
+servo screenshot e5                              # Screenshot the whole desktop
+servo get e5 position                            # Get the reported position of the element
+
+# Try
 servo click e5 --origin TopLeft --offset "5,5"   # Use a different origin point instead of center
 servo click e5 -i ControlApi                     # Might ignore the coordinates
 servo snapshot w1 --framework UiaOnly            # Re-snapshot with different framework (bounds may differ)
@@ -384,10 +389,10 @@ servo snapshot w1                        # Fresh refs for newly visible rows
 **Status bar:** SAP confirms operations via the status bar. After an action:
 
 ```bash
-servo get e99 text                       # Read status bar (ref varies)
+servo get e99 text                       # Read status bar
 ```
 
 **Tips:**
-- Use longer timeouts for SAP operations: `--timeout 60`
+- Use longer timeouts for SAP operations
 - Check status bar messages to confirm operations
 - SAP tables only expose visible rows in snapshots -- use `extract-table` for full data
