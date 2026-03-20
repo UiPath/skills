@@ -2,6 +2,8 @@
 
 Guide to UiPath Orchestrator concepts, architecture, and CLI operations for managing automation infrastructure.
 
+> For full option details on any command, use `--help` (e.g., `uip or folders list --help`)
+
 ## Concepts
 
 ### What is Orchestrator?
@@ -50,53 +52,7 @@ Modern folders are the primary organizational unit within a tenant. They support
 - **Automatic robot provisioning** — Robots auto-assigned based on folder membership
 - **Resource isolation** — Each folder has its own processes, assets, queues
 
-**Folder types:**
-
-| Type | Description |
-|---|---|
-| Standard | Default folder type for organizing automations |
-| Personal | User-specific workspace |
-| Virtual | Logical grouping without physical separation |
-| Solution | Created automatically by solution deployment |
-| DebugSolution | Debug variant of a solution folder |
-
-### Assets
-
-Assets are key-value pairs stored in Orchestrator that automations can read at runtime. They externalize configuration so the same automation package works across environments.
-
-**Asset types:**
-
-| Type | Description | Example |
-|---|---|---|
-| Text | Plain text string | API URL, file path |
-| Bool | Boolean value | Feature flag |
-| Integer | Numeric value | Retry count, timeout |
-| Credential | Username + password | Service account |
-| Secret | Encrypted value | API key, token |
-| DBConnectionString | Database connection | SQL Server connection |
-| HttpConnectionString | HTTP endpoint | REST API base URL |
-| WindowsCredential | Windows credential pair | Domain login |
-
-**Asset scope:**
-
-| Scope | Description |
-|---|---|
-| Global | Same value for all robots |
-| PerRobot | Different value per robot (allows overrides) |
-
-### Queues
-
-Queues enable distributed processing of work items across multiple robots:
-
-1. **Dispatcher** automation adds items to a queue
-2. **Performer** automation(s) process items from the queue
-3. Orchestrator handles distribution, retries, and status tracking
-
-Each queue item has:
-- **Specific Content** — JSON payload with the data to process
-- **Status** — New, InProgress, Successful, Failed, Abandoned, Deleted
-- **Priority** — High, Normal, Low
-- **Retry** — Automatic retry on failure (configurable)
+For assets, queues, and storage buckets, see [resources-guide.md](resources/resources-guide.md)
 
 ### Processes
 
@@ -140,10 +96,8 @@ uip or folders list --filter "DisplayName eq 'Finance'" --format json
 ### Create a Folder
 
 ```bash
-# Top-level folder
 uip or folders create "Finance" --format json
 
-# Nested folder
 uip or folders create "Invoicing" --parent 12345 --description "Invoice processing" --format json
 ```
 
@@ -193,25 +147,18 @@ uip or folders delete 12345 --format json
 Set up a new environment from scratch using the CLI:
 
 ```bash
-# 1. Login
 uip login --format json
-
-# 2. Select tenant
 uip login tenant set "Production" --format json
 
-# 3. Create folder structure
 uip or folders create "Finance" --format json
-# Note the folder ID from the response, e.g., 12345
-
+# Use the folder ID from the response (e.g., 12345) for nested folders
 uip or folders create "Invoicing" --parent 12345 --format json
 uip or folders create "Reporting" --parent 12345 --format json
 
-# 4. Create assets in the folder
 uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --format json
 uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --format json
 uip resources assets create 12345 "MaxRetries" "3" --type Integer --format json
 
-# 5. Pack and publish solution
 uip solution pack ./MySolution ./output --version "1.0.0" --format json
 uip solution publish ./output/MySolution.1.0.0.zip --format json
 ```
@@ -221,14 +168,12 @@ uip solution publish ./output/MySolution.1.0.0.zip --format json
 Promote an automation from development to production:
 
 ```bash
-# 1. Pack in dev
 uip solution pack ./MySolution ./output --version "1.0.0" --format json
 
-# 2. Publish to staging
 uip login tenant set "Staging" --format json
 uip solution publish ./output/MySolution.1.0.0.zip --format json
 
-# 3. After validation, publish to production
+# After validation, promote to production
 uip login tenant set "Production" --format json
 uip solution publish ./output/MySolution.1.0.0.zip --format json
 ```
@@ -238,10 +183,8 @@ uip solution publish ./output/MySolution.1.0.0.zip --format json
 In coded workflows, assets are accessed via the `system` service:
 
 ```csharp
-// Read a text asset
 string apiUrl = system.GetAsset("ApiBaseUrl").ToString();
 
-// Read a credential asset
 var credential = system.GetCredential("ServiceAccount");
 string username = credential.Username;
 string password = credential.Password;
@@ -250,7 +193,6 @@ string password = credential.Password;
 ### Using Queues from Code
 
 ```csharp
-// Add item to queue
 system.AddQueueItem("InvoiceQueue", new Dictionary<string, object>
 {
     { "InvoiceId", "INV-001" },
@@ -258,7 +200,6 @@ system.AddQueueItem("InvoiceQueue", new Dictionary<string, object>
     { "CustomerName", "Acme Corp" }
 });
 
-// Get next queue item
 var item = system.GetQueueItem("InvoiceQueue");
 string invoiceId = item.SpecificContent["InvoiceId"].ToString();
 ```
