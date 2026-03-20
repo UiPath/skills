@@ -11,13 +11,11 @@ All commands require authentication (`uip login`). All subcommands use **nested 
 ```
 uip resources
   ├── assets              ← list, get, create, update, delete
-  ├── queues              ← create, delete
-  ├── queue-items         ← create, get, set-result, delete
+  ├── queues              ← list, create, delete
+  ├── queue-items         ← list, create, get, set-result, delete
   ├── storage-buckets     ← list, get, create, delete
   └── storage-bucket-files ← read, write, delete
 ```
-
-> **Note:** There is no `queues list` or `queue-items list` command. Use the Orchestrator UI or REST API to discover existing queues/items.
 
 ---
 
@@ -42,8 +40,10 @@ uip resources assets create 12345 "ApiKey" "sk-abc123" --type Secret --format js
 
 | Command | Description |
 |---------|-------------|
+| `uip resources queues list <folder-id>` | List queues in a folder |
 | `uip resources queues create <folder-id> <name>` | Create a queue |
 | `uip resources queues delete <folder-id> <queue-id>` | Delete a queue |
+| `uip resources queue-items list <folder-id>` | List queue items (use --filter to narrow, e.g. `"QueueDefinitionId eq 123"`) |
 | `uip resources queue-items create <folder-id> <queue-name>` | Add item to queue |
 | `uip resources queue-items get <folder-id> <item-id>` | Get queue item |
 | `uip resources queue-items set-result <folder-id> <item-id>` | Set item result (--success or --fail) |

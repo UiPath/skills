@@ -33,16 +33,16 @@ Manage folders, jobs, and processes. See [orchestrator-guide.md](orchestrator-gu
 
 Manage assets, queues, and storage buckets. See [resources/resources-guide.md](resources/resources-guide.md). Use `uip resources --help` for all subcommands.
 
-> **Note:** Assets use nested subcommands (`assets list`), queues and buckets use flat hyphens (`queues-create`, `storage-buckets-list`).
-
 | Command | Description |
 |---|---|
 | `uip resources assets list <folder-id>` | List assets |
 | `uip resources assets create <folder-id> <name> <value>` | Create an asset |
-| `uip resources queues-create <folder-id> <name>` | Create a queue |
-| `uip resources queues-add-items <folder-id> <queue-name>` | Add item to queue |
-| `uip resources storage-buckets-list <folder-id>` | List storage buckets |
-| `uip resources storage-buckets-create <folder-id> <name>` | Create a bucket |
+| `uip resources queues list <folder-id>` | List queues |
+| `uip resources queues create <folder-id> <name>` | Create a queue |
+| `uip resources queue-items list <folder-id>` | List queue items |
+| `uip resources queue-items create <folder-id> <queue-name>` | Add item to queue |
+| `uip resources storage-buckets list <folder-id>` | List storage buckets |
+| `uip resources storage-buckets create <folder-id> <name>` | Create a bucket |
 
 ---
 
