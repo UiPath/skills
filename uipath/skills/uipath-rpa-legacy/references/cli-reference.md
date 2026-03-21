@@ -78,6 +78,8 @@ With `--include-type-definitions`, output includes `TypeDefinitions` array with 
 | `--include-type-definitions` | Include full type definitions for argument types (enums, classes, interfaces) |
 | `--trace-level <level>` | Logging verbosity |
 
+**Query tips:** Use short single-concept terms (`"ReadRange"`, `"SendMail"`). Multi-term queries (`"BuildDataTable AddDataRow"`) return empty — search each term separately. Overly specific queries (`"ReadRange portable"`) may also miss. Each call takes ~15-30s, so use good search terms to minimize calls.
+
 ### type-definition
 
 Inspects any .NET type from the project's NuGet dependencies — enum values, properties, methods, constructors, and base types.

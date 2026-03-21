@@ -25,34 +25,54 @@ Every legacy UiPath XAML workflow is a WF4 Activity serialized as XAML:
   xmlns:ui="http://schemas.uipath.com/workflow/activities"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- TextExpression.NamespacesForImplementation -->
+  <!-- BASELINE NAMESPACE IMPORTS (21 — include ALL of these in every new VB.NET XAML) -->
   <TextExpression.NamespacesForImplementation>
     <sco:Collection x:TypeArguments="x:String">
       <x:String>System.Activities</x:String>
       <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
       <x:String>Microsoft.VisualBasic</x:String>
       <x:String>Microsoft.VisualBasic.Activities</x:String>
       <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
       <x:String>System.Collections.Generic</x:String>
       <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
       <x:String>System.IO</x:String>
       <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
-      <!-- Additional namespaces as needed -->
+      <x:String>System.Windows.Markup</x:String>
+      <!-- Add package-specific namespaces below when using additional packages -->
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
 
-  <!-- TextExpression.ReferencesForImplementation -->
+  <!-- BASELINE ASSEMBLY REFERENCES (16 — include ALL of these in every new VB.NET XAML) -->
   <TextExpression.ReferencesForImplementation>
     <sco:Collection x:TypeArguments="AssemblyReference">
-      <AssemblyReference>System</AssemblyReference>
       <AssemblyReference>System.Activities</AssemblyReference>
-      <AssemblyReference>System.Core</AssemblyReference>
-      <AssemblyReference>System.Data</AssemblyReference>
       <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
       <AssemblyReference>UiPath.System.Activities</AssemblyReference>
-      <!-- Additional assembly references as needed -->
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <!-- Add package-specific assembly references below when using additional packages -->
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
 
@@ -340,21 +360,61 @@ Run `uip rpa-legacy validate` after every XAML modification. Do not batch multip
 
 ---
 
-## Adding Namespace Imports
+## Managing References When Adding Packages (CRITICAL)
 
-When using activities from additional packages, add the namespace import:
+**Every package you use in a XAML file MUST have its assembly references and namespace imports added to that file.** Missing a single assembly reference causes all expressions using types from that assembly to fail validation.
+
+This replicates what Studio does automatically when you drag an activity onto the canvas or add an import via the Imports panel. When generating XAML programmatically, you must do this manually.
+
+### UiPath Activity Packages
+
+When you add a UiPath activity package to `dependencies` in project.json and use its activities in a XAML file:
+
+1. Add `xmlns` declaration to root `<Activity>` — use `XmlnsDeclaration` from `find-activities` output
+2. Add `<AssemblyReference>` — use `AssemblyName` from `find-activities` output
+3. Add `<x:String>` namespace imports — use the activity's `Namespace` from `find-activities` output
 
 ```xml
+<!-- Example: after adding UiPath.Excel.Activities to dependencies -->
+<!-- 1. xmlns on root Activity: -->
+xmlns:ueab="clr-namespace:UiPath.Excel.Activities.Business;assembly=UiPath.Excel.Activities"
+
+<!-- 2. Assembly reference: -->
+<AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+
+<!-- 3. Namespace imports: -->
 <x:String>UiPath.Excel</x:String>
-<x:String>System.Data</x:String>
-<x:String>System.Net.Mail</x:String>
+<x:String>UiPath.Excel.Activities.Business</x:String>
 ```
 
-And the assembly reference:
+### Arbitrary .NET Packages
+
+When you add a NuGet package (e.g., `CsvHelper`, `HtmlAgilityPack`) and use its classes in expressions or InvokeCode:
+
+1. Add `<AssemblyReference>` with the package's assembly name
+2. Add `<x:String>` namespace import for the namespace you use
+3. If using in xmlns attributes, add `xmlns` declaration too
 
 ```xml
-<AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
-<AssemblyReference>System.Data</AssemblyReference>
+<!-- Example: after adding HtmlAgilityPack to dependencies -->
+<AssemblyReference>HtmlAgilityPack</AssemblyReference>
+<x:String>HtmlAgilityPack</x:String>
+```
+
+### C# Projects — Additional Baseline References
+
+C# legacy projects need these **in addition** to the 16 VB.NET baseline refs:
+
+```xml
+<AssemblyReference>Microsoft.CSharp</AssemblyReference>
+<AssemblyReference>System.Runtime.Serialization</AssemblyReference>
+<AssemblyReference>System.ServiceModel</AssemblyReference>
+<AssemblyReference>System.ServiceModel.Activities</AssemblyReference>
+```
+
+And this additional namespace import:
+```xml
+<x:String>System.Text</x:String>
 ```
 
 ---

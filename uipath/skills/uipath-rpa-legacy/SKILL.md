@@ -106,7 +106,9 @@ Before writing XAML for Flowchart or StateMachine:
 - [ ] xmlns uses `assembly=mscorlib` (not `System.Private.CoreLib`)
 - [ ] VB.NET: `[bracket]` notation for expressions
 - [ ] Classic activity names (no "X" suffix)
-- [ ] Standard namespace imports and assembly references
+- [ ] All 16 baseline assembly references present (see [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md))
+- [ ] All 21 baseline namespace imports present
+- [ ] Package-specific assembly refs + namespace imports added for every activity package used
 - [ ] Flowchart/StateMachine: `xmlns:av` declared, ViewState on every node
 - [ ] Scope activities: `ActivityAction<T>` body pattern (see [common-pitfalls.md](./references/common-pitfalls.md))
 

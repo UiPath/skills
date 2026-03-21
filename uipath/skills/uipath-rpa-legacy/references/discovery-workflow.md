@@ -58,6 +58,13 @@ uip rpa-legacy find-activities "{projectRoot}" --query "invoke code" --include-t
 
 **Use the returned `XamlSnippet` as your starting point** for activity XAML — it has correct element names, namespaces, and property names for the installed package version. Also add the returned `XmlnsDeclaration` to the root `<Activity>` element.
 
+**Query syntax tips:**
+- Use **short, single-concept terms**: `"ReadRange"`, `"SendMail"`, `"DataTable"`
+- Multi-word queries work but overly specific combos may return empty: `"ReadRange portable"` → empty
+- Multi-term queries (AND logic) are not supported: `"BuildDataTable AddDataRow"` → empty. Search each term separately.
+- Each call takes ~15-30 seconds — minimize calls by using good search terms
+- If a query returns empty, try a broader term: `"range"` instead of `"ReadRange portable"`
+
 Activity reference docs describe behavior/gotchas but NOT exact CLR class names or argument types. Skipping this step → guessing → wasted validation cycles.
 
 ---
