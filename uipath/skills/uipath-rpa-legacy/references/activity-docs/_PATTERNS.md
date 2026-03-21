@@ -210,6 +210,25 @@ Retry Scope (NumberOfRetries=3, RetryInterval=00:00:05)
   ├── Condition: Element Exists (check if action succeeded)
 ```
 
+### Throw Activity — Quote Escaping Gotcha (XAML Generation)
+
+In `Throw.Exception` bracket expressions, fully-qualified class names + complex string concatenation with `&quot;` can cause compiler errors. The VB.NET expression compiler rejects the combination.
+
+**Rules:**
+1. **Use short-form class names** — `BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`
+2. **For complex messages, use a variable** — Assign the message string first, then `[New BusinessRuleException(errorMessage)]`
+3. **Simple inline is fine** — `[New BusinessRuleException(&quot;simple message&quot;)]`
+
+```xml
+<!-- GOOD: Short name + simple expression -->
+<Throw Exception="[New BusinessRuleException(&quot;Invalid data for &quot; &amp; txId)]" />
+
+<!-- BEST: Variable approach for complex messages -->
+<!-- Step 1: Assign errorMessage = "Invalid: " & amount.ToString("F2") & " for " & txId -->
+<!-- Step 2: Throw with variable reference -->
+<Throw Exception="[New BusinessRuleException(errorMessage)]" />
+```
+
 ### REFramework Exception Types
 | Exception | Meaning | Action |
 |-----------|---------|--------|

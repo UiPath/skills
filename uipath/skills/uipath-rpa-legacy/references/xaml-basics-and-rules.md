@@ -129,6 +129,8 @@ VB.NET expressions use bracket notation `[expression]` inline in attributes:
 
 **XML escaping required inside expressions:** `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, `&` → `&amp;`
 
+**Throw.Exception quote escaping gotcha:** Fully-qualified class names + complex string expressions with multiple `&quot;` in `Throw.Exception` can cause compiler errors. Use short-form class names (`BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`) and for complex messages, assign to a variable first then throw with the variable. See [common-pitfalls.md](./common-pitfalls.md#vbnet-quote-escaping-in-throwexception-critical-for-xaml-generation) for the full pattern.
+
 For comprehensive VB.NET expression patterns (strings, dates, collections, DataTables), see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
 
 ---

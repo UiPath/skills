@@ -103,6 +103,55 @@ Legacy `HttpClient` timeout is only 6,000ms. `NetHttpRequest` default is 10,000m
 
 ---
 
+## VB.NET Quote Escaping in Throw.Exception (CRITICAL for XAML Generation)
+
+The `Throw.Exception` attribute wraps the bracket expression in `VisualBasicValue<Exception>`. When fully-qualified class names are combined with complex string expressions containing multiple `&quot;`, the VB.NET compiler can reject the expression — even though the same `&quot;` escaping works fine in simpler attributes like `LogMessage.Message`.
+
+### What fails
+
+```xml
+<!-- FAILS: Fully-qualified name + complex string concatenation -->
+<Throw Exception="[New UiPath.Core.Activities.BusinessRuleException(&quot;Invalid amount: &quot; &amp; amount.ToString(&quot;F2&quot;) &amp; &quot; for &quot; &amp; txId)]" />
+
+<!-- FAILS: String.Format with multiple &quot; inside brackets -->
+<Throw Exception="[New UiPath.Core.Activities.BusinessRuleException(String.Format(&quot;Invalid amount: {0} for {1}&quot;, amount, txId))]" />
+```
+
+### What works
+
+**Approach 1: Short-form class name + simple expression (recommended for simple messages)**
+```xml
+<!-- Works: Short name (namespace already imported) + simple concatenation -->
+<Throw Exception="[New BusinessRuleException(&quot;Invalid amount for &quot; &amp; txId)]" />
+```
+
+**Approach 2: Variable for message, then Throw (recommended for complex messages)**
+```xml
+<!-- Best practice from codebase: construct message in a variable, then throw -->
+<Assign DisplayName="Build Error Message">
+  <Assign.To>
+    <OutArgument x:TypeArguments="x:String">[errorMessage]</OutArgument>
+  </Assign.To>
+  <Assign.Value>
+    <InArgument x:TypeArguments="x:String">["Invalid amount: " &amp; amount.ToString("F2") &amp; " for transaction " &amp; txId]</InArgument>
+  </Assign.Value>
+</Assign>
+<Throw Exception="[New BusinessRuleException(errorMessage)]" />
+```
+
+### Rules
+
+1. **Always use short-form class names** in `Throw.Exception` — `BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`. Ensure `UiPath.Core.Activities` is in the namespace imports.
+2. **For complex messages, use the variable approach** — Assign the message string to a variable first, then pass the variable to the exception constructor.
+3. **For simple messages, inline is fine** — `[New BusinessRuleException(&quot;simple message&quot;)]` works.
+4. **Same rules apply to all exception types** — `Exception`, `BusinessRuleException`, `ArgumentException`, etc.
+
+### Why this happens
+
+`Throw.Exception` compiles the bracket expression via `VisualBasicValue<Exception>`. The combination of a long fully-qualified type path + embedded `&quot;` string literals with concatenation operators creates ambiguity for the VB.NET expression compiler. Shorter expressions or variable references avoid this.
+
+---
+
 ## Top Gotchas by Package
 
 ### Excel
