@@ -49,12 +49,14 @@ Mature project: prioritize local patterns. Greenfield: skip.
 
 ## Step 4: Discover Activities (MANDATORY)
 
-**Run for every activity you plan to use.** Gets exact class names, argument signatures, types.
+**Run for every activity you plan to use.** Returns exact class names, argument signatures, types, **ready-to-use XAML snippet**, and **xmlns declaration**.
 
 ```bash
 uip rpa-legacy find-activities "{projectRoot}" --query "send mail" --format json
 uip rpa-legacy find-activities "{projectRoot}" --query "invoke code" --include-type-definitions --format json
 ```
+
+**Use the returned `XamlSnippet` as your starting point** for activity XAML — it has correct element names, namespaces, and property names for the installed package version. Also add the returned `XmlnsDeclaration` to the root `<Activity>` element.
 
 Activity reference docs describe behavior/gotchas but NOT exact CLR class names or argument types. Skipping this step → guessing → wasted validation cycles.
 

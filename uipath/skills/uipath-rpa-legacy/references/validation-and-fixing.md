@@ -6,26 +6,29 @@ Detailed procedures for validating legacy workflows, analyzing project quality, 
 
 ## Step 3.1: Validate
 
-Use `uip rpa-legacy validate` to check a single XAML file for compilation errors.
+Use `uip rpa-legacy validate` to check a XAML file or entire project for compilation errors. Accepts XAML file path, project.json path, or project folder.
 
 ```bash
-# Validate a specific workflow (always use full path)
+# Validate a specific file (use during iteration — per activity)
 uip rpa-legacy validate "{projectRoot}/Main.xaml" --format json
 
+# Validate entire project (use as FINAL step before completing)
+uip rpa-legacy validate "{projectRoot}" --format json
+
 # Strict mode
-uip rpa-legacy validate "{projectRoot}/Workflows/Process.xaml" --treat-warnings-as-errors --format json
+uip rpa-legacy validate "{projectRoot}" --treat-warnings-as-errors --format json
 ```
 
-**Notes:**
-- Takes a **full path** to the XAML file (not relative)
-- Checks: missing arguments, broken references, type mismatches, unknown activities, invalid XML
+**Workflow:**
+- **During iteration:** validate per-file after each activity edit (faster, focused feedback)
+- **Before completing:** validate the entire project to catch cross-file issues
 - Run after **every** XAML edit — do not batch multiple edits without validation
 
 ---
 
-## Step 3.2: Analyze (Optional, Project-Wide)
+## Step 3.2: Analyze (Only When Requested)
 
-Use `uip rpa-legacy analyze` to run workflow analyzer rules on the entire project.
+Use `uip rpa-legacy analyze` to run workflow analyzer rules on the entire project. **Only run when the user explicitly asks for analysis** — it is NOT part of the standard validation loop.
 
 ```bash
 # Analyze entire project

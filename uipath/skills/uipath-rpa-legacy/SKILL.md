@@ -24,8 +24,9 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 |---------|--------|---------------|
 | Create workflow | Phase 0 → Discovery → Generate | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
 | Edit workflow | Phase 0 → Discovery → Edit | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
-| Validate | `uip rpa-legacy validate "{projectRoot}/File.xaml" --format json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
-| Analyze | `uip rpa-legacy analyze "{projectRoot}" --format json` | [cli-reference.md](./references/cli-reference.md) |
+| Validate file | `uip rpa-legacy validate "{projectRoot}/File.xaml" --format json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
+| Validate project | `uip rpa-legacy validate "{projectRoot}" --format json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
+| Analyze (only when asked) | `uip rpa-legacy analyze "{projectRoot}" --format json` | [cli-reference.md](./references/cli-reference.md) |
 | Build | `uip rpa-legacy build "{projectRoot}" -o "{dir}"` | [cli-reference.md](./references/cli-reference.md) |
 | Debug | `uip rpa-legacy debug "{projectRoot}/File.xaml"` | [cli-reference.md](./references/cli-reference.md) |
 | Create test data | Generate Excel/CSV/JSON/types for testing | [test-data-guide.md](./references/test-data-guide.md) |
@@ -56,7 +57,7 @@ No Studio needed. See [environment-setup.md](./references/environment-setup.md) 
 | VB.NET expression syntax | [activity-docs/_PATTERNS.md](./references/activity-docs/_PATTERNS.md) |
 | XAML structure, templates, ViewState layout | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) + [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md) |
 | Dangerous defaults, scope requirements | [common-pitfalls.md](./references/common-pitfalls.md) |
-| **Exact class names, argument types** | `uip rpa-legacy find-activities "{projectRoot}" --query "..." --format json` **← MANDATORY** |
+| **Exact class names, arguments, XAML snippet, xmlns** | `uip rpa-legacy find-activities "{projectRoot}" --query "..." --format json` **← MANDATORY. Use the returned `XamlSnippet` as your starting point.** |
 | **Exact enum values, type members** | `uip rpa-legacy type-definition "{projectRoot}" --type "TypeName" --format json` **← MANDATORY** |
 | InvokeCode patterns | [activity-docs/_INVOKE-CODE.md](./references/activity-docs/_INVOKE-CODE.md) |
 | REFramework structure | [activity-docs/_REFRAMEWORK.md](./references/activity-docs/_REFRAMEWORK.md) |
@@ -75,7 +76,7 @@ See [discovery-workflow.md](./references/discovery-workflow.md) for detailed ste
 ### Before Writing ANY XAML
 
 - [ ] Read relevant activity doc (behavioral context)
-- [ ] Run `find-activities` for every activity (exact class names)
+- [ ] Run `find-activities` for every activity — use returned `XamlSnippet` + `XmlnsDeclaration` as starting point
 - [ ] Run `type-definition` for every enum/complex type (exact values)
 - [ ] Read [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) for XAML structure
 - [ ] Read [common-pitfalls.md](./references/common-pitfalls.md) for gotchas
@@ -119,9 +120,12 @@ Before writing XAML for Flowchart or StateMachine:
 ## Phase 3: Validate & Fix
 
 ```
-LOOP:
-  validate → 0 errors? → DONE
-           → errors?   → categorize → fix highest category → validate again
+LOOP (per-file during iteration):
+  validate "{projectRoot}/File.xaml" → 0 errors? → next activity
+                                     → errors?   → categorize → fix → validate again
+
+FINAL (before completing):
+  validate "{projectRoot}" → 0 errors across entire project? → DONE
 ```
 
 **Fix order:** Package → Structure → Type → Properties → Logic
@@ -160,7 +164,8 @@ See [cli-reference.md](./references/cli-reference.md) for all options.
 - [ ] Brief description of what the workflow does
 - [ ] Key activities and logic
 - [ ] Packages required (note manual installs)
-- [ ] Validation result (0 errors or documented remaining)
+- [ ] Per-file validation passed during development
+- [ ] Whole-project validation passed (`validate "{projectRoot}"`)
 - [ ] Limitations and next steps
 - [ ] Manual actions needed (package install, connection setup)
 
@@ -172,10 +177,10 @@ See [cli-reference.md](./references/cli-reference.md) for all options.
 
 | Command | Purpose |
 |---------|---------|
-| `uip rpa-legacy find-activities <path> --query "..." --format json` | Find activities, class names, arguments |
+| `uip rpa-legacy find-activities <path> --query "..." --format json` | Find activities, class names, arguments, **XAML snippet, xmlns** |
 | `uip rpa-legacy type-definition <path> --type "..." --format json` | Inspect types, enum values, properties |
-| `uip rpa-legacy validate <xaml-path> --format json` | Check XAML for compilation errors |
-| `uip rpa-legacy analyze <path> --format json` | Run workflow analyzer rules |
+| `uip rpa-legacy validate <file-or-project-path> --format json` | Validate single file or entire project |
+| `uip rpa-legacy analyze <path> --format json` | Run workflow analyzer rules (only when asked) |
 | `uip rpa-legacy build <path> -o <dir>` | Package into .nupkg |
 | `uip rpa-legacy debug <xaml-path> -i '...'` | Execute via UiRobot |
 | `uip docsai ask "question" --format json` | Search UiPath documentation |

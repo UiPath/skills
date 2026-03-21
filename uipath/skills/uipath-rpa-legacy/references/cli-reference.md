@@ -37,18 +37,36 @@ uip rpa-legacy validate --help             # parameters for validate
 
 ### find-activities
 
-Searches for available activities in the project's installed NuGet dependencies. Returns activity names, arguments (in/out with types), and optionally full type definitions.
+Searches for available activities in the project's installed NuGet dependencies. Returns activity names, arguments (in/out with types), **ready-to-use XAML snippet**, **xmlns declaration**, and optionally full type definitions.
+
+**Always use the returned `XamlSnippet` as your starting point** for activity XAML instead of constructing from scratch. The snippet has correct element names, namespaces, and property names for the installed package version.
 
 ```bash
 # Find email-related activities
 uip rpa-legacy find-activities "C:/Projects/MyLegacyProject" --query "send mail" --format json
 
-# Find Excel activities with type definitions
-uip rpa-legacy find-activities "C:/Projects/MyLegacyProject" --query "read range" --include-type-definitions --format json
-
-# Filter by tags
-uip rpa-legacy find-activities "C:/Projects/MyLegacyProject" --query "excel" --tags "data" --limit 20 --format json
+# Find with type definitions (enums, classes)
+uip rpa-legacy find-activities "C:/Projects/MyLegacyProject" --query "invoke code" --include-type-definitions --format json
 ```
+
+**Output per activity:**
+```json
+{
+  "DisplayName": "SendMail",
+  "ClassName": "SendMail",
+  "Namespace": "UiPath.Mail.SMTP.Activities",
+  "TypeFullName": "UiPath.Mail.SMTP.Activities.SendMail",
+  "Arguments": [
+    { "Name": "To", "Direction": "In", "Type": "String" },
+    { "Name": "Result", "Direction": "Out", "Type": "String" }
+  ],
+  "XmlnsPrefix": "umsa",
+  "XmlnsDeclaration": "xmlns:umsa=\"clr-namespace:UiPath.Mail.SMTP.Activities;assembly=UiPath.Mail.Activities\"",
+  "XamlSnippet": "<umsa:SendMail\n    To=\"[toValue]\"\n    Result=\"[result]\" />"
+}
+```
+
+With `--include-type-definitions`, output includes `TypeDefinitions` array with enum values, class properties, etc.
 
 | Parameter | Description |
 |-----------|-------------|
@@ -57,8 +75,7 @@ uip rpa-legacy find-activities "C:/Projects/MyLegacyProject" --query "excel" --t
 | `--tags <tags>` | Comma-separated category tags to filter by |
 | `-l, --limit <count>` | Maximum results to return (default: 50) |
 | `--include-type-definitions` | Include full type definitions for argument types (enums, classes, interfaces) |
-| `--trace-level <level>` | Logging verbosity (None\|Critical\|Error\|Warning\|Information\|Verbose) |
-| `--timeout <seconds>` | Timeout in seconds |
+| `--trace-level <level>` | Logging verbosity |
 
 ### type-definition
 
@@ -85,35 +102,44 @@ uip rpa-legacy type-definition "C:/Projects/MyLegacyProject" --type "System.Net.
 
 | Action | How | Key Parameters |
 |--------|-----|----------------|
-| **Validate a workflow** | `Bash`: `uip rpa-legacy validate <xaml-path> --format json` | `<xaml-path>` (required) |
-| **Analyze project** | `Bash`: `uip rpa-legacy analyze <project-path> --format json` | `<project-path>` (required) |
+| **Validate file** | `Bash`: `uip rpa-legacy validate <xaml-path> --format json` | Single file validation |
+| **Validate project** | `Bash`: `uip rpa-legacy validate <project-path> --format json` | Whole-project validation |
+| **Analyze project** | `Bash`: `uip rpa-legacy analyze <project-path> --format json` | Only when explicitly asked |
 
 ### validate
 
-Checks a single XAML workflow for compilation errors — missing arguments, broken references, type mismatches.
+Checks a XAML workflow file or entire project for compilation errors — missing arguments, broken references, type mismatches.
+
+Accepts: XAML file path, project.json path, or project folder path.
 
 ```bash
-# Validate a specific workflow
+# Validate a specific file (use during iteration — one activity at a time)
 uip rpa-legacy validate "C:/Projects/MyLegacyProject/Main.xaml" --format json
 
+# Validate entire project (use before completing — final check)
+uip rpa-legacy validate "C:/Projects/MyLegacyProject" --format json
+
 # Strict mode: treat warnings as errors
-uip rpa-legacy validate "C:/Projects/MyLegacyProject/Main.xaml" --treat-warnings-as-errors --format json
+uip rpa-legacy validate "C:/Projects/MyLegacyProject" --treat-warnings-as-errors --format json
 
 # Save results to file
-uip rpa-legacy validate "C:/Projects/MyLegacyProject/Main.xaml" --result-path "C:/output/errors.json"
+uip rpa-legacy validate "C:/Projects/MyLegacyProject" --result-path "C:/output/errors.json"
 ```
 
 | Parameter | Description |
 |-----------|-------------|
-| `<xaml-path>` | Full path to the XAML workflow file (required, positional) |
+| `<path>` | XAML file, project.json, or project folder (required, positional) |
 | `--treat-warnings-as-errors` | Treat warnings as errors |
 | `--result-path <path>` | Write validation results to a JSON file instead of stdout |
 | `--trace-level <level>` | Logging verbosity |
-| `--timeout <seconds>` | Timeout in seconds |
+
+**Workflow:** Use per-file validation during development (faster, focused). Use project-level validation as a final step before completing the task.
 
 ### analyze
 
 Runs workflow analyzer rules on an entire RPA project and reports violations (unused dependencies, naming conventions, best practices).
+
+**Only run when explicitly requested by the user.** Not part of the standard validation loop.
 
 ```bash
 # Analyze entire project
