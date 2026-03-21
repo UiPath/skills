@@ -142,3 +142,28 @@ uip rpa-legacy debug "{projectRoot}/Main.xaml" --timeout 60
 ```
 
 **Caution:** `debug` executes the workflow via UiRobot — it will perform real actions. Only use when safe, with appropriate test inputs.
+
+For test data creation (Excel files, CSV, JSON, common UiPath types), see **[test-data-guide.md](./test-data-guide.md)**.
+
+---
+
+## Common Error Scenarios
+
+### Wrong enum value
+**Symptom:** "Cannot create unknown type" or "is not a member of" for an enum property.
+**Fix:** `uip rpa-legacy type-definition "{projectRoot}" --type "EnumTypeName" --format json`. Example: InvokeCode `Language` accepts `VBNet` and `CSharp` — not `VisualBasic` or `VB`.
+
+### Activity class name not found
+**Symptom:** Unknown activity type or missing namespace.
+**Fix:** `uip rpa-legacy find-activities "{projectRoot}" --query "..." --format json`, add xmlns + assembly ref.
+
+### Multiple errors after batch editing
+**Symptom:** Many errors after writing multiple activities at once.
+**Fix:** Revert to last good state. Re-add one activity at a time, validating after each.
+
+### Activity docs don't match XAML property names
+**Symptom:** Properties from reference docs don't work in XAML.
+**Fix:** `find-activities --include-type-definitions` for exact CLR property names from compiled assemblies.
+
+### Stuck on unfamiliar problem
+**Escalation:** `uip docsai ask "..."` → `WebSearch` (UiPath Forum, Stack Overflow, GitHub) → ask user.

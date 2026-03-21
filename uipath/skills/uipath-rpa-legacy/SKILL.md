@@ -5,555 +5,219 @@ description: "Edit, create, build, and maintain legacy UiPath RPA projects (clas
 
 # Legacy RPA Workflow Architect
 
-Edit, create, and maintain legacy UiPath RPA projects using a **discovery-first approach** with **iterative validation-driven refinement**. Legacy projects use the classic design experience (.NET Framework 4.6.1), primarily VB.NET expressions, and classic activities (no "X" suffix).
+Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic activities (no "X" suffix). Uses `uip rpa-legacy` CLI (standalone, no Studio IPC needed).
 
-This skill uses `uip rpa-legacy` CLI commands (via `Bash`) and Claude Code's built-in tools (`Read`, `Write`, `Edit`, `Glob`, `Grep`) to interact with legacy UiPath projects and manage workflow files.
+## Rules (Non-Negotiable)
 
-## Core Principles
-
-1. **Discover Before You Write** — Never generate XAML without first running `find-activities` (for exact class names and argument signatures) and `type-definition` (for enum values and type details). The bundled activity reference docs cover behavior, gotchas, and patterns — but they do **NOT** contain the exact CLR namespaces, enum values, or property names needed for valid XAML. Guessing these values wastes validation cycles. Always use CLI discovery tools to get the precise information before writing.
-2. **Know Before You Write** — Never generate XAML blind. Understand the project structure, installed packages, expression language (VB.NET vs C#), and existing workflow patterns. The deeper your understanding, the fewer validation cycles you'll need.
-3. **One Activity at a Time** — Write the XAML for a single activity, validate it immediately with `uip rpa-legacy validate`, fix any errors, then move to the next activity. **Never batch-write multiple activities before validating.** Complex workflows emerge from validated building blocks, not from generating everything at once.
-4. **Validate After Every Change** — Never assume an edit succeeded. Confirm with `uip rpa-legacy validate` after every single XAML modification. Do not batch edits. Optionally run `uip rpa-legacy analyze` for project-wide quality checks.
-5. **Fix Errors by Category** — Triage errors in order: Package (missing dependencies) → Structure (invalid XML) → Type (wrong property types) → Activity Properties (misconfigured activity) → Logic (wrong behavior). Fixing in this order avoids cascading false errors.
-6. **Activity Docs for Context, CLI Tools for Precision** — Use `references/activity-docs/` to understand what an activity does, its gotchas, and usage patterns. Use `find-activities` and `type-definition` to get the exact property names, types, and enum values you need for XAML. Both are essential — neither alone is sufficient.
+1. **Discover before writing** — run `find-activities` + `type-definition` for exact CLR names/enums before any XAML. Activity docs cover behavior, NOT property names.
+2. **One activity at a time** — write ONE activity → `validate` → fix → next. Never batch-write.
+3. **Validate after every change** — `uip rpa-legacy validate` after every XAML edit. No exceptions.
+4. **Fix by category** — Package → Structure → Type → Properties → Logic. This order prevents cascading errors.
+5. **Activity docs + CLI tools together** — docs for context/gotchas, CLI for precision. Neither alone is sufficient.
+6. **Always use `--format json`** — for any CLI output you need to parse.
 
 ---
 
-## CLI Output Format
+## Request Router
 
-All `uip` commands support `--format <format>` (table, json, yaml, plain).
+| Request | Action | Key Reference |
+|---------|--------|---------------|
+| Create workflow | Phase 0 → Discovery → Generate | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
+| Edit workflow | Phase 0 → Discovery → Edit | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) |
+| Validate | `uip rpa-legacy validate "{projectRoot}/File.xaml" --format json` | [validation-and-fixing.md](./references/validation-and-fixing.md) |
+| Analyze | `uip rpa-legacy analyze "{projectRoot}" --format json` | [cli-reference.md](./references/cli-reference.md) |
+| Build | `uip rpa-legacy build "{projectRoot}" -o "{dir}"` | [cli-reference.md](./references/cli-reference.md) |
+| Debug | `uip rpa-legacy debug "{projectRoot}/File.xaml"` | [cli-reference.md](./references/cli-reference.md) |
+| Create test data | Generate Excel/CSV/JSON/types for testing | [test-data-guide.md](./references/test-data-guide.md) |
 
-**Always use `--format json`** for commands whose output you need to parse or act on (e.g., `validate`, `find-activities`, `analyze`). JSON output is structured, unambiguous, and avoids table-formatting surprises.
-
-Use the default (table) only when displaying results directly to the user for readability.
-
----
-
-## Tool Quick Reference
-
-For the full CLI command reference (all tools, parameters, and error recovery), see **[references/cli-reference.md](./references/cli-reference.md)**.
-
-Key commands: `find-activities`, `type-definition`, `validate`, `analyze`, `build`, `debug`. Also available: `uip docsai ask` for searching UiPath official documentation.
-
-**The CLI is fully self-documenting.** Append `--help` at any level: `uip rpa-legacy --help`, `uip rpa-legacy validate --help`, etc.
-
-**Key difference from `uip rpa`:** The `rpa-legacy` CLI is standalone — no Studio Desktop IPC required. It resolves dependencies from NuGet directly and uses UiRobot for execution.
+If unclear which file to edit, **ask the user**.
 
 ---
 
-## Supporting References
+## Phase 0: Environment
 
-### Procedural Reference Files
-
-- **[cli-reference.md](./references/cli-reference.md)** — Full `uip rpa-legacy` CLI command reference (all 6 commands, parameters, error recovery)
-- **[environment-setup.md](./references/environment-setup.md)** — Phase 0 details: project root detection, legacy verification, authentication
-- **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Phase 3 details: validate/analyze loop, error categorization, fix strategies
-
-### Domain Reference Files
-
-- **[xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md)** — Legacy XAML file anatomy, VB.NET vs C# expressions, workflow types, safety rules. **CRITICAL: read before generating/editing any XAML.**
-- **[project-structure.md](./references/project-structure.md)** — Legacy project directory layout, project.json schema, common packages
-- **[common-pitfalls.md](./references/common-pitfalls.md)** — Dangerous defaults, required parent scopes, VB.NET cheat sheet, top gotchas by package
-
-### Activity Reference Docs (Behavioral Knowledge Base)
-
-The bundled activity reference docs at `references/activity-docs/` provide behavioral knowledge about legacy activities: what they do, their gotchas, required parent scopes, and usage patterns.
-
-**CRITICAL LIMITATION:** These docs do **NOT** contain the exact CLR property names, enum values, or namespace paths needed for valid XAML. For those, you **MUST** use:
-- `uip rpa-legacy find-activities` — exact class names, argument signatures
-- `uip rpa-legacy type-definition` — enum values, type properties, methods
-
-**Example:** The activity docs say InvokeCode has a "Language" property, but don't tell you the valid enum values. Running `type-definition --type "NetLanguage"` reveals `VBNet` and `CSharp` — not `VisualBasic` or `VB` (which are wrong and waste fix cycles).
-
-**Entry points:**
-
-| Need | Read |
-|------|------|
-| **Find which package covers a capability** | [activity-docs/_INDEX.md](./references/activity-docs/_INDEX.md) — Master index with adoption rankings |
-| **VB.NET expression patterns** | [activity-docs/_PATTERNS.md](./references/activity-docs/_PATTERNS.md) — Cheat sheet for strings, dates, DataTables, error handling |
-| **XAML structure and templates** | [activity-docs/_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md) — File structure, VB vs C#, Sequence/Flowchart/StateMachine |
-| **Real-world gotchas** | [activity-docs/_COMMON-PITFALLS.md](./references/activity-docs/_COMMON-PITFALLS.md) — Zombie processes, selector failures, dangerous defaults |
-| **Complete activity catalog** | [activity-docs/AllActivities.md](./references/activity-docs/AllActivities.md) — Every legacy activity by package |
-| **Invoke Code deep reference** | [activity-docs/_INVOKE-CODE.md](./references/activity-docs/_INVOKE-CODE.md) — InvokeCode activity: properties, XAML templates, code examples, compilation details |
-| **REFramework template** | [activity-docs/_REFRAMEWORK.md](./references/activity-docs/_REFRAMEWORK.md) — State Machine project template: file structure, arguments, states, Config.xlsx, retry logic, test cases |
-| **Document Understanding Process template** | [activity-docs/_DU-PROCESS.md](./references/activity-docs/_DU-PROCESS.md) — DU pipeline template: digitize, classify, extract, validate, train, export with Action Center |
-| **Specific package** | `activity-docs/{PackageName}.md` — e.g., `Excel.md`, `Mail.md`, `System.md`, `UIAutomation.md` |
-
-**Decision table:**
-
-| Situation | Action |
-|-----------|--------|
-| **You know the package** | Read `references/activity-docs/{PackageName}.md` directly |
-| **You don't know the package** | Read `references/activity-docs/_INDEX.md` to find it by capability |
-| **Need VB.NET expression syntax** | Read `references/activity-docs/_PATTERNS.md` |
-| **Need XAML structure guidance** | Read `references/activity-docs/_XAML-GUIDE.md` |
-| **Need gotchas for a package** | Read `references/activity-docs/_COMMON-PITFALLS.md` |
-| **Need complete activity list** | Read `references/activity-docs/AllActivities.md` |
-| **Need InvokeCode patterns** | Read `references/activity-docs/_INVOKE-CODE.md` |
-| **Working with REFramework project** | Read `references/activity-docs/_REFRAMEWORK.md` — file structure, arguments, states, Config.xlsx, customization points |
-| **Working with Document Understanding** | Read `references/activity-docs/_DU-PROCESS.md` — pipeline steps, taxonomy, classifiers, extractors, Action Center |
-| **Activity not in reference docs** | Use `uip rpa-legacy find-activities` to discover it |
-| **Need exact property names or enum values for XAML** | **Always** use `find-activities` + `type-definition` — do not guess from activity docs alone |
-
----
-
-## Core Workflow: Classify Request
-
-**Determine the request type before proceeding:**
-
-| Request Type | Trigger Words | Action |
-|--------------|---------------|--------|
-| **CREATE** | "generate", "create", "make", "build", "new workflow" | Phase 0 → Discovery → Generate |
-| **EDIT** | "update", "change", "fix", "modify", "add to" | Phase 0 → Discovery → Edit |
-| **VALIDATE** | "validate", "check errors", "compile" | Phase 0 → Validate |
-| **ANALYZE** | "analyze", "check quality", "best practices" | Phase 0 → Analyze |
-| **BUILD** | "build", "package", "nupkg" | Phase 0 → Build |
-| **DEBUG** | "debug", "run", "test", "execute" | Phase 0 → Debug |
-
-If unclear which file to edit, **ask the user** rather than guessing.
-
----
-
-## Phase 0: Environment Readiness
-
-Establish the project root and verify the project is legacy. See **[references/environment-setup.md](./references/environment-setup.md)** for the full procedure.
-
-**Quick check:**
-1. Find `project.json` to establish `{projectRoot}`
-2. Read `project.json` and verify `targetFramework` is `"Legacy"` (or absent, implying Legacy)
+1. Find `project.json` → establish `{projectRoot}`
+2. Read `project.json` → verify `targetFramework: "Legacy"` (or absent = Legacy)
 3. Note `expressionLanguage` (VB.NET or C#)
 
-**No Studio Desktop required** — `uip rpa-legacy` is a standalone CLI tool.
+No Studio needed. See [environment-setup.md](./references/environment-setup.md) for details.
 
 ---
 
 ## Phase 1: Discovery
 
-**Goal:** Understand project context, consult activity reference docs, study existing patterns, and discover activities before writing any XAML.
+**What you need → Where to find it:**
 
-### Step 1.1: Project Structure
+| Need | Tool / File |
+|------|------------|
+| Project structure, packages, expression language | `Glob **/*.xaml` + `Read project.json` |
+| What an activity does, gotchas, patterns | `references/activity-docs/{PackageName}.md` |
+| Which package for a capability | [activity-docs/_INDEX.md](./references/activity-docs/_INDEX.md) |
+| VB.NET expression syntax | [activity-docs/_PATTERNS.md](./references/activity-docs/_PATTERNS.md) |
+| XAML structure, templates, ViewState layout | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) + [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md) |
+| Dangerous defaults, scope requirements | [common-pitfalls.md](./references/common-pitfalls.md) |
+| **Exact class names, argument types** | `uip rpa-legacy find-activities "{projectRoot}" --query "..." --format json` **← MANDATORY** |
+| **Exact enum values, type members** | `uip rpa-legacy type-definition "{projectRoot}" --type "TypeName" --format json` **← MANDATORY** |
+| InvokeCode patterns | [activity-docs/_INVOKE-CODE.md](./references/activity-docs/_INVOKE-CODE.md) |
+| REFramework structure | [activity-docs/_REFRAMEWORK.md](./references/activity-docs/_REFRAMEWORK.md) |
+| Document Understanding pipeline | [activity-docs/_DU-PROCESS.md](./references/activity-docs/_DU-PROCESS.md) |
+| Official UiPath docs (fallback) | `uip docsai ask "question" --format json` |
+| Community solutions (last resort) | `WebSearch` — UiPath Forum, Stack Overflow, GitHub, Reddit |
 
-```
-Glob: pattern="**/*.xaml" path="{projectRoot}"       → list all XAML workflow files
-Read: file_path="{projectRoot}/project.json"          → read the project definition
-```
+**Activity docs cover behavior. CLI tools give precision. Both are mandatory.**
 
-Analyze:
-- Where should new workflows be placed? (folder conventions)
-- What naming pattern is used?
-- What similar workflows already exist?
-- Should I use VB or C# syntax? (check `expressionLanguage` in `project.json`)
-- What packages are already installed? (check `dependencies` in `project.json`)
-
-### Step 1.2: Consult Activity Reference Docs (Behavioral Context)
-
-Read the bundled reference docs at `references/activity-docs/` to understand what activities do, their gotchas, and usage patterns. This gives you the behavioral context you need before writing XAML.
-
-**Workflow:**
-1. If you know which package you need, read its doc directly: `references/activity-docs/{PackageName}.md`
-2. If you don't know the package, read the index: `references/activity-docs/_INDEX.md`
-3. Before writing VB.NET expressions, consult: `references/activity-docs/_PATTERNS.md`
-4. Before generating XAML structure, read: [references/xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md)
-5. Check for known gotchas: `references/activity-docs/_COMMON-PITFALLS.md`
-6. For InvokeCode activities, read: `references/activity-docs/_INVOKE-CODE.md`
-
-**Remember:** These docs tell you *what* activities do and *how* to use them — but NOT the exact CLR property names and enum values for XAML. Steps 1.4 and 1.5 are mandatory for that.
-
-### Step 1.3: Search Current Project
-
-Search existing workflows for reusable patterns and conventions:
-
-```
-Glob: pattern="**/*pattern*.xaml" path="{projectRoot}"     → find files matching a pattern
-Grep: pattern="ActivityName|pattern" path="{projectRoot}"  → search XAML content for activities
-Read: file_path="{projectRoot}/ExistingWorkflow.xaml"      → read a relevant existing workflow
-```
-
-**Mature project** (has existing workflows): Prioritize local patterns — they reflect the project's conventions.
-**Greenfield project** (empty or near-empty): Skip this step.
-
-### Step 1.4: Discover Activities (MANDATORY Before Writing XAML)
-
-**Run this for every activity you plan to use.** Use `uip rpa-legacy find-activities` to get the exact fully qualified class name, argument signatures, and types:
-
-```bash
-# Find activities by capability
-uip rpa-legacy find-activities "{projectRoot}" --query "send mail" --format json
-
-# Include full type definitions for argument types
-uip rpa-legacy find-activities "{projectRoot}" --query "invoke code" --include-type-definitions --format json
-```
-
-**Why this is mandatory:** The activity reference docs describe behavior and gotchas, but they do NOT contain the exact CLR class names, property names, or argument types needed for valid XAML. Skipping this step leads to guessing property names and wasting validation cycles.
-
-**What you get:** Exact fully qualified class name, all argument names with directions (In/Out/InOut) and types, package information. With `--include-type-definitions`, you also get enum values, class properties, and methods.
-
-### Step 1.5: Inspect Types (MANDATORY For Enums and Complex Types)
-
-**Run this for every enum or complex type you encounter.** Use `uip rpa-legacy type-definition` to get exact enum values and type members:
-
-```bash
-# Discover enum values (e.g., InvokeCode Language property)
-uip rpa-legacy type-definition "{projectRoot}" --type "NetLanguage" --format json
-# Returns: VBNet, CSharp (NOT "VisualBasic" or "VB" — those are wrong!)
-
-# Inspect a complex type's properties
-uip rpa-legacy type-definition "{projectRoot}" --type "System.Net.Mail.MailMessage" --format json
-```
-
-**Why this is mandatory:** Enum values and type members cannot be reliably guessed. For example, the InvokeCode `Language` property accepts `VBNet` (not `VisualBasic`, not `VB`). Each incorrect guess costs a validation-fix cycle. Always use `type-definition` to discover the exact values.
-
-**When to run:**
-- Any property that takes an enum value
-- Any activity argument with a complex type (not String/Int32/Boolean)
-- Any time the activity reference docs mention a type without listing its valid values
-
-### Step 1.6: Search UiPath Documentation (Fallback)
-
-Use `uip docsai ask` to search official UiPath documentation when bundled activity docs and CLI tools are insufficient:
-
-```bash
-# Best practices and guidelines
-uip docsai ask "best practices for Excel automation in legacy projects" --format json
-
-# Troubleshooting specific errors
-uip docsai ask "ExcelApplicationScope ActivityAction body validation error" --format json
-
-# Platform concepts and configuration
-uip docsai ask "Orchestrator queue item retry and deadline behavior" --format json
-
-# Activity configuration details
-uip docsai ask "How to configure REFramework MaxRetryNumber" --format json
-```
-
-**When to use:**
-- Bundled activity docs and `find-activities`/`type-definition` don't cover the topic
-- You need best practices, guidelines, or recommended patterns from UiPath
-- You encounter an unfamiliar error and need troubleshooting guidance
-- You need clarification on platform-level concepts (Orchestrator assets, queues, triggers, etc.)
-- You need configuration details not captured in the bundled reference docs
-
-### Step 1.7: Search the Web (Last Resort)
-
-When bundled docs, CLI tools, and `docsai` are all insufficient — use `WebSearch` to find answers from the broader UiPath community and developer ecosystem:
-
-```bash
-# Search UiPath Forum
-WebSearch: "UiPath forum ExcelApplicationScope ActivityAction body legacy"
-
-# Search Stack Overflow
-WebSearch: "site:stackoverflow.com UiPath legacy ExcelApplicationScope XAML"
-
-# Search GitHub for examples
-WebSearch: "site:github.com UiPath REFramework legacy XAML example"
-
-# Search for specific error messages
-WebSearch: "UiPath legacy \"Cannot create unknown type\" ExcelApplicationScope"
-
-# Search Reddit for community solutions
-WebSearch: "site:reddit.com r/UiPath legacy workflow best practices"
-```
-
-**When to use:**
-- All previous discovery steps (activity docs, CLI tools, docsai) don't resolve the issue
-- You encounter an obscure error message not covered by official docs
-- You need community-tested workarounds or alternative approaches
-- You need real-world examples of complex legacy workflow patterns
-- You need to verify whether a known bug or limitation exists
-
-**Good sources:** UiPath Forum (`forum.uipath.com`), Stack Overflow, GitHub (public UiPath repos and community projects), Reddit (`r/UiPath`), UiPath documentation (`docs.uipath.com`)
-
-**Always verify** web-sourced information against the project's actual installed package versions and configuration before applying.
+See [discovery-workflow.md](./references/discovery-workflow.md) for detailed step-by-step procedure with examples.
 
 ---
 
 ## Phase 2: Generate or Edit
 
-### Prerequisites — Complete Before Writing ANY XAML
+### Before Writing ANY XAML
 
-Before writing or editing any activity XAML, confirm you have completed:
-1. **Step 1.2** — Read the relevant activity reference doc (behavioral context)
-2. **Step 1.4** — Run `find-activities` for every activity you plan to use (exact class names, arguments)
-3. **Step 1.5** — Run `type-definition` for every enum and complex type (exact valid values)
-4. Read [references/xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) for XAML structure
-5. Read [references/common-pitfalls.md](./references/common-pitfalls.md) for gotchas
+- [ ] Read relevant activity doc (behavioral context)
+- [ ] Run `find-activities` for every activity (exact class names)
+- [ ] Run `type-definition` for every enum/complex type (exact values)
+- [ ] Read [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) for XAML structure
+- [ ] Read [common-pitfalls.md](./references/common-pitfalls.md) for gotchas
 
-**Do not skip steps 1.4 and 1.5.** Activity reference docs alone are insufficient for generating valid XAML — they cover behavior, not exact CLR property names and enum values.
+### Choose Workflow Type
 
-### Plan Workflow Structure (MANDATORY for Flowchart/StateMachine)
+| Pattern | Use When |
+|---------|----------|
+| **Sequence** | Linear step-by-step, no branching |
+| **Flowchart** | Branching decisions, loops with conditions, complex control flow |
+| **StateMachine** | Distinct states with transitions (REFramework, approval workflows) |
 
-Before writing XAML for a Flowchart or StateMachine, plan the visual layout:
+### Flowchart/StateMachine: Plan Layout FIRST
 
-1. **Choose the workflow type early:**
-   - **Sequence** — linear step-by-step processes (no visual layout needed)
-   - **Flowchart** — branching decisions, loops with conditions, complex control flow
-   - **StateMachine** — distinct states with transitions (REFramework pattern, approval workflows)
+Before writing XAML for Flowchart or StateMachine:
+1. List all nodes and connections
+2. Assign coordinates per layout guide in [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md)
+3. Map True/False branch paths (Flowchart) or transition routes (StateMachine)
 
-2. **Sketch the node graph** — list all nodes and their connections:
-   - For Flowcharts: activities, decisions (True/False paths), merge points
-   - For StateMachines: states, transitions with conditions, final state
+**ViewState is MANDATORY** — without it, Studio stacks all nodes at (0,0).
 
-3. **Assign coordinates** using the layout algorithms in [activity-docs/_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md):
-   - Flowcharts: main path center X=270, branches offset ±150px, ~110px vertical step
-   - StateMachines: 600×600 container, ~200px horizontal / ~130px vertical spacing
+### CREATE Checklist
 
-4. **Map branch paths** — for each FlowDecision, determine True (left) and False (right) targets and where paths merge back. For each StateMachine transition, determine source/target states.
+- [ ] Root `<Activity>` has `mva:VisualBasic.Settings="{x:Null}"` (VB projects)
+- [ ] xmlns uses `assembly=mscorlib` (not `System.Private.CoreLib`)
+- [ ] VB.NET: `[bracket]` notation for expressions
+- [ ] Classic activity names (no "X" suffix)
+- [ ] Standard namespace imports and assembly references
+- [ ] Flowchart/StateMachine: `xmlns:av` declared, ViewState on every node
+- [ ] Scope activities: `ActivityAction<T>` body pattern (see [common-pitfalls.md](./references/common-pitfalls.md))
 
-This planning step prevents generating logic-correct but visually unusable workflows.
+### EDIT Checklist
 
-### For CREATE Requests
-
-**Strategy:** Generate minimal working version, iterate. Build one activity at a time.
-
-Use the `Write` tool to create a new `.xaml` file with proper legacy XAML boilerplate. Refer to [references/xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) for the complete XAML file anatomy template.
-
-```
-Write: file_path="{projectRoot}/Workflows/DescriptiveName.xaml"
-       content=<valid XAML content with proper headers, namespaces, and body>
-```
-
-**File path inference:**
-- Use folder conventions from project structure exploration
-- Create descriptive filename: follow existing project patterns
-- Ensure filename ends with `.xaml`
-
-**Legacy XAML checklist:**
-- Root `<Activity>` has `mva:VisualBasic.Settings="{x:Null}"` (for VB projects)
-- Assembly xmlns uses `assembly=mscorlib` (not `System.Private.CoreLib`)
-- VB.NET expressions use `[bracket]` notation
-- Classic activity names (no "X" suffix)
-- Include standard VB.NET namespace imports and assembly references
-- **Flowchart/StateMachine:** include `xmlns:av="http://schemas.microsoft.com/winfx/2006/xaml/presentation"` and generate ViewState with ShapeLocation/ShapeSize/ConnectorLocation for every node (see layout guides in `_XAML-GUIDE.md`)
-
-### For EDIT Requests
-
-**Strategy:** Always read current content before editing.
-
-```
-Read: file_path="{projectRoot}/WorkflowToEdit.xaml"              → understand current structure
-Grep: pattern="section to modify" path="{projectRoot}/..."       → OR search for specific sections
-```
-
-Then use the `Edit` tool for targeted string replacement:
-
-```
-Edit: file_path="{projectRoot}/WorkflowToEdit.xaml"
-      old_string=<exact text from file>
-      new_string=<modified text>
-```
-
-**Critical:** `old_string` must match exactly what's in the file and be unique. Include surrounding context if needed to ensure uniqueness.
-
-**Flowchart/StateMachine edits:** When adding new nodes to an existing Flowchart or StateMachine, read existing ViewState positions first (`ShapeLocation` values), then generate ViewState for new nodes with coordinates that avoid overlap. Use ≥110px vertical / ≥200px horizontal clearance from existing nodes.
+- [ ] Read current XAML content before editing
+- [ ] Use `Edit` tool with exact `old_string` match
+- [ ] Flowchart/StateMachine: read existing ViewState positions, place new nodes with ≥110px vertical / ≥200px horizontal clearance
+- [ ] Validate after every edit
 
 ---
 
-## Phase 3: Validate, Analyze & Fix Loop
+## Phase 3: Validate & Fix
 
-This phase repeats until 0 errors or remaining errors cannot be auto-resolved.
+```
+LOOP:
+  validate → 0 errors? → DONE
+           → errors?   → categorize → fix highest category → validate again
+```
 
-### Step 3.1: Validate
+**Fix order:** Package → Structure → Type → Properties → Logic
+
+| Category | Fix Strategy |
+|----------|-------------|
+| **Package** | Ask user to install in Studio (no CLI install command) |
+| **Structure** | Read XAML around error → Edit to fix XML |
+| **Type** | `type-definition` for exact enum/type values |
+| **Properties** | `find-activities --include-type-definitions` for exact property names |
+| **Logic** | Check expression language, consult `_PATTERNS.md`, use `debug` |
+
+When stuck: `docsai ask` → `WebSearch` → ask user.
+
+See [validation-and-fixing.md](./references/validation-and-fixing.md) for detailed procedures and common error scenarios.
+
+---
+
+## Phase 4-5: Build & Debug
 
 ```bash
-# Validate a specific workflow (use full path)
-uip rpa-legacy validate "{projectRoot}/Main.xaml" --format json
+# Build to .nupkg
+uip rpa-legacy build "{projectRoot}" -o "{dir}" --version "1.0.0"
+
+# Debug via UiRobot (CAUTION: performs real actions)
+uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_TestMode": true}' --timeout 120
 ```
 
-**Notes:** Takes a **full path** to the XAML file (not relative). Run after every XAML edit.
-
-### Step 3.2: Analyze (Optional, Project-Wide)
-
-```bash
-# Run workflow analyzer rules on the entire project
-uip rpa-legacy analyze "{projectRoot}" --format json
-```
-
-Use `--stop-on-rule-violation` for strict enforcement. Use `--ignored-rules` to skip specific rules.
-
-### Step 3.3: Categorize and Fix
-
-**Fix order:** Package → Structure → Type → Activity Properties → Logic.
-
-**1. Package Errors** — Missing namespace, unknown activity type
-- The legacy CLI **does not have `install-or-update-packages`**
-- Identify the missing package from the error message
-- Check `references/activity-docs/_INDEX.md` for the correct package name
-- **Ask the user** to install the package in Studio manually
-- Re-validate after installation
-
-**2. Structural Errors** — Invalid XML, malformed elements
-- `Read` the XAML around the error → `Edit` to fix
-- Cross-check against [references/xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md)
-
-**3. Type Errors** — Wrong property type, invalid cast
-- Consult activity reference docs for correct types
-- Use `uip rpa-legacy type-definition` to inspect expected types
-- Common: wrong `x:TypeArguments`, missing namespace prefix, VB/C# mismatch
-
-**4. Activity Properties Errors** — Unknown properties, wrong values
-- Consult activity reference docs for property names and valid values
-- Use `uip rpa-legacy find-activities` to discover correct class names
-
-**5. Logic Errors** — Wrong behavior, incorrect expressions
-- Verify expression syntax matches project language
-- Consult `references/activity-docs/_PATTERNS.md` for VB.NET patterns
-- Use `uip rpa-legacy debug` for runtime validation
-
-**When stuck:** Defer to the user for configuration details (missing package, connection setup). Document what needs manual action.
-
-For detailed procedures, see **[references/validation-and-fixing.md](./references/validation-and-fixing.md)**.
+See [cli-reference.md](./references/cli-reference.md) for all options.
 
 ---
 
-## Phase 4: Build (Optional)
+## Phase 6: Response Checklist
 
-Package the project into a deployable `.nupkg` file:
-
-```bash
-uip rpa-legacy build "{projectRoot}" -o "{outputDir}" --format json
-```
-
-Options:
-- `--version "1.2.0"` — set package version
-- `--auto-version` — auto-generate version
-- `--release-notes "..."` — add release notes
-- `--output-type Process|Library|Tests|Objects` — force output type
-
-A successful build confirms all dependencies resolve and all XAML files compile.
+- [ ] File path of created/edited workflow
+- [ ] Brief description of what the workflow does
+- [ ] Key activities and logic
+- [ ] Packages required (note manual installs)
+- [ ] Validation result (0 errors or documented remaining)
+- [ ] Limitations and next steps
+- [ ] Manual actions needed (package install, connection setup)
 
 ---
 
-## Phase 5: Debug (Optional)
+## Quick Reference
 
-Execute a workflow locally via UiRobot:
+### CLI Commands
 
-```bash
-# Run a workflow
-uip rpa-legacy debug "{projectRoot}/Main.xaml"
+| Command | Purpose |
+|---------|---------|
+| `uip rpa-legacy find-activities <path> --query "..." --format json` | Find activities, class names, arguments |
+| `uip rpa-legacy type-definition <path> --type "..." --format json` | Inspect types, enum values, properties |
+| `uip rpa-legacy validate <xaml-path> --format json` | Check XAML for compilation errors |
+| `uip rpa-legacy analyze <path> --format json` | Run workflow analyzer rules |
+| `uip rpa-legacy build <path> -o <dir>` | Package into .nupkg |
+| `uip rpa-legacy debug <xaml-path> -i '...'` | Execute via UiRobot |
+| `uip docsai ask "question" --format json` | Search UiPath documentation |
 
-# Run with input arguments
-uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_Name": "John", "in_Count": 5}'
+Full reference: [cli-reference.md](./references/cli-reference.md)
 
-# Run with timeout
-uip rpa-legacy debug "{projectRoot}/Main.xaml" --timeout 120
-```
+### Reference Files
 
-**Caution:** `debug` executes the workflow — it performs real actions. Only use when safe to run.
+| File | Content |
+|------|---------|
+| [cli-reference.md](./references/cli-reference.md) | All CLI commands, parameters, error recovery |
+| [discovery-workflow.md](./references/discovery-workflow.md) | Detailed discovery steps, troubleshooting |
+| [environment-setup.md](./references/environment-setup.md) | Project root detection, legacy verification |
+| [project-structure.md](./references/project-structure.md) | Legacy project layout, project.json schema |
+| [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) | XAML anatomy, expressions, safety rules |
+| [common-pitfalls.md](./references/common-pitfalls.md) | Dangerous defaults, scope patterns, gotchas |
+| [validation-and-fixing.md](./references/validation-and-fixing.md) | Validate/analyze loop, error scenarios |
+| [test-data-guide.md](./references/test-data-guide.md) | Excel, CSV, JSON, top 10 file types and UiPath types |
 
----
+### Activity Docs (`references/activity-docs/`)
 
-## Phase 6: Response
-
-**Provide comprehensive summary:**
-
-1. **File path** of created/edited workflow
-2. **Brief description** of what the workflow does
-3. **Key activities** and logic implemented
-4. **Packages required** (note any that need manual installation)
-5. **Validation result** (0 errors, or remaining errors documented)
-6. **Analyzer results** (if run)
-7. **Limitations** or notes
-8. **Suggested next steps** (testing, parameterization, manual configuration)
-
-**Do NOT just say "workflow created"** — give user confidence the request was fully fulfilled.
-
----
-
-## CLI Error Recovery
-
-For CLI error diagnosis and recovery patterns, see the **CLI Error Recovery** section in **[references/cli-reference.md](./references/cli-reference.md#cli-error-recovery)**.
-
-**General strategy:** Do NOT retry the same failing command in a loop. Diagnose the root cause, apply the recovery action, then retry once. If it fails again, inform the user.
-
----
-
-## Anti-Patterns
-
-**Never:**
-- **Batch-write multiple activities before validating** — write ONE activity, validate, fix, then next. This is the single most important rule. Batching writes compounds errors and makes debugging much harder.
-- **Guess enum values or property names from activity docs alone** — always use `find-activities` and `type-definition` to get exact values. Example: InvokeCode Language is `VBNet`, not `VisualBasic` or `VB`. Each wrong guess costs a full validation-fix cycle.
-- **Skip discovery steps 1.4 and 1.5** — activity reference docs cover behavior and gotchas, not exact CLR namespaces, property names, or enum values. `find-activities` and `type-definition` are mandatory for valid XAML.
-- **Rely solely on activity reference docs for XAML generation** — they are essential for understanding what activities do, but insufficient for writing correct XAML. Combine them with CLI discovery tools.
-- Generate large, complex workflows in one go — build incrementally, one activity at a time
-- Assume a create/edit succeeded without validating with `uip rpa-legacy validate`
-- Guess VB.NET syntax — consult `references/activity-docs/_PATTERNS.md`
-- Use modern "X" suffix activities in legacy projects (e.g., `ReadRangeX` instead of `ExcelReadRange`)
-- Assume `.local/docs/packages/` exists — legacy projects don't have auto-generated activity docs
-- Use `assembly=System.Private.CoreLib` in xmlns — legacy uses `assembly=mscorlib`
-- Use `[bracket]` expression notation in C# legacy projects — use `<mca:CSharpValue>` instead
-- Retry failing CLI commands in a loop without diagnosing the root cause
-- Manually edit `project.json` dependencies without understanding NuGet version constraints
+| File | Content |
+|------|---------|
+| `_INDEX.md` | Master index with adoption rankings |
+| `_PATTERNS.md` | VB.NET cheat sheet, DataTable ops, error handling |
+| `_XAML-GUIDE.md` | XAML internals, Flowchart/StateMachine layout guides |
+| `_COMMON-PITFALLS.md` | Real-world gotchas by package |
+| `_INVOKE-CODE.md` | InvokeCode: properties, templates, compilation |
+| `_REFRAMEWORK.md` | REFramework template structure and customization |
+| `_DU-PROCESS.md` | Document Understanding pipeline template |
+| `AllActivities.md` | Complete legacy activity catalog |
+| `{Package}.md` | Per-package docs (Excel, Mail, System, UIAutomation, etc.) |
 
 ---
 
-## Troubleshooting
+## Never Do
 
-### Wrong enum value causes validation error
-**Symptom:** `validate` reports "Cannot create unknown type" or "is not a member of" for an enum property.
-**Cause:** Guessed enum value instead of discovering it.
-**Fix:** Run `uip rpa-legacy type-definition "{projectRoot}" --type "EnumTypeName" --format json` to get exact valid values. Example: InvokeCode `Language` accepts `VBNet` and `CSharp` — not `VisualBasic`, `VB`, or `Visual Basic`.
-
-### Activity class name not found
-**Symptom:** `validate` reports unknown activity type or missing namespace.
-**Cause:** Used wrong class name or missing xmlns declaration.
-**Fix:** Run `uip rpa-legacy find-activities "{projectRoot}" --query "activity description" --format json` to find the exact fully qualified class name, then add the corresponding xmlns and assembly reference.
-
-### Multiple validation errors after batch editing
-**Symptom:** Many errors after writing multiple activities at once.
-**Cause:** Skipped the one-activity-at-a-time workflow.
-**Fix:** Revert to last known good state. Re-add activities one at a time, validating after each.
-
-### Activity reference docs don't match XAML property names
-**Symptom:** Property names from `Excel.md` or similar docs don't work in XAML.
-**Cause:** Activity docs cover behavior, not exact CLR property names. XAML property names may differ.
-**Fix:** Use `find-activities --include-type-definitions` to get exact property names and types from the compiled assemblies.
-
-### Stuck on an unfamiliar problem
-**Symptom:** Bundled docs, `find-activities`, and `type-definition` don't resolve the issue.
-**Escalation path:**
-1. `uip docsai ask "your question"` — search official UiPath documentation for best practices, guidelines, and troubleshooting
-2. `WebSearch` — search UiPath Forum, Stack Overflow, GitHub public repos, Reddit for community solutions and real-world examples
-3. If still unresolved, document the issue clearly and ask the user for guidance
-
----
-
-## Quality Checklist
-
-Before handover, verify:
-
-**Environment:**
-- [ ] Project root is correctly identified
-- [ ] Confirmed legacy project (`targetFramework: "Legacy"` or absent)
-- [ ] Expression language noted (VB.NET or C#)
-
-**Discovery:**
-- [ ] Activity reference docs consulted for behavioral context (gotchas, patterns)
-- [ ] `_PATTERNS.md` consulted for VB.NET expression patterns
-- [ ] Local project explored for existing patterns and conventions
-- [ ] `find-activities` run for **every** activity used (exact class names, argument signatures)
-- [ ] `type-definition` run for **every** enum and complex type (exact valid values)
-- [ ] No property names, enum values, or CLR types were guessed — all verified via CLI tools
-
-**XAML Content Quality:**
-- [ ] VB.NET or C# syntax matches project language
-- [ ] All namespace declarations present for activities used
-- [ ] Variables and arguments properly scoped and named
-- [ ] Classic activity names used (no "X" suffix)
-- [ ] Legacy xmlns patterns used (`assembly=mscorlib`)
-- [ ] Required parent scopes present (Excel Application Scope, etc.)
-- [ ] Flowchart/StateMachine: ViewState generated with ShapeLocation/ShapeSize/ConnectorLocation for every node
-- [ ] Flowchart/StateMachine: visual layout planned before generation (node graph, coordinates, branch paths)
-
-**Validation & Testing:**
-- [ ] Workflow file path is valid and follows project conventions
-- [ ] All required activities are present
-- [ ] Error handling (Try-Catch) included where appropriate
-- [ ] `validate` returns 0 errors (or remaining errors documented for user)
-- [ ] `analyze` passed (if run)
-- [ ] `debug` smoke test considered (if workflow is safe to run)
-
-**User Communication:**
-- [ ] User informed of any limitations
-- [ ] Next steps suggested (testing, customization)
-- [ ] Manual actions needed documented (package installation, connection setup)
+- Batch-write multiple activities before validating
+- Guess enum values or property names — always use `find-activities` + `type-definition`
+- Skip discovery steps 4-5 (CLI tools are mandatory for valid XAML)
+- Use modern "X" suffix activities in legacy projects
+- Use `assembly=System.Private.CoreLib` — legacy uses `assembly=mscorlib`
+- Use `[bracket]` expressions in C# projects — use `<mca:CSharpValue>` instead
+- Generate Flowchart/StateMachine without ViewState
+- Retry failing CLI commands without diagnosing root cause
