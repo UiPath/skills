@@ -1,6 +1,6 @@
 ---
 name: uipath-development
-description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets), solution lifecycle (pack, publish, deploy), Integration Service, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service (connectors, connections, activities, resources); User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
+description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets, queues, storage buckets), solution lifecycle (pack, publish, deploy), Integration Service, resources management, Test Manager, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes, storage buckets); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service (connectors, connections, activities, resources); User wants to manage resources (assets, queues, queue items, storage buckets, bucket files); User wants to use Test Manager (projects, test sets, test cases, executions, results, reports); User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
 metadata: 
    allowed-tools: Bash, Read, Write, Glob, Grep
 ---
@@ -13,17 +13,18 @@ Comprehensive guide for setting up and managing UiPath development environments,
 
 - User wants to **authenticate** with UiPath Cloud (login, logout, switch tenants)
 - User wants to **manage Orchestrator folders** (list, create, edit, move, delete)
-- User wants to **manage Orchestrator assets** (list, create, get, delete)
+- User wants to **manage Orchestrator assets** (list, create, get, update, delete)
+- User wants to **manage resources** (assets, queues, queue items, storage buckets, bucket files)
 - User wants to **work with solutions** (create, pack, publish, deploy, activate)
 - User asks about **UiPath platform concepts** (tenants, folders, robots, queues, packages)
+- User wants to **use Test Manager** (projects, test sets, test cases, executions, results, reports, attachments)
 - User wants to **install or manage CLI tools** (search, install, update)
 - User wants to set up a **CI/CD pipeline** for UiPath automation projects
 - User asks **how to deploy** an automation to Orchestrator
-- User wants to **manage flow projects** (init, pack, validate, run jobs, trace)
 
 ## Auth token location
 
-The CLI stores credentials at **`~/.uip/.env`** after login:
+The CLI stores credentials at **`~/.uipath/.auth`** after login:
 ```
 UIPATH_URL=https://alpha.uipath.com
 UIPATH_ORG_NAME=my_org
@@ -87,11 +88,12 @@ Choose the appropriate operation from the Task Navigation table below.
 |---|---|
 | **Authenticate / manage tenants** | [references/uip-commands.md - Authentication](references/uip-commands.md) |
 | **Manage Orchestrator folders** | [references/orchestrator-guide.md - Folders](references/orchestrator-guide.md) |
-| **Manage Orchestrator assets** | [references/orchestrator-guide.md - Assets](references/orchestrator-guide.md) |
+| **Manage assets** (via `resources assets`, NOT `or`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
+| **Manage resources** (assets, queues, queue items, storage buckets, files via `resources`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
-| **Manage flow projects** | [references/uip-commands.md - Flow](references/uip-commands.md) |
+| **Use Test Manager** (projects, test sets, test cases, executions, reports) | [references/test-manager/test-manager-guide.md](references/test-manager/test-manager-guide.md) |
 | **Install / manage CLI tools** | [references/uip-commands.md - Tools](references/uip-commands.md) |
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
 | **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
@@ -181,14 +183,14 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 |---|---|---|---|
 | **Authentication** | `login`, `logout` | OAuth2, client credentials, PAT, tenant management | Available |
 | **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
+| **Resources** | `resources` | Assets, queues, queue items, storage buckets, bucket files | Available |
 | **Solutions** | `solution` | Create, pack, publish, deploy solutions | Available |
-| **Flow** | `flow` | Flow project lifecycle (init, pack, validate, run, trace) | Available |
 | **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
+| **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
 | **MCP** | `mcp` | Model Context Protocol server | Available |
 | **Coded Agents** | `codedagents` | Python agent lifecycle (setup, exec) | Available |
 | **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
-| **Test Manager** | `tm` | Test management operations | Available |
 
 ### Global Options
 
@@ -210,7 +212,7 @@ The typical deployment workflow for a UiPath automation:
 ```
 1. Develop    → Create/edit coded workflows or RPA projects locally
 2. Validate   → uip rpa validate
-3. Pack       → uip solution pack / uip flow pack
+3. Pack       → uip solution pack
 4. Login      → uip login
 5. Publish    → uip solution publish
 6. Deploy     → uip solution deploy run -n "<NAME>" -c "<CONFIG_KEY>"
@@ -219,14 +221,14 @@ The typical deployment workflow for a UiPath automation:
 ### Practical Deployment Notes
 
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uip/.env`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md).
+- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md).
 
 ## Orchestrator REST API (Fallback)
 
 When CLI commands are insufficient, use the Orchestrator REST API directly with the stored access token:
 
 ```bash
-source ~/.uip/.env
+source ~/.uipath/.auth
 
 # Upload a .nupkg package
 curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage" \
@@ -255,6 +257,8 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 
 - **[Complete CLI Command Reference](references/uip-commands.md)** — Every `uip` command with parameters
 - **[Orchestrator Guide](references/orchestrator-guide.md)** — Concepts, folders, assets, and planned features
+- **[Resources Guide](references/resources/resources-guide.md)** — Assets, queues, queue items, storage buckets, bucket files
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
+- **[Test Manager Guide](references/test-manager/test-manager-guide.md)** — Test projects, test sets, test cases, executions, reports, attachments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
 - **[Coded Workflows](/uipath-coded-workflows:uipath-coded-workflows)** — Building coded automation projects
