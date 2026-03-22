@@ -104,7 +104,7 @@ These activities **silently swallow all errors** by default:
 
 | Activity | Package | Impact |
 |----------|---------|--------|
-| `NetHttpRequest` (HTTP Request) | Web | HTTP 500/timeout → empty response, no error |
+| `NetHttpRequest` / `HttpClient` (HTTP Request) | Web | HTTP 500/timeout → empty response, no error |
 | `Data Scraping` wizard output | UIAutomation | Extraction failure → empty DataTable |
 
 **Always** set `ContinueOnError=False` on HTTP Request activities.
@@ -118,7 +118,7 @@ These activities **silently swallow all errors** by default:
 `BrowserType` defaults to `IE` in source code. **Always explicitly set** BrowserType to Chrome, Firefox, or Edge.
 
 ### HTTP Request Very Short Timeout
-Legacy `HttpClient` timeout is only 6,000ms. `NetHttpRequest` default is 10,000ms. Both are often too low for production APIs.
+Legacy `HttpClient` (also called `NetHttpRequest` internally) timeout is only 6,000-10,000ms. Both are often too low for production APIs.
 
 **Fix:** Set `TimeoutMS` to 30,000-60,000ms.
 

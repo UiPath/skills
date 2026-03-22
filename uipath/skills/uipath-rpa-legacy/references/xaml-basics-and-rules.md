@@ -270,7 +270,7 @@ Arguments are declared in `<x:Members>` and define the workflow's public interfa
 | `x:Decimal` | System.Decimal | |
 | `sd:DataTable` | System.Data.DataTable | Requires `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` |
 | `s:DateTime` | System.DateTime | **Cannot** use `x:DateTime` — it's not in the XAML schema |
-| `s:SecureString` | System.Security.SecureString | Requires `xmlns:s` for System namespace |
+| `ss:SecureString` | System.Security.SecureString | Requires `xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"` (NOT `xmlns:s` — SecureString is in `System.Security`, not `System`) |
 | `scg:Dictionary(x:String, x:Object)` | Dictionary\<String, Object\> | |
 | `scg:List(x:String)` | List\<String\> | |
 
