@@ -7,11 +7,37 @@ UiPath Agent Skills give AI coding agents the domain knowledge to build, run, te
 
 ## Quick Start
 
+> **Prerequisite:** [Node.js](https://nodejs.org/) (LTS) is required — it includes `npx`.
+
 ```bash
 npx skills add uipath/skills
 ```
 
 Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
+
+<details>
+<summary>Don't have Node.js installed?</summary>
+
+**macOS**
+```bash
+brew install node
+```
+
+**Windows**
+```bash
+winget install OpenJS.NodeJS.LTS
+```
+
+**Linux**
+```bash
+curl -fsSL https://fnm.vercel.app/install | bash
+fnm install --lts
+```
+See [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager) for other methods.
+
+After installing, verify with `node -v` and then run the quick start command above.
+
+</details>
 
 ## Skill Catalog
 
