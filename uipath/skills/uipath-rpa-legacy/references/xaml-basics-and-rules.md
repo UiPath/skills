@@ -419,6 +419,30 @@ And this additional namespace import:
 
 ---
 
+## xmlns Prefix Deconfliction
+
+`find-activities` may suggest the **same xmlns prefix** for activities from different CLR namespaces (e.g., both `LogMessage` and `ReadCsvFile` return `uca`). Using the same prefix for two different namespace URIs breaks the XAML.
+
+**Before writing XAML:**
+1. Collect all `XmlnsDeclaration` values from all activities you plan to use
+2. Check for prefix collisions (same prefix, different `clr-namespace` URI)
+3. Rename conflicting prefixes with descriptive abbreviations
+
+**Example conflict:**
+```xml
+<!-- Both returned "uca" but point to different namespaces — CONFLICT -->
+xmlns:uca="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"
+xmlns:uca="clr-namespace:UiPath.CSV.Activities;assembly=UiPath.Excel.Activities"
+
+<!-- Fix: rename one prefix -->
+xmlns:uca="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"
+xmlns:ucsvact="clr-namespace:UiPath.CSV.Activities;assembly=UiPath.Excel.Activities"
+```
+
+**Tip:** The `ui` schema prefix (`xmlns:ui="http://schemas.uipath.com/workflow/activities"`) covers most `UiPath.Core.Activities` — prefer it over CLR-based prefixes for core activities like LogMessage, InvokeCode, etc.
+
+---
+
 ## XAML Generation Gotchas
 
 1. **Every `x:Name` must be unique** — FlowSteps use `__ReferenceID0`, `__ReferenceID1`, etc.

@@ -60,3 +60,19 @@ This opens a browser-based login flow. Authentication is typically needed only f
 - Accessing Orchestrator resources (assets, queues) during `debug` execution
 
 For most local development tasks (validate, analyze, edit, find-activities), authentication is **not required**.
+
+---
+
+## Step 0.4: Package Restore
+
+After creating or modifying `project.json` dependencies, packages must be restored before `find-activities` or `type-definition` will work.
+
+**Trigger restore** by running validate on the project directory:
+
+```bash
+uip rpa-legacy validate "{projectRoot}" --format json
+```
+
+This resolves NuGet packages from configured feeds. After this completes, `find-activities` and `type-definition` will have access to the package assemblies.
+
+**If `find-activities` returns "No assemblies resolved from package dependencies"**, run validate first to trigger restore.

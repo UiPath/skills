@@ -72,22 +72,28 @@ Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationC
 
 ### Common Scope Body Patterns
 
-| Scope Activity | Body TypeArgument | DelegateInArgument Name |
-|---------------|-------------------|------------------------|
-| `ExcelProcessScopeX` | `ui:IExcelProcess` | `ExcelProcessScopeTag` |
-| `ExcelApplicationCard` (Use Excel File) | `ue:IWorkbookQuickHandle` | `Excel` |
-| `ExcelApplicationScope` (classic Interop) | `ue:WorkbookApplication` | `ExcelWorkbookScope` |
-| `WordApplicationScope` | (Word handle type) | `WordApplicationScope` |
-| `PowerPointApplicationScope` | (PowerPoint handle type) | `PowerPointApplication` |
+| Activity | Body TypeArgument | DelegateInArgument Name | Notes |
+|----------|-------------------|------------------------|-------|
+| `ExcelProcessScopeX` | `ui:IExcelProcess` | `ExcelProcessScopeTag` | Outer Excel scope |
+| `ExcelApplicationCard` | `ue:IWorkbookQuickHandle` | `Excel` | Inner Excel scope (inside ExcelProcessScopeX) |
+| `ExcelApplicationScope` | `ue:WorkbookApplication` | `ExcelWorkbookScope` | Classic Interop scope |
+| `ForEachRow` | `ActivityAction(sd:DataRow)` | `row` | Iterates DataTable rows |
+| `WordApplicationScope` | (Word handle type) | `WordApplicationScope` | Word COM scope |
+| `PowerPointApplicationScope` | (PowerPoint handle type) | `PowerPointApplication` | PowerPoint COM scope |
+| `TryCatch` | (special — `Catches` collection) | — | Not ActivityAction, but has nested body structure |
+| `Parallel` | (multiple `Branches`) | — | Each branch is a separate Sequence |
+
+**`find-activities` now returns `Body` info** when an activity requires an `ActivityAction<T>` body — check the output before writing XAML for scope activities.
 
 **Key xmlns required:**
 - `xmlns:ue="clr-namespace:UiPath.Excel;assembly=UiPath.Excel.Activities"`
 - `xmlns:ueab="clr-namespace:UiPath.Excel.Activities.Business;assembly=UiPath.Excel.Activities"`
 - `xmlns:ui="http://schemas.uipath.com/workflow/activities"`
+- `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` (for ForEachRow DataRow type)
 
 **Nested scopes:** Modern Excel requires TWO levels: `ExcelProcessScopeX` → `ExcelApplicationCard` → activities. Each level has its own `ActivityAction` body.
 
-**Always use `find-activities --include-type-definitions`** to discover the exact TypeArgument and body structure for any scope activity. Do not guess.
+**Always check `find-activities` output** for body pattern info before using scope activities.
 
 ---
 

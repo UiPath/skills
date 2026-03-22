@@ -10,11 +10,11 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 ## Rules (Non-Negotiable)
 
 1. **Discover before writing** — run `find-activities` + `type-definition` for exact CLR names/enums before any XAML. Activity docs cover behavior, NOT property names.
-2. **One activity at a time** — write ONE activity → `validate` → fix → next. Never batch-write.
-3. **Validate after every change** — `uip rpa-legacy validate` after every XAML edit. No exceptions.
+2. **Validate frequently** — for Sequences with well-known activities, write the full XAML then validate once. For Flowcharts/StateMachines/unfamiliar activities, validate after each addition. Always validate after edits to existing files.
+3. **Absolute paths only** — store `{projectRoot}` as an absolute path at Phase 0. Pass it to every CLI command. **Never use `cd`.**
 4. **Fix by category** — Package → Structure → Type → Properties → Logic. This order prevents cascading errors.
 5. **Activity docs + CLI tools together** — docs for context/gotchas, CLI for precision. Neither alone is sufficient.
-6. **Always use `--format json`** — for any CLI output you need to parse.
+6. **Always use `--format json`** — for any CLI output you need to parse. **Never suppress stderr** (`2>/dev/null`) — error details are in the JSON output.
 
 ---
 
@@ -38,9 +38,10 @@ If unclear which file to edit, **ask the user**.
 
 ## Phase 0: Environment
 
-1. Find `project.json` → establish `{projectRoot}`
+1. Find `project.json` → establish `{projectRoot}` **as absolute path**
 2. Read `project.json` → verify `targetFramework: "Legacy"` (or absent = Legacy)
 3. Note `expressionLanguage` (VB.NET or C#)
+4. Run `uip rpa-legacy validate "{projectRoot}" --format json` to trigger **package restore** (required before `find-activities` works)
 
 No Studio needed. See [environment-setup.md](./references/environment-setup.md) for details.
 
@@ -48,28 +49,25 @@ No Studio needed. See [environment-setup.md](./references/environment-setup.md) 
 
 ## Phase 1: Discovery
 
-**What you need → Where to find it:**
+**Read only what's needed for the task — don't load all docs upfront:**
 
-| Need | Tool / File |
-|------|------------|
-| Project structure, packages, expression language | `Glob **/*.xaml` + `Read project.json` |
-| What an activity does, gotchas, patterns | `references/activity-docs/{PackageName}.md` |
-| Which package for a capability | [activity-docs/_INDEX.md](./references/activity-docs/_INDEX.md) |
-| VB.NET expression syntax | [activity-docs/_PATTERNS.md](./references/activity-docs/_PATTERNS.md) |
-| XAML structure, templates, ViewState layout | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) + [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md) |
-| Dangerous defaults, scope requirements | [common-pitfalls.md](./references/common-pitfalls.md) |
-| **Exact class names, arguments, XAML snippet, xmlns** | `uip rpa-legacy find-activities "{projectRoot}" --query "..." --format json` **← MANDATORY. Use the returned `XamlSnippet` as your starting point.** |
-| **Exact enum values, type members** | `uip rpa-legacy type-definition "{projectRoot}" --type "TypeName" --format json` **← MANDATORY** |
-| InvokeCode patterns | [activity-docs/_INVOKE-CODE.md](./references/activity-docs/_INVOKE-CODE.md) |
-| REFramework structure | [activity-docs/_REFRAMEWORK.md](./references/activity-docs/_REFRAMEWORK.md) |
-| Document Understanding pipeline | [activity-docs/_DU-PROCESS.md](./references/activity-docs/_DU-PROCESS.md) |
-| **Search NuGet for packages** | `uip rpa-legacy find-package --query "..." --format json` — searches all configured feeds |
-| Official UiPath docs (fallback) | `uip docsai ask "question" --format json` |
-| Community solutions (last resort) | `WebSearch` — UiPath Forum, Stack Overflow, GitHub, Reddit |
+| Task Type | Must Read | Also Read If Needed |
+|-----------|-----------|-------------------|
+| **Any workflow** | [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md), run `find-activities` + `type-definition` | [common-pitfalls.md](./references/common-pitfalls.md) |
+| Flowchart/StateMachine | + [_XAML-GUIDE.md](./references/activity-docs/_XAML-GUIDE.md) (ViewState layout) | |
+| Uses Excel/CSV | + [Excel.md](./references/activity-docs/Excel.md) | |
+| Uses Email | + [Mail.md](./references/activity-docs/Mail.md) | |
+| Uses InvokeCode | + [_INVOKE-CODE.md](./references/activity-docs/_INVOKE-CODE.md) | |
+| REFramework project | + [_REFRAMEWORK.md](./references/activity-docs/_REFRAMEWORK.md) | |
+| Don't know which package | [_INDEX.md](./references/activity-docs/_INDEX.md) | `find-package --query "..."` |
+| VB.NET expression help | [_PATTERNS.md](./references/activity-docs/_PATTERNS.md) | |
+| Stuck | `uip docsai ask "..."` → `WebSearch` → ask user | |
 
-**Activity docs cover behavior. CLI tools give precision. Both are mandatory.**
+**CLI tools (mandatory for every activity):**
+- `uip rpa-legacy find-activities "{projectRoot}" --query "..." --format json` — returns class names, arguments, **XAML snippet**, **xmlns**, **body pattern**. Use `XamlSnippet` as starting point.
+- `uip rpa-legacy type-definition "{projectRoot}" --type "TypeName" --format json` — exact enum values, type members
 
-See [discovery-workflow.md](./references/discovery-workflow.md) for detailed step-by-step procedure with examples.
+See [discovery-workflow.md](./references/discovery-workflow.md) for detailed step-by-step procedure.
 
 ---
 
@@ -161,8 +159,8 @@ uip rpa-legacy debug "{projectRoot}/Main.xaml"
 # With input arguments
 uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_FilePath": "C:\\data.xlsx", "in_Count": 5}'
 
-# Programmatic (suppress streaming logs, capture result to file)
-uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_FilePath": "C:\\data.xlsx"}' --result-path /tmp/result.json --trace-level Error 2>/dev/null
+# Capture result to file
+uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_FilePath": "C:\\data.xlsx"}' --result-path /tmp/result.json --trace-level Error
 ```
 
 **Reading results:**
@@ -240,9 +238,10 @@ Full reference: [cli-reference.md](./references/cli-reference.md)
 
 ## Never Do
 
-- Batch-write multiple activities before validating
+- **Use `cd`** to change working directory — pass absolute `{projectRoot}` to every CLI command
+- **Suppress stderr** with `2>/dev/null` — error details are in the JSON output
 - Guess enum values or property names — always use `find-activities` + `type-definition`
-- Skip discovery steps 4-5 (CLI tools are mandatory for valid XAML)
+- Skip CLI discovery (find-activities + type-definition are mandatory for valid XAML)
 - Use modern "X" suffix activities in legacy projects
 - Use `assembly=System.Private.CoreLib` — legacy uses `assembly=mscorlib`
 - Use `[bracket]` expressions in C# projects — use `<mca:CSharpValue>` instead

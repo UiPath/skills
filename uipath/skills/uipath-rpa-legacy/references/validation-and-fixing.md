@@ -138,7 +138,7 @@ Not required for debugging — legacy RPA can be debugged directly without packa
 uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_TestMode": true}' --timeout 60
 
 # Programmatic: capture result to file, suppress streaming logs
-uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_TestMode": true}' --result-path /tmp/result.json --trace-level Error 2>/dev/null
+uip rpa-legacy debug "{projectRoot}/Main.xaml" -i '{"in_TestMode": true}' --result-path /tmp/result.json --trace-level Error
 ```
 
 **Reading results:**

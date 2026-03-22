@@ -13,6 +13,22 @@ uip rpa-legacy validate --help             # parameters for validate
 
 ---
 
+## Path and Output Rules
+
+- **Always use absolute paths** — store `{projectRoot}` at Phase 0, pass it to every command. **Never use `cd`.**
+- **Always use `--format json`** for programmatic parsing.
+- **NEVER suppress stderr** (`2>/dev/null`) — error details are in the JSON output on stderr when exit code is non-zero.
+- Check the `Result` field in output: `"Success"` or `"Failure"`.
+- On failure, read `Message` and `Instructions` for diagnostics.
+
+```
+WRONG:  cd "C:/Projects/MyProject" && uip rpa-legacy validate . --format json
+RIGHT:  uip rpa-legacy validate "C:/Projects/MyProject" --format json
+RIGHT:  uip rpa-legacy validate "C:/Projects/MyProject/Main.xaml" --format json
+```
+
+---
+
 ## File Operations (Built-in Tools)
 
 | Action | How | Key Parameters |
@@ -247,7 +263,7 @@ uip rpa-legacy debug "C:/Projects/MyLegacyProject/Main.xaml" -i '{"in_FilePath":
 uip rpa-legacy debug "C:/Projects/MyLegacyProject/Main.xaml" \
   -i '{"in_FilePath": "C:\\data.xlsx"}' \
   --result-path /tmp/result.json \
-  --trace-level Error 2>/dev/null
+  --trace-level Error
 ```
 
 | Parameter | Description |
