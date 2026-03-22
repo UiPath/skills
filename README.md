@@ -41,9 +41,7 @@ After installing, verify with `node -v` and then run the quick start command abo
 
 ## Skill Catalog
 
-### Automation & Platform (`uipath`)
-
-Skills for building and managing UiPath automation projects — coded workflows in C#, RPA workflows in XAML, Flow projects in JSON, desktop/browser UI automation, and platform operations.
+The repository contains skills for building and managing UiPath automation projects — coded workflows in C#, RPA workflows in XAML, Flow projects in JSON, desktop/browser UI automation, and platform operations.
 
 | Skill | Description |
 |-------|-------------|
@@ -52,22 +50,6 @@ Skills for building and managing UiPath automation projects — coded workflows 
 | **uipath-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
 | **uipath-development** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
 | **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
-
-### Coded Agents (`uipath-coded-agents`)
-
-Skills for the full lifecycle of UiPath Python coded agents — from project scaffolding to evaluation and deployment. Supports LangGraph, LlamaIndex, OpenAI Agents SDK, and simple function agents.
-
-| Skill | Description |
-|-------|-------------|
-| **auth** | Authenticate with UiPath Cloud or on-premise (OAuth, client credentials, tenant selection) |
-| **setup** | Scaffold and initialize agent projects with `uipath new`, `uv sync`, and `uipath init` |
-| **build** | Implement agent logic with framework-specific patterns (LangGraph, LlamaIndex, OpenAI Agents, simple functions) |
-| **run** | Run agents locally or invoke published agents in UiPath Cloud |
-| **evaluate** | Create and run evaluations with built-in evaluators (ExactMatch, LLMJudge, Trajectory, and more) |
-| **deploy** | Package and publish agents to Orchestrator |
-| **sync** | Push and pull project files to and from Studio Web |
-| **bindings** | Synchronize agent code with `bindings.json` for UiPath platform resource overrides |
-| **uipath** | Full lifecycle orchestrator — runs auth, setup, build, run, evaluate, deploy, and sync end-to-end |
 
 ## Claude Code
 
@@ -79,14 +61,10 @@ This repository also works as a **Claude Code plugin**. If you use [Claude Code]
 claude plugin marketplace add https://github.com/UiPath/skills
 ```
 
-### Install a plugin
+### Install the plugin
 
 ```bash
-# Install the automation & platform plugin
 claude plugin install uipath@uipath-marketplace
-
-# Install the coded agents plugin
-claude plugin install uipath-coded-agents@uipath-marketplace
 ```
 
 ## Contributing
