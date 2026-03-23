@@ -1,5 +1,5 @@
 ---
-name: project-context
+name: uipath-project-discovery
 description: "Generate project context documentation for UiPath automation projects. Discovers project structure, dependencies, naming conventions, code patterns, and entry points, then writes context files for Claude Code and UiPath Autopilot. TRIGGER when: UiPath project detected (project.json with UiPath dependencies exists in or near the working directory) AND the file .claude/rules/project-context.md does NOT exist; User explicitly asks to generate project context, analyze project structure, or create AGENTS.md; User invokes /uipath:project-context. DO NOT TRIGGER when: .claude/rules/project-context.md already exists (context was already generated) unless the user explicitly asks to regenerate or refresh; User is asking to create, edit, or run workflows (use uipath-coded-workflows or uipath-rpa-workflows instead); User is asking about Orchestrator, deployment, or CLI setup (use uipath-development instead)."
 metadata:
   allowed-tools: Bash, Read, Write, Glob, Grep, Edit

@@ -17,13 +17,9 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 # Development environment — authentication, Orchestrator, deployment, CLI tools, Integration Service
 /uipath:uipath-development
 
-<<<<<<< Updated upstream
 # UI automation & testing — click, type, read, verify, screenshot desktop and browser UIs
 /uipath:uipath-servo
-=======
-# Project context — auto-discover project structure, conventions, and dependencies
-/uipath:project-context
->>>>>>> Stashed changes
+
 ```
 
 ## Skills
@@ -34,11 +30,13 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 | **RPA Workflows** | `/uipath:uipath-rpa-workflows` | Generate and edit RPA workflows (XAML) using a discovery-first approach with iterative error-driven refinement |
 | **Flow Projects** | `/uipath:uipath-flow` | Create, edit, validate, and debug UiPath Flow projects using the `uip` CLI and `.flow` file format |
 | **Development** | `/uipath:uipath-development` | Environment setup, authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tooling |
-<<<<<<< Updated upstream
 | **Servo** | `/uipath:uipath-servo` | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
-=======
-| **Project Context** | `/uipath:project-context` | Auto-discover project structure, dependencies, conventions, and generate context files for Claude Code and UiPath Autopilot |
->>>>>>> Stashed changes
+
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| **Project Discovery** (`uipath-project-discovery`) | Auto-discovers project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggers automatically when a UiPath project is detected and no context file exists. Can also be triggered manually by asking to "regenerate project context." |
 
 ## Coded Workflows
 
