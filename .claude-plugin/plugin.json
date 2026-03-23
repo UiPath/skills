@@ -9,6 +9,5 @@
   "homepage": "https://github.com/UiPath/skills",
   "repository": "https://github.com/UiPath/skills",
   "keywords": ["uipath", "automation", "rpa", "workflows", "code", "xaml", "studio", "ui-automation", "ui-testing", "desktop", "browser"],
-  "skills": "../skills/",
-  "hooks": "../hooks/hooks.json"
+  "skills": "./skills/"
 }
