@@ -1,159 +1,107 @@
-# UiPath Plugin for Claude Code
+# UiPath Agent Skills
 
-Comprehensive UiPath automation plugin for Claude Code — covering coded workflows, RPA workflows (XAML), UI automation and testing (Servo), environment setup, Orchestrator management, and CLI tooling.
+> [!NOTE]
+> **Work in Progress** — This repository is under active development. Skills are being added and refined. Contributions, feedback, and ideas are welcome! See [Contributing](#contributing) below.
+
+UiPath Agent Skills give AI coding agents the domain knowledge to build, run, test, and deploy UiPath automations and agents — directly from your development environment. Each skill is a self-contained package of instructions and resources that teaches your coding agent how to perform a specific UiPath task.
 
 ## Quick Start
 
-```bash
-# Coded workflow assistant — create, edit, validate, and run coded automations (.cs)
-/uipath:uipath-coded-workflows
-
-# RPA workflow architect — generate and edit XAML workflows in UiPath Studio Desktop
-/uipath:uipath-rpa-workflows
-
-# Flow project assistant — create, edit, validate, and debug .flow projects
-/uipath:uipath-flow
-
-# Development environment — authentication, Orchestrator, deployment, CLI tools, Integration Service
-/uipath:uipath-platform
-
-# Coded agents — scaffold, build, run, evaluate, and deploy Python agents
-/uipath:uipath-coded-agents
-
-# UI automation & testing — click, type, read, verify, screenshot desktop and browser UIs
-/uipath:uipath-servo
-```
-
-## Skills
-
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **Coded Workflows** | `/uipath:uipath-coded-workflows` | Full coding assistant for creating, editing, validating, and running UiPath coded automation projects (.cs) |
-| **RPA Workflows** | `/uipath:uipath-rpa-workflows` | Generate and edit RPA workflows (XAML) using a discovery-first approach with iterative error-driven refinement |
-| **Flow Projects** | `/uipath:uipath-flow` | Create, edit, validate, and debug UiPath Flow projects using the `uip` CLI and `.flow` file format |
-| **Development** | `/uipath:uipath-platform` | Environment setup, authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tooling |
-| **Coded Agents** | `/uipath:uipath-coded-agents` | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
-| **Servo** | `/uipath:uipath-servo` | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
-
-## Coded Workflows
-
-Build UiPath coded automations in C# with automatic validation and activity references.
-
-- **Project Scaffolding**: Create new coded automation projects via `rpa-tool create-project`
-- **Workflow Creation**: Build workflows, test cases, and helper classes using templates
-- **Validation Loop**: Automatic file validation with `rpa-tool validate` after every create/edit
-- **Activity References**: Guides for 20+ UiPath activity packages (Excel, Word, Mail, UI Automation, Azure, AWS, and more)
-- **Dependency Management**: Service-to-package mapping ensures correct NuGet dependencies
-
-### Documentation
-
-- **[Operations Guide](skills/uipath-coded-workflows/references/operations-guide.md)** - Step-by-step procedures for all project operations
-- **[Coding Guidelines](skills/uipath-coded-workflows/references/coding-guidelines.md)** - Using statements, best practices, and common issues
-- **[CodedWorkflow Reference](skills/uipath-coded-workflows/references/codedworkflow-reference.md)** - Base class methods, hooks, and invocation patterns
-- **[UI Automation Guide](skills/uipath-coded-workflows/references/ui-automation/ui-automation.md)** - Object Repository, descriptors, and UI interaction
-- **[UiPath CLI Guide](skills/uipath-coded-workflows/references/uip-guide.md)** - Build, pack, and run commands
-- **[Third-Party Packages](skills/uipath-coded-workflows/references/third-party-packages-guide.md)** - Adding and inspecting NuGet dependencies
-
-### Activity References
-
-| Category | Topics |
-|----------|--------|
-| **Document & Productivity** | [Excel](skills/uipath-coded-workflows/references/excel/excel.md), [Word](skills/uipath-coded-workflows/references/word/word.md), [PowerPoint](skills/uipath-coded-workflows/references/powerpoint/powerpoint.md), [Mail](skills/uipath-coded-workflows/references/mail/mail.md) |
-| **Cloud & Integration** | [Office 365](skills/uipath-coded-workflows/references/office365/office365.md), [GSuite](skills/uipath-coded-workflows/references/gsuite/gsuite.md), [Azure](skills/uipath-coded-workflows/references/it-automations/azure/azure.md), [Google Cloud](skills/uipath-coded-workflows/references/it-automations/google-cloud/google-cloud.md), [AWS](skills/uipath-coded-workflows/references/it-automations/amazon-web-services/amazon-web-services.md) |
-| **Infrastructure** | [Exchange Server](skills/uipath-coded-workflows/references/it-automations/exchange-server/exchange-server.md), [Active Directory](skills/uipath-coded-workflows/references/it-automations/active-directory/active-directory.md), [Azure AD](skills/uipath-coded-workflows/references/it-automations/azure-active-directory/azure-active-directory.md), [Citrix](skills/uipath-coded-workflows/references/it-automations/citrix/citrix.md), [Hyper-V](skills/uipath-coded-workflows/references/it-automations/hyperv/hyperv.md) |
-| **Core** | [System](skills/uipath-coded-workflows/references/system/system.md), [Testing](skills/uipath-coded-workflows/references/testing/testing.md), [UI Automation](skills/uipath-coded-workflows/references/ui-automation/ui-automation.md) |
-
-### Templates
-
-- [Workflow Template](skills/uipath-coded-workflows/assets/codedworkflow-template.md) | [Test Case](skills/uipath-coded-workflows/assets/testcase-template.md) | [Helper Class](skills/uipath-coded-workflows/assets/helper-utility-template.md)
-- [JSON Templates](skills/uipath-coded-workflows/assets/json-template.md) | [Project Structure](skills/uipath-coded-workflows/assets/project-structure-examples.md) | [Hooks](skills/uipath-coded-workflows/assets/before-after-hooks-template.md)
-
-## RPA Workflows
-
-Generate and edit RPA workflows (XAML files) in UiPath Studio Desktop using a discovery-first approach with iterative error-driven refinement.
-
-- **Discovery-First Approach**: Understand project structure and existing patterns before generating XAML
-- **Example-Driven**: Search and study workflow examples via `uip rpa list-workflow-examples` and `uip rpa get-workflow-example`
-- **Iterative Validation**: Validate after every change with `uip rpa get-errors` and fix errors methodically
-- **Activity Search**: Find activities with `uip rpa find-activities` and get default XAML templates
-- **UI Automation**: Capture selectors into the Object Repository with indication tools
-
-### Core Principles
-
-1. **Discovery Before Generation** — Never generate XAML without first understanding project structure
-2. **Search Examples Repository** — Always find and study relevant examples before creating workflows
-3. **Start Simple, Iterate** — Create minimal working version first, then refine
-4. **Validate After Every Change** — Always check with `uip rpa get-errors`
-5. **Fix Errors Methodically** — Package → Structure → Type → Logic
-
-### Key CLI Commands
+> **Prerequisite:** [Node.js](https://nodejs.org/) (LTS) is required — it includes `npx`.
 
 ```bash
-uip rpa list-instances --format json           # Find open Studio projects
-uip rpa find-activities --query "..." --format json  # Search for activities
-uip rpa list-workflow-examples --tags '["..."]' --format json  # Find examples
-uip rpa get-workflow-example --key "..."        # Retrieve example XAML
-uip rpa get-errors --format json                # Validate workflow files
-uip rpa run-file --file-path "..."              # Run a workflow
+npx skills add uipath/skills
 ```
 
-## Flow Projects
+Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
 
-Build and run UiPath Flow projects — JSON-based workflow definitions executed via the `uip` CLI.
+<details>
+<summary>Don't have Node.js installed?</summary>
 
-- **Project Scaffolding**: Create new Flow projects with `uip flow init`
-- **Node Registry**: Discover available node types via `uip flow registry search/get`
-- **Local Validation**: Instant schema + cross-reference check with `uip flow validate` (no auth needed)
-- **Cloud Debug**: Upload and run in Orchestrator via `uip flow debug` (requires `uip login`)
-- **Format Reference**: Full `.flow` JSON schema — nodes, edges, definitions, ports, and gotchas
+**macOS**
+```bash
+brew install node
+```
 
-### Key CLI Commands
+**Windows**
+```bash
+winget install OpenJS.NodeJS.LTS
+```
+
+**Linux**
+```bash
+curl -fsSL https://fnm.vercel.app/install | bash
+fnm install --lts
+```
+See [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager) for other methods.
+
+After installing, verify with `node -v` and then run the quick start command above.
+
+</details>
+
+## Skill Catalog
+
+The repository contains skills for building and managing UiPath automation projects — coded workflows in C#, RPA workflows in XAML, Flow projects in JSON, desktop/browser UI automation, and platform operations.
+
+| Skill | Description |
+|-------|-------------|
+| **uipath-coded-workflows** | Create, edit, build, and run UiPath coded automations (.cs) with activity references for 20+ packages |
+| **uipath-rpa-workflows** | Generate and edit RPA workflows (XAML) in UiPath Studio Desktop with discovery-first approach |
+| **uipath-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
+| **uipath-platform** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
+| **uipath-coded-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
+| **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
+
+## Multi-Tool Support
+
+This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor IDE**.
+
+### Claude Code
+
+This repository works as a **Claude Code plugin**. Install skills as a plugin marketplace for direct access to slash commands.
 
 ```bash
-uip flow init <ProjectName>                  # scaffold new project
-uip flow validate <ProjectName>.flow         # local schema check (no auth needed)
-uip flow debug <ProjectName>.flow            # cloud debug session (requires login)
-uip flow registry pull                       # refresh node type cache
-uip flow registry search <keyword>           # find node types
-uip flow registry get <nodeType> --format json   # full schema for one node type
+# Add the marketplace
+claude plugin marketplace add https://github.com/UiPath/skills
+
+# Install the plugin
+claude plugin install uipath@uipath-marketplace
 ```
 
-### References
+### OpenAI Codex CLI
 
-- **[.flow File Format](skills/uipath-flow/references/flow-file-format.md)** — JSON schema, node/edge/definition structure, common node types, ports, and examples
-- **[CLI Command Reference](skills/uipath-flow/references/flow-commands.md)** — All `uip flow` subcommands with parameters
+This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
-## Requirements
+> **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
+> ```bash
+> git clone -c core.symlinks=true https://github.com/UiPath/skills
+> ```
+> If you've already cloned without symlink support, re-enable and re-checkout:
+> ```bash
+> git config core.symlinks true
+> git checkout -- .
+> ```
 
-- UiPath Studio Desktop (2025.x+ for coded workflows)
-- .NET 8.0+ (for coded workflows)
-- Node.js (for `uip` CLI)
-- Claude Code CLI
+### Cursor IDE
 
-### Setting up uip
+Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
 
-The `uip` CLI is required for both RPA and coded workflow skills. It is temporarily hosted on **GitHub Packages** during development and will be moved to the public npm registry for public release. Until then, you need to set an authentication token before the plugin can install it automatically.
+## Contributing
 
-Add `GH_NPM_REGISTRY_TOKEN` to your shell profile so it's available on every session:
+Contributions are welcome! Whether it's a new skill, a bug fix, or a documentation improvement — we'd love your help.
 
-```powershell
-# PowerShell — add to $PROFILE
-$env:GH_NPM_REGISTRY_TOKEN = "ghp_your_token_here"
-```
+1. Fork this repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-```bash
-# Bash / Zsh — add to ~/.bashrc or ~/.zshrc
-export GH_NPM_REGISTRY_TOKEN=ghp_your_token_here
-```
-
-The plugin handles the rest (registry configuration, installation, and updates) on session start.
+For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/skills/issues).
 
 ## Resources
 
 - [UiPath Documentation](https://docs.uipath.com/)
 - [UiPath Community](https://community.uipath.com/)
-- [GitHub Issues](https://github.com/UiPath/uipath-claude-plugins/issues)
 
 ## License
 
-MIT
+[MIT](LICENSE)
