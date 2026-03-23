@@ -1,0 +1,16 @@
+---
+description: "Conventions for editing or creating UiPath skills. Apply when modifying SKILL.md files, references, or assets in the skills/ directory."
+globs: ["skills/**/*.md", "skills/**/SKILL.md"]
+alwaysApply: false
+---
+
+# Skill Editing Conventions
+
+When creating or editing skills:
+
+1. Every skill directory MUST have a `SKILL.md` with YAML frontmatter containing `name` and `description`
+2. The `description` field should clearly state WHEN to trigger and WHEN NOT to trigger
+3. Reference documents go in `references/` subdirectory
+4. Templates and static resources go in `assets/` subdirectory
+5. Executable scripts go in `scripts/` subdirectory
+6. Skills in `skills/experimental/` must include a warning about their experimental status

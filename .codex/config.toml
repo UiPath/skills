@@ -1,0 +1,5 @@
+# Codex CLI project configuration
+# See: https://developers.openai.com/codex/config-basic
+
+# Fall back to CLAUDE.md if AGENTS.md is not found
+project_doc_fallback_filenames = ["CLAUDE.md"]
