@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-workflows
-description: "Full coding assistant for UiPath coded automations — create, edit, build, pack, run, and debug coded workflows, test cases, and project configuration. TRIGGER when: Coded workflow project detected (project.json with UiPath dependencies AND .cs files with [Workflow]/[TestCase] attributes); User references coded workflows, coded automations, coded test cases, or C#-based UiPath automations; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, queues, API calls, Integration Service connectors, etc.) and a UiPath coded workflow project exists nearby; User asks about UiPath activities or how to use them in code; User wants to call an Integration Service connector (Jira, Salesforce, ServiceNow, Slack, etc.) from a coded workflow using IntegrationConnectorService. DO NOT TRIGGER when: User is working with XAML/RPA workflows (use uipath-rpa-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
+description: "Full coding assistant for UiPath coded automations — create, edit, build, pack, run, and debug coded workflows, test cases, and project configuration. TRIGGER when: Coded workflow project detected (project.json with UiPath dependencies AND .cs files with [Workflow]/[TestCase] attributes); User references coded workflows, coded automations, coded test cases, or C#-based UiPath automations; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, queues, API calls, etc.) and a UiPath coded workflow project exists nearby; User asks about UiPath activities or how to use them in code. DO NOT TRIGGER when: User is working with XAML/RPA workflows (use uipath-rpa-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-development instead)."
 ---
 
 # UiPath Coded Workflows Assistant
@@ -111,7 +111,6 @@ Choose your task to find the right reference files:
 | **Add a test case** | [operations-guide.md § Add Test Case](references/operations-guide.md) |
 | **Write UI automation** | [ui-automation.md](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/coded/ui-automation.md) → [operations-guide.md § Indicate](references/operations-guide.md) |
 | **Use Excel/Word/Mail/etc.** | Service table below → activity reference in `../../references/activity-docs/{PackageId}/{Version}/coded/` (e.g. [excel](../../references/activity-docs/UiPath.Excel.Activities/3.5/coded/excel.md), [word](../../references/activity-docs/UiPath.Word.Activities/2.5/coded/word.md), [mail](../../references/activity-docs/UiPath.Mail.Activities/2.8/coded/mail.md), [powerpoint](../../references/activity-docs/UiPath.Presentations.Activities/2.5/coded/powerpoint.md)) |
-| **Call an Integration Service connector** | [references/integration-service.md](references/integration-service.md) — use [uipath-development skill](../uipath-development/SKILL.md) first to resolve connector key, connection id, object name, httpMethod, path, and parameter types. **Before writing any Create/Update call:** run Step 1b in that guide to check for `"type": "multipart"` params in the raw metadata file — if found, pass `multipartParameters: new()` to `ExecuteAsync` |
 | **Use Office 365 / Google** | Service table below → [codedworkflow-reference.md § Integration Service](references/codedworkflow-reference.md) |
 | **Use Azure services** | Service table below → [azure](../../references/activity-docs/UiPath.Azure.Activities/1.7/coded/azure.md) |
 | **Use Google Cloud (GCP)** | Service table below → [google-cloud](../../references/activity-docs/UiPath.GoogleCloud.Activities/2.5/coded/google-cloud.md) |
@@ -150,14 +149,6 @@ These packages are typically included in most projects. **Always check `project.
 | `system` | `UiPath.System.Activities` `[25.12.2]` |
 | `testing` | `UiPath.Testing.Activities` `[25.10.0]` |
 | `uiAutomation` | `UiPath.UIAutomation.Activities` `[25.10.21]` |
-
-### Integration Service package (add when calling connectors from code)
-
-| API Class | Required Package in `project.json` | Reference |
-|---|---|---|
-| `IntegrationConnectorService` | `UiPath.IntegrationService.Activities` `[1.24.0]` | [references/integration-service.md](references/integration-service.md) |
-
-Use `IntegrationConnectorService.Create(services.Container).ExecuteAsync(...)` to call any connector (Jira, Salesforce, ServiceNow, Slack, etc.) directly. Requires the connector key, connection id, object name, HTTP method, path, and parameter buckets — all resolved up-front via the `uipath-development` skill.
 
 ### Domain-specific packages (add only when needed)
 These packages provide the `excel`, `word`, `powerpoint`, `mail`, `office365`, and `google` services. Add them to `project.json` `dependencies` when the workflow uses the corresponding service.
