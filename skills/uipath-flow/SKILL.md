@@ -121,7 +121,7 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
 | **Wire nodes with edges** | [references/flow-file-format.md - Edges](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip flow registry search <keyword>` |
-| **Pack / publish / deploy** | [/uipath:uipath-development](/uipath:uipath-development) |
+| **Pack / publish / deploy** | [/uipath:uipath-platform](/uipath:uipath-platform) |
 
 ## Key Concepts
 
@@ -155,4 +155,4 @@ Always use `--format json` for programmatic use. The `--localstorage-file` warni
 
 - **[.flow File Format](references/flow-file-format.md)** — Full JSON schema, node/edge structure, common node types, ports, and examples
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
-- **[Pack / Publish / Deploy](/uipath:uipath-development)** — Packaging and Orchestrator deployment (uipath-development skill)
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Packaging and Orchestrator deployment (uipath-platform skill)

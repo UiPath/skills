@@ -44,7 +44,7 @@ uip flow pack <ProjectDir> <OutputDir> --format json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-For publishing the package to Orchestrator, see [uipath-development](/uipath:uipath-development).
+For publishing the package to Orchestrator, see [uipath-platform](/uipath:uipath-platform).
 
 ## uip flow debug
 

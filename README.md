@@ -48,24 +48,43 @@ The repository contains skills for building and managing UiPath automation proje
 | **uipath-coded-workflows** | Create, edit, build, and run UiPath coded automations (.cs) with activity references for 20+ packages |
 | **uipath-rpa-workflows** | Generate and edit RPA workflows (XAML) in UiPath Studio Desktop with discovery-first approach |
 | **uipath-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
-| **uipath-development** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
+| **uipath-platform** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
+| **uipath-coded-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
 | **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
 
-## Claude Code
+## Multi-Tool Support
 
-This repository also works as a **Claude Code plugin**. If you use [Claude Code](https://docs.anthropic.com/en/docs/claude-code), you can install skills as a plugin marketplace for direct access to slash commands.
+This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor IDE**.
 
-### Add the marketplace
+### Claude Code
+
+This repository works as a **Claude Code plugin**. Install skills as a plugin marketplace for direct access to slash commands.
 
 ```bash
+# Add the marketplace
 claude plugin marketplace add https://github.com/UiPath/skills
-```
 
-### Install the plugin
-
-```bash
+# Install the plugin
 claude plugin install uipath@uipath-marketplace
 ```
+
+### OpenAI Codex CLI
+
+This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+
+> **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
+> ```bash
+> git clone -c core.symlinks=true https://github.com/UiPath/skills
+> ```
+> If you've already cloned without symlink support, re-enable and re-checkout:
+> ```bash
+> git config core.symlinks true
+> git checkout -- .
+> ```
+
+### Cursor IDE
+
+Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
 
 ## Contributing
 
