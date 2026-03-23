@@ -36,7 +36,7 @@ Comprehensive UiPath automation plugin for Claude Code — covering coded workfl
 
 | Agent | Description |
 |-------|-------------|
-| **Project Discovery** (`uipath-project-discovery`) | Auto-discovers project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggers automatically when a UiPath project is detected and no context file exists. Can also be triggered manually by asking to "regenerate project context." |
+| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
 
 ## Coded Workflows
 

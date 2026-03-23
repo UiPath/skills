@@ -1,6 +1,6 @@
 {
   "name": "uipath",
-  "version": "0.0.12",
+  "version": "0.0.15",
   "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath RPA workflows, UI automation, and UI testing",
   "author": {
     "name": "UiPath"
@@ -9,6 +9,5 @@
   "homepage": "https://github.com/UiPath/skills",
   "repository": "https://github.com/UiPath/skills",
   "keywords": ["uipath", "automation", "rpa", "workflows", "code", "xaml", "studio", "ui-automation", "ui-testing", "desktop", "browser"],
-  "skills": "./skills/",
-  "agents": "./agents/"
+  "skills": "./skills/"
 }

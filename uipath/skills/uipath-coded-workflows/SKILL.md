@@ -19,6 +19,17 @@ Full coding assistant for creating, editing, managing and running UiPath coded a
 - User wants to **add helper/utility classes** or models to a project (Coded Source Files)
 - User wants to **validate, build, pack and run** a coded workflow project
 
+## Precondition: Project Context
+
+Before doing any work, check if `.claude/rules/project-context.md` exists in the project directory.
+If it does **NOT** exist:
+1. Trigger the `uipath-project-discovery-agent` and wait for it to complete
+2. The agent returns the generated context document as its response
+3. Write the returned content to **both**:
+   - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
+   - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
+4. Then proceed with the skill workflow
+
 ## Quick Start
 
 **Step 0 — Resolve `PROJECT_DIR` first** (applies to ALL operations below):
