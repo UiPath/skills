@@ -6,21 +6,8 @@
   },
   "plugins": [
     {
-      "name": "uipath-coded-agents",
-      "source": "./uipath-coded-agents",
-      "description": "Create, run, and evaluate UiPath coded agents with AI-powered assistance",
-      "version": "0.0.1",
-      "author": {
-        "name": "UiPath"
-      },
-      "homepage": "https://github.com/UiPath/skills",
-      "repository": "https://github.com/UiPath/skills",
-      "license": "MIT",
-      "keywords": ["uipath", "automation", "rpa", "agent", "evaluation"]
-    },
-    {
       "name": "uipath",
-      "source": "./uipath",
+      "source": ".",
       "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, and UI testing",
       "version": "0.0.8",
       "author": {

@@ -1,0 +1,47 @@
+---
+description: "UiPath Agent Skills repository structure and conventions"
+globs: ""
+alwaysApply: true
+---
+
+# UiPath Agent Skills
+
+This repository contains domain knowledge packages (skills) for building, running, testing, and deploying UiPath automations and agents.
+
+## Repository Structure
+
+- `skills/` — All skills, each in its own directory with a `SKILL.md` and optional `references/`, `assets/`, `scripts/` subdirectories
+- `skills/experimental/` — Experimental skills under active development. Always confirm with the user before using.
+- `references/activity-docs/` — UiPath activity package documentation
+- `hooks/` — Session hooks (ensure-uip.sh)
+- `.claude-plugin/` — Claude Code plugin + marketplace registration
+- `.agents/` — Codex CLI skill discovery (symlinks to `skills/`)
+- `.codex/` — Codex CLI project configuration
+- `.cursor/rules/` — Cursor IDE project rules
+
+## Skills
+
+### Core Skills (in `skills/`)
+- **uipath-coded-workflows** — C# coded automation creation, editing, building, and running
+- **uipath-rpa-workflows** — XAML RPA workflow generation and editing
+- **uipath-flow** — JSON-based Flow project creation and debugging
+- **uipath-development** — Authentication, Orchestrator, deployment, CLI tools
+- **uipath-servo** — Desktop and browser UI automation and testing
+
+### Experimental Skills (in `skills/experimental/`)
+- **uipath-coded-agents** — End-to-end toolkit for coded agents (scaffold, build, run, evaluate, deploy, sync)
+
+## Skill Format
+
+Each skill directory contains:
+- `SKILL.md` — YAML frontmatter (`name`, `description`) + markdown instructions
+- `references/` — Domain documentation and guides
+- `assets/` — Templates and resources
+- `scripts/` — Automation scripts
+
+## Conventions
+
+- Skills use YAML frontmatter with `name` and `description` fields
+- The `description` field explains when the skill should and should not trigger
+- Reference docs are markdown files organized by domain area
+- Experimental skills require explicit user confirmation before use
