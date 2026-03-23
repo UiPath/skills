@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Plan: {{PROJECT_NAME}}</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #fafafa;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.25rem; }
+        .summary { font-size: 1.05rem; color: #444; margin-bottom: 1.5rem; }
+        .diagram-container {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th { background: #f5f5f5; font-weight: 600; }
+        tr:hover td { background: #f9f9f9; }
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .tag-connector { background: #dbeafe; color: #1e40af; }
+        .tag-script { background: #fef3c7; color: #92400e; }
+        .tag-control { background: #e0e7ff; color: #3730a3; }
+        .tag-trigger { background: #d1fae5; color: #065f46; }
+        .tag-agent { background: #ede9fe; color: #5b21b6; }
+        .required { color: #dc2626; font-weight: 600; }
+        .found { color: #16a34a; }
+        .missing { color: #dc2626; }
+        .section-note {
+            background: #fffbeb;
+            border-left: 3px solid #f59e0b;
+            padding: 0.75rem 1rem;
+            margin: 0.75rem 0;
+            font-size: 0.9rem;
+        }
+        .metadata { color: #888; font-size: 0.85rem; margin-top: 3rem; }
+    </style>
+</head>
+<body>
+    <h1>Flow Plan: {{PROJECT_NAME}}</h1>
+    <p class="summary">{{SUMMARY}}</p>
+
+    <h2>Flow Diagram</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+{{MERMAID_DIAGRAM}}
+        </pre>
+    </div>
+
+    <!--
+        MERMAID TIPS for large flows (20+ nodes):
+        - Use subgraph blocks to group related nodes:
+            subgraph Ingestion
+                A[Read Emails] --> B[Parse Body]
+            end
+        - Use direction TB (top-bottom) for vertical flows, LR for horizontal
+        - Node shapes: [rectangle], {diamond/decision}, ([rounded]), [[subroutine]]
+        - Edge labels: A -->|"label"| B
+        - Style subgraphs: style Ingestion fill:#f0f9ff,stroke:#3b82f6
+    -->
+
+    <h2>Nodes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Node Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!--
+                EXAMPLE ROW — replace with actual nodes:
+                <tr>
+                    <td>1</td>
+                    <td>Read Emails</td>
+                    <td><span class="tag tag-connector">connector</span></td>
+                    <td>uipath.outlook.mail.read</td>
+                    <td>Reads unread emails from the configured Outlook inbox</td>
+                </tr>
+
+                Tag classes: tag-connector, tag-script, tag-control, tag-trigger, tag-agent
+            -->
+            {{NODE_ROWS}}
+        </tbody>
+    </table>
+
+    <h2>Connector Details</h2>
+    <!--
+        OMIT THIS SECTION if the flow has no connector nodes.
+    -->
+    <table>
+        <thead>
+            <tr>
+                <th>Node</th>
+                <th>Connector Key</th>
+                <th>Operation</th>
+                <th>Required Inputs</th>
+                <th>Connection</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!--
+                EXAMPLE ROW:
+                <tr>
+                    <td>Read Emails</td>
+                    <td>uipath-microsoft365-mail</td>
+                    <td>List Messages</td>
+                    <td>folderId, maxResults</td>
+                    <td><span class="found">Found (id: abc-123)</span></td>
+                </tr>
+                <tr>
+                    <td>Post to Slack</td>
+                    <td>uipath-slack-connector</td>
+                    <td>Send Message</td>
+                    <td>channel, text</td>
+                    <td><span class="missing">Not found — user must create</span></td>
+                </tr>
+            -->
+            {{CONNECTOR_ROWS}}
+        </tbody>
+    </table>
+
+    <h2>Inputs & Outputs</h2>
+    <table>
+        <thead>
+            <tr><th>Direction</th><th>Name</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <!--
+                EXAMPLE:
+                <tr><td>Input</td><td>triggeredBy</td><td>Timer (5 min)</td><td>Scheduled trigger</td></tr>
+                <tr><td>Output</td><td>processedCount</td><td>number</td><td>Number of emails processed</td></tr>
+            -->
+            {{IO_ROWS}}
+        </tbody>
+    </table>
+
+    <!-- INCLUDE THIS SECTION ONLY IF THERE ARE OPEN QUESTIONS -->
+    <h2>Open Questions</h2>
+    <div class="section-note">
+        <!--
+            EXAMPLE:
+            <p><span class="required">[REQUIRED]</span> Which Slack channel should notifications be posted to?</p>
+            <p><span class="required">[REQUIRED]</span> Should the flow filter by email sender or subject line?</p>
+        -->
+        {{OPEN_QUESTIONS}}
+    </div>
+
+    <p class="metadata">Generated by UiPath Flow skill &mdash; refresh this page after plan updates</p>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: "default", flowchart: { useMaxWidth: true, htmlLabels: true } });</script>
+</body>
+</html>
