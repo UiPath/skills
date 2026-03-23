@@ -1,6 +1,5 @@
 ---
 name: uipath-flow
-user_invocable: true
 description: "This skill should be used when the user wants to 'create a new Flow project', 'scaffold a flow with uip flow init', 'add a node to my flow', 'connect nodes in my flow', 'validate a .flow file', 'debug a flow', 'run a flow', 'discover flow node types', or when the user is editing a .flow file, wiring nodes and edges, working with definitions or ports, or asks about the .flow JSON format or uip flow CLI commands."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep

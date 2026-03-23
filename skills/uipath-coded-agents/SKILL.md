@@ -2,7 +2,6 @@
 name: uipath-coded-agents
 description: "End-to-end toolkit for UiPath coded agents: scaffold projects, authenticate with UiPath Cloud, build agents using LangGraph/LlamaIndex/OpenAI Agents SDK, manage bindings, run locally, evaluate with built-in evaluators, deploy to Orchestrator, and sync with Studio Web. TRIGGER when: User wants to create, build, run, evaluate, or deploy a UiPath coded agent (Python); User mentions coded agents, Python agents, LangGraph, LlamaIndex, OpenAI Agents in a UiPath context; User asks about agent scaffolding, agent evaluation, agent deployment to Orchestrator, or Studio Web sync for agents; User asks about UiPath Python SDK, uipath CLI for agents, bindings.json, or agent entry points. DO NOT TRIGGER when: User is working with coded workflows (.cs files with [Workflow]/[TestCase] attributes — use uipath-coded-workflows instead); User is working with XAML/RPA workflows (use uipath-rpa-workflows instead); User asks about Orchestrator management without agent context (use uipath-platform instead)."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
-user-invocable: true
 ---
 
 # UiPath Coded Agents

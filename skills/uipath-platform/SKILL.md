@@ -1,6 +1,5 @@
 ---
 name: uipath-platform
-user_invocable: true
 description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets, queues, storage buckets), solution lifecycle (pack, publish, deploy), Integration Service, resources management, Test Manager, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes, storage buckets); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service (connectors, connections, activities, resources); User wants to manage resources (assets, queues, queue items, storage buckets, bucket files); User wants to use Test Manager (projects, test sets, test cases, executions, results, reports); User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
 metadata: 
    allowed-tools: Bash, Read, Write, Glob, Grep
