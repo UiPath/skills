@@ -50,7 +50,7 @@ RIGHT:  uip rpa-legacy validate "C:/Projects/MyProject/Main.xaml" --format json
 | **Search for activities** | `Bash`: `uip rpa-legacy find-activities <project-path> --query "..." --format json` | `<project-path>` (required), `--query`, `--tags`, `--limit` (default 50) |
 | **Search with type info** | `Bash`: `uip rpa-legacy find-activities <project-path> --query "..." --include-type-definitions --format json` | Adds full type definitions for argument types |
 | **Inspect a .NET type** | `Bash`: `uip rpa-legacy type-definition <project-path> --type "FullyQualifiedTypeName" --format json` | `<project-path>` (required), `--type` (full or simple name) |
-| **Search NuGet for packages** | `Bash`: `uip rpa-legacy find-package --query "..." --format json` | `--query` (required), `--limit` (default 20) |
+| **Search NuGet for packages** | `Bash`: `uip rpa-legacy find-package --query "..." --format json` | `--query` (required), `--limit` (default: 50) |
 
 ### find-activities
 
@@ -147,7 +147,7 @@ Activity packages (tagged `UiPathActivities`) are returned first. Searches all e
 | Parameter | Description |
 |-----------|-------------|
 | `--query <search>` | Search term to match against package name and description (required) |
-| `-l, --limit <count>` | Maximum results per feed (default: 20) |
+| `-l, --limit <count>` | Maximum results (default: 50) |
 
 After finding a package, add it to `dependencies` in project.json. Then `find-activities` will index its activities.
 
