@@ -46,6 +46,7 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`. See [Step 1.2](../
 | **Get JIT type definitions** | `Read` tool on `{projectRoot}/.project/JitCustomTypesSchema.json` | File path |
 | **Install/update packages** | `Bash`: `uip rpa install-or-update-packages --packages '[{"id":"..."}]'` | `--packages` (JSON array; `version` optional — omit to auto-resolve latest) |
 | **Run workflow** | `Bash`: `uip rpa run-file --file-path "..." [--input-arguments '...'] [--log-level ...]` | `--file-path` (required), `--input-arguments` (JSON), `--log-level` |
+| **Debug workflow** | `Bash`: `uip rpa run-file --file-path "..." --command StartDebugging --format json` then use `StepOver`, `StepInto`, `Continue`, `Stop`, etc. | `--command` (debug command), `--input-arguments` (JSON, for StartDebugging). See [debugging.md](debugging.md) for full reference |
 
 ## Project Lifecycle Tools
 
