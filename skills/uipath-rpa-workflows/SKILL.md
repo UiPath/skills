@@ -44,34 +44,43 @@ Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-e
 
 **Always check installed activity docs first** (`{projectRoot}/.local/docs/packages/`) before using the bundled references below. See [Step 1.2](#step-12-discover-activity-documentation-primary-source).
 
-### Determining Package Version for Activity Docs
+### Resolving Packages & Activity Docs
 
-Activity reference docs are versioned by major.minor under `../../references/activity-docs/{PackageId}/{Major.Minor}/activities/`. **Before reading any activity docs, determine the user's installed version:**
+Follow this flow whenever you need to use an activity package:
 
-1. **Read `project.json`** in the user's project directory and find the package in the `dependencies` object:
-   ```json
-   {
-     "dependencies": {
-       "UiPath.Excel.Activities": "[3.3.1]",
-       "UiPath.UIAutomation.Activities": "[25.10.21]",
-       "UiPath.System.Activities": "[25.12.2]"
-     }
-   }
-   ```
-2. **Extract major.minor** from the version string — strip the brackets and drop the patch version:
-   - `[3.3.1]` → `3.3`
-   - `[25.10.21]` → `25.10`
-   - `[2.5.10]` → `2.5`
-3. **List available version folders** for the package:
-   ```
-   Glob: pattern="{PackageId}/*" path="../../references/activity-docs/"
-   ```
-4. **Pick the best match:**
-   - If the exact major.minor folder exists (e.g., `3.3/`) → use it
-   - If not, use the **closest available version that doesn't exceed** the installed version (e.g., installed `3.3`, available folders are `3.5/` → use `3.5/` as it's the closest, but note docs may reference newer APIs)
-   - Fall back to the latest available folder if no lower version exists
+#### Step 1 — Ensure the package is installed
 
-The version numbers in the links throughout this document represent the latest documented version. Always cross-check with the user's actual installed version when available.
+Check `project.json` → `dependencies` for the required package.
+
+- **If the package IS in `project.json`** → note the installed version, proceed to Step 2. You may suggest updating to the latest for the best experience, but **never force an update** — respect the user's current version.
+- **If the package is NOT in `project.json`** → discover and install the latest version:
+
+```bash
+# List latest versions including prerelease/beta (newest first) — DEFAULT
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --format json
+
+# List only stable versions (use when the user explicitly prefers stable)
+uip rpa get-versions --package-id <PackageId> --project-dir "<PROJECT_DIR>" --format json
+
+# Install a specific version
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>","version":"<version>"}]' --project-dir "<PROJECT_DIR>" --format json
+
+# Install without specifying version (auto-resolves: prerelease Studio → latest preview, stable Studio → latest stable)
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --format json
+```
+
+**By default, use `--include-prerelease`** to get the absolute latest version (including beta/preview). Only omit it when the user explicitly asks for stable versions. Always prefer `uip rpa get-versions` over hardcoded version numbers — it queries the actual NuGet feeds configured for the project.
+
+#### Step 2 — Find activity docs (priority order)
+
+Once the package is installed, find the right documentation in this order:
+
+1. **Check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`** — these are auto-generated docs from the installed package version and are always the most accurate match. If present, use them as the **primary source** and stop here.
+2. **Fall back to bundled reference docs** — if `.local/docs/` is missing or doesn't contain docs for this package, look in `../../references/activity-docs/{PackageId}/` and pick the **closest version folder** to what is installed:
+   - Extract major.minor from the installed version (e.g., `[25.10.21]` → `25.10`)
+   - List available doc folders: `ls ../../references/activity-docs/{PackageId}/`
+   - Pick the closest match: exact major.minor if it exists, otherwise the nearest available folder
+   - If the package was just installed (new), use the latest available folder
 
 ### Procedural Reference Files
 
@@ -83,21 +92,31 @@ Detailed procedures extracted from the main workflow phases:
 
 ### Domain Reference Files
 
-For XAML structure, control flow, and domain-specific patterns not covered by activity docs, consult these files (read them on-demand):
+For XAML structure, control flow, and domain-specific patterns not covered by activity docs, consult these files (read them on-demand).
+
+**For all activity package docs below:** always check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/` first — these are auto-generated from the installed package and are the most accurate. Only fall back to the bundled references when `.local/docs/` is unavailable. When using bundled references, pick the version folder closest to what is installed (see [Resolving Packages & Activity Docs § Step 2](#step-2--find-activity-docs-priority-order)).
+
 - **[xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md)** — XAML file anatomy, workflow types, safety rules, common editing operations, reference examples, and ConnectorActivity internals. **CRITICAL: read before generating/creating/editing any XAML.**
-- **[System activities](../../references/activity-docs/UiPath.System.Activities/25.10/activities/overview.md)** — Core control flow activities (Assign, If/Else, For Each, While, Try Catch, etc.) and code integration (InvokeCode, InvokeWorkflow). Per-activity docs in `../../references/activity-docs/UiPath.System.Activities/25.10/activities/` — includes both control flow and invoke-code patterns. InvokeCode is a pragmatic fallback when dedicated activities have unresolvable issues.
+- **System activities** (`UiPath.System.Activities`) — Core control flow activities (Assign, If/Else, For Each, While, Try Catch, etc.) and code integration (InvokeCode, InvokeWorkflow). `.local/docs/` → fallback: `../../references/activity-docs/UiPath.System.Activities/{closest}/activities/`. InvokeCode is a pragmatic fallback when dedicated activities have unresolvable issues.
 - **[common-pitfalls.md](./references/common-pitfalls.md)** — Common pitfalls, constraints, scope requirements, property conflicts, gotchas, and issues that should be known before working with RPA workflows, along with strategies to avoid them
-- **[GSuite activities](../../references/activity-docs/UiPath.GSuite.Activities/3.8/activities/overview.md)** — Google Suite activity patterns: Gmail (send, iterate, get newest, download attachments, label/archive/delete/move/mark-read, auto-reply), Google Sheets (read range, write range, write row, create spreadsheet), Google Drive (get file/folder, list files, iterate folder, upload, download), and Google Calendar (create event). Covers triggers for all services and model types (`GmailMessage`, `GDriveRemoteItem`, `GSuiteEventItem`). Read when working with `UiPath.GSuite.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.GSuite.Activities/3.8/activities/`.
-- **[Document Understanding activities](../../references/activity-docs/UiPath.DocumentUnderstanding.Activities/7.0/activities/overview.md)** — Document Understanding (DU) pipeline activities: classification, extraction, validation, and PDF utilities (ExtractPDFText, GetPDFPageCount, SetPDFPassword, MergePDFs, ExtractPDFPageRange, ExtractPDFImages). Read when working with `UiPath.DocumentUnderstanding.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.DocumentUnderstanding.Activities/7.0/activities/`.
-- **[Word activities](../../references/activity-docs/UiPath.Word.Activities/2.5/activities/overview.md)** — Word document activity patterns: WordApplicationScope (required scope), WordReadText, WordAppendText, WordReplaceText, WordExportToPdf, and other Word manipulation activities. Read when working with `UiPath.Word.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.Word.Activities/2.5/activities/`.
-- **[PowerPoint activities](../../references/activity-docs/UiPath.Presentations.Activities/2.5/activities/overview.md)** — PowerPoint presentation activity patterns: PowerPointApplicationScope (required scope), InsertTextInPresentation, FindAndReplaceTextInPresentation, ReplaceShapeWithMedia, ReplaceShapeWithDataTable, InsertSlide, DeleteSlide, CopyPasteSlide, SavePresentationAsPdf, RunMacro, and related activities. Read when working with `UiPath.Presentations.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.Presentations.Activities/2.5/activities/`.
-- **[Excel activities](../../references/activity-docs/UiPath.Excel.Activities/3.5/activities/overview.md)** — Excel activity patterns for both modern (`ueab:` with `ExcelApplicationCard`/`ExcelProcessScopeX`) and classic (`ui:` standalone) styles. Covers scope containers, iterators (`ExcelForEachRowX`, `ForEachSheetX`), read/write/cell/format/sort/lookup/pivot/chart/VBA activities, and namespace requirements. Read when working with `UiPath.Excel.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.Excel.Activities/3.5/activities/`.
-- **[Outlook Mail activities](../../references/activity-docs/UiPath.Mail.Activities/2.8/activities/overview.md)** — Classic Outlook mail activity patterns: namespaces, `GetOutlookMailMessages`, `MoveOutlookMessage`, `SaveMailAttachments`, `SendOutlookMail` (classic `ui:` prefix), modern `OutlookApplicationCard` scope with `ForEachEmailX`, variable type (`System.Net.Mail.MailMessage`), and IS connection pattern. Read when working with `UiPath.Mail.Activities` Outlook activities (not O365). Per-activity docs in `../../references/activity-docs/UiPath.Mail.Activities/2.8/activities/`.
-- **[Office 365 Outlook activities](../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/overview.md)** — Office 365 Outlook mail activity patterns: namespaces, `SendMailConnections`, `GetNewestEmail`, `DownloadEmailAttachments`, `NewEmailReceived` trigger, filter expressions, and `Office365Message` type. Read when working with `UiPath.MicrosoftOffice365.Activities`. Per-activity docs in `../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/`.
+- **GSuite activities** (`UiPath.GSuite.Activities`) — Gmail, Google Sheets, Google Drive, Google Calendar patterns. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.GSuite.Activities/{closest}/activities/`.
+- **Document Understanding activities** (`UiPath.DocumentUnderstanding.Activities`) — Classification, extraction, validation, PDF utilities. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.DocumentUnderstanding.Activities/{closest}/activities/`.
+- **Word activities** (`UiPath.Word.Activities`) — WordApplicationScope, read/append/replace text, export to PDF. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Word.Activities/{closest}/activities/`.
+- **PowerPoint activities** (`UiPath.Presentations.Activities`) — PowerPointApplicationScope, insert/replace/delete slides. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Presentations.Activities/{closest}/activities/`.
+- **Excel activities** (`UiPath.Excel.Activities`) — Modern and classic styles, scope containers, iterators, read/write/format. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Excel.Activities/{closest}/activities/`.
+- **Outlook Mail activities** (`UiPath.Mail.Activities`) — Classic Outlook mail patterns (not O365). `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Mail.Activities/{closest}/activities/`.
+- **Office 365 Outlook activities** (`UiPath.MicrosoftOffice365.Activities`) — O365 mail patterns, triggers, filter expressions. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/{closest}/activities/`.
 - **[project-structure.md](./references/project-structure.md)** — Project directory layout, project.json schema, common packages
 - **[jit-custom-types-schema.md](./references/jit-custom-types-schema.md)** - How to get JIT custom types of dynamic activities.
-- **[UI Automation activities](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/activities/overview.md)** — UI Automation (UIA) best practices, rules, and XAML examples. **CRITICAL: read before generating/editing any UI Automation workflows.** Per-activity docs in `../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/activities/`.
-- **[UI Automation version notes](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/activities/version-notes.md)** — Version-specific UIA differences (24.10.x vs 25.10+). Read when the installed `UiPath.UIAutomation.Activities` package is below 25.10 — several properties from the main reference don't exist in older versions.
+- **[UI Automation guide](./references/ui-automation-guide.md)** (`UiPath.UIAutomation.Activities`) — UIA overview: selectors, target configuration, Object Repository, indication flow, sub-skills, and common pitfalls. **CRITICAL: read before generating/editing any UI Automation workflows.** For full activity details: `.local/docs/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/`.
+
+#### UI Automation References
+
+For a quick overview of selectors, target configuration, indication flow, and common pitfalls, see [ui-automation-guide.md](./references/ui-automation-guide.md).
+
+The UIA activity-docs version folder may contain additional guides (selector creation, target configuration, CV targeting, selector improvement). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+
+For full activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/`.
 
 ---
 
@@ -465,7 +484,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --f
 - Verify expression syntax matches project language (VB.NET vs C#)
 - Use `uip rpa run-file` for runtime validation if static checks pass
 
-**When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (see [InvokeCode.md](../../references/activity-docs/UiPath.System.Activities/25.10/activities/InvokeCode.md)).
+**When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (find `InvokeCode.md` under the latest version folder in `../../references/activity-docs/UiPath.System.Activities/`).
 
 For detailed procedures (package resolution, JIT types, focus-activity debugging, iteration loop, smoke testing), see **[references/validation-and-fixing.md](./references/validation-and-fixing.md)**.
 
