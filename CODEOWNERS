@@ -5,13 +5,19 @@
 /hooks/ @DragosUnguru
 
 # Activity references
-/references/ @DragosUnguru
+/references/ @DragosUnguru @chandusailella @baishalighosh
 
 # RPA workflows skill
-/skills/uipath-rpa-workflows/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-rpa-workflows/ @DragosUnguru @RaduAna-Maria @chandusailella @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Coded workflows skill
-/skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
-/skills/uipath-platform/ @gabrielavaduva
+/skills/uipath-platform/ @gabrielavaduva @chandusailella @baishalighosh
+
+# Coded agents skill
+/skills/uipath-coded-agents/ @chandusailella
+
+# Flow skill
+/skills/uipath-flow/ @rockymadden @baishalighosh @chandusailella
