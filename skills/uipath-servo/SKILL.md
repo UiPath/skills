@@ -1,12 +1,23 @@
 ---
 name: uipath-servo
 description: "Desktop and browser UI automation via CLI -- click, type, read, verify, screenshot, and extract UI elements. TRIGGER when: user mentions 'servo', any UI interaction or automation intent (desktop or browser), UI testing or verification tasks, taking screenshots of desktop/windows/elements. DO NOT TRIGGER when: pure API/backend work, writing UI code (WPF, WinForms, Java, Qt, HTML/CSS) without intent to test or verify it."
-allowed-tools: Bash(servo:*), Read, Grep
+allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
 ---
 
 # UI Automation with Servo
 
-Servo is a Windows-only CLI tool. Install: `npm install -g @uipath/servo`. Help: `servo --help`.
+> **Servo is a standalone command-line tool.** It is NOT a subcommand of `uip` — you run it directly from your terminal.
+
+**Windows only.** Run via npx or install globally:
+
+```bash
+# Run directly via npx (no install needed)
+npx @uipath/servo --help
+
+# Or install globally, then use the `servo` command
+npm install -g @uipath/servo
+servo --help
+```
 
 ## Quick Start
 
@@ -161,8 +172,7 @@ Use `--framework` with `servo snapshot` to control how the UI tree is scanned.
 Default framework works for most apps. Exceptions — use `--framework UiaOnly` for:
 - WinUI3 apps — modern Windows apps like Windows Terminal, and the redesigned Notepad, Paint, Calculator, Media Player
 - WPF apps — .NET desktop apps with rich UI like Visual Studio, Blend, or any app built with XAML
-- SAP Logon (connection picker)
-- Firefox without the extension (no b-refs) — the default framework may miss page content
+- SAP Logon (only the connection picker)
 
 If a snapshot looks empty or incomplete, try a different framework.
 
