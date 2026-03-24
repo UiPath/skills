@@ -159,7 +159,7 @@ Run validation and fix errors iteratively until the flow is clean.
 uip flow validate flow_files/<ProjectName>.flow --format json
 ```
 
-**Validation loop (max 5 iterations):**
+**Validation loop:**
 1. Run `uip flow validate`
 2. If valid → done, move to Step 8
 3. If errors → read the error messages, fix the `.flow` file
@@ -170,8 +170,6 @@ Common error categories:
 - **Missing definition** — every `type:typeVersion` in nodes needs a matching `definitions` entry
 - **Invalid node/edge references** — `sourceNodeId`/`targetNodeId` must reference existing node `id`s
 - **Duplicate IDs** — node and edge `id`s must be unique
-
-If validation still fails after 5 iterations, stop and report the remaining errors to the user.
 
 ### Step 8 — Debug (cloud) — only when explicitly requested
 
