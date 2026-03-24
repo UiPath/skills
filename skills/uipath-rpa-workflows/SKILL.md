@@ -139,7 +139,7 @@ Ensure Studio Desktop is running, connected, and targeting the correct project. 
 
 **Quick check:** Find `project.json` to establish `{projectRoot}`, run `uip rpa list-instances --format json` to verify Studio, and `uip rpa open-project` if needed.
 
-**Critical — Expression language for new projects:** When creating new Windows target framework projects, always use `VisualBasic` as the expression language (`--expression-language "VisualBasic"`). C# Windows projects have JIT compilation disabled, which causes selector-based UI Automation activities to fail at runtime. See [common-pitfalls.md](./references/common-pitfalls.md) for details.
+**Expression language for new projects:** Prefer `VisualBasic` for Windows target framework projects.
 
 ---
 
