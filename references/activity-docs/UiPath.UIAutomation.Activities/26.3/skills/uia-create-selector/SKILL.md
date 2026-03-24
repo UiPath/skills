@@ -44,7 +44,7 @@ If `$ELEMENT` is not provided, run in **window-only mode** — execute CREATE-1�
 
 ## File Roles
 
-- `TargetCapture.json` — Runtime input consumed by CLI commands (`capture-runtime-data`, `get-default-selector`). Contains the selectors being worked on.
+- `TargetCapture.json` — Runtime input consumed by CLI commands (`snapshot capture`, `get-default-selector`). Contains the selectors being worked on.
 - `TargetDefinition.json` — Output configuration consumed by `configure-target` for Object Repository registration. Contains the final selectors plus metadata (SearchSteps, etc.).
 
 Both files share `WindowSelector` and `PartialSelector` fields, but serve different consumers.
@@ -52,8 +52,8 @@ Both files share `WindowSelector` and `PartialSelector` fields, but serve differ
 ## Error Handling
 
 After every CLI command, check the exit code. If non-zero, show the CLI's stderr/stdout to the user and stop. Common failures:
-- **capture-runtime-data**: application not running, window minimized, or not visible on screen
-- **filter-tree**: tree file missing (prior capture may have failed)
+- **snapshot capture**: application not running, window minimized, or not visible on screen
+- **snapshot filter**: tree file missing (prior capture may have failed)
 - **get-default-selector**: invalid ref or element not found in tree
 
 ## CREATE-1: Capture Top-Level Tree
@@ -89,7 +89,7 @@ Write a minimal `TargetCapture.json` (no window selector yet) using the Write to
 Capture the top-level tree:
 
 ```bash
-"$CLI" selector-intelligence capture-runtime-data --runtime-data-folder-path "$ELEM_FOLDER"
+"$CLI" snapshot capture --folder-path "$ELEM_FOLDER"
 ```
 
 This produces only `TopLevelNodeTreeInfo.json` (top-level windows).
@@ -99,7 +99,7 @@ This produces only `TopLevelNodeTreeInfo.json` (top-level windows).
 View the window tree:
 
 ```bash
-"$CLI" selector-intelligence filter-tree --runtime-data-folder-path "$ELEM_FOLDER" --source window
+"$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --source window
 ```
 
 Read the output file (path printed to stdout). Match `$WINDOW` against window titles and app names (partial, case-insensitive). Browser tabs are labeled `BrowserTab` with `b` prefix refs (e.g., `b3`) — prefer those over native browser windows for web apps. Regular windows use `w` prefix refs (e.g., `w3`).
@@ -110,7 +110,7 @@ If no match, present the list and ask the user.
 ## CREATE-3: Get Window Selector
 
 ```bash
-"$CLI" selector-intelligence get-default-selector --runtime-data-folder-path "$ELEM_FOLDER" --ref $WREF  # append --from-snapshot if $FROM_SNAPSHOT is true
+"$CLI" selector-intelligence get-default-selector --folder-path "$ELEM_FOLDER" --ref $WREF  # append --from-snapshot if $FROM_SNAPSHOT is true
 ```
 
 Save the stdout output as `$WINDOW_SELECTOR`.
@@ -134,7 +134,7 @@ Write or update `$ELEM_FOLDER/TargetDefinition.json`: if the file already exists
 ## CREATE-4: Capture App-Level Tree
 
 ```bash
-"$CLI" selector-intelligence capture-runtime-data --runtime-data-folder-path "$ELEM_FOLDER"
+"$CLI" snapshot capture --folder-path "$ELEM_FOLDER"
 ```
 
 This time `WindowSelector` is set, so it produces:
@@ -152,19 +152,19 @@ Read "$ELEM_FOLDER/ApplicationScreenshot.jpg"
 Get a high-level view of the app tree:
 
 ```bash
-"$CLI" selector-intelligence filter-tree --runtime-data-folder-path "$ELEM_FOLDER" --max-depth 40
+"$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --max-depth 40
 ```
 
 Read the output file to understand the structure. Search for the target element using keywords from `$ELEMENT`:
 
 ```bash
-"$CLI" selector-intelligence filter-tree --runtime-data-folder-path "$ELEM_FOLDER" --query "add to cart"
+"$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --query "add to cart"
 ```
 
 Refine with role filters if needed:
 
 ```bash
-"$CLI" selector-intelligence filter-tree --runtime-data-folder-path "$ELEM_FOLDER" --query "cart" --role "button,link"
+"$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --query "cart" --role "button,link"
 ```
 
 The tree format shows each element as:
@@ -180,7 +180,7 @@ If ambiguous, list candidates and ask the user.
 ## CREATE-6: Get Partial Selector
 
 ```bash
-"$CLI" selector-intelligence get-default-selector --runtime-data-folder-path "$ELEM_FOLDER" --ref $EREF  # append --from-snapshot if $FROM_SNAPSHOT is true
+"$CLI" selector-intelligence get-default-selector --folder-path "$ELEM_FOLDER" --ref $EREF  # append --from-snapshot if $FROM_SNAPSHOT is true
 ```
 
 Save the stdout output as `$PARTIAL_SELECTOR`.
@@ -202,7 +202,7 @@ Write or update `$ELEM_FOLDER/TargetDefinition.json`: if the file already exists
 Now that the partial selector is set, re-capture to get a screenshot with the target element highlighted. The app tree already exists so this only takes the screenshot.
 
 ```bash
-"$CLI" selector-intelligence capture-runtime-data --runtime-data-folder-path "$ELEM_FOLDER"
+"$CLI" snapshot capture --folder-path "$ELEM_FOLDER"
 ```
 
 This overwrites `ApplicationScreenshot.jpg` with a highlighted version. Skips both tree extractions since the files already exist.

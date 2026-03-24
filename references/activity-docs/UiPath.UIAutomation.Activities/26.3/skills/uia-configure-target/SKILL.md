@@ -56,7 +56,6 @@ Write initial `$WORK_FOLDER/TargetDefinition.json` using the Write tool:
 
 ```json
 {
-    "SearchSteps": ["Selector"],
     "SelectionStrategy": "Default"
 }
 ```
@@ -157,7 +156,7 @@ This single call improves whatever is in `TargetCapture.json` — window selecto
 
 Derive a natural-language description of the element from `$ELEMENT` (e.g., `"Submit button in the order form"`). Save as `$SEMANTIC_SELECTOR`.
 
-Read `$WORK_FOLDER/TargetDefinition.json`, set `"SemanticSelector": "$SEMANTIC_SELECTOR"`, and append `"Semantic"` to the `SearchSteps` array. Write back.
+Read `$WORK_FOLDER/TargetDefinition.json`, set `"SemanticSelector": "$SEMANTIC_SELECTOR"`. Write back.
 
 ## TARGET-8: Register in OR
 

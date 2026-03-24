@@ -56,7 +56,7 @@ Write `$WORK_FOLDER/TargetCapture.json` using the Write tool:
 Capture runtime data (tree + screenshot):
 
 ```bash
-"$CLI" selector-intelligence capture-runtime-data --runtime-data-folder-path "$WORK_FOLDER"
+"$CLI" snapshot capture --folder-path "$WORK_FOLDER"
 ```
 
 Set `$WORK_FOLDER` to the created path and continue to IMPROVE-1.
@@ -68,7 +68,7 @@ Set `$WORK_FOLDER` to the created path and continue to IMPROVE-1.
 Run the CLI to get tagged instructions. The output contains `<system_prompt>`, `<user_message>`, and `<schema_config>` tags. 
 
 ```bash
-"$CLI" selector-intelligence get-instructions --runtime-data-folder-path "$WORK_FOLDER" --mode $MODE > "$WORK_FOLDER/selector-instructions.md" 2>&1
+"$CLI" selector-intelligence get-instructions --folder-path "$WORK_FOLDER" --mode $MODE > "$WORK_FOLDER/selector-instructions.md" 2>&1
 ```
 
 Do NOT read this file yourself — the subagent will read it directly.
@@ -110,7 +110,7 @@ After the subagent completes, verify `$WORK_FOLDER/selector-output-claude.json` 
 ## IMPROVE-3: Validate
 
 ```bash
-"$CLI" selector-intelligence validate --runtime-data-folder-path "$WORK_FOLDER" --improve-selector-response-file-path "$WORK_FOLDER/selector-output-claude.json" --mode $MODE > "$WORK_FOLDER/validation-result.txt" 2>&1
+"$CLI" selector-intelligence validate --folder-path "$WORK_FOLDER" --improve-selector-response-file-path "$WORK_FOLDER/selector-output-claude.json" --mode $MODE > "$WORK_FOLDER/validation-result.txt" 2>&1
 ```
 
 **At least one valid:** Read `$WORK_FOLDER/validation-result.txt` to check results (ignore any warning lines before the JSON). Pick the selector with the highest FinalScore. Then read the top-level `reasoning` field from `$WORK_FOLDER/selector-output-claude.json` to extract the root cause and strategy.

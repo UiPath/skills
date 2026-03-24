@@ -86,7 +86,7 @@ If the selector has an `aaname` or `name` attribute, that's often the same text 
 If the tree data exists, optionally check it:
 
 ```bash
-"$CLI" selector-intelligence filter-tree "$ELEM_FOLDER" --query "$ELEMENT_DESC" --max-depth 5
+"$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --query "$ELEMENT_DESC" --max-depth 5
 ```
 
 Read the output to confirm the element's text/name.
