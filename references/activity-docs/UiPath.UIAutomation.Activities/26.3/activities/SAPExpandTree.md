@@ -43,22 +43,22 @@ Expand parent tree to an active node or an active item. After indicating the SAP
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPExpandTree
+  <uix:NSAPExpandTree
       DisplayName="Expand Tree 'Root Node'"
       Item="Root Node/Child Node"
       Version="V5">
-    <ua:NSAPExpandTree.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPExpandTree.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiTree' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPExpandTree.Target>
-  </ua:NSAPExpandTree>
-</ua:NApplicationCard>
+    </uix:NSAPExpandTree.Target>
+  </uix:NSAPExpandTree>
+</uix:NApplicationCard>
 ```
 
 ## Notes

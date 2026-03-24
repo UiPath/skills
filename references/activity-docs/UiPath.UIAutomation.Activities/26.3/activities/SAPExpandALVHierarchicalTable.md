@@ -46,23 +46,23 @@ Use the activity to identify any cell inside SAP ALV Hierarchical Table. After t
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPExpandALVHierarchicalTable
+  <uix:NSAPExpandALVHierarchicalTable
       DisplayName="Expand ALV Hierarchical Table"
       ColumnNameLevel0="Order Number"
       ColumnValueLevel0="[orderNumber]"
       Version="V5">
-    <ua:NSAPExpandALVHierarchicalTable.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPExpandALVHierarchicalTable.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiALVGrid' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPExpandALVHierarchicalTable.Target>
-  </ua:NSAPExpandALVHierarchicalTable>
-</ua:NApplicationCard>
+    </uix:NSAPExpandALVHierarchicalTable.Target>
+  </uix:NSAPExpandALVHierarchicalTable>
+</uix:NApplicationCard>
 ```
 
 ## Notes

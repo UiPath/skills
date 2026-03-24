@@ -40,17 +40,17 @@ Use the activity to log into an SAP system.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPLogin
+  <uix:NSAPLogin
       DisplayName="SAP Login"
       Username="[username]"
       Client="800"
       Language="EN"
       Version="V5" />
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

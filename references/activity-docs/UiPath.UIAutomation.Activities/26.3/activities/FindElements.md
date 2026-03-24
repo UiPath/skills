@@ -42,23 +42,23 @@ Gets the child elements of the specified UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NFindElements
+  <uix:NFindElements
       DisplayName="Find Elements"
       Mode="Descendants"
       Children="[foundElements]"
       Version="V5">
-    <ua:NFindElements.Target>
-      <ua:TargetAnchorable
+    <uix:NFindElements.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='UL' id='list' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NFindElements.Target>
-  </ua:NFindElements>
-</ua:NApplicationCard>
+    </uix:NFindElements.Target>
+  </uix:NFindElements>
+</uix:NApplicationCard>
 ```
 
 ## Notes

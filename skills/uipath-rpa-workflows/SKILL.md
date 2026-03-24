@@ -11,9 +11,9 @@ This skill uses `uip` CLI commands (via `Bash`) and Claude Code's built-in tools
 
 ## Core Principles
 
-1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. They eliminate guesswork and are more reliable than examples or CLI-retrieved defaults. Always check for them first; push for package updates if unavailable, or fallback to `get-default-activity-xaml` and/or `get-workflow-example`.
+1. **Activity Docs Are the Source of Truth (for properties)** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and XAML examples. They eliminate guesswork for property configuration. Always check for them first; push for package updates if unavailable, or fallback to `get-default-activity-xaml` and/or `get-workflow-example`. **Caveat:** Activity doc XAML examples may use incorrect `xmlns` prefixes (e.g., CLR namespace instead of schema URI for UIA activities). Always cross-check `xmlns` declarations against `get-default-activity-xaml` output. For scope/container activities (like `NApplicationCard`), always run `get-default-activity-xaml` first to get the structural skeleton (Body, ActivityAction, required sub-objects), then fill in property values from the activity docs.
 2. **Know Before You Write** — Never generate XAML blind. Never try to guess properties, types, or configurations. Understand the project structure, what packages are installed, what expression language is used, and what patterns existing workflows follow. The deeper your understanding, the fewer validation cycles you'll need.
-3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file — don't enumerate all packages first. If activity docs give you a complete XAML example, don't also call `get-default-activity-xaml`. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
+3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file — don't enumerate all packages first. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist. **Exception:** For scope/container activities (`NApplicationCard`, `ExcelApplicationCard`, etc.), always run `get-default-activity-xaml` even when activity docs have XAML examples — scope activities have structural requirements (Body, ActivityAction, delegate arguments) that doc examples may omit or simplify.
 4. **Start Minimal, Iterate to Correct** — Build one activity at a time. Write the smallest working XAML, validate with `uip rpa get-errors`, fix what breaks, repeat. Start with what you know works (default or example values, configurations). Complex workflows emerge from validated building blocks, not from generating everything at once.
 5. **Validate After Every Change** — Never assume an edit succeeded. Always confirm with `uip rpa get-errors`. Static validation catches most problems; `run-file` catches the rest.
 6. **Fix Errors by Category** — Triage errors in order: Package (missing dependencies) → Structure (invalid XML) → Type (wrong property types) → Activity Properties (misconfigured activity) → Logic (wrong behavior). Fixing in this order avoids cascading false errors.
@@ -395,6 +395,14 @@ When the workflow involves Integration Service connectors (dynamic activities), 
 ### Guidelines for both CREATE and EDIT:
 Apply Core Principles: consult activity docs first, read relevant [reference files](./references/) for XAML structure and patterns, start minimal and iterate.
 
+### UI Automation Workflows — Target Configuration Gate
+
+**Before writing any XAML that contains UI activities** (Click, TypeInto, GetText, etc.), every UI element target must be configured through the `uia-configure-target` skill flow. This means: for each distinct element the workflow interacts with, read and follow the `uia-configure-target` skill steps (found in the UIA activity-docs). The skill handles snapshot capture, element discovery, selector generation, selector improvement, and Object Repository registration. All steps must complete — do not stop after getting a raw selector.
+
+**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't tracked in the project.
+
+**Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps (CREATE-1 + CREATE-2) capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
+
 ### For CREATE Requests
 
 **Strategy:** Generate minimal working version, expect to iterate. Take it one activity at a time. Build incrementally and validate frequently.
@@ -519,6 +527,7 @@ For CLI error diagnosis and recovery patterns (IPC failures, auth errors, packag
 ## Anti-Patterns
 
 **Never** (items not already covered by Core Principles):
+- Manually craft UI selectors by calling low-level `uip rpa uia` CLI commands (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) outside of the `uia-configure-target` skill flow — this skips selector improvement and OR registration
 - Generate large, complex workflows in one go — build incrementally, one activity at a time
 - Assume a create/edit succeeded without validating with `uip rpa get-errors`
 - Stop the iteration loop before correctly rendering all activities
@@ -546,6 +555,11 @@ Before handover, verify:
 - [ ] Local project explored for existing patterns and conventions
 - [ ] Service/provider disambiguation resolved — auto-selected or prompted only when ambiguous (Step 1.5)
 - [ ] For connector workflows: connections verified with `uip is connections list`
+
+**UI Automation Targets (if applicable):**
+- [ ] Every UI element target configured through the `uia-configure-target` skill flow (not raw CLI commands)
+- [ ] Selectors improved (selector improvement step completed, not just raw `get-default-selector` output)
+- [ ] All targets registered in the Object Repository (screens and elements created via OR commands)
 
 **XAML Content Quality:**
 - [ ] VB.NET or C# syntax matches project language (checked existing workflows)

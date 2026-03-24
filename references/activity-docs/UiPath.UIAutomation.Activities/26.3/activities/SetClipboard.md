@@ -41,18 +41,18 @@ Sets the system's Clipboard data to the given text.
 ## XAML Example
 
 ```xml
-<ua:NSetClipboard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NSetClipboard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Set Clipboard"
     Text="[textToCopy]"
     Version="V5">
-  <ua:NSetClipboard.Target>
-    <ua:TargetAnchorable
+  <uix:NSetClipboard.Target>
+    <uix:TargetAnchorable
         FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
         SearchSteps="Selector"
         Version="V6" />
-  </ua:NSetClipboard.Target>
-</ua:NSetClipboard>
+  </uix:NSetClipboard.Target>
+</uix:NSetClipboard>
 ```
 
 ## Notes

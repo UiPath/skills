@@ -28,23 +28,23 @@ Setup a trigger on a given event on the indicated UI Element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NNativeEventTrigger
+  <uix:NNativeEventTrigger
       DisplayName="Application Event Trigger"
       IncludeChildren="True"
       Version="V5">
-    <ua:NNativeEventTrigger.Target>
-      <ua:TargetAnchorable
+    <uix:NNativeEventTrigger.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='content' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NNativeEventTrigger.Target>
+    </uix:NNativeEventTrigger.Target>
     <!-- Handler activities go here -->
-  </ua:NNativeEventTrigger>
-</ua:NApplicationCard>
+  </uix:NNativeEventTrigger>
+</uix:NApplicationCard>
 ```
 
 ## Notes

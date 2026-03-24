@@ -41,19 +41,19 @@ Suppress keyboard/mouse input until the set key combination is pressed, or timeo
 ## XAML Example
 
 ```xml
-<ua:NBlockUserInput
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NBlockUserInput
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Block User Input"
     BlockType="Both"
     Version="V5">
-  <ua:NBlockUserInput.Target>
-    <ua:TargetAnchorable
+  <uix:NBlockUserInput.Target>
+    <uix:TargetAnchorable
         FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
         SearchSteps="Selector"
         Version="V6" />
-  </ua:NBlockUserInput.Target>
+  </uix:NBlockUserInput.Target>
   <!-- Activities to execute while input is blocked -->
-</ua:NBlockUserInput>
+</uix:NBlockUserInput>
 ```
 
 ## Notes

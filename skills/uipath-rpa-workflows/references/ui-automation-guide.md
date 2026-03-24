@@ -28,36 +28,57 @@ The Object Repository stores reusable screen and element definitions in the `.ob
 
 ---
 
-## Selector & Target Configuration Sub-Skills
+## Configuring Targets (Primary Approach)
 
-For creating, fixing, and configuring selectors and targets, use the CLI commands directly:
+**Always use the `uia-configure-target` skill** to create or find targets in the Object Repository. This skill handles the full flow: snapshot capture, element discovery, selector generation, selector improvement, and OR registration.
 
-```bash
-# Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --project-dir "<PROJECT_DIR>" --format json
+The UIA activity-docs version folder contains the skill files. Discover them by globbing:
+```
+Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"
+```
+These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
 
-# Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
+To configure a target, read and follow the `uia-configure-target` skill:
+- **Window + element:** `--window <description> --element <description>`
+- **Window only:** `--window <description>`
+
+The skill will search the Object Repository for existing matches before creating new entries, generate selectors from the live application tree, and return the OR reference IDs.
+
+### Applying OR References to XAML
+
+After `uia-configure-target` returns reference IDs, apply them to the XAML by setting the `Reference` attribute on the target objects. The `Reference` attribute links the XAML to the OR entry so Studio can sync selector changes. **Selectors are still required** — `Reference` does not replace them.
+
+**On `TargetApp`** (screen reference → from `uia-configure-target --window`):
+```xml
+<uix:TargetApp
+    Reference="<screen_ref_id>"
+    Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    Version="V2" />
 ```
 
-> **Extra references:** The UIA activity-docs version folder may contain additional guides for selector creation, target configuration, CV targeting, and selector improvement. Discover them by globbing:
-> ```
-> Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"
-> ```
-> These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool. Read the relevant `.md` file and follow its instructions manually using the CLI commands.
+**On `TargetAnchorable`** (element reference → from `uia-configure-target --window --element`):
+```xml
+<uix:TargetAnchorable
+    FullSelectorArgument="&lt;uia automationid='btn1' name='Submit' /&gt;"
+    Reference="<element_ref_id>"
+    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    SearchSteps="Selector"
+    Version="V6" />
+```
+
+When an element is reused across multiple activities, use the same `Reference` value on each `TargetAnchorable`. Studio will populate design-time metadata (`ContentHash`, `DesignTimeRectangle`, `Guid`, etc.) automatically when it opens the file — you do not need to set these.
+
+See [Target.md](../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/common/Target.md#using-object-repository-references-in-xaml) for full details.
 
 ---
 
-## Capturing New UI Targets
+## Low-Level Indication Tools (Alternative)
 
-When the Object Repository is empty or missing targets for the workflow, use the CLI indication tools:
+If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable), you can fall back to the raw indication CLI commands. These require user interaction (clicking on the target element) and produce less robust selectors:
 
 ```bash
 # Indicate a screen (creates App automatically if none exists)
 uip rpa indicate-application --name "Dashboard" --project-dir "<PROJECT_DIR>" --format json
-
-# Indicate a screen under an existing App
-uip rpa indicate-application --name "Dashboard" --parent-id "r-xxxxx/yyyyy" --project-dir "<PROJECT_DIR>" --format json
 
 # Indicate an element on a screen
 uip rpa indicate-element --name "SubmitButton" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --project-dir "<PROJECT_DIR>" --format json
@@ -87,7 +108,10 @@ After indication, re-read `.objects/` metadata to get the reference strings for 
 
 ## Common Pitfalls
 
-- **Missing `xmlns:uix`** — every UIA workflow needs `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"`
+- **Wrong xmlns for UIA activities** — use `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"` (schema URI). Do NOT use `xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=..."` (CLR namespace) — it fails to resolve `TargetApp`, `TargetAnchorable`, and the `Body` property. Activity doc XAML examples may show the CLR namespace; always replace with the schema URI.
+- **Missing Body/ActivityAction on NApplicationCard** — child activities must be placed inside `Body > ActivityAction > Sequence`, not directly as children. The `OCREngine` `ActivityFunc` is also required. Always use `get-default-activity-xaml` for `NApplicationCard` to get the correct structural skeleton.
+- **Missing `ScopeSelectorArgument` on `TargetAnchorable`** — every child activity (Click, GetText, etc.) must have `ScopeSelectorArgument` set to the window selector on its `TargetAnchorable`, even when inside an `NApplicationCard` scope. Without it, the activity cannot find the target element at runtime (`NodeNotFoundException`). See [common-pitfalls.md](common-pitfalls.md) for details.
+- **Using `CSharpValue` for selector strings** — selector properties (`FullSelectorArgument`, `ScopeSelectorArgument`, `Selector`) accept plain XML-escaped strings as attribute values. Do NOT wrap them in `CSharpValue` expressions. See [xaml-basics-and-rules.md](xaml-basics-and-rules.md) for the correct pattern.
 - **Wrong Object Repository references** — never copy references from examples; always discover from `.objects/`
 - **SelectItem on web dropdowns** — may fail on custom `<select>` elements; use Type Into as a workaround
 - **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow; use proper selectors first

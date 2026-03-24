@@ -44,26 +44,30 @@ Extracts the text from a specified UI element.
 
 ## XAML Example
 
+Selector properties use plain XML-escaped attribute strings (not `CSharpValue` or `[bracket]` expressions). `ScopeSelectorArgument` (window selector) must be set on every `TargetAnchorable`.
+
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NGetText
+  <uix:NGetText
       DisplayName="Get Text 'Label'"
       Version="V5">
-    <ua:NGetText.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='SPAN' id='labelText' /&gt;&quot;]"
+    <uix:NGetText.Target>
+      <uix:TargetAnchorable
+          FullSelectorArgument="&lt;webctrl tag='SPAN' id='labelText' /&gt;"
+          ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NGetText.Target>
-  </ua:NGetText>
-</ua:NApplicationCard>
+    </uix:NGetText.Target>
+  </uix:NGetText>
+</uix:NApplicationCard>
 ```
 
 ## Notes
 
 - This activity must be placed inside a `UiPath.UIAutomationNext.Activities.NApplicationCard` scope.
 - The `Version` attribute is mandatory and must be set to `V5`.
+- `ScopeSelectorArgument` must be set on the `TargetAnchorable` to match the parent `NApplicationCard`'s window selector. Without it, the Get Text activity will fail at runtime with `NodeNotFoundException`.
 - Assembly: `UiPath.UIAutomationNext.Activities`

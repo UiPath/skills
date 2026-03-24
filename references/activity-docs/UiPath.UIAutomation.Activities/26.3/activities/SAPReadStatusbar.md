@@ -38,16 +38,16 @@ Reads the message displayed in the Status Bar on the bottom of the SAP GUI windo
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPReadStatusbar
+  <uix:NSAPReadStatusbar
       DisplayName="Read Status Bar"
       MessageText="[statusMessage]"
       MessageType="[statusType]"
       Version="V5" />
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

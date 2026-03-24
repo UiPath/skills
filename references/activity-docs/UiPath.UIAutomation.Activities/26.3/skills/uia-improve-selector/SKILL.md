@@ -27,7 +27,7 @@ Extract from `$ARGUMENTS`:
   - **recover** (default): "fix", "broken", "stopped working", "element not found", "recover", "failed"
   - **improve**: "improve", "robust", "optimize", "strengthen", "harden", "resilient"
   - If unclear, default to `recover`.
-- `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files and complete. Used when this skill is called as a sub-step by another skill.
+- `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files. Used when this skill is called as a sub-step by another skill.
 - `--window <selector>` → `$WINDOW_SELECTOR` (optional). The window selector XML.
 - `--partial <selector>` → `$PARTIAL_SELECTOR` (optional). The partial selector XML.
 
@@ -113,7 +113,7 @@ After the subagent completes, verify `$WORK_FOLDER/selector-output-claude.json` 
 "$CLI" selector-intelligence validate --folder-path "$WORK_FOLDER" --improve-selector-response-file-path "$WORK_FOLDER/selector-output-claude.json" --mode $MODE > "$WORK_FOLDER/validation-result.txt" 2>&1
 ```
 
-**At least one valid:** Read `$WORK_FOLDER/validation-result.txt` to check results (ignore any warning lines before the JSON). Pick the selector with the highest FinalScore. Then read the top-level `reasoning` field from `$WORK_FOLDER/selector-output-claude.json` to extract the root cause and strategy.
+**At least one valid:** Read `$WORK_FOLDER/validation-result.txt` to check results. Pick the selector with the highest FinalScore. Then read the top-level `reasoning` field from `$WORK_FOLDER/selector-output-claude.json` to extract the root cause and strategy.
 
 Write or update `$WORK_FOLDER/TargetDefinition.json`: if the file already exists, read it first and preserve all existing fields. Set `"WindowSelector"` to the winning candidate's WindowSelector. If the winning candidate has an EditablePartialSelector, also set `"PartialSelector"` to it.
 

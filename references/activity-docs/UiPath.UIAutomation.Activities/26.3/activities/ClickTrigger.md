@@ -30,24 +30,24 @@ Setup a click event trigger on the indicated UI Element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NClickTrigger
+  <uix:NClickTrigger
       DisplayName="Click Event Trigger"
       Button="Left"
       KeyModifiers="None"
       Version="V5">
-    <ua:NClickTrigger.Target>
-      <ua:TargetAnchorable
+    <uix:NClickTrigger.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='BUTTON' id='action' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NClickTrigger.Target>
+    </uix:NClickTrigger.Target>
     <!-- Handler activities go here -->
-  </ua:NClickTrigger>
-</ua:NApplicationCard>
+  </uix:NClickTrigger>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -45,23 +45,23 @@ Clicks the picture displayed on a SAP GUI screen.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPClickPictureOnScreen
+  <uix:NSAPClickPictureOnScreen
       DisplayName="Click Picture on Screen"
       ClickType="Single"
       ActivateBefore="True"
       Version="V5">
-    <ua:NSAPClickPictureOnScreen.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPClickPictureOnScreen.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiPicture' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPClickPictureOnScreen.Target>
-  </ua:NSAPClickPictureOnScreen>
-</ua:NApplicationCard>
+    </uix:NSAPClickPictureOnScreen.Target>
+  </uix:NSAPClickPictureOnScreen>
+</uix:NApplicationCard>
 ```
 
 ## Notes

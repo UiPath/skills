@@ -44,24 +44,24 @@ Captures and handles browser dialogs such as alert, confirm and prompt.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NBrowserDialogScope
+  <uix:NBrowserDialogScope
       DisplayName="Browser Dialog Scope"
       DialogScopeType="AlertSingle"
       DialogResponse="Accept"
       Version="V5">
-    <ua:NBrowserDialogScope.Target>
-      <ua:TargetAnchorable
+    <uix:NBrowserDialogScope.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='HTML' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NBrowserDialogScope.Target>
+    </uix:NBrowserDialogScope.Target>
     <!-- Place activities that trigger the dialog here -->
-  </ua:NBrowserDialogScope>
-</ua:NApplicationCard>
+  </uix:NBrowserDialogScope>
+</uix:NApplicationCard>
 ```
 
 ## Notes

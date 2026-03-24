@@ -40,8 +40,8 @@ Dismisses all popups that are on top of the application and block a target, usin
 ## XAML Example
 
 ```xml
-<ua:NClosePopup
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NClosePopup
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Close Popup"
     PreferredButtons="[new String() {&quot;OK&quot;, &quot;Close&quot;, &quot;Accept&quot;}]"
     Version="V5" />

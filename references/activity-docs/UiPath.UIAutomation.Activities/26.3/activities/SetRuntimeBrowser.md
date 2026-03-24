@@ -27,9 +27,9 @@ Sets the currently active runtime browser.
 ## XAML Example
 
 ```xml
-<ua:NSetRuntimeBrowser Version="V5" DisplayName="Set Runtime Browser"
+<uix:NSetRuntimeBrowser Version="V5" DisplayName="Set Runtime Browser"
   BrowserType="[NBrowserType.Chrome]">
-</ua:NSetRuntimeBrowser>
+</uix:NSetRuntimeBrowser>
 ```
 
 ## Notes

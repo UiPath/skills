@@ -35,15 +35,15 @@ Select a Menu Item from the main SAP GUI window. After indicating the window, th
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPSelectMenuItem
+  <uix:NSAPSelectMenuItem
       DisplayName="Select Menu Item 'Own Data'"
       Item="System/User Profile/Own Data"
       Version="V5" />
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

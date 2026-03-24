@@ -43,24 +43,24 @@ Captures and handles a browser file picker dialog.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NBrowserFilePickerScope
+  <uix:NBrowserFilePickerScope
       DisplayName="Browser File Picker Scope"
       Mode="SingleFile"
       SingleFilePath="[&quot;C:\Documents\upload.pdf&quot;]"
       Version="V5">
-    <ua:NBrowserFilePickerScope.Target>
-      <ua:TargetAnchorable
+    <uix:NBrowserFilePickerScope.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='HTML' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NBrowserFilePickerScope.Target>
+    </uix:NBrowserFilePickerScope.Target>
     <!-- Place activities that trigger the file picker here -->
-  </ua:NBrowserFilePickerScope>
-</ua:NApplicationCard>
+  </uix:NBrowserFilePickerScope>
+</uix:NApplicationCard>
 ```
 
 ## Notes

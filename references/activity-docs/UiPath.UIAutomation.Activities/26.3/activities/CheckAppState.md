@@ -42,20 +42,20 @@ Ensures the automated app is in a specific state, by verifying if a UI element e
 ## XAML Example
 
 ```xml
-<ua:NCheckState
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NCheckState
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Check App State"
     Mode="WaitAppear"
     Timeout="[5]"
     Exists="[elementExists]"
     Version="V5">
-  <ua:NCheckState.Target>
-    <ua:TargetAnchorable
+  <uix:NCheckState.Target>
+    <uix:TargetAnchorable
         FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='login-form' /&gt;&quot;]"
         SearchSteps="Selector"
         Version="V6" />
-  </ua:NCheckState.Target>
-</ua:NCheckState>
+  </uix:NCheckState.Target>
+</uix:NCheckState>
 ```
 
 ## Notes

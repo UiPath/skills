@@ -44,8 +44,8 @@ Uses AI to seamlessly populate the designated form with information extracted fr
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     xmlns:semantic="clr-namespace:UiPath.Semantic.Activities;assembly=UiPath.UIAutomationNext.Activities"
     DisplayName="Use Application/Browser"
     Version="V2">
@@ -54,13 +54,13 @@ Uses AI to seamlessly populate the designated form with information extracted fr
       DataSource="[myDataObject]"
       Version="V5">
     <semantic:NFillForm.Target>
-      <ua:TargetAnchorable
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='FORM' id='registrationForm' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
     </semantic:NFillForm.Target>
   </semantic:NFillForm>
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

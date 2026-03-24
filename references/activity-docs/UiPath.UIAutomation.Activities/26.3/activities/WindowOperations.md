@@ -46,22 +46,22 @@ Perform various operations on the specified window element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NWindowOperation
+  <uix:NWindowOperation
       DisplayName="Window Operation - Maximize"
       Operation="Maximize"
       Version="V5">
-    <ua:NWindowOperation.Target>
-      <ua:TargetAnchorable
+    <uix:NWindowOperation.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NWindowOperation.Target>
-  </ua:NWindowOperation>
-</ua:NApplicationCard>
+    </uix:NWindowOperation.Target>
+  </uix:NWindowOperation>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -40,22 +40,22 @@ Checks if an element is enabled or disabled.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NCheckElement
+  <uix:NCheckElement
       DisplayName="Check Element 'Submit'"
       Result="[isEnabled]"
       Version="V5">
-    <ua:NCheckElement.Target>
-      <ua:TargetAnchorable
+    <uix:NCheckElement.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='BUTTON' id='submit' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NCheckElement.Target>
-  </ua:NCheckElement>
-</ua:NApplicationCard>
+    </uix:NCheckElement.Target>
+  </uix:NCheckElement>
+</uix:NApplicationCard>
 ```
 
 ## Notes

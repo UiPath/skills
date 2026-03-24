@@ -33,16 +33,16 @@ Navigates to the specified URL in the indicated web browser.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NGoToUrl
+  <uix:NGoToUrl
       DisplayName="Go To URL"
       Url="https://www.example.com"
       Version="V5"
     />
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -43,23 +43,23 @@ Visually highlights a specified UI element by surrounding it in a box.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NHighlight
+  <uix:NHighlight
       DisplayName="Highlight 'Content'"
       HighlightTime="[2]"
       Color="Red"
       Version="V5">
-    <ua:NHighlight.Target>
-      <ua:TargetAnchorable
+    <uix:NHighlight.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='main-content' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NHighlight.Target>
-  </ua:NHighlight>
-</ua:NApplicationCard>
+    </uix:NHighlight.Target>
+  </uix:NHighlight>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -42,22 +42,22 @@ Expand parent ALV tree to the selected node. After indicating the SAP node eleme
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPExpandALVTree
+  <uix:NSAPExpandALVTree
       DisplayName="Expand ALV Tree"
       Path="Root/Child Node"
       Version="V5">
-    <ua:NSAPExpandALVTree.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPExpandALVTree.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiALVGrid' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPExpandALVTree.Target>
-  </ua:NSAPExpandALVTree>
-</ua:NApplicationCard>
+    </uix:NSAPExpandALVTree.Target>
+  </uix:NSAPExpandALVTree>
+</uix:NApplicationCard>
 ```
 
 ## Notes

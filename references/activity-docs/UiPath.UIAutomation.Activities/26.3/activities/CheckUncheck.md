@@ -43,22 +43,22 @@ Used to check, uncheck, or toggle a checkbox.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NCheck
+  <uix:NCheck
       DisplayName="Check 'Agree to Terms'"
       Action="Check"
       Version="V5">
-    <ua:NCheck.Target>
-      <ua:TargetAnchorable
+    <uix:NCheck.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' type='checkbox' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NCheck.Target>
-  </ua:NCheck>
-</ua:NApplicationCard>
+    </uix:NCheck.Target>
+  </uix:NCheck>
+</uix:NApplicationCard>
 ```
 
 ## Notes

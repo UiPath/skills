@@ -2,6 +2,65 @@
 
 Common pitfalls that cause validation errors or runtime failures.
 
+## Wrong xmlns for UIA Activities (Schema URI vs CLR Namespace)
+
+**Error:** `Could not find type 'UiPath.UIAutomationNext.Activities.TargetApp'`, `Could not find type 'UiPath.UIAutomationNext.Activities.TargetAnchorable'`, `Could not find member 'Implementation'`
+
+**Root cause:** UIA activities require the **schema URI** xmlns, not the CLR namespace. Using the CLR namespace fails to resolve `TargetApp`, `TargetAnchorable`, and the `Body` property on `NApplicationCard`.
+
+**Wrong** (CLR namespace — does not resolve sub-types):
+```xml
+xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+```
+
+**Correct** (schema URI — resolves all UIA types):
+```xml
+xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+```
+
+Always use the xmlns from `get-default-activity-xaml` output. If activity doc XAML examples use a CLR-based xmlns, replace it with the schema URI above.
+
+## NApplicationCard Requires Body/ActivityAction Pattern
+
+**Error:** `Could not find member 'Implementation'` when placing child activities directly inside `NApplicationCard`.
+
+**Root cause:** `NApplicationCard` is a scope activity that requires child activities to be wrapped in `Body > ActivityAction > Sequence`. Placing activities directly as children creates implicit `Implementation` member assignments that don't exist.
+
+**Wrong:**
+```xml
+<uix:NApplicationCard DisplayName="Use Application/Browser" Version="V2">
+  <uix:NClick DisplayName="Click" Version="V5" />
+</uix:NApplicationCard>
+```
+
+**Correct:**
+```xml
+<uix:NApplicationCard AttachMode="ByInstance" DisplayName="Use Application/Browser" HealingAgentBehavior="Job" Version="V2">
+  <uix:NApplicationCard.Body>
+    <ActivityAction x:TypeArguments="x:Object">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Do">
+        <uix:NClick DisplayName="Click" Version="V5" />
+      </Sequence>
+    </ActivityAction>
+  </uix:NApplicationCard.Body>
+  <uix:NApplicationCard.OCREngine>
+    <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+      <ActivityFunc.Argument>
+        <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+      </ActivityFunc.Argument>
+    </ActivityFunc>
+  </uix:NApplicationCard.OCREngine>
+  <uix:NApplicationCard.TargetApp>
+    <uix:TargetApp Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;" Version="V2" />
+  </uix:NApplicationCard.TargetApp>
+</uix:NApplicationCard>
+```
+
+The `OCREngine` `ActivityFunc` is required even when OCR is not used. Always use `get-default-activity-xaml` for `NApplicationCard` to get the full structural skeleton.
+
 ## Container/Scope Requirements
 
 These activities **must** be placed inside a specific parent scope:
@@ -72,6 +131,59 @@ Some properties are only required when another property has a specific value:
 | ExchangeScope (Interactive auth) | `AuthenticationMode = Interactive` | `ApplicationId` must be set |
 | ExchangeScope | `ApplicationId` is set | `DirectoryId` must also be set (and vice versa — both or neither) |
 | WordApplicationScope | `CreateNewFile = true` | Path must be local (not a URL) |
+
+## Missing `ScopeSelectorArgument` on `TargetAnchorable`
+
+**Error:** `NodeNotFoundException: Could not find the user-interface (UI) element for this action.` at runtime, even though the selectors look correct and the element is visible on screen.
+
+**Root cause:** Every `TargetAnchorable` on a child activity (Click, GetText, TypeInto, etc.) must have `ScopeSelectorArgument` set to the window selector — even when the activity is inside an `NApplicationCard` scope that already has the correct `TargetApp.Selector`. The `NApplicationCard` does not automatically propagate its window selector to child activities' `TargetAnchorable` targets.
+
+**Wrong — missing `ScopeSelectorArgument`:**
+```xml
+<uix:NClick.Target>
+  <uix:TargetAnchorable
+      FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+      SearchSteps="Selector"
+      Version="V6" />
+</uix:NClick.Target>
+```
+
+**Correct — `ScopeSelectorArgument` set to the window selector:**
+```xml
+<uix:NClick.Target>
+  <uix:TargetAnchorable
+      FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+      ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+      SearchSteps="Selector"
+      Version="V6" />
+</uix:NClick.Target>
+```
+
+**Note:** This error is not caught by `get-errors` (static validation passes). It only manifests at runtime when the activity tries to find the element.
+
+## Using `CSharpValue` for Selector Literal Strings
+
+**Error:** Selectors wrapped in `CSharpValue` expressions may cause unexpected behavior or overly complex XAML.
+
+**Root cause:** Selector properties (`FullSelectorArgument`, `ScopeSelectorArgument`, `Selector` on `TargetApp`) are `InArgument<string>` and accept plain XML-escaped literal strings as attribute values via XAML TypeConverters. Wrapping them in `CSharpValue` is unnecessary and adds complexity.
+
+**Wrong — unnecessarily wrapped in CSharpValue:**
+```xml
+<uix:TargetAnchorable.FullSelectorArgument>
+  <InArgument x:TypeArguments="x:String">
+    <CSharpValue x:TypeArguments="x:String">"&lt;uia automationid='submitBtn' /&gt;"</CSharpValue>
+  </InArgument>
+</uix:TargetAnchorable.FullSelectorArgument>
+```
+
+**Correct — plain attribute string:**
+```xml
+<uix:TargetAnchorable
+    FullSelectorArgument="&lt;uia automationid='submitBtn' /&gt;"
+    ... />
+```
+
+Use `CSharpValue`/`CSharpReference` only for actual expressions (variable references, concatenation, method calls), not for literal string values.
 
 ## Input Method Constraints (UIAutomation)
 
@@ -206,6 +318,20 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
 
 Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
+
+## System Activities (`ui:`) vs UIA Activities (`uix:`) Prefix Confusion
+
+**Error:** `Could not find type 'NLogMessage' in namespace 'http://schemas.uipath.com/workflow/activities/uix'`
+
+**Root cause:** When building UI Automation workflows, all the surrounding activities use the `uix:` prefix. It's easy to assume system activities like `LogMessage`, `Assign`, or `If` also live under `uix:`. They don't — they use the `ui:` prefix (`xmlns:ui="http://schemas.uipath.com/workflow/activities"`), and some (like `Assign`, `If`, `Sequence`) use no prefix at all (default XAML activities namespace).
+
+| Activity | Correct prefix | xmlns |
+|----------|---------------|-------|
+| LogMessage, WriteLine, InvokeWorkflow | `ui:` | `http://schemas.uipath.com/workflow/activities` |
+| NApplicationCard, NClick, NGetText, NTypeInto | `uix:` | `http://schemas.uipath.com/workflow/activities/uix` |
+| Assign, If, Sequence, ForEach, TryCatch | (none) | default `http://schemas.microsoft.com/netfx/2009/xaml/activities` |
+
+**Prevention:** Use `uip rpa find-activities` or `uip rpa get-default-activity-xaml` to confirm the correct namespace before using an activity. Do not assume prefix based on surrounding activities.
 
 ## Portable vs Windows Framework Limitations
 

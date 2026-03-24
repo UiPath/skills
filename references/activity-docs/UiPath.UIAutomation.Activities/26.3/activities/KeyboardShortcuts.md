@@ -49,23 +49,23 @@ Sends one or more keyboard shortcuts to a UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NKeyboardShortcuts
+  <uix:NKeyboardShortcuts
       DisplayName="Keyboard Shortcuts"
       Shortcuts="ctrl+a"
       ActivateBefore="True"
       Version="V5">
-    <ua:NKeyboardShortcuts.Target>
-      <ua:TargetAnchorable
+    <uix:NKeyboardShortcuts.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' type='text' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NKeyboardShortcuts.Target>
-  </ua:NKeyboardShortcuts>
-</ua:NApplicationCard>
+    </uix:NKeyboardShortcuts.Target>
+  </uix:NKeyboardShortcuts>
+</uix:NApplicationCard>
 ```
 
 ## Notes

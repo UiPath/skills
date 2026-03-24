@@ -44,22 +44,22 @@ Executes JavaScript code in the context of the web page corresponding to a UiEle
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NInjectJsScript
+  <uix:NInjectJsScript
       DisplayName="Inject Js Script"
       ScriptCode="[&quot;return document.title;&quot;]"
       Version="V5">
-    <ua:NInjectJsScript.Target>
-      <ua:TargetAnchorable
+    <uix:NInjectJsScript.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='HTML' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NInjectJsScript.Target>
-  </ua:NInjectJsScript>
-</ua:NApplicationCard>
+    </uix:NInjectJsScript.Target>
+  </uix:NInjectJsScript>
+</uix:NApplicationCard>
 ```
 
 ## Notes

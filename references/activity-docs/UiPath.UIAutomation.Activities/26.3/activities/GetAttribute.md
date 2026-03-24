@@ -43,23 +43,23 @@ Retrieves the value of a specified attribute of the indicated UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NGetAttributeGeneric
+  <uix:NGetAttributeGeneric
       DisplayName="Get Attribute 'href'"
       Attribute="[&quot;href&quot;]"
       Result="[attributeValue]"
       Version="V5">
-    <ua:NGetAttributeGeneric.Target>
-      <ua:TargetAnchorable
+    <uix:NGetAttributeGeneric.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='A' class='link' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NGetAttributeGeneric.Target>
-  </ua:NGetAttributeGeneric>
-</ua:NApplicationCard>
+    </uix:NGetAttributeGeneric.Target>
+  </uix:NGetAttributeGeneric>
+</uix:NApplicationCard>
 ```
 
 ## Notes

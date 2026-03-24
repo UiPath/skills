@@ -52,25 +52,25 @@ Enters text in a specified UI element, for example a text box.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NTypeInto
+  <uix:NTypeInto
       DisplayName="Type Into 'Text'"
       Text="[inputText]"
       ActivateBefore="True"
       ClickBeforeMode="Single"
       EmptyFieldMode="SingleLine"
       Version="V5">
-    <ua:NTypeInto.Target>
-      <ua:TargetAnchorable
+    <uix:NTypeInto.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' type='text' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NTypeInto.Target>
-  </ua:NTypeInto>
-</ua:NApplicationCard>
+    </uix:NTypeInto.Target>
+  </uix:NTypeInto>
+</uix:NApplicationCard>
 ```
 
 ## Notes

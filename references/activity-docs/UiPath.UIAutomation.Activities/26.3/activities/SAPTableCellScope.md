@@ -46,24 +46,24 @@ A container that enables you to attach to an existing Table UI element and perfo
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPTableCellScope
+  <uix:NSAPTableCellScope
       DisplayName="Table Cell Scope 'Material'"
       ColumnName="Material"
       RowIndex="[1]"
       Version="V5">
-    <ua:NSAPTableCellScope.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPTableCellScope.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiTableControl' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPTableCellScope.Target>
+    </uix:NSAPTableCellScope.Target>
     <!-- Child activities go here -->
-  </ua:NSAPTableCellScope>
-</ua:NApplicationCard>
+  </uix:NSAPTableCellScope>
+</uix:NApplicationCard>
 ```
 
 ## Notes

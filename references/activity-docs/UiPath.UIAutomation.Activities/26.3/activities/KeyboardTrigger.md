@@ -30,24 +30,24 @@ Setup a key pressed event trigger on the indicated UI Element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NKeyboardTrigger
+  <uix:NKeyboardTrigger
       DisplayName="Keypress Event Trigger"
       Key="Enter"
       KeyModifiers="None"
       Version="V5">
-    <ua:NKeyboardTrigger.Target>
-      <ua:TargetAnchorable
+    <uix:NKeyboardTrigger.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' id='search' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NKeyboardTrigger.Target>
+    </uix:NKeyboardTrigger.Target>
     <!-- Handler activities go here -->
-  </ua:NKeyboardTrigger>
-</ua:NApplicationCard>
+  </uix:NKeyboardTrigger>
+</uix:NApplicationCard>
 ```
 
 ## Notes

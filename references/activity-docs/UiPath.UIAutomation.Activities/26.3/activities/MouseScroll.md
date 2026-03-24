@@ -50,23 +50,23 @@ Sends mouse scroll events to the specified UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NMouseScroll
+  <uix:NMouseScroll
       DisplayName="Mouse Scroll 'Content'"
       Direction="Down"
       MovementUnits="[3]"
       Version="V5">
-    <ua:NMouseScroll.Target>
-      <ua:TargetAnchorable
+    <uix:NMouseScroll.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' class='scrollable' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NMouseScroll.Target>
-  </ua:NMouseScroll>
-</ua:NApplicationCard>
+    </uix:NMouseScroll.Target>
+  </uix:NMouseScroll>
+</uix:NApplicationCard>
 ```
 
 ## Notes

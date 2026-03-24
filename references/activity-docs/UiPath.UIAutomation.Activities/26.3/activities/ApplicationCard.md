@@ -66,30 +66,60 @@ Configure auto-dismissal of JavaScript dialogs.
 **XAML nested element syntax:**
 
 ```xml
-<ua:NApplicationCard.DialogHandling>
-  <ua:DialogHandling
+<uix:NApplicationCard.DialogHandling>
+  <uix:DialogHandling
       DismissAlerts="{x:Null}"
       DismissConfirms="{x:Null}"
       DismissPrompts="{x:Null}"
       ConfirmDialogResponse="{x:Null}"
       PromptDialogResponse="{x:Null}"
       PromptDialogResponseText="{x:Null}" />
-</ua:NApplicationCard.DialogHandling>
+</uix:NApplicationCard.DialogHandling>
 ```
 
 ## XAML Example
 
+Child activities must be placed inside the `Body > ActivityAction > Sequence` structure. The `OCREngine` and `TargetApp` sub-objects are also required.
+
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+    xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common"
+    xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives"
+    xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+    AttachMode="ByInstance"
     DisplayName="Use Application/Browser"
+    HealingAgentBehavior="Job"
     Version="V2">
-  <!-- Child activities go here -->
-</ua:NApplicationCard>
+  <uix:NApplicationCard.Body>
+    <ActivityAction x:TypeArguments="x:Object">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Do">
+        <!-- Child activities (Click, Type Into, Get Text, etc.) go here -->
+      </Sequence>
+    </ActivityAction>
+  </uix:NApplicationCard.Body>
+  <uix:NApplicationCard.OCREngine>
+    <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+      <ActivityFunc.Argument>
+        <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+      </ActivityFunc.Argument>
+    </ActivityFunc>
+  </uix:NApplicationCard.OCREngine>
+  <uix:NApplicationCard.TargetApp>
+    <uix:TargetApp
+        Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+        Version="V2" />
+  </uix:NApplicationCard.TargetApp>
+</uix:NApplicationCard>
 ```
 
 ## Notes
 
-- This activity is a scope/container activity. Place child activities (Click, Type Into, etc.) inside the body.
+- This activity is a scope/container activity. Child activities must be placed inside `Body > ActivityAction > Sequence`.
+- The `Body` property wraps child activities in an `ActivityAction<object>` with a `DelegateInArgument` named `WSSessionData`.
+- The `OCREngine` `ActivityFunc` is required even if OCR is not used — omitting it causes validation errors.
 - The `Version` attribute is mandatory and must be set to `V2`.
 - Assembly: `UiPath.UIAutomationNext.Activities`

@@ -56,22 +56,22 @@ These properties are bidirectional: the activity reads the incoming value **and*
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NExtractDataGeneric
+  <uix:NExtractDataGeneric
       DisplayName="Extract Table Data"
       ExtractMetadata="[extractMetadataXml]"
       Version="V5">
-    <ua:NExtractDataGeneric.Target>
-      <ua:TargetAnchorable
+    <uix:NExtractDataGeneric.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='TABLE' id='dataGrid' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NExtractDataGeneric.Target>
-  </ua:NExtractDataGeneric>
-</ua:NApplicationCard>
+    </uix:NExtractDataGeneric.Target>
+  </uix:NExtractDataGeneric>
+</uix:NApplicationCard>
 ```
 
 ## Notes

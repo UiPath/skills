@@ -41,18 +41,18 @@ Gets the system's Clipboard data.
 ## XAML Example
 
 ```xml
-<ua:NGetClipboard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NGetClipboard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Get Clipboard"
     Result="[clipboardText]"
     Version="V5">
-  <ua:NGetClipboard.Target>
-    <ua:TargetAnchorable
+  <uix:NGetClipboard.Target>
+    <uix:TargetAnchorable
         FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
         SearchSteps="Selector"
         Version="V6" />
-  </ua:NGetClipboard.Target>
-</ua:NGetClipboard>
+  </uix:NGetClipboard.Target>
+</uix:NGetClipboard>
 ```
 
 ## Notes

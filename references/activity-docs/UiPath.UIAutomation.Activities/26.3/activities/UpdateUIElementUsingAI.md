@@ -44,8 +44,8 @@ Uses AI to seamlessly update a UI element's state/value.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     xmlns:semantic="clr-namespace:UiPath.Semantic.Activities;assembly=UiPath.UIAutomationNext.Activities"
     DisplayName="Use Application/Browser"
     Version="V2">
@@ -54,13 +54,13 @@ Uses AI to seamlessly update a UI element's state/value.
       Value="[valueToSet]"
       Version="V5">
     <semantic:NSetValue.Target>
-      <ua:TargetAnchorable
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' id='email' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
     </semantic:NSetValue.Target>
   </semantic:NSetValue>
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

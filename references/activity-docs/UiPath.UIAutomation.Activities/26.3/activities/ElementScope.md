@@ -38,22 +38,22 @@ A container that enables you to attach to an existing UI element and perform mul
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NElementScope
+  <uix:NElementScope
       DisplayName="Element Scope"
       Version="V5">
-    <ua:NElementScope.Target>
-      <ua:TargetAnchorable
+    <uix:NElementScope.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='panel' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NElementScope.Target>
+    </uix:NElementScope.Target>
     <!-- Child activities go here -->
-  </ua:NElementScope>
-</ua:NApplicationCard>
+  </uix:NElementScope>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -17,7 +17,7 @@ The target system defines how UI Automation activities locate application window
 | `RegionOffset` | Area | `RegionOffset` | The offset values for the area used to perform the action. |
 | `ElementVisibilityArgument` | Visibility check | `InArgument<NElementVisibility>` | When enabled, the activity also checks whether the UI element is visible or not. |
 | `IsResponsive` | Responsive websites | `bool` | Enable responsive websites layout. Default: `false`. |
-| `ScopeSelectorArgument` | Window selector (Application instance) | `InArgument<string>` | Selector for the application window. Only applicable when Window attach mode is set to Application instance. |
+| `ScopeSelectorArgument` | Window selector (Application instance) | `InArgument<string>` | **Required for reliable targeting.** The window selector that identifies the application window. Must be set on every `TargetAnchorable` — even when the activity is inside an `NApplicationCard` scope. Without it, the activity cannot locate the target element at runtime (`NodeNotFoundException`). Set it to the same selector used in the parent `NApplicationCard`'s `TargetApp.Selector`. |
 | `WaitForReadyArgument` | Wait for page load | `InArgument<NWaitForReady>` | Before performing the action, wait for the application to become ready to accept input. The options are: None - does not wait for the target to be ready; Interactive - waits until only a part of the app is loaded; Complete - waits for the entire app to be loaded. **Project setting.** |
 | `SemanticSelectorArgument` | Semantic selector | `InArgument<string>` | A semantic description that defines the target. |
 
@@ -41,38 +41,70 @@ The target system defines how UI Automation activities locate application window
 | `CvTextOccurrenceArgument` | CV Text occurrence | `InArgument<int>` | Indicates a specific occurrence to be used, when multiple matches are found. Default value is 0, meaning no specific occurrence will be used. |
 | `CvTextAccuracyArgument` | CV Text accuracy | `InArgument<double>` | Indicates the accuracy level for OCR text matching. Default value is 0.7. |
 
+### Object Repository Properties
+
+| Property | Display Name | Type | Description |
+|----------|-------------|------|-------------|
+| `Reference` | OR Reference | `string` | Object Repository reference ID linking this target to an element registered in `.objects/`. Format: `<library>/<selection>/<version>/<screen>/<element>`. When set, Studio syncs selector changes from the OR entry. The selectors (`FullSelectorArgument`, `ScopeSelectorArgument`) are still used at runtime — `Reference` is the OR linkage, not a replacement for selectors. |
+| `ContentHash` | Content hash | `string` | Hash of the OR entry content. Used by Studio to detect when the OR entry has changed. |
+| `Guid` | GUID | `string` | Unique identifier for this target instance in the workflow. |
+| `ElementType` | Element type | `string` | UI element type (e.g., `Button`, `Text`, `CheckBox`). Design-time metadata from the OR. |
+| `DesignTimeRectangle` | Design-time rectangle | `string` | Bounding box of the element at design time (`x, y, width, height`). Design-time metadata. |
+| `DesignTimeScaleFactor` | Design-time scale | `string` | DPI scale factor at design time. Design-time metadata. |
+
 ### XAML Syntax
 
+Use plain XML-escaped attribute strings for selector properties. Do NOT wrap selectors in `CSharpValue` or `[bracket]` expressions — they are literal strings, not expressions.
+
 ```xml
-<uia:TargetAnchorable Version="V6">
-  <uia:TargetAnchorable.PointOffset>
-    <uia:PointOffset />
-  </uia:TargetAnchorable.PointOffset>
-  <uia:TargetAnchorable.RegionOffset>
-    <uia:RegionOffset />
-  </uia:TargetAnchorable.RegionOffset>
-  <uia:TargetAnchorable.ElementVisibilityArgument>
+<!-- Without OR reference (inline selectors only) -->
+<uix:TargetAnchorable
+    FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    SearchSteps="Selector"
+    Version="V6" />
+
+<!-- With OR reference (selectors + link to Object Repository element) -->
+<uix:TargetAnchorable
+    FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+    Reference="ulW7.../cmDZJ049506fyLJLXd7dIA"
+    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    SearchSteps="Selector"
+    Version="V6" />
+```
+
+Expanded syntax (only needed for non-literal, expression-driven values):
+
+```xml
+<uix:TargetAnchorable Version="V6">
+  <uix:TargetAnchorable.PointOffset>
+    <uix:PointOffset />
+  </uix:TargetAnchorable.PointOffset>
+  <uix:TargetAnchorable.RegionOffset>
+    <uix:RegionOffset />
+  </uix:TargetAnchorable.RegionOffset>
+  <uix:TargetAnchorable.ElementVisibilityArgument>
     <InArgument x:TypeArguments="uia:NElementVisibility" />
-  </uia:TargetAnchorable.ElementVisibilityArgument>
-  <uia:TargetAnchorable.WaitForReadyArgument>
+  </uix:TargetAnchorable.ElementVisibilityArgument>
+  <uix:TargetAnchorable.WaitForReadyArgument>
     <InArgument x:TypeArguments="uia:NWaitForReady" />
-  </uia:TargetAnchorable.WaitForReadyArgument>
-  <uia:TargetAnchorable.SemanticSelectorArgument>
+  </uix:TargetAnchorable.WaitForReadyArgument>
+  <uix:TargetAnchorable.SemanticSelectorArgument>
     <InArgument x:TypeArguments="x:String" />
-  </uia:TargetAnchorable.SemanticSelectorArgument>
-  <uia:TargetAnchorable.FullSelectorArgument>
+  </uix:TargetAnchorable.SemanticSelectorArgument>
+  <uix:TargetAnchorable.FullSelectorArgument>
     <InArgument x:TypeArguments="x:String">[selector]</InArgument>
-  </uia:TargetAnchorable.FullSelectorArgument>
-  <uia:TargetAnchorable.FuzzySelectorArgument>
+  </uix:TargetAnchorable.FullSelectorArgument>
+  <uix:TargetAnchorable.FuzzySelectorArgument>
     <InArgument x:TypeArguments="x:String">[fuzzySelector]</InArgument>
-  </uia:TargetAnchorable.FuzzySelectorArgument>
-  <uia:TargetAnchorable.ImageAccuracyArgument>
+  </uix:TargetAnchorable.FuzzySelectorArgument>
+  <uix:TargetAnchorable.ImageAccuracyArgument>
     <InArgument x:TypeArguments="x:Double">0.8</InArgument>
-  </uia:TargetAnchorable.ImageAccuracyArgument>
-  <uia:TargetAnchorable.NativeTextArgument>
+  </uix:TargetAnchorable.ImageAccuracyArgument>
+  <uix:TargetAnchorable.NativeTextArgument>
     <InArgument x:TypeArguments="x:String">[text]</InArgument>
-  </uia:TargetAnchorable.NativeTextArgument>
-</uia:TargetAnchorable>
+  </uix:TargetAnchorable.NativeTextArgument>
+</uix:TargetAnchorable>
 ```
 
 ## TargetApp
@@ -88,44 +120,94 @@ The target system defines how UI Automation activities locate application window
 | `Arguments` | Arguments | `InArgument<string>` | Parameters to pass to the target application at startup. Used only when opening a new application or browser instance. |
 | `Url` | URL | `InArgument<string>` | The URL of the web page to open. |
 | `WorkingDirectory` | Working directory | `InArgument<string>` | Path of the current working directory. |
+| `Reference` | OR Reference | `string` | Object Repository reference ID linking this target to a screen registered in `.objects/`. Format: `<library>/<selection>/<version>/<screen>`. When set, Studio syncs selector changes from the OR entry. The `Selector` property is still used at runtime. |
+| `ContentHash` | Content hash | `string` | Hash of the OR entry content. Design-time metadata managed by Studio. |
+| `Area` | Area | `string` | Window position and size at design time (`x, y, width, height`). Design-time metadata. |
+| `InformativeScreenshot` | Screenshot | `string` | Filename of the screen screenshot stored in `.screenshots/`. Design-time metadata. |
 
 ### XAML Syntax
 
+Use plain XML-escaped attribute strings for selector properties:
+
 ```xml
-<uia:TargetApp Version="V2">
-  <uia:TargetApp.Selector>
+<!-- Without OR reference -->
+<uix:TargetApp
+    Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    Version="V2" />
+
+<!-- With OR reference (selector + link to Object Repository screen) -->
+<uix:TargetApp
+    Reference="ulW7.../B_nfvc4lj0aNIoz-5nodeg"
+    Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    Version="V2" />
+```
+
+Expanded syntax (only needed for non-literal, expression-driven values):
+
+```xml
+<uix:TargetApp Version="V2">
+  <uix:TargetApp.Selector>
     <InArgument x:TypeArguments="x:String">[selector]</InArgument>
-  </uia:TargetApp.Selector>
-  <uia:TargetApp.FilePath>
+  </uix:TargetApp.Selector>
+  <uix:TargetApp.FilePath>
     <InArgument x:TypeArguments="x:String">[filePath]</InArgument>
-  </uia:TargetApp.FilePath>
-  <uia:TargetApp.Arguments>
+  </uix:TargetApp.FilePath>
+  <uix:TargetApp.Arguments>
     <InArgument x:TypeArguments="x:String">[arguments]</InArgument>
-  </uia:TargetApp.Arguments>
-  <uia:TargetApp.Url>
+  </uix:TargetApp.Arguments>
+  <uix:TargetApp.Url>
     <InArgument x:TypeArguments="x:String">[url]</InArgument>
-  </uia:TargetApp.Url>
-  <uia:TargetApp.WorkingDirectory>
+  </uix:TargetApp.Url>
+  <uix:TargetApp.WorkingDirectory>
     <InArgument x:TypeArguments="x:String">[workingDirectory]</InArgument>
-  </uia:TargetApp.WorkingDirectory>
-</uia:TargetApp>
+  </uix:TargetApp.WorkingDirectory>
+</uix:TargetApp>
 ```
 
 ## Configure a TargetAnchorable
 
-To configure a TargetAnchorable for an activity, use the [`uia-configure-target`](../../skills/uia-configure-target/SKILL.md) skill with both `--window` and `--element` flags:
+To configure a TargetAnchorable for an activity, spawn a general-purpose subagent with the following prompt (replace `$VARIABLES` with actual values):
 
-```
-/uia-configure-target --window <description> --element <description>
-```
+> Read the skill file at `uia-configure-target/SKILL.md` (resolve relative to this file's directory: `../../skills/uia-configure-target/SKILL.md`) and execute it with these arguments: `--window $WINDOW --elements $ELEMENTS`
+
+To configure multiple elements on the same screen in a single invocation, separate them with `|`. This captures the window once and reuses it for all elements:
+
+> `--window $WINDOW --elements "element one | element two | element three"`
 
 ## Configure a TargetApp
 
-To configure a TargetApp, use the [`uia-configure-target`](../../skills/uia-configure-target/SKILL.md) skill with only the `--window` flag:
+To configure a TargetApp (window only, no elements), spawn a general-purpose subagent with the following prompt:
 
+> Read the skill file at `uia-configure-target/SKILL.md` (resolve relative to this file's directory: `../../skills/uia-configure-target/SKILL.md`) and execute it with these arguments: `--window $WINDOW`
+
+
+## Using Object Repository References in XAML
+
+After `uia-configure-target` returns screen and element reference IDs, apply them to the XAML as follows:
+
+**1. On `TargetApp`** — set `Reference` to the **screen** reference ID:
+```xml
+<uix:TargetApp
+    Reference="ulW7KVQc9ECQrwRUerqlGA/.../B_nfvc4lj0aNIoz-5nodeg"
+    Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    Version="V2" />
 ```
-/uia-configure-target --window <description>
+
+**2. On `TargetAnchorable`** — set `Reference` to the **element** reference ID:
+```xml
+<uix:TargetAnchorable
+    FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+    Reference="ulW7KVQc9ECQrwRUerqlGA/.../cmDZJ049506fyLJLXd7dIA"
+    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    SearchSteps="Selector"
+    Version="V6" />
 ```
+
+**Key points:**
+- `Reference` links the XAML target to an OR entry — it does **not** replace the selectors. Both `FullSelectorArgument`/`ScopeSelectorArgument` (on TargetAnchorable) and `Selector` (on TargetApp) must still be set. The selectors are the runtime mechanism; `Reference` is the design-time linkage that allows Studio to sync selector changes from the OR.
+- When an element is reused across multiple activities (e.g., clicking the same button twice), use the **same** `Reference` value on each `TargetAnchorable`.
+- Design-time metadata (`ContentHash`, `DesignTimeRectangle`, `Guid`, `Area`, `IconBase64`, `InformativeScreenshot`) is managed by Studio when it opens the file. You do not need to set these — Studio will populate them from the OR entry.
+- If OR references are not needed (e.g., quick one-off automations), inline selectors without `Reference` work fine.
 
 ## Notes
 

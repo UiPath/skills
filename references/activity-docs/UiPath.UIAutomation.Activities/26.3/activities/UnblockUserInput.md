@@ -40,17 +40,17 @@ Unblock keyboard/mouse input that has been previously blocked by a 'Block User I
 ## XAML Example
 
 ```xml
-<ua:NUnblockUserInput
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NUnblockUserInput
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Unblock User Input"
     Version="V5">
-  <ua:NUnblockUserInput.Target>
-    <ua:TargetAnchorable
+  <uix:NUnblockUserInput.Target>
+    <uix:TargetAnchorable
         FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
         SearchSteps="Selector"
         Version="V6" />
-  </ua:NUnblockUserInput.Target>
-</ua:NUnblockUserInput>
+  </uix:NUnblockUserInput.Target>
+</uix:NUnblockUserInput>
 ```
 
 ## Notes

@@ -37,28 +37,28 @@ Iterates over a structured set of UiElements.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NForEachUiElement
+  <uix:NForEachUiElement
       DisplayName="For Each UI Element"
       Version="V5">
-    <ua:NForEachUiElement.Target>
-      <ua:TargetAnchorable
+    <uix:NForEachUiElement.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='TR' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NForEachUiElement.Target>
-    <ua:NForEachUiElement.NextLink>
-      <ua:TargetAnchorable
+    </uix:NForEachUiElement.Target>
+    <uix:NForEachUiElement.NextLink>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='A' class='next-page' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NForEachUiElement.NextLink>
+    </uix:NForEachUiElement.NextLink>
     <!-- Activities to execute for each UI element -->
-  </ua:NForEachUiElement>
-</ua:NApplicationCard>
+  </uix:NForEachUiElement>
+</uix:NApplicationCard>
 ```
 
 ## Notes

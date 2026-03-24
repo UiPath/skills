@@ -108,10 +108,10 @@ Never remove existing `xmlns` attributes from the root `<Activity>` element. Onl
 
 ### Respect Expression Language
 Always check the project's expression language before writing expressions:
-- **CSharp**: Use C# syntax (`+` for string concat, `==` for equality)
-- **VB**: Use VB syntax (`&` for string concat, `=` for equality)
+- **CSharp**: Use C# syntax (`+` for string concat, `==` for equality). Use `<CSharpValue>` for input expressions and `<CSharpReference>` for output bindings — **without a namespace prefix**. Do NOT use `[bracket]` shorthand — brackets create `VisualBasicValue` nodes, causing "multiple languages" validation errors.
+- **VB**: Use VB syntax (`&` for string concat, `=` for equality). Use `[bracket]` shorthand for expressions.
 
-Mixing expression languages causes build failures.
+Mixing expression languages causes build failures. The most common trigger is using `[variable]` in a C# project. See the [Expressions](#expressions) section and [Example 4](#example-4-ui-automation-click--get-text-in-calculator) for correct patterns.
 
 ### Use `uip rpa get-default-activity-xaml` Output
 Never construct activity XAML from memory. The `uip rpa get-default-activity-xaml` command returns the exact XAML needed for the installed package version, including:
@@ -193,6 +193,26 @@ Add `<AssemblyReference>` entries:
 ```
 
 ### Expressions
+
+#### Literal Strings vs Expressions
+
+`InArgument<string>` properties accept **plain literal strings** as attribute values via XAML TypeConverters. No expression wrapper is needed for static values. This is the preferred form for selector strings and other fixed values:
+
+```xml
+<!-- Plain literal string — works in both VB and C# projects -->
+<uix:TargetAnchorable
+    FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    SearchSteps="Selector"
+    Version="V6" />
+
+<!-- TargetApp selector — same plain attribute syntax -->
+<uix:TargetApp
+    Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+    Version="V2" />
+```
+
+Only use `CSharpValue`/`CSharpReference` (C#) or `[bracket]` shorthand (VB) when the value is an **actual expression** — variable references, string concatenation, method calls, etc.
 
 #### C# Projects (default)
 Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReference>` (for write/lvalue) elements inside `<InArgument>` / `<OutArgument>`:
@@ -509,6 +529,121 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
 - `FieldObjects` define input/output fields with `isactr:FieldObject` elements
 - Output types reference a JIT-generated assembly (e.g., `CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3`)
 - The generated assembly name and namespace imports are connector-specific — always use `uip rpa get-default-activity-xaml` output
+
+### Example 4: UI Automation (Click + Get Text in Calculator)
+
+C# project with UI Automation activities. Shows `NApplicationCard` scope with `Body/ActivityAction` pattern, `NClick`, `NGetText` with output binding, and `LogMessage`.
+
+**Critical:** UIA activities use the schema URI `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"` — NOT the CLR namespace `clr-namespace:UiPath.UIAutomationNext.Activities;assembly=...`. Using the CLR namespace fails to resolve `TargetApp`, `TargetAnchorable`, and the `Body` property.
+
+```xml
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common"
+  xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <!-- ... other standard imports ... -->
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <!-- ... other standard references ... -->
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="resultText" />
+    </Sequence.Variables>
+    <!-- NApplicationCard: Body/ActivityAction/Sequence pattern is REQUIRED -->
+    <uix:NApplicationCard AttachMode="ByInstance" DisplayName="Use Application/Browser"
+        HealingAgentBehavior="Job" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do">
+            <!-- Click: ScopeSelectorArgument MUST be set on every TargetAnchorable -->
+            <uix:NClick ActivateBefore="True" ClickType="Single" DisplayName="Click 'Submit'"
+                HealingAgentBehavior="SameAsCard" KeyModifiers="None" MouseButton="Left" Version="V5">
+              <uix:NClick.Target>
+                <uix:TargetAnchorable
+                    FullSelectorArgument="&lt;uia automationid='submitBtn' name='Submit' /&gt;"
+                    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+                    SearchSteps="Selector" Version="V6" />
+              </uix:NClick.Target>
+            </uix:NClick>
+            <!-- GetText with output binding to variable -->
+            <uix:NGetText DisplayName="Get Text 'Result'" HealingAgentBehavior="SameAsCard" Version="V5">
+              <uix:NGetText.Target>
+                <uix:TargetAnchorable
+                    FullSelectorArgument="&lt;uia automationid='resultLabel' role='text' /&gt;"
+                    ScopeSelectorArgument="&lt;wnd app='myapp.exe' title='My App' /&gt;"
+                    SearchSteps="Selector" Version="V6" />
+              </uix:NGetText.Target>
+              <uix:NGetText.Text>
+                <OutArgument x:TypeArguments="x:String">
+                  <CSharpReference x:TypeArguments="x:String">resultText</CSharpReference>
+                </OutArgument>
+              </uix:NGetText.Text>
+            </uix:NGetText>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Selector="&lt;wnd app='myapp.exe' title='My App' /&gt;" Version="V2" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+    <!-- LogMessage: Message is InArgument<object>, not InArgument<string> -->
+    <ui:LogMessage DisplayName="Log Result" Level="Info">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <CSharpValue x:TypeArguments="x:Object">"Result: " + resultText</CSharpValue>
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+  </Sequence>
+</Activity>
+```
+
+**Key patterns:**
+- `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"` — **must** use the schema URI, not `clr-namespace:UiPath.UIAutomationNext.Activities;assembly=...`
+- `NApplicationCard.Body` wraps children in `ActivityAction<x:Object>` with `DelegateInArgument Name="WSSessionData"`
+- `NApplicationCard.OCREngine` with `ActivityFunc` is required even when OCR is not used
+- Every `TargetAnchorable` requires `ScopeSelectorArgument` set to the window selector — omitting it causes `NodeNotFoundException` at runtime
+- Selectors are plain XML-escaped attribute strings — do NOT use `CSharpValue` wrappers
+- `LogMessage.Message` is `InArgument<x:Object>`, not `InArgument<x:String>`
+- Child activities need `HealingAgentBehavior="SameAsCard"` to inherit the parent card's setting
 
 ## Property Binding: Attributes vs Child Elements
 

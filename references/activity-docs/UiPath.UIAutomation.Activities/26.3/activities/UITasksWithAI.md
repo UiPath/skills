@@ -52,8 +52,8 @@ Performs a given UI task, using AI, on the attached application.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     xmlns:semantic="clr-namespace:UiPath.Semantic.Activities;assembly=UiPath.UIAutomationNext.Activities"
     DisplayName="Use Application/Browser"
     Version="V2">
@@ -62,13 +62,13 @@ Performs a given UI task, using AI, on the attached application.
       Task="[taskPrompt]"
       Version="V5">
     <semantic:NUITask.Target>
-      <ua:TargetAnchorable
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='HTML' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
     </semantic:NUITask.Target>
   </semantic:NUITask>
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

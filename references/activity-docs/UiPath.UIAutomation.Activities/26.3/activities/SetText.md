@@ -44,22 +44,22 @@ Enters text in a specified UI element, for example a text box.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSetText
+  <uix:NSetText
       DisplayName="Set Text 'Name'"
       Text="[myTextVariable]"
       Version="V5">
-    <ua:NSetText.Target>
-      <ua:TargetAnchorable
+    <uix:NSetText.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' type='text' name='name' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSetText.Target>
-  </ua:NSetText>
-</ua:NApplicationCard>
+    </uix:NSetText.Target>
+  </uix:NSetText>
+</uix:NApplicationCard>
 ```
 
 ## Notes

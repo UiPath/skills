@@ -47,23 +47,23 @@ Select Dates in Calendar. The activity can be used to select single dates or per
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPSelectDatesInCalendar
+  <uix:NSAPSelectDatesInCalendar
       DisplayName="Select Dates In Calendar"
       SelectType="SingleDate"
       Date="[selectedDate]"
       Version="V5">
-    <ua:NSAPSelectDatesInCalendar.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPSelectDatesInCalendar.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiCalendar' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPSelectDatesInCalendar.Target>
-  </ua:NSAPSelectDatesInCalendar>
-</ua:NApplicationCard>
+    </uix:NSAPSelectDatesInCalendar.Target>
+  </uix:NSAPSelectDatesInCalendar>
+</uix:NApplicationCard>
 ```
 
 ## Notes

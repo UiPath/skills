@@ -43,22 +43,22 @@ Selects an item from a drop-down list.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSelectItem
+  <uix:NSelectItem
       DisplayName="Select Item 'Country'"
       Item="[selectedItem]"
       Version="V5">
-    <ua:NSelectItem.Target>
-      <ua:TargetAnchorable
+    <uix:NSelectItem.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='SELECT' name='country' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSelectItem.Target>
-  </ua:NSelectItem>
-</ua:NApplicationCard>
+    </uix:NSelectItem.Target>
+  </uix:NSelectItem>
+</uix:NApplicationCard>
 ```
 
 ## Notes

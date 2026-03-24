@@ -30,16 +30,16 @@ Executes a transaction code or program in the current SAP GUI window.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPCallTransaction
+  <uix:NSAPCallTransaction
       DisplayName="Call Transaction 'VA01'"
       Transaction="VA01"
       Prefix="/n"
       Version="V5" />
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -45,28 +45,28 @@ Executes a drag and drop operation from the source UI element to the destination
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NDragAndDrop
+  <uix:NDragAndDrop
       DisplayName="Drag and Drop"
       MouseButton="Left"
       Version="V5">
-    <ua:NDragAndDrop.Target>
-      <ua:TargetAnchorable
+    <uix:NDragAndDrop.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' class='draggable' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NDragAndDrop.Target>
-    <ua:NDragAndDrop.DestinationTarget>
-      <ua:TargetAnchorable
+    </uix:NDragAndDrop.Target>
+    <uix:NDragAndDrop.DestinationTarget>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' class='drop-zone' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NDragAndDrop.DestinationTarget>
-  </ua:NDragAndDrop>
-</ua:NApplicationCard>
+    </uix:NDragAndDrop.DestinationTarget>
+  </uix:NDragAndDrop>
+</uix:NApplicationCard>
 ```
 
 ## Notes

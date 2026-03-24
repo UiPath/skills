@@ -43,22 +43,22 @@ Clicks a button from the system or application SAP toolbars. After indicating th
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSAPClickToolbarButton
+  <uix:NSAPClickToolbarButton
       DisplayName="Click Toolbar Button 'Save'"
       Item="Save"
       Version="V5">
-    <ua:NSAPClickToolbarButton.Target>
-      <ua:TargetAnchorable
+    <uix:NSAPClickToolbarButton.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;sapctrl type='GuiToolbarControl' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSAPClickToolbarButton.Target>
-  </ua:NSAPClickToolbarButton>
-</ua:NApplicationCard>
+    </uix:NSAPClickToolbarButton.Target>
+  </uix:NSAPClickToolbarButton>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -46,22 +46,22 @@ Takes a screenshot of an application or UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NTakeScreenshot
+  <uix:NTakeScreenshot
       DisplayName="Take Screenshot"
       FileName="[&quot;screenshot.png&quot;]"
       Version="V5">
-    <ua:NTakeScreenshot.Target>
-      <ua:TargetAnchorable
+    <uix:NTakeScreenshot.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='content' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NTakeScreenshot.Target>
-  </ua:NTakeScreenshot>
-</ua:NApplicationCard>
+    </uix:NTakeScreenshot.Target>
+  </uix:NTakeScreenshot>
+</uix:NApplicationCard>
 ```
 
 ## Notes

@@ -41,21 +41,21 @@ Sets keyboard focus to the specified UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NSetFocus
+  <uix:NSetFocus
       DisplayName="Set Focus 'Search'"
       Version="V5">
-    <ua:NSetFocus.Target>
-      <ua:TargetAnchorable
+    <uix:NSetFocus.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' id='search' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NSetFocus.Target>
-  </ua:NSetFocus>
-</ua:NApplicationCard>
+    </uix:NSetFocus.Target>
+  </uix:NSetFocus>
+</uix:NApplicationCard>
 ```
 
 ## Notes

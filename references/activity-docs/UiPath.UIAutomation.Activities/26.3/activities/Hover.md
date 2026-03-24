@@ -45,22 +45,22 @@ Hovers the mouse over a specified UI element.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     DisplayName="Use Application/Browser"
     Version="V2">
-  <ua:NHover
+  <uix:NHover
       DisplayName="Hover 'Menu Item'"
       HoverTime="[1]"
       Version="V5">
-    <ua:NHover.Target>
-      <ua:TargetAnchorable
+    <uix:NHover.Target>
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' class='menu-item' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
-    </ua:NHover.Target>
-  </ua:NHover>
-</ua:NApplicationCard>
+    </uix:NHover.Target>
+  </uix:NHover>
+</uix:NApplicationCard>
 ```
 
 ## Notes

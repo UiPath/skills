@@ -42,8 +42,8 @@ Uses AI to seamlessly extract form data.
 ## XAML Example
 
 ```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
+<uix:NApplicationCard
+    xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"
     xmlns:semantic="clr-namespace:UiPath.Semantic.Activities;assembly=UiPath.UIAutomationNext.Activities"
     DisplayName="Use Application/Browser"
     Version="V2">
@@ -51,13 +51,13 @@ Uses AI to seamlessly extract form data.
       DisplayName="Extract Form Data"
       Version="V5">
     <semantic:NExtractFormDataGeneric.Target>
-      <ua:TargetAnchorable
+      <uix:TargetAnchorable
           FullSelectorArgument="[&quot;&lt;webctrl tag='FORM' id='orderForm' /&gt;&quot;]"
           SearchSteps="Selector"
           Version="V6" />
     </semantic:NExtractFormDataGeneric.Target>
   </semantic:NExtractFormDataGeneric>
-</ua:NApplicationCard>
+</uix:NApplicationCard>
 ```
 
 ## Notes
