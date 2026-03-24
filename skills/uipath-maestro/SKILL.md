@@ -30,7 +30,13 @@ Comprehensive guide for managing UiPath Maestro process instances, processes, an
 The `uip` CLI is installed via npm. If `uip` is not on PATH (common in nvm environments), resolve it first:
 
 ```bash
-UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
+if UIP=$(command -v uip 2>/dev/null); then
+  # uip is on PATH, use it directly
+  :
+else
+  # uip not on PATH, resolve via npm
+  UIP=$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
+fi
 $UIP --version
 ```
 
