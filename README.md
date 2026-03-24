@@ -1,86 +1,114 @@
-# Claude Plugin Marketplace
+# UiPath Agent Skills
 
-This repository contains a Claude Code plugin marketplace with configuration and management files.
+> [!NOTE]
+> **Work in Progress** — This repository is under active development. Skills are being added and refined. Contributions, feedback, and ideas are welcome! See [Contributing](#contributing) below.
 
-## Managing Marketplaces
+UiPath Agent Skills give AI coding agents the domain knowledge to build, run, test, and deploy UiPath automations and agents — directly from your development environment. Each skill is a self-contained package of instructions and resources that teaches your coding agent how to perform a specific UiPath task.
 
-### Adding a Marketplace
+## Quick Start
 
-To add a marketplace, use the `claude plugin marketplace add` command:
-
-```bash
-claude plugin marketplace add ./
-```
-
-This adds the current directory as a marketplace, making all plugins in it available for installation.
-
-### Removing a Marketplace
-
-To remove a marketplace, use the `claude plugin marketplace remove` command:
+> **Prerequisite:** [Node.js](https://nodejs.org/) (LTS) is required — it includes `npx`.
 
 ```bash
-claude plugin marketplace remove uipath-marketplace
+npx skills add uipath/skills
 ```
 
-Replace `uipath-marketplace` with the name of the marketplace you want to remove.
+Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
 
-## Managing Plugins
+<details>
+<summary>Don't have Node.js installed?</summary>
 
-### Installing a Plugin
+**macOS**
+```bash
+brew install node
+```
 
-To install a plugin from a marketplace, use the `claude plugin install` command:
+**Windows**
+```bash
+winget install OpenJS.NodeJS.LTS
+```
+
+**Linux**
+```bash
+curl -fsSL https://fnm.vercel.app/install | bash
+fnm install --lts
+```
+See [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager) for other methods.
+
+After installing, verify with `node -v` and then run the quick start command above.
+
+</details>
+
+## Skill Catalog
+
+The repository contains skills for building and managing UiPath automation projects — coded workflows in C#, RPA workflows in XAML, Flow projects in JSON, desktop/browser UI automation, and platform operations.
+
+| Skill | Description |
+|-------|-------------|
+| **uipath-coded-workflows** | Create, edit, build, and run UiPath coded automations (.cs) with activity references for 20+ packages |
+| **uipath-rpa-workflows** | Generate and edit RPA workflows (XAML) in UiPath Studio Desktop with discovery-first approach |
+| **uipath-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
+| **uipath-platform** | Authentication, Orchestrator management, solution lifecycle, Integration Service, and CLI tools |
+| **uipath-coded-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
+| **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
+| **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
+
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
+
+## Multi-Tool Support
+
+This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor IDE**.
+
+### Claude Code
+
+This repository works as a **Claude Code plugin**. Install skills as a plugin marketplace for direct access to slash commands.
 
 ```bash
-claude plugin install <plugin-name>@uipath-marketplace
+# Add the marketplace
+claude plugin marketplace add https://github.com/UiPath/skills
+
+# Install the plugin
+claude plugin install uipath@uipath-marketplace
 ```
 
-Example:
-```bash
-claude plugin install uipath-coded-agents@uipath-marketplace
-```
+### OpenAI Codex CLI
 
-### Uninstalling a Plugin
+This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
-To uninstall a plugin, use the `claude plugin uninstall` command:
+> **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
+> ```bash
+> git clone -c core.symlinks=true https://github.com/UiPath/skills
+> ```
+> If you've already cloned without symlink support, re-enable and re-checkout:
+> ```bash
+> git config core.symlinks true
+> git checkout -- .
+> ```
 
-```bash
-claude plugin uninstall <plugin-name>
-```
+### Cursor IDE
 
-Example:
-```bash
-claude plugin uninstall uipath-coded-agents
-```
+Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
 
-## Plugins in This Marketplace
+## Contributing
 
-| Plugin | Description | Version |
-|--------|-------------|---------|
-| [**uipath-coded-agents**](./uipath-coded-agents/README.md) | Create, run, and evaluate UiPath coded agents with AI-powered assistance | 0.0.1 |
-| [**uipath**](./uipath/README.md) | UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, and UI testing | 0.0.8 |
+Contributions are welcome! Whether it's a new skill, a bug fix, or a documentation improvement — we'd love your help.
 
-## Project Structure
+1. Fork this repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-For a complete overview of the plugin marketplace structure and individual plugin structures, see the [Claude Code Plugin Documentation](https://code.claude.com/docs/en/plugins).
+For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/skills/issues).
 
-This marketplace contains:
+## Resources
 
-- **`.claude-plugin/`** - Plugin configuration directory
-  - `marketplace.json` - Marketplace definition listing all available plugins
-- **`uipath-coded-agents/`** - UiPath coded agents plugin
-- **`uipath/`** - UiPath workflows, UI automation, and UI testing plugin
-- **README.md** - This file
+- [UiPath Documentation](https://docs.uipath.com/)
+- [UiPath Community](https://community.uipath.com/)
 
-## Getting Help
+## License
 
-For comprehensive information about Claude plugins and how to develop them, see:
-- **[Claude Code Plugins Documentation](https://code.claude.com/docs/en/plugins)** - Complete plugin development guide including project structure, SKILL.md format, plugin manifest, hooks, and more
-
-For help with Claude plugin commands in your terminal:
-
-```bash
-claude plugin --help
-claude plugin marketplace --help
-```
-
-For plugin-specific documentation, see the README files in individual plugin directories (`uipath-coded-agents/`, `uipath/`)
+[MIT](LICENSE)
