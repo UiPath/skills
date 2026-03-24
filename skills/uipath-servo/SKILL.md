@@ -6,7 +6,18 @@ allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
 
 # UI Automation with Servo
 
-Servo is a Windows-only CLI tool. Install: `npm install -g @uipath/servo`. Help: `servo --help`.
+> **Servo is a standalone command-line tool.** It is NOT a subcommand of `uip` — you run it directly from your terminal.
+
+**Windows only.** Run via npx or install globally:
+
+```bash
+# Run directly via npx (no install needed)
+npx @uipath/servo --help
+
+# Or install globally, then use the `servo` command
+npm install -g @uipath/servo
+servo --help
+```
 
 ## Quick Start
 
