@@ -4,7 +4,7 @@ Examples using the `google` service from `UiPath.GSuite.Activities` package.
 
 **Required package:** `"UiPath.GSuite.Activities": "[3.6.10]"`
 
-> **Prerequisites:** All examples require Integration Service connections configured in UiPath Automation Cloud (Google OAuth). The `connections` property provides typed access to configured connections. Studio auto-generates `ConnectionsManager.cs` and `ConnectionsFactory.cs` in `.codedworkflows/` with the available connection names.
+> **Prerequisites:** All examples require Integration Platform & Experiences connections configured in UiPath Automation Cloud (Google OAuth). The `connections` property provides typed access to configured connections. Studio auto-generates `ConnectionsManager.cs` and `ConnectionsFactory.cs` in `.codedworkflows/` with the available connection names.
 
 ---
 

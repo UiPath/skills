@@ -10,7 +10,7 @@ Reference for the `google` service from `UiPath.GSuite.Activities` package.
 
 ## Overview
 
-The Google Workspace API provides coded workflow access to **Gmail, Google Calendar, Google Drive, Google Sheets, and Google Docs** via Google Workspace APIs. Uses **OAuth tokens managed by Integration Service** — no local installation needed.
+The Google Workspace API provides coded workflow access to **Gmail, Google Calendar, Google Drive, Google Sheets, and Google Docs** via Google Workspace APIs. Uses **OAuth tokens managed by Integration Platform & Experiences** — no local installation needed.
 
 ### Architecture
 
@@ -25,7 +25,7 @@ google (IGoogleConnectionsService)
 
 ### Prerequisites
 
-1. **Integration Service connections** must be configured in UiPath Automation Cloud (Google OAuth)
+1. **Integration Platform & Experiences connections** must be configured in UiPath Automation Cloud (Google OAuth)
 2. Studio auto-generates `ConnectionsManager.cs` and `ConnectionsFactory.cs` in `.codedworkflows/` with typed connection accessors
 3. Access connections via the `connections` property on `CodedWorkflow`
 

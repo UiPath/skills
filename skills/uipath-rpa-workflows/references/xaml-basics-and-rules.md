@@ -337,7 +337,7 @@ VB project with core workflow activities. Shows If/Then/Else branching and Assig
 
 ### Example 2: Package Connector Activity (Office 365 Get Newest Email)
 
-Shows a package-based activity with `ConnectionId` for Integration Service.
+Shows a package-based activity with `ConnectionId` for Integration Platform & Experiences.
 
 ```xml
 <Activity mc:Ignorable="sap sap2010" x:Class="GetNewestEmail"
@@ -377,7 +377,7 @@ Shows a package-based activity with `ConnectionId` for Integration Service.
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="GetNewestEmail" sap2010:WorkflowViewState.IdRef="Sequence_1">
-    <!-- Activity with ConnectionId for Integration Service -->
+    <!-- Activity with ConnectionId for Integration Platform & Experiences -->
     <umam:GetNewestEmail
       ConnectionAccountName="{x:Null}" ContinueOnError="{x:Null}" Filter="{x:Null}"
       FolderIdBackup="{x:Reference __ReferenceID0}" FreeTextFilter="{x:Null}"
@@ -426,15 +426,15 @@ Shows a package-based activity with `ConnectionId` for Integration Service.
 ```
 
 **Key patterns:**
-- `ConnectionId` attribute holds the Integration Service connection GUID
+- `ConnectionId` attribute holds the Integration Platform & Experiences connection GUID
 - Nullable properties use `{x:Null}` explicitly
 - Complex sub-objects (MailFolderArgument, MailboxArgument) with `BackupSlot` pattern
 - `x:Reference` / `x:Name` for cross-referencing objects within the XAML
 - Multiple package-specific xmlns prefixes (`umam`, `umame`, `umamm`, `usau`)
 
-### Example 3: Integration Service Connector Activity (GitHub Search Repositories)
+### Example 3: Integration Platform & Experiences Connector Activity (GitHub Search Repositories)
 
-Shows the generic `ConnectorActivity` pattern used for Integration Service connectors.
+Shows the generic `ConnectorActivity` pattern used for Integration Platform & Experiences connectors.
 
 ```xml
 <Activity mc:Ignorable="sap sap2010" x:Class="Sequence"
@@ -449,7 +449,7 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
   xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
   xmlns:uiascb="clr-namespace:UiPath.IntegrationService.Activities.SWEntities.CDF573A04A6_search_repositories.Bundle;assembly=CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <!-- Namespaces include Integration Service runtime + connector-specific -->
+  <!-- Namespaces include Integration Platform & Experiences runtime + connector-specific -->
   <TextExpression.NamespacesForImplementation>
     <sco:Collection x:TypeArguments="x:String">
       <!-- Standard imports + IS-specific -->
@@ -472,7 +472,7 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
-    <!-- Generic ConnectorActivity for Integration Service -->
+    <!-- Generic ConnectorActivity for Integration Platform & Experiences -->
     <isactr:ConnectorActivity
       Configuration="H4sIAAAAAAAACr1W70/bSBD9V1b+dCcFXwgtPSHx..."
       ConnectionId="93c89540-f260-4150-afbd-43df573a04a6"
@@ -502,9 +502,9 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
 ```
 
 **Key patterns:**
-- `isactr:ConnectorActivity` is the generic IS activity type (`xmlns:isactr="http://schemas.uipath.com/workflow/integration-service-activities/isactr"`)
+- `isactr:ConnectorActivity` is the generic IPE activity type (`xmlns:isactr="http://schemas.uipath.com/workflow/integration-service-activities/isactr"`)
 - `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uip rpa get-default-activity-xaml`
-- `ConnectionId` is the Integration Service connection GUID
+- `ConnectionId` is the Integration Platform & Experiences connection GUID
 - `UiPathActivityTypeId` identifies the specific connector operation
 - `FieldObjects` define input/output fields with `isactr:FieldObject` elements
 - Output types reference a JIT-generated assembly (e.g., `CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3`)
@@ -555,7 +555,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 | Property | Editable? | Description |
 |----------|-----------|-------------|
 | `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uip rpa get-default-activity-xaml` command. Do not parse, modify, or construct manually. |
-| `ConnectionId` | Yes (replace GUID) | Integration Service connection GUID. Use `uip is connections list [connector-key]` to discover available connections and their IDs. |
+| `ConnectionId` | Yes (replace GUID) | Integration Platform & Experiences connection GUID. Use `uip ipe connections list [connector-key]` to discover available connections and their IDs. |
 | `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uip rpa get-default-activity-xaml` or `uip rpa find-activities`. |
 | `DisplayName` | Yes | Human-readable activity name for the designer. |
 

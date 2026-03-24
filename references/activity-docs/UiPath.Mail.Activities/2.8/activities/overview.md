@@ -36,7 +36,7 @@ Classic Outlook mail activity patterns for `UiPath.Mail.Activities`. Always get 
 
 ## IS Connection Pattern (Classic activities)
 
-When using Integration Service connection, add `UseISConnection="True"` and the `ConnectionDetailsBackupSlot` child to `GetOutlookMailMessages` and `SendOutlookMail`. Use `uip is connections list --format json` to discover available connection GUIDs. If no Outlook connection exists, create one: `uip is connections create <outlook-connector-key>`.
+When using Integration Platform & Experiences connection, add `UseISConnection="True"` and the `ConnectionDetailsBackupSlot` child to `GetOutlookMailMessages` and `SendOutlookMail`. Use `uip ipe connections list --format json` to discover available connection GUIDs. If no Outlook connection exists, create one: `uip ipe connections create <outlook-connector-key>`.
 
 ```xml
 <ui:GetOutlookMailMessages ... UseISConnection="True">

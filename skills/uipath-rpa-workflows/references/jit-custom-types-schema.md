@@ -6,7 +6,7 @@ Use this skill to discover properties and CLR types of custom JIT-compiled types
 
 - Populating an `Assign` activity that targets a custom type property
 - Creating a variable typed to a custom entity
-- Setting properties on an Integration Service entity (e.g., Salesforce, ServiceNow)
+- Setting properties on an Integration Platform & Experiences entity (e.g., Salesforce, ServiceNow)
 - Any time you need to know what properties a custom type exposes and their .NET types
 
 ## Steps

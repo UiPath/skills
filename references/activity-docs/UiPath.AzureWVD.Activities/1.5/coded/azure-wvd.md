@@ -33,7 +33,7 @@ SessionHostList sessionHosts = await sessionHostService.ListSessionHosts(hostPoo
 
 ### Client Provider
 
-The `IClientProvider` parameter is obtained from an Azure WVD Scope activity. It provides authenticated access to Azure WVD REST APIs and the Azure Management SDK using either service principal credentials or Integration Service tokens.
+The `IClientProvider` parameter is obtained from an Azure WVD Scope activity. It provides authenticated access to Azure WVD REST APIs and the Azure Management SDK using either service principal credentials or Integration Platform & Experiences tokens.
 
 ### API Categories
 

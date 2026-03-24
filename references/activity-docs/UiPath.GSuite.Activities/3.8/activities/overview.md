@@ -11,7 +11,7 @@ All GSuite activities authenticate via two attributes:
 ConnectionId="<guid>" UseConnectionService="True"
 ```
 
-Use `uip is connections list --format json` to obtain the connection GUID. If no GSuite connection exists, create one: `uip is connections create <gsuite-connector-key>`. Verify it's active: `uip is connections ping <connection-id>`. All activity names end in `Connections` (e.g., `GetNewestEmailConnections`, `ReadRangeConnections`).
+Use `uip ipe connections list --format json` to obtain the connection GUID. If no GSuite connection exists, create one: `uip ipe connections create <gsuite-connector-key>`. Verify it's active: `uip ipe connections ping <connection-id>`. All activity names end in `Connections` (e.g., `GetNewestEmailConnections`, `ReadRangeConnections`).
 
 ## Model Types
 

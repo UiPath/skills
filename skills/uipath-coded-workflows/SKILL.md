@@ -111,7 +111,7 @@ Choose your task to find the right reference files:
 | **Add a test case** | [operations-guide.md § Add Test Case](references/operations-guide.md) |
 | **Write UI automation** | [ui-automation.md](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/coded/ui-automation.md) → [operations-guide.md § Indicate](references/operations-guide.md) |
 | **Use Excel/Word/Mail/etc.** | Service table below → activity reference in `../../references/activity-docs/{PackageId}/{Version}/coded/` (e.g. [excel](../../references/activity-docs/UiPath.Excel.Activities/3.5/coded/excel.md), [word](../../references/activity-docs/UiPath.Word.Activities/2.5/coded/word.md), [mail](../../references/activity-docs/UiPath.Mail.Activities/2.8/coded/mail.md), [powerpoint](../../references/activity-docs/UiPath.Presentations.Activities/2.5/coded/powerpoint.md)) |
-| **Use Office 365 / Google** | Service table below → [codedworkflow-reference.md § Integration Service](references/codedworkflow-reference.md) |
+| **Use Office 365 / Google** | Service table below → [codedworkflow-reference.md § Integration Platform & Experiences](references/codedworkflow-reference.md) |
 | **Use Azure services** | Service table below → [azure](../../references/activity-docs/UiPath.Azure.Activities/1.7/coded/azure.md) |
 | **Use Google Cloud (GCP)** | Service table below → [google-cloud](../../references/activity-docs/UiPath.GoogleCloud.Activities/2.5/coded/google-cloud.md) |
 | **Use Exchange Server** | Service table below → [exchange-server](../../references/activity-docs/UiPath.ExchangeServer.Activities/1.4/coded/exchange-server.md) |
@@ -180,7 +180,7 @@ These packages provide services for cloud platforms, virtualization, directory s
 | `hyperv` | `UiPath.HyperV.Activities` | [hyperv](../../references/activity-docs/UiPath.HyperV.Activities/1.4/coded/hyperv.md) |
 | `netiq` | `UiPath.NetIQeDirectory.Activities` | [netiq-edirectory](../../references/activity-docs/UiPath.NetIQeDirectory.Activities/1.6/coded/netiq-edirectory.md) |
 
-> **Note:** The `office365` and `google` services require **Integration Service connections** configured in UiPath Automation Cloud. They inject both a service property (`office365` / `google`) and a `connections` property for accessing configured connection instances. `office365` provides Mail, Calendar, Excel (cloud), OneDrive, and SharePoint via Microsoft Graph API. `google` provides Gmail, Google Calendar, Google Drive, Google Sheets, and Google Docs via Google Workspace APIs. Both use OAuth tokens managed by Integration Service — see [references/codedworkflow-reference.md § Integration Service Connections](references/codedworkflow-reference.md).
+> **Note:** The `office365` and `google` services require **Integration Platform & Experiences connections** configured in UiPath Automation Cloud. They inject both a service property (`office365` / `google`) and a `connections` property for accessing configured connection instances. `office365` provides Mail, Calendar, Excel (cloud), OneDrive, and SharePoint via Microsoft Graph API. `google` provides Gmail, Google Calendar, Google Drive, Google Sheets, and Google Docs via Google Workspace APIs. Both use OAuth tokens managed by Integration Platform & Experiences — see [references/codedworkflow-reference.md § Integration Platform & Experiences Connections](references/codedworkflow-reference.md).
 
 ### Determining Package Version for Activity Docs
 
@@ -273,4 +273,4 @@ When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
 2. **Validation status** — whether all files passed validation (or remaining errors if max retries hit)
 3. **How to run** — the `uip rpa run-file` command to execute the workflow (if applicable)
-4. **Next steps** — any follow-up actions the user should take (e.g. configure Integration Service connections, add Object Repository elements)
+4. **Next steps** — any follow-up actions the user should take (e.g. configure Integration Platform & Experiences connections, add Object Repository elements)

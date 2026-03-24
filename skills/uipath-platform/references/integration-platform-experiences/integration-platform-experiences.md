@@ -1,8 +1,8 @@
-# Integration Service
+# Integration Platform & Experiences
 
-Interact with external services through UiPath Integration Service — discover connectors, manage connections, and execute operations via the `uip` CLI.
+Interact with external services through UiPath Integration Platform & Experiences — discover connectors, manage connections, and execute operations via the `uip` CLI.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline in each reference file.
+> Full command syntax and options: [uip-commands.md — Integration Platform & Experiences](../uip-commands.md#integration-platform--experiences-ipe). Domain-specific usage patterns are shown inline in each reference file.
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ When multiple options exist, present them clearly:
 
 | Problem | Recovery |
 |---|---|
-| Ping returns non-enabled | Run `is connections edit <id>` to re-authenticate, then ping again. If still fails, ask user to choose another connection or create new. |
+| Ping returns non-enabled | Run `ipe connections edit <id>` to re-authenticate, then ping again. If still fails, ask user to choose another connection or create new. |
 | List returns empty after `--refresh` | Inform user the data does not exist. Do not retry. Suggest checking permissions or folder context. |
 | Reference field lookup returns empty | Inform user — the referenced object has no records. Ask if they want to create one or use a different value. |
 | Execute fails with validation error | Re-check describe output for required fields. Verify field types and reference IDs are correct. |

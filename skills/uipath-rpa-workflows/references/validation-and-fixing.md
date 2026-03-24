@@ -18,7 +18,7 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 
 ## Resolving Dynamic Activity Custom Types
 
-Dynamic activities (e.g., Integration Service connectors) retrieved via `uip rpa get-default-activity-xaml` (with `--activity-type-id`) may use **JIT-compiled custom types** for their input/output properties. After the activity is added to the workflow, when you need to discover the property names and CLR types of these custom entities (e.g., to populate an `Assign` activity targeting a custom type property, or to create a variable of a custom type), read the JIT custom types schema:
+Dynamic activities (e.g., Integration Platform & Experiences connectors) retrieved via `uip rpa get-default-activity-xaml` (with `--activity-type-id`) may use **JIT-compiled custom types** for their input/output properties. After the activity is added to the workflow, when you need to discover the property names and CLR types of these custom entities (e.g., to populate an `Assign` activity targeting a custom type property, or to create a variable of a custom type), read the JIT custom types schema:
 
 ```
 Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"

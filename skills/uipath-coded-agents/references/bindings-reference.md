@@ -296,7 +296,7 @@ results = sdk.context_grounding.search(name="index_name", query="...", folder_pa
 
 ---
 
-### Connection (Integration Service)
+### Connection (Integration Platform & Experiences)
 
 **SDK call:**
 ```python

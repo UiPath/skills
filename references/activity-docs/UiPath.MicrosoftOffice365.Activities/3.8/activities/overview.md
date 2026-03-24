@@ -21,7 +21,7 @@ All activities authenticate via:
 ConnectionId="<guid>" UseConnectionService="True" AuthScopesInvalid="False"
 ```
 
-Use `uip is connections list --format json` to obtain the connection GUID. If no O365 connection exists, create one: `uip is connections create <o365-connector-key>`. Verify it's active: `uip is connections ping <connection-id>`.
+Use `uip ipe connections list --format json` to obtain the connection GUID. If no O365 connection exists, create one: `uip ipe connections create <o365-connector-key>`. Verify it's active: `uip ipe connections ping <connection-id>`.
 
 ## Key Patterns
 

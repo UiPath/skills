@@ -1,6 +1,6 @@
 ---
 name: uipath-platform
-description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets, queues, storage buckets), solution lifecycle (pack, publish, deploy), Integration Service, resources management, Test Manager, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes, storage buckets); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service (connectors, connections, activities, resources); User wants to manage resources (assets, queues, queue items, storage buckets, bucket files); User wants to use Test Manager (projects, test sets, test cases, executions, results, reports); User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
+description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets, queues, storage buckets), solution lifecycle (pack, publish, deploy), Integration Platform & Experiences, resources management, Test Manager, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes, storage buckets); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Platform & Experiences (connectors, connections, activities, resources); User wants to manage resources (assets, queues, queue items, storage buckets, bucket files); User wants to use Test Manager (projects, test sets, test cases, executions, results, reports); User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
 metadata: 
    allowed-tools: Bash, Read, Write, Glob, Grep
 ---
@@ -40,7 +40,7 @@ This token can be reused for direct Orchestrator REST API calls when CLI command
 
 ### Step 1 — Authenticate
 
-Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
+Before interacting with Orchestrator, solutions, or Integration Platform & Experiences, the user must be logged in.
 
 **Interactive login (browser OAuth2):**
 ```bash
@@ -96,7 +96,7 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Use Test Manager** (projects, test sets, test cases, executions, reports) | [references/test-manager/test-manager-guide.md](references/test-manager/test-manager-guide.md) |
 | **Install / manage CLI tools** | [references/uip-commands.md - Tools](references/uip-commands.md) |
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
-| **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
+| **Use Integration Platform & Experiences** (connectors, connections, activities, resources) | [references/integration-platform-experiences/integration-platform-experiences.md](references/integration-platform-experiences/integration-platform-experiences.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath-coded-workflows:uipath-coded-workflows](/uipath-coded-workflows:uipath-coded-workflows) |
 
@@ -185,7 +185,7 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 | **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
 | **Resources** | `resources` | Assets, queues, queue items, storage buckets, bucket files | Available |
 | **Solutions** | `solution` | Create, pack, publish, deploy solutions | Available |
-| **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
+| **Integration Platform & Experiences** | `ipe` | Connectors, connections, activities, resources | Available |
 | **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
 | **MCP** | `mcp` | Model Context Protocol server | Available |
@@ -260,5 +260,5 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Resources Guide](references/resources/resources-guide.md)** — Assets, queues, queue items, storage buckets, bucket files
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
 - **[Test Manager Guide](references/test-manager/test-manager-guide.md)** — Test projects, test sets, test cases, executions, reports, attachments
-- **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
+- **[Integration Platform & Experiences](references/integration-platform-experiences/integration-platform-experiences.md)** — Connectors, connections, activities, resources for third-party services
 - **[Coded Workflows](/uipath-coded-workflows:uipath-coded-workflows)** — Building coded automation projects

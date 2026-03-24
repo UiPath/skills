@@ -10,7 +10,7 @@ Reference for the `office365` service from `UiPath.MicrosoftOffice365.Activities
 
 ## Overview
 
-The Microsoft 365 API provides coded workflow access to **Mail, Calendar, Excel (cloud), OneDrive, and SharePoint** via the Microsoft Graph API. Unlike the `mail` service (COM-based Outlook/IMAP/SMTP), `office365` uses **OAuth tokens managed by Integration Service** — no local Outlook installation needed.
+The Microsoft 365 API provides coded workflow access to **Mail, Calendar, Excel (cloud), OneDrive, and SharePoint** via the Microsoft Graph API. Unlike the `mail` service (COM-based Outlook/IMAP/SMTP), `office365` uses **OAuth tokens managed by Integration Platform & Experiences** — no local Outlook installation needed.
 
 ### Architecture
 
@@ -25,7 +25,7 @@ office365 (IOffice365ConnectionsService)
 
 ### Prerequisites
 
-1. **Integration Service connections** must be configured in UiPath Automation Cloud
+1. **Integration Platform & Experiences connections** must be configured in UiPath Automation Cloud
 2. Studio auto-generates `ConnectionsManager.cs` and `ConnectionsFactory.cs` in `.codedworkflows/` with typed connection accessors
 3. Access connections via the `connections` property on `CodedWorkflow`
 
