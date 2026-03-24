@@ -110,7 +110,9 @@ Generate a plan as a **self-contained HTML file** with a mermaid diagram and str
 
 #### 5a. Write the plan file
 
-Write `flow-plan.html` in the project directory using the template in [references/plan-template.html](references/plan-template.html). The plan must include:
+Read [references/plan-template.html](references/plan-template.html) and write `flow-plan.html` in the project directory by **copying the template and replacing the `{{PLACEHOLDER}}` markers** with actual content. Do not rewrite the HTML from scratch — preserve the Tailwind config, styles, and structure exactly. The HTML comment examples in the template show the expected format for each section.
+
+The plan must include:
 
 1. **Summary** — 2-3 sentences describing what the flow does end-to-end
 2. **Mermaid diagram** — visual flowchart showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability.
