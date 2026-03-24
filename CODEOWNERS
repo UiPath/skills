@@ -1,0 +1,17 @@
+# Default owners for the entire repo
+* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria
+
+# Hooks
+/hooks/ @DragosUnguru
+
+# Activity references
+/references/ @DragosUnguru
+
+# RPA workflows skill
+/skills/uipath-rpa-workflows/ @DragosUnguru @RaduAna-Maria
+
+# Coded workflows skill
+/skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria
+
+# Platform skill
+/skills/uipath-platform/ @gabrielavaduva
