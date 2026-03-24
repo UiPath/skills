@@ -5,7 +5,7 @@ Complete reference for all platform services available through the UiPath Python
 ## SDK Initialization
 
 ```python
-from uipath import UiPath
+from uipath.platform import UiPath
 
 sdk = UiPath()  # Reads credentials from environment variables
 
@@ -13,6 +13,8 @@ sdk = UiPath()  # Reads credentials from environment variables
 sdk = UiPath(base_url="https://cloud.uipath.com/...", secret="your_token")
 sdk = UiPath(client_id="id", client_secret="secret", scope="scope", base_url="url")
 ```
+
+> **CRITICAL: Never import or instantiate `UiPath()` at module level.** It requires auth credentials at construction time. Always create the instance inside a function or graph node — never at the top of the file. `uip codedagents init` imports your module to introspect it, and module-level `UiPath()` will fail.
 
 ## Available Services
 

@@ -1,5 +1,54 @@
 # File Synchronization
 
+Sync project files between local development and remote Studio Web storage.
+
+## Quick Reference
+
+```bash
+# Pull remote files to local
+uip codedagents pull
+
+# Push local files to remote (mirrors local state)
+uip codedagents push
+
+# Force overwrite without prompts
+uip codedagents push --overwrite
+uip codedagents pull --overwrite
+```
+
+## Documentation
+
+- **[File Sync Guide](file-sync.md)** — Complete sync workflow
+  - Push and pull commands with all options
+  - `UIPATH_PROJECT_ID` setup
+  - Conflict resolution strategies
+  - Common workflows (clone, collaborate, CI/CD)
+  - Troubleshooting
+
+## Prerequisites
+
+- Authentication configured — if not authenticated, use the [authentication reference](authentication.md) first
+- `UIPATH_PROJECT_ID` set in `.env` or environment — also required by the [evaluate reference](evaluate.md) when reporting evaluation results to Studio Web (`--report` flag)
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `UIPATH_PROJECT_ID environment variable not found` | Missing project ID in `.env` | Create a Coded Agent project in Studio Web, copy its ID, add `UIPATH_PROJECT_ID=<id>` to `.env` |
+| `Your local version is behind the remote version. Aborted!` | Push requires interactive confirmation that CLI cannot provide | Use `uip codedagents push --overwrite` to force push |
+| Push deleted unexpected files | Push mirrors local state — removes remote files not present locally | This is by design. Review local files before pushing |
+| `Conflict on pull` | Remote and local both changed | Use `uip codedagents pull --overwrite` to force remote, or manually resolve differences |
+| `401 Unauthorized` | Auth expired | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+
+## Additional Instructions
+
+- Read the [file sync reference](file-sync.md) before making assumptions about push/pull behavior.
+- Push **deletes** remote files not present locally. It mirrors local state.
+
+---
+
+# File Synchronization
+
 Sync UiPath project files between your local development environment and remote storage (Studio Web).
 
 ## Synchronization Workflow
@@ -14,7 +63,7 @@ Setup Project ID → Pull Remote Files → Make Local Changes → Push Local Fil
 Before syncing files, ensure:
 
 1. **UiPath Account**: Active UiPath Cloud or on-premise account
-2. **Authentication**: Configured credentials via `uipath auth`
+2. **Authentication**: Configured credentials via `uip login`
 3. **Project ID**: Identify your project's ID in Studio Web
 4. **Python Environment**: Python 3.11+ with `uv` package manager
 
@@ -37,12 +86,12 @@ export UIPATH_PROJECT_ID=12345
 Or inline for a single command:
 
 ```bash
-UIPATH_PROJECT_ID=12345 uv run uipath push
+UIPATH_PROJECT_ID=12345 uip codedagents push
 ```
 
 ### Authentication
 
-Run `uv run uipath auth --cloud --tenant <TENANT>` to configure your credentials. This sets up:
+Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to configure your credentials. This sets up:
 - `UIPATH_URL` - Your UiPath instance URL
 - `UIPATH_ACCESS_TOKEN` - Bearer token for API access
 - `UIPATH_TENANT_NAME` - Your tenant identifier
@@ -54,7 +103,7 @@ Run `uv run uipath auth --cloud --tenant <TENANT>` to configure your credentials
 Download remote project files to your local environment.
 
 ```bash
-uv run uipath pull
+uip codedagents pull
 ```
 
 ### What It Does
@@ -74,12 +123,12 @@ uv run uipath pull
 
 **Pull remote files (with confirmation on conflicts):**
 ```bash
-uv run uipath pull
+uip codedagents pull
 ```
 
 **Pull and automatically overwrite local changes:**
 ```bash
-uv run uipath pull --overwrite
+uip codedagents pull --overwrite
 ```
 
 ### Use Cases
@@ -96,7 +145,7 @@ uv run uipath pull --overwrite
 Upload local project files to remote storage, keeping remote in sync with local state.
 
 ```bash
-uv run uipath push
+uip codedagents push
 ```
 
 ### What It Does
@@ -118,22 +167,22 @@ uv run uipath push
 
 **Push with confirmation prompts:**
 ```bash
-uv run uipath push
+uip codedagents push
 ```
 
 **Push and skip confirmation (batch/automation):**
 ```bash
-uv run uipath push --overwrite
+uip codedagents push --overwrite
 ```
 
 **Push without updating dependencies lock:**
 ```bash
-uv run uipath push --nolock
+uip codedagents push --nolock
 ```
 
 **Push without syncing resources:**
 ```bash
-uv run uipath push --ignore-resources
+uip codedagents push --ignore-resources
 ```
 
 ### Use Cases
@@ -153,13 +202,13 @@ If local files differ from remote, you have two options:
 
 **Option 1: Review and confirm each conflict**
 ```bash
-uv run uipath pull
+uip codedagents pull
 # Interactive prompts will ask about each conflicting file
 ```
 
 **Option 2: Auto-overwrite local files with remote**
 ```bash
-uv run uipath pull --overwrite
+uip codedagents pull --overwrite
 ```
 
 ### Push with Conflicts
@@ -168,13 +217,13 @@ If remote files differ from local, you have two options:
 
 **Option 1: Review and confirm each change**
 ```bash
-uv run uipath push
+uip codedagents push
 # Interactive prompts will ask about each file to overwrite
 ```
 
 **Option 2: Force push local state (overwrite all remote files)**
 ```bash
-uv run uipath push --overwrite
+uip codedagents push --overwrite
 ```
 
 ---
@@ -191,13 +240,13 @@ UIPATH_PROJECT_ID=my-project-123
 Then work with your project:
 ```bash
 # Pull all remote files to local
-uv run uipath pull
+uip codedagents pull
 
 # Make changes locally
 # ... edit your files ...
 
 # Push changes back to remote
-uv run uipath push
+uip codedagents push
 ```
 
 ### Workflow 2: Collaborative Development
@@ -209,16 +258,16 @@ UIPATH_PROJECT_ID=shared-project
 
 **Developer A:**
 ```bash
-uv run uipath pull          # Get latest from team
+uip codedagents pull          # Get latest from team
 # ... make changes ...
-uv run uipath push --overwrite  # Push back
+uip codedagents push --overwrite  # Push back
 ```
 
 **Developer B:**
 ```bash
-uv run uipath pull --overwrite  # Get latest from Developer A
+uip codedagents pull --overwrite  # Get latest from Developer A
 # ... make their own changes ...
-uv run uipath push --overwrite
+uip codedagents push --overwrite
 ```
 
 ### Workflow 3: Automated Sync in CI/CD
@@ -234,9 +283,9 @@ Script:
 set -e
 
 # Sync files
-uv run uipath pull --overwrite
+uip codedagents pull --overwrite
 # ... run tests or build ...
-uv run uipath push --overwrite
+uip codedagents push --overwrite
 ```
 
 ### Workflow 4: Selective Sync (Skip Resources)
@@ -249,10 +298,10 @@ UIPATH_PROJECT_ID=my-project
 Then selectively sync:
 ```bash
 # Push code without syncing resource files
-uv run uipath push --ignore-resources
+uip codedagents push --ignore-resources
 
 # Later, sync resources separately
-uv run uipath push
+uip codedagents push
 ```
 
 ---
@@ -285,9 +334,9 @@ uv run uipath push
 | Variable | Required | Description | How to Set |
 |----------|----------|-------------|-----------|
 | `UIPATH_PROJECT_ID` | Yes | ID of the project to sync | Add to `.env` file |
-| `UIPATH_URL` | Yes | Base URL of your UiPath instance | Set by `uv run uipath auth` |
-| `UIPATH_ACCESS_TOKEN` | Yes | Bearer token for authentication | Set by `uv run uipath auth` |
-| `UIPATH_TENANT_NAME` | Optional | Your tenant identifier | Set by `uv run uipath auth` |
+| `UIPATH_URL` | Yes | Base URL of your UiPath instance | Set by `uip login` |
+| `UIPATH_ACCESS_TOKEN` | Yes | Bearer token for authentication | Set by `uip login` |
+| `UIPATH_TENANT_NAME` | Optional | Your tenant identifier | Set by `uip login` |
 
 See [Environment Setup](#environment-setup) above for how to set these.
 
@@ -308,7 +357,7 @@ See [Environment Setup](#environment-setup) above for how to set these.
    - Use environment variables or secure vaults instead
 
 4. **Test Before Pushing**
-   - Test your local changes with `uv run uipath run`
+   - Test your local changes with `uip codedagents run`
    - Verify everything works before pushing to remote
 
 5. **Use Version Control Locally**
@@ -335,14 +384,14 @@ UIPATH_PROJECT_ID=your-project-id
 Or set it as an environment variable:
 ```bash
 export UIPATH_PROJECT_ID=your-project-id
-uv run uipath push
+uip codedagents push
 ```
 
 ### "Authentication failed"
 
 **Error:** Command fails with "Unauthorized" or "Invalid token"
 
-**Solution:** Re-run `uv run uipath auth --cloud --tenant <TENANT>` to refresh credentials.
+**Solution:** Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to refresh credentials.
 
 ### "Files were unexpectedly deleted"
 
@@ -360,9 +409,8 @@ uv run uipath push
 **Solution:** Choose a strategy:
 ```bash
 # Keep local version (push --overwrite)
-uv run uipath push --overwrite
+uip codedagents push --overwrite
 
 # Keep remote version (pull --overwrite)
-uv run uipath pull --overwrite
+uip codedagents pull --overwrite
 ```
-
