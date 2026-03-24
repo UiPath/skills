@@ -21,7 +21,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Quick Start
 
-These steps are for **creating a new flow from scratch**. For existing projects, skip to the relevant step. For small targeted edits (changing a script body, renaming a node, tweaking a port), skip straight to Step 5.
+These steps are for **creating a new flow from scratch**. For existing projects, skip to the relevant step. For small targeted edits (changing a script body, renaming a node, tweaking a port), skip straight to Step 6.
 
 ### Step 0 — Resolve the `uip` binary
 
@@ -70,7 +70,7 @@ uip flow registry get <nodeType> --format json  # full schema for one node type
 
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector nodes are also available.
 
-### Step 3b — Discover connector capabilities (when using connectors)
+### Step 4 — Discover connector capabilities (when using connectors)
 
 **Skip this step if the flow only uses OOTB nodes (scripts, HTTP, branching).** When the flow uses Integration Service connectors (e.g., Slack, Salesforce, Outlook), query the IS APIs to understand what the connector can actually do **before** planning.
 
@@ -102,24 +102,24 @@ uip is connections ping <connection-id>
 
 > **Why this matters**: The flow registry tells you *which* connector nodes exist, but not what operations they support or what fields are required. Without IS discovery, generated flows will have missing or incorrect `inputs.detail`, empty `outputs` blocks, and unresolvable `$vars` references — issues that `flow validate` does not catch.
 
-### Step 4 — Plan the flow (interactive)
+### Step 5 — Plan the flow (interactive)
 
 **Only for new flows or major restructuring.** Skip for small targeted edits.
 
 Generate a plan as a **self-contained HTML file** with a mermaid diagram and structured details. This lets the user (and PMs) visually review the flow topology before any code is written.
 
-#### 4a. Write the plan file
+#### 5a. Write the plan file
 
 Write `flow-plan.html` in the project directory using the template in [references/plan-template.html](references/plan-template.html). The plan must include:
 
 1. **Summary** — 2-3 sentences describing what the flow does end-to-end
 2. **Mermaid diagram** — visual flowchart showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability.
 3. **Node table** — every node with: ID, display name, node type, and what it does
-4. **Connector details** — for each connector node: connector key, operation, required input fields (from Step 3b IS discovery), and connection status (found/missing)
+4. **Connector details** — for each connector node: connector key, operation, required input fields (from Step 4 IS discovery), and connection status (found/missing)
 5. **Inputs & Outputs** — what the flow needs to start and what it produces
 6. **Open questions** — anything the user hasn't specified, marked as `[REQUIRED: ...]`
 
-#### 4b. Open the plan for review
+#### 5b. Open the plan for review
 
 ```bash
 open flow-plan.html    # macOS — opens in default browser
@@ -127,9 +127,9 @@ open flow-plan.html    # macOS — opens in default browser
 
 In chat, output a **short summary only** (goal + key nodes + any open questions). Tell the user to review the full plan and diagram in the browser.
 
-#### 4c. Iterate until approved
+#### 5c. Iterate until approved
 
-**Do NOT proceed to Step 5 until the user explicitly approves the plan.** The iteration loop:
+**Do NOT proceed to Step 6 until the user explicitly approves the plan.** The iteration loop:
 
 1. User reviews the plan in browser and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
 2. Update `flow-plan.html` with the changes
@@ -137,19 +137,19 @@ In chat, output a **short summary only** (goal + key nodes + any open questions)
 4. Summarize what changed in chat
 5. Repeat until the user says the plan is approved
 
-### Step 5 — Build the flow
+### Step 6 — Build the flow
 
 Edit `flow_files/<ProjectName>.flow` only. Never edit `content/<ProjectName>.bpmn` — it is auto-generated.
 
 Build the flow by editing the `.flow` JSON directly. For each node:
 1. Get the full node schema: `uip flow registry get <nodeType> --format json`
 2. Copy the `Data.Node` object into the `definitions` array
-3. Add the node instance to the `nodes` array with correct inputs (use field info from Step 3b IS discovery)
+3. Add the node instance to the `nodes` array with correct inputs (use field info from Step 4 IS discovery)
 4. Add edges to the `edges` array with correct `sourcePort` and `targetPort`
 
 See [references/flow-file-format.md](references/flow-file-format.md) for the full JSON schema, node/edge structure, and definition requirements.
 
-### Step 6 — Validate loop
+### Step 7 — Validate loop
 
 Run validation and fix errors iteratively until the flow is clean.
 
@@ -159,7 +159,7 @@ uip flow validate flow_files/<ProjectName>.flow --format json
 
 **Validation loop (max 5 iterations):**
 1. Run `uip flow validate`
-2. If valid → done, move to Step 7
+2. If valid → done, move to Step 8
 3. If errors → read the error messages, fix the `.flow` file
 4. Go to 1
 
@@ -171,7 +171,7 @@ Common error categories:
 
 If validation still fails after 5 iterations, stop and report the remaining errors to the user.
 
-### Step 7 — Debug (cloud) — only when explicitly requested
+### Step 8 — Debug (cloud) — only when explicitly requested
 
 ```bash
 uip flow debug flow_files/<ProjectName>.flow
@@ -185,7 +185,7 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 
 | I need to... | Read these |
 |---|---|
-| **Generate a flow plan** | Step 4 + [references/plan-template.html](references/plan-template.html) |
+| **Generate a flow plan** | Step 5 + [references/plan-template.html](references/plan-template.html) |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
