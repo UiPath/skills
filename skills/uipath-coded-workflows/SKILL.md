@@ -98,32 +98,40 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
     4. Only then proceed to run the workflow or report success to the user
     5. If after 5 fix attempts errors persist, stop and present the remaining errors to the user — they may require domain knowledge, missing dependencies, or environment-specific fixes you cannot resolve autonomously
     Note: `get-errors` returns the cached error state without re-analyzing — use `validate` instead when files have been changed outside Studio.
-15. **NEVER use UITask (ScreenPlay) as the primary UI automation approach.** For ANY workflow using `uiAutomation.*`, follow the Finding Descriptors hierarchy in [ui-automation overview](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/coded/ui-automation.md): (1) Check Object Repository, (2) Check UILibrary NuGet packages, (3) Indicate missing elements via Studio, (4) UITask ONLY as last resort for brittle selectors. Do NOT skip steps or jump to UITask because indicating seems tedious.
+15. **NEVER use UITask (ScreenPlay) as the primary UI automation approach.** For ANY workflow using `uiAutomation.*`, follow the Finding Descriptors hierarchy in the UI Automation coded API reference (discover the latest version folder under `../../references/activity-docs/UiPath.UIAutomation.Activities/`): (1) Check Object Repository, (2) Check UILibrary NuGet packages, (3) Indicate missing elements via Studio, (4) UITask ONLY as last resort for brittle selectors. Do NOT skip steps or jump to UITask because indicating seems tedious.
+
+### UI Automation References
+
+For a quick overview of UI automation patterns, descriptor resolution, indication flow, and common pitfalls, see [ui-automation-guide.md](references/ui-automation-guide.md).
+
+The UIA activity-docs version folder may contain additional guides (selector creation, target configuration, CV targeting, selector improvement). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+
+For full API details: `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/`.
 
 ## Task Navigation
 
-Choose your task to find the right reference files:
+Choose your task to find the right reference files. **For any activity package docs**, always follow the doc resolution order from [Resolving Packages & Activity Docs § Step 2](#step-2--find-activity-docs-priority-order): check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/` first, then fall back to the bundled references below.
 
 | I need to... | Read these |
 |-------------|-----------|
 | **Create a new project** | Quick Start above → [operations-guide.md § Initialize](references/operations-guide.md) |
 | **Add/edit a workflow** | [operations-guide.md § Add Workflow](references/operations-guide.md) → [coding-guidelines.md](references/coding-guidelines.md) |
 | **Add a test case** | [operations-guide.md § Add Test Case](references/operations-guide.md) |
-| **Write UI automation** | [ui-automation.md](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/coded/ui-automation.md) → [operations-guide.md § Indicate](references/operations-guide.md) |
-| **Use Excel/Word/Mail/etc.** | Service table below → activity reference in `../../references/activity-docs/{PackageId}/{Version}/coded/` (e.g. [excel](../../references/activity-docs/UiPath.Excel.Activities/3.5/coded/excel.md), [word](../../references/activity-docs/UiPath.Word.Activities/2.5/coded/word.md), [mail](../../references/activity-docs/UiPath.Mail.Activities/2.8/coded/mail.md), [powerpoint](../../references/activity-docs/UiPath.Presentations.Activities/2.5/coded/powerpoint.md)) |
+| **Write UI automation** | [ui-automation-guide.md](references/ui-automation-guide.md) → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` → [operations-guide.md § Indicate](references/operations-guide.md) |
+| **Use Excel/Word/Mail/etc.** | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/coded/` |
 | **Use Office 365 / Google** | Service table below → [codedworkflow-reference.md § Integration Service](references/codedworkflow-reference.md) |
-| **Use Azure services** | Service table below → [azure](../../references/activity-docs/UiPath.Azure.Activities/1.7/coded/azure.md) |
-| **Use Google Cloud (GCP)** | Service table below → [google-cloud](../../references/activity-docs/UiPath.GoogleCloud.Activities/2.5/coded/google-cloud.md) |
-| **Use Exchange Server** | Service table below → [exchange-server](../../references/activity-docs/UiPath.ExchangeServer.Activities/1.4/coded/exchange-server.md) |
-| **Use System Center** | Service table below → [system-center](../../references/activity-docs/UiPath.SystemCenter.Activities/1.6/coded/system-center.md) |
-| **Use Amazon Web Services** | Service table below → [amazon-web-services](../../references/activity-docs/UiPath.AmazonWebServices.Activities/2.9/coded/amazon-web-services.md) |
-| **Use Amazon WorkSpaces** | Service table below → [amazon-workspaces](../../references/activity-docs/UiPath.AmazonWorkSpaces.Activities/1.5/coded/amazon-workspaces.md) |
-| **Use Azure AD** | Service table below → [azure-active-directory](../../references/activity-docs/UiPath.AzureActiveDirectory.Activities/1.6/coded/azure-active-directory.md) |
-| **Use Azure WVD** | Service table below → [azure-wvd](../../references/activity-docs/UiPath.AzureWVD.Activities/1.5/coded/azure-wvd.md) |
-| **Use Active Directory** | Service table below → [active-directory](../../references/activity-docs/UiPath.ActiveDirectory.Activities/1.7/coded/active-directory.md) |
-| **Use Citrix** | Service table below → [citrix](../../references/activity-docs/UiPath.Citrix.Activities/1.5/coded/citrix.md) |
-| **Use Hyper-V** | Service table below → [hyperv](../../references/activity-docs/UiPath.HyperV.Activities/1.4/coded/hyperv.md) |
-| **Use NetIQ eDirectory** | Service table below → [netiq-edirectory](../../references/activity-docs/UiPath.NetIQeDirectory.Activities/1.6/coded/netiq-edirectory.md) |
+| **Use Azure services** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Azure.Activities/{closest}/coded/` |
+| **Use Google Cloud (GCP)** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.GoogleCloud.Activities/{closest}/coded/` |
+| **Use Exchange Server** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.ExchangeServer.Activities/{closest}/coded/` |
+| **Use System Center** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.SystemCenter.Activities/{closest}/coded/` |
+| **Use Amazon Web Services** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.AmazonWebServices.Activities/{closest}/coded/` |
+| **Use Amazon WorkSpaces** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.AmazonWorkSpaces.Activities/{closest}/coded/` |
+| **Use Azure AD** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.AzureActiveDirectory.Activities/{closest}/coded/` |
+| **Use Azure WVD** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.AzureWVD.Activities/{closest}/coded/` |
+| **Use Active Directory** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.ActiveDirectory.Activities/{closest}/coded/` |
+| **Use Citrix** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Citrix.Activities/{closest}/coded/` |
+| **Use Hyper-V** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.HyperV.Activities/{closest}/coded/` |
+| **Use NetIQ eDirectory** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.NetIQeDirectory.Activities/{closest}/coded/` |
 | **Build/run/validate** | [uip-guide.md](references/uip-guide.md) |
 | **Add a NuGet package** | [operations-guide.md § Add Dependency](references/operations-guide.md) → [third-party-packages-guide.md](references/third-party-packages-guide.md) |
 | **Troubleshoot errors** | [coding-guidelines.md § Common Issues](references/coding-guidelines.md) |
@@ -167,49 +175,60 @@ These packages provide services for cloud platforms, virtualization, directory s
 
 | Service Property | Required Package in `project.json` | API Reference |
 |-----------------|-------------------------------------|---------------|
-| `azure` | `UiPath.Azure.Activities` | [azure](../../references/activity-docs/UiPath.Azure.Activities/1.7/coded/azure.md) |
-| `gcp` | `UiPath.GoogleCloud.Activities` | [google-cloud](../../references/activity-docs/UiPath.GoogleCloud.Activities/2.5/coded/google-cloud.md) |
-| `exchangeserver` | `UiPath.ExchangeServer.Activities` | [exchange-server](../../references/activity-docs/UiPath.ExchangeServer.Activities/1.4/coded/exchange-server.md) |
-| `systemCenter` | `UiPath.SystemCenter.Activities` | [system-center](../../references/activity-docs/UiPath.SystemCenter.Activities/1.6/coded/system-center.md) |
-| `aws` | `UiPath.AmazonWebServices.Activities` | [amazon-web-services](../../references/activity-docs/UiPath.AmazonWebServices.Activities/2.9/coded/amazon-web-services.md) |
-| `awrks` | `UiPath.Amazon.Workspaces.Activities` | [amazon-workspaces](../../references/activity-docs/UiPath.AmazonWorkSpaces.Activities/1.5/coded/amazon-workspaces.md) |
-| `azureAD` | `UiPath.AzureActiveDirectory.Activities` | [azure-active-directory](../../references/activity-docs/UiPath.AzureActiveDirectory.Activities/1.6/coded/azure-active-directory.md) |
-| `azureWVD` | `UiPath.AzureWVD.Activities` | [azure-wvd](../../references/activity-docs/UiPath.AzureWVD.Activities/1.5/coded/azure-wvd.md) |
-| `activeDirectoryDomainServices` | `UiPath.ActiveDirectory.Activities` | [active-directory](../../references/activity-docs/UiPath.ActiveDirectory.Activities/1.7/coded/active-directory.md) |
-| `citrix` | `UiPath.Citrix.Activities` | [citrix](../../references/activity-docs/UiPath.Citrix.Activities/1.5/coded/citrix.md) |
-| `hyperv` | `UiPath.HyperV.Activities` | [hyperv](../../references/activity-docs/UiPath.HyperV.Activities/1.4/coded/hyperv.md) |
-| `netiq` | `UiPath.NetIQeDirectory.Activities` | [netiq-edirectory](../../references/activity-docs/UiPath.NetIQeDirectory.Activities/1.6/coded/netiq-edirectory.md) |
+| `azure` | `UiPath.Azure.Activities` | `../../references/activity-docs/UiPath.Azure.Activities/{latest}/coded/` |
+| `gcp` | `UiPath.GoogleCloud.Activities` | `../../references/activity-docs/UiPath.GoogleCloud.Activities/{latest}/coded/` |
+| `exchangeserver` | `UiPath.ExchangeServer.Activities` | `../../references/activity-docs/UiPath.ExchangeServer.Activities/{latest}/coded/` |
+| `systemCenter` | `UiPath.SystemCenter.Activities` | `../../references/activity-docs/UiPath.SystemCenter.Activities/{latest}/coded/` |
+| `aws` | `UiPath.AmazonWebServices.Activities` | `../../references/activity-docs/UiPath.AmazonWebServices.Activities/{latest}/coded/` |
+| `awrks` | `UiPath.Amazon.Workspaces.Activities` | `../../references/activity-docs/UiPath.AmazonWorkSpaces.Activities/{latest}/coded/` |
+| `azureAD` | `UiPath.AzureActiveDirectory.Activities` | `../../references/activity-docs/UiPath.AzureActiveDirectory.Activities/{latest}/coded/` |
+| `azureWVD` | `UiPath.AzureWVD.Activities` | `../../references/activity-docs/UiPath.AzureWVD.Activities/{latest}/coded/` |
+| `activeDirectoryDomainServices` | `UiPath.ActiveDirectory.Activities` | `../../references/activity-docs/UiPath.ActiveDirectory.Activities/{latest}/coded/` |
+| `citrix` | `UiPath.Citrix.Activities` | `../../references/activity-docs/UiPath.Citrix.Activities/{latest}/coded/` |
+| `hyperv` | `UiPath.HyperV.Activities` | `../../references/activity-docs/UiPath.HyperV.Activities/{latest}/coded/` |
+| `netiq` | `UiPath.NetIQeDirectory.Activities` | `../../references/activity-docs/UiPath.NetIQeDirectory.Activities/{latest}/coded/` |
 
 > **Note:** The `office365` and `google` services require **Integration Service connections** configured in UiPath Automation Cloud. They inject both a service property (`office365` / `google`) and a `connections` property for accessing configured connection instances. `office365` provides Mail, Calendar, Excel (cloud), OneDrive, and SharePoint via Microsoft Graph API. `google` provides Gmail, Google Calendar, Google Drive, Google Sheets, and Google Docs via Google Workspace APIs. Both use OAuth tokens managed by Integration Service — see [references/codedworkflow-reference.md § Integration Service Connections](references/codedworkflow-reference.md).
 
-### Determining Package Version for Activity Docs
+### Resolving Packages & Activity Docs
 
-Activity reference docs are versioned by major.minor under `../../references/activity-docs/{PackageId}/{Major.Minor}/coded/`. **Before reading any activity docs, determine the user's installed version:**
+Follow this flow whenever you need to use an activity package:
 
-1. **Read `project.json`** in the user's project directory and find the package in the `dependencies` object:
-   ```json
-   {
-     "dependencies": {
-       "UiPath.Excel.Activities": "[3.3.1]",
-       "UiPath.UIAutomation.Activities": "[25.10.21]",
-       "UiPath.System.Activities": "[25.12.2]"
-     }
-   }
-   ```
-2. **Extract major.minor** from the version string — strip the brackets and drop the patch version:
-   - `[3.3.1]` → `3.3`
-   - `[25.10.21]` → `25.10`
-   - `[2.5.10]` → `2.5`
-3. **List available version folders** for the package:
-   ```
-   Glob: pattern="{PackageId}/*" path="../../references/activity-docs/"
-   ```
-4. **Pick the best match:**
-   - If the exact major.minor folder exists (e.g., `3.3/`) → use it
-   - If not, use the **closest available version that doesn't exceed** the installed version (e.g., installed `3.3`, available folders are `3.5/` → use `3.5/` as it's the closest, but note docs may reference newer APIs)
-   - Fall back to the latest available folder if no lower version exists
+#### Step 1 — Ensure the package is installed
 
-The version numbers in the links throughout this document represent the latest documented version. Always cross-check with the user's actual installed version when available.
+Check `project.json` → `dependencies` for the required package.
+
+- **If the package IS in `project.json`** → note the installed version, proceed to Step 2. You may suggest updating to the latest for the best experience, but **never force an update** — respect the user's current version.
+- **If the package is NOT in `project.json`** → discover and install the latest version:
+
+```bash
+# List latest versions including prerelease/beta (newest first) — DEFAULT
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --format json
+
+# List only stable versions (use when the user explicitly prefers stable)
+uip rpa get-versions --package-id <PackageId> --project-dir "<PROJECT_DIR>" --format json
+
+# Install a specific version
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>","version":"<version>"}]' --project-dir "<PROJECT_DIR>" --format json
+
+# Install without specifying version (auto-resolves: prerelease Studio → latest preview, stable Studio → latest stable)
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --format json
+```
+
+**By default, use `--include-prerelease`** to get the absolute latest version (including beta/preview). Only omit it when the user explicitly asks for stable versions. Always prefer `uip rpa get-versions` over hardcoded version numbers — it queries the actual NuGet feeds configured for the project.
+
+#### Step 2 — Find activity docs (priority order)
+
+Once the package is installed, find the right documentation in this order:
+
+1. **Check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`** — these are auto-generated docs from the installed package version and are always the most accurate match. If present, use them as the **primary source** and stop here.
+2. **Fall back to bundled reference docs** — if `.local/docs/` is missing or doesn't contain docs for this package, look in `../../references/activity-docs/{PackageId}/` and pick the **closest version folder** to what is installed:
+   - Extract major.minor from the installed version (e.g., `[25.10.21]` → `25.10`)
+   - List available doc folders: `ls ../../references/activity-docs/{PackageId}/`
+   - Pick the closest match: exact major.minor if it exists, otherwise the nearest available folder
+   - If the package was just installed (new), use the latest available folder
+
+**Resolving `{latest}`:** Throughout this document, `{latest}` means "list the version folders under the package directory and pick the highest one." When the project already has the package installed, prefer the docs version closest to the installed version instead.
 
 📖 **Using statements rules and best practices**: [references/coding-guidelines.md](references/coding-guidelines.md)
 
@@ -257,15 +276,17 @@ All file templates with ready-to-use code:
 
 ## Activity Examples & References
 
-Activity and service references live in `../../references/activity-docs/{PackageId}/{Version}/coded/` — each contains a main guide, API reference (`api.md`, `windows-api.md`, `portable-api.md`), and `examples.md`. See the Task Navigation table above for links.
+**Always check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/` first** — these are auto-generated from the installed package and are the most accurate. Only fall back to the bundled references below when `.local/docs/` is unavailable.
+
+Bundled reference docs live in `../../references/activity-docs/{PackageId}/{Version}/coded/` — pick the version folder closest to what is installed in the project (see [Resolving Packages & Activity Docs § Step 2](#step-2--find-activity-docs-priority-order)).
 
 Available reference packages:
-- **Document & productivity:** [Excel](../../references/activity-docs/UiPath.Excel.Activities/3.5/coded/excel.md), [Word](../../references/activity-docs/UiPath.Word.Activities/2.5/coded/word.md), [Presentations](../../references/activity-docs/UiPath.Presentations.Activities/2.5/coded/powerpoint.md), [Mail](../../references/activity-docs/UiPath.Mail.Activities/2.8/coded/mail.md), [Office365](../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/coded/office365.md), [GSuite](../../references/activity-docs/UiPath.GSuite.Activities/3.8/coded/gsuite.md)
-- **Cloud platforms:** [Azure](../../references/activity-docs/UiPath.Azure.Activities/1.7/coded/azure.md), [Google Cloud](../../references/activity-docs/UiPath.GoogleCloud.Activities/2.5/coded/google-cloud.md), [Amazon Web Services](../../references/activity-docs/UiPath.AmazonWebServices.Activities/2.9/coded/amazon-web-services.md)
-- **Virtualization & infrastructure:** [Amazon WorkSpaces](../../references/activity-docs/UiPath.AmazonWorkSpaces.Activities/1.5/coded/amazon-workspaces.md), [Azure WVD](../../references/activity-docs/UiPath.AzureWVD.Activities/1.5/coded/azure-wvd.md), [Citrix](../../references/activity-docs/UiPath.Citrix.Activities/1.5/coded/citrix.md), [Hyper-V](../../references/activity-docs/UiPath.HyperV.Activities/1.4/coded/hyperv.md)
-- **Identity & directory:** [Azure Active Directory](../../references/activity-docs/UiPath.AzureActiveDirectory.Activities/1.6/coded/azure-active-directory.md), [Active Directory](../../references/activity-docs/UiPath.ActiveDirectory.Activities/1.7/coded/active-directory.md), [NetIQ eDirectory](../../references/activity-docs/UiPath.NetIQeDirectory.Activities/1.6/coded/netiq-edirectory.md)
-- **IT automation:** [Exchange Server](../../references/activity-docs/UiPath.ExchangeServer.Activities/1.4/coded/exchange-server.md), [System Center](../../references/activity-docs/UiPath.SystemCenter.Activities/1.6/coded/system-center.md)
-- **Core:** [System](../../references/activity-docs/UiPath.System.Activities/25.10/coded/system.md), [Testing](../../references/activity-docs/UiPath.Testing.Activities/25.10/coded/testing.md), [UI Automation](../../references/activity-docs/UiPath.UIAutomation.Activities/26.2/coded/ui-automation.md)
+- **Document & productivity:** `UiPath.Excel.Activities`, `UiPath.Word.Activities`, `UiPath.Presentations.Activities`, `UiPath.Mail.Activities`, `UiPath.MicrosoftOffice365.Activities`, `UiPath.GSuite.Activities`
+- **Cloud platforms:** `UiPath.Azure.Activities`, `UiPath.GoogleCloud.Activities`, `UiPath.AmazonWebServices.Activities`
+- **Virtualization & infrastructure:** `UiPath.AmazonWorkSpaces.Activities`, `UiPath.AzureWVD.Activities`, `UiPath.Citrix.Activities`, `UiPath.HyperV.Activities`
+- **Identity & directory:** `UiPath.AzureActiveDirectory.Activities`, `UiPath.ActiveDirectory.Activities`, `UiPath.NetIQeDirectory.Activities`
+- **IT automation:** `UiPath.ExchangeServer.Activities`, `UiPath.SystemCenter.Activities`
+- **Core:** `UiPath.System.Activities`, `UiPath.Testing.Activities`, `UiPath.UIAutomation.Activities`
 
 ## Completion Output
 
