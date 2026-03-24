@@ -87,6 +87,7 @@ After indication, re-read `.objects/` metadata to get the reference strings for 
 
 ## Common Pitfalls
 
+- **C# Windows projects fail with selectors** — In C# Windows (non-Legacy) projects, JIT compilation is disabled, causing `InArgument<string>` selector values to fail at runtime. **Always use VB expression language for Windows projects that use UI Automation.** See [common-pitfalls.md](common-pitfalls.md) for details.
 - **Missing `xmlns:uix`** — every UIA workflow needs `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"`
 - **Wrong Object Repository references** — never copy references from examples; always discover from `.objects/`
 - **SelectItem on web dropdowns** — may fail on custom `<select>` elements; use Type Into as a workaround

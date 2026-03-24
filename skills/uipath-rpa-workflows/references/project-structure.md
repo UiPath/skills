@@ -58,7 +58,7 @@ MyProject/
       "privateWorkflows": []
     }
   },
-  "expressionLanguage": "CSharp",
+  "expressionLanguage": "VisualBasic",
   "entryPoints": [
     {
       "filePath": "Main.xaml",
@@ -81,9 +81,11 @@ MyProject/
 | `name` | Project name (used in package output) |
 | `main` | Entry point workflow file (relative path) |
 | `dependencies` | NuGet package dependencies with version constraints |
-| `expressionLanguage` | `CSharp` or `VisualBasic` — determines expression syntax in XAML |
+| `expressionLanguage` | `CSharp` or `VisualBasic` — determines expression syntax in XAML. **Use `VisualBasic` for Windows target framework projects** (see note below) |
 | `designOptions.outputType` | `Process`, `Library`, or `Tests` |
 | `targetFramework` | `Windows` (.NET 6 Windows, default — best compatibility) or `Portable` (cross-platform .NET 6+ — for serverless/Studio Web) |
+
+> **Important — Expression Language for Windows Projects:** When `targetFramework` is `Windows`, always prefer `VisualBasic` as the expression language. In C# Windows (non-Legacy) projects, JIT compilation is disabled. This causes `InArgument<string>` values containing UiPath selector XML (e.g., `<html app='chrome.exe' /><webctrl tag='BUTTON' />`) to fail at runtime with compilation errors — the C# expression compiler cannot parse selector strings that contain angle brackets and single-quoted attributes. VB Windows projects do not have this limitation because VB expressions use a different compilation path that handles these selector strings correctly.
 
 ## Rules
 

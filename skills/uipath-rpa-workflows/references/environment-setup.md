@@ -76,9 +76,11 @@ uip rpa new \
 | `--name` | Any string | (required) | Project folder name |
 | `--location` | Directory path | (current dir) | Parent directory where project folder is created |
 | `--template-id` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` | `BlankTemplate` | Project template |
-| `--expression-language` | `VisualBasic`, `CSharp` | (template default) | Expression syntax for XAML workflows |
+| `--expression-language` | `VisualBasic`, `CSharp` | (template default) | Expression syntax for XAML workflows. **Use `VisualBasic` for Windows target framework** (see note below) |
 | `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
 | `--description` | Any string | (none) | Project description in project.json |
+
+> **Important — Use VB for Windows projects:** When creating projects with `--target-framework "Windows"`, always use `--expression-language "VisualBasic"`. In C# Windows (non-Legacy) projects, JIT compilation is disabled, which causes `InArgument<string>` values containing UiPath selector XML (e.g., `<html app='chrome.exe' /><webctrl tag='BUTTON' />`) to fail at runtime with compilation errors. VB Windows projects do not have this limitation. Only use `CSharp` with Windows target framework if the project will not use UI Automation selectors (i.e., no browser automation or desktop UI interaction).
 
 ### After Creation
 

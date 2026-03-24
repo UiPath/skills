@@ -2,6 +2,29 @@
 
 Common pitfalls that cause validation errors or runtime failures.
 
+## C# Windows Projects: JIT Compilation Disabled — Selector Expressions Fail
+
+**This is a critical project setup issue.** In C# Windows (non-Legacy) projects (`targetFramework: "Windows"` + `expressionLanguage: "CSharp"` in `project.json`), JIT compilation is disabled for expression evaluation. This causes **runtime failures** when `InArgument<string>` values contain UiPath selector XML strings.
+
+**What happens:**
+- Selectors like `<html app='chrome.exe' /><webctrl tag='BUTTON' />` are set as `InArgument<string>` values in XAML
+- The C# expression compiler tries to compile these strings but fails because the angle brackets and single-quoted attributes cannot be parsed as valid C# expressions
+- Error: `"JIT compilation is disabled for non-Legacy projects"` or expression compilation errors at runtime
+- This affects **all UI Automation activities** that use selectors (Click, Type Into, Get Text, etc.)
+
+**Why VB does not have this issue:**
+- VB Windows projects use a different expression compilation path that correctly handles selector strings as literal values
+- VB expression evaluation does not require JIT compilation for `InArgument<string>` values
+
+**Prevention:**
+- **Always create Windows target framework projects with `VisualBasic` expression language** — use `--expression-language "VisualBasic"` when calling `uip rpa new`
+- Only use C# expression language with Windows target framework if the project will **not** use UI Automation selectors
+- If you encounter this error in an existing C# Windows project, the project must be recreated with VB — there is no in-place fix for changing the expression language
+
+**Detection:** Check `project.json` — if `targetFramework` is `"Windows"` and `expressionLanguage` is `"CSharp"`, any workflow using UI Automation selectors will fail at runtime even if it passes static validation (`get-errors` may report 0 errors).
+
+---
+
 ## Container/Scope Requirements
 
 These activities **must** be placed inside a specific parent scope:
