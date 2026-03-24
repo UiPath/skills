@@ -4,7 +4,7 @@ Guide to creating new UiPath agents with AI-powered business logic implementatio
 
 ## Initial Setup
 
-Follow the [Project Setup Guide](setup.md) to create your project directory, scaffold with `uipath new`, install dependencies, and authenticate. All subsequent commands use `uv run` to run within the project's virtual environment.
+Follow the [Project Setup Guide](setup.md) to create your project directory, scaffold with `uip codedagents new`, install dependencies, and authenticate. All subsequent commands use the `uip codedagents` CLI wrapper.
 
 ## Workflow
 
@@ -124,15 +124,15 @@ Describe your agent's functionality, then implement the main function (or graph 
 
 ### Step 4: Generate Entry Points
 
-Run `uv run uipath init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
+Run `uip codedagents init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
 
 ### Step 5: Create Smoke Evaluation Set
 
-**Required.** Create `evaluations/eval-sets/smoke-test.json` with 2-3 basic test cases, then run `uv run uipath eval`. Use `ExactMatchEvaluator` for deterministic agents or `LLMJudgeOutputEvaluator` for LLM agents.
+**Required.** Create `evaluations/eval-sets/smoke-test.json` with 2-3 basic test cases, then run `uip codedagents eval`. Use `ExactMatchEvaluator` for deterministic agents or `LLMJudgeOutputEvaluator` for LLM agents.
 
 ### Step 6: Deploy
 
-When deploying: add author to `pyproject.toml`, bump version if re-deploying, then run `uv run uipath deploy --my-workspace`.
+When deploying: add author to `pyproject.toml`, bump version if re-deploying, then run `uip codedagents deploy --my-workspace`.
 
 ## Generated Template Details
 
@@ -148,4 +148,4 @@ The created agent will include:
 - Input/output fields are strongly typed with Pydantic
 - The agent works globally and can call any UiPath SDK services
 - Generated `entry-points.json` enables integration with UiPath Cloud
-- If you require authentication, run `uv run uipath auth --cloud --tenant <TENANT>`.
+- If you require authentication, run `uip login --format json` then `uip login tenant set "<TENANT>" --format json`.

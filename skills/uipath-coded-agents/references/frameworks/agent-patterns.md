@@ -10,11 +10,11 @@ Common implementation patterns for building UiPath coded agents, from simple fun
 
 See the **[Project Setup Guide](setup.md)** for:
 - Creating a new project directory
-- Scaffolding with `uv run uipath new`
+- Scaffolding with `uip codedagents new`
 - Installing dependencies with `uv sync`
 - Defining Input/Output Pydantic models
-- Configuring your agent with `uv run uipath init`
-- Testing your agent with `uv run uipath run`
+- Configuring your agent with `uip codedagents init`
+- Testing your agent with `uip codedagents run`
 
 ## Pattern Overview
 
@@ -386,7 +386,7 @@ graph = builder.compile()
 
 ## Common Building Blocks
 
-- **Pydantic models** — Every agent defines `Input`/`Output` (or `GraphInput`/`GraphOutput`) as `BaseModel` subclasses. Run `uv run uipath init` after changing them.
+- **Pydantic models** — Every agent defines `Input`/`Output` (or `GraphInput`/`GraphOutput`) as `BaseModel` subclasses. Run `uip codedagents init` after changing them.
 - **`@traced()`** — Apply to `main` and key helpers. LangGraph agents get tracing automatically.
 - **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking.
 - **Async** — All patterns support `async def main(...)`. SDK methods have `_async` variants.

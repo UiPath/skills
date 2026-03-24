@@ -205,7 +205,7 @@ eval-sets/
 ## CI/CD Integration
 
 ```bash
-uv run uipath eval <agent> evaluations/eval-sets/smoke-tests.json \
+uip codedagents eval <agent> evaluations/eval-sets/smoke-tests.json \
   --workers 4 \
   --mocker-cache \
   --output-file eval-results.json

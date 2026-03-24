@@ -1,3 +1,53 @@
+# Deploy UiPath Agents
+
+Package, publish, and invoke your agents in UiPath Cloud.
+
+## Quick Reference
+
+```bash
+# Pack + publish in one command
+uip codedagents deploy --my-workspace
+
+# Or step by step
+uip codedagents pack
+uip codedagents publish --my-workspace
+
+# Invoke published agent — use entrypoint name from entry-points.json, NOT project name
+uip codedagents invoke <ENTRYPOINT> '{"query": "test"}'
+```
+
+## Documentation
+
+- **[Deployment Guide](deployment.md)** — Complete deployment workflow
+  - `uip codedagents pack` — Package into .nupkg with validation
+  - `uip codedagents publish` — Upload to Orchestrator feed (--my-workspace, --tenant, --folder)
+  - `uip codedagents deploy` — Combined pack + publish
+  - `uip codedagents invoke` — Execute published agents in cloud
+  - Pack options (`packOptions` in `uipath.json`)
+  - Configuration files and environment variables
+
+## Prerequisites
+
+- Authentication configured — if not authenticated, use the [authentication reference](authentication.md) first
+- `entry-points.json` exists (run `uip codedagents init`)
+- `pyproject.toml` has `name`, `version`, `description`, `authors`
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` section |
+| `Pack failed: missing fields` | `pyproject.toml` incomplete | Ensure `name`, `version`, `description`, and `authors` are all set |
+| `Version already exists` | Same version already published | Bump the patch version in `pyproject.toml` before re-deploying |
+| `401 Unauthorized` | Auth expired or not configured | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+
+## Additional Instructions
+
+- Read the [deployment reference](deployment.md) for details on pack options and feed selection.
+- Always test locally with `uip codedagents run <ENTRYPOINT>` before deploying.
+
+---
+
 # Deployment
 
 Package, publish, and invoke your UiPath coded agent in the cloud.
@@ -5,8 +55,8 @@ Package, publish, and invoke your UiPath coded agent in the cloud.
 ## Deployment Workflow
 
 ```
-uipath init  →  uipath run (test)  →  uipath pack  →  uipath publish  →  uipath invoke
-                                       \___________ uipath deploy ___________/
+uip codedagents init → uip codedagents run (test) → uip codedagents pack → uip codedagents publish → uip codedagents invoke
+                                       \___________ uip codedagents deploy ___________/
 ```
 
 ## Pack
@@ -14,7 +64,7 @@ uipath init  →  uipath run (test)  →  uipath pack  →  uipath publish  → 
 Package your project into a `.nupkg` file for deployment.
 
 ```bash
-uv run uipath pack
+uip codedagents pack
 ```
 
 ### What It Does
@@ -80,7 +130,7 @@ The package is saved as `.uipath/my-agent.0.1.0.nupkg`.
 Upload a packaged project to a UiPath feed.
 
 ```bash
-uv run uipath publish
+uip codedagents publish
 ```
 
 ### Options
@@ -95,13 +145,13 @@ uv run uipath publish
 
 ```bash
 # Publish to personal workspace
-uv run uipath publish --my-workspace
+uip codedagents publish --my-workspace
 
 # Publish to tenant feed
-uv run uipath publish --tenant
+uip codedagents publish --tenant
 
 # Publish to a specific folder
-uv run uipath publish --folder "Finance"
+uip codedagents publish --folder "Finance"
 ```
 
 ### Feed Selection
@@ -121,7 +171,7 @@ Authentication configures these environment variables:
 Shorthand that runs **pack + publish** in one command.
 
 ```bash
-uv run uipath deploy
+uip codedagents deploy
 ```
 
 ### Options
@@ -139,20 +189,20 @@ Combines all options from pack and publish:
 
 ```bash
 # Deploy to personal workspace
-uv run uipath deploy --my-workspace
+uip codedagents deploy --my-workspace
 
 # Deploy to a specific folder
-uv run uipath deploy --folder "Finance"
+uip codedagents deploy --folder "Finance"
 
 # Deploy from a subdirectory
-uv run uipath deploy ./my-agent --my-workspace
+uip codedagents deploy ./my-agent --my-workspace
 ```
 
 ---
 
 ## Execute
 
-To run and test your published agent, use `uv run uipath invoke <entrypoint> '<json-input>'`. This is async — it returns a monitoring URL immediately. There is NO `--wait` flag.
+To run and test your published agent, use `uip codedagents invoke <entrypoint> '<json-input>'`. This is async — it returns a monitoring URL immediately. There is NO `--wait` flag.
 
 ---
 
@@ -162,10 +212,10 @@ To run and test your published agent, use `uv run uipath invoke <entrypoint> '<j
 
 | File | Created By | Used By | Purpose |
 |------|-----------|---------|---------|
-| `uipath.json` | `uipath init` | `pack` | Runtime options, pack options |
+| `uipath.json` | `uip codedagents init` | `pack` | Runtime options, pack options |
 | `pyproject.toml` | You | `pack`, `invoke` | Project name, version, dependencies |
-| `entry-points.json` | `uipath init` | `pack`, `invoke` | Entry point definitions with schemas |
-| `bindings.json` | `uipath init` | `pack` | Runtime bindings |
+| `entry-points.json` | `uip codedagents init` | `pack`, `invoke` | Entry point definitions with schemas |
+| `bindings.json` | `uip codedagents init` | `pack` | Runtime bindings |
 
 ### Environment Variables
 
@@ -175,7 +225,7 @@ To run and test your published agent, use `uv run uipath invoke <entrypoint> '<j
 | `UIPATH_ACCESS_TOKEN` | publish, deploy, invoke | Bearer token for API auth |
 | `UIPATH_FOLDER_PATH` | optional | Default folder context |
 
-These are set automatically by `uv run uipath auth`.
+These are set automatically by `uip login`.
 
 ## Version Bumping
 
@@ -190,11 +240,10 @@ On re-deploy, always increment the patch number (e.g., `0.0.1` → `0.0.2` → `
 
 ## Typical Deployment Flow
 
-1. Authenticate with `uv run uipath auth --cloud --tenant <TENANT>`
-2. Test locally: `uv run uipath run main '<input-json>'`
+1. Authenticate with `uip login --format json` then `uip login tenant set "<TENANT>" --format json`
+2. Test locally: `uip codedagents run main '<input-json>'`
 3. Bump version in `pyproject.toml` if re-deploying
-4. Deploy: `uv run uipath deploy --my-workspace`
-5. Invoke published agent: `uv run uipath invoke main '<input-json>'`
+4. Deploy: `uip codedagents deploy --my-workspace`
+5. Invoke published agent: `uip codedagents invoke main '<input-json>'`
 
-> **Note:** Use `uv run uipath run` for local testing and `uv run uipath invoke` for cloud execution.
-
+> **Note:** Use `uip codedagents run` for local testing and `uip codedagents invoke` for cloud execution.

@@ -16,7 +16,7 @@ Before creating evaluations, ensure your project has:
 - `entry-points.json` - Agent definitions
 - `evaluations/` directory for test cases
 
-If missing, create an agent first using `uv run uipath new` and `uv run uipath init`.
+If missing, create an agent first using `uip codedagents new` and `uip codedagents init`.
 
 ### Phase 2: Define Evaluation Details
 
