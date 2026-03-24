@@ -7,9 +7,9 @@ Complete reference for all `uip` CLI commands and error recovery patterns.
 uip --help                                  # top-level command groups
 uip rpa --help                              # all rpa subcommands
 uip rpa get-default-activity-xaml --help     # parameters for a specific command
-uip is --help                               # Integration Service command groups
-uip is connections --help                   # IS connections subcommands
-uip is connections list --help              # parameters for a specific IS command
+uip ipe --help                               # Integration Platform & Experiences command groups
+uip ipe connections --help                   # IS connections subcommands
+uip ipe connections list --help              # parameters for a specific IS command
 ```
 
 ## Installed Package Activity Documentation (Primary Discovery)
@@ -85,20 +85,20 @@ Use these when building UI Automation workflows to capture selectors into the Ob
 | **Get manual test cases** | `Bash`: `uip rpa get-manual-test-cases --format json` | (none) |
 | **Get manual test steps** | `Bash`: `uip rpa get-manual-test-steps --format json` | (none) |
 
-## Integration Service (IS) Tools
+## Integration Platform & Experiences (`ipe`) Tools
 
 | Action | How | Key Parameters |
 |--------|-----|----------------|
-| **List connectors** | `Bash`: `uip is connectors list [--filter "..."] --format json` | `--filter` (by name/key) |
-| **Get connector details** | `Bash`: `uip is connectors get <connector-key> --format json` | `connector-key` (required) |
-| **List connections** | `Bash`: `uip is connections list [connector-key] [--connection-id "..."] [--folder-key "..."] --format json` | `connector-key` (optional filter), `--connection-id`, `--folder-key` |
-| **Create connection (OAuth)** | `Bash`: `uip is connections create <connector-key> [--no-browser]` | `connector-key` (required), opens OAuth flow |
-| **Ping/verify connection** | `Bash`: `uip is connections ping <connection-id>` | `connection-id` (required) |
-| **Edit/re-auth connection** | `Bash`: `uip is connections edit <connection-id>` | `connection-id` (required), opens OAuth flow |
-| **List connector activities** | `Bash`: `uip is activities list <connector-key> --format json` | `connector-key` (required) |
-| **List connector resources** | `Bash`: `uip is resources list <connector-key> [--operation ...] --format json` | `connector-key`, `--operation` (List/Retrieve/Create/Update/Delete/Replace) |
-| **Describe resource schema** | `Bash`: `uip is resources describe <connector-key> <object-name> [--operation ...] --format json` | `connector-key`, `object-name`, `--operation` |
-| **Execute resource CRUD** | `Bash`: `uip is resources execute <op> <connector-key> <object-name>` | Operations: `create`, `list`, `get`, `update`, `replace`, `delete` |
+| **List connectors** | `Bash`: `uip ipe connectors list [--filter "..."] --format json` | `--filter` (by name/key) |
+| **Get connector details** | `Bash`: `uip ipe connectors get <connector-key> --format json` | `connector-key` (required) |
+| **List connections** | `Bash`: `uip ipe connections list [connector-key] [--connection-id "..."] [--folder-key "..."] --format json` | `connector-key` (optional filter), `--connection-id`, `--folder-key` |
+| **Create connection (OAuth)** | `Bash`: `uip ipe connections create <connector-key> [--no-browser]` | `connector-key` (required), opens OAuth flow |
+| **Ping/verify connection** | `Bash`: `uip ipe connections ping <connection-id>` | `connection-id` (required) |
+| **Edit/re-auth connection** | `Bash`: `uip ipe connections edit <connection-id>` | `connection-id` (required), opens OAuth flow |
+| **List connector activities** | `Bash`: `uip ipe activities list <connector-key> --format json` | `connector-key` (required) |
+| **List connector resources** | `Bash`: `uip ipe resources list <connector-key> [--operation ...] --format json` | `connector-key`, `--operation` (List/Retrieve/Create/Update/Delete/Replace) |
+| **Describe resource schema** | `Bash`: `uip ipe resources describe <connector-key> <object-name> [--operation ...] --format json` | `connector-key`, `object-name`, `--operation` |
+| **Execute resource CRUD** | `Bash`: `uip ipe resources execute <op> <connector-key> <object-name>` | Operations: `create`, `list`, `get`, `update`, `replace`, `delete` |
 
 ## CLI Error Recovery
 

@@ -107,7 +107,7 @@ MyProject/
 | `UiPath.Word.Activities` | Word automation | Read Text, Replace Text, Insert Image, Export to PDF |
 | `UiPath.Testing.Activities` | Testing and assertions | Verify Expression, Verify Are Equal, Generate Test Data |
 | `UiPath.Presentations.Activities` | PowerPoint automation | Add Slide, Replace Text, Insert Image |
-| `UiPath.IntegrationService.Activities` | Integration Service connector runtime | Generic `ConnectorActivity` that consumes metadata from IS connectors (Salesforce, ServiceNow, HubSpot, etc.). Required for any IS connector activity. |
+| `UiPath.IntegrationService.Activities` | Integration Platform & Experiences connector runtime | Generic `ConnectorActivity` that consumes metadata from IPE connectors (Salesforce, ServiceNow, HubSpot, etc.). Required for any IPE connector activity. |
 | `UiPath.Cryptography.Activities` | Encryption/hashing | Encrypt Text, Decrypt Text, Hash File |
 
 ## Version Constraints

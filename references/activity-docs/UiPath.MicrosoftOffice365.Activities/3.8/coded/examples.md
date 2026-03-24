@@ -4,7 +4,7 @@ Examples using the `office365` service from `UiPath.MicrosoftOffice365.Activitie
 
 **Required package:** `"UiPath.MicrosoftOffice365.Activities": "[3.6.10]"`
 
-> **Prerequisites:** All examples require Integration Service connections configured in UiPath Automation Cloud. The `connections` property provides typed access to configured connections. Studio auto-generates `ConnectionsManager.cs` and `ConnectionsFactory.cs` in `.codedworkflows/` with the available connection names.
+> **Prerequisites:** All examples require Integration Platform & Experiences connections configured in UiPath Automation Cloud. The `connections` property provides typed access to configured connections. Studio auto-generates `ConnectionsManager.cs` and `ConnectionsFactory.cs` in `.codedworkflows/` with the available connection names.
 
 ---
 

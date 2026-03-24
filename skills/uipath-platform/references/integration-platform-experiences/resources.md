@@ -2,7 +2,7 @@
 
 Resources represent the data objects available through a connector (e.g., Salesforce Account, Contact, Opportunity). Each resource supports a set of CRUD operations.
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: [uip-commands.md — Integration Platform & Experiences](../uip-commands.md#integration-platform--experiences-ipe). Domain-specific usage patterns are shown inline below.
 
 ## Contents
 - Listing and Describing Resources
@@ -74,7 +74,7 @@ A reference field in the describe output:
   "field": "departmentId",
   "referencedObject": "departments",
   "lookupValue": "id",
-  "hint": "Resolve by executing: is resources execute list ... \"departments\" ..."
+  "hint": "Resolve by executing: ipe resources execute list ... \"departments\" ..."
 }
 ```
 
@@ -82,17 +82,17 @@ A reference field in the describe output:
 
 ```bash
 # 1. Describe → discover referenceFields: departmentId → "departments", contactId → "contacts"
-uip is resources describe "uipath-zoho-desk" "tickets" \
+uip ipe resources describe "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" --operation Create --format json
 
 # 2. Resolve references
-uip is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
+uip ipe resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
 # → { "id": "1892000000006907", "name": "Engineering" }
-uip is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
+uip ipe resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
 # → { "id": "1892000000048009", "name": "John Doe" }
 
 # 3. Execute with resolved IDs
-uip is resources execute create "uipath-zoho-desk" "tickets" \
+uip ipe resources execute create "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" \
   --body '{"departmentId": "1892000000006907", "subject": "Bug report", "contactId": "1892000000048009"}' \
   --format json
@@ -105,7 +105,7 @@ uip is resources execute create "uipath-zoho-desk" "tickets" \
 When describe metadata is unavailable (see [Describe Failures](#describe-failures)), infer reference fields from naming conventions:
 
 - Fields ending in **`Id`** (e.g., `PromotionId`, `AccountId`) typically reference the object with the matching base name (`Promotion`, `Account`).
-- List the inferred object to resolve the ID: `is resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --format json`
+- List the inferred object to resolve the ID: `ipe resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --format json`
 - Match the user's value by `Name` or `DisplayName` in the results.
 
 ### Example: Coupon → Promotion (no describe available)
@@ -113,12 +113,12 @@ When describe metadata is unavailable (see [Describe Failures](#describe-failure
 ```bash
 # User wants: create coupon "XYZ" for promotion "Chandu Test"
 # Infer: PromotionId → list Promotion objects
-uip is resources execute list "uipath-salesforce-sfdc" "Promotion" \
+uip ipe resources execute list "uipath-salesforce-sfdc" "Promotion" \
   --connection-id "<id>" --format json
 # → { "Id": "<promotion-id>", "Name": "Summer Sale" }
 
 # Use resolved Id in create
-uip is resources execute create "uipath-salesforce-sfdc" "Coupon" \
+uip ipe resources execute create "uipath-salesforce-sfdc" "Coupon" \
   --connection-id "<id>" \
   --body '{"CouponCode": "SAVE20", "PromotionId": "<promotion-id>"}' --format json
 ```
@@ -160,7 +160,7 @@ Some objects have auto-generated fields that cannot be set on create (e.g., Sale
 List operations may return paginated results. Use `--query "limit=50&offset=0"` and increment `offset` by `limit` to page through. Stop when the result set is empty or smaller than the limit.
 
 ```bash
-uip is resources execute list "<connector-key>" "<object>" \
+uip ipe resources execute list "<connector-key>" "<object>" \
   --connection-id "<id>" --query "limit=50&offset=0" --format json
 # → next page: --query "limit=50&offset=50"
 ```

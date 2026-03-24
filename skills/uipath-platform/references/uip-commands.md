@@ -58,16 +58,16 @@ Create, pack, publish, and deploy solutions. See [solution-guide.md](solution-gu
 
 ---
 
-## Integration Service (`is`)
+## Integration Platform & Experiences (`ipe`)
 
-Manage connectors, connections, and resources. See [integration-service/](integration-service/). Use `uip is --help` for all subcommands.
+Manage connectors, connections, and resources. See [integration-platform-experiences/](integration-platform-experiences/). Use `uip ipe --help` for all subcommands.
 
 | Command | Description |
 |---|---|
-| `uip is connectors list` | List all connectors |
-| `uip is connections list [connector-key]` | List connections |
-| `uip is connections create <connector-key>` | Create a connection |
-| `uip is connections ping <connection-id>` | Test connection health |
+| `uip ipe connectors list` | List all connectors |
+| `uip ipe connections list [connector-key]` | List connections |
+| `uip ipe connections create <connector-key>` | Create a connection |
+| `uip ipe connections ping <connection-id>` | Test connection health |
 
 ---
 

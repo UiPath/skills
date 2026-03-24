@@ -28,7 +28,7 @@ sdk = UiPath(client_id="id", client_secret="secret", scope="scope", base_url="ur
 | Context Grounding | `sdk.context_grounding` | RAG index management and search |
 | Documents | `sdk.documents` | Document extraction and validation |
 | Entities | `sdk.entities` | Data Service entity and record management |
-| Connections | `sdk.connections` | Integration Service connections |
+| Connections | `sdk.connections` | Integration Platform & Experiences connections |
 | LLM | `sdk.llm` | Chat completions via normalized LLM Gateway |
 | LLM OpenAI | `sdk.llm_openai` | OpenAI-compatible chat and embeddings |
 | Guardrails | `sdk.guardrails` | Evaluate guardrails on data |

@@ -24,7 +24,7 @@ This skill uses `uip` CLI commands (via `Bash`) and Claude Code's built-in tools
 
 All `uip` commands support `--format <format>` (table, json, yaml, plain).
 
-**Always use `--format json`** for commands whose output you need to parse or act on (e.g., `get-errors`, `find-activities`, `list-workflow-examples`, `is connections list`). JSON output is structured, unambiguous, and avoids table-formatting surprises.
+**Always use `--format json`** for commands whose output you need to parse or act on (e.g., `get-errors`, `find-activities`, `list-workflow-examples`, `ipe connections list`). JSON output is structured, unambiguous, and avoids table-formatting surprises.
 
 Use the default (table) only when displaying results directly to the user for readability.
 
@@ -34,9 +34,9 @@ Use the default (table) only when displaying results directly to the user for re
 
 For the full CLI command reference (all tools, parameters, and error recovery), see **[references/cli-reference.md](./references/cli-reference.md)**.
 
-Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
+Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`. For IS connectors: `ipe connectors list/get`, `ipe connections list/create/ping`, `ipe activities list`, `ipe resources list/describe/execute`.
 
-**The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uip --help`, `uip rpa --help`, `uip rpa get-default-activity-xaml --help`, `uip is --help`, `uip is connections --help`, etc.
+**The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uip --help`, `uip rpa --help`, `uip rpa get-default-activity-xaml --help`, `uip ipe --help`, `uip ipe connections --help`, etc.
 
 ---
 
@@ -265,7 +265,7 @@ When results contain multiple competing packages for the same capability (e.g., 
 **Prompt only as a last resort** — when multiple viable options exist and none of the above signals apply:
 1. Present the top 2–4 choices from the search results
 2. Mark the recommended option with **(Recommended)** — prefer the most modern/full-featured option
-3. Include a one-line difference for each (e.g., "requires Integration Service connection" vs "protocol-based, works on-premise")
+3. Include a one-line difference for each (e.g., "requires Integration Platform & Experiences connection" vs "protocol-based, works on-premise")
 4. Continue with **only** the chosen package
 
 **Save the preference:** After resolving disambiguation (whether auto-selected or user-chosen), suggest saving the preference to `CLAUDE.md` and `AGENTS.md` in the project folder so future sessions auto-select without re-prompting. For example: _"Want me to save this preference (e.g., 'Always use O365 for email activities') to CLAUDE.md and AGENTS.md so it's remembered for future workflows?"_
@@ -285,7 +285,7 @@ uip rpa get-default-activity-xaml --activity-class-name "UiPath.Core.Activities.
 #### For Dynamic Activities
 
 ```bash
-uip is connections list # Find relevant connection ID, if any
+uip ipe connections list # Find relevant connection ID, if any
 uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-249b07ac0127" --connection-id "{connectionId}"
 
 # Or, if no relevant connection, pass an empty string
@@ -301,7 +301,7 @@ uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-24
 **Key parameters:**
 - `--activity-class-name`: For non-dynamic activities. Must be fully qualified (e.g., `UiPath.Core.Activities.WriteLine`)
 - `--activity-type-id`: For dynamic activities. Use `uip rpa find-activities` to find the exact type ID
-- `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uip is connections list [connector-key]`
+- `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uip ipe connections list [connector-key]`
 
 **For JIT custom types**, read the schema file:
 
@@ -357,15 +357,15 @@ Glob: pattern="**/*" path="{projectRoot}/.objects/"         → explore object r
 Read: file_path="{projectRoot}/.objects/.metadata"          → object repository metadata
 Read: file_path="{projectRoot}/Main.xaml"                   → existing workflow (variables, arguments, imports)
 Glob: pattern="**/*" path="{projectRoot}/.settings/"        → settings profiles
-Bash: uip is connections list --format json              → available Integration Service connections
-Bash: uip is connectors list --format json               → available connectors
+Bash: uip ipe connections list --format json              → available Integration Platform & Experiences connections
+Bash: uip ipe connectors list --format json               → available connectors
 ```
 
 This surfaces variables, arguments, imports, expression language, available connections, and reusable project-level resources.
 
 ### Step 1.9: Discover Connector Capabilities (For IS/Connector Workflows)
 
-When the workflow involves Integration Service connectors (dynamic activities), explore capabilities and manage connections before writing XAML. See **[references/connector-capabilities.md](./references/connector-capabilities.md)** for the full procedure (activity/resource discovery, connection management, schema inspection).
+When the workflow involves Integration Platform & Experiences connectors (dynamic activities), explore capabilities and manage connections before writing XAML. See **[references/connector-capabilities.md](./references/connector-capabilities.md)** for the full procedure (activity/resource discovery, connection management, schema inspection).
 
 ---
 
@@ -449,7 +449,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --f
 
 **3. Type Errors** — Wrong property type, invalid cast, type mismatch
 - Check the activity doc at `.local/docs/packages/{PackageId}/activities/{ActivityName}.md` for correct types and enum values
-- For dynamic activities, Integration Service connectors, JIT types: see [jit-custom-types-schema.md](./references/jit-custom-types-schema.md)
+- For dynamic activities, Integration Platform & Experiences connectors, JIT types: see [jit-custom-types-schema.md](./references/jit-custom-types-schema.md)
 - If docs are unavailable, use `uip rpa get-default-activity-xaml` to see the expected default property types
 - Push for package updates if docs are missing, inaccurate, or if `get-default-activity-xaml` cannot resolve
 - If default activity activity XAML is unavailable, check for examples in the examples repository (`list-workflow-examples` and `get-workflow-example`)
@@ -458,7 +458,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --f
 - **Primary:** Read the activity doc — it documents all properties, conditional groups (`Visible When`), valid configurations, and enum values
 - **Fallback:** `uip rpa get-default-activity-xaml` for the activity's default XAML template
 - Pay attention to mutually exclusive property groups (OverloadGroups) — setting properties from multiple groups causes errors
-- For IS/dynamic activities, check connection status: `uip is connections list <connector-key> --format json`
+- For IS/dynamic activities, check connection status: `uip ipe connections list <connector-key> --format json`
 
 **5. Logic Errors** — Wrong behavior, incorrect expressions, business logic issues
 - `Read` the XAML to understand current flow → `Edit` to correct
@@ -507,7 +507,7 @@ For CLI error diagnosis and recovery patterns (IPC failures, auth errors, packag
 - Ask the user to choose a service provider without first checking project signals — auto-select when possible (Step 1.5)
 - Retry failing CLI commands in a loop without diagnosing the root cause
 - Skip Phase 0 (Studio readiness) — all subsequent phases depend on Studio IPC
-- Use connector/dynamic activities without checking whether a connection exists (`uip is connections list`)
+- Use connector/dynamic activities without checking whether a connection exists (`uip ipe connections list`)
 
 ---
 
@@ -524,7 +524,7 @@ Before handover, verify:
 - [ ] Activity properties sourced from activity docs, `find-activities`, `get-default-activity-xaml`, `get-workflow-example` (priority ladder followed)
 - [ ] Local project explored for existing patterns and conventions
 - [ ] Service/provider disambiguation resolved — auto-selected or prompted only when ambiguous (Step 1.5)
-- [ ] For connector workflows: connections verified with `uip is connections list`
+- [ ] For connector workflows: connections verified with `uip ipe connections list`
 
 **XAML Content Quality:**
 - [ ] VB.NET or C# syntax matches project language (checked existing workflows)

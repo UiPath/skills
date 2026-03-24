@@ -2,14 +2,14 @@
 
 Activities are pre-built actions available for each connector (e.g., "Send Message", "Create Issue"). They represent specific operations the connector supports. Activities include both **actions** (non-trigger) and **triggers** (event listeners).
 
-> Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+> Full command syntax and options: [uip-commands.md — Integration Platform & Experiences](../uip-commands.md#integration-platform--experiences-ipe). Domain-specific usage patterns are shown inline below.
 
 ---
 
 ## List Activities (Non-Trigger)
 
 ```bash
-uip is activities list "<connector-key>" --format json
+uip ipe activities list "<connector-key>" --format json
 ```
 
 This lists **non-trigger activities only** (actions, not event listeners).
@@ -17,7 +17,7 @@ This lists **non-trigger activities only** (actions, not event listeners).
 ## List Trigger Activities
 
 ```bash
-uip is activities list "<connector-key>" --triggers --format json
+uip ipe activities list "<connector-key>" --triggers --format json
 ```
 
 The `--triggers` flag filters to **trigger activities only** (`isTrigger=true`). These represent events the connector can fire (e.g., "Record Created", "Record Updated").
@@ -44,8 +44,8 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 ## When to Use Activities vs Resources vs Triggers
 
-- **Activities** = named actions (e.g., "Send Email"). Discovered via `is activities list`.
-- **Triggers** = event listeners (e.g., "Record Created"). Discovered via `is activities list --triggers`. Metadata via `is triggers objects` / `is triggers describe`. See [triggers.md](triggers.md).
-- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `is resources list`. Executed via `is resources execute <verb>`.
+- **Activities** = named actions (e.g., "Send Email"). Discovered via `ipe activities list`.
+- **Triggers** = event listeners (e.g., "Record Created"). Discovered via `ipe activities list --triggers`. Metadata via `ipe triggers objects` / `ipe triggers describe`. See [triggers.md](triggers.md).
+- **Resources** = data objects with CRUD (e.g., "Account"). Discovered via `ipe resources list`. Executed via `ipe resources execute <verb>`.
 
 > After listing activities, present the available actions to the user. Activities provide context for what a connector can do — use this to guide which resource operations, triggers, or workflow actions to pursue.

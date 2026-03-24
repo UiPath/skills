@@ -162,10 +162,10 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
 
 **Connection lifecycle with CLI:**
-- **Discover connections**: `uip is connections list [connector-key] --format json` — find existing connection GUIDs
-- **Verify connection health**: `uip is connections ping <connection-id>` — check if a connection is still active
-- **Create new connection**: `uip is connections create <connector-key>` — opens OAuth flow for user to authenticate
-- **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
+- **Discover connections**: `uip ipe connections list [connector-key] --format json` — find existing connection GUIDs
+- **Verify connection health**: `uip ipe connections ping <connection-id>` — check if a connection is still active
+- **Create new connection**: `uip ipe connections create <connector-key>` — opens OAuth flow for user to authenticate
+- **Re-authenticate**: `uip ipe connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
 - If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user they must configure the connection in Studio
 
 ## Deprecated Activities (Do Not Use)

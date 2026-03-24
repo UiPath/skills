@@ -54,9 +54,9 @@ var result = RunWorkflow(workflowPath, new Dictionary<string, object>
 
 Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.ReadRange(...)`, `testing.VerifyExpression(...)`, etc. See the Service-to-Package mapping in SKILL.md.
 
-## Integration Service Connections
+## Integration Platform & Experiences Connections
 
-When packages that use Integration Service connections are installed (e.g. `UiPath.MicrosoftOffice365.Activities`, `UiPath.GSuite.Activities`), Studio auto-generates two files in `.codedworkflows/`:
+When packages that use Integration Platform & Experiences connections are installed (e.g. `UiPath.MicrosoftOffice365.Activities`, `UiPath.GSuite.Activities`), Studio auto-generates two files in `.codedworkflows/`:
 
 - **`ConnectionsManager.cs`** — Exposes a typed property for each connection category (e.g. `O365Mail`, `Excel`, `OneDrive`, `Gmail`, etc.)
 - **`ConnectionsFactory.cs`** — Contains factory classes with typed properties for each configured connection instance
@@ -65,7 +65,7 @@ These are injected via the `connections` property on `CodedWorkflow`.
 
 ### How It Works
 
-1. **Configure connections** in UiPath Automation Cloud → Integration Service
+1. **Configure connections** in UiPath Automation Cloud → Integration Platform & Experiences
 2. **Studio detects them** and generates typed accessors in `.codedworkflows/`
 3. **Access in code** via `connections.<FactoryName>.<ConnectionName>`
 
@@ -92,7 +92,7 @@ public class ConnectionsManager
 ```csharp
 public class O365MailFactory
 {
-    // Connection name derived from Integration Service display name
+    // Connection name derived from Integration Platform & Experiences display name
     public MailConnection My_Workspace_user_company_com { get; set; }
 
     public O365MailFactory(ICodedWorkflowsServiceContainer resolver)
@@ -139,9 +139,9 @@ mailService.SendEmail("recipient@example.com", "Subject", "Body");
 
 ### Important Notes
 
-- Connection names in the factory are sanitized versions of the Integration Service display name (spaces/special chars replaced with `_`)
-- The connection ID (GUID) is embedded in the factory — it references the specific Integration Service connection
-- If a connection is **not authorized** or the token is expired, you get `ConnectionHttpException: Connection [...] failed to authorize` at runtime — re-authorize in Automation Cloud → Integration Service
+- Connection names in the factory are sanitized versions of the Integration Platform & Experiences display name (spaces/special chars replaced with `_`)
+- The connection ID (GUID) is embedded in the factory — it references the specific Integration Platform & Experiences connection
+- If a connection is **not authorized** or the token is expired, you get `ConnectionHttpException: Connection [...] failed to authorize` at runtime — re-authorize in Automation Cloud → Integration Platform & Experiences
 - The `connections` property is always available on `CodedWorkflow` regardless of installed packages, but the factory properties (`.O365Mail`, `.OneDrive`, etc.) only exist when the corresponding package is installed and connections are configured
 
 ## The `workflows` Property (Strongly-Typed Workflow Invocation)
