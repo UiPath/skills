@@ -86,40 +86,35 @@ Gather this information **before** moving to the planning step. For each connect
 
 **Required when creating a new flow or adding multiple nodes.** Only skip this step for small targeted edits to an *existing* flow (e.g., changing a script body, renaming a node, tweaking one connection). When in doubt, plan.
 
-Generate a plan as a **self-contained HTML file** with a mermaid diagram and structured details. This lets the user (and PMs) visually review the flow topology before any code is written.
+Generate a plan as a **markdown file** with a mermaid diagram and structured details. This lets the user (and PMs) review the flow topology before any code is written.
 
 #### 5a. Write the plan file
 
-Read [references/plan-template.html](references/plan-template.html) **once** and write `flow-plan.html` in the project directory by **copying the template and replacing the `{{PLACEHOLDER}}` markers** with actual content. Do not rewrite the HTML from scratch — preserve the Tailwind config, styles, and structure exactly. The HTML comment examples in the template show the expected format for each section.
+Read [references/plan-template.md](references/plan-template.md) **once** and write `flow-plan.md` in the project directory by **copying the template and replacing the `{{PLACEHOLDER}}` markers** with actual content. The comment blocks in the template show the expected format for each section.
 
-> **Token efficiency:** Only read the template when generating a new plan. For subsequent updates (Step 5c), edit `flow-plan.html` directly — do not re-read the template.
+> **Token efficiency:** Only read the template when generating a new plan. For subsequent updates (Step 5c), edit `flow-plan.md` directly — do not re-read the template.
 
 The plan must include:
 
 1. **Summary** — 2-3 sentences describing what the flow does end-to-end
 2. **Mermaid diagram** — visual flowchart showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability.
-3. **Node table** — every node with: ID, display name, node type, and what it does
+3. **Node table** — every node with: ID, display name, category, node type, and what it does
 4. **Connector details** — for each connector node: connector key, operation, required input fields (from Step 4 IS discovery), and connection status (found/missing)
 5. **Inputs & Outputs** — what the flow needs to start and what it produces
-6. **Open questions** — anything the user hasn't specified, marked as `[REQUIRED: ...]`
+6. **Open questions** — anything the user hasn't specified, marked as `[REQUIRED]`
 
-#### 5b. Open the plan for review
+#### 5b. Present the plan for review
 
-```bash
-open flow-plan.html    # macOS — opens in default browser
-```
-
-In chat, output a **short summary only** (goal + key nodes + any open questions). Tell the user to review the full plan and diagram in the browser.
+In chat, output a **short summary only** (goal + key nodes + any open questions). Tell the user to review the full plan in `flow-plan.md`.
 
 #### 5c. Iterate until approved
 
 **Do NOT proceed to Step 6 until the user explicitly approves the plan.** The iteration loop:
 
-1. User reviews the plan in browser and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
-2. Update `flow-plan.html` with the changes
-3. Tell the user to refresh the browser page
-4. Summarize what changed in chat
-5. Repeat until the user says the plan is approved
+1. User reviews the plan and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
+2. Update `flow-plan.md` with the changes
+3. Summarize what changed in chat
+4. Repeat until the user says the plan is approved
 
 ### Step 6 — Build the flow
 
@@ -167,7 +162,7 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 
 | I need to... | Read these |
 |---|---|
-| **Generate a flow plan** | Step 5 + [references/plan-template.html](references/plan-template.html) |
+| **Generate a flow plan** | Step 5 + [references/plan-template.md](references/plan-template.md) |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
@@ -209,5 +204,5 @@ Always use `--format json` for programmatic use. The `--localstorage-file` warni
 
 - **[.flow File Format](references/flow-file-format.md)** — Full JSON schema, node/edge structure, common node types, ports, and examples
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
-- **[Plan Template](references/plan-template.html)** — HTML template for flow plan visualization (mermaid diagram + node details)
+- **[Plan Template](references/plan-template.md)** — Markdown template for flow plan visualization (mermaid diagram + node details)
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Packaging and Orchestrator deployment (uipath-platform skill)
