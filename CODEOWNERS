@@ -1,5 +1,5 @@
 # Default owners for the entire repo
-* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria
+* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar
 
 # Hooks
 /hooks/ @DragosUnguru
@@ -15,3 +15,6 @@
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva
+
+# Flow skill
+/skills/uipath-flow/ @bai-uipath @rockymadden
