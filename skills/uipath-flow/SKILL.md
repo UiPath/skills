@@ -172,7 +172,6 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 | **Generate a flow plan** | [references/flow-planning-guide.md](references/flow-planning-guide.md) + Step 5 + [references/plan-template.html](references/plan-template.html) |
 | **Choose the right node type** | [references/flow-planning-guide.md — Node Selection Guide](references/flow-planning-guide.md#node-selection-guide) |
 | **Understand expressions and $vars** | [references/flow-planning-guide.md — Expressions](references/flow-planning-guide.md#expressions-and-variables) |
-| **Know validation rules** | [references/flow-planning-guide.md — Validation Rules](references/flow-planning-guide.md#validation-rules) |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |

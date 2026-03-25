@@ -323,6 +323,18 @@ Wire multiple outputs from one node to different downstream nodes. Use **Merge**
 ### "I need error handling"
 Nodes with an `error` output port (Script, HTTP, Loop, Mock) can route errors to a handler. Wire the `error` port to a Script node that logs/formats the error, then to Terminate or a recovery path.
 
+### "The flow needs something I can't build with flow nodes"
+When a flow requires capabilities outside the flow skill's scope — an RPA process for desktop automation, a coded workflow for complex logic, a custom agent — **stop and point, don't chain skills.**
+
+1. Add a `core.mock.blank` placeholder node in the plan where the external component goes
+2. Tell the user what's needed and which skill to use:
+   - Desktop/browser automation → `/uipath:uipath-rpa-workflows`
+   - Coded workflow (C#) → `/uipath:uipath-coded-workflows`
+   - Agent → `/uipath:uipath-coded-agents`
+3. Once the user creates the component, replace the placeholder with the real node
+
+**Do not** attempt to invoke other skills automatically. Each skill should work independently — cross-skill chaining multiplies failure rates.
+
 ---
 
 ## Wiring Rules
@@ -358,51 +370,6 @@ Some nodes create ports based on their configuration:
 - **Loop** — `output` port for iteration body, `success` for completion
 
 When wiring to dynamic ports, the port ID must match the configured item's `id`.
-
----
-
-## Validation Rules
-
-The `uip flow validate` command checks these rules. Knowing them helps avoid errors during planning.
-
-### 1. TRIGGER_REQUIRED
-Every flow must have at least one trigger node (node type starting with `core.trigger`).
-
-### 2. MIN_CONNECTIONS
-Handles with `minConnections` constraint must have enough edges. The manual trigger requires at least 1 outgoing connection.
-
-### 3. SCHEMA_VALIDATION
-Node inputs are validated against the node type's `inputDefinition` JSON Schema:
-- Required fields must be present (e.g., Script's `script`, HTTP's `method` and `url`)
-- String fields with `minLength: 1` cannot be empty
-- **Expression bypass:** Values starting with `=` or containing `{{` skip type/format validation (can't validate runtime values)
-
-### 4. CONDITION_EXPRESSION
-JavaScript condition expressions are syntax-checked (parsed, not executed):
-- Decision: `inputs.expression`
-- Switch: each `inputs.cases[].expression`
-- HTTP: each `inputs.branches[].conditionExpression`
-
-### 5. OUTPUT_MAPPING
-If the workflow declares output variables (`direction: "out"` or `"inout"`), every End node must have mappings for all of them in `node.outputs`.
-
-### 6. DATA_TRANSFORM
-Transform nodes must have valid operation configurations:
-- `collection` must be non-empty
-- `operations` array must not be empty
-- Filter operations need conditions with non-empty `field`
-- Map operations need mappings with non-empty `field` (if not keeping originals)
-- Group-by needs non-empty `groupByField`
-
-### What Validation Does NOT Check (Yet)
-
-- Whether `$vars.nodeId.output` references actually point to real nodes
-- Whether data types are compatible between connected nodes
-- Whether expressions produce the expected type (e.g., boolean for Decision)
-- Whether connector inputs have all required fields from the IS schema
-- Whether connections referenced in connector nodes actually exist
-
-These semantic checks are planned but not yet implemented. During planning, verify these manually.
 
 ---
 
