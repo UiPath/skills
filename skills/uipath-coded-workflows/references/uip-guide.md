@@ -208,7 +208,7 @@ uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJ
 Open Studio's visual indicator for the user to point at an application window. Creates a **Screen** entry in the Object Repository under the specified AppVersion.
 
 ```bash
-uip rpa indicate-application --name "<SCREEN_NAME>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<SCREEN_NAME>" --description "<SCREEN_DESCRIPTION>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Description |
@@ -239,7 +239,7 @@ After indication, Studio regenerates `ObjectRepository.cs`. Re-read it to get th
 Open Studio's visual indicator for the user to point at a UI element. Creates an **Element** entry under an existing Screen. The screen must already exist.
 
 ```bash
-uip rpa indicate-element --name "<ELEMENT_NAME>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ELEMENT_NAME>" --description "<ELEMENT_DESCRIPTION>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 | Parameter | Required | Description |

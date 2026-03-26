@@ -34,10 +34,10 @@ For creating, fixing, and configuring selectors and targets, use the CLI command
 
 ```bash
 # Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --format json
 
 # Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 > **Extra references:** The UIA activity-docs version folder may contain additional guides for selector creation, target configuration, CV targeting, and selector improvement. Discover them by globbing:
@@ -54,13 +54,13 @@ When the Object Repository is empty or missing targets for the workflow, use the
 
 ```bash
 # Indicate a screen (creates App automatically if none exists)
-uip rpa indicate-application --name "Dashboard" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --project-dir "<PROJECT_DIR>" --format json
 
 # Indicate a screen under an existing App
-uip rpa indicate-application --name "Dashboard" --parent-id "r-xxxxx/yyyyy" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --parent-id "r-xxxxx/yyyyy" --project-dir "<PROJECT_DIR>" --format json
 
 # Indicate an element on a screen
-uip rpa indicate-element --name "SubmitButton" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "SubmitButton" --description "Submit button on the form" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 After indication, re-read `.objects/` metadata to get the reference strings for use in XAML.
