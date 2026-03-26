@@ -69,10 +69,10 @@ Use `uip rpa indicate-application` / `uip rpa indicate-element` CLI commands dir
 
 ```bash
 # Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --format json
 
 # Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
 After indication, re-read `ObjectRepository.cs` to get the actual descriptor paths.
