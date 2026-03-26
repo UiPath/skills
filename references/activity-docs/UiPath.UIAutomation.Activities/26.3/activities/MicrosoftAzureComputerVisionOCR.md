@@ -22,13 +22,13 @@ Extracts a string and its information from an indicated UI element using the Mic
 |------|-------------|------|------|---------|----------|-------------|
 | `HandwritingRecognition` | UseReadAPI | Property | `bool` |  |  | If selected, the new Azure Computer Vision API 2.0 with handwriting recognition capabilities is used. If not selected, the standard Azure Computer Vision API for printed text is used. |
 
-## XAML Example
+## How to create a new Microsoft Azure Computer Vision OCR
 
-```xml
-<core:MicrosoftAzureComputerVisionOCR Version="V5" DisplayName="Microsoft Azure Computer Vision OCR"
-  sap2010:WorkflowViewState.IdRef="MicrosoftAzureComputerVisionOCR_1" />
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Core.Activities.MicrosoftAzureComputerVisionOCR
 ```
-
 ## Notes
 
 - This is an OCR engine activity meant to be used within other OCR activities such as `Click OCR Text`, `Get OCR Text`, or `Find OCR Text Position`.

@@ -113,19 +113,19 @@ The target system defines how UI Automation activities locate application window
 
 ## Configure a TargetAnchorable
 
-To configure a TargetAnchorable for an activity, use the [`uia-configure-target`](../../skills/uia-configure-target/SKILL.md) skill with both `--window` and `--element` flags:
+To configure a TargetAnchorable for an activity, spawn a general-purpose subagent with the following prompt (replace `$VARIABLES` with actual values):
 
-```
-/uia-configure-target --window <description> --element <description>
-```
+> Read the skill file at `uia-configure-target/SKILL.md` (resolve relative to this file's directory: `../../skills/uia-configure-target/SKILL.md`) and execute it with these arguments: `--window $WINDOW --elements $ELEMENTS`
+
+To configure multiple elements on the same screen in a single invocation, separate them with `|`. This captures the window once and reuses it for all elements:
+
+> `--window $WINDOW --elements "element one | element two | element three"`
 
 ## Configure a TargetApp
 
-To configure a TargetApp, use the [`uia-configure-target`](../../skills/uia-configure-target/SKILL.md) skill with only the `--window` flag:
+To configure a TargetApp (window only, no elements), spawn a general-purpose subagent with the following prompt:
 
-```
-/uia-configure-target --window <description>
-```
+> Read the skill file at `uia-configure-target/SKILL.md` (resolve relative to this file's directory: `../../skills/uia-configure-target/SKILL.md`) and execute it with these arguments: `--window $WINDOW`
 
 ## Notes
 

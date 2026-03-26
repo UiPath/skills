@@ -25,28 +25,13 @@ Setup a trigger on a given event on the indicated UI Element.
 | `IncludeChildren` | Include children | InArgument | `bool` |  |  | When selected, the children of the specified UI element are also monitored. By default, this check box is selected. |
 | `SchedulingMode` | Scheduling mode | Property | `TriggerActionSchedulingMode` |  |  | It specifies how to execute the actions when a trigger is fired. Sequential: actions are executed one after another; Concurrent: actions execution can overlap; OneTime: executes one action and exits monitoring. For Sequential and Concurrent modes the monitoring continues until either the user stops the execution or a Break activity is met. |
 
-## XAML Example
+## How to create a new Application Event Trigger
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NNativeEventTrigger
-      DisplayName="Application Event Trigger"
-      IncludeChildren="True"
-      Version="V5">
-    <ua:NNativeEventTrigger.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='content' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NNativeEventTrigger.Target>
-    <!-- Handler activities go here -->
-  </ua:NNativeEventTrigger>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NNativeEventTrigger
 ```
-
 ## Notes
 
 - This activity requires a parent `Use Application/Browser` scope.

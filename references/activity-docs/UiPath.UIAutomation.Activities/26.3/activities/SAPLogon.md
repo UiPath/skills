@@ -42,18 +42,13 @@ Use the activity to directly log on to an SAP system. Provide the exact SAP conn
 | `ContinueOnError` | Continue on error | InArgument | `bool` |  |  | Continue executing the activities in the automation if this activity fails. The default value is False. |
 | `Timeout` | Timeout | InArgument | `double` |  |  | The amount of time (in seconds) to wait for the operation to be performed before generating an error. The default value is 30 seconds. |
 
-## XAML Example
+## How to create a new SAP Logon
 
-```xml
-<uian:NSAPLogon Version="V2" DisplayName="SAP Logon"
-  sap2010:WorkflowViewState.IdRef="NSAPLogon_1">
-  <uian:NSAPLogon.TargetApp>
-    <uian:TargetApp />
-  </uian:NSAPLogon.TargetApp>
-  <!-- Inner activities go here -->
-</uian:NSAPLogon>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPLogon
 ```
-
 ## Notes
 
 - This activity acts as a scope (similar to `Use Application/Browser`) specifically for SAP systems.

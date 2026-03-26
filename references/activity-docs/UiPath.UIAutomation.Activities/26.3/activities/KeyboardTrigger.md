@@ -27,29 +27,13 @@ Setup a key pressed event trigger on the indicated UI Element.
 | `Mode` | Trigger mode | InArgument | `NKeyTriggerMode` |  |  | Specifies if the event is triggered on key down or key up. |
 | `SchedulingMode` | Scheduling mode | Property | `TriggerActionSchedulingMode` |  |  | It specifies how to execute the actions when a trigger is fired. Sequential: actions are executed one after another; Concurrent: actions execution can overlap; OneTime: executes one action and exits monitoring. For Sequential and Concurrent modes the monitoring continues until either the user stops the execution or a Break activity is met. |
 
-## XAML Example
+## How to create a new Keypress Event Trigger
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NKeyboardTrigger
-      DisplayName="Keypress Event Trigger"
-      Key="Enter"
-      KeyModifiers="None"
-      Version="V5">
-    <ua:NKeyboardTrigger.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='INPUT' id='search' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NKeyboardTrigger.Target>
-    <!-- Handler activities go here -->
-  </ua:NKeyboardTrigger>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NKeyboardTrigger
 ```
-
 ## Notes
 
 - This activity requires a parent `Use Application/Browser` scope.

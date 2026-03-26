@@ -1,8 +1,8 @@
 ---
 name: uia-create-selector
 description: Generate a UiPath selector for a UI element by describing it in natural language against a live running application. Use when asked to "create a selector", "get selector for", "find selector", or "selector for <element>". Example phrases "create selector for add to cart button", "selector for the search box in Chrome", "get me a selector for the Submit button"
-argument-hint: "--window <description> [--element <description>] [--folder <path>] [--from-snapshot] [--activity <type>] [--no-improve] [--quiet]"
-allowed-tools: Bash, Read, Write, Skill, AskUserQuestion
+argument-hint: "--window <description> [--element <description>] [--folder <path>] [--from-snapshot] [--activity <type>] [--quiet]"
+allowed-tools: Bash, Read, Write, AskUserQuestion
 ---
 
 Generate a robust UiPath selector for an element described in natural language, using the live running application.
@@ -17,8 +17,6 @@ Generate a robust UiPath selector for an element described in natural language, 
 CLI="uip rpa uia"
 ```
 
-**IMPORTANT: The CLI resolves relative paths against its own install directory, not the shell's cwd. Always convert folder paths to absolute before passing them to the CLI** (e.g., `"$(pwd)/.local/.uia/.create-selector/..."`).
-
 ## Input Parsing
 
 Extract from `$ARGUMENTS`:
@@ -28,8 +26,7 @@ Extract from `$ARGUMENTS`:
 - `--folder <path>` → `$ELEM_FOLDER` (optional). When provided, **skip folder creation and cleanup** (the caller owns the folder). The folder must already exist.
 - `--from-snapshot` → `$FROM_SNAPSHOT=true` (default: `false`). Generate selectors from the captured tree snapshot instead of probing the live element. Passed as `--from-snapshot` to `get-default-selector` calls.
 - `--activity <type>` → `$ACTIVITY_TYPE` (default: `Click`). Used in `TargetCapture.json`. Valid values: `Click`, `GetText`, `SetText`, `TypeInto`, `Check`, `Hover`, `Highlight`, `SelectItem`, `GetAttribute`, `TakeScreenshot`, `KeyboardShortcut`, `MouseScroll`, `DragAndDrop`, `InjectJsScript`, `ExtractData`, `CheckState`, `FindElements`, `SetFocus`, `CheckElement`, `ElementScope`, `WindowOperations`. If unrecognized, warn and default to `Click`.
-- `--no-improve` → `$IMPROVE=false` (default: `true`). Skips the improve step (CREATE-8).
-- `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files and complete. Used when this skill is called as a sub-step by another skill.
+- `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files. Used when this skill is called as a sub-step by another skill.
 
 If `--window` and `--element` are not found as explicit flags, try parsing the remaining text as natural language:
 - `Window: <window>. Element: <element>`
@@ -72,7 +69,7 @@ If the file doesn't exist or `WindowSelector` is empty, continue below.
 
 ```bash
 NAME_SRC="${ELEMENT:-$WINDOW}"
-ELEM_FOLDER=".local/.uia/.create-selector/$(date +%Y%m%d_%H%M%S)_$(echo "$NAME_SRC" | tr ' /:*?"<>|\\' '_' | head -c 40)"
+ELEM_FOLDER="$(pwd)/.local/.uia/.create-selector/$(date +%Y%m%d_%H%M%S)_$(echo "$NAME_SRC" | tr ' /:*?"<>|\\' '_' | head -c 40)"
 mkdir -p "$ELEM_FOLDER"
 ```
 
@@ -125,11 +122,9 @@ Update `TargetCapture.json` using the Write tool:
 }
 ```
 
-Write or update `$ELEM_FOLDER/TargetDefinition.json`: if the file already exists, read it first and preserve all existing fields. Set `"WindowSelector"` to `$WINDOW_SELECTOR`.
+Write or update `$ELEM_FOLDER/TargetDefinition.json`: if the file already exists, read it first and preserve all existing fields. Set `"WindowSelector"` to `$WINDOW_SELECTOR` and `"WindowNodeId"` to `$WREF`.
 
-**If window-only mode** (no `$ELEMENT`):
-- If `$IMPROVE` is `true`: invoke the `/uia-improve-selector` skill with `$ELEM_FOLDER --mode improve` as the argument. Then stop (the improve skill handles output).
-- Otherwise: skip to **Output**.
+**If window-only mode** (no `$ELEMENT`): skip to **Output**.
 
 ## CREATE-4: Capture App-Level Tree
 
@@ -195,7 +190,7 @@ Update `TargetCapture.json` using the Write tool:
 }
 ```
 
-Write or update `$ELEM_FOLDER/TargetDefinition.json`: if the file already exists, read it first and preserve all existing fields. Set `"WindowSelector"` to `$WINDOW_SELECTOR`, `"PartialSelector"` to `$PARTIAL_SELECTOR`, `"ActivityType"` to `$ACTIVITY_TYPE`.
+Write or update `$ELEM_FOLDER/TargetDefinition.json`: if the file already exists, read it first and preserve all existing fields. Set `"WindowSelector"` to `$WINDOW_SELECTOR`, `"WindowNodeId"` to `$WREF`, `"PartialSelector"` to `$PARTIAL_SELECTOR`, `"ElementNodeId"` to `$EREF`, `"ActivityType"` to `$ACTIVITY_TYPE`.
 
 ## CREATE-7: Capture Highlighted Screenshot
 
@@ -207,17 +202,11 @@ Now that the partial selector is set, re-capture to get a screenshot with the ta
 
 This overwrites `ApplicationScreenshot.jpg` with a highlighted version. Skips both tree extractions since the files already exist.
 
-## CREATE-8: Improve the Selector
-
-**Skip this step if `$IMPROVE` is `false` (`--no-improve` was set).**
-
-Otherwise, invoke the `/uia-improve-selector` skill with `$ELEM_FOLDER --mode improve` as the argument.
-
 ## Output Rules
 
 **If `$QUIET` is `true`: The calling skill will continue with its next step.**
 
-**Do NOT add commentary, analysis, or opinions about the selectors.** Just present the final selectors in the format below. The improve skill handles its own output when used.
+**Do NOT add commentary, analysis, or opinions about the selectors.** Just present the final selectors in the format below.
 
 **Window-only mode** (no `$ELEMENT`):
 
@@ -228,7 +217,7 @@ Otherwise, invoke the `/uia-improve-selector` skill with `$ELEM_FOLDER --mode im
 \`\`\`
 ```
 
-**Element mode with `--no-improve`:**
+**Element mode:**
 
 ```
 **Window:**

@@ -38,24 +38,13 @@ Suppress keyboard/mouse input until the set key combination is pressed, or timeo
 |------|-------------|------|------|-------------|
 | `ContinueOnError` | Continue on error | InArgument | `bool` | Continue executing the activities in the automation if this activity fails. The default value is False. |
 
-## XAML Example
+## How to create a new Block User Input
 
-```xml
-<ua:NBlockUserInput
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Block User Input"
-    BlockType="Both"
-    Version="V5">
-  <ua:NBlockUserInput.Target>
-    <ua:TargetAnchorable
-        FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
-        SearchSteps="Selector"
-        Version="V6" />
-  </ua:NBlockUserInput.Target>
-  <!-- Activities to execute while input is blocked -->
-</ua:NBlockUserInput>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NBlockUserInput
 ```
-
 ## Notes
 
 - No mandatory parent scope is required for this activity.

@@ -66,28 +66,24 @@ Configure auto-dismissal of JavaScript dialogs.
 **XAML nested element syntax:**
 
 ```xml
-<ua:NApplicationCard.DialogHandling>
-  <ua:DialogHandling
+<uix:NApplicationCard.DialogHandling>
+  <uix:DialogHandling
       DismissAlerts="{x:Null}"
       DismissConfirms="{x:Null}"
       DismissPrompts="{x:Null}"
       ConfirmDialogResponse="{x:Null}"
       PromptDialogResponse="{x:Null}"
       PromptDialogResponseText="{x:Null}" />
-</ua:NApplicationCard.DialogHandling>
+</uix:NApplicationCard.DialogHandling>
 ```
 
-## XAML Example
+## How to create a new Use Application/Browser
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <!-- Child activities go here -->
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NApplicationCard
 ```
-
 ## Notes
 
 - This activity is a scope/container activity. Place child activities (Click, Type Into, etc.) inside the body.

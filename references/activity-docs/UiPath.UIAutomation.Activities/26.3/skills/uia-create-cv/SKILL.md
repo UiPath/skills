@@ -19,8 +19,6 @@ Determine the CV (Computer Vision) properties — `CvType` and `CvText` — for 
 CLI="uip rpa uia"
 ```
 
-**IMPORTANT: The CLI resolves relative paths against its own install directory, not the shell's cwd. Always convert folder paths to absolute before passing them to the CLI** (e.g., `"$(pwd)/.local/.uia/..."`).
-
 ## Input Parsing
 
 Extract from `$ARGUMENTS`:

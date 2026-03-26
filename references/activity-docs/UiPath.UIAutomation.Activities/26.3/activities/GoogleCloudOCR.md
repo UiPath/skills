@@ -23,13 +23,13 @@ Extracts a string and its information from an indicated UI element using the Goo
 | `Region` | Region | InArgument | `GoogleCloudRegion` |  |  | The geographical region for the servers to be used for OCR |
 | `ResizeToApiLimits` | ResizeToMaxLimitIfNecessary | Property | `bool` |  |  | When checked, the engine will attempt downsizing the image so as to have an acceptable size according to the Google Cloud Vision imposed limits |
 
-## XAML Example
+## How to create a new Google Cloud Vision OCR
 
-```xml
-<core:GoogleCloudOCR Version="V5" DisplayName="Google Cloud Vision OCR"
-  sap2010:WorkflowViewState.IdRef="GoogleCloudOCR_1" />
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Core.Activities.GoogleCloudOCR
 ```
-
 ## Notes
 
 - This is an OCR engine activity meant to be used within other OCR activities such as `Click OCR Text`, `Get OCR Text`, or `Find OCR Text Position`.

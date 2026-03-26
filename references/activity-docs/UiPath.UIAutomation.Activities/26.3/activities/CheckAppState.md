@@ -39,25 +39,13 @@ Ensures the automated app is in a specific state, by verifying if a UI element e
 |------|-------------|------|------|---------|----------|-------------|
 | `DelayBefore` | Delay before | InArgument | `double` |  |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Check App State
 
-```xml
-<ua:NCheckState
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Check App State"
-    Mode="WaitAppear"
-    Timeout="[5]"
-    Exists="[elementExists]"
-    Version="V5">
-  <ua:NCheckState.Target>
-    <ua:TargetAnchorable
-        FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='login-form' /&gt;&quot;]"
-        SearchSteps="Selector"
-        Version="V6" />
-  </ua:NCheckState.Target>
-</ua:NCheckState>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NCheckState
 ```
-
 ## Notes
 
 - This activity does not require a mandatory parent scope and can be used standalone or inside a **Use Application/Browser** (`NApplicationCard`) scope.

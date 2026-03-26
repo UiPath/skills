@@ -31,19 +31,13 @@ Check for the accessibility issues
 | `DelayAfter` | Delay after | InArgument | `double` |  |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Accessibility Check
 
-```xml
-<ui:NApplicationCard Version="V2" DisplayName="Use Application/Browser">
-  <ui:NApplicationCard.Body>
-    <ActivityAction x:TypeArguments="ui:IUiObject">
-      <ui:NAccessibilityCheck Version="V5" DisplayName="Accessibility Check"
-                              AccessibilityResults="[accessibilityResults]" />
-    </ActivityAction>
-  </ui:NApplicationCard.Body>
-</ui:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NAccessibilityCheck
 ```
-
 ## Notes
 
 - This activity must be placed inside a **Use Application/Browser** (`NApplicationCard`) scope.

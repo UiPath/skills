@@ -37,22 +37,13 @@ Unblock keyboard/mouse input that has been previously blocked by a 'Block User I
 | `DelayAfter` | Delay after | InArgument | `double` | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Unblock User Input
 
-```xml
-<ua:NUnblockUserInput
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Unblock User Input"
-    Version="V5">
-  <ua:NUnblockUserInput.Target>
-    <ua:TargetAnchorable
-        FullSelectorArgument="[&quot;&lt;wnd cls='Notepad' /&gt;&quot;]"
-        SearchSteps="Selector"
-        Version="V6" />
-  </ua:NUnblockUserInput.Target>
-</ua:NUnblockUserInput>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NUnblockUserInput
 ```
-
 ## Notes
 
 - No mandatory parent scope is required for this activity.

@@ -42,33 +42,13 @@ Executes a drag and drop operation from the source UI element to the destination
 | `DelayAfter` | Delay after | InArgument | `double` |  |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Drag and Drop
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NDragAndDrop
-      DisplayName="Drag and Drop"
-      MouseButton="Left"
-      Version="V5">
-    <ua:NDragAndDrop.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' class='draggable' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NDragAndDrop.Target>
-    <ua:NDragAndDrop.DestinationTarget>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' class='drop-zone' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NDragAndDrop.DestinationTarget>
-  </ua:NDragAndDrop>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NDragAndDrop
 ```
-
 ## Notes
 
 - This activity requires a parent `Use Application/Browser` scope.

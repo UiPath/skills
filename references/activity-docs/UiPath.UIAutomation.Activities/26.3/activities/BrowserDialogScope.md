@@ -41,29 +41,13 @@ Captures and handles browser dialogs such as alert, confirm and prompt.
 | `Timeout` | Timeout | InArgument | `double` |  |  | The amount of time (in seconds) to wait for the operation to be performed before generating an error. The default value is 30 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Browser Dialog Scope
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NBrowserDialogScope
-      DisplayName="Browser Dialog Scope"
-      DialogScopeType="AlertSingle"
-      DialogResponse="Accept"
-      Version="V5">
-    <ua:NBrowserDialogScope.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='HTML' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NBrowserDialogScope.Target>
-    <!-- Place activities that trigger the dialog here -->
-  </ua:NBrowserDialogScope>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NBrowserDialogScope
 ```
-
 ## Notes
 
 - This activity must be placed inside a **Use Application/Browser** (`NApplicationCard`) scope.

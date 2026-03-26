@@ -42,28 +42,13 @@ Clicks the picture displayed on a SAP GUI screen.
 | `DelayAfter` | Delay after | InArgument | `double` |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Click Picture on Screen
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NSAPClickPictureOnScreen
-      DisplayName="Click Picture on Screen"
-      ClickType="Single"
-      ActivateBefore="True"
-      Version="V5">
-    <ua:NSAPClickPictureOnScreen.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;sapctrl type='GuiPicture' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NSAPClickPictureOnScreen.Target>
-  </ua:NSAPClickPictureOnScreen>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPClickPictureOnScreen
 ```
-
 ## Notes
 
 - This activity must be placed inside a `UiPath.UIAutomationNext.Activities.NApplicationCard` scope.

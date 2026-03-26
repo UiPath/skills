@@ -40,27 +40,13 @@ Selects an item from a drop-down list.
 | `DelayAfter` | Delay after | InArgument | `double` |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Select Item
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NSelectItem
-      DisplayName="Select Item 'Country'"
-      Item="[selectedItem]"
-      Version="V5">
-    <ua:NSelectItem.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='SELECT' name='country' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NSelectItem.Target>
-  </ua:NSelectItem>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSelectItem
 ```
-
 ## Notes
 
 - This activity must be placed inside a `UiPath.UIAutomationNext.Activities.NApplicationCard` scope.

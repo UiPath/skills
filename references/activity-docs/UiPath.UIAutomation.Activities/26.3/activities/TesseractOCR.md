@@ -18,13 +18,13 @@ Extracts a string and its information from an indicated UI element using Tessera
 | `Invert` | Invert | InArgument | `bool` |  |  | If this check box is selected, the colors of the UI element are inverted before scraping. This is useful when the background is darker than the text color. |
 | `Profile` | Profile | InArgument | `OCRProfile` |  |  | Choose a preprocessing profile for the specified image or UI element to achieve a better OCR read. The following options are available: None - does not apply a preprocessing profile; Screen - preprocessing suitable for remote desktop applications; Scan - preprocessing suitable for scanned files; Legacy - uses the engine's default settings for preprocessing images, this is the default option. |
 
-## XAML Example
+## How to create a new Tesseract OCR
 
-```xml
-<core:GoogleOCR Version="V5" DisplayName="Tesseract OCR"
-  sap2010:WorkflowViewState.IdRef="GoogleOCR_1" />
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Core.Activities.GoogleOCR
 ```
-
 ## Notes
 
 - This is an OCR engine activity meant to be used within other OCR activities such as `Click OCR Text`, `Get OCR Text`, or `Find OCR Text Position`.

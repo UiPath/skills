@@ -39,28 +39,13 @@ Gets the child elements of the specified UI element.
 | `ContinueOnError` | Continue on error | InArgument | `bool` | Continue executing the activities in the automation if this activity fails. The default value is False. |
 | `DelayBefore` | Delay before | InArgument | `double` | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Find Elements
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NFindElements
-      DisplayName="Find Elements"
-      Mode="Descendants"
-      Children="[foundElements]"
-      Version="V5">
-    <ua:NFindElements.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='UL' id='list' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NFindElements.Target>
-  </ua:NFindElements>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NFindElements
 ```
-
 ## Notes
 
 - This activity must be placed inside a **Use Application/Browser** (`NApplicationCard`) scope.

@@ -43,28 +43,13 @@ Use the activity to identify any cell inside SAP ALV Hierarchical Table. After t
 | `DelayAfter` | Delay after | InArgument | `double` |  |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Expand ALV Hierarchical Table
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NSAPExpandALVHierarchicalTable
-      DisplayName="Expand ALV Hierarchical Table"
-      ColumnNameLevel0="Order Number"
-      ColumnValueLevel0="[orderNumber]"
-      Version="V5">
-    <ua:NSAPExpandALVHierarchicalTable.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;sapctrl type='GuiALVGrid' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NSAPExpandALVHierarchicalTable.Target>
-  </ua:NSAPExpandALVHierarchicalTable>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandALVHierarchicalTable
 ```
-
 ## Notes
 
 - This activity requires a parent `Use Application/Browser` scope.

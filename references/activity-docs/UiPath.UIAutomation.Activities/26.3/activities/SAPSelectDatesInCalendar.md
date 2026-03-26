@@ -44,28 +44,13 @@ Select Dates in Calendar. The activity can be used to select single dates or per
 | `DelayAfter` | Delay after | InArgument | `double` |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Select Dates In Calendar
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NSAPSelectDatesInCalendar
-      DisplayName="Select Dates In Calendar"
-      SelectType="SingleDate"
-      Date="[selectedDate]"
-      Version="V5">
-    <ua:NSAPSelectDatesInCalendar.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;sapctrl type='GuiCalendar' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NSAPSelectDatesInCalendar.Target>
-  </ua:NSAPSelectDatesInCalendar>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPSelectDatesInCalendar
 ```
-
 ## Notes
 
 - This activity must be placed inside a `UiPath.UIAutomationNext.Activities.NApplicationCard` scope.

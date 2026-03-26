@@ -40,27 +40,13 @@ Expand parent tree to an active node or an active item. After indicating the SAP
 | `DelayAfter` | Delay after | InArgument | `double` |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
-## XAML Example
+## How to create a new Expand Tree
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NSAPExpandTree
-      DisplayName="Expand Tree 'Root Node'"
-      Item="Root Node/Child Node"
-      Version="V5">
-    <ua:NSAPExpandTree.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;sapctrl type='GuiTree' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NSAPExpandTree.Target>
-  </ua:NSAPExpandTree>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandTree
 ```
-
 ## Notes
 
 - This activity must be placed inside a `UiPath.UIAutomationNext.Activities.NApplicationCard` scope.

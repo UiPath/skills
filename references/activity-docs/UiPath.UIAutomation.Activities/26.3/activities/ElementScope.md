@@ -35,27 +35,13 @@ A container that enables you to attach to an existing UI element and perform mul
 | `ContinueOnError` | Continue on error | InArgument | `bool` | Continue executing the activities in the automation if this activity fails. The default value is False. |
 | `Timeout` | Timeout | InArgument | `double` | The amount of time (in seconds) to wait for the operation to be performed before generating an error. The default value is 30 seconds. |
 
-## XAML Example
+## How to create a new Element Scope
 
-```xml
-<ua:NApplicationCard
-    xmlns:ua="clr-namespace:UiPath.UIAutomationNext.Activities;assembly=UiPath.UIAutomationNext.Activities"
-    DisplayName="Use Application/Browser"
-    Version="V2">
-  <ua:NElementScope
-      DisplayName="Element Scope"
-      Version="V5">
-    <ua:NElementScope.Target>
-      <ua:TargetAnchorable
-          FullSelectorArgument="[&quot;&lt;webctrl tag='DIV' id='panel' /&gt;&quot;]"
-          SearchSteps="Selector"
-          Version="V6" />
-    </ua:NElementScope.Target>
-    <!-- Child activities go here -->
-  </ua:NElementScope>
-</ua:NApplicationCard>
+To generate the default XAML for this activity, run the following command:
+
+```bash
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NElementScope
 ```
-
 ## Notes
 
 - This activity acts as a container scope. Child activities placed inside it operate within the context of the targeted UI element.
