@@ -1,7 +1,7 @@
 ---
 name: uia-create-cv
 description: "Determine CV (Computer Vision) targeting properties for a UiPath target element. Use when asked to \"create CV target\", \"add CV targeting\", \"get CV properties\", or when configuring a target that needs Computer Vision as a secondary targeting method. Takes an element description and/or selector plus a runtime data folder with a screenshot."
-argument-hint: "<element description> [--folder <path>] [--quiet]"
+argument-hint: "<element description> [--folder <path>] [--quiet] [--project-dir <path>]"
 allowed-tools: Bash, Read, Write, AskUserQuestion
 ---
 
@@ -19,6 +19,8 @@ Determine the CV (Computer Vision) properties — `CvType` and `CvText` — for 
 CLI="uip rpa uia"
 ```
 
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+
 ## Input Parsing
 
 Extract from `$ARGUMENTS`:
@@ -26,6 +28,7 @@ Extract from `$ARGUMENTS`:
 - `$ELEMENT_DESC` (required) — natural-language description of the target element (e.g., `"Submit button"`, `"search input field"`, `"Accept terms checkbox"`).
 - `--folder <path>` → `$ELEM_FOLDER` (optional). Path to a runtime data folder containing `ApplicationScreenshot.jpg` and optionally tree data. If not provided, ask the user.
 - `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files and complete. Used when this skill is called as a sub-step by another skill.
+- `--project-dir <path>` → `$PROJECT_DIR` (optional). UiPath project directory. Included in all CLI commands via the `$CLI` variable.
 
 If `$ELEMENT_DESC` is not provided, ask the user to describe the element.
 
@@ -87,7 +90,7 @@ If the tree data exists, optionally check it:
 "$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --query "$ELEMENT_DESC" --max-depth 5
 ```
 
-Read the output to confirm the element's text/name.
+The CLI prints the output file path. Read that file to confirm the element's text/name.
 
 ## CV-4: Write TargetDefinition.json and Present Results
 

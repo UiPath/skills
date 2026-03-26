@@ -1,7 +1,7 @@
 ---
 name: uia-create-selector
 description: Generate a UiPath selector for a UI element by describing it in natural language against a live running application. Use when asked to "create a selector", "get selector for", "find selector", or "selector for <element>". Example phrases "create selector for add to cart button", "selector for the search box in Chrome", "get me a selector for the Submit button"
-argument-hint: "--window <description> [--element <description>] [--folder <path>] [--from-snapshot] [--activity <type>] [--quiet]"
+argument-hint: "--window <description> [--element <description>] [--folder <path>] [--from-snapshot] [--activity <type>] [--quiet] [--project-dir <path>]"
 allowed-tools: Bash, Read, Write, AskUserQuestion
 ---
 
@@ -17,6 +17,8 @@ Generate a robust UiPath selector for an element described in natural language, 
 CLI="uip rpa uia"
 ```
 
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+
 ## Input Parsing
 
 Extract from `$ARGUMENTS`:
@@ -27,6 +29,7 @@ Extract from `$ARGUMENTS`:
 - `--from-snapshot` → `$FROM_SNAPSHOT=true` (default: `false`). Generate selectors from the captured tree snapshot instead of probing the live element. Passed as `--from-snapshot` to `get-default-selector` calls.
 - `--activity <type>` → `$ACTIVITY_TYPE` (default: `Click`). Used in `TargetCapture.json`. Valid values: `Click`, `GetText`, `SetText`, `TypeInto`, `Check`, `Hover`, `Highlight`, `SelectItem`, `GetAttribute`, `TakeScreenshot`, `KeyboardShortcut`, `MouseScroll`, `DragAndDrop`, `InjectJsScript`, `ExtractData`, `CheckState`, `FindElements`, `SetFocus`, `CheckElement`, `ElementScope`, `WindowOperations`. If unrecognized, warn and default to `Click`.
 - `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files. Used when this skill is called as a sub-step by another skill.
+- `--project-dir <path>` → `$PROJECT_DIR` (optional). UiPath project directory. Included in all CLI commands via the `$CLI` variable.
 
 If `--window` and `--element` are not found as explicit flags, try parsing the remaining text as natural language:
 - `Window: <window>. Element: <element>`
@@ -89,7 +92,7 @@ Capture the top-level tree:
 "$CLI" snapshot capture --folder-path "$ELEM_FOLDER"
 ```
 
-This produces only `TopLevelNodeTreeInfo.json` (top-level windows).
+This produces `TopLevelNodeTreeInfo.json` (top-level windows) and prints the output path.
 
 ## CREATE-2: Choose a Window
 
@@ -99,7 +102,7 @@ View the window tree:
 "$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --source window
 ```
 
-Read the output file (path printed to stdout). Match `$WINDOW` against window titles and app names (partial, case-insensitive). Browser tabs are labeled `BrowserTab` with `b` prefix refs (e.g., `b3`) — prefer those over native browser windows for web apps. Regular windows use `w` prefix refs (e.g., `w3`).
+The CLI prints the output file path (e.g., `Filtered tree written to .../filtered-window-tree.md`). Read that file. Match `$WINDOW` against window titles and app names (partial, case-insensitive). Browser tabs are labeled `BrowserTab` with `b` prefix refs (e.g., `b3`) — prefer those over native browser windows for web apps. Regular windows use `w` prefix refs (e.g., `w3`).
 
 Save the matching ref as `$WREF` (e.g., `b3` for a browser tab, `w3` for a native window).
 If no match, present the list and ask the user.
@@ -150,7 +153,7 @@ Get a high-level view of the app tree:
 "$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --max-depth 40
 ```
 
-Read the output file to understand the structure. Search for the target element using keywords from `$ELEMENT`:
+The CLI prints the output file path. Read that file to understand the structure. Search for the target element using keywords from `$ELEMENT`:
 
 ```bash
 "$CLI" snapshot filter --folder-path "$ELEM_FOLDER" --query "add to cart"

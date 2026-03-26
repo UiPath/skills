@@ -1,7 +1,7 @@
 ---
 name: uia-improve-selector
 description: "Fix, improve, or recover a UiPath selector using runtime data. **Use when** (1) a selector stopped working and user has runtime data, (2) user asks to fix/improve/recover a selector, (3) user mentions 'element not found' with a snapshot or runtime data folder, (4) user wants to make an existing selector more robust, (5) a selector needs to be fixed after a failure. **Example phrases** 'fix this selector', 'selector stopped working', 'improve the selector', 'element not found, here\\'s the runtime data', 'make this selector more robust', 'recover this selector', 'element not found'"
-argument-hint: "<folder> [--mode <recover|improve>] [--quiet] | --window <selector> [--partial <selector>] [--mode <recover|improve>] [--quiet]"
+argument-hint: "<folder> [--mode <recover|improve>] [--quiet] [--project-dir <path>] | --window <selector> [--partial <selector>] [--mode <recover|improve>] [--quiet] [--project-dir <path>]"
 allowed-tools: Bash, Read, Write, AskUserQuestion
 ---
 
@@ -17,6 +17,8 @@ The user provides either a runtime data folder path, or `--window` and `--partia
 CLI="uip rpa uia"
 ```
 
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+
 ## Input Parsing
 
 Extract from `$ARGUMENTS`:
@@ -28,6 +30,7 @@ Extract from `$ARGUMENTS`:
 - `--quiet` → `$QUIET=true` (default: `false`). Suppress all output — just write files. Used when this skill is called as a sub-step by another skill.
 - `--window <selector>` → `$WINDOW_SELECTOR` (optional). The window selector XML.
 - `--partial <selector>` → `$PARTIAL_SELECTOR` (optional). The partial selector XML.
+- `--project-dir <path>` → `$PROJECT_DIR` (optional). UiPath project directory. Included in all CLI commands via the `$CLI` variable.
 
 **If `--window` is provided (with or without `--partial`):** create a fresh working folder, write TargetCapture.json, and capture live runtime data:
 
@@ -63,25 +66,25 @@ Set `$WORK_FOLDER` to the created path and continue to IMPROVE-1.
 
 ## IMPROVE-1: Get Instructions
 
-Run the CLI to get tagged instructions. The output contains `<system_prompt>`, `<user_message>`, and `<schema_config>` tags.
+Run the CLI to generate instruction files. The CLI writes three separate files to `$WORK_FOLDER`:
+- `selector-system-prompt.md` — the system prompt with rules and constraints
+- `selector-user-message.md` — the user message with the task, selectors, and DOM data
+- `selector-schema-config.md` — the JSON schema for the expected output
 
 ```bash
-"$CLI" selector-intelligence get-instructions --folder-path "$WORK_FOLDER" --mode $MODE > "$WORK_FOLDER/selector-instructions.md" 2>&1
-```
-
-The DOM JSON can be a single very long line that exceeds the Read tool's context limit. Fold it so each line stays under ~8000 tokens:
-
-```bash
-fold -s -w 30000 "$WORK_FOLDER/selector-instructions.md" > "$WORK_FOLDER/selector-instructions-wrapped.md" && mv "$WORK_FOLDER/selector-instructions-wrapped.md" "$WORK_FOLDER/selector-instructions.md"
+"$CLI" selector-intelligence get-instructions --folder-path "$WORK_FOLDER" --mode $MODE
 ```
 
 ## IMPROVE-2: Read Instructions and Generate Selectors
 
-**Use ONLY the Read tool and Write tool for this step. Do NOT use Bash, Python, or any other tool to parse, process, or extract content from the instructions file.**
+**Use ONLY the Read tool and Write tool for this step. Do NOT use Bash, Python, or any other tool to parse, process, or extract content from the instruction files.**
 
-1. Read `$WORK_FOLDER/selector-instructions.md` using the Read tool. The file can be large (the DOM JSON is a single long line), so read in chunks using `offset` and `limit` as needed. Parse the `<system_prompt>`, `<user_message>`, and `<schema_config>` sections.
+1. Read the three instruction files using the Read tool (use `offset` and `limit` for large files):
+   - `$WORK_FOLDER/selector-system-prompt.md` — the rules and constraints to follow
+   - `$WORK_FOLDER/selector-user-message.md` — the task to execute (can be large due to DOM JSON)
+   - `$WORK_FOLDER/selector-schema-config.md` — the output schema
 2. Read `$WORK_FOLDER/ApplicationScreenshot.jpg` for visual context (skip if it doesn't exist).
-3. Execute the task from `<user_message>` following the rules from `<system_prompt>`. Write the JSON result (conforming to `<schema_config>`) to `$WORK_FOLDER/selector-output-claude.json` using the Write tool.
+3. Execute the task from `selector-user-message.md` following the rules from `selector-system-prompt.md`. Write the JSON result (conforming to the schema in `selector-schema-config.md`) to `$WORK_FOLDER/selector-output-claude.json` using the Write tool.
 
 ## IMPROVE-3: Validate and Retry Loop
 

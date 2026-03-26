@@ -1,13 +1,13 @@
 ---
 name: uia-configure-target
 description: "Primary entry point for configuring a UiPath target — ensures the screen and element exist in the Object Repository, checking for existing entries before creating new ones. Returns the OR reference ID. Supports batch element configuration via pipe-separated list (e.g., --elements \"Five button | Plus button | Equals button\") to avoid redundant window captures and screen lookups. Use when asked to 'configure target', 'configure application', 'set up target', 'set up application', 'create target in OR', 'find or create target', 'get OR reference for an element', 'select application window', 'create window selector', 'add target to object repository', or when an orchestrator agent needs an OR element reference for a UI element. Trigger this whenever building automation workflows that need reliable OR references."
-argument-hint: "--window <description> [--elements <descriptions>] [--semantic] [--no-improve] [--from-snapshot] [--activity <type>]"
+argument-hint: "--window <description> [--elements <descriptions>] [--semantic] [--no-improve] [--from-snapshot] [--activity <type>] [--project-dir <path>]"
 allowed-tools: Bash, Read, Write, Agent, AskUserQuestion
 ---
 
 Ensure a UI target (screen + elements) exists in the Object Repository. Checks for existing OR entries first — creates new ones only when needed. Returns the OR reference ID(s).
 
-`$ARGUMENTS` format: `--window <description> [--elements <descriptions>] [--semantic] [--no-improve] [--from-snapshot] [--activity <type>]`
+`$ARGUMENTS` format: `--window <description> [--elements <descriptions>] [--semantic] [--no-improve] [--from-snapshot] [--activity <type>] [--project-dir <path>]`
 
 **IMPORTANT: Use forward slashes in ALL paths.**
 
@@ -19,6 +19,8 @@ Ensure a UI target (screen + elements) exists in the Object Repository. Checks f
 CLI="uip rpa uia"
 ```
 
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+
 ## Input Parsing
 
 Extract from `$ARGUMENTS`:
@@ -29,6 +31,7 @@ Extract from `$ARGUMENTS`:
 - `--no-improve` → `$NO_IMPROVE=true` (default: `false`). Skip selector improvement steps.
 - `--from-snapshot` → `$FROM_SNAPSHOT=true` (default: `false`). Generate selectors from captured tree snapshot instead of probing the live element.
 - `--activity <type>` → `$ACTIVITY_TYPE` (default: `Click`). Valid values: `Click`, `GetText`, `SetText`, `TypeInto`, `Check`, `Hover`, `Highlight`, `SelectItem`, `GetAttribute`, `TakeScreenshot`, `KeyboardShortcut`, `MouseScroll`, `DragAndDrop`, `InjectJsScript`, `ExtractData`, `CheckState`, `FindElements`, `SetFocus`, `CheckElement`, `ElementScope`, `WindowOperations`.
+- `--project-dir <path>` → `$PROJECT_DIR` (optional). UiPath project directory. Passed through to all CLI commands and subagent prompts.
 
 If `$WINDOW` is not provided, ask the user which application/window to target.
 
@@ -64,7 +67,7 @@ Spawn a general-purpose subagent with the prompt below. Use `model: "sonnet"`. R
 You are creating a window selector for a UiPath target. Follow the instructions in the skill file mechanically.
 
 1. Read `../uia-create-selector/SKILL.md` (relative to the directory this file is in) to learn the full procedure.
-2. Execute the skill steps with these arguments: `--window $WINDOW --folder $WORK_FOLDER --quiet` (add `--from-snapshot` if `$FROM_SNAPSHOT` is true).
+2. Execute the skill steps with these arguments: `--window $WINDOW --folder $WORK_FOLDER --quiet` (add `--from-snapshot` if `$FROM_SNAPSHOT` is true; add `--project-dir $PROJECT_DIR` if `$PROJECT_DIR` is set).
 3. The folder already exists and contains `TargetDefinition.json`. Write all output files there.
 
 ---
@@ -157,7 +160,7 @@ Then spawn one `Agent` per element, **all in a single message** so they run in p
 You are creating an element selector for a UiPath target. Follow the instructions in the skill file mechanically.
 
 1. Read `../uia-create-selector/SKILL.md` (relative to the directory this file is in) to learn the full procedure.
-2. Execute the skill steps with these arguments: `--window $WINDOW --element $ELEMENT --folder $ELEMENT_WORK_FOLDER --activity $ACTIVITY_TYPE --quiet` (add `--from-snapshot` if `$FROM_SNAPSHOT` is true).
+2. Execute the skill steps with these arguments: `--window $WINDOW --element $ELEMENT --folder $ELEMENT_WORK_FOLDER --activity $ACTIVITY_TYPE --quiet` (add `--from-snapshot` if `$FROM_SNAPSHOT` is true; add `--project-dir $PROJECT_DIR` if `$PROJECT_DIR` is set).
 3. The folder already exists and contains `TargetCapture.json` with `WindowSelector` set, plus `ApplicationLevelNodeTreeInfo.json`, `ApplicationLevelApplicationMetadata.json`, and `ApplicationScreenshot.jpg`. This means the skill skips CREATE-1 through CREATE-4 and starts at CREATE-5 (find the element).
 
 ---
@@ -211,7 +214,7 @@ Use the prompt below for each, replacing `$FOLDER` with `$WORK_FOLDER` (screen-o
 You are improving UiPath selectors to make them more robust. Follow the instructions in the skill file mechanically.
 
 1. Read `../uia-improve-selector/SKILL.md` (relative to the directory this file is in) to learn the full procedure.
-2. Execute the skill steps with these arguments: `$FOLDER --mode improve --quiet`.
+2. Execute the skill steps with these arguments: `$FOLDER --mode improve --quiet` (add `--project-dir $PROJECT_DIR` if `$PROJECT_DIR` is set).
 3. The folder contains `TargetCapture.json` with the current selectors and `TargetDefinition.json` for output. Improve whatever is present — window selector only or window + element selector together.
 
 ---
