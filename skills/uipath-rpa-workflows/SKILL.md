@@ -340,13 +340,13 @@ Use when activity docs, `find-activities`, `get-default-activity-xaml`, and doma
 
 ```bash
 # Search by service tags (AND logic — all tags must match)
-uip rpa list-workflow-examples --tags '["web"]' --limit 10 --format json
+uip rpa list-workflow-examples --tags web --limit 10 --format json
 
 # Multiple tags narrow down results (AND logic — all tags must match)
-uip rpa list-workflow-examples --tags '["jira", "confluence"]' --limit 10 --format json
+uip rpa list-workflow-examples --tags jira,confluence --limit 10 --format json
 
 # Use prefix to filter by category
-uip rpa list-workflow-examples --tags '["gmail"]' --prefix "email-communication/" --limit 15 --format json
+uip rpa list-workflow-examples --tags gmail --prefix "email-communication/" --limit 15 --format json
 
 # Once you identify relevant examples from the list operation, retrieve XAML content:
 uip rpa get-workflow-example --key "email-communication/add-new-gmail-emails-to-keap-as-contacts.xaml"
