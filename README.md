@@ -10,8 +10,20 @@ UiPath Agent Skills give AI coding agents the domain knowledge to build, run, te
 > **Prerequisite:** [Node.js](https://nodejs.org/) (LTS) is required — it includes `npm`.
 
 ```bash
+# Install the UiPath CLI
 npm -g install @uipath/cli
-uip skills install
+
+# List available agents
+uip skill install --help
+
+# Install skills for your chosen agent or multiple agents at once
+uip skill install --agents <comma-separated list of agents>
+
+# Example: Install skills for Claude
+uip skill install --agents claude
+
+# Example: Install skills for both Claude and Codex
+uip skill install --agents claude,codex
 ```
 
 Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
