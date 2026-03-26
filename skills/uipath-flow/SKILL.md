@@ -19,9 +19,43 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 - User asks about the **`.flow` JSON format**, nodes, edges, definitions, or ports
 - User asks **how to implement logic** in a Flow (scripts, HTTP calls, branching, etc.)
 
+## Common Edits (existing flows)
+
+For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Always run `uip flow validate` after editing.
+
+### Change a script body
+
+Edit the `inputs.script` string on the target node in `flow_files/<ProjectName>.flow`. Script nodes must return an object (`return { key: value }`), not a scalar.
+
+### Add a node between two existing nodes
+
+1. Get the new node's schema: `uip flow registry get <nodeType> --format json`
+2. Add its `Data.Node` to the `definitions` array (skip if that type already has a definition)
+3. Add the node instance to `nodes` with a unique `id` and correct `ui.position`
+4. Find the edge connecting the two existing nodes — update it to point to the new node instead:
+   - Change `targetNodeId` to the new node's `id` and `targetPort` to the new node's incoming port (usually `input`)
+5. Add a new edge (with a unique `id`) from the new node to the original target:
+   - `sourceNodeId`: new node's `id`, `sourcePort`: `success` (or the appropriate port)
+   - `targetNodeId`: original target's `id`, `targetPort`: `input`
+6. Check ports: see [references/flow-file-format.md — Standard ports](references/flow-file-format.md) for source/target ports by node type
+
+### Add a branch (condition node)
+
+1. Get the definition: `uip flow registry get core.logic.condition --format json` and add `Data.Node` to `definitions`
+2. Add a `core.logic.condition` node with an `expression` input
+3. Redirect the incoming edge to the condition node — update `targetNodeId` and set `targetPort: "input"`
+4. Add two outgoing edges from the condition — one from `sourcePort: "true"`, one from `sourcePort: "false"` — each wiring to the appropriate downstream node with `targetPort: "input"`
+
+### Remove a node
+
+1. Delete the node from the `nodes` array
+2. Delete all edges where `sourceNodeId` or `targetNodeId` matches the removed node's `id`
+3. Reconnect: add a new edge from the upstream node to the downstream node
+4. Remove its definition from `definitions` only if no other node uses the same type
+
 ## Quick Start
 
-These steps are for **creating a new flow from scratch**. For existing projects, skip to the relevant step. For small targeted edits (changing a script body, renaming a node, tweaking a port), skip straight to Step 6.
+These steps are for **creating a new flow from scratch**. For existing projects, use the Common Edits section above or skip to the relevant step.
 
 ### Step 0 — Resolve the `uip` binary
 
@@ -86,40 +120,34 @@ Gather this information **before** moving to the planning step. For each connect
 
 **Required when creating a new flow or adding multiple nodes.** Only skip this step for small targeted edits to an *existing* flow (e.g., changing a script body, renaming a node, tweaking one connection). When in doubt, plan.
 
-Generate a plan as a **self-contained HTML file** with a mermaid diagram and structured details. This lets the user (and PMs) visually review the flow topology before any code is written.
+Generate a plan as a **markdown file** with a mermaid diagram and structured details. This lets the user (and PMs) review the flow topology before any code is written.
 
 #### 5a. Write the plan file
 
-Read [references/plan-template.html](references/plan-template.html) **once** and write `flow-plan.html` in the project directory by **copying the template and replacing the `{{PLACEHOLDER}}` markers** with actual content. Do not rewrite the HTML from scratch — preserve the Tailwind config, styles, and structure exactly. The HTML comment examples in the template show the expected format for each section.
+Write `flow-plan.md` in the project directory with the following sections. For subsequent updates (Step 5c), edit `flow-plan.md` directly.
 
-> **Token efficiency:** Only read the template when generating a new plan. For subsequent updates (Step 5c), edit `flow-plan.html` directly — do not re-read the template.
-
-The plan must include:
+**Required sections:**
 
 1. **Summary** — 2-3 sentences describing what the flow does end-to-end
-2. **Mermaid diagram** — visual flowchart showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability.
-3. **Node table** — every node with: ID, display name, node type, and what it does
-4. **Connector details** — for each connector node: connector key, operation, required input fields (from Step 4 IS discovery), and connection status (found/missing)
-5. **Inputs & Outputs** — what the flow needs to start and what it produces
-6. **Open questions** — anything the user hasn't specified, marked as `[REQUIRED: ...]`
+2. **Flow Diagram** — a mermaid diagram showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability. Use direction TB (top-bottom) for most flows; LR (left-right) only for very linear flows with few branches.
+3. **Node table** — markdown table with columns: `#`, `Name`, `Category`, `Node Type`, `Description`. Category is one of: connector, script, control, trigger, agent.
+4. **Edges** — markdown table with columns: `#`, `Source Node`, `Source Port`, `Target Node`, `Target Port`, `Description`. One row per edge. Source/target ports must match the node type's standard ports (see [references/flow-file-format.md](references/flow-file-format.md)).
+5. **Connector details** (omit if no connectors) — markdown table with columns: `Node`, `Connector Key`, `Operation`, `Required Inputs`, `Connection`. Mark connection status as found or not found.
+6. **Inputs & Outputs** — markdown table with columns: `Direction`, `Name`, `Type`, `Description`
+7. **Open questions** (omit if none) — bulleted list, each prefixed with `**[REQUIRED]**`
 
-#### 5b. Open the plan for review
+#### 5b. Present the plan for review
 
-```bash
-open flow-plan.html    # macOS — opens in default browser
-```
-
-In chat, output a **short summary only** (goal + key nodes + any open questions). Tell the user to review the full plan and diagram in the browser.
+In chat, output a **short summary only** (goal + key nodes + any open questions). Tell the user to review the full plan in `flow-plan.md`.
 
 #### 5c. Iterate until approved
 
 **Do NOT proceed to Step 6 until the user explicitly approves the plan.** The iteration loop:
 
-1. User reviews the plan in browser and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
-2. Update `flow-plan.html` with the changes
-3. Tell the user to refresh the browser page
-4. Summarize what changed in chat
-5. Repeat until the user says the plan is approved
+1. User reviews the plan and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
+2. Update `flow-plan.md` with the changes
+3. Summarize what changed in chat
+4. Repeat until the user says the plan is approved
 
 ### Step 6 — Build the flow
 
@@ -167,7 +195,8 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 
 | I need to... | Read these |
 |---|---|
-| **Generate a flow plan** | Step 5 + [references/plan-template.html](references/plan-template.html) |
+| **Edit an existing flow** | Common Edits section |
+| **Generate a flow plan** | Step 5 |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
@@ -209,5 +238,4 @@ Always use `--format json` for programmatic use. The `--localstorage-file` warni
 
 - **[.flow File Format](references/flow-file-format.md)** — Full JSON schema, node/edge structure, common node types, ports, and examples
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
-- **[Plan Template](references/plan-template.html)** — HTML template for flow plan visualization (mermaid diagram + node details)
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Packaging and Orchestrator deployment (uipath-platform skill)
