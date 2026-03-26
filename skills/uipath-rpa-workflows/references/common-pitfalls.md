@@ -475,3 +475,22 @@ When reading Excel data with `ReadRangeX`, column types in the resulting `DataTa
 **Workarounds:**
 - Use LINQ with explicit conversion: `dtData.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
 - Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types
+
+### `uip rpa restore` dumps .nupkg files into the project directory
+
+When calling `uip rpa restore` without `--destination-path`, the command restores NuGet packages directly into the project root directory, polluting it with hundreds of `.nupkg` files. These are cached package files, not project artifacts, and should not be there.
+
+**Always specify `--destination-path`** pointing to a location outside the project directory:
+
+```bash
+# Correct — restore to a temp/cache directory
+uip rpa restore --project-path "{projectRoot}" --destination-path "{projectRoot}/.local/packages" --format json
+
+# Wrong — packages end up in project root
+uip rpa restore --project-path "{projectRoot}" --format json
+```
+
+If you already have `.nupkg` files littering the project root, clean them up:
+```bash
+rm "{projectRoot}"/*.nupkg
+```
