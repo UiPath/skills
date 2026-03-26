@@ -55,12 +55,11 @@ Execute custom JavaScript code. Use for data transformation, computation, format
 | **Output variables** | `output` (the return value), `error` (error object if failed) |
 
 **Script rules:**
-- JavaScript only (not TypeScript, not Python)
+- JavaScript only (not TypeScript, not Python) — executed via [Jint](https://github.com/sebastienros/jint) (ES2020). No browser/DOM APIs (`fetch`, `document`, `window`, `setTimeout` are unavailable). Pure ES only.
 - Must `return` an object: `return { key: value }` (not a bare scalar)
 - `$vars` is available as a global — use it directly: `return { upper: $vars.input1.toUpperCase() }`
 - Cannot make HTTP calls or access external systems (use HTTP node for that)
 - 30-second execution timeout
-- Limits: ~10k characters inbound script, ~1MB outbound payload
 
 #### HTTP Request (`core.action.http`)
 
