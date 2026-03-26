@@ -21,7 +21,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Critical Rules
 
-1. **ALWAYS query the registry before building.** Run `uip flow registry pull` then `uip flow registry get <nodeType> --format json` for every node type you plan to use. Copy the `Data.Node` object into `definitions` verbatim — do not guess node schemas, port names, or input fields from memory.
+1. **ALWAYS query the registry before building.** Run `uip flow registry pull` then `uip flow registry get <nodeType> --format json` for every node type you plan to use. When using `uip flow node add`, definitions are handled automatically. When editing JSON directly, copy the `Data.Node` object into `definitions` verbatim — do not guess node schemas, port names, or input fields from memory.
 2. **ALWAYS discover connector capabilities via IS before planning.** For every connector node, run `uip is activities list <connector-key>` and `uip is resources describe <connector-key> <resource>` to learn the exact operations, required fields, and field types. Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
 4. **ALWAYS use `--format json`** on all `uip` commands when parsing output programmatically.
@@ -168,13 +168,38 @@ In chat, output a **short summary only** (goal + key nodes + any open questions)
 
 Edit `flow_files/<ProjectName>.flow` only. Never edit `content/<ProjectName>.bpmn` — it is auto-generated.
 
-Build the flow by editing the `.flow` JSON directly. For each node:
-1. Get the full node schema: `uip flow registry get <nodeType> --format json`
-2. Copy the `Data.Node` object into the `definitions` array
-3. Add the node instance to the `nodes` array with correct inputs (use field info from Step 4 IS discovery)
-4. Add edges to the `edges` array with correct `sourcePort` and `targetPort`
+**Prefer CLI commands for adding nodes and edges.** They handle definitions and port wiring automatically, eliminating the most common build errors. Fall back to direct JSON editing only for operations the CLI doesn't support yet (update, remove, rewire).
 
-See [references/flow-file-format.md](references/flow-file-format.md) for the full JSON schema, node/edge structure, and definition requirements.
+#### Adding nodes
+
+```bash
+uip flow node add flow_files/<ProjectName>.flow <nodeType> --format json \
+  --input '{"expression": "$vars.fetchData.output.statusCode === 200"}' \
+  --label "Check Status" \
+  --position 300,400
+```
+
+The command automatically adds the node to the `nodes` array and its definition to `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.).
+
+After adding nodes, list them to get the assigned IDs for wiring:
+
+```bash
+uip flow node list flow_files/<ProjectName>.flow --format json
+```
+
+#### Adding edges
+
+```bash
+uip flow edge add flow_files/<ProjectName>.flow <sourceNodeId> <targetNodeId> --format json \
+  --source-port success \
+  --target-port input
+```
+
+The command automatically adds `targetPort` and validates the edge structure.
+
+#### When to fall back to JSON editing
+
+The CLI does not yet support: removing nodes, removing edges, updating existing node inputs (e.g., changing a script body), or rewiring existing edges. For these operations, edit the `.flow` JSON directly — see [references/flow-file-format.md](references/flow-file-format.md) and the Common Edits section above.
 
 ### Step 7 — Validate loop
 
