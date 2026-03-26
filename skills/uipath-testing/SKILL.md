@@ -69,20 +69,23 @@ uip rpa run-tests --project-dir "<PROJECT_DIR>" --file-path "<TEST_FILE>.cs" --s
 
 ## Coded Test Cases
 
-Coded test cases use C# with the `[TestCase]` attribute to test workflow logic programmatically.
+Coded test cases use C# with the `[TestCase]` attribute to test workflow logic programmatically. See the [uipath-coded-workflows skill](../uipath-coded-workflows/SKILL.md) for the full project structure and `CodedWorkflow` base class conventions that apply here too.
 
 ### Structure
 
+Each test case is its own class (and its own `.cs` file) — **only one `[TestCase]` method is allowed per class**.
+
 ```csharp
+// File: ValidInvoice_ExtractsCorrectTotal.cs
 using UiPath.CodedWorkflows;
 using UiPath.Testing.API;
 
 namespace MyAutomation_Tests
 {
-    public class InvoiceProcessingTests : CodedWorkflow
+    public class ValidInvoice_ExtractsCorrectTotal : CodedWorkflow
     {
         [TestCase]
-        public void ValidInvoice_ExtractsCorrectTotal()
+        public void Execute()
         {
             // Arrange
             var testInvoicePath = "TestData/sample-invoice.pdf";
@@ -94,14 +97,26 @@ namespace MyAutomation_Tests
             testing.VerifyExpression(result.TotalAmount == 1250.00m, "Total amount should be 1250.00");
             testing.VerifyExpression(result.VendorName == "Acme Corp", "Vendor name should be Acme Corp");
         }
+    }
+}
+```
 
+```csharp
+// File: MissingVendor_FailsValidation.cs
+using UiPath.CodedWorkflows;
+using UiPath.Testing.API;
+
+namespace MyAutomation_Tests
+{
+    public class MissingVendor_FailsValidation : CodedWorkflow
+    {
         [TestCase]
-        public void MissingVendor_ThrowsValidationError()
+        public void Execute()
         {
             // Arrange
             var invalidInvoicePath = "TestData/missing-vendor.pdf";
 
-            // Act & Assert — expect exception
+            // Act & Assert
             testing.VerifyExpressionWithOperator(
                 workflows.ProcessInvoice(invalidInvoicePath).IsValid,
                 false,
@@ -115,8 +130,8 @@ namespace MyAutomation_Tests
 ### Key rules for test cases
 
 1. **Inherit from `CodedWorkflow`** — same as regular workflows
-2. **Attribute must be `[TestCase]`** — NOT `[Workflow]`
-3. **Method name describes the test** — use `MethodUnderTest_Scenario_ExpectedResult` naming
+2. **Attribute must be `[TestCase]`** — NOT `[Workflow]`; only one `[TestCase]` method allowed per class
+3. **File name describes the test** — use `MethodUnderTest_Scenario_ExpectedResult` naming for the file and class
 4. **One assertion per test** — keep tests focused; multiple assertions are allowed but test one behavior
 5. **Generate `.cs.json` metadata** alongside each test file
 6. **Add to `fileInfoCollection`** in `project.json` — test files go here, not in `entryPoints`
@@ -127,14 +142,14 @@ namespace MyAutomation_Tests
 {
   "fileInfoCollection": [
     {
-      "fileName": "InvoiceProcessingTests.cs",
-      "entryPoint": "InvoiceProcessingTests.ValidInvoice_ExtractsCorrectTotal",
-      "filePath": "InvoiceProcessingTests.cs"
+      "fileName": "ValidInvoice_ExtractsCorrectTotal.cs",
+      "entryPoint": "ValidInvoice_ExtractsCorrectTotal.Execute",
+      "filePath": "ValidInvoice_ExtractsCorrectTotal.cs"
     },
     {
-      "fileName": "InvoiceProcessingTests.cs",
-      "entryPoint": "InvoiceProcessingTests.MissingVendor_ThrowsValidationError",
-      "filePath": "InvoiceProcessingTests.cs"
+      "fileName": "MissingVendor_FailsValidation.cs",
+      "entryPoint": "MissingVendor_FailsValidation.Execute",
+      "filePath": "MissingVendor_FailsValidation.cs"
     }
   ]
 }
