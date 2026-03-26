@@ -406,6 +406,14 @@ Flowcharts and State Machines use `x:Name="__ReferenceID0"` and `{x:Reference __
 - Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
 - When `uip rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
 
+## Literal Curly Braces in Attribute Values
+
+- Attribute values starting with `{` are parsed as XAML markup extensions — `Search="{FullName}"` fails with `Could not find type 'FullName' in namespace '...'`
+- This affects **any** literal string property, not just `WordReplaceText.Search` — common with Word/text template placeholders like `{FullName}`, `{Email}`, `{DepartmentName}`
+- Expression-wrapped values (`Search="[&quot;{FullName}&quot;]"`) are not affected — the expression engine handles those, not the XAML parser
+
+**Fix:** Prefix with the XAML escape sequence `{}` to indicate a literal string: `Search="{}{FullName}"`
+
 ## Selector Special Characters
 
 When writing selectors in XAML, XML special characters must be escaped:
