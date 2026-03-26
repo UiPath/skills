@@ -131,9 +131,10 @@ Write `flow-plan.md` in the project directory with the following sections. For s
 1. **Summary** — 2-3 sentences describing what the flow does end-to-end
 2. **Flow Diagram** — a mermaid diagram showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability. Use direction TB (top-bottom) for most flows; LR (left-right) only for very linear flows with few branches.
 3. **Node table** — markdown table with columns: `#`, `Name`, `Category`, `Node Type`, `Description`. Category is one of: connector, script, control, trigger, agent.
-4. **Connector details** (omit if no connectors) — markdown table with columns: `Node`, `Connector Key`, `Operation`, `Required Inputs`, `Connection`. Mark connection status as found or not found.
-5. **Inputs & Outputs** — markdown table with columns: `Direction`, `Name`, `Type`, `Description`
-6. **Open questions** (omit if none) — bulleted list, each prefixed with `**[REQUIRED]**`
+4. **Edges** — markdown table with columns: `#`, `Source Node`, `Source Port`, `Target Node`, `Target Port`, `Description`. One row per edge. Source/target ports must match the node type's standard ports (see [references/flow-file-format.md](references/flow-file-format.md)).
+5. **Connector details** (omit if no connectors) — markdown table with columns: `Node`, `Connector Key`, `Operation`, `Required Inputs`, `Connection`. Mark connection status as found or not found.
+6. **Inputs & Outputs** — markdown table with columns: `Direction`, `Name`, `Type`, `Description`
+7. **Open questions** (omit if none) — bulleted list, each prefixed with `**[REQUIRED]**`
 
 #### 5b. Present the plan for review
 
