@@ -2,6 +2,62 @@
 
 Reference for selecting nodes, wiring them correctly, and avoiding common mistakes when planning and building UiPath Flows.
 
+## Product Heuristics
+
+These are org-wide "when to use what" rules that can't be encoded in individual node descriptions. They reflect how UiPath's products fit together and which approach to prefer for a given task.
+
+### Connecting to External Services
+
+Use this decision order — prefer higher tiers:
+
+1. **Pre-built Integration Service connector** — Use when a connector exists and its activities cover your use case. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically. Always check first: `uip flow registry search <service> --filter "category=connector"`.
+2. **HTTP Request within a connector** — Use when a connector exists but lacks the specific API endpoint you need. The connector still manages authentication; you just supply the path and payload.
+3. **Standalone HTTP Request node** (`core.action.http`) — Use for one-off API calls to services without connectors, or during prototyping when you need quick iteration. You handle auth manually (headers, tokens).
+4. **RPA workflow node** — Use only when the target system has no API at all (legacy desktop apps, terminal-based systems, browser flows that can't be done via API). RPA requires robot infrastructure and is orders of magnitude slower than API-based approaches.
+
+**Why this order matters:** Telemetry shows HTTP Request is used far more than connectors, but connectors are the better long-term choice — they're reusable, maintainable, and handle auth lifecycle. Prefer connectors when they exist; fall back to HTTP when they don't.
+
+### Agent Nodes vs Workflow Logic
+
+| Use an Agent node when... | Use Script/Decision/Switch when... |
+|---|---|
+| Input is ambiguous or unstructured (free text, emails, support tickets) | Input is structured and well-defined (JSON, form data) |
+| The task requires reasoning or judgment (triage, classification, summarization) | The task is deterministic (if X then Y, map/filter/transform) |
+| Branching depends on context that can't be reduced to simple conditions | Branching conditions are explicit and enumerable |
+| You need natural language generation (draft emails, summaries) | You need data transformation or computation |
+
+**Anti-pattern:** Don't use an agent node for tasks that can be done with a Decision + Script. Agents are slower, more expensive (LLM tokens), and less predictable. Use them where their flexibility is actually needed.
+
+**Hybrid pattern:** Use workflow nodes for the deterministic parts (fetch data, transform, route) and agent nodes for the ambiguous parts (classify intent, draft response, extract entities). The flow orchestrates; the agent reasons.
+
+**Prevalence in real flows:** Analysis of 30 production use cases shows OOTB + Connector nodes in ~100% of flows, Agent nodes in ~81%, Human-in-the-loop in ~50%, Document Understanding in ~13%, RPA in ~6%. Most flows are connector-heavy with selective agent use.
+
+### Script Node vs HTTP Node
+
+These are complementary, not alternatives:
+
+- **Script** — Pure computation on data you already have. Transform, validate, filter, format, calculate. Cannot make external calls. 30-second timeout.
+- **HTTP** — External system calls. Retrieve or send data to APIs. Can branch on response. Has retry and timeout support.
+
+**Common pattern:** HTTP (fetch data) → Script (transform/filter it) → HTTP (send result somewhere) or Decision (branch on it).
+
+### When to Use Transform vs Script for Data
+
+- **Transform node** (`core.action.transform`) — Use for standard map/filter/group-by operations on collections. Declarative configuration, no code needed. Prefer this when your operation fits the transform model.
+- **Script node** — Use when the transformation is custom logic that doesn't fit map/filter/group-by (e.g., complex restructuring, multi-step computation, string manipulation, conditional field extraction).
+
+### Subflow Extraction
+
+| Keep flat | Extract to subflow |
+|---|---|
+| Logic is used once | Same logic appears in 2+ places |
+| Flow has < 15 nodes | Flow has 20+ nodes and needs visual grouping |
+| All logic is linear or simple branching | A section has distinct input/output boundaries |
+
+**Default:** Keep it flat. Only extract when there's clear reuse or the flow is too large to read. Premature extraction adds complexity without benefit.
+
+---
+
 ## Node Catalog
 
 ### Triggers
