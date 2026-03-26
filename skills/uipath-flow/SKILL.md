@@ -111,7 +111,7 @@ Before editing the `.flow` file, check what nodes are available:
 uip flow registry pull                          # refresh local cache (expires after 30 min)
 uip flow registry list --format json            # list all cached node types
 uip flow registry search <keyword>              # search by name, tag, or category
-uip flow registry search --filter "category=agent"
+uip flow registry search agent
 uip flow registry get <nodeType> --format json  # full schema for one node type
 ```
 
@@ -126,6 +126,8 @@ uip flow registry get <nodeType> --format json  # full schema for one node type
 - `uip is activities list <connector-key>` — what operations the connector supports
 - `uip is resources list/describe <connector-key>` — what data objects and fields are available
 - `uip is connections list/ping/create <connector-key>` — check or create authenticated connections
+
+**If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --format json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
 
 Gather this information **before** moving to the planning step. For each connector node in the flow, you should know: which operation to use, what fields are required, and whether a connection exists.
 
