@@ -1,8 +1,9 @@
 ---
 name: uipath-maestro
-description: "End-to-end toolkit for UiPath Maestro: create a Maestro project from a .bpmn file, pack it, upload to Orchestrator, create a release, run the job, and monitor it. TRIGGER when: User wants to create and run a Maestro process; User mentions 'create and run maestro', 'end-to-end maestro', 'deploy and run bpmn', 'maestro init', 'maestro pack', 'maestro process'; User wants the full pipeline from maestro init to job execution; User asks about uip maestro CLI commands, BPMN orchestration, entry-points.json, or Maestro project lifecycle. DO NOT TRIGGER when: User is working with Flow projects (.flow files — use uipath-flow instead); User is working with coded workflows (.cs files — use uipath-coded-workflows instead); User is working with XAML/RPA workflows (use uipath-rpa-workflows instead); User asks about Orchestrator management without Maestro context (use uipath-platform instead); User is working with coded apps (use uipath-coded-apps instead)."
+description: "[EXPERIMENTAL] End-to-end toolkit for UiPath Maestro: create a Maestro project from a .bpmn file, pack it, upload to Orchestrator, create a release, run the job, and monitor it. TRIGGER when: User wants to create and run a Maestro process; User mentions 'create and run maestro', 'end-to-end maestro', 'deploy and run bpmn', 'maestro init', 'maestro pack', 'maestro process'; User wants the full pipeline from maestro init to job execution; User asks about uip maestro CLI commands, BPMN orchestration, entry-points.json, or Maestro project lifecycle. DO NOT TRIGGER when: User is working with Flow projects (.flow files — use uipath-flow instead); User is working with coded workflows (.cs files — use uipath-coded-workflows instead); User is working with XAML/RPA workflows (use uipath-rpa-workflows instead); User asks about Orchestrator management without Maestro context (use uipath-platform instead); User is working with coded apps (use uipath-coded-apps instead)."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+disable-model-invocation: true
 ---
 
 # UiPath Maestro

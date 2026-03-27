@@ -1,8 +1,9 @@
 ---
 name: uipath-coded-agents
-description: UiPath coded agents lifecycle assistant. Orchestrates setup, auth, build, bindings, run, evaluate, deploy, and sync for UiPath Python agents. Use when the user wants to create a new agent from scratch or manage the full lifecycle, e.g. "create a UiPath agent", "set up and deploy an agent", or "build and run a new agent end-to-end".
+description: "[EXPERIMENTAL] UiPath coded agents lifecycle assistant. Orchestrates setup, auth, build, bindings, run, evaluate, deploy, and sync for UiPath Python agents. Use when the user wants to create a new agent from scratch or manage the full lifecycle, e.g. \"create a UiPath agent\", \"set up and deploy an agent\", or \"build and run a new agent end-to-end\"."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
+disable-model-invocation: true
 ---
 
 # UiPath Coded Agents
