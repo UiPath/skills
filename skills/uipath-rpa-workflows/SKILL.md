@@ -216,7 +216,7 @@ The filesystem structure is deterministic -- use it to skip unnecessary enumerat
 |-----------|--------|
 | **You know the package + activity name** | Go directly: `Read: file_path="{projectRoot}/.local/docs/packages/{PackageId}/activities/{ActivityName}.md"` |
 | **You know the package, not the activity** | `Read` the `overview.md`, then read the identified activity doc. |
-| **You don't know the package** | `Grep` across `.local/docs/packages/` for keywords. |
+| **You don't know the package** | `Glob` with `**/*.md` in `{projectRoot}/.local/docs/packages/` to list all doc files, then `Read` promising matches. The `.local/` folder is gitignored and hidden, so `Grep` will not find it — always use `Glob` + `Read` or `Bash: ls` to discover docs. |
 | **Docs exist but activity isn't documented** | Use other activity docs in the same package as structural reference, fall back to `get-default-activity-xaml`. |
 | **No docs for the package** | **Update the package first** (`uip rpa install-or-update-packages`) -- this often adds docs. If still no docs, fall back to Steps 1.4-1.7. |
 | **Package not installed** | **Install it first** (`uip rpa install-or-update-packages`) -- both docs and `get-default-activity-xaml` require it. After install, check for docs before proceeding to fallbacks. |

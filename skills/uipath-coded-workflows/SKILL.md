@@ -231,6 +231,7 @@ uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project
 Once the package is installed, find the right documentation in this order:
 
 1. **Check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`** — these are auto-generated docs from the installed package version and are always the most accurate match. If present, use them as the **primary source** and stop here.
+   > **Important:** The `.local/` folder is gitignored and hidden, so `Grep` will not find it. Always use `Glob` + `Read` or `Bash: ls` to discover and search docs inside `.local/docs/`.
 2. **Fall back to bundled reference docs** — if `.local/docs/` is missing or doesn't contain docs for this package, look in `../../references/activity-docs/{PackageId}/` and pick the **closest version folder** to what is installed:
    - Extract major.minor from the installed version (e.g., `[25.10.21]` → `25.10`)
    - List available doc folders: `ls ../../references/activity-docs/{PackageId}/`

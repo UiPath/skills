@@ -22,7 +22,7 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`. See [Step 1.2](../
 | **Read package overview** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/overview.md` | Package ID (e.g., `UiPath.WebAPI.Activities`) |
 | **List documented packages** | `Bash`: `ls {projectRoot}/.local/docs/packages/` | Project root directory |
 | **List documented activities of package** | `Bash`: `ls {projectRoot}/.local/docs/packages/{PackageId}/activities/` | Package ID |
-| **Search activity docs by keyword** | `Grep` with pattern across `{projectRoot}/.local/docs/packages/` | Search pattern |
+| **Search activity docs by keyword** | `Glob` with `**/*.md` in `{projectRoot}/.local/docs/packages/` to list files, then `Read` matches. **Do not use `Grep`** — `.local/` is gitignored/hidden and `Grep` skips it. | Glob pattern + Read |
 
 ## Core RPA Workflow Tools
 
