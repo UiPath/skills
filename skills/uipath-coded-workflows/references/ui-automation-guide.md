@@ -13,7 +13,7 @@ Quick reference for UI automation in coded workflows using the `uiAutomation` se
 
 1. **Open** or **Attach** to an application screen — returns a `UiTargetApp` handle.
 2. Use the `UiTargetApp` handle to perform element interactions (Click, TypeInto, GetText, etc.).
-3. The `UiTargetApp` is `IDisposable` — use `using` blocks or dispose manually.
+3. Call `app.Close()` explicitly when done — **never use `using var`** with `Open()`/`Attach()`. The `using` pattern calls `Dispose()` on any exit (including exceptions), which closes the application and prevents runtime recovery from selector failures.
 
 ## Screen Handle Affinity (Critical)
 
