@@ -21,7 +21,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Critical Rules
 
-1. **ALWAYS query the registry before building.** Run `uip flow registry pull` then `uip flow registry get <nodeType> --format json` for every node type you plan to use. Copy the `Data.Node` object into `definitions` verbatim — do not guess node schemas, port names, or input fields from memory.
+1. **Do NOT `registry get` built-in nodes.** The planning guide already documents all OOTB node types (script, HTTP, decision, switch, loop, merge, end, terminate, transform, mock) with their ports, inputs, and output variables. Only run `uip flow registry get <nodeType> --format json` for **connector nodes** and **unknown/new node types** not in the planning guide. When editing JSON directly, copy the `Data.Node` object into `definitions` verbatim — do not guess node schemas.
 2. **ALWAYS discover connector capabilities via IS before planning.** For every connector node, run `uip is activities list <connector-key>` and `uip is resources describe <connector-key> <resource>` to learn the exact operations, required fields, and field types. Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
 4. **ALWAYS use `--format json`** on all `uip` commands when parsing output programmatically.
@@ -111,7 +111,7 @@ Before editing the `.flow` file, check what nodes are available:
 uip flow registry pull                          # refresh local cache (expires after 30 min)
 uip flow registry list --format json            # list all cached node types
 uip flow registry search <keyword>              # search by name, tag, or category
-uip flow registry search --filter "category=agent"
+uip flow registry search agent
 uip flow registry get <nodeType> --format json  # full schema for one node type
 ```
 
@@ -127,7 +127,20 @@ uip flow registry get <nodeType> --format json  # full schema for one node type
 - `uip is resources list/describe <connector-key>` — what data objects and fields are available
 - `uip is connections list/ping/create <connector-key>` — check or create authenticated connections
 
-Gather this information **before** moving to the planning step. For each connector node in the flow, you should know: which operation to use, what fields are required, and whether a connection exists.
+**If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --format json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
+
+**Resolve reference fields.** After running `uip flow registry get` for a connector node, check `inputDefinition.fields` for any field with a `reference` object. These fields require IDs, not human-readable names. The `reference` tells you exactly how to resolve:
+- `reference.objectName` — the IS resource to query
+- `reference.lookupValue` — the field to use as the value (usually `"id"`)
+
+Example: a `channel` field with `reference: { objectName: "curated_channels?types=public_channel,private_channel", lookupValue: "id" }` means you must look up the channel ID:
+```bash
+uip is resources execute list <connector-key> <reference.objectName> \
+  --connection-id <connection-id> --format json
+```
+Then use the `id` from results, not the display name.
+
+Gather this information **before** moving to the planning step. For each connector node in the flow, you should know: which operation to use, what fields are required, what reference fields need ID resolution, and whether a connection exists.
 
 ### Step 5 — Plan the flow (interactive)
 
@@ -168,13 +181,52 @@ In chat, output a **short summary only** (goal + key nodes + any open questions)
 
 Edit `flow_files/<ProjectName>.flow` only. Never edit `content/<ProjectName>.bpmn` — it is auto-generated.
 
-Build the flow by editing the `.flow` JSON directly. For each node:
-1. Get the full node schema: `uip flow registry get <nodeType> --format json`
-2. Copy the `Data.Node` object into the `definitions` array
-3. Add the node instance to the `nodes` array with correct inputs (use field info from Step 4 IS discovery)
-4. Add edges to the `edges` array with correct `sourcePort` and `targetPort`
+**Prefer CLI commands for adding nodes and edges.** They handle definitions and port wiring automatically, eliminating the most common build errors. Fall back to direct JSON editing only for operations the CLI doesn't support yet (update, remove, rewire).
 
-See [references/flow-file-format.md](references/flow-file-format.md) for the full JSON schema, node/edge structure, and definition requirements.
+#### Adding nodes
+
+```bash
+uip flow node add flow_files/<ProjectName>.flow <nodeType> --format json \
+  --input '{"expression": "$vars.fetchData.output.statusCode === 200"}' \
+  --label "Check Status" \
+  --position 300,400
+```
+
+The command automatically adds the node to the `nodes` array and its definition to `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.).
+
+> **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write the JSON to a temp file and pass it: `cat /tmp/input.json | uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --format json`
+
+After adding nodes, list them to get the assigned IDs for wiring:
+
+```bash
+uip flow node list flow_files/<ProjectName>.flow --format json
+```
+
+#### Adding edges
+
+```bash
+uip flow edge add flow_files/<ProjectName>.flow <sourceNodeId> <targetNodeId> --format json \
+  --source-port success \
+  --target-port input
+```
+
+The command automatically adds `targetPort` and validates the edge structure.
+
+#### When to fall back to JSON editing
+
+The CLI does not yet support: removing nodes, removing edges, updating existing node inputs (e.g., changing a script body), or rewiring existing edges. For these operations, edit the `.flow` JSON directly — see [references/flow-file-format.md](references/flow-file-format.md) and the Common Edits section above.
+
+#### Known limitation: connector node bindings
+
+`uip flow node add` for connector nodes does **not** create bindings (`BindingsCreated: 0` in output). Connector nodes have `<bindings.X>` placeholders in their `model.context` that must resolve to actual connection IDs at runtime. Without bindings, the flow validates but **fails at debug/runtime**.
+
+Until the CLI supports this, connector nodes require manual JSON edits after `node add`:
+
+1. **Add binding entries to the `.flow` `bindings` array** — each binding needs an `id` matching the placeholder name (e.g., `"uipath-salesforce-slack connection"` for `<bindings.uipath-salesforce-slack connection>`), with `resourceKey` and `default` set to the connection ID from `uip is connections list`.
+2. **Add entries to `bindings_v2.json`** — with the connection resource metadata.
+3. **Set the full `inputs.detail` envelope** — connector nodes need more than user-facing fields. The `inputs.detail` must include: `connector`, `connectionId`, `connectionResourceId`, `connectionFolderKey`, `method`, `endpoint`, `bodyParameters` (containing the actual user fields), and `configuration`. Copy this structure from the `registry get` output's `form.componentProps.connectorDetail.configuration` field and a known working reference flow.
+
+**Recommendation:** If a reference flow with the same connector exists, copy its binding and `inputs.detail` structure rather than building from scratch.
 
 ### Step 7 — Validate loop
 
@@ -200,13 +252,18 @@ Common error categories:
 
 ```bash
 uip flow debug flow_files/<ProjectName>.flow
+uip flow debug flow_files/<ProjectName>.flow --keep    # keep the project in Studio Web after debug
+uip flow debug flow_files/<ProjectName>.flow --inputs '{"param": "value"}'  # pass input parameters
 ```
 
 Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchestrator, and streams results. Always `validate` first — debug is a cloud round-trip with real side effects (see Critical Rule #9).
 
+By default, debug cleans up the Studio Web project after the run. Use `--keep` to persist the project in Studio Web — this is currently the only way to make a flow-skill-built project visible in Studio Web (the solution deploy pipeline does not yet support flow projects).
+
 ## Anti-Patterns
 
-- **Never guess node schemas** — always `uip flow registry get` first. Guessed port names or input fields cause silent wiring failures.
+- **Never guess node schemas** — use the planning guide for OOTB nodes, `registry get` for connector/unknown nodes. Guessed port names or input fields cause silent wiring failures.
+- **Never `registry get` built-in nodes** — the planning guide already documents all OOTB node types with ports and inputs. Redundant registry calls waste tokens and time.
 - **Never skip IS discovery for connector nodes** — the registry tells you a node exists; only IS tells you what operations and fields it supports. Skipping this is the #1 cause of broken connector nodes.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.

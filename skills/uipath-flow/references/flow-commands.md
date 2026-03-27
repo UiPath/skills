@@ -104,8 +104,7 @@ uip flow registry list --format yaml
 
 # Search by keyword (matches nodeType, category, tags, label)
 uip flow registry search <keyword> --format json
-uip flow registry search --filter "category=agent" --format json
-uip flow registry search <keyword> --filter "category=<cat>" --format json
+uip flow registry search agent --format json
 
 # Get full schema for a specific node type
 uip flow registry get <nodeType> --format json

@@ -10,7 +10,7 @@ These are org-wide "when to use what" rules that can't be encoded in individual 
 
 Use this decision order — prefer higher tiers:
 
-1. **Pre-built Integration Service connector** — Use when a connector exists and its activities cover your use case. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically. Always check first: `uip flow registry search <service> --filter "category=connector"`.
+1. **Pre-built Integration Service connector** — Use when a connector exists and its activities cover your use case. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically. Always check first: `uip flow registry search <service> --format json`.
 2. **HTTP Request within a connector** — Use when a connector exists but lacks the specific API endpoint you need. The connector still manages authentication; you just supply the path and payload.
 3. **Standalone HTTP Request node** (`core.action.http`) — Use for one-off API calls to services without connectors, or during prototyping when you need quick iteration. You handle auth manually (headers, tokens).
 4. **RPA workflow node** — Use only when the target system has no API at all (legacy desktop apps, terminal-based systems, browser flows that can't be done via API). RPA requires robot infrastructure and is orders of magnitude slower than API-based approaches.
@@ -197,9 +197,10 @@ Connector nodes typically have:
 
 **To find connector nodes:**
 ```bash
-uip flow registry search --filter "category=connector"
-uip flow registry search slack --filter "category=connector"
+uip flow registry search <service> --format json
 ```
+
+Search broadly by service name, then check the `category` field in results to confirm it's a connector node.
 
 **Before using a connector node:** Always discover its capabilities via IS commands (see Step 4 in SKILL.md). The registry tells you the node exists; IS tells you what it can do and what fields are required.
 
@@ -208,7 +209,7 @@ uip flow registry search slack --filter "category=connector"
 Agent nodes invoke UiPath agents within a flow. Available after login.
 
 ```bash
-uip flow registry search --filter "category=agent"
+uip flow registry search agent --format json
 ```
 
 ---
@@ -267,7 +268,7 @@ Expressions are JavaScript-like and used in:
 Use **Script** (`core.action.script`). Write JavaScript, return an object. Common pattern: HTTP (fetch) → Script (transform) → HTTP (send) or Decision (branch).
 
 ### "I need to call an external API"
-- **First choice:** Check if a **connector node** exists for the service (`uip flow registry search slack --filter "category=connector"`). Connectors handle auth, pagination, and error formatting automatically.
+- **First choice:** Check if a **connector node** exists for the service (`uip flow registry search <service> --format json`). Connectors handle auth, pagination, and error formatting automatically.
 - **Second choice:** Use **HTTP Request** (`core.action.http`) for generic REST APIs or services without a dedicated connector.
 
 ### "I need to branch based on a condition"
