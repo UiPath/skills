@@ -7,6 +7,8 @@ Quick reference for UI automation in coded workflows using the `uiAutomation` se
 **Required package:** `UiPath.UIAutomation.Activities`
 **Service accessor:** `uiAutomation` (type `IUiAutomationAppService`)
 
+> **Minimum version for `uip rpa uia` CLI:** The `uip rpa uia` subcommands (snapshot, selector-intelligence, object-repository) require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. If the installed version is older, the subcommands will not appear. Upgrade the package before using any `uip rpa uia` features.
+
 ---
 
 ## Workflow Pattern

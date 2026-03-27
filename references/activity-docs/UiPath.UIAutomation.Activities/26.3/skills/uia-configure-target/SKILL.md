@@ -39,6 +39,28 @@ If `$WINDOW` is not provided, ask the user which application/window to target.
 
 Derive `$SCREEN_NAME` from `$WINDOW` by converting to Title Case (e.g., "google chrome" → `Google Chrome`).
 
+## TARGET-0: Check UIA Package Version
+
+The `uip rpa uia` subcommands require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. Check the installed version:
+
+```bash
+uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --format json
+```
+
+Also check `project.json` in `$PROJECT_DIR` for the currently installed version under `dependencies`.
+
+**If the installed version is below `26.3.1-beta.11555873`:** ask the user whether to upgrade using AskUserQuestion:
+
+> "The project's `UiPath.UIAutomation.Activities` package (currently `<installed_version>`) is below the minimum required for `uip rpa uia` CLI features (`26.3.1-beta.11555873`). This upgrade enables object repository management, snapshot capture, and selector intelligence. May I upgrade it?"
+
+If the user approves, run:
+
+```bash
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "26.3.1-beta.11555873"}]' --project-dir "$PROJECT_DIR" --format json
+```
+
+Wait for restore to complete, then continue. If the user declines, warn that `uip rpa uia` commands will fail and fall back to the indication tools (Step 3 in the UI Automation Guide).
+
 ## TARGET-1: Prepare Working Folder
 
 Clean and create:

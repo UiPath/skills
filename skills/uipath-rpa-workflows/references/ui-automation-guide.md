@@ -6,6 +6,8 @@ Quick reference for UI automation in XAML/RPA workflows using UiPath UIAutomatio
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
+> **Minimum version for `uip rpa uia` CLI:** The `uip rpa uia` subcommands (snapshot, selector-intelligence, object-repository) require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. If the installed version is older, the subcommands will not appear. Upgrade the package before using any `uip rpa uia` features.
+
 ---
 
 ## Key Concepts
