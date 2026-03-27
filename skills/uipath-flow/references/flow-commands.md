@@ -34,7 +34,7 @@ Exit code 0 = valid, 1 = invalid.
 
 ## uip flow pack
 
-Pack a Flow project into a `.nupkg` for publishing.
+Pack a Flow project into a `.nupkg` for Orchestrator deployment.
 
 ```bash
 uip flow pack <ProjectDir> <OutputDir>
@@ -44,7 +44,30 @@ uip flow pack <ProjectDir> <OutputDir> --format json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-For publishing the package to Orchestrator, see [uipath-platform](/uipath:uipath-platform).
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `solution bundle` + `solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
+
+## uip solution bundle
+
+Bundle a local solution directory into a `.uis` file for upload to Studio Web.
+
+```bash
+uip solution bundle <solutionPath> --format json
+uip solution bundle <solutionPath> --output <outputDir> --name <name> --format json
+```
+
+The `<solutionPath>` must be a directory containing a `.uipx` file. Output: a `.uis` zip file.
+
+## uip solution upload
+
+Upload a `.uis` solution file to Studio Web. **Requires `uip login`.**
+
+```bash
+uip solution upload <solutionFile.uis> --format json
+```
+
+Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
+
+> **This is the default publish path.** When the user asks to "publish" without specifying where, use `solution bundle` + `solution upload` to push to Studio Web. Share the resulting URL with the user.
 
 ## uip flow debug
 

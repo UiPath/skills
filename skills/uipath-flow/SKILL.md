@@ -252,13 +252,30 @@ Common error categories:
 
 ```bash
 uip flow debug flow_files/<ProjectName>.flow
-uip flow debug flow_files/<ProjectName>.flow --keep    # keep the project in Studio Web after debug
-uip flow debug flow_files/<ProjectName>.flow --inputs '{"param": "value"}'  # pass input parameters
+uip flow debug flow_files/<ProjectName>.flow --inputs '{"param": "value"}'
 ```
 
 Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchestrator, and streams results. Always `validate` first — debug is a cloud round-trip with real side effects (see Critical Rule #9).
 
-By default, debug cleans up the Studio Web project after the run. Use `--keep` to persist the project in Studio Web — this is currently the only way to make a flow-skill-built project visible in Studio Web (the solution deploy pipeline does not yet support flow projects).
+Debug is for **testing the flow runs correctly** — not for publishing. It creates a temporary project in Studio Web that is cleaned up after the run.
+
+### Step 9 — Publish to Studio Web
+
+**This is the default publish target.** When the user wants to publish, view, or share the flow, upload it to Studio Web using `solution bundle` + `solution upload`:
+
+```bash
+# Bundle the solution directory into a .uis file
+uip solution bundle <SolutionDir> --output . --format json
+
+# Upload the .uis to Studio Web
+uip solution upload <SolutionName>.uis --format json
+```
+
+The `bundle` command requires a solution directory containing a `.uipx` file. If the project was created with `uip flow init`, it lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+
+**Do NOT run `uip flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`solution bundle` + `solution upload`).
+
+For Orchestrator deployment when explicitly requested, see [references/flow-commands.md](references/flow-commands.md) for `uip flow pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
 
 ## Anti-Patterns
 
@@ -287,7 +304,8 @@ By default, debug cleans up the Studio Web project after the run. Use `--keep` t
 | **Find the right node type** | Run `uip flow registry search <keyword>` |
 | **Discover connector capabilities** | Step 4 + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
 | **Check/create connections** | [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Pack / publish / deploy** | [/uipath:uipath-platform](/uipath:uipath-platform) |
+| **Publish to Studio Web** | Step 9 (solution bundle + upload) |
+| **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 
 ## Key Concepts
 
@@ -320,10 +338,11 @@ When you finish building or editing a flow, report to the user:
 4. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 5. **Missing connections** — any connector nodes that need IS connections the user must create
 6. **Next step** — ask if the user wants to debug the flow (do not run debug automatically)
+7. **Publish offer** — ask if the user wants to publish to Studio Web (do not publish automatically). If yes, run `solution bundle` + `solution upload` and share the Studio Web URL.
 
 ## References
 
 - **[Flow Planning Guide](references/flow-planning-guide.md)** — Complete node catalog, expression system, wiring rules, node selection heuristics, validation rules, and common patterns. **Read this first when planning a new flow.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
-- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Packaging and Orchestrator deployment (uipath-platform skill)
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 9).
