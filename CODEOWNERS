@@ -23,3 +23,6 @@
 
 # Flow skill
 /skills/uipath-flow/ @bai-uipath @rockymadden
+
+# Maestro skill
+/skills/uipath-maestro/ @gabrielavaduva @AlvinStanescu
