@@ -4,14 +4,22 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 ## uip flow init
 
-Scaffold a new Flow project directory.
+Scaffold a new Flow project directory. **Always create a solution first** (see Quick Start Step 2 in SKILL.md).
 
 ```bash
-uip flow init <ProjectName>
-uip flow init <ProjectName> --format json
+# 1. Create solution first
+uip solution new "<SolutionName>" --format json
+
+# 2. Init the flow project inside the solution folder
+cd <directory>/<SolutionName> && uip flow init <ProjectName>
+
+# 3. Register the project with the solution
+uip solution project add \
+  <directory>/<SolutionName>/<ProjectName> \
+  <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-Creates `<ProjectName>/` with `project.uiproj`, `flow_files/<ProjectName>.flow`, and `content/` files.
+Creates `<ProjectName>/` with `project.uiproj`, `flow_files/<ProjectName>.flow`, and `content/` files inside the solution directory.
 
 ## uip flow validate
 
