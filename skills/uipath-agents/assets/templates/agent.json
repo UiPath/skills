@@ -1,0 +1,52 @@
+{
+  "version": "1.1.0",
+  "name": "{AGENT_NAME}",
+  "metadata": {
+    "storageVersion": "44.0.0",
+    "isConversational": false
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant. Complete the user's task accurately and concisely. If you are missing information required to complete the task, ask a clarifying question before proceeding.",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "You are a helpful assistant. Complete the user's task accurately and concisely. If you are missing information required to complete the task, ask a clarifying question before proceeding." }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{task}}",
+      "contentTokens": [
+        { "type": "variable", "rawString": "input.task" }
+      ]
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "task": {
+        "type": "string",
+        "description": "The task or question for the agent to complete."
+      }
+    },
+    "required": ["task"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "result": {
+        "type": "string",
+        "description": "The agent's response or the outcome of the completed task."
+      }
+    }
+  },
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25
+  },
+  "resources": [],
+  "features": []
+}

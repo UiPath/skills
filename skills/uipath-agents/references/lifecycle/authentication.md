@@ -1,0 +1,190 @@
+# UiPath Authentication
+
+> **Agent type: Both coded and low-code agents.** The same `uip login` flow applies to both. Authentication is required for any command that connects to UiPath Cloud (run, eval with `--report`, deploy, push, pull, invoke).
+
+Set up authentication with UiPath Cloud or on-premise before running cloud commands.
+
+## Quick Reference
+
+```bash
+# Interactive OAuth (recommended)
+uip login --format json
+uip login tenant set "MY_TENANT" --format json
+
+# Unattended (automation/CI)
+uip login --client-id ID --client-secret SECRET --base-url URL
+```
+
+## Documentation
+
+- This file covers complete authentication setup.
+  - Interactive OAuth flow (with tenant selection)
+  - Unattended client credentials flow
+  - Environment modes (--cloud, --staging, --alpha)
+  - Network and proxy settings
+  - Troubleshooting (browser issues, token expiry, tenant mismatch)
+
+## Critical Rules
+
+- **Skip auth if already authenticated.** Check if `.env` contains `UIPATH_URL` and auth tokens first. If auth is already configured, inform the user and skip.
+- **After `uip login`, ALWAYS run `uip login tenant set` immediately.** The interactive tenant picker cannot be used from Claude's Bash tool. If the tenant name is known, run: `uip login --format json` then `uip login tenant set "<TENANT>" --format json`. If unknown, use the two-step discovery flow (see Interactive Mode below).
+- **Auth MUST be an interactive question (when needed).** If auth is NOT configured, your ENTIRE response must be ONLY this question — no bullet points, no "Next Steps" headers, no status summaries:
+
+  > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
+
+  Then STOP and wait for the user's reply. Only after they answer, run `uip login --format json` followed by `uip login tenant set "<TENANT>" --format json`.
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` from LLM Gateway | Token expired or wrong tenant | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+| `UIPATH_URL not found` | `.env` missing or not in project root | Check `.env` exists in the working directory with `UIPATH_URL` set |
+
+## Additional Instructions
+
+- If unsure about usage, read the full authentication guide below before making assumptions.
+
+---
+
+# UiPath Authentication
+
+Authenticate with UiPath using the UiPath Python CLI. Authentication is required to run agents and access UiPath Cloud Platform.
+
+## Authentication Modes
+
+The UiPath CLI supports two main authentication approaches: **Interactive** (OAuth) and **Unattended** (client credentials). Additionally, you can target different UiPath environments:
+
+- **`--cloud`** — Production UiPath Cloud (default)
+- **`--staging`** — Staging environment for testing
+- **`--alpha`** — Alpha/preview features environment
+
+### 🔓 Interactive Mode (Default - Recommended)
+
+Opens a browser for OAuth authentication.
+
+**IMPORTANT — Ask upfront, don't interrupt:**
+
+Before running auth, ask the user for **all required info in a single question**:
+- **Environment**: cloud (default), staging, or alpha
+- **Organization**: their UiPath organization name
+- **Tenant**: their tenant name
+
+Example prompt: "To authenticate, I need your UiPath **environment** (cloud/staging/alpha), **organization**, and **tenant name**."
+
+The CLI's interactive tenant picker cannot be used from Claude's Bash tool. Always run `uip login tenant set` after every login.
+
+```bash
+# Cloud (default):
+uip login --format json
+uip login tenant set "MY_TENANT" --format json
+
+# Staging environment:
+uip login --authority "https://staging.uipath.com/identity_" --format json
+uip login tenant set "MY_TENANT" --format json
+
+# Alpha environment:
+uip login --authority "https://alpha.uipath.com/identity_" --format json
+uip login tenant set "MY_TENANT" --format json
+```
+
+**If the user doesn't know their tenant name**, use a two-step flow:
+
+1. Log in first, then list available tenants:
+   ```bash
+   uip login --format json
+   uip login tenant list --format json
+   ```
+
+2. Present ALL tenant names to the user and ask them to pick one.
+
+3. Set the selected tenant:
+   ```bash
+   uip login tenant set "SELECTED_TENANT" --format json
+   ```
+
+### 🔐 Unattended Mode (For Automation)
+
+Uses client credentials flow for automated authentication without user interaction.
+
+```bash
+uip login --client-id YOUR_CLIENT_ID \
+                   --client-secret YOUR_CLIENT_SECRET \
+                   --base-url YOUR_BASE_URL
+```
+
+## Prerequisites Check
+
+Verify the `uip` CLI is installed:
+
+```bash
+uip --version
+```
+
+If missing, install with `npm install -g @uipath/cli` (requires Node.js 18+). Then ensure the Python runtime is set up:
+
+```bash
+uip codedagents setup --format json
+```
+
+> **Low-code agents:** No `pyproject.toml` or `uv sync` needed — only `uip codedagents setup` is required for the runtime.
+
+## Environment Setup
+
+For **Automation Suite** (on-premise) deployments, set your instance URL:
+
+```bash
+export UIPATH_URL=https://your-instance-url
+```
+
+Or add to a `.env` file in your project directory.
+
+## Additional Options
+
+- **Force Re-authentication:** Use `-f` or `--force` to get a new token: `uip login --force --format json`
+- **Custom Scopes:** Use `--scope "SCOPE1 SCOPE2"` (defaults to 'OR.Execution')
+
+## Network Configuration
+
+The CLI respects proxy settings via:
+- `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` environment variables
+- `REQUESTS_CA_BUNDLE` for custom CA certificates
+
+## Troubleshooting
+
+### Browser Does Not Open
+
+**Symptom:** Running `uip login --format json` does not open a browser window.
+
+**Solutions:**
+- Ensure you have a default browser configured on your system
+- Try running the command from a standard terminal (not inside a remote SSH session or container)
+- Use unattended mode with `--client-id` and `--client-secret` as an alternative
+
+### Token Expired / "Unauthorized" Errors
+
+**Symptom:** Commands fail with "Unauthorized" or "401" after previously working.
+
+**Solutions:**
+- Re-run `uip login --format json` then `uip login tenant set "YOUR_TENANT" --format json` to refresh the token
+- Force a new token: `uip login --force --format json` then `uip login tenant set "YOUR_TENANT" --format json`
+- Check that `UIPATH_URL` and `UIPATH_ACCESS_TOKEN` environment variables are not stale in your `.env` file
+
+### Tenant Not Found / Mismatch
+
+**Symptom:** `uip login tenant set "MY_TENANT"` fails with "tenant not found" or commands target the wrong tenant.
+
+**Solutions:**
+- List available tenants: `uip login --format json` then `uip login tenant list --format json`
+- Verify the tenant name is spelled exactly as shown in the list (case-sensitive)
+- Re-run `uip login tenant set "<CORRECT_NAME>" --format json` with the exact name from the list
+- Ensure your UiPath account has access to the target tenant
+
+### Client Credentials Flow Fails
+
+**Symptom:** Unattended authentication with `--client-id` / `--client-secret` returns errors.
+
+**Solutions:**
+- Verify the client ID and secret are correct and not expired
+- Check that the `--base-url` points to the correct UiPath instance
+- Ensure the external application has the required scopes configured in UiPath
