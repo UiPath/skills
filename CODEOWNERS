@@ -12,9 +12,14 @@
 
 # Coded workflows skill
 /skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-coded-workflows/references/integration-service.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva
+/skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
+
+# Coded agents skill
+/skills/uipath-coded-agents/ @chandusailella
 
 # Flow skill
 /skills/uipath-flow/ @bai-uipath @rockymadden
