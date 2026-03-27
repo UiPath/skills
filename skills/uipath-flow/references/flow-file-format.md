@@ -77,7 +77,7 @@ The `.flow` file is a JSON document in `flow_files/<ProjectName>.flow`. It is th
 Every node type appearing in `nodes` must have a matching entry in `definitions`. Get the correct definition from:
 
 ```bash
-uip flow registry get core.action.script --format json
+uip flow registry get core.action.script --output json
 ```
 
 Copy the object at `Data.Node` into your `definitions` array. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
@@ -101,7 +101,7 @@ For full details on each node (ports, inputs, outputs, when to use), see [flow-p
 
 Discover all available types:
 ```bash
-uip flow registry list --format json
+uip flow registry list --output json
 uip flow registry search <keyword>
 ```
 
@@ -122,7 +122,7 @@ uip flow registry search <keyword>
 
 Verify exact ports for any node type:
 ```bash
-uip flow registry get <nodeType> --format json
+uip flow registry get <nodeType> --output json
 # Look at Data.Node.handleConfiguration[].handles[].id
 ```
 
@@ -195,9 +195,9 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
 Run one command per node type used in `nodes`. Copy the `Data.Node` object from each response into the `definitions` array.
 
 ```bash
-uip flow registry get core.trigger.manual --format json
-uip flow registry get core.action.script --format json
-uip flow registry get core.logic.terminate --format json
+uip flow registry get core.trigger.manual --output json
+uip flow registry get core.action.script --output json
+uip flow registry get core.logic.terminate --output json
 ```
 
 The `definitions` array must contain exactly one entry per unique `type` used — not one per node instance. If two nodes share the same type, one definition covers both.
@@ -369,11 +369,11 @@ For manual-trigger flows with connector activities, you only need `Connection` r
 
 ```bash
 # 1. List connections for the connector
-uip is connections list "uipath-atlassian-jira" --format json
+uip is connections list "uipath-atlassian-jira" --output json
 # → Pick the one with IsDefault: Yes, State: Enabled
 
 # 2. Verify it's healthy
-uip is connections ping "<connection-id>" --format json
+uip is connections ping "<connection-id>" --output json
 
 # 3. Write into bindings_v2.json
 ```
