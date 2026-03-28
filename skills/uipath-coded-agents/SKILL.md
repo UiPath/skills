@@ -1,6 +1,11 @@
 ---
 name: uipath-coded-agents
-description: UiPath coded agents lifecycle assistant. Orchestrates setup, auth, build, bindings, run, evaluate, deploy, and sync for UiPath Python agents. Use when the user wants to create a new agent from scratch or manage the full lifecycle, e.g. "create a UiPath agent", "set up and deploy an agent", or "build and run a new agent end-to-end".
+description: >
+  Python agent lifecycle — setup, build, evaluate, deploy via uip codedagents CLI. Frameworks:
+  LangGraph, LlamaIndex, OpenAI Agents. Use when user says "coded agent", "Python agent",
+  "LangGraph agent", "LlamaIndex agent", "OpenAI Agents", or "uip codedagents". NOT for:
+  C# coded workflows (uipath-coded-workflows), XAML workflows (uipath-rpa-workflows), web apps
+  (uipath-coded-apps), or Orchestrator management (uipath-platform).
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---

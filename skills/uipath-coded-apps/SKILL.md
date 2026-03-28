@@ -1,6 +1,12 @@
 ---
 name: uipath-coded-apps
-description: "End-to-end toolkit for UiPath Coded Web Applications: authenticate, push/pull source code to Studio Web, package into .nupkg, publish to Orchestrator, and deploy. TRIGGER when: User wants to create, build, push, pull, pack, publish, or deploy a UiPath coded web app; User mentions coded apps, coded web apps, codedapp, web application in a UiPath context; User asks about pushing code to Studio Web, packaging a web app, publishing a .nupkg, deploying a coded app; User asks about uip codedapp CLI commands, .uipath directory, app.config.json, or coded app project lifecycle. DO NOT TRIGGER when: User is working with coded agents (Python — use uipath-coded-agents instead); User is working with coded workflows (.cs files — use uipath-coded-workflows instead); User is working with XAML/RPA workflows (use uipath-rpa-workflows instead); User asks about Orchestrator management without coded app context (use uipath-platform instead)."
+description: >
+  Coded web app lifecycle — push, pull, pack, publish, deploy via uip codedapp CLI. Use when
+  user says "coded app", "codedapp", "web app" in UiPath context, "push to Studio Web",
+  ".nupkg", or "uip codedapp". Also triggers when user mentions deploying a React/Angular/Vue
+  app to UiPath. NOT for: Python agents (uipath-coded-agents), C# workflows
+  (uipath-coded-workflows), XAML workflows (uipath-rpa-workflows), Orchestrator management
+  (uipath-platform).
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
