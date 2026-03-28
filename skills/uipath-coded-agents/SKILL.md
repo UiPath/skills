@@ -1,12 +1,11 @@
 ---
 name: uipath-coded-agents
-description: "Python agent lifecycle — setup, build, evaluate, deploy via uip codedagents CLI. Frameworks: LangGraph, LlamaIndex, OpenAI Agents."
-when_to_use: >
-  Direct match: user explicitly says "coded agent", "Python agent", "LangGraph agent",
-  "LlamaIndex agent", "OpenAI Agents", or "uip codedagents".
-  For ambiguous UiPath tasks, the uipath router handles dispatch.
-  NOT for: C# coded workflows (uipath-coded-workflows), XAML workflows (uipath-rpa-workflows),
-  web apps (uipath-coded-apps), or Orchestrator management (uipath-platform).
+description: >
+  Python agent lifecycle — setup, build, evaluate, deploy via uip codedagents CLI. Frameworks:
+  LangGraph, LlamaIndex, OpenAI Agents. Use when user says "coded agent", "Python agent",
+  "LangGraph agent", "LlamaIndex agent", "OpenAI Agents", or "uip codedagents". NOT for:
+  C# coded workflows (uipath-coded-workflows), XAML workflows (uipath-rpa-workflows), web apps
+  (uipath-coded-apps), or Orchestrator management (uipath-platform).
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---

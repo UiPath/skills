@@ -1,11 +1,13 @@
 ---
 name: uipath-servo
-description: "Live UI automation via servo CLI — click, type, screenshot, inspect desktop and browser elements."
-when_to_use: >
-  Direct match: user mentions "servo", "screenshot", "click element", "UI tree",
-  "snapshot window", or wants to interact with/test live UI (desktop or browser).
-  NOT for: Writing automation code (uipath-coded-workflows or uipath-rpa-workflows),
-  pure API/backend work, or authoring UI code without testing intent.
+description: >
+  Live UI automation via servo CLI — click, type, screenshot, inspect desktop and browser
+  elements. Use when user mentions "servo", "screenshot", "click element", "UI tree",
+  "snapshot window", or wants to interact with/test live UI (desktop or browser). Also use
+  when user wants to verify UI state, check if an element exists, or debug UI automation
+  issues — even if they don't mention "servo" explicitly. NOT for: Writing automation code
+  (uipath-coded-workflows or uipath-rpa-workflows), pure API/backend work, or authoring UI
+  code without testing intent.
 allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
 ---
 

@@ -1,11 +1,13 @@
 ---
 name: uipath
-description: "Route any UiPath task to the right skill. Detects project type from filesystem context, disambiguates overlapping domains, and loads the correct specialist skill. TRIGGER on any UiPath-related request: automation, agents, apps, platform ops, UI testing, flows, or general UiPath questions."
-when_to_use: >
-  Use for ANY UiPath-related task when the correct specialist skill is not obvious.
-  This is the default UiPath entry point. Catches: "automate X", "create a UiPath project",
-  "deploy my automation", "work with UiPath", or any ambiguous UiPath intent.
-  NOT needed when user explicitly names a domain (e.g., "edit my coded workflow",
+description: >
+  Route any UiPath task to the right skill. Detects project type from filesystem context,
+  disambiguates overlapping domains, and loads the correct specialist skill. TRIGGER on any
+  UiPath-related request: automation, agents, apps, platform ops, UI testing, flows, or
+  general UiPath questions. Use this skill for ANY UiPath-related task when the correct
+  specialist skill is not obvious — it is the default UiPath entry point. Catches: "automate X",
+  "create a UiPath project", "deploy my automation", "work with UiPath", or any ambiguous
+  UiPath intent. NOT needed when user explicitly names a domain (e.g., "edit my coded workflow",
   "run servo snapshot") — those go direct to the specialist skill.
 allowed-tools: Bash, Glob, Grep
 user-invocable: true

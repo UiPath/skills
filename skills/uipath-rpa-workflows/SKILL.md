@@ -1,13 +1,12 @@
 ---
 name: uipath-rpa-workflows
-description: "XAML RPA workflow authoring — generate, edit, validate, run .xaml files in Studio Desktop (uip rpa CLI)."
-when_to_use: >
-  Direct match: user explicitly says "XAML", "RPA workflow", ".xaml file", "Studio Desktop",
-  "get-errors", or project has .xaml files with project.json.
-  For ambiguous UiPath tasks (e.g., "automate Excel" with no project context),
-  the uipath router handles dispatch.
-  NOT for: C# coded workflows (uipath-coded-workflows), Python agents (uipath-coded-agents),
-  Orchestrator management (uipath-platform).
+description: >
+  XAML RPA workflow authoring — generate, edit, validate, run .xaml files in Studio Desktop
+  (uip rpa CLI). Use when user says "XAML", "RPA workflow", ".xaml file", "Studio Desktop",
+  "get-errors", or project has .xaml files with project.json. Also use for ambiguous automation
+  requests when the project context contains XAML files. NOT for: C# coded workflows
+  (uipath-coded-workflows), Python agents (uipath-coded-agents), Orchestrator management
+  (uipath-platform).
 ---
 
 # RPA Workflow Architect

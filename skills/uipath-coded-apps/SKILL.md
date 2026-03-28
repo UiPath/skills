@@ -1,12 +1,12 @@
 ---
 name: uipath-coded-apps
-description: "Coded web app lifecycle — push, pull, pack, publish, deploy via uip codedapp CLI."
-when_to_use: >
-  Direct match: user explicitly says "coded app", "codedapp", "web app" in UiPath context,
-  "push to Studio Web", ".nupkg", or "uip codedapp".
-  For ambiguous UiPath tasks, the uipath router handles dispatch.
-  NOT for: Python agents (uipath-coded-agents), C# workflows (uipath-coded-workflows),
-  XAML workflows (uipath-rpa-workflows), Orchestrator management (uipath-platform).
+description: >
+  Coded web app lifecycle — push, pull, pack, publish, deploy via uip codedapp CLI. Use when
+  user says "coded app", "codedapp", "web app" in UiPath context, "push to Studio Web",
+  ".nupkg", or "uip codedapp". Also triggers when user mentions deploying a React/Angular/Vue
+  app to UiPath. NOT for: Python agents (uipath-coded-agents), C# workflows
+  (uipath-coded-workflows), XAML workflows (uipath-rpa-workflows), Orchestrator management
+  (uipath-platform).
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---

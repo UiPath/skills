@@ -1,10 +1,9 @@
 ---
 name: uipath-flow
-description: "Flow project authoring — create, edit, validate .flow JSON files with nodes and edges (uip flow CLI)."
-when_to_use: >
-  Direct match: user mentions ".flow file", "Flow project", "uip flow", "flow validate",
-  "nodes and edges", "flow registry", or is editing a .flow JSON file.
-  For ambiguous UiPath tasks, the uipath router handles dispatch.
+description: >
+  Flow project authoring — create, edit, validate .flow JSON files with nodes and edges
+  (uip flow CLI). Use when user mentions ".flow file", "Flow project", "uip flow",
+  "flow validate", "nodes and edges", "flow registry", or is editing a .flow JSON file.
   NOT for: XAML workflows, C# workflows, Python agents, or platform management.
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep

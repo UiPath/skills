@@ -1,13 +1,12 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops — auth, Orchestrator resources, solutions, Integration Service, Test Manager, uip CLI."
-when_to_use: >
-  Direct match: user asks about "Orchestrator", "assets", "queues", "storage buckets",
-  "uip login", "deploy solution", "Test Manager", "Integration Service", or general
-  UiPath platform/infrastructure questions.
-  For ambiguous UiPath tasks, the uipath router handles dispatch.
-  NOT for: Writing workflow code (uipath-coded-workflows or uipath-rpa-workflows),
-  building agents (uipath-coded-agents), or building web apps (uipath-coded-apps).
+description: >
+  UiPath platform ops — auth, Orchestrator resources, solutions, Integration Service, Test
+  Manager, uip CLI. Use when user asks about "Orchestrator", "assets", "queues", "storage
+  buckets", "uip login", "deploy solution", "Test Manager", "Integration Service", or general
+  UiPath platform/infrastructure questions. NOT for: Writing workflow code
+  (uipath-coded-workflows or uipath-rpa-workflows), building agents (uipath-coded-agents),
+  or building web apps (uipath-coded-apps).
 metadata:
    allowed-tools: Bash, Read, Write, Glob, Grep
 ---
