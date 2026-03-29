@@ -38,11 +38,24 @@ The describe command fetches JSON Schema from the IS API (`Accept: application/s
 | Section | Description |
 |---|---|
 | **operations** | Available operations — each with method, path, description, parameters (name, type, required, description) |
+| **operations[].agent** | Agent metadata (if present) — `description` (action-oriented), `fieldOrder` (resolution sequence), `knownErrors` (connector-specific error patterns and resolutions) |
 | **fields** | All fields — each with name, type, required flag, enum values (if any), $ref (if any) |
+| **fields[].agent** | Per-field agent hints (if present) — `description` (action-oriented, how to resolve), `resolveFirst` (boolean), `dependsOn` (field resolution dependencies) |
 
 Use `--operation <Create|List|Retrieve|Update|Delete|Replace>` to filter to a single operation and reduce output.
 
 Results are cached locally. Use `--refresh` to bypass cache after re-auth or schema changes.
+
+### Agent metadata in describe
+
+When present, agent metadata provides connector-specific guidance that goes beyond what the standard schema offers:
+
+- **`agent.fieldOrder`** — resolve reference fields in this order (respects dependency chains)
+- **`agent.knownErrors`** — connector-specific error patterns with resolutions. These contain non-obvious knowledge (e.g., "transitions are per-issue, not per-project" or "Slack returns HTTP 200 for errors")
+- **`agent.description`** on fields — action-oriented descriptions (e.g., "Use channel ID not name", "Resolve accountId via user search, not email")
+- **`agent.dependsOn`** on fields — explicit dependency chain (e.g., issue type depends on project key)
+
+**Use agent metadata from describe to guide field resolution and to understand failure responses.** The `knownErrors` from describe correspond to the `AgentContext.knownErrors` returned on execute failure.
 
 ---
 
@@ -83,7 +96,9 @@ Some resources return an error on describe. This is a **server-side metadata gap
 Most IS connectors use the `elements-*` pagination protocol. The CLI returns pagination state nested inside `Data.Pagination`:
 
 - **`Data.Pagination.HasMore`**: `"true"` or `"false"` — indicates if more pages exist
-- **`Data.Pagination.NextPageToken`**: token to pass as `nextPage` query param for the next page
+- **`Data.Pagination.NextPageToken`**: the token value to use for the next page
+
+**IMPORTANT:** The query parameter name is `nextPage` (NOT `nextPageToken`). Pass the value from `Data.Pagination.NextPageToken` as `--query "nextPage=<value>"`.
 
 ```bash
 # First page (do not pass pageSize unless the user explicitly requests a specific page size)
@@ -91,9 +106,9 @@ uip is resources execute list "<connector-key>" "<resource>" \
   --connection-id "<id>" --format json
 # → Check Data.Pagination.HasMore and Data.Pagination.NextPageToken in the JSON response
 
-# Subsequent pages (token encodes page and pageSize, so only nextPage is needed)
+# Subsequent pages — use nextPage as the query param name (NOT nextPageToken)
 uip is resources execute list "<connector-key>" "<resource>" \
-  --connection-id "<id>" --query "nextPage=<NextPageToken>" --format json
+  --connection-id "<id>" --query "nextPage=<value-from-NextPageToken>" --format json
 # → Continue until Data.Pagination.HasMore is "false" or target item is found
 ```
 
@@ -137,7 +152,45 @@ Connectors with key `uipath-uipath-http` do NOT use the `elements-*` pagination 
 When an execute command fails, the CLI returns:
 - **`Message`**: HTTP status (e.g., `400 Bad Request`)
 - **`Instructions`**: The raw vendor error response body as JSON
+- **`AgentContext`** (if available): Connector-specific hints from the cached describe metadata
 
-Read the `Instructions` field to understand the actual vendor error and apply the fix directly. The CLI does not transform or interpret vendor errors — the raw response is passed through so the agent can act on it.
+### AgentContext structure
+
+When the CLI has cached describe metadata for the resource, it attaches `AgentContext` to failure responses:
+
+```json
+{
+  "Result": "Failure",
+  "Message": "400 Bad Request",
+  "Instructions": "{\"errorMessages\":[\"Transition id 31 is not valid\"]}",
+  "AgentContext": {
+    "operationDescription": "Transition a Jira issue to a new status...",
+    "fieldOrder": ["issueIdOrKey", "id"],
+    "knownErrors": [
+      {
+        "match": "transition id not valid",
+        "resolution": "Transitions are dynamic per issue — they depend on the CURRENT status of the specific issue. List transitions for THIS issue via /issue/{issueKey}/transitions."
+      }
+    ],
+    "fields": [
+      {
+        "name": "id",
+        "description": "The transition ID (not status name). List transitions for the issue to get valid IDs.",
+        "resolveFirst": true,
+        "dependsOn": ["issueIdOrKey"]
+      }
+    ]
+  }
+}
+```
+
+### How to use AgentContext on failure
+
+1. **Read `Instructions`** — the raw vendor error tells you WHAT failed
+2. **Read `AgentContext.knownErrors`** — match the vendor error against `match` keywords to find the connector-specific `resolution` that tells you HOW to fix it
+3. **Read `AgentContext.fields`** — field-level hints with `dependsOn` chains to guide re-resolution
+4. **If no `AgentContext`** — fall back to the generic self-healing loop (re-describe, discover, retry)
+
+> **`AgentContext` is only present when cached describe metadata exists for the resource.** If the resource was never described, or describe failed, the error response only contains `Message` and `Instructions`.
 
 For the self-healing loop (read error → diagnose → discover correct values → fix → retry), see [agent-workflow.md — Error Self-Healing](agent-workflow.md#error-self-healing).

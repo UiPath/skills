@@ -6,6 +6,7 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 ## Contents
 - Reference Fields (CRITICAL)
+- Using Agent Metadata for Resolution
 - Simple Reference Fields (no dependencies)
 - Field Dependency Chains
 - Inferring References Without Describe
@@ -28,89 +29,102 @@ A reference field in the describe output:
 }
 ```
 
-### Example: Creating a Zoho Desk Ticket
+### Resolution workflow
 
 ```bash
-# 1. Describe → discover referenceFields: departmentId → "departments", contactId → "contacts"
-uip is resources describe "uipath-zoho-desk" "tickets" \
+# 1. Describe → discover reference fields and agent hints
+uip is resources describe "<connector-key>" "<resource>" \
   --connection-id "<id>" --operation Create --format json
 
-# 2. Resolve references
-uip is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
-# → { "id": "1892000000006907", "name": "Engineering" }
-uip is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
-# → { "id": "1892000000048009", "name": "John Doe" }
+# 2. Resolve each reference field by listing its referenced object
+uip is resources execute list "<connector-key>" "<referenced-object>" \
+  --connection-id "<id>" --format json
 
 # 3. Execute with resolved IDs
-uip is resources execute create "uipath-zoho-desk" "tickets" \
-  --connection-id "<id>" \
-  --body '{"departmentId": "1892000000006907", "subject": "Bug report", "contactId": "1892000000048009"}' \
-  --format json
-```
-
-### Simple reference fields (no dependencies)
-
-For reference fields with no parent dependency, resolve directly by listing the referenced object and matching the user's value:
-
-```bash
-# Resolve Slack channel "#test-slack" to its channel ID
-uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
-  --connection-id "<id>" --format json
-# → { "id": "C1234567890", "name": "test-slack" }
+uip is resources execute create "<connector-key>" "<resource>" \
+  --connection-id "<id>" --body '{"fieldName": "<resolved-id>"}' --format json
 ```
 
 **Present options to the user** when multiple matches exist. Use the resolved IDs (not display names) in `--body` or `--query`.
 
 ---
 
+## Using Agent Metadata for Resolution
+
+When describe returns `agent` metadata on fields, **use it to guide resolution order and approach**:
+
+- **`agent.fieldOrder`** (operation level) — resolve fields in this exact sequence
+- **`agent.dependsOn`** (field level) — this field's valid values depend on another field being resolved first
+- **`agent.resolveFirst: true`** (field level) — this field must be resolved before execute
+- **`agent.description`** (field level) — action-oriented hint on how to resolve (e.g., "Use ID not name", "List resource X to find valid values")
+
+### Resolution with agent metadata
+
+```
+1. Read agent.fieldOrder from the operation → gives the resolution sequence
+2. For each field in order:
+   a. Check agent.dependsOn — if it depends on another field, ensure that field is resolved first
+   b. Read agent.description — it tells you HOW to resolve (list which resource, use which value)
+   c. If field has reference section — use reference.path with any resolved parent values substituted
+   d. Present options to the user
+3. Once all resolveFirst fields are resolved, proceed to execute
+```
+
+### When agent metadata is absent
+
+Fall back to the standard approach: read `reference` sections, detect dependency chains via `{template}` variables in reference paths, and resolve in dependency order.
+
+---
+
 ## Field Dependency Chains
 
-Some reference fields **depend on other fields** — the child field's valid values are scoped by the parent field's selection. The connector's underlying metadata encodes this in `reference.path` using template variables like `{fields.project.key}`.
+Some reference fields **depend on other fields** — the child field's valid values are scoped by the parent field's selection. Dependencies are expressed in two ways:
+
+1. **`agent.dependsOn`** (explicit) — the field lists its parent dependencies directly
+2. **`reference.path` templates** (implicit) — the path contains `{otherField}` variables that must be substituted
 
 ### How to detect dependencies
 
-When two fields share the same `reference.objectName` (e.g., both reference `"project"`), or when a field's reference path contains `{otherField}`, they form a dependency chain. Resolve them **in order** — parent first, then child using the parent's resolved value.
+- **With agent metadata:** read `agent.dependsOn` array on each field. Empty array = no dependencies. Non-empty = resolve those fields first.
+- **Without agent metadata:** check if `reference.path` contains `{fieldName}` template variables. If so, that field depends on the referenced field.
 
 **CRITICAL: If a parent field value is NOT in the user's prompt, you MUST ask the user for it BEFORE attempting to resolve any child fields.** Do not resolve child fields without a scoped parent — the results will be wrong or ambiguous.
 
-### Common pattern: Jira project → issue type
+### Dependency chain example
 
-The Jira `curated_create_issue` resource has this dependency:
+A resource has two reference fields with a dependency chain:
 
 ```
-fields.project.key  → reference.path: /project/search                          (no dependency)
-fields.issuetype.id → reference.path: /project/{fields.project.key}/issuetypes (depends on project.key)
+Field A → dependsOn: []                    → resolve first (list resource, pick value)
+Field B → dependsOn: ["Field A"]           → resolve after A (list scoped by A's value)
 ```
 
-**Wrong** — listing `issuetype` globally returns Bug types from ALL projects:
+**Wrong** — listing Field B's resource globally returns duplicates from all scopes.
+
+**Correct** — resolve Field A first, then list Field B's resource scoped to Field A's resolved value:
+
 ```bash
-uip is resources execute list "uipath-atlassian-jira" "issuetype" \
+# Step 1: Resolve Field A (no dependencies)
+uip is resources execute list "<connector-key>" "<resource-a>" \
   --connection-id "<id>" --format json
-# → Bug (id=1), Bug (id=10004), Bug (id=12947), ... dozens of duplicates
-```
+# → pick value
 
-**Correct** — resolve project first, then list issue types scoped to that project:
-```bash
-# Step 1: Resolve project
-uip is resources execute list "uipath-atlassian-jira" "project" \
+# Step 2: Resolve Field B scoped to Field A's value
+uip is resources execute list "<connector-key>" "<resource-a>/<resolved-value>/sub-resource" \
   --connection-id "<id>" --format json
-# → { "key": "ENGCE", "name": "Integration Service", "id": "10845" }
-
-# Step 2: Resolve issue types FOR that project (scoped path)
-uip is resources execute list "uipath-atlassian-jira" "project/ENGCE/issuetypes" \
-  --connection-id "<id>" --format json
-# → { "id": "10004", "name": "Bug" }  ← only issue types valid for ENGCE
+# → only values valid for this scope
 ```
 
 ### General rule
 
 When resolving reference fields:
-1. **Sort fields by dependency** — fields with no `{template}` in their reference path come first
-2. **Resolve parent fields** — list the parent resource, pick the value
-3. **Substitute into child path** — replace `{parentField}` in the child's reference path with the resolved value
-4. **Resolve child fields** — list the scoped resource using the substituted path
+1. **Use `agent.fieldOrder`** if available — it gives the pre-computed resolution sequence
+2. **Otherwise, sort fields by dependency** — fields with no `{template}` in their reference path and no `dependsOn` come first
+3. **Resolve parent fields** — list the parent resource, pick the value
+4. **Substitute into child path** — replace `{parentField}` in the child's reference path with the resolved value
+5. **Resolve child fields** — list the scoped resource using the substituted path
 
-This pattern applies across connectors (Jira, Salesforce, ServiceNow, Zoho, etc.) wherever child fields are scoped by parent selections.
+This pattern applies across all connectors wherever child fields are scoped by parent selections.
 
 ---
 
@@ -122,21 +136,6 @@ When describe metadata is unavailable (see [resources.md — Describe Failures](
 - List the inferred object to resolve the ID: `is resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --format json`
 - Match the user's value by `Name` or `DisplayName` in the results.
 
-### Example: Coupon → Promotion (no describe available)
-
-```bash
-# User wants: create coupon "XYZ" for promotion "Chandu Test"
-# Infer: PromotionId → list Promotion objects
-uip is resources execute list "uipath-salesforce-sfdc" "Promotion" \
-  --connection-id "<id>" --format json
-# → { "Id": "<promotion-id>", "Name": "Summer Sale" }
-
-# Use resolved Id in create
-uip is resources execute create "uipath-salesforce-sfdc" "Coupon" \
-  --connection-id "<id>" \
-  --body '{"CouponCode": "SAVE20", "PromotionId": "<promotion-id>"}' --format json
-```
-
 ---
 
 ## Validate Required Fields Before Executing
@@ -144,19 +143,12 @@ uip is resources execute create "uipath-salesforce-sfdc" "Coupon" \
 After resolving references, **check every required field** from the describe response against what the user provided. This is a hard gate — do NOT execute until all required fields have values.
 
 **Process:**
-1. Collect all fields where `required: true` from the describe output's `requiredFields`
+1. Collect all fields where `required: true` from the describe output
 2. For each required field, check if the user's prompt contains a value for it
 3. If any required field is missing, **ask the user** before proceeding:
-   - List the missing fields with their `displayName` and `description`
-   - For reference fields, explain what kind of value is expected (e.g., "Which Jira project should this issue be created in?")
+   - List the missing fields with their `displayName` and `description` (or `agent.description` if available)
+   - For reference fields, explain what kind of value is expected
    - Wait for the user's response before continuing
 4. Only after all required fields are accounted for, proceed to execute
-
-**Example — user says "Create a Jira ticket with issue type Bug":**
-- Required fields from describe: `fields.project.key` (Project), `fields.issuetype.id` (Issue type), `fields.summary` (Summary)
-- User provided: issue type = Bug
-- User did NOT provide: project, summary
-- **Ask:** "To create this Jira Bug, I need: (1) Which project? (e.g., ENGCE) (2) What should the summary/title be?"
-- Wait for response, resolve references with provided values, then execute
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.

@@ -175,20 +175,26 @@ See [resources.md — Execute Operations](resources.md#execute-operations) for t
 
 ## Error Self-Healing
 
-When Step 6 returns a `Failure` result, follow this loop instead of retrying blindly or giving up. The CLI returns the HTTP status in `Message` and the raw vendor error body in `Instructions` — read `Instructions` for the actual error.
+When Step 6 returns a `Failure` result, follow this loop instead of retrying blindly or giving up. The CLI returns the HTTP status in `Message`, the raw vendor error body in `Instructions`, and connector-specific hints in `AgentContext` (when available).
 
 ### Self-Healing Loop
 
 ```
 Execute → Success? → Done
   ↓ Failure
-Step 6a: Read the Instructions field — it contains the raw vendor error response
+Step 6a: Read the failure response
+  - Instructions — raw vendor error (WHAT failed)
+  - AgentContext.knownErrors — connector-specific hints (HOW to fix, if available)
+  - AgentContext.fields — field-level hints with dependsOn chains
   ↓
-Step 6b: Diagnose and discover
-  - Field not found → run `is resources describe --operation <op>` to get valid field names
-  - Invalid value → run `is resources execute list` on the referenced object to get valid values
-  - Auth error → run `is connections edit <id>` to re-authenticate, then ping again
-  - Scope error → inform user, connection needs broader permissions
+Step 6b: Diagnose using AgentContext first, then generic discovery
+  - If AgentContext.knownErrors has a matching resolution → follow it directly
+  - If AgentContext.fields has dependsOn hints → re-resolve the dependency chain
+  - Otherwise fall back to generic discovery:
+    - Field not found → run `is resources describe --operation <op>` to get valid field names
+    - Invalid value → run `is resources execute list` on the referenced object to get valid values
+    - Auth error → run `is connections edit <id>` to re-authenticate, then ping again
+    - Scope error → inform user, connection needs broader permissions
   ↓
 Step 6c: Correct and retry (max 2 retries)
   - Apply the specific fix from 6b
@@ -200,8 +206,9 @@ Step 6c: Correct and retry (max 2 retries)
 
 1. **Max 2 semantic retries** — each retry must address a specific diagnosed issue. Not blind retries.
 2. **Never retry the same query unchanged** — if you can't identify what to fix, escalate to the user.
-3. **Discover before guessing** — use `describe` and `list` to find correct field names and values. Do not hallucinate.
-4. **Escalate with context** — when presenting to the user, show: original query, error message, what was tried, and the suggested manual fix.
+3. **AgentContext first, discover second** — if the failure includes `AgentContext.knownErrors`, use the matching resolution before making additional API calls. The hints contain connector-specific knowledge that generic discovery cannot provide.
+4. **Discover before guessing** — when no AgentContext match, use `describe` and `list` to find correct field names and values. Do not hallucinate.
+5. **Escalate with context** — when presenting to the user, show: original query, error message, what was tried, and the suggested manual fix.
 
 ---
 
