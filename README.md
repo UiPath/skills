@@ -92,12 +92,20 @@ Project rules are provided in `.cursor/rules/` and are automatically loaded by C
 
 Contributions are welcome! Whether it's a new skill, a bug fix, or a documentation improvement — we'd love your help.
 
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide, including:
+- Repository structure and architecture
+- How to add a new skill (folder layout, SKILL.md format, frontmatter)
+- Naming conventions and quality checklist
+- Pull request process and branch naming
+
+**Quick version:**
+
 1. Fork this repository
-2. Create a feature branch
-3. Make your changes
+2. Create a feature branch (`feat/add-<skill-name>`)
+3. Add your skill under `skills/uipath-<name>/` with a `SKILL.md`
 4. Submit a pull request
 
-For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/skills/issues).
+For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/uipath-claude-plugins/issues).
 
 ## Resources
 
