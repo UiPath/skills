@@ -109,6 +109,35 @@ uip flow job status <job-key> --output json
 uip flow job traces <job-key> --output json
 ```
 
+## uip flow node
+
+Add and list nodes in a `.flow` file. Automatically manages the `definitions` array.
+
+```bash
+uip flow node add flow_files/<ProjectName>.flow <nodeType> --output json \
+  --input '{"expression": "..."}' \
+  --label "My Node" \
+  --position 300,400
+
+uip flow node list flow_files/<ProjectName>.flow --output json
+```
+
+`node add` inserts the node into `nodes` and its definition into `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.). After adding nodes, use `node list` to get the assigned IDs for wiring edges.
+
+> **Shell quoting tip:** If `--input` JSON contains special characters, write it to a temp file: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
+
+## uip flow edge
+
+Add edges between nodes in a `.flow` file.
+
+```bash
+uip flow edge add flow_files/<ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
+  --source-port success \
+  --target-port input
+```
+
+Run `uip flow node --help` or `uip flow edge --help` for all options.
+
 ## uip flow registry
 
 Manage the local node type cache. No auth required for OOTB nodes; login for tenant-specific connector nodes.
@@ -126,7 +155,7 @@ Run `uip flow registry <subcommand> --help` for additional options (e.g., `--for
 
 ## Integration Service commands (for connector binding and reference resolution)
 
-When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4c** of the flow authoring workflow.
+When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4d** of the flow authoring workflow.
 
 ```bash
 # Connections

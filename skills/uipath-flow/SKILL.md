@@ -22,7 +22,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 ## Critical Rules
 
 1. **Do NOT `registry get` built-in nodes.** The planning guide already documents all OOTB node types (script, HTTP, decision, switch, loop, merge, end, terminate, transform, mock) with their ports, inputs, and output variables. Only run `uip flow registry get <nodeType> --output json` for **connector nodes** and **unknown/new node types** not in the planning guide. When editing JSON directly, copy the `Data.Node` object into `definitions` verbatim — do not guess node schemas.
-2. **ALWAYS discover connector capabilities via IS before planning.** For every connector node, run `uip is activities list <connector-key>` and `uip is resources describe <connector-key> <resource>` to learn the exact operations, required fields, and field types. Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
+2. **ALWAYS discover connector capabilities via IS before planning.** Follow Step 4 for every connector node: fetch a connection (4a), call `registry get --connection-id` for enriched metadata (4b), and resolve reference fields via `uip is resources execute list` (4c). Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 5. **Edit `flow_files/*.flow` only** — `content/*.bpmn` and `entry-points.json` are auto-generated and will be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
@@ -304,19 +304,17 @@ Common error categories:
 - **Invalid node/edge references** — `sourceNodeId`/`targetNodeId` must reference existing node `id`s
 - **Duplicate IDs** — node and edge `id`s must be unique
 
-### Step 8 — Push to Studio Web
+### Step 8 — Debug (cloud) — only when explicitly requested
 
-After validation passes, push the project to Studio Web so the user can view and inspect the flow visually.
+After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
 ```bash
 UIPCLI_LOG_LEVEL=info uip flow debug <ProjectName>/
 ```
 
-This uploads the project to Studio Web and triggers a debug session in Orchestrator. The `UIPCLI_LOG_LEVEL=info` flag provides detailed progress output during the upload.
+This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results. The `UIPCLI_LOG_LEVEL=info` flag provides detailed progress output.
 
-> **Note:** This step requires `uip login`. The debug command has **real side effects** — it executes the flow (sends emails, posts messages, calls APIs). Always confirm with the user before running. See Critical Rule #9.
-
-Debug is for **testing the flow runs correctly** — not for publishing. It creates a temporary project in Studio Web that is cleaned up after the run.
+> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
 
 ### Step 9 — Publish to Studio Web
 
