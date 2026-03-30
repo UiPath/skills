@@ -7,7 +7,20 @@ Quick reference for UI automation in coded workflows using the `uiAutomation` se
 **Required package:** `UiPath.UIAutomation.Activities`
 **Service accessor:** `uiAutomation` (type `IUiAutomationAppService`)
 
-> **Minimum version for `uip rpa uia` CLI:** The `uip rpa uia` subcommands (snapshot, selector-intelligence, object-repository) require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. If the installed version is older, the subcommands will not appear. Upgrade the package before using any `uip rpa uia` features.
+### Prerequisites
+
+The `uip rpa uia` subcommands (snapshot, selector-intelligence, object-repository) used by `uia-configure-target` require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. Before configuring any target, check the installed version in `project.json` under `dependencies`.
+
+If the installed version is below the minimum, ask the user whether to upgrade:
+
+```bash
+uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --format json
+
+# If user approves the upgrade:
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "26.3.1-beta.11555873"}]' --project-dir "$PROJECT_DIR" --format json
+```
+
+If the user declines, warn that `uip rpa uia` commands will fail and fall back to the indication tools (see [Fallback: Raw Indication Commands](#fallback-raw-indication-commands)).
 
 ---
 
@@ -85,9 +98,32 @@ The skill will search the Object Repository for existing matches before creating
 
 **Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
 
+#### Multi-Step UI Flows (Advancing Application State)
+
+Some UI elements only become visible after interacting with earlier elements (e.g., a compose form appears after clicking "New mail", a confirmation dialog appears after submitting). Since `uia-configure-target` works from the current screen state, you need to **advance the application to each state** before capturing its elements.
+
+Use the `servo` CLI to interact with already-configured targets and advance the UI, then run `uia-configure-target` again for the newly visible elements:
+
+1. Run `uia-configure-target` for elements visible on the current screen
+2. Use `servo` to advance the UI state (e.g., click a button to open a form):
+   ```bash
+   # List targets to find the window/tab
+   servo targets
+   # Snapshot to get element refs
+   servo snapshot <window-or-tab-ref>
+   # Click to advance UI state
+   servo click <element-ref>
+   ```
+3. Run `uia-configure-target` again for elements now visible on the new screen
+4. Repeat until all workflow targets are registered in the OR
+
+**Do NOT use `uip rpa run-file` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. Servo is stateless: it clicks/types and leaves the app in the resulting state.
+
+After all targets are captured, build the full workflow code in one pass using all the collected OR references.
+
 #### Fallback: Raw Indication Commands
 
-If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable), you can fall back to the raw indication CLI commands. These require user interaction (clicking on the target element) and produce less robust selectors:
+If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable), or when elements only appear after user interaction (e.g., a compose form that opens after clicking a button), you can fall back to the raw indication CLI commands. These require user interaction (clicking on the target element) but produce verified, runtime-tested selectors:
 
 ```bash
 # Indicate a screen (creates App automatically if none exists in .objects/)
@@ -97,7 +133,15 @@ uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescrip
 uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
 ```
 
-After indication, re-read `ObjectRepository.cs` to get the actual descriptor paths.
+Both commands return the OR reference ID. After indication, retrieve the descriptor paths by re-reading `ObjectRepository.cs`, or retrieve the ready-to-use XAML snippets for verification:
+
+```bash
+# Get the screen XAML (TargetApp)
+uip rpa uia object-repository get-screen-xaml --reference-id "<screen-reference>"
+
+# Get the element XAML (TargetAnchorable)
+uip rpa uia object-repository get-element-xaml --reference-id "<element-reference>"
+```
 
 ### Step 4 — UITask / ScreenPlay (last resort only)
 
