@@ -6,9 +6,11 @@ Scaffold a new UiPath Coded Web Application using Vite + React + TypeScript with
 
 **CRITICAL: You do NOT know these values. You CANNOT infer or assume them. Ask the user and wait for their reply before writing any files.**
 
-### Step 1 — Determine required scopes
+### Step 1 — Infer required SDK services and scopes
 
-From the user's description, identify which UiPath SDK services the app will use. Read [oauth-scopes.md](oauth-scopes.md) and collect the exact scopes for every method those services expose. Compose the full deduplicated space-separated scopes string — you need this before asking for the Client ID so you can tell the user what scopes to configure.
+From the user's description of the app, identify which SDK services it will use. Do **not** ask the user to pick from a list — infer from what they've described. Read [oauth-scopes.md](oauth-scopes.md) and collect the exact scopes for every method those services expose. Compose the full deduplicated space-separated scopes string — you need this before asking for the Client ID so you can tell the user what scopes to configure.
+
+If the user's description doesn't mention any UiPath platform data (Data Fabric, Orchestrator, Buckets, etc.), assume no SDK services are needed beyond basic auth.
 
 ### Step 2 — Ask the user for setup info
 
@@ -18,14 +20,7 @@ Ask for all of the following. You may ask together or one at a time:
 2. **Environment** — `cloud` (production), `staging`, or `alpha`
 3. **Organization name** — the org slug in their UiPath URL (`cloud.uipath.com/<orgName>`)
 4. **Tenant name** — their UiPath tenant
-5. **Which SDK services?** — ask which of these the app will use:
-   - Data Fabric Entities / ChoiceSets
-   - Storage Buckets
-   - Orchestrator Tasks, Processes, Assets, Queues
-   - Maestro Processes / Process Instances
-   - Cases / Case Instances
-   - Conversational Agent
-6. **Client ID** — from their UiPath External Application (see below if they don't have one)
+5. **Client ID** — from their UiPath External Application (see below if they don't have one)
 
 **If the user doesn't have a Client ID**, instruct them to:
 > Go to **UiPath Cloud → Org Settings → External Applications**. Create a **Non-Confidential** application with:

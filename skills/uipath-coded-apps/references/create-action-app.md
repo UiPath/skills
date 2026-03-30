@@ -28,22 +28,15 @@ Convert to lowercase kebab-case. Store as `<app-name>`.
 Auto-convert spaces/underscores to hyphens and uppercase to lowercase. Validate the pattern and length. Confirm the final value. Store as `<routing-name>`.
 
 ### Q3 — SDK services (optional)
-> "Does this app need to call UiPath platform services like Data Fabric, Orchestrator APIs, or Storage Buckets? Answer yes or no."
 
-If **yes**: ask which services from the list below, read [oauth-scopes.md](oauth-scopes.md) to deduce scopes, then ask for a Client ID (Q3a).
+From the user's description of the form, determine whether it needs to call UiPath platform services (Data Fabric, Orchestrator, Buckets, etc.). Do **not** ask the user to pick from a list — infer from what they've described.
 
-If **no**: no SDK setup needed beyond `@uipath/uipath-ts-coded-action-apps`.
+If services are needed: read [oauth-scopes.md](oauth-scopes.md) to deduce the required scopes, present them for confirmation, then proceed to Q3a.
 
-**Available services:**
-1. Data Fabric Entities / ChoiceSets
-2. Storage Buckets
-3. Orchestrator Tasks, Processes, Assets, Queues
-4. Maestro Processes / Process Instances
-5. Cases / Case Instances
-6. Conversational Agent
+If no platform services are mentioned: skip to Q4. No SDK setup needed beyond `@uipath/uipath-ts-coded-action-apps`.
 
 After deducing scopes, present them to the user:
-> "Based on the services you selected, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or provide your own."
+> "Based on your app description, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or tell me what to change."
 
 ### Q3a — Client ID (only if SDK needed)
 > "Enter the Client ID of your Non-Confidential External Application in UiPath Cloud.
