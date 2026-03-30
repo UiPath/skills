@@ -292,9 +292,20 @@ uip rpa find-activities --query "get weather" --output json --use-studio
 uip rpa find-activities --query "read range" --limit 10 --output json --use-studio
 ```
 
-### Step 1.5: Disambiguate Service / Provider
+### Step 1.5: Disambiguate Approach and Provider
 
-This step requires `find-activities` results from Step 1.4.
+#### Approach-level disambiguation (API vs UI Automation vs Connector)
+
+Before installing any packages, determine the **approach** for each capability the workflow needs. When multiple approaches exist (e.g., HTTP request vs browser UI automation for web scraping, IS connector vs desktop UI automation for Slack), confirm with the user if the approach is not obvious:
+
+- **Auto-select** when: the user explicitly stated the approach ("use UI automation", "scrape the website", "use the API"), or only one approach is viable (e.g., no API available, no IS connector exists).
+- **Prompt** when: multiple approaches are viable and the user hasn't indicated a preference. Present the trade-offs briefly (e.g., "HTTP request is simpler but requires parsing HTML; browser UI automation is visual but needs selectors").
+
+**Do NOT install packages until the approach is confirmed.** Installing packages you end up not using adds unnecessary dependencies to the project.
+
+#### Provider-level disambiguation (within an approach)
+
+This sub-step requires `find-activities` results from Step 1.4.
 
 When results contain multiple competing packages for the same capability (e.g., O365 vs Gmail vs SMTP for email), determine the correct one using these signals — **do not ask the user unless all signals are ambiguous:**
 
@@ -517,7 +528,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --o
 **5. Logic Errors** — Wrong behavior, incorrect expressions, business logic issues
 - `Read` the XAML to understand current flow → `Edit` to correct
 - Verify expression syntax matches project language (VB.NET vs C#)
-- Use `uip rpa run-file --use-studio` for runtime validation if static checks pass
+- Use `uip rpa run-file --use-studio` for runtime validation if static checks pass. **For UI automation workflows:** always use `--command StartDebugging` (not `StartExecution`) — a debug session pauses on error instead of tearing down the application. See [Running UI Automation Workflows](./references/validation-and-fixing.md#running-ui-automation-workflows) for the full procedure (baseline windows, start debug, stop, cleanup).
 
 **When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (find `InvokeCode.md` under the latest version folder in `../../references/activity-docs/UiPath.System.Activities/`).
 
@@ -596,7 +607,7 @@ Before handover, verify:
 - [ ] All required activities are present
 - [ ] Error handling (Try-Catch) is included where appropriate
 - [ ] `get-errors` returns 0 errors (or remaining errors are documented as user-deferred)
-- [ ] Smoke test with `run-file` considered (if workflow is safe to run)
+- [ ] Smoke test with `run-file` considered (if workflow is safe to run). **For UI automation workflows:** use `--command StartDebugging` and follow the full debug procedure in [validation-and-fixing.md § Running UI Automation Workflows](./references/validation-and-fixing.md#running-ui-automation-workflows)
 
 **User Communication:**
 - [ ] User has been informed of any limitations
