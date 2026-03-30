@@ -95,14 +95,16 @@ After collecting all answers, scaffold the project. Use the file templates in [a
 ```bash
 npm create vite@latest <app-name> -- --template react-ts
 cd <app-name>
+npm install @uipath/uipath-ts-coded-action-apps --@uipath:registry=https://registry.npmjs.org
 npm install
-npm install @uipath/uipath-ts-coded-action-apps
 ```
 
 If SDK services are needed:
 ```bash
-npm install @uipath/uipath-typescript
+npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 ```
+
+> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces these packages to install from the public npm registry.
 
 ---
 

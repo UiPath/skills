@@ -43,9 +43,11 @@ Ask for all of the following. You may ask together or one at a time:
 ```bash
 npm create vite@latest <app-name> -- --template react-ts
 cd <app-name>
+npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 npm install
-npm install @uipath/uipath-typescript
 ```
+
+> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces this package to install from the public npm registry.
 
 Use the file templates in [assets/templates/web-app.md](../assets/templates/web-app.md) as starting points for all generated files.
 

@@ -165,6 +165,22 @@ if (!sdk.isAuthenticated()) {
 2. Is the dev server running on the expected port (default: 5173)?
 3. Clear browser storage and retry.
 
+### `npm install` fails with 401 Unauthorized from `npm.pkg.github.com`
+
+**Cause:** The user's `.npmrc` has `@uipath` scoped to GitHub Packages registry, which requires authentication. Public UiPath packages are on the public npm registry, not GitHub Packages.
+
+**Fix:** Install `@uipath` packages with an explicit registry override:
+
+```bash
+npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
+npm install @uipath/uipath-ts-coded-action-apps --@uipath:registry=https://registry.npmjs.org
+npm install
+```
+
+The `--@uipath:registry` flag overrides the scoped registry for this install only, without modifying `.npmrc`.
+
+---
+
 ### Action App: Form Data Not Loading
 
 **Cause:** `codedActionAppsService.getTask()` failed silently.
