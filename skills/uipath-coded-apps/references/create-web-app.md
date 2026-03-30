@@ -147,19 +147,7 @@ const { sdk } = useAuth();
 export const assets = new Assets(sdk);
 ```
 
-**Service subpath imports:**
-
-| Service Class(es) | Import Subpath |
-|---|---|
-| `Entities`, `ChoiceSets` | `@uipath/uipath-typescript/entities` |
-| `Buckets` | `@uipath/uipath-typescript/buckets` |
-| `Assets` | `@uipath/uipath-typescript/assets` |
-| `Processes` | `@uipath/uipath-typescript/processes` |
-| `Tasks` | `@uipath/uipath-typescript/tasks` |
-| `Queues` | `@uipath/uipath-typescript/queues` |
-| `MaestroProcesses`, `ProcessInstances`, `ProcessIncidents` | `@uipath/uipath-typescript/maestro-processes` |
-| `Cases`, `CaseInstances` | `@uipath/uipath-typescript/cases` |
-| `ConversationalAgent` | `@uipath/uipath-typescript/conversational-agent` |
+See the **SDK Module Imports** table in `SKILL.md` for all subpath imports.
 
 ---
 

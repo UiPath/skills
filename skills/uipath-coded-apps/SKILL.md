@@ -122,6 +122,29 @@ uip codedapp publish -t Action    # must use -t Action
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
 5. **Deploy** — `uip codedapp deploy`. Share the app URL with the user.
 
+## SDK Module Imports
+
+Always import service classes from their **subpath**, never from the root package.
+
+| Subpath | Classes |
+|---------|---------|
+| `@uipath/uipath-typescript/core` | `UiPath`, `UiPathError`, `UiPathSDKConfig`, `PaginationCursor`, `PaginationOptions`, `PaginatedResponse`, `NonPaginatedResponse` |
+| `@uipath/uipath-typescript/entities` | `Entities`, `ChoiceSets` |
+| `@uipath/uipath-typescript/tasks` | `Tasks` |
+| `@uipath/uipath-typescript/maestro-processes` | `MaestroProcesses`, `ProcessInstances`, `ProcessIncidents` |
+| `@uipath/uipath-typescript/cases` | `Cases`, `CaseInstances` |
+| `@uipath/uipath-typescript/assets` | `Assets` |
+| `@uipath/uipath-typescript/queues` | `Queues` |
+| `@uipath/uipath-typescript/buckets` | `Buckets` |
+| `@uipath/uipath-typescript/processes` | `Processes` |
+| `@uipath/uipath-typescript/conversational-agent` | `ConversationalAgent`, `Exchanges`, `Messages` |
+
+Types, enums, and option interfaces are exported from the **same subpath** as their service class (e.g. `import type { AssetGetResponse } from '@uipath/uipath-typescript/assets'`).
+
+**NEVER** import service classes from the root package (`import { Entities } from '@uipath/uipath-typescript'`) — service classes are only available via subpath imports.
+
+**NEVER** use deprecated dot-chain access (`sdk.entities.getAll()`). Always use constructor DI: `new Entities(sdk)`.
+
 ## Key Concepts
 
 ### App Config (`.uipath/app.config.json`)
