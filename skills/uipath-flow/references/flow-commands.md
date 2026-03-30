@@ -126,6 +126,17 @@ uip flow node list flow_files/<ProjectName>.flow --output json
 
 > **Shell quoting tip:** If `--input` JSON contains special characters, write it to a temp file: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
 
+### uip flow node configure
+
+Configure a **connector** node with connection and endpoint details. Run this after `node add` for connector nodes.
+
+```bash
+uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "endpoint": "<endpoint>", "bodyParameters": {...}}'
+```
+
+The `--detail` JSON accepts: `connectionId`, `folderKey`, `endpoint`, `bodyParameters`, `queryParameters`, `pathParameters`. The command populates `inputs.detail` and creates workflow-level `bindings` entries (connection + folder key) automatically.
+
 ## uip flow edge
 
 Add edges between nodes in a `.flow` file.

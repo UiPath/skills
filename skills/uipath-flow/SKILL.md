@@ -271,18 +271,22 @@ uip flow edge add flow_files/<ProjectName>.flow <sourceNodeId> <targetNodeId> --
 
 The command automatically adds `targetPort` and validates the edge structure.
 
+#### Configuring connector nodes
+
+After adding a connector node with `node add`, configure it with the resolved connection and field values from Step 4:
+
+```bash
+uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "endpoint": "<endpoint>", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}'
+```
+
+This populates `inputs.detail` (connection, endpoint, body/query/path parameters) and creates the workflow-level `bindings` entries automatically. Use **resolved IDs** from Step 4c, not display names.
+
+> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
+
 #### When to fall back to JSON editing
 
 The CLI does not yet support: removing nodes, removing edges, updating existing node inputs (e.g., changing a script body), or rewiring existing edges. For these operations, edit the `.flow` JSON directly — see [references/flow-file-format.md](references/flow-file-format.md) and the Common Edits section above.
-
-For connector nodes, the node `inputs` should use **resolved IDs** from Step 4c, not display names:
-```json
-"inputs": {
-  "fields.project.key": "ENGCE",
-  "fields.issuetype.id": "10004",
-  "fields.assignee.id": "5f4abc..."
-}
-```
 
 ### Step 7 — Validate loop
 
