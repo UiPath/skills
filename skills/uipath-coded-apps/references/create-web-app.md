@@ -18,22 +18,56 @@ You need these scopes **before** Step 2 so you can tell the user exactly what sc
 
 ### Step 2 — Ask the user for setup info
 
-Ask for all of the following. You may ask together or one at a time:
+Output the following text directly (replace `<scopes>` with the actual scopes from Step 1). **Do NOT call any tools yet — just output this text and wait for the user's reply.**
 
-1. **App name** — project folder name, lowercase kebab-case (e.g., `my-dashboard`)
-2. **Environment** — `cloud` (production), `staging`, or `alpha`
-3. **Organization name** — the org slug in their UiPath URL (`cloud.uipath.com/<orgName>`)
-4. **Tenant name** — their UiPath tenant
-5. **Client ID** — from their UiPath External Application (see below if they don't have one)
+---
 
-**If the user doesn't have a Client ID**, instruct them to:
-> Go to **UiPath Cloud → Org Settings → External Applications**. Create a **Non-Confidential** application with:
-> - **Redirect URIs** (register all that apply):
->   - Dev: `http://localhost:5173` and `http://localhost:5173/` (register both — trailing slash behavior may vary)
->   - Production: their deployed app URL (e.g. `https://<org>.uipath.host/<routingName>`) and the same URL with a trailing slash, to be safe
-> - **Scopes**: `<the scopes you computed in Step 1>`
->
-> Copy the Client ID and paste it here.
+Here's what your app needs:
+
+**OAuth scopes:** `<scopes>`
+
+**Redirect URI:** `http://localhost:5173` (computed automatically at runtime — works in both local dev and production)
+
+Please answer these questions to continue:
+
+**1. App name** — lowercase kebab-case project folder name (e.g. `my-dashboard`)
+
+**2. Environment** — which UiPath environment?
+   - `cloud` — Production *(most common)*
+   - `staging` — Staging
+   - `alpha` — Alpha
+
+**3. Org name** — your UiPath organization slug (from `cloud.uipath.com/<orgName>`)
+
+**4. Tenant name** — your UiPath tenant (often `DefaultTenant`)
+
+**5. Client ID** — do you have an existing OAuth External Application client ID with the scopes above?
+   - If yes, paste it
+   - If no, say **"create one"** and I'll set it up via browser automation
+
+---
+
+**Wait for the user's reply before proceeding.**
+
+### Step 2.5 — Ensure Playwright CLI is available (only if user said "create one")
+
+Before running browser automation, check if Playwright is installed:
+
+```bash
+npx playwright --version 2>/dev/null
+```
+
+If the command fails or returns no output, install it:
+
+```bash
+npm install -D playwright && npx playwright install chromium --with-deps
+```
+
+Once confirmed available, read [oauth-client-setup.md](oauth-client-setup.md) and follow it exactly to create the External Application with the scopes from Step 1 and redirect URI `http://localhost:5173`. That reference has all the browser automation details.
+
+### Step 3 — Resolve org name (if not provided)
+
+If the user typed their org name, use it. If they said "find from browser", navigate to the UiPath cloud host for their environment and extract the org name from the URL path (first segment after the domain).
 
 ---
 
