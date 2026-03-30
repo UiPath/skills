@@ -15,7 +15,7 @@ Updated by: Orchestrator (phase transitions)
   "phase": "triage | hypotheses | test | evaluate | deepen | resolution | complete",
   "scope": {
     "level": "platform | product | feature | process | activity",
-    "domain": ["orchestrator", "ui-automation"],
+    "domain": ["orchestrator", "maestro", "ui-automation"],
     "confidence": "high | medium | low"
   },
   "entry_point": {
