@@ -14,7 +14,6 @@ Read the app's current configuration:
 
 1. **Find `.env`** — look for `.env`, `.env.local`, `.env.development`. Extract:
    - `VITE_UIPATH_CLIENT_ID`
-   - `VITE_UIPATH_REDIRECT_URI`
    - `VITE_UIPATH_SCOPE`
    - `VITE_UIPATH_ORG_NAME`
    - `VITE_UIPATH_TENANT_NAME`
@@ -52,10 +51,12 @@ Fix in `.env` if wrong.
 
 ### 2c — Redirect URI
 
-For local dev, `VITE_UIPATH_REDIRECT_URI` must match what's registered in the External Application. Common values:
-- Vite default: `http://localhost:5173`
-- CRA default: `http://localhost:3000`
-- Custom: check `vite.config.ts` server port
+The SDK uses `window.location.origin + window.location.pathname` at runtime as the redirect URI — no `VITE_UIPATH_REDIRECT_URI` env var is needed. The URI that must be registered in the External Application is determined by where the app is running:
+- Vite default: `http://localhost:5173` (and `http://localhost:5173/` — register both)
+- CRA default: `http://localhost:3000` (and `http://localhost:3000/`)
+- Custom port: check `vite.config.ts` for `server.port`
+
+If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on and register it (with and without trailing slash) in the External Application.
 
 ---
 
@@ -98,13 +99,14 @@ Navigate to the app. Observe what happens at each stage:
 
 ### `redirect_uri_mismatch` / Login Loop
 
-**Cause:** The redirect URI in `.env` doesn't match what's registered in the UiPath External Application.
+**Cause:** The redirect URI the SDK sends at runtime (`window.location.origin + window.location.pathname`) is not registered in the UiPath External Application.
 
 **Fix:**
-1. Check `VITE_UIPATH_REDIRECT_URI` in `.env`
+1. Identify the URL the browser is on when login is triggered (e.g. `http://localhost:5173` or `http://localhost:5173/`)
 2. Go to UiPath Cloud → Org Settings → External Applications → your app
-3. Verify the redirect URI listed there matches exactly (including `http://` vs `https://` and trailing slash)
-4. Add `http://localhost:5173` if it's missing
+3. Register that URL as a redirect URI — add both with and without a trailing slash (e.g. `http://localhost:5173` and `http://localhost:5173/`) since trailing slash behavior may vary
+4. For production, register the deployed app URL and its trailing-slash variant (e.g. `https://<org>.uipath.host/<routingName>` and `https://<org>.uipath.host/<routingName>/`)
+5. There is no `VITE_UIPATH_REDIRECT_URI` env var to update — the redirect URI is derived dynamically
 
 ### `invalid_scope` Error in Auth URL
 
@@ -159,8 +161,8 @@ if (!sdk.isAuthenticated()) {
 **Cause:** `sdk.initialize()` redirects the browser — if the redirect doesn't return to the app, the OAuth flow never completes.
 
 **Check:**
-1. Is `VITE_UIPATH_REDIRECT_URI` set correctly and registered in the External Application?
-2. Is the dev server running on the port in the redirect URI?
+1. Is the current app URL (`window.location.origin + window.location.pathname`) registered as a redirect URI in the External Application? Register both with and without trailing slash.
+2. Is the dev server running on the expected port (default: 5173)?
 3. Clear browser storage and retry.
 
 ### Action App: Form Data Not Loading
@@ -193,9 +195,9 @@ If the user needs to create or modify an External Application:
 
 1. Go to UiPath Cloud → **Org Settings** → **External Applications**
 2. Click **Add Application** → select **Non-Confidential**
-3. Add redirect URIs:
-   - Dev: `http://localhost:5173`
-   - Production: the deployed app URL (e.g., `https://<org>.uipath.host/<routingName>`)
+3. Add redirect URIs (the SDK uses `window.location.origin + window.location.pathname` at runtime — no env var needed):
+   - Dev: `http://localhost:5173` and `http://localhost:5173/` (register both — trailing slash behavior may vary)
+   - Production: `https://<org>.uipath.host/<routingName>` and `https://<org>.uipath.host/<routingName>/` (register both)
    - Action apps: `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`
 4. Under **Resources**, add scopes from [oauth-scopes.md](oauth-scopes.md)
 5. Save and copy the **Client ID** to `VITE_UIPATH_CLIENT_ID` in `.env`

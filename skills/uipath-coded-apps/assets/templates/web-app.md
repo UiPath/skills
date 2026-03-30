@@ -8,12 +8,13 @@ Ready-to-use boilerplate for a new UiPath Coded Web App (Vite + React + TypeScri
 
 ```
 VITE_UIPATH_CLIENT_ID={{CLIENT_ID}}
-VITE_UIPATH_REDIRECT_URI=http://localhost:5173
 VITE_UIPATH_SCOPE={{SCOPES}}
 VITE_UIPATH_ORG_NAME={{ORG_NAME}}
 VITE_UIPATH_TENANT_NAME={{TENANT_NAME}}
 VITE_UIPATH_BASE_URL={{BASE_URL}}
 ```
+
+> **No redirect URI env var needed.** The SDK uses `window.location.origin + window.location.pathname` at runtime as the redirect URI.
 
 `{{BASE_URL}}` values: `https://api.uipath.com` (cloud) · `https://staging.api.uipath.com` (staging) · `https://alpha.api.uipath.com` (alpha)
 
@@ -23,7 +24,6 @@ VITE_UIPATH_BASE_URL={{BASE_URL}}
 
 ```
 VITE_UIPATH_CLIENT_ID=
-VITE_UIPATH_REDIRECT_URI=http://localhost:5173
 VITE_UIPATH_SCOPE=
 VITE_UIPATH_ORG_NAME=
 VITE_UIPATH_TENANT_NAME=

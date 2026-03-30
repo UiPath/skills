@@ -91,7 +91,6 @@ uip codedapp publish -t Action    # must use -t Action
 | Variable | Used By | Description |
 |----------|---------|-------------|
 | `VITE_UIPATH_CLIENT_ID` | Web App SDK | OAuth Client ID from External Application |
-| `VITE_UIPATH_REDIRECT_URI` | Web App SDK | OAuth redirect URI |
 | `VITE_UIPATH_SCOPE` | Web App SDK | Space-separated OAuth scopes |
 | `VITE_UIPATH_ORG_NAME` | Web App SDK | UiPath organization slug |
 | `VITE_UIPATH_TENANT_NAME` | Web App SDK | UiPath tenant name |

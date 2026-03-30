@@ -29,7 +29,9 @@ Ask for all of the following. You may ask together or one at a time:
 
 **If the user doesn't have a Client ID**, instruct them to:
 > Go to **UiPath Cloud → Org Settings → External Applications**. Create a **Non-Confidential** application with:
-> - **Redirect URIs**: `http://localhost:5173` (for dev) and their deployed app URL when known
+> - **Redirect URIs** (register all that apply):
+>   - Dev: `http://localhost:5173` and `http://localhost:5173/` (register both — trailing slash behavior may vary)
+>   - Production: their deployed app URL (e.g. `https://<org>.uipath.host/<routingName>`) and the same URL with a trailing slash, to be safe
 > - **Scopes**: `<the scopes you computed in Step 1>`
 >
 > Copy the Client ID and paste it here.
@@ -55,12 +57,13 @@ Create `.env` in the project root:
 
 ```
 VITE_UIPATH_CLIENT_ID=<client-id>
-VITE_UIPATH_REDIRECT_URI=http://localhost:5173
 VITE_UIPATH_SCOPE=<space-separated-scopes>
 VITE_UIPATH_ORG_NAME=<org-name>
 VITE_UIPATH_TENANT_NAME=<tenant-name>
 VITE_UIPATH_BASE_URL=<base-url>
 ```
+
+> **No redirect URI env var needed.** The SDK uses `window.location.origin + window.location.pathname` at runtime as the redirect URI. Make sure those URLs are registered in your External Application in UiPath Cloud.
 
 **Base URL by environment:**
 
@@ -229,4 +232,4 @@ If login fails, see [debug.md](debug.md).
 
 When ready, follow [pack-publish-deploy.md](pack-publish-deploy.md) for the full deployment pipeline.
 
-Update `.env` to add production redirect URI before the final deploy, and add that URI to your External Application in UiPath Cloud.
+Before deploying to production, register your deployed app URL (e.g. `https://<org>.uipath.host/<routingName>`) — and the same URL with a trailing slash — as redirect URIs in your External Application in UiPath Cloud. No `.env` change is needed; the SDK derives the redirect URI from `window.location.origin + window.location.pathname` at runtime.
