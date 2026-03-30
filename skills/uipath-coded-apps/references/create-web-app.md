@@ -45,6 +45,8 @@ npm install
 npm install @uipath/uipath-typescript
 ```
 
+Use the file templates in [assets/templates/web-app.md](../assets/templates/web-app.md) as starting points for all generated files.
+
 ---
 
 ## Environment Configuration

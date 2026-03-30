@@ -90,7 +90,7 @@ Show the complete `action-schema.json` to the user and ask:
 
 ## Project Scaffolding
 
-After collecting all answers, scaffold the project:
+After collecting all answers, scaffold the project. Use the file templates in [assets/templates/action-app.md](../assets/templates/action-app.md) as starting points for all generated files.
 
 ```bash
 npm create vite@latest <app-name> -- --template react-ts
