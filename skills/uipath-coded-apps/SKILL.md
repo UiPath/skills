@@ -16,7 +16,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
 
-If the user's intent is ambiguous, ask:
+**Always ask this before doing anything else:**
 > "Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"
 
 ## Task Navigation
