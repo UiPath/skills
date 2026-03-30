@@ -71,62 +71,80 @@ If the user typed their org name, use it. If they said "find from browser", navi
 
 ---
 
-## Project Scaffolding
+## Step 4 — Run Setup Script
+
+Once you have all values (app name, org, tenant, client ID, environment, scopes), run the setup script. The script path is `scripts/setup.sh` in this skill's directory — derive the absolute path from where this file was loaded.
 
 ```bash
-npm create vite@latest <app-name> -- --template react-ts
-cd <app-name>
-npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
-npm install
+bash <skill-dir>/scripts/setup.sh <app-name> <org-name> <tenant-name> <client-id> "<scopes>" <environment>
 ```
 
-> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces this package to install from the public npm registry.
+**Set `timeout: 300000`** (5 minutes) on the Bash call — `npm install` can take several minutes and the default 2-minute timeout is not enough.
 
-Use the file templates in [assets/templates/web-app.md](../assets/templates/web-app.md) as starting points for all generated files.
+The script creates a complete project:
+
+| File | What it does |
+|------|-------------|
+| `vite.config.ts` | Vite config with `base: './'`, `global: 'globalThis'`, path-browserify alias |
+| `uipath.json` | CLI deployment config with `scope` and `clientId` |
+| `.env` / `.env.example` | OAuth env vars (both `UIPATH_*` and `VITE_UIPATH_*`) |
+| `src/hooks/useAuth.tsx` | `AuthProvider` + `useAuth` hook handling PKCE callback and login |
+| `src/App.tsx` | App shell wrapping content in `<AuthProvider>` |
+| Tailwind CSS | `tailwind.config.js`, `postcss.config.js`, `src/index.css` |
 
 ---
 
-## Environment Configuration
+## Environment Variables
 
-Create `.env` in the project root:
+The script creates `.env` with this structure:
 
 ```
+UIPATH_BASE_URL=https://api.uipath.com
+UIPATH_CLIENT_ID=<client-id>
+UIPATH_ORG_NAME=<org-name>
+UIPATH_TENANT_NAME=<tenant-name>
+UIPATH_SCOPE=<scopes>
+
+VITE_UIPATH_BASE_URL=${UIPATH_BASE_URL}
 VITE_UIPATH_CLIENT_ID=<client-id>
-VITE_UIPATH_SCOPE=<space-separated-scopes>
 VITE_UIPATH_ORG_NAME=<org-name>
 VITE_UIPATH_TENANT_NAME=<tenant-name>
-VITE_UIPATH_BASE_URL=<base-url>
+VITE_UIPATH_SCOPE=<scopes>
 ```
 
-> **No redirect URI env var needed.** The SDK uses `window.location.origin + window.location.pathname` at runtime as the redirect URI. Make sure those URLs are registered in your External Application in UiPath Cloud.
+**Why `${}` for BASE_URL only:** The CLI overwrites `UIPATH_BASE_URL` with the production value at deploy time. The `VITE_` version references it via `${}` so it picks up the new value automatically. Other vars are set directly.
 
-**Base URL by environment:**
+**No redirect URI env var.** The SDK computes it at runtime as `window.location.origin + window.location.pathname`.
 
-| Environment | Base URL |
-|---|---|
-| `cloud` | `https://api.uipath.com` |
-| `staging` | `https://staging.api.uipath.com` |
-| `alpha` | `https://alpha.api.uipath.com` |
+---
 
-Also create `.env.example` with the same keys but empty values, and add `.env` to `.gitignore`.
+## uipath.json
+
+The script creates `uipath.json` at the project root. This file is required by the `uip codedapp` CLI for deployment and by the Vite plugin for local dev meta tag injection:
+
+```json
+{
+  "scope": "<scopes>",
+  "clientId": "<client-id>"
+}
+```
+
+Keep this in sync with `.env` if the client ID or scopes change.
 
 ---
 
 ## SDK Setup
 
-Create `src/uipath.ts` with the core client and any selected services:
+After the setup script runs, create `src/uipath.ts` to instantiate the `sdk` and any services the app needs. Get the `sdk` instance from the `useAuth` hook rather than creating a new one:
 
 ```typescript
-import { UiPath } from '@uipath/uipath-typescript/core';
-// Add imports for selected services — see subpath table below
-// import { Assets } from '@uipath/uipath-typescript/assets';
-// import { Entities } from '@uipath/uipath-typescript/entities';
+import { useAuth } from './hooks/useAuth';
+import { Assets } from '@uipath/uipath-typescript/assets';
+// import other services as needed
 
-export const sdk = new UiPath();
-
-// Instantiate selected services (pass sdk as the argument):
-// export const assets = new Assets(sdk);
-// export const entities = new Entities(sdk);
+// In a component or hook:
+const { sdk } = useAuth();
+export const assets = new Assets(sdk);
 ```
 
 **Service subpath imports:**
@@ -145,53 +163,36 @@ export const sdk = new UiPath();
 
 ---
 
-## OAuth Initialization Pattern
+## Auth Pattern
 
-The SDK uses PKCE OAuth. Update `src/App.tsx`:
+The setup script generates `src/hooks/useAuth.tsx` with `AuthProvider` and `useAuth`. `App.tsx` wraps everything in `<AuthProvider>` and the hook handles PKCE callback detection, login redirect, and logout:
 
 ```typescript
-import { sdk } from './uipath';
-import { useEffect, useState } from 'react';
+// src/App.tsx (generated by setup script)
+const authConfig: UiPathSDKConfig = {
+  clientId: import.meta.env.VITE_UIPATH_CLIENT_ID,
+  orgName: import.meta.env.VITE_UIPATH_ORG_NAME,
+  tenantName: import.meta.env.VITE_UIPATH_TENANT_NAME,
+  baseUrl: import.meta.env.VITE_UIPATH_BASE_URL,
+  redirectUri: window.location.origin + window.location.pathname,
+  scope: import.meta.env.VITE_UIPATH_SCOPE,
+};
 
-function App() {
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        // Handle OAuth callback (URL has ?code=...)
-        if (sdk.isInOAuthCallback()) {
-          await sdk.completeOAuth();
-        }
-        // Redirect to login if not authenticated
-        if (!sdk.isAuthenticated()) {
-          await sdk.initialize();
-          return;
-        }
-        setReady(true);
-      } catch (e) {
-        setError(String(e));
-      }
-    };
-    init();
-  }, []);
-
+function AppContent() {
+  const { isAuthenticated, isLoading, error } = useAuth();
+  if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-  if (!ready) return <div>Loading...</div>;
-
-  return <div>Your app content here</div>;
+  if (!isAuthenticated) return <div>Redirecting to login...</div>;
+  return <div>Your app content here</div>;  // ← replace with real content
 }
-
-export default App;
 ```
 
-**Key SDK methods — always use these instead of custom implementations:**
+**Key SDK methods** (used inside `useAuth.tsx` — do not call these directly in app code):
 
 | Method | Purpose |
 |--------|---------|
 | `sdk.isInOAuthCallback()` | Returns true if URL has OAuth `code` param |
-| `sdk.completeOAuth()` | Exchanges the code for tokens — call before `isAuthenticated()` |
+| `sdk.completeOAuth()` | Exchanges the code for tokens |
 | `sdk.isAuthenticated()` | Returns true if a valid token exists |
 | `sdk.initialize()` | Initiates PKCE OAuth flow (redirects to UiPath login) |
 | `sdk.getToken()` | Returns the current access token |
@@ -228,19 +229,9 @@ When implementing specific SDK services, read the corresponding reference:
 
 ## Vite Configuration
 
-`base: './'` is **always required**. The Cloudflare Worker handles URL routing at the platform level — the app must use relative asset paths to work correctly when served from any path.
+The setup script generates `vite.config.ts` with `base: './'` already set. **Do not change this** — the Cloudflare Worker handles URL routing; the app must use relative asset paths.
 
-```typescript
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  base: './',
-});
-```
-
-Do not add a `server.proxy` to `vite.config.ts` — it interferes with the OAuth callback and asset resolution.
+Do not add `server.proxy` — it interferes with the OAuth callback and asset resolution.
 
 ## Router Base Path (if using a client-side router)
 
