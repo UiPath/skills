@@ -1,9 +1,3 @@
----
-product: ui-automation
-type: investigation-guide
-description: Prerequisites and data correlation rules for UI Automation investigations
----
-
 # UI Automation Investigation Guide
 
 ## Data Correlation

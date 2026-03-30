@@ -20,12 +20,12 @@ Updated by: Hypothesis Tester (status, evidence), Orchestrator (root cause flag)
       "is_root_cause": null,
       "parent": null,
       "reasoning": "Why this hypothesis was generated — what data or pattern led to it",
-      "source": "knowledge_graph | rag | playbook | playbook_shortcut",
+      "source": "playbook | docsai | evidence",
       "evidence_needed": {
         "to_confirm": ["what evidence would prove this"],
         "to_eliminate": ["what evidence would disprove this"]
       },
-      "evidence_refs": ["evidence/H1-mcp-data.json"],
+      "evidence_refs": ["evidence/H1-cli-data.json"],
       "evidence_summary": "What was actually discovered during testing",
       "resolution": null
     }
@@ -51,4 +51,6 @@ Updated by: Hypothesis Tester (status, evidence), Orchestrator (root cause flag)
 - Never remove eliminated hypotheses — they prevent retesting
 - `parent` links sub-hypotheses to the confirmed symptom they're deepening
 - `generation_context` tells the generator what happened before (for re-invocation)
-- `source` indicates where the hypothesis came from. Set to `playbook_shortcut` for shortcut-originated hypotheses — the orchestrator uses this to decide if it can skip testing remaining hypotheses after confirmation
+- When deepening: orchestrator sets `generation_context.trigger: "deepening"` and `generation_context.parent_hypothesis` to the ID of the confirmed symptom before re-invoking the generator
+- `source`: `playbook` for playbook-derived, `docsai` for documentation-derived, `evidence` for evidence-derived
+- When a high-confidence hypothesis (from a high-confidence playbook) is confirmed, the orchestrator may skip testing remaining hypotheses — present the fix directly

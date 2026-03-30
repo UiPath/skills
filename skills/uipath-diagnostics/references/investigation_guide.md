@@ -1,8 +1,3 @@
----
-type: investigation-guide
-description: Generic data correlation rules and testing prerequisites that apply to all investigations
----
-
 # Generic Investigation Guide
 
 Always apply these rules. If a product-specific `investigation_guide.md` exists, apply it **in addition** to these.

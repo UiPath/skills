@@ -10,7 +10,7 @@ Gather evidence and evaluate ONE specific hypothesis.
 - `.investigation/state.json`
 - `.investigation/evidence/` — reuse existing evidence, don't re-fetch
 - `.investigation/hypotheses.json` — for context
-- Source code at `state.json.requirements.source_code_path` if set
+- Source code path if provided by the user
 
 ## Outputs
 
@@ -21,15 +21,17 @@ Gather evidence and evaluate ONE specific hypothesis.
 ## Steps
 
 1. **Read the hypothesis** — understand confirm/eliminate criteria.
-2. **Read the investigation guides** — always read `references/investigation_guide.md` first. Then check if the matched product/package has an `investigation_guide.md` (linked from its summary) and read that too. Follow the data correlation rules to verify evidence relates to the correct entity, and the testing prerequisites to know what to gather before drawing conclusions. If you cannot get data for the correct entity, set `inconclusive` and explain the gap — do NOT use unrelated data.
-3. **Read matching playbooks and feature files** — playbooks describe what can be tested and what conditions cause the issue. Use them to inform your approach, not as a step-by-step script. Feature files describe specialized data gathering strategies (e.g., how to check HA enablement, interpret confidence scores, match ActivityRefId to XAML).
+2. **Read the investigation guides** from `state.json.investigation_guides`. Follow the data correlation rules to verify evidence relates to the correct entity, and the testing prerequisites to know what to gather before drawing conclusions. If you cannot get data for the correct entity, set `inconclusive` and explain the gap — do NOT use unrelated data.
+3. **Read the matched playbook** for this hypothesis (path in `state.json.matched_playbooks`). Always read `## Context` first for understanding. Then:
+   - If `## Investigation` exists → follow the steps. Each step produces evidence.
+   - If `## Investigation` is absent → reason freely from context and evidence.
 4. **Check existing evidence** — reuse data already in `evidence/`
 5. **Gather new evidence** using available tools:
-   - uip CLI commands, `uip docsai ask` for documentation, knowledge base (`references/`), source code, user input
+   - uip CLI commands, `uip docsai ask` for documentation, source code, user input
 6. **For large result sets:** summarize yourself — group errors by type, count patterns, extract samples
 7. **Before confirming, actively try to disprove:**
-   - Check EVERY item in `evidence_needed.to_eliminate`
-   - Trace the full execution path — independently verify each step in the chain
+   - Check EVERY item in `evidence_needed.to_eliminate` — populate `elimination_checks` in the evidence file for each criterion with `outcome: "passed" | "failed" | "not_testable"`
+   - Trace the full execution path — populate `execution_path_traced` with each step, expected vs. actual, and what verified it
    - For any downstream entity (child job, queue item, triggered process): query its actual state, don't infer from upstream
 8. **Set status:**
 

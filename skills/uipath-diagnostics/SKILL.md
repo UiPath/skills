@@ -24,7 +24,7 @@ All state lives in `.investigation/` (relative to working directory). Schemas in
 
 | File | Purpose | Writers |
 |------|---------|---------|
-| `state.json` | Scope, phase, requirements | triage, orchestrator |
+| `state.json` | Scope, phase, matched playbooks | triage, orchestrator |
 | `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator |
 | `evidence/*.json` | Interpreted summaries | triage, tester |
 | `raw/*.json` | Full raw CLI/API responses | triage, tester |
@@ -46,7 +46,7 @@ Set each task to `in_progress` when starting it, `completed` when done. Add addi
 
 ## User Interaction
 
-Use `AskUserQuestion` whenever you need input from the user — clarifying the problem, confirming hypotheses, resolving playbook requirements, or any decision point. Do NOT proceed past a question until the user responds.
+Use `AskUserQuestion` whenever you need input from the user — clarifying the problem or any decision point. Do NOT proceed past a question until the user responds. Sub-agents can also ask for clarification via `needs_user_input`.
 
 ## New Data from User
 
@@ -60,58 +60,45 @@ Do NOT try to patch new data into an in-progress investigation — re-triage ens
 
 ## Investigation Flow
 
+Update `state.json.phase` at each transition:
+
+| Phase | Set when |
+|-------|----------|
+| `triage` | Starting triage (or re-triaging with new data) |
+| `hypotheses` | Starting hypothesis generation |
+| `test` | Starting to test a hypothesis |
+| `evaluate` | Evaluating a tester's result |
+| `deepen` | Re-invoking generator to deepen a confirmed symptom |
+| `resolution` | Presenting findings to the user |
+| `complete` | Investigation finished (root cause found or no root cause) |
+
 ### 1. TRIAGE
 
-Spawn triage sub-agent (`agents/triage.md`). It classifies scope, runs lightweight uip commands, auto-resolves playbook requirements, and writes `state.json` + initial evidence.
+Spawn triage sub-agent (`agents/triage.md`). It classifies scope, discovers ALL matching playbooks, runs lightweight uip commands, and writes `state.json` + initial evidence.
 
 **Triage sanity gate** (before anything else):
 - Read the triage evidence and verify the data actually relates to the user's reported problem.
-- Check: do the job release names, queue names, process names, and time windows in the evidence match what the user reported?
-- If the triage data is about a **different process, queue, or entity**: discard the triage results, inform the user what happened, and either re-spawn triage with corrected filters or ask the user for clarification.
+- If the triage data is about a **different process, queue, or entity**: discard the triage results, inform the user what happened, and either re-spawn triage with corrected filters or use `AskUserQuestion` for clarification.
 - Do NOT proceed with an investigation built on data from the wrong source.
 
-**Requirements gate** (after triage sanity gate passes):
-1. Read matched playbook(s) and collect all requirements (including inherited)
-2. For each requirement where scope matches `state.json.scope.level`:
+**After triage**, check if the sub-agent returned `needs_user_input: true`. If so, use `AskUserQuestion` to present the question to the user. Do NOT proceed until the user responds. Re-spawn triage if the user's answer changes the scope.
 
-   | Condition | Action |
-   |-----------|--------|
-   | Already resolved | Skip |
-   | Required + not deferrable + unresolved | **Use `AskUserQuestion`, wait for response** |
-   | Required + deferrable + unresolved | Note it, proceed |
-   | Not required + unresolved | Skip |
-
-3. Present triage findings. If there are unresolved requirements, use `AskUserQuestion` to collect them before proceeding.
-4. Update `state.json.requirements` with user's answers.
-
-### 1.5. SHORTCUT CHECK
-
-Check matched playbook(s) for `## Shortcuts` sections.
-
-| Shortcut match? | "Still test" result | Action |
-|-----------------|---------------------|--------|
-| No match | — | Go to step 2 |
-| Match, consistent | Confirms shortcut | Go to step 5 (resolution) |
-| Match, contradicted | Disproves shortcut | Wait for generator, go to step 3 |
-| Match, inconclusive | — | Wait for generator, proceed normally |
-
-When a shortcut matches: spawn generator in background (fallback), spawn tester for the shortcut's "Still test" items only, write shortcut hypothesis with `source: "playbook_shortcut"`.
+If additional data is needed (e.g., source code path, folder ID), use `AskUserQuestion` to collect it before proceeding.
 
 ### 2. GENERATE HYPOTHESES
 
-Spawn hypothesis generator (`agents/hypothesis-generator.md`). If already spawned in background by step 1.5, wait for it instead.
+Spawn hypothesis generator (`agents/hypothesis-generator.md`). It reads `## Context` from all matched playbooks and produces hypotheses:
+
+- **High-confidence** playbooks → exactly 1 hypothesis per playbook, high confidence
+- **Medium / Low-confidence** playbooks → 2-5 hypotheses as normal
+
+The generator also uses docsai. If no playbooks matched, the generator works from triage evidence alone.
 
 ### 3. TEST HYPOTHESES
 
-**Before testing, present all hypotheses to the user** (ranked by confidence):
-- Show each hypothesis: ID, description, confidence, and brief reasoning
-- Use `AskUserQuestion` to ask: "These are the hypotheses I'll investigate. Want me to proceed, adjust, or skip any?"
-- Do NOT start testing until the user confirms.
-- If the user removes, reorders, or adds hypotheses, update `hypotheses.json` accordingly.
+Test every hypothesis sequentially (highest confidence first). For each, spawn hypothesis tester (`agents/hypothesis-tester.md`), then evaluate.
 
-Then test **every approved** hypothesis sequentially (highest confidence first). Multiple root causes can coexist.
-
-For each pending hypothesis: spawn hypothesis tester (`agents/hypothesis-tester.md`), then evaluate (step 4).
+The tester reads `## Context` for understanding, then follows `## Investigation` steps if present, or reasons freely if absent.
 
 ### 4. EVALUATE (after each test)
 
@@ -128,20 +115,14 @@ For each pending hypothesis: spawn hypothesis tester (`agents/hypothesis-tester.
 |--------|--------|
 | Eliminated | Record, next hypothesis |
 | Inconclusive | Record, next hypothesis |
-| Confirmed — explains WHY | Root cause (`is_root_cause: true`). Present finding, use `AskUserQuestion` to ask if they want remaining hypotheses tested. |
-| Confirmed — describes WHAT only | Symptom (`is_root_cause: false`). Deepen: set `generation_context.trigger: "deepening"`, go to step 2. |
-| All tested, root cause(s) found | Go to step 5 |
-| All tested, no root cause found | Go to step 5 — present inconclusive outcome |
+| Confirmed — explains WHY | Root cause (`is_root_cause: true`). If from a high-confidence playbook, skip remaining hypotheses and go to Resolution. If from medium/low, use `AskUserQuestion` to ask if the user wants remaining hypotheses tested. If multiple high-confidence hypotheses exist, test all of them before skipping — each addresses a distinct known issue. If a high-confidence hypothesis is eliminated, continue to the next hypothesis normally. |
+| Confirmed — describes WHAT only | Symptom (`is_root_cause: false`). Set `generation_context.trigger: "deepening"` and `generation_context.parent_hypothesis` to this hypothesis ID. Re-invoke generator. |
 
-**Root cause vs. symptom:** Check playbook Evaluation sections first. Fallback rule: explains WHY = root cause, describes WHAT = symptom.
-
-**Deferred requirements:** If a deferrable requirement is still unresolved for a confirmed root cause, use `AskUserQuestion` to present findings and collect the requirement. Include `fallback_note` if they decline.
-
-**Shortcut exception:** Confirmed `playbook_shortcut` hypotheses may skip remaining tests — go to step 5.
+**Root cause vs. symptom:** explains WHY = root cause, describes WHAT = symptom.
 
 ### 5. RESOLUTION
 
-**If root cause(s) found** — for each confirmed root cause, present:
+**If root cause(s) found** — check the playbook that sourced the confirmed hypothesis. If it has a `## Resolution` section, present its concrete fixes. Otherwise, for each confirmed root cause present:
 
 ```
 ### Root Cause: {description}

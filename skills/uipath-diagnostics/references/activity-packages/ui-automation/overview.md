@@ -1,25 +1,3 @@
----
-id: ui-automation
-display_name: UI Automation
-type: activity-package
-namespaces:
-  - UiPath.UIAutomationNext.Activities
-  - UiPath.UIAutomation.Activities
-  - UiPath.Core.Activities.Click
-  - UiPath.Core.Activities.TypeInto
-  - UiPath.Core.Activities.GetText
-  - UiPath.Core.Activities.SetText
-depends_on:
-  - service: asrobots
-    mechanism: Activities execute inside the robot runtime on the host machine
-  - service: healing-agent
-    mechanism: Healing Agent captures UI tree snapshots and generates alternative selectors when activities fail
-  - service: computervision
-    mechanism: Image-based element detection as fallback when selector-based targeting fails
-  - service: semanticproxy
-    mechanism: Routes healing agent requests and computer vision calls
----
-
 # UI Automation
 
 Activities for interacting with desktop and web application UIs. Robots use selectors (XML descriptors of UI elements) to find and interact with buttons, text fields, tables, and other controls.

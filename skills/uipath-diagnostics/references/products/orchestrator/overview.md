@@ -1,27 +1,3 @@
----
-id: orchestrator
-display_name: Orchestrator
-type: product
-cli_tools: 
-  - "uip or"
-  - "uip resources"
-depends_on:
-  - service: identity
-    mechanism: S2S auth and JWT validation for all API calls
-  - service: authorization
-    mechanism: Permission checks on every API call via RBAC engine
-  - service: messagebus
-    mechanism: Event-driven communication for trigger evaluations and alert delivery
-  - service: location
-    mechanism: Service discovery and routing to locate other platform services
-  - service: resource-catalog
-    mechanism: Resource inventory lookups for robot and machine availability
-  - service: notificationservice
-    mechanism: Email notification delivery for alerts
-  - service: webhook
-    mechanism: Webhook event delivery to external systems
----
-
 # Orchestrator
 
 Web application that manages automation resources, robots, processes, and execution. Central hub for attended and unattended automation orchestration.
@@ -49,6 +25,14 @@ Organization (cloud.uipath.com)
               ├── Machines          ← Robot execution environments
               └── Robots            ← Attended/Unattended agents
 ```
+
+## Dependencies
+
+- **Identity Server** — authentication and token management; Orchestrator cannot function without it
+- **SQL Server** — stores all Orchestrator data (jobs, queues, assets, audit, configuration)
+- **Elasticsearch** (optional) — stores robot execution logs; if unavailable, logs are lost but jobs still run
+- **IIS / ASP.NET Core** — hosts the Orchestrator web application
+- **Load Balancer / Reverse Proxy** — in clustered deployments, routes traffic and terminates SSL
 
 ## Features
 

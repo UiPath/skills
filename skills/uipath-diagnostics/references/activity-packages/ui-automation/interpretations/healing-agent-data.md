@@ -1,13 +1,3 @@
----
-product: ui-automation
-feature: Healing Agent Data
-depends_on:
-  - service: semanticproxy
-    mechanism: Routes HA analysis requests to backend services
-  - service: llmgateway
-    mechanism: LLM-based UI element analysis for recovery recommendations
----
-
 # Healing Agent Data
 
 When Healing Agent is enabled and a UI automation activity fails, the system captures detailed recovery data. This feature describes how HA interacts with UI Automation at runtime, the data structure it produces, and how to gather and interpret that data.

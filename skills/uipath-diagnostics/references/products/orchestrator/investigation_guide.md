@@ -1,9 +1,3 @@
----
-product: orchestrator
-type: investigation-guide
-description: Prerequisites and data correlation rules for Orchestrator investigations
----
-
 # Orchestrator Investigation Guide
 
 ## Data Correlation
@@ -27,4 +21,4 @@ When testing hypotheses for Orchestrator issues, gather and verify these before 
 3. **Robot assignment** — verify the robot/machine template is assigned to the folder and has capacity
 4. **Execution logs** — use job traces/logs to reconstruct the actual execution path, don't infer from job status alone
 5. **Timing** — check job start/end times, queue transaction durations, and trigger schedules against reported symptoms
-6. **Dependencies** — check `depends_on` in `overview.md` for cross-product issues (e.g., Identity, Elasticsearch, SQL Server)
+6. **Dependencies** — check `## Dependencies` in `overview.md` for cross-product issues (e.g., Identity Server, Elasticsearch, SQL Server)
