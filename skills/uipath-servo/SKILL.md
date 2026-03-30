@@ -1,6 +1,6 @@
 ---
 name: uipath-servo
-description: "Desktop and browser UI automation via CLI -- click, type, read, verify, screenshot, and extract UI elements. TRIGGER when: user mentions 'servo', any UI interaction or automation intent (desktop or browser), UI testing or verification tasks, taking screenshots of desktop/windows/elements. DO NOT TRIGGER when: pure API/backend work, writing UI code (WPF, WinForms, Java, Qt, HTML/CSS) without intent to test or verify it."
+description: "Direct desktop and browser UI interaction via CLI -- click, type, read, verify, screenshot, and extract UI elements in live running applications. TRIGGER when: user mentions 'servo', wants to interact with a live app (click buttons, type text, read values, inspect UI state), take screenshots of desktop/windows/elements, advance application state for UI target capture, or verify UI behavior. DO NOT TRIGGER when: user wants to create/edit UiPath RPA workflows (.xaml) or coded automations (.cs) -- those are handled by uipath-rpa-workflows and uipath-coded-workflows respectively. DO NOT TRIGGER for pure API/backend work or writing UI framework code (WPF, WinForms, Java, Qt, HTML/CSS) without intent to test or verify it."
 metadata:
   allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
 ---

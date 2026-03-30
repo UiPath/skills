@@ -426,6 +426,8 @@ Apply Core Principles: consult activity docs first, read relevant [reference fil
 
 **Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps (CREATE-1 + CREATE-2) capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
 
+**For multi-step UI flows** where elements only appear after interaction (e.g., clicking "New mail" reveals a compose form), see the [Multi-Step UI Flows](./references/ui-automation-guide.md#multi-step-ui-flows-advancing-application-state) section in the UI Automation guide.
+
 ### For CREATE Requests
 
 **Strategy:** Generate minimal working version, expect to iterate. Take it one activity at a time. Build incrementally and validate frequently.

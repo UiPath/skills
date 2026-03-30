@@ -1082,15 +1082,14 @@ Inherits from `GetAttributeBaseOptions`.
 ### 1. Attach to a browser and click a button
 
 ```csharp
-var app = uiAutomation.Attach("MyWebApp");
+using var app = uiAutomation.Attach("MyWebApp");
 app.Click("SubmitButton");
-app.Close();
 ```
 
 ### 2. Open an application, type text, and read a result
 
 ```csharp
-var app = uiAutomation.Open("LoginScreen");
+using var app = uiAutomation.Open("LoginScreen");
 app.TypeInto("UsernameField", "admin@example.com");
 app.TypeInto("PasswordField", new TypeIntoOptions
 {
@@ -1101,13 +1100,12 @@ app.Click("LoginButton");
 
 bool loaded = app.WaitState("Dashboard", NCheckStateMode.WaitAppear, 10);
 string welcomeText = app.GetText("WelcomeLabel");
-app.Close();
 ```
 
 ### 3. Extract table data from a web page with pagination
 
 ```csharp
-var app = uiAutomation.Open("ProductCatalog");
+using var app = uiAutomation.Open("ProductCatalog");
 DataTable products = app.ExtractTableData("ProductsTable", new ExtractTableDataOptions
 {
     LimitExtractionTo = LimitType.Rows,
@@ -1119,13 +1117,12 @@ foreach (DataRow row in products.Rows)
 {
     Log(row["ProductName"].ToString());
 }
-app.Close();
 ```
 
 ### 4. Use keyboard shortcuts and check element state
 
 ```csharp
-var app = uiAutomation.Attach("SpreadsheetApp");
+using var app = uiAutomation.Attach("SpreadsheetApp");
 
 app.Click("CellA1");
 app.KeyboardShortcut("CellA1", "ctrl+c");
@@ -1137,13 +1134,12 @@ if (isSaveEnabled)
 {
     app.Click("SaveButton");
 }
-app.Close();
 ```
 
 ### 5. Iterate child elements and get attributes
 
 ```csharp
-var app = uiAutomation.Attach("FileManager");
+using var app = uiAutomation.Attach("FileManager");
 
 var children = app.GetChildren("FileList", new GetChildrenOptions
 {
@@ -1161,5 +1157,4 @@ foreach (var child in children)
     string href = app.GetAttribute(child, new GetAttributeOptions { Attribute = "href" });
     Log($"File: {fileName}, Link: {href}");
 }
-app.Close();
 ```
