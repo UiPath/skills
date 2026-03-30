@@ -39,11 +39,29 @@ After deducing scopes, present them to the user:
 > "Based on your request, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or tell me what to change."
 
 ### Q3a — Client ID (only if SDK needed)
-> "Enter the Client ID of your Non-Confidential External Application in UiPath Cloud.
->
-> It must have these scopes: `<deduced-scopes>` and this redirect URI: `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`"
 
-Store as `<client-id>`.
+Ask:
+> "Do you have an existing OAuth External Application client ID?
+> It needs these scopes: `<deduced-scopes>` and this redirect URI: `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`
+>
+> - If yes, paste it
+> - If no, say **"create one"** and I'll set it up via browser automation"
+
+**If the user says "create one":** First check/install Playwright CLI:
+
+```bash
+npx playwright --version 2>/dev/null
+```
+
+If not available, install it:
+
+```bash
+npm install -D playwright && npx playwright install chromium --with-deps
+```
+
+Then read [oauth-client-setup.md](oauth-client-setup.md) and follow it to create the External Application with the scopes above and redirect URI `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`.
+
+Store the resulting client ID as `<client-id>`.
 
 ### Q4 — Action schema
 
