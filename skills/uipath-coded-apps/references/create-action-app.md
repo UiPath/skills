@@ -300,7 +300,7 @@ export default Form;
 
 ### `vite.config.ts`
 
-Action apps **must** set the base path to the routing name:
+`base: './'` is **always required** — the platform handles URL routing at runtime:
 
 ```typescript
 import { defineConfig } from 'vite';
@@ -308,7 +308,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/<routing-name>/',
+  base: './',
 });
 ```
 

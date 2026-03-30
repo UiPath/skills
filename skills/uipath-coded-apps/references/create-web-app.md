@@ -178,7 +178,7 @@ See [oauth-scopes.md](oauth-scopes.md) for the full list of methods and their re
 
 ## Vite Configuration
 
-`vite.config.ts` — add a custom base path only if needed for your routing setup:
+`base: './'` is **always required**. The Cloudflare Worker handles URL routing at the platform level — the app must use relative asset paths to work correctly when served from any path.
 
 ```typescript
 import { defineConfig } from 'vite';
@@ -186,9 +186,30 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // base: '/<routing-name>/',  // uncomment if deploying under a sub-path
+  base: './',
 });
 ```
+
+Do not add a `server.proxy` to `vite.config.ts` — it interferes with the OAuth callback and asset resolution.
+
+## Router Base Path (if using a client-side router)
+
+If the app uses React Router, Vue Router, or similar, use `getAppBase()` as the router basename. It reads the `uipath:app-base` meta tag injected by the platform at runtime and falls back to `'/'` locally — safe to use unconditionally.
+
+```typescript
+import { getAppBase } from '@uipath/uipath-typescript';
+import { BrowserRouter } from 'react-router-dom';
+
+function App() {
+  return (
+    <BrowserRouter basename={getAppBase()}>
+      {/* your routes */}
+    </BrowserRouter>
+  );
+}
+```
+
+For React Router v6 (`createBrowserRouter`) and Vue Router patterns, see [assets/templates/web-app.md](../assets/templates/web-app.md).
 
 ---
 

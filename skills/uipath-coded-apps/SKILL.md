@@ -40,6 +40,8 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
 - **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
 - **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
+- **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
+- **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
 
 ## CLI Setup
 

@@ -34,14 +34,56 @@ VITE_UIPATH_BASE_URL=https://api.uipath.com
 
 ## `vite.config.ts`
 
+`base: './'` is **always required** — the platform (Cloudflare Worker) handles URL routing; the app must use relative asset paths.
+
 ```typescript
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // Uncomment and set base path only if deploying under a sub-path:
-  // base: '/{{ROUTING_NAME}}/',
+  base: './',
+});
+```
+
+## Router base path (if using a client-side router)
+
+If the app uses React Router or Vue Router, set the basename/base to `getAppBase()`. It reads the `uipath:app-base` meta tag injected by the platform at runtime and falls back to `'/'` locally — safe to use unconditionally.
+
+**React Router (v5 / `BrowserRouter`):**
+```typescript
+import { getAppBase } from '@uipath/uipath-typescript';
+import { BrowserRouter } from 'react-router-dom';
+
+function App() {
+  return (
+    <BrowserRouter basename={getAppBase()}>
+      {/* your routes */}
+    </BrowserRouter>
+  );
+}
+```
+
+**React Router v6 (`createBrowserRouter`):**
+```typescript
+import { getAppBase } from '@uipath/uipath-typescript';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+
+const router = createBrowserRouter(routes, { basename: getAppBase() });
+
+function App() {
+  return <RouterProvider router={router} />;
+}
+```
+
+**Vue Router:**
+```typescript
+import { getAppBase } from '@uipath/uipath-typescript';
+import { createRouter, createWebHistory } from 'vue-router';
+
+const router = createRouter({
+  history: createWebHistory(getAppBase()),
+  routes,
 });
 ```
 

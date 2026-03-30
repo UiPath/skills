@@ -6,7 +6,7 @@ Ready-to-use boilerplate for a new UiPath Coded Action App (React + TypeScript).
 
 ## `vite.config.ts`
 
-Action apps **must** set `base` to the routing name — this is how Action Center resolves assets:
+`base: './'` is **always required** — the platform handles URL routing; the app must use relative asset paths.
 
 ```typescript
 import { defineConfig } from 'vite';
@@ -14,7 +14,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/{{ROUTING_NAME}}/',
+  base: './',
 });
 ```
 
