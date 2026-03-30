@@ -106,3 +106,4 @@ Use `--help` to explore these:
 | **RPA** | `uip rpa --help` | RPA workflow management (XAML) |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
 | **Coded Agents** | `uip codedagents --help` | Python-based agent development |
+| **Maestro** | `uip maestro --help` | Maestro process instance runtime management (requires `uip tools install @uipath/maestro-tool`) |

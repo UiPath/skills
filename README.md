@@ -53,6 +53,7 @@ The repository contains skills for building and managing UiPath automation proje
 | **uipath-coded-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
 | **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
 | **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
+| **uipath-maestro** | Manage Maestro process instances — list, inspect, pause, resume, cancel, retry instances; navigate steps; set input/deadline; manage notes and priorities |
 
 ## Multi-Tool Support
 

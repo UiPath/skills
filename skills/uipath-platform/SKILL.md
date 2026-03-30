@@ -99,6 +99,7 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath-coded-workflows:uipath-coded-workflows](/uipath-coded-workflows:uipath-coded-workflows) |
+| **Manage Maestro process instances** | [/uipath:uipath-maestro](/uipath:uipath-maestro) |
 
 ## Resolving UiPath Studio
 
@@ -191,6 +192,7 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 | **MCP** | `mcp` | Model Context Protocol server | Available |
 | **Coded Agents** | `codedagents` | Python agent lifecycle (setup, exec) | Available |
 | **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
+| **Maestro** | `maestro` | Process instance runtime management (requires `@uipath/maestro-tool`) | Available |
 
 ### Global Options
 

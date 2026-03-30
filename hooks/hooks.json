@@ -8,7 +8,7 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.sh\"",
             "timeout": 180,
             "once": true,
-            "statusMessage": "Checking uip, servo and rpa-tool installation..."
+            "statusMessage": "Checking uip, servo, rpa-tool and maestro-tool installation..."
           }
         ]
       }
