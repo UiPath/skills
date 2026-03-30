@@ -97,16 +97,12 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 ### Step 2 — Create a solution and Flow project
 
-Every Flow project lives inside a solution. **Before creating the project, ask the user whether they want to create a new solution or use an existing one.**
+Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, ask the user whether they want to use one of them or create a new solution. If no existing solutions are found, create a new one automatically.
 
-#### 2a. Ask the user
+- If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
+- Otherwise, create a new solution (Step 2a)
 
-Prompt: *"Would you like to create a new solution for this project, or add it to an existing solution?"*
-
-- If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2c)
-- If the user wants a new solution, proceed to Step 2b
-
-#### 2b. Create a new solution (if requested)
+#### 2a. Create a new solution
 
 ```bash
 uip solution new "<SolutionName>" --output json
@@ -114,13 +110,13 @@ uip solution new "<SolutionName>" --output json
 
 > **Naming convention:** Use the same name for both the solution and the project unless the user specifies otherwise. If the user only provides a project name, use it as the solution name too.
 
-#### 2c. Create the Flow project inside the solution folder
+#### 2b. Create the Flow project inside the solution folder
 
 ```bash
 cd <directory>/<SolutionName> && uip flow init <ProjectName>
 ```
 
-#### 2d. Add the project to the solution
+#### 2c. Add the project to the solution
 
 ```bash
 uip solution project add \
