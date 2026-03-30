@@ -140,6 +140,20 @@ Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `A
 - **TargetSession validation**: `TargetSession.Secondary` (or any non-Current value) requires `UnSafe=True`. Without it, validation fails.
 - **Persistence with isolation**: Using `ResumeInstanceId` with Safe mode (`UnSafe=false`) without persistence support throws `NotSupportedException`.
 
+## InvokeCode Language Property
+
+The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
+
+**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` — it is not a valid `NetLanguage` value. `"CSharp"` is the same in both.
+
+**What happens:** Using `Language="VisualBasic"` passes Studio validation but fails at runtime:
+```
+Failed to create a 'Language' from the text 'VisualBasic'.
+System.FormatException: VisualBasic is not a valid value for NetLanguage.
+```
+
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `references/activity-docs/UiPath.System.Activities/` for full details.
+
 ## HTTP Request Activity Complexity
 
 The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
