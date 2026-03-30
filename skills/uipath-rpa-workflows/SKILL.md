@@ -324,6 +324,8 @@ uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-24
 - `--activity-type-id`: For dynamic activities. Use `uip rpa find-activities` to find the exact type ID
 - `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uip is connections list [connector-key]`
 
+**IMPORTANT — `.Item` child elements:** The default XAML returned by this command may contain `.Item` child elements with `ItemArgument` nodes (e.g., `<activity:SomeActivity.Item><upap:ItemArgument .../></activity:SomeActivity.Item>`). These are internal scaffolding for OverloadGroup (FileName/ResourceFile) switching. **Do NOT copy `.Item` children into your generated XAML.** Instead, set the desired property (e.g., `FileName`) directly on the activity element and omit the `.Item` child. Studio auto-generates the internal structure when it loads the workflow. Including a misconfigured `.Item` child causes `"None of the overload groups have all their required/optional activity arguments configured"` errors. See [common-pitfalls.md](./references/common-pitfalls.md) for details.
+
 **For JIT custom types**, read the schema file:
 
 ```
