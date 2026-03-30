@@ -19,6 +19,14 @@ Use this reference to:
 
 ---
 
+## Jobs
+
+| Method | Required Scope |
+|--------|----------------|
+| `getAll()` | `OR.Jobs` or `OR.Jobs.Read` |
+
+---
+
 ## Buckets
 
 | Method | Required Scope |
@@ -39,12 +47,14 @@ Use this reference to:
 | `getById()` | `DataFabric.Schema.Read` |
 | `getAllRecords()` | `DataFabric.Data.Read` |
 | `getRecordById()` / `getRecord()` | `DataFabric.Data.Read` |
-| `insertRecord()` / `insertRecords()` | `DataFabric.Data.Write` |
-| `deleteRecords()` | `DataFabric.Data.Write` |
-| `updateRecords()` | `DataFabric.Data.Write` |
+| `insertRecordById()` / `insertRecord()` | `DataFabric.Data.Write` |
+| `insertRecordsById()` / `insertRecords()` | `DataFabric.Data.Write` |
+| `deleteRecordsById()` / `deleteRecords()` | `DataFabric.Data.Write` |
+| `updateRecordById()` / `updateRecord()` | `DataFabric.Data.Write` |
+| `updateRecordsById()` / `updateRecords()` | `DataFabric.Data.Write` |
 | `downloadAttachment()` | `DataFabric.Data.Read` |
-
-**Folder-scoped entities only:** Add `OR.Users` if entities are folder-scoped. Not required for tenant-scoped entities.
+| `uploadAttachment()` | `DataFabric.Data.Write` |
+| `deleteAttachment()` | `DataFabric.Data.Write` |
 
 ---
 
@@ -83,6 +93,7 @@ Use this reference to:
 | `getAll()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `getById()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `getUsers()` | `OR.Tasks` or `OR.Tasks.Read` |
+| `getFormTaskById()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `create()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `assign()` / `reassign()` / `unassign()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `complete()` | `OR.Tasks` or `OR.Tasks.Write` |
