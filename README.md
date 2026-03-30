@@ -54,6 +54,12 @@ The repository contains skills for building and managing UiPath automation proje
 | **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
 | **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
 
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
+
 ## Multi-Tool Support
 
 This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor IDE**.
