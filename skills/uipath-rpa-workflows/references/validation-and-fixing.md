@@ -60,6 +60,17 @@ DO NOT assume edits worked without checking.
 
 Expect multiple iteration cycles for complex workflows.
 
+### Stale Validation Cache
+
+Studio may cache validation results internally. If `get-errors` reports persistent errors after multiple edits to the same file — especially OverloadGroup errors that should be resolved by your changes — the cache may be stale. To clear it:
+
+```bash
+uip rpa close-project --project-dir "<PROJECT_DIR>" --format json
+uip rpa open-project --project-dir "<PROJECT_DIR>" --format json
+```
+
+Then re-run `get-errors`. This forces Studio to reload all files from disk and revalidate from scratch.
+
 ## Smoke Test (Optional but Recommended)
 
 **Important:** `get-errors` (Studio validation) and `run-file` (runtime compilation) use different validation paths. Some errors — such as invalid enum values on activity properties — pass Studio validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.

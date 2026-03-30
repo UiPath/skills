@@ -55,8 +55,31 @@ Many activities use `[OverloadGroup]` to define mutually exclusive property sets
 | CopyFile, Delete, ExtractFiles | `Path` (string) | `PathResource` / `File` (IResource) | — |
 | WorkbookActivityBase | `Workbook` (use open) | `WorkbookPath` (file string) | `WorkbookPathResource` (IResource) |
 | WordDocumentActivity | `FilePath` (string) | `PathResource` (ILocalResource) | — |
+| PDF activities (ReadPDFText, GetPDFPageCount, ExtractPDFPageRange, ManagePDFPassword, ExportPDFPageAsImage, ExtractImagesFromPDF, ReadXPSText) | `FileName` (string) | `ResourceFile` (IResource) | — |
+| PDF convert activities (ConvertHtmlToPDF, ConvertTextToPDF) | `FileName` (string, when InputMode=File) | `ResourceFile` (IResource, when InputMode=File) | `Html`/`Text` (string, when InputMode=Content) |
 
 **Key rule**: Exactly ONE group must have values. Setting properties from multiple groups OR no groups both cause validation errors.
+
+### ItemArgument and `.Item` Child Elements in OverloadGroup Activities
+
+`uip rpa get-default-activity-xaml` returns activities with `.Item` child elements containing `ItemArgument` nodes. These are internal scaffolding for the FileName/ResourceFile overload group switching mechanism. **Do NOT include `.Item` child elements when writing XAML manually.** Simply set the desired overload group property (e.g., `FileName`) directly on the activity element and omit the `.Item` child entirely. Studio will auto-generate the internal `.Item` structure when it loads the workflow.
+
+**Example — correct (no `.Item` child):**
+```xml
+<upap:GetPDFPageCount DisplayName="Get PDF Page Count"
+    FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]" />
+```
+
+**Example — avoid (`.Item` child from `get-default-activity-xaml`):**
+```xml
+<upap:GetPDFPageCount FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]">
+    <upap:GetPDFPageCount.Item>
+      <upap:ItemArgument x:TypeArguments="upr:IResource" FileName="{x:Null}" ResourceFile="{x:Null}" />
+    </upap:GetPDFPageCount.Item>
+</upap:GetPDFPageCount>
+```
+
+Including the `.Item` child with misconfigured `ItemArgument` properties can cause `"None of the overload groups have all their required/optional activity arguments configured"` validation errors. This applies to all activities that use the `ItemArgument` pattern, including PDF, Excel, and other file-based activities.
 
 ## Conditional Property Requirements
 
@@ -483,3 +506,22 @@ When reading Excel data with `ReadRangeX`, column types in the resulting `DataTa
 **Workarounds:**
 - Use LINQ with explicit conversion: `dtData.AsEnumerable().Where(Function(row) CDbl(row("Amount")) > 1000).CopyToDataTable()`
 - Convert the column type after reading: loop through rows and convert values, or clone the DataTable with the correct column types
+
+### `uip rpa restore` dumps .nupkg files into the project directory
+
+When calling `uip rpa restore` without `--destination-path`, the command restores NuGet packages directly into the project root directory, polluting it with hundreds of `.nupkg` files. These are cached package files, not project artifacts, and should not be there.
+
+**Always specify `--destination-path`** pointing to a location outside the project directory:
+
+```bash
+# Correct — restore to a temp/cache directory
+uip rpa restore --project-path "{projectRoot}" --destination-path "{projectRoot}/.local/packages" --format json
+
+# Wrong — packages end up in project root
+uip rpa restore --project-path "{projectRoot}" --format json
+```
+
+If you already have `.nupkg` files littering the project root, clean them up:
+```bash
+rm "{projectRoot}"/*.nupkg
+```
