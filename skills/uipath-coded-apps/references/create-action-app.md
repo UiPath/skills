@@ -29,14 +29,14 @@ Auto-convert spaces/underscores to hyphens and uppercase to lowercase. Validate 
 
 ### Q3 — SDK services (optional)
 
-From the user's description of the form, determine whether it needs to call UiPath platform services (Data Fabric, Orchestrator, Buckets, etc.). Do **not** ask the user to pick from a list — infer from what they've described.
+From the user's **request**, determine whether the app needs to call UiPath platform services (Data Fabric, Orchestrator, Buckets, etc.). Do **not** ask the user to pick from a list.
 
-If services are needed: read [oauth-scopes.md](oauth-scopes.md) to deduce the required scopes, present them for confirmation, then proceed to Q3a.
+If services are needed: read [oauth-scopes.md](oauth-scopes.md) to determine the required scopes, then proceed to Q3a.
 
-If no platform services are mentioned: skip to Q4. No SDK setup needed beyond `@uipath/uipath-ts-coded-action-apps`.
+If no platform services are apparent from the request: skip to Q4. No SDK setup needed beyond `@uipath/uipath-ts-coded-action-apps`.
 
 After deducing scopes, present them to the user:
-> "Based on your app description, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or tell me what to change."
+> "Based on your request, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or tell me what to change."
 
 ### Q3a — Client ID (only if SDK needed)
 > "Enter the Client ID of your Non-Confidential External Application in UiPath Cloud.

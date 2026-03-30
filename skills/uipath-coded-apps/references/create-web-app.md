@@ -6,11 +6,15 @@ Scaffold a new UiPath Coded Web Application using Vite + React + TypeScript with
 
 **CRITICAL: You do NOT know these values. You CANNOT infer or assume them. Ask the user and wait for their reply before writing any files.**
 
-### Step 1 — Infer required SDK services and scopes
+### Step 1 — Determine required scopes first
 
-From the user's description of the app, identify which SDK services it will use. Do **not** ask the user to pick from a list — infer from what they've described. Read [oauth-scopes.md](oauth-scopes.md) and collect the exact scopes for every method those services expose. Compose the full deduplicated space-separated scopes string — you need this before asking for the Client ID so you can tell the user what scopes to configure.
+**Before asking the user any setup questions**, figure out what the app needs:
 
-If the user's description doesn't mention any UiPath platform data (Data Fabric, Orchestrator, Buckets, etc.), assume no SDK services are needed beyond basic auth.
+1. From the user's **request**, identify which UiPath services the app will use (e.g., Entities, Tasks, Processes, Maestro, Conversational Agent, Buckets, etc.).
+2. Read [oauth-scopes.md](oauth-scopes.md) and collect the exact scopes required for every method those services expose.
+3. Compose the full deduplicated space-separated scopes string.
+
+You need these scopes **before** Step 2 so you can tell the user exactly what scopes to configure on their Client ID.
 
 ### Step 2 — Ask the user for setup info
 
