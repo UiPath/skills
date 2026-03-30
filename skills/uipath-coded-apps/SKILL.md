@@ -30,6 +30,13 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
+| **SDK: Assets, Queues, Buckets, Processes, Tasks** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
+| **SDK: Data Fabric (Entities, ChoiceSets)** | [references/sdk/data-fabric.md](references/sdk/data-fabric.md) |
+| **SDK: Maestro (Processes, Cases)** | [references/sdk/maestro.md](references/sdk/maestro.md) |
+| **SDK: Action Center (Tasks)** | [references/sdk/action-center.md](references/sdk/action-center.md) |
+| **SDK: Conversational Agent** | [references/sdk/conversational-agent.md](references/sdk/conversational-agent.md) |
+| **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
+| **UI Patterns (polling, BPMN, HITL)** | [references/patterns.md](references/patterns.md) |
 
 ## Critical Rules
 

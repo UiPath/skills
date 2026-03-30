@@ -177,6 +177,18 @@ const records = await entities.getAllRecords('EntityName');
 
 See [oauth-scopes.md](oauth-scopes.md) for the full list of methods and their required scopes.
 
+When implementing specific SDK services, read the corresponding reference:
+
+| Service | Reference |
+|---------|-----------|
+| Assets, Queues, Buckets, Processes, Tasks | [sdk/orchestrator.md](sdk/orchestrator.md) |
+| Data Fabric Entities / ChoiceSets | [sdk/data-fabric.md](sdk/data-fabric.md) |
+| Maestro Processes / Cases | [sdk/maestro.md](sdk/maestro.md) |
+| Action Center Tasks | [sdk/action-center.md](sdk/action-center.md) |
+| Conversational Agent | [sdk/conversational-agent.md](sdk/conversational-agent.md) |
+| Pagination patterns | [sdk/pagination.md](sdk/pagination.md) |
+| UI patterns (polling, BPMN, HITL) | [patterns.md](patterns.md) |
+
 ---
 
 ## Vite Configuration
