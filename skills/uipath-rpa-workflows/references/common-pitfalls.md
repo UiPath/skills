@@ -8,7 +8,8 @@ These activities must be inside a specific parent scope:
 
 | Activity | Required parent |
 |----------|----------------|
-| Read Range, Write Range, Read Cell, etc. | `ExcelApplicationScope` or `ExcelApplicationCard` |
+| ReadRangeX, WriteRangeX (Business) | `ExcelProcessScopeX` > `ExcelApplicationCard`. **Avoid** — use classic workbook activities instead. See [excel-workbook-activities.md](./excel-workbook-activities.md) |
+| ReadRange, WriteRange (classic workbook) | **No scope needed** — standalone activities |
 | Click, Type Into, Get Text, Check/Uncheck | `Use Application/Browser` (`NApplicationCard`) |
 | All Word interop activities | `WordApplicationScope` |
 | PivotTableFieldX | `CreatePivotTableX` |

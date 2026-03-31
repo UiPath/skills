@@ -212,17 +212,38 @@ Priority order (use the first one that works):
 
 These are verified. Use them directly with `get-default-activity-xaml`:
 
-| Activity | Class name | Package |
-|----------|-----------|---------|
-| Log Message | `UiPath.Core.Activities.LogMessage` | UiPath.System.Activities |
-| Assign | `System.Activities.Statements.Assign` | Built-in (no package needed) |
-| If / Else | `System.Activities.Statements.If` | Built-in |
-| For Each | `System.Activities.Statements.ForEach` | Built-in |
-| While | `System.Activities.Statements.While` | Built-in |
-| Sequence | `System.Activities.Statements.Sequence` | Built-in |
-| Try Catch | `System.Activities.Statements.TryCatch` | Built-in |
-| WriteLine | `System.Activities.Statements.WriteLine` | Built-in |
-| Invoke Workflow | `System.Activities.XamlIntegration.InvokeWorkflow` | Built-in |
+| Activity | Class name | Package | Notes |
+|----------|-----------|---------|-------|
+| Log Message | `UiPath.Core.Activities.LogMessage` | UiPath.System.Activities | |
+| Assign | `System.Activities.Statements.Assign` | Built-in | |
+| If / Else | `System.Activities.Statements.If` | Built-in | |
+| While | `System.Activities.Statements.While` | Built-in | |
+| Sequence | `System.Activities.Statements.Sequence` | Built-in | |
+| Try Catch | `System.Activities.Statements.TryCatch` | Built-in | Needs `s:Exception` — read [exception-and-type-patterns.md](./references/exception-and-type-patterns.md) |
+| WriteLine | `System.Activities.Statements.WriteLine` | Built-in | |
+| Invoke Workflow | `UiPath.Core.Activities.InvokeWorkflowFile` | UiPath.System.Activities | `WorkflowFileName`, `Arguments` dict |
+| HTTP Request (legacy) | `UiPath.Web.Activities.HttpClient` | UiPath.WebAPI.Activities | Returns string `Result`. Use over `NetHttpRequest` (type resolution issues) |
+| Deserialize JSON Array | `UiPath.Web.Activities.DeserializeJsonArray` | UiPath.WebAPI.Activities | `JsonString` in, `JsonArray` out (JArray) |
+| Send SMTP Mail | `UiPath.Mail.SMTP.Activities.SendMail` | UiPath.Mail.Activities | Don't set both `Password` and `SecurePassword` |
+| Read Range (workbook) | `UiPath.Excel.Activities.ReadRange` | UiPath.Excel.Activities | `WorkbookPath`, `SheetName`, `DataTable` out. Read [excel-workbook-activities.md](./references/excel-workbook-activities.md) |
+| Write Range (workbook) | `UiPath.Excel.Activities.WriteRange` | UiPath.Excel.Activities | `WorkbookPath`, `SheetName`, `DataTable` in. Read [excel-workbook-activities.md](./references/excel-workbook-activities.md) |
+
+**ForEach** — generic, `get-default-activity-xaml` cannot generate it. Use this pattern (copy from existing workflow or build manually):
+```xml
+<ui:ForEach x:TypeArguments="x:String" DisplayName="For Each item" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[myList]">
+  <ui:ForEach.Body>
+    <ActivityAction x:TypeArguments="x:String">
+      <ActivityAction.Argument>
+        <DelegateInArgument x:TypeArguments="x:String" Name="item" />
+      </ActivityAction.Argument>
+      <Sequence DisplayName="Body">
+        <!-- activities here -->
+      </Sequence>
+    </ActivityAction>
+  </ui:ForEach.Body>
+</ui:ForEach>
+```
+Change `x:TypeArguments` for other types (e.g., `njl:JToken` for JSON iteration).
 
 For ANY other activity, use `uip rpa find-activities --query "keyword"` to find the correct class name.
 
@@ -279,6 +300,8 @@ C# requires `xmlns:mca="clr-namespace:Microsoft.CSharp.Activities;assembly=Syste
 | [environment-setup.md](./references/environment-setup.md) | Studio is not running, or creating a new project for the first time |
 | [validation-and-fixing.md](./references/validation-and-fixing.md) | Deep in the validate/fix loop and need advanced debugging |
 | [project-structure.md](./references/project-structure.md) | Need to understand project.json fields or folder layout |
+| [excel-workbook-activities.md](./references/excel-workbook-activities.md) | Working with Excel read/write/filter operations |
+| [exception-and-type-patterns.md](./references/exception-and-type-patterns.md) | Using TryCatch, or "type not defined" errors on DateTime/Exception/Guid |
 | [jit-custom-types-schema.md](./references/jit-custom-types-schema.md) | Working with dynamic/connector activities that need JIT types |
 
 ---
