@@ -1,6 +1,6 @@
 ---
 name: uipath-flow
-description: "This skill should be used when the user wants to 'create a new Flow project', 'scaffold a flow with uip flow init', 'add a node to my flow', 'connect nodes in my flow', 'validate a .flow file', 'debug a flow', 'run a flow', 'discover flow node types', or when the user is editing a .flow file, wiring nodes and edges, working with definitions or ports, or asks about the .flow JSON format or uip flow CLI commands."
+description: "This skill should be used when the user wants to 'create a new Flow project', 'scaffold a flow with uip flow init', 'add a node to my flow', 'connect nodes in my flow', 'validate a .flow file', 'debug a flow', 'run a flow', 'discover flow node types', 'orchestrate RPA and agents', 'add variables to a flow', 'manage flow expressions', 'create a subflow', 'add a scheduled trigger', 'add data transform nodes', or when the user is editing a .flow file, wiring nodes and edges, working with definitions or ports, managing variables and expressions, orchestrating external resources (RPA, agents, apps, other flows), or asks about the .flow JSON format or uip flow CLI commands. TRIGGER when: user mentions Flow, .flow files, flow nodes, flow orchestration, or wants to compose multiple UiPath automations. DO NOT TRIGGER when: user is working with XAML/RPA workflows (use uipath-rpa-workflows), coded C# workflows (use uipath-coded-workflows), Python agents (use uipath-coded-agents), or web apps (use uipath-coded-apps) — unless they want to orchestrate these from a flow."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
@@ -18,10 +18,16 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 - User wants to **debug** a Flow (cloud)
 - User asks about the **`.flow` JSON format**, nodes, edges, definitions, or ports
 - User asks **how to implement logic** in a Flow (scripts, HTTP calls, branching, etc.)
+- User wants to **orchestrate multiple automations** — RPA processes, agents, apps, other flows
+- User wants to **manage variables** — inputs, outputs, state, expressions
+- User wants to **create subflows** for reusable grouped logic
+- User wants to **add data transforms** — filter, map, group-by operations
+- User wants to **schedule a flow** with a recurring trigger
+- User wants to **integrate with queues** — creating queue items for robot work distribution
 
 ## Critical Rules
 
-1. **Do NOT `registry get` built-in nodes.** The planning guide already documents all OOTB node types (script, HTTP, decision, switch, loop, merge, end, terminate, transform, mock) with their ports, inputs, and output variables. Only run `uip flow registry get <nodeType> --output json` for **connector nodes** and **unknown/new node types** not in the planning guide. When editing JSON directly, copy the `Data.Node` object into `definitions` verbatim — do not guess node schemas.
+1. **Do NOT `registry get` built-in nodes during planning.** The planning guide and node reference already document all OOTB node types with their ports, inputs, and output variables. Only run `uip flow registry get <nodeType> --output json` for **connector nodes**, **resource nodes**, and **unknown/new node types** not in the guides. **Exception:** When building the flow (Step 6), you DO need `registry get` for any node type to populate the `definitions` array in the `.flow` file — definitions must be copied from registry output, never hand-written.
 2. **ALWAYS discover connector capabilities via IS before planning.** Follow Step 4 for every connector node: fetch a connection (4a), call `registry get --connection-id` for enriched metadata (4b), and resolve reference fields via `uip is resources execute list` (4c). Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
@@ -31,6 +37,11 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 8. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
 9. **Do NOT run `flow debug` without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs).
 10. **Validate after every change** — run `uip flow validate` after each edit to the `.flow` file. Do not batch multiple edits before validating.
+11. **Manage variables by editing `.flow` JSON directly** — there are no CLI commands for variable management. Add/remove/update variables in the `variables` section of the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
+12. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
+13. **Use `=js:` prefix for all expressions** — the runtime uses a Jint-based JavaScript engine (ES2020 subset). See [references/variables-and-expressions.md](references/variables-and-expressions.md) for supported features and constraints.
+14. **For resources not yet published, use mock placeholders** — add a `core.logic.mock` node, tell the user which skill to use for creation, then replace the mock after publishing. See [references/orchestration-guide.md](references/orchestration-guide.md).
+15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 
 ## Common Edits (existing flows)
 
@@ -65,6 +76,54 @@ Edit the `inputs.script` string on the target node in `flow_files/<ProjectName>.
 2. Delete all edges where `sourceNodeId` or `targetNodeId` matches the removed node's `id`
 3. Reconnect: add a new edge from the upstream node to the downstream node
 4. Remove its definition from `definitions` only if no other node uses the same type
+
+### Add a workflow variable
+
+Edit `variables.globals` in the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md) for the full schema.
+
+1. Add the variable object to `variables.globals` with the correct `direction` (`in`, `out`, or `inout`)
+2. For `out` variables: add output mapping to every reachable End node's `outputs`
+3. For `inout` variables: add `variableUpdates` entries on nodes that modify the state
+4. Validate: `uip flow validate`
+
+### Update a state variable on a node
+
+Add a `variableUpdates` entry to update an `inout` variable when a specific node completes:
+
+1. Ensure the variable exists in `variables.globals` with `direction: "inout"`
+2. Add the update expression to `variables.variableUpdates.{nodeId}`:
+   ```json
+   { "variableId": "counter", "expression": "=js:$vars.counter + 1" }
+   ```
+3. Validate: `uip flow validate`
+
+### Create a subflow
+
+1. Add a `core.subflow` node to the parent flow's `nodes` array with `inputs` matching the subflow's `in` variables
+2. Add a `subflows.{nodeId}` entry with its own `nodes`, `edges`, and `variables`
+3. The subflow must have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
+4. Define subflow inputs (`direction: "in"`) and outputs (`direction: "out"`) in `subflows.{nodeId}.variables.globals`
+5. Map outputs on the subflow's End node
+6. See [references/node-reference.md — Subflow](references/node-reference.md) for the full JSON structure
+
+### Add a scheduled trigger
+
+Replace `core.trigger.manual` with `core.trigger.scheduled`:
+
+1. Change the start node's `type` to `core.trigger.scheduled`
+2. Add timer inputs: `timerType: "timeCycle"`, `timerPreset: "R/PT1H"` (or custom)
+3. Add the `eventDefinition` to `model`: `"eventDefinition": "bpmn:TimerEventDefinition"`
+4. See [references/node-reference.md — Scheduled Trigger](references/node-reference.md) for presets
+
+### Add a resource node (RPA process, agent, etc.)
+
+See [references/orchestration-guide.md](references/orchestration-guide.md) for the full workflow. Summary:
+
+1. `uip flow registry pull --force` to refresh
+2. `uip flow registry search "<name>" --output json` to find the resource
+3. `uip flow node add` with the discovered node type
+4. Wire edges and validate
+5. If the resource doesn't exist yet, use a `core.logic.mock` placeholder and tell the user which skill to use
 
 ## Quick Start
 
@@ -253,7 +312,7 @@ uip flow node add flow_files/<ProjectName>.flow <nodeType> --output json \
 
 The command automatically adds the node to the `nodes` array and its definition to `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.).
 
-> **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write the JSON to a temp file and pass it: `cat /tmp/input.json | uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
+> **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write the JSON to a temp file and pass it: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
 
 After adding nodes, list them to get the assigned IDs for wiring:
 
@@ -345,6 +404,10 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 - **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, insert a `core.logic.mock` placeholder and tell the user which skill to use. Do not invoke other skills.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
 - **Never batch multiple edits before validating** — validate after each change to catch errors early.
+- **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
+- **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
+- **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.
+- **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
 
 ## Task Navigation
 
@@ -353,7 +416,6 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | **Edit an existing flow** | Common Edits section |
 | **Generate a flow plan** | [references/flow-planning-guide.md](references/flow-planning-guide.md) + Step 5 |
 | **Choose the right node type** | [references/flow-planning-guide.md — Node Selection Guide](references/flow-planning-guide.md#node-selection-guide) |
-| **Understand expressions and $vars** | [references/flow-planning-guide.md — Expressions](references/flow-planning-guide.md#expressions-and-variables) |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
@@ -366,6 +428,14 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | **Check/create connections** | [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
 | **Publish to Studio Web** | Step 9 (solution bundle + upload) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
+| **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) |
+| **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
+| **Orchestrate RPA, agents, apps** | [references/orchestration-guide.md](references/orchestration-guide.md) |
+| **Create a resource that doesn't exist yet** | [references/orchestration-guide.md — Create New Workflow](references/orchestration-guide.md) |
+| **Add data transform nodes** | [references/node-reference.md — Data Transform](references/node-reference.md) |
+| **Create a subflow** | [references/node-reference.md — Subflow](references/node-reference.md) + Common Edits |
+| **Add a delay or scheduled trigger** | [references/node-reference.md](references/node-reference.md) |
+| **Use queue nodes** | [references/orchestration-guide.md — Queue Integration](references/orchestration-guide.md) |
 
 ## Key Concepts
 
@@ -402,7 +472,10 @@ When you finish building or editing a flow, report to the user:
 
 ## References
 
-- **[Flow Planning Guide](references/flow-planning-guide.md)** — Complete node catalog, expression system, wiring rules, node selection heuristics, validation rules, and common patterns. **Read this first when planning a new flow.**
+- **[Flow Planning Guide](references/flow-planning-guide.md)** — Node catalog, node selection heuristics, wiring rules, and common patterns. **Read this first when planning a new flow.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
+- **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
+- **[Orchestration Guide](references/orchestration-guide.md)** — How to orchestrate RPA processes, agents, apps, other flows, and API workflows. Includes resource node types, "create new" workflow, queue integration, and human task patterns
+- **[Node Reference](references/node-reference.md)** — Complete catalog of nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes, and agent nodes
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 9).

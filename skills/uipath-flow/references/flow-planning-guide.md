@@ -37,8 +37,12 @@ Use this decision order — prefer higher tiers:
 | Node Type | Description | Output Ports |
 |-----------|-------------|--------------|
 | `core.trigger.manual` | Entry point for manual workflow execution. Every flow needs at least one trigger. | `output` |
+| `core.trigger.scheduled` | Entry point with recurring schedule (ISO 8601 repeating intervals). | `output` |
 
-**Config:** No inputs needed. Must set `model.entryPointId` to a UUID matching `entry-points.json`.
+**Manual trigger:** No inputs needed. Must set `model.entryPointId` to a UUID matching `entry-points.json`.
+
+**Scheduled trigger:** Requires `timerType: "timeCycle"` and `timerPreset` (e.g., `R/PT1H` for hourly, `R/P1D` for daily). Use `timerPreset: "custom"` with `timerValue` for non-standard intervals. See [node-reference.md — Scheduled Trigger](node-reference.md) for presets and examples.
+
 **Constraint:** Must connect to at least one downstream node (`minConnections: 1`).
 
 ### Actions
@@ -96,6 +100,33 @@ Map, filter, or group-by data in a collection. Sub-variants: `core.action.transf
 | **Output ports** | `output` |
 | **Required inputs** | `collection` (non-empty), `operations` (non-empty array) |
 
+#### Delay (`core.logic.delay`)
+
+Pause execution for a duration or until a specific date. Uses ISO 8601 time formats.
+
+| | |
+|--|--|
+| **Input port** | `input` |
+| **Output ports** | `output` |
+| **Required inputs** | `timerType` (`timeDuration` or `timeDate`), `timerPreset` |
+
+**Duration presets:** `PT5M`, `PT15M`, `PT30M`, `PT1H`, `PT6H`, `PT12H`, `P1D`, `P1W`, or `custom` with `timerValue`.
+
+**Date-based:** Set `timerType: "timeDate"` and `timerDate` to an ISO 8601 datetime or `=js:` expression.
+
+See [node-reference.md — Delay](node-reference.md) for full JSON examples.
+
+#### Queue Nodes
+
+| Node Type | Description |
+|---|---|
+| `core.action.queue.create` | Create a queue item in Orchestrator and continue immediately |
+| `core.action.queue.create-and-wait` | Create a queue item and wait for processing to complete |
+
+Both accept: `queue` (name), `itemData` (JSON payload), `priority`, `reference`, `deferDate`, `dueDate`.
+
+See [orchestration-guide.md — Queue Integration](orchestration-guide.md) for details and examples.
+
 ### Control Flow
 
 #### Decision (`core.logic.decision`)
@@ -138,9 +169,9 @@ Iterate over a collection. Supports sequential and parallel execution. Has aggre
 | **Required inputs** | `collection` (expression pointing to array) |
 
 **Internal variables (available inside loop body only):**
-- `currentItem` — The item being processed in this iteration
-- `currentIndex` — 0-based iteration index
-- `collection` — The full collection
+- `iterator.currentItem` — The item being processed in this iteration
+- `iterator.currentIndex` — 0-based iteration index
+- `iterator.collection` — The full collection
 
 **External output:** `output` — Aggregated results from all iterations.
 
@@ -179,6 +210,21 @@ Immediately stop entire workflow execution (like throwing an exception). Use for
 
 **End vs Terminate:** End = graceful completion of one path. Terminate = abort everything immediately. Use End for normal flow completion. Use Terminate for error paths where continuing other branches would be harmful.
 
+#### Subflow (`core.subflow`)
+
+Group steps into a reusable, drillable container with isolated variable scope.
+
+| | |
+|--|--|
+| **Input port** | `input` |
+| **Output ports** | `output`, `error` |
+| **Inputs** | Mapped from subflow's `in` variables |
+| **Outputs** | Mapped from subflow's `out` variables |
+
+**Key properties:** Subflows have their own `nodes`, `edges`, and `variables` stored in `subflows.{nodeId}`. Parent `$vars` are not visible inside — pass values via inputs. Subflows can be nested up to 3 levels.
+
+See [node-reference.md — Subflow](node-reference.md) for the full JSON structure.
+
 ### Placeholders
 
 | Node Type | Description |
@@ -206,59 +252,60 @@ Search broadly by service name, then check the `category` field in results to co
 
 ### Agent Nodes
 
-Agent nodes invoke UiPath agents within a flow. Available after login.
+Built-in agent nodes for AI-powered reasoning within flows:
 
-```bash
-uip flow registry search agent --output json
-```
+| Node Type | Description |
+|---|---|
+| `uipath.agent.autonomous` | Autonomous agent — reasons and acts independently |
+| `uipath.agent.conversational` | Conversational agent — interactive dialogue |
+
+Available after login: `uip flow registry search "uipath.agent" --output json`
+
+See [orchestration-guide.md — Built-in Agent Nodes](orchestration-guide.md) for when to use agent vs script nodes.
+
+### Resource Nodes (External Automations)
+
+Resource nodes invoke published UiPath automations from within a flow. They appear in the registry after login.
+
+| Category | Node Type Pattern | Description |
+|---|---|---|
+| RPA Process | `uipath.core.rpa-workflow.{key}` | Run a published RPA workflow |
+| Agent | `uipath.core.agent.{key}` | Run a published AI agent |
+| Agentic Process | `uipath.core.agentic-process.{key}` | Run an orchestration process |
+| Flow | `uipath.core.flow.{key}` | Run another flow as a subprocess |
+| API Workflow | `uipath.core.api-workflow.{key}` | Call a published API function |
+| Web App (Human Task) | `uipath.core.human-task.{key}` | Pause for human input via a UiPath App |
+
+**Discovery:** `uip flow registry search "<resource-name>" --output json`
+
+**If the resource doesn't exist yet:** Use a `core.logic.mock` placeholder and tell the user which skill to use to create it. See [orchestration-guide.md](orchestration-guide.md) for the full "create new" workflow.
 
 ---
 
 ## Expressions and Variables
 
-### The `$vars` System
+For the **complete reference** on variables (declaration, types, scoping, variable updates) and expressions (`=js:`, templates, Jint constraints), see [variables-and-expressions.md](variables-and-expressions.md).
 
-Nodes communicate data through the `$vars` variable system. Every node's output is accessible to downstream nodes via `$vars.{nodeId}.{outputProperty}`.
+### Quick Reference
 
-**Common patterns:**
+Nodes communicate data through `$vars`. Every node's output is accessible downstream via `$vars.{nodeId}.{outputProperty}`.
+
 ```javascript
-// Access a script node's return value
-$vars.rollDice.output.roll
-
-// Access HTTP response body
-$vars.fetchData.output.body
-
-// Access HTTP status code
-$vars.fetchData.output.statusCode
-
-// Access HTTP response headers
-$vars.fetchData.output.headers
-
-// Access error information
-$vars.someNode.error.message
-
-// Access loop iteration context (inside loop body only)
-$vars.myLoop.currentItem
-$vars.myLoop.currentIndex
+$vars.rollDice.output.roll              // Script return value
+$vars.fetchData.output.body             // HTTP response body
+$vars.fetchData.output.statusCode       // HTTP status code
+$vars.someNode.error.message            // Error information
+iterator.currentItem                     // Loop item (inside loop body)
 ```
-
-### Expression Syntax
-
-Expressions are JavaScript-like and used in:
-- Script node `script` field (full JS with `return`)
-- Decision `expression` field (boolean expression)
-- Switch case `expression` fields (boolean expressions)
-- HTTP branch `conditionExpression` fields (boolean expressions)
-- Any input field that accepts dynamic values
 
 **Expression prefixes:**
-- `=` prefix indicates a runtime expression: `=result.response` in output definitions
-- `=js:` prefix in condition expressions (stripped before evaluation)
+- `=js:` — Full JavaScript expression evaluated by Jint: `=js:$vars.count > 10`
+- `{ }` — Template interpolation for string fields: `Order {$vars.orderId} is {$vars.status}`
 
-**Template interpolation:** Use `{{ expression }}` within string fields:
-```
-"Hello {{ $vars.getName.output.firstName }}"
-```
+**Variable directions** (`variables.globals`):
+- `in` — External input (read-only after start)
+- `out` — Workflow output (must be mapped on End nodes)
+- `inout` — State variable (updated via `variableUpdates`)
 
 ---
 
@@ -290,6 +337,24 @@ Wire multiple outputs from one node to different downstream nodes. Use **Merge**
 - **Normal completion:** Use **End** (`core.control.end`)
 - **Abort on error:** Use **Terminate** (`core.logic.terminate`)
 - A flow can have multiple End nodes (one per terminal path)
+
+### "I need to wait before continuing"
+Use **Delay** (`core.logic.delay`). Supports fixed durations (`PT15M`, `P1D`) or wait-until-date (`timeDate` with ISO 8601 datetime). See [node-reference.md — Delay](node-reference.md).
+
+### "I need to distribute work to robots"
+Use **Queue** nodes. `core.action.queue.create` for fire-and-forget; `core.action.queue.create-and-wait` when you need the processed result. See [orchestration-guide.md — Queue Integration](orchestration-guide.md).
+
+### "I need to group related steps"
+Use **Subflow** (`core.subflow`). Groups nodes into a reusable container with isolated scope. Supports nesting up to 3 levels. See [node-reference.md — Subflow](node-reference.md).
+
+### "I need to invoke an RPA process, agent, or other automation"
+Use a **Resource node**. Check the registry first (`uip flow registry search`). If the resource exists, add it directly. If not, use a `core.logic.mock` placeholder and tell the user which skill to create it with. See [orchestration-guide.md](orchestration-guide.md).
+
+### "I need human approval or input"
+Use a **Human Task** node (`uipath.core.human-task.{key}`). This pauses the flow and presents a UiPath App to a user. See [orchestration-guide.md — Human Task](orchestration-guide.md).
+
+### "I need to run the flow on a schedule"
+Replace the manual trigger with **Scheduled Trigger** (`core.trigger.scheduled`). See [node-reference.md — Scheduled Trigger](node-reference.md).
 
 ### "I need error handling"
 Nodes expose error information via `$vars.nodeId.error` (with `code`, `message`, `detail` fields). Use a Decision node after an action to check for errors and branch to a handler or Terminate.
@@ -375,5 +440,28 @@ Trigger → HTTP Request ──default──→ Decision($vars.httpCall.error) �
                                         └──false──→ Process → End
 ```
 Check `$vars.nodeId.error` after action nodes. Use a Decision to branch on error presence, then route to a handler or Terminate.
+
+### Orchestration (Mixed Resource Types)
+```
+Trigger → Script (prepare) → RPA Process (extract) → Agent (classify) → Decision →
+  approved: Script (format) → End
+  rejected: Human Task (review) → End
+```
+Flow composes different automation types into one business process. Each resource node's output feeds the next via `$vars`.
+
+### Subflow Composition
+```
+Trigger → Subflow (validate) → Decision (valid?) →
+  true: Subflow (process) → End
+  false: Script (log) → Terminate
+```
+Use subflows to encapsulate reusable logic. Each subflow has isolated scope — pass data via inputs/outputs.
+
+### Scheduled Batch Processing
+```
+Scheduled Trigger (R/PT1H) → HTTP (fetch batch) → Loop (items) →
+  Queue Create (per item) → End Loop → Script (summary) → End
+```
+Combine scheduled triggers with loops and queues for recurring batch jobs.
 
 
