@@ -49,6 +49,67 @@ Enters text in a specified UI element, for example a text box.
 | `DelayAfter` | Delay after | InArgument | `double` |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
+## Special Keys Encoding Format
+
+The `Text` property supports special key encoding mixed with regular text. Keys use `[d(...)]` (press down), `[u(...)]` (release), and `[k(...)]` (tap) tokens:
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `[d(ctrl)]` | Hold Ctrl modifier | `[d(ctrl)]a[u(ctrl)]` = Ctrl+A |
+| `[u(ctrl)]` | Release Ctrl modifier | Always pair with `[d(ctrl)]` |
+| `[d(shift)]` | Hold Shift | |
+| `[u(shift)]` | Release Shift | |
+| `[d(alt)]` | Hold Alt | |
+| `[u(alt)]` | Release Alt | |
+| `[d(lwin)]` | Hold Windows key | |
+| `[u(lwin)]` | Release Windows key | |
+| `[k(tab)]` | Press Tab | Use `[k(...)]` for non-printable keys |
+| `[k(enter)]` | Press Enter | |
+| `[k(back)]` | Press Backspace | |
+| `[k(del)]` | Press Delete | |
+| `[k(f1)]`--`[k(f12)]` | Function keys | |
+| `a`, `w`, etc. | Printable character | Plain characters, no brackets |
+| ` ` (literal space) | Press Space | NOT `[k(space)]` |
+
+- All key names must be **lowercase**: `ctrl`, `shift`, `enter` -- not `Ctrl`, `SHIFT`, `Enter`.
+- Escape a literal `[` by writing `[[`.
+- Mix text and special keys: `"Hello[k(enter)]World"` types "Hello", presses Enter, types "World".
+
+### Modifier Combinations
+
+| Pattern | Syntax | Example |
+|---------|--------|---------|
+| Single modifier | `[d(mod)]key[u(mod)]` | `[d(ctrl)]c[u(ctrl)]` = Ctrl+C |
+| Multiple modifiers | `[d(m1)][d(m2)]key[u(m2)][u(m1)]` | `[d(ctrl)][d(shift)]a[u(shift)][u(ctrl)]` = Ctrl+Shift+A |
+| Modifier + special key | `[d(mod)][k(key)][u(mod)]` | `[d(alt)][k(f4)][u(alt)]` = Alt+F4 |
+| Key sequence | Chain in one string | `[d(ctrl)]a[u(ctrl)][k(del)]` = Select all + delete |
+
+### Common Examples
+
+| Action | Text value |
+|--------|-----------|
+| Select all | `[d(ctrl)]a[u(ctrl)]` |
+| Copy | `[d(ctrl)]c[u(ctrl)]` |
+| Paste | `[d(ctrl)]v[u(ctrl)]` |
+| Undo | `[d(ctrl)]z[u(ctrl)]` |
+| Select all + delete (clear field) | `[d(ctrl)]a[u(ctrl)][k(del)]` |
+| Tab to next field | `value1[k(tab)]value2[k(tab)]value3` |
+| Shift+Tab (go back) | `[d(shift)][k(tab)][u(shift)]` |
+
+## Type Into Pitfalls
+
+### Newlines trigger Enter
+
+Typing a newline character sends an Enter key press. In messaging apps (Slack, Teams, etc.), this **sends the message** instead of creating a new line.
+
+- **Slack, Teams, chat apps:** Use `[d(shift)][k(enter)][u(shift)]` for a newline within the message (Shift+Enter = newline, Enter = send).
+- **Excel, Google Sheets:** Use `[d(alt)][k(enter)][u(alt)]` for a newline within a cell (Alt+Enter = newline, Enter = move to next cell).
+- **Word, Notepad, most editors:** Enter = newline (no workaround needed).
+
+### Auto-bulleted lists
+
+Apps like Slack, Teams, PowerPoint, and Word auto-add bullets when pressing Enter in a list context. If you also type a bullet character, you get doubled bullets (`- - Item`). Only add the bullet for the first item; the app adds the rest.
+
 ## How to create a new Type Into
 
 To generate the default XAML for this activity, run the following command:
@@ -56,6 +117,7 @@ To generate the default XAML for this activity, run the following command:
 ```bash
 uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NTypeInto --use-studio
 ```
+
 ## Notes
 
 - This activity must be placed inside a `UiPath.UIAutomationNext.Activities.NApplicationCard` scope.

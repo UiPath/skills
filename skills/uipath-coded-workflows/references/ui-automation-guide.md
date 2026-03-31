@@ -2,25 +2,14 @@
 
 Quick reference for UI automation in coded workflows using the `uiAutomation` service.
 
-> **For full API details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` (pick the version folder closest to what is installed in the project).
+### Prerequisites
+
+See [../shared/uia-prerequisites.md](../shared/uia-prerequisites.md).
 
 **Required package:** `UiPath.UIAutomation.Activities`
 **Service accessor:** `uiAutomation` (type `IUiAutomationAppService`)
 
-### Prerequisites
-
-The `uip rpa uia` subcommands (snapshot, selector-intelligence, object-repository) used by `uia-configure-target` require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. Before configuring any target, check the installed version in `project.json` under `dependencies`.
-
-If the installed version is below the minimum, ask the user whether to upgrade:
-
-```bash
-uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --format json
-
-# If user approves the upgrade:
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "26.3.1-beta.11555873"}]' --project-dir "$PROJECT_DIR" --format json
-```
-
-If the user declines, warn that `uip rpa uia` commands will fail and fall back to the indication tools (see [Fallback: Raw Indication Commands](#fallback-raw-indication-commands)).
+> **For full API details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` (pick the version folder closest to what is installed in the project).
 
 ---
 
@@ -80,74 +69,13 @@ Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `
 
 ### Step 3 — Configure the target via `uia-configure-target` skill
 
-**Always use the `uia-configure-target` skill** to create missing targets. This skill handles the full flow: snapshot capture, element discovery, selector generation, selector improvement, and OR registration. All steps must complete — do not stop after getting a raw selector.
+See [../shared/uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
-The UIA activity-docs version folder contains the skill files. Discover them by globbing:
-```
-Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"
-```
-These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
-
-To configure a target, read and follow the `uia-configure-target` skill:
-- **Window + element:** `--window <description> --element <description>`
-- **Window only:** `--window <description>`
-
-The skill will search the Object Repository for existing matches before creating new entries, generate selectors from the live application tree, and register everything in the OR. After completion, re-read `ObjectRepository.cs` to get the descriptor paths.
-
-**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't tracked in the project.
-
-**Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
+After the skill completes, re-read `ObjectRepository.cs` and search for the returned reference IDs to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
 
 #### Multi-Step UI Flows (Advancing Application State)
 
-Some UI elements only become visible after interacting with earlier elements (e.g., a compose form appears after clicking "New mail", a confirmation dialog appears after submitting). Since `uia-configure-target` works from the current screen state, you need to **advance the application to each state** before capturing its elements.
-
-> **CRITICAL: Complete-then-advance.** Finish ALL `uia-configure-target` calls for elements visible in the current screen state — including OR registration (the full skill through TARGET-8) — before using servo to advance to the next state. Servo interactions change the app state irreversibly. If you advance before registering, elements from the previous state may no longer be visible, causing OR registration to fail.
->
-> **Do NOT use servo to "test" element interactions** (e.g., verifying autocomplete behavior, checking what happens when you click a button) during the capture phase. Testing happens later, when running the completed workflow. During capture, servo is ONLY for advancing the app to the next screen so you can capture the newly revealed elements.
-
-> **WARNING: Servo refs and UIA snapshot refs are independent numbering systems.** Element `e42` from `uip rpa uia snapshot filter` is NOT the same as `e42` from `servo snapshot`. Always run `servo snapshot <window-ref>` to get servo-specific refs before using `servo click`/`servo type`. Never reuse refs from UIA snapshots in servo commands.
-
-Use the `servo` CLI to interact with already-configured targets and advance the UI, then run `uia-configure-target` again for the newly visible elements:
-
-1. **Capture current state completely:** Run `uia-configure-target` for ALL elements visible on the current screen. Let the skill run through to TARGET-8 (OR registration) for each element. Do not stop after getting a raw selector.
-2. **Advance the UI** using servo to move to the next state (e.g., click a button to open a form):
-   ```bash
-   # List targets to find the window/tab
-   servo targets
-   # Take a SERVO snapshot to get servo-specific element refs
-   servo snapshot <window-or-tab-ref>
-   # Click to advance UI state (use servo refs, NOT UIA refs)
-   servo click <servo-element-ref>
-   ```
-3. **Capture the new state:** Run `uia-configure-target` again for elements now visible on the new screen (full skill through TARGET-8).
-4. **Repeat** until all workflow targets are registered in the OR.
-
-**Do NOT use `uip rpa run-file` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. Servo is stateless: it clicks/types and leaves the app in the resulting state.
-
-After all targets are captured, build the full workflow code in one pass using all the collected OR references.
-
-#### Fallback: Raw Indication Commands
-
-If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable), or when elements only appear after user interaction (e.g., a compose form that opens after clicking a button), you can fall back to the raw indication CLI commands. These require user interaction (clicking on the target element) but produce verified, runtime-tested selectors:
-
-```bash
-# Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
-# Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
-
-Both commands return the OR reference ID. After indication, retrieve the descriptor paths by re-reading `ObjectRepository.cs`, or retrieve the ready-to-use XAML snippets for verification:
-
-```bash
-# Get the screen XAML (TargetApp)
-uip rpa uia object-repository get-screen-xaml --reference-id "<screen-reference>"
-
-# Get the element XAML (TargetAnchorable)
-uip rpa uia object-repository get-element-xaml --reference-id "<element-reference>"
-```
+See [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md).
 
 ### Step 4 — UITask / ScreenPlay (last resort only)
 
@@ -174,54 +102,15 @@ Using an element descriptor on the wrong screen handle causes `"Target name 'X' 
 
 ## Running UI Automation Workflows
 
-**Always use `--command StartDebugging`** (not `StartExecution`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
+See [../shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md).
 
-**Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
-
-1. **Record the window baseline:**
-   ```bash
-   servo targets
-   ```
-   Note which windows (w-refs and titles) are already present.
-2. **Run the workflow:**
-   ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
-   ```
-3. **When done** (success or failure) — **stop the debug session:**
-   ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json --use-studio
-   ```
-4. **List windows again:**
-   ```bash
-   servo targets
-   ```
-5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close it:
-   ```bash
-   servo window <w-ref> Close
-   ```
-
-Skipping steps 4–5 causes the next run's `Open(IfNotOpen)` to reuse a stale window in whatever state it was left in, or — if the selector doesn't match — to spawn a duplicate instance.
-
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --format json
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --format json
 ---
 
 ## Runtime Selector Failures
 
-"UI element not found", "UI element is invalid", element not on screen — these surface at runtime, not during static validation. They occur when a selector was captured against one app state but the DOM changed by the time the activity executes.
+See [../shared/uia-selector-recovery.md](../shared/uia-selector-recovery.md).
 
-When a workflow fails at runtime with a selector error:
-1. **The app is already in the right state.** The debug session paused at the failing activity, so the app's current DOM reflects the state that activity needs to target.
-2. **Identify the failing element** — read the error to find which descriptor/element failed.
-3. **Read the window selector** — from the `ObjectRepository.cs` or OR `.metadata` files, find the screen's selector that scopes the failing element.
-4. **Run the `uia-improve-selector` skill in recover mode** by spawning a subagent with the Agent tool. The prompt must include: the `uia-improve-selector` SKILL.md path (find it under the UIA activity-docs skills folder), the project folder, `--mode recover`, `--window <windowSelector>`, and `--partial <failingPartialSelector>`. The subagent reads the skill, re-analyzes the live DOM in its current state, and returns a corrected selector.
-5. **Update the OR element** with the recovered selector.
-6. **Clean up and re-run** — follow the "Running UI Automation Workflows" procedure above (stop, diff, close leaked windows, re-run).
 
-Repeat until the workflow completes successfully. Each failure advances the app to the next problematic state, making recovery self-correcting.
 
----
-
-## More Information
-
-- **Full coded API reference:** `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/`
-- **Selector & target sub-skills and extras:** glob `../../references/activity-docs/UiPath.UIAutomation.Activities/**/*.md` to discover what's available
-- **Operations guide (indicate flow):** [operations-guide.md](operations-guide.md)

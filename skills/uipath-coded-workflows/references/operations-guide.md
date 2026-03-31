@@ -386,23 +386,14 @@ namespace MyProjectName
 - The workflow needs a UI element that doesn't exist in `ObjectRepository.cs`
 - The user asks to automate something involving a screen or element not yet in the Object Repository
 
-**Quick steps:**
-1. Read `<PROJECT_DIR>\.local\.codedworkflows\ObjectRepository.cs` — check what descriptors already exist
-2. Identify missing screens/elements by comparing against what the workflow needs
-3. For each missing target: read and follow the `uia-configure-target` skill (found in the UIA activity-docs). The skill handles snapshot capture, element discovery, selector generation, selector improvement, and OR registration
-4. Re-read `ObjectRepository.cs` — Studio regenerates it after target configuration
-5. Write code using the actual descriptor paths from the updated file
-
 **Workflow order:** Configure ALL missing targets FIRST, then write the workflow code using real descriptor paths.
 
-📖 **Target configuration and selector recovery:** [ui-automation-guide.md](ui-automation-guide.md)
-📖 **CLI command reference** (`indicate-application`, `indicate-element` parameters and responses): [uip-guide.md](uip-guide.md)
+**Full configure-target workflow and rules:** [uia-configure-target-workflows.md](../../shared/uia-configure-target-workflows.md)
+**Target configuration and selector recovery:** [ui-automation-guide.md](ui-automation-guide.md)
 
 **Key reminders:**
-- Do NOT manually call low-level `uip rpa uia` CLI commands outside of the `uia-configure-target` skill flow
-- Do NOT launch the target application before running the skill — it captures the window tree first
-- Fallback: use `indicate-application` / `indicate-element` if the skill docs are unavailable
 - Add `using <ProjectNamespace>.ObjectRepository;` to any file referencing `Descriptors.*`
+- After target configuration, re-read `ObjectRepository.cs` — Studio regenerates it. Search for the reference IDs returned by `uia-configure-target` to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
 
 ---
 

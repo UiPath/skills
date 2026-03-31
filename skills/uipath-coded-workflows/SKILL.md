@@ -119,12 +119,19 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
     3. Repeat until validation returns zero errors (max 5 fix attempts)
     4. Only then proceed to run the workflow or report success to the user
     5. If after 5 fix attempts errors persist, stop and present the remaining errors to the user — they may require domain knowledge, missing dependencies, or environment-specific fixes you cannot resolve autonomously
-    Note: `get-errors` returns the cached error state without re-analyzing — use `validate` instead when files have been changed outside Studio.
-15. **NEVER use UITask (ScreenPlay) as the primary UI automation approach.** For ANY workflow using `uiAutomation.*`, follow the Finding Descriptors hierarchy in [ui-automation-guide.md](references/ui-automation-guide.md): (1) Check Object Repository, (2) Check UILibrary NuGet packages, (3) Configure missing targets through the `uia-configure-target` skill flow (found in the UIA activity-docs — NOT via raw CLI commands), (4) UITask ONLY as last resort for brittle selectors. Do NOT skip steps or jump to UITask because configuring targets seems tedious. Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
+    Note: `get-errors` returns the cached error state without re-analyzing — use `validate` instead when files have been changed outside Studio. For the full fix-one-thing rule and iteration loop, see [shared/validation-loop.md](../shared/validation-loop.md).
+15. **For UI automation workflows**, follow the target configuration approach in [ui-automation-guide.md](references/ui-automation-guide.md). For shared UIA procedures (prerequisites, target configuration, debug workflow, selector recovery, multi-step flows), see the [shared/](../shared/) files referenced from that guide.
 
 ### UI Automation References
 
-For a quick overview of UI automation patterns, descriptor resolution, target configuration via `uia-configure-target`, runtime selector failure recovery, and common pitfalls, see [ui-automation-guide.md](references/ui-automation-guide.md).
+Shared UIA procedures (used by both coded and RPA skills):
+- [Prerequisites and version check](../shared/uia-prerequisites.md)
+- [Configure target workflows](../shared/uia-configure-target-workflows.md)
+- [Debug workflow procedure](../shared/uia-debug-workflow.md)
+- [Selector recovery](../shared/uia-selector-recovery.md)
+- [Multi-step UI flows](../shared/uia-multi-step-flows.md)
+
+For C#-specific patterns (workflow pattern, screen handle affinity, descriptor resolution, common pitfalls), see [ui-automation-guide.md](references/ui-automation-guide.md).
 
 The UIA activity-docs version folder contains skill files (`uia-configure-target`, `uia-improve-selector`) and additional guides (selector creation, CV targeting). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
 
@@ -155,7 +162,7 @@ Choose your task to find the right reference files. **For any activity package d
 | **Use Citrix** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Citrix.Activities/{closest}/coded/` |
 | **Use Hyper-V** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.HyperV.Activities/{closest}/coded/` |
 | **Use NetIQ eDirectory** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.NetIQeDirectory.Activities/{closest}/coded/` |
-| **Build/run/validate** | [uip-guide.md](references/uip-guide.md) |
+| **Build/run/validate** | [cli-reference.md](references/cli-reference.md) |
 | **Add a NuGet package** | [operations-guide.md § Add Dependency](references/operations-guide.md) → [third-party-packages-guide.md](references/third-party-packages-guide.md) |
 | **Troubleshoot errors** | [coding-guidelines.md § Common Issues](references/coding-guidelines.md) |
 | **Review coding rules** | [coding-guidelines.md](references/coding-guidelines.md) (using statements, best practices, anti-patterns) |

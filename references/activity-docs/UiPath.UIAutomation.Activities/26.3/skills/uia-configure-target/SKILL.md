@@ -191,6 +191,8 @@ Before running improvement, evaluate each selector to decide whether it actually
 
 5. **Good structure.** A typical selector has ~2 tags. Selectors with 4+ tags are over-specified and fragile (intermediate containers add breakage points without value). Each tag should have 2-3 meaningful attributes — a tag with only `tag` and no other attribute, or only a generic `role`/`cls` shared by many siblings, is under-specified.
 
+6. No `css-selector` attribute.
+
 Mark each selector (window + each element) as `RELIABLE` or `NEEDS_IMPROVEMENT`.
 
 **If all selectors are RELIABLE:** skip improvement entirely and proceed to TARGET-7.

@@ -115,11 +115,11 @@ The target system defines how UI Automation activities locate application window
 
 To configure a TargetAnchorable for an activity (replace `$VARIABLES` with actual values):
 
-> Read the skill file at `uia-configure-target/SKILL.md` (resolve relative to this file's directory: `../../skills/uia-configure-target/SKILL.md`) and execute it with these arguments: `--window $WINDOW --elements $ELEMENTS`
+> Read the skill file at `uia-configure-target/SKILL.md` (resolve relative to this file's directory: `../../skills/uia-configure-target/SKILL.md`) and execute it with these arguments: `--window $WINDOW --elements $ELEMENTS --semantic`
 
 To configure multiple elements on the same screen in a single invocation, separate them with `|`. This captures the window once and reuses it for all elements:
 
-> `--window $WINDOW --elements "element one | element two | element three"`
+> `--window $WINDOW --elements "element one | element two | element three" --semantic`
 
 ## Configure a TargetApp
 

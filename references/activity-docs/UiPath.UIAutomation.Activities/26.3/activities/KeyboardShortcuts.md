@@ -46,6 +46,57 @@ Sends one or more keyboard shortcuts to a UI element.
 | `DelayAfter` | Delay after | InArgument | `double` |  |  | Delay (in seconds) after this activity is completed, before next activity starts. The default amount of time is 0.3 seconds. |
 | `DelayBefore` | Delay before | InArgument | `double` |  |  | Delay (in seconds) to wait before executing this activity. The default amount of time is 0.2 seconds. |
 
+## CRITICAL: `Shortcuts` vs `ShortcutsArgument`
+
+This activity has **two** shortcut properties -- using the wrong one causes VB bracket parsing failures:
+
+| XAML attribute | C# type | Bracket behavior | When to use |
+|----------------|---------|------------------|-------------|
+| `Shortcuts` | `string` (plain property) | **Literal text** -- brackets are part of the hotkey encoding | **Always use this** for hardcoded shortcuts |
+| `ShortcutsArgument` | `InArgument<string>` | **VB expression** -- `[...]` parsed as VB, will FAIL | Only for dynamic/variable-driven shortcuts |
+
+**NEVER set `ShortcutsArgument` with hotkey encoding directly** -- the VB parser tries to evaluate `d(hk)` as a function call and throws.
+
+## Hotkey Encoding Format
+
+Every shortcut sequence is wrapped in `[d(hk)]...[u(hk)]` delimiters (shortcut-start / shortcut-end). Inside:
+
+| Token | Meaning | Example |
+|-------|---------|---------|
+| `[d(hk)]` | Start of shortcut sequence | Required at the beginning |
+| `[u(hk)]` | End of shortcut sequence | Required at the end |
+| `[d(ctrl)]` | Hold Ctrl modifier | `[d(ctrl)]a[u(ctrl)]` = Ctrl+A |
+| `[u(ctrl)]` | Release Ctrl modifier | Always pair with `[d(ctrl)]` |
+| `[d(shift)]` | Hold Shift | |
+| `[u(shift)]` | Release Shift | |
+| `[d(alt)]` | Hold Alt | |
+| `[u(alt)]` | Release Alt | |
+| `[d(lwin)]` | Hold Windows key | |
+| `[u(lwin)]` | Release Windows key | |
+| `[k(tab)]` | Press Tab | Use `[k(...)]` for non-printable keys |
+| `[k(enter)]` | Press Enter | |
+| `[k(back)]` | Press Backspace | |
+| `[k(del)]` | Press Delete | |
+| `[k(f1)]`--`[k(f12)]` | Function keys | |
+| `a`, `w`, etc. | Printable character | Plain characters, no brackets |
+| ` ` (literal space) | Press Space | NOT `[k(space)]` |
+
+### Common Examples
+
+| Shortcut | Encoding |
+|----------|----------|
+| Ctrl+A | `[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]` |
+| Ctrl+C | `[d(hk)][d(ctrl)]c[u(ctrl)][u(hk)]` |
+| Ctrl+Shift+J | `[d(hk)][d(ctrl)d(shift)]j[u(shift)u(ctrl)][u(hk)]` |
+| Alt+F4 | `[d(hk)][d(alt)][k(f4)][u(alt)][u(hk)]` |
+| Shift+Tab | `[d(hk)][d(shift)][k(tab)][u(shift)][u(hk)]` |
+| Enter | `[d(hk)][k(enter)][u(hk)]` |
+| Space | `[d(hk)] [u(hk)]` |
+
+**Multiple modifiers** combine in a single `[d(...)]` block: `[d(alt)d(ctrl)]...[u(ctrl)u(alt)]`.
+
+**Multiple shortcut sequences** are concatenated: `[d(hk)]...[u(hk)][d(hk)]...[u(hk)]`.
+
 ## How to create a new Keyboard Shortcuts
 
 To generate the default XAML for this activity, run the following command:
@@ -53,9 +104,11 @@ To generate the default XAML for this activity, run the following command:
 ```bash
 uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NKeyboardShortcuts --use-studio
 ```
+
 ## Notes
 
 - This activity must be placed inside a **Use Application/Browser** (`NApplicationCard`) scope.
 - Supports sending multiple shortcuts in sequence, with configurable delay between them.
 - Use `ActivateBefore` to ensure the target element has focus before sending shortcuts.
 - The `ClickBeforeMode` property allows clicking the element before sending the shortcuts to ensure focus.
+- `InteractionMode="HardwareEvents"` is the most reliable mode for keyboard shortcuts.

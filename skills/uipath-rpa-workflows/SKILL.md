@@ -34,10 +34,6 @@ Use the default (table) only when displaying results directly to the user for re
 
 For the full CLI command reference (all tools, parameters, and error recovery), see **[references/cli-reference.md](./references/cli-reference.md)**.
 
-Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
-
-**The CLI is fully self-documenting.** Append `--help` or `-h` at any level to discover commands, subcommands, and parameters: `uip --help`, `uip rpa --help`, `uip rpa get-default-activity-xaml --help`, `uip is --help`, `uip is connections --help`, etc.
-
 ---
 
 ## Supporting References
@@ -87,7 +83,7 @@ Once the package is installed, find the right documentation in this order:
 Detailed procedures extracted from the main workflow phases:
 - **[cli-reference.md](./references/cli-reference.md)** — Full `uip` CLI command reference guide (all tools, parameters, commands)
 - **[environment-setup.md](./references/environment-setup.md)** — Phase 0 details: project root detection, Studio verification, authentication, and new project creation
-- **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Phase 3 details: package resolution, JIT custom types, focus-activity debugging, iteration loop, smoke testing
+- **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Package resolution, JIT custom types, focus-activity debugging, validation iteration loop, smoke testing
 - **[connector-capabilities.md](./references/connector-capabilities.md)** — IS connector discovery, resource schema inspection, connection management
 
 ### Domain Reference Files
@@ -112,7 +108,14 @@ For XAML structure, control flow, and domain-specific patterns not covered by ac
 
 #### UI Automation References
 
-For a quick overview of selectors, target configuration, indication flow, and common pitfalls, see [ui-automation-guide.md](./references/ui-automation-guide.md).
+Shared UIA procedures (used by both coded and RPA skills):
+- [Prerequisites and version check](../shared/uia-prerequisites.md)
+- [Configure target workflows](../shared/uia-configure-target-workflows.md)
+- [Debug workflow procedure](../shared/uia-debug-workflow.md)
+- [Selector recovery](../shared/uia-selector-recovery.md)
+- [Multi-step UI flows](../shared/uia-multi-step-flows.md)
+
+For XAML-specific patterns (application cards, target configuration, common activities, common pitfalls), see [ui-automation-guide.md](./references/ui-automation-guide.md).
 
 The UIA activity-docs version folder may contain additional guides (selector creation, target configuration, CV targeting, selector improvement). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
 
@@ -431,13 +434,9 @@ Apply Core Principles: consult activity docs first, read relevant [reference fil
 
 ### UI Automation Workflows — Target Configuration Gate
 
-**Before writing any XAML that contains UI activities** (Click, TypeInto, GetText, etc.), every UI element target must be configured through the `uia-configure-target` skill flow. This means: for each distinct element the workflow interacts with, read and follow the `uia-configure-target` skill steps (found in the UIA activity-docs). The skill handles snapshot capture, element discovery, selector generation, selector improvement, and Object Repository registration. All steps must complete — do not stop after getting a raw selector.
+Before writing any XAML with UI activities, every UI element target must be configured through the `uia-configure-target` skill flow. See [../shared/uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) for the full procedure and [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md) for multi-step flows.
 
-**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't tracked in the project.
-
-**Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps (CREATE-1 + CREATE-2) capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
-
-**For multi-step UI flows** where elements only appear after interaction (e.g., clicking "New mail" reveals a compose form), see the [Multi-Step UI Flows](./references/ui-automation-guide.md#multi-step-ui-flows-advancing-application-state) section in the UI Automation guide.
+Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow. Do NOT launch the target application before running `uia-configure-target`.
 
 ### For CREATE Requests
 
@@ -528,7 +527,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --o
 **5. Logic Errors** — Wrong behavior, incorrect expressions, business logic issues
 - `Read` the XAML to understand current flow → `Edit` to correct
 - Verify expression syntax matches project language (VB.NET vs C#)
-- Use `uip rpa run-file --use-studio` for runtime validation if static checks pass. **For UI automation workflows:** always use `--command StartDebugging` (not `StartExecution`) — a debug session pauses on error instead of tearing down the application. See [Running UI Automation Workflows](./references/validation-and-fixing.md#running-ui-automation-workflows) for the full procedure (baseline windows, start debug, stop, cleanup).
+- Use `uip rpa run-file --use-studio` for runtime validation if static checks pass. **For UI automation workflows:** always use `--command StartDebugging` (not `StartExecution`) — a debug session pauses on error instead of tearing down the application. See [shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md) for the full debug procedure (baseline windows, start debug, stop, cleanup).
 
 **When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (find `InvokeCode.md` under the latest version folder in `../../references/activity-docs/UiPath.System.Activities/`).
 
@@ -607,7 +606,7 @@ Before handover, verify:
 - [ ] All required activities are present
 - [ ] Error handling (Try-Catch) is included where appropriate
 - [ ] `get-errors` returns 0 errors (or remaining errors are documented as user-deferred)
-- [ ] Smoke test with `run-file` considered (if workflow is safe to run). **For UI automation workflows:** use `--command StartDebugging` and follow the full debug procedure in [validation-and-fixing.md § Running UI Automation Workflows](./references/validation-and-fixing.md#running-ui-automation-workflows)
+- [ ] Smoke test with `run-file` considered (if workflow is safe to run). **For UI automation workflows:** use `--command StartDebugging` and follow the full debug procedure in [shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md)
 
 **User Communication:**
 - [ ] User has been informed of any limitations

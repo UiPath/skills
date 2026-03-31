@@ -2,24 +2,13 @@
 
 Quick reference for UI automation in XAML/RPA workflows using UiPath UIAutomation activities.
 
-> **For full activity details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/` (pick the version folder closest to what is installed in the project).
+### Prerequisites
+
+See [../shared/uia-prerequisites.md](../shared/uia-prerequisites.md).
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
-### Prerequisites
-
-The `uip rpa uia` subcommands (snapshot, selector-intelligence, object-repository) used by `uia-configure-target` require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. Before configuring any target, check the installed version in `project.json` under `dependencies`.
-
-If the installed version is below the minimum, ask the user whether to upgrade:
-
-```bash
-uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --format json
-
-# If user approves the upgrade:
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "26.3.1-beta.11555873"}]' --project-dir "$PROJECT_DIR" --format json
-```
-
-If the user declines, warn that `uip rpa uia` commands will fail and fall back to the indication tools (see [Low-Level Indication Tools](#low-level-indication-tools-alternative)).
+> **For full activity details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/` (pick the version folder closest to what is installed in the project).
 
 ---
 
@@ -37,107 +26,17 @@ Each UI activity targets an element via the **Target** property, which includes:
 - **CV (Computer Vision)** — fallback visual targeting using screenshots
 - **Fuzzy selector** — tolerant matching for dynamic attributes
 
-### Object Repository
-
-The Object Repository stores reusable screen and element definitions in the `.objects/` directory. **CRITICAL: ALWAYS use object references discovered from `.objects/`. NEVER invent or guess reference strings.**
-
 ---
 
-## Configuring Targets (Primary Approach)
+## Configuring Targets (Object Repository)
 
-**Always use the `uia-configure-target` skill** to create or find targets in the Object Repository. This skill handles the full flow: snapshot capture, element discovery, selector generation, selector improvement, and OR registration.
+See [../shared/uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
-The UIA activity-docs version folder contains the skill files. Discover them by globbing:
-```
-Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"
-```
-These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
-
-To configure a target, read and follow the `uia-configure-target` skill:
-- **Window + element:** `--window <description> --element <description>`
-- **Window only:** `--window <description>`
-
-The skill will search the Object Repository for existing matches before creating new entries, generate selectors from the live application tree, and return the XAML snippet to use directly.
-
-### Applying Targets to XAML
-
-`uia-configure-target` returns the ready-to-use XAML for the target. Use the returned snippet directly in your workflow — do not manually construct target elements.
-
-When an element is reused across multiple activities, use the same returned snippet for each one.
+The skill returns ready-to-use XAML snippets — use them directly in your workflow. When an element is reused across multiple activities, use the same returned snippet for each one.
 
 ### Multi-Step UI Flows (Advancing Application State)
 
-Some UI elements only become visible after interacting with earlier elements (e.g., a compose form appears after clicking "New mail", a confirmation dialog appears after submitting). Since `uia-configure-target` works from the current screen state, you need to **advance the application to each state** before capturing its elements.
-
-> **CRITICAL: Complete-then-advance.** Finish ALL `uia-configure-target` calls for elements visible in the current screen state — including OR registration (the full skill through TARGET-8) — before using servo to advance to the next state. Servo interactions change the app state irreversibly. If you advance before registering, elements from the previous state may no longer be visible, causing OR registration to fail.
->
-> **Do NOT use servo to "test" element interactions** (e.g., verifying autocomplete behavior, checking what happens when you click a button) during the capture phase. Testing happens later, when running the completed workflow. During capture, servo is ONLY for advancing the app to the next screen so you can capture the newly revealed elements.
-
-> **WARNING: Servo refs and UIA snapshot refs are independent numbering systems.** Element `e42` from `uip rpa uia snapshot filter` is NOT the same as `e42` from `servo snapshot`. Always run `servo snapshot <window-ref>` to get servo-specific refs before using `servo click`/`servo type`. Never reuse refs from UIA snapshots in servo commands.
-
-Use the `servo` CLI to interact with already-configured targets and advance the UI, then run `uia-configure-target` again for the newly visible elements:
-
-1. **Capture current state completely:** Run `uia-configure-target` for ALL elements visible on the current screen. Let the skill run through to TARGET-8 (OR registration) for each element. Do not stop after getting a raw selector.
-2. **Advance the UI** using servo to move to the next state (e.g., click a button to open a form):
-   ```bash
-   # List targets to find the window/tab
-   servo targets
-   # Take a SERVO snapshot to get servo-specific element refs
-   servo snapshot <window-or-tab-ref>
-   # Click to advance UI state (use servo refs, NOT UIA refs)
-   servo click <servo-element-ref>
-   ```
-3. **Capture the new state:** Run `uia-configure-target` again for elements now visible on the new screen (full skill through TARGET-8).
-4. **Repeat** until all workflow targets are registered in the OR.
-
-**Do NOT use `uip rpa run-file` with partial workflows to advance UI state** — the workflow lifecycle may close the target application when execution ends. Servo is stateless: it clicks/types and leaves the app in the resulting state.
-
-After all targets are captured, build the full workflow XAML in one pass using all the collected OR references.
-
----
-
-## Low-Level Indication Tools (Alternative)
-
-If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable), or when elements only appear after user interaction (e.g., a compose form that opens after clicking a button), you can fall back to the raw indication CLI commands. These require user interaction (clicking on the target element) but produce verified, runtime-tested selectors:
-
-```bash
-# Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
-# Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
-
-Both commands return the OR reference ID. After indication, retrieve the ready-to-use XAML snippets:
-
-```bash
-# Get the TargetApp XAML for Use Application/Browser
-uip rpa uia object-repository get-screen-xaml --reference-id "<screen-reference>"
-
-# Get the TargetAnchorable XAML for child activities (Click, TypeInto, GetText, etc.)
-uip rpa uia object-repository get-element-xaml --reference-id "<element-reference>"
-```
-
-Embed these snippets directly as `TargetApp` and `Target` in your activities. **Do not manually construct `TargetAnchorable` or `TargetApp` elements** — the OR XAML includes `Reference`, `ContentHash`, `ScopeSelectorArgument`, and other metadata the runtime needs for reliable element matching.
-
----
-
-## Capturing New UI Targets
-
-When the Object Repository is empty or missing targets for the workflow, use the CLI indication tools:
-
-```bash
-# Indicate a screen (creates App automatically if none exists)
-uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
-# Indicate a screen under an existing App
-uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --parent-id "r-xxxxx/yyyyy" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
-# Indicate an element on a screen
-uip rpa indicate-element --name "SubmitButton" --description "Submit button on the form" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
-
-After indication, retrieve the XAML snippets using `get-screen-xaml` and `get-element-xaml` (see above). Embed these directly in your workflow — do not manually construct target XAML from reference strings.
+See [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md).
 
 ---
 
@@ -162,7 +61,7 @@ After indication, retrieve the XAML snippets using `get-screen-xaml` and `get-el
 ## Common Pitfalls
 
 - **Missing `xmlns:uix`** — every UIA workflow needs `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"`
-- **Wrong Object Repository references** — never copy references from examples; always discover from `.objects/`
+- **Wrong Object Repository references** — never copy references from examples; always use `uia-configure-target` to get them
 - **SelectItem on web dropdowns** — may fail on custom `<select>` elements; use Type Into as a workaround
 - **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow; use proper selectors first
 
@@ -170,8 +69,6 @@ After indication, retrieve the XAML snippets using `get-screen-xaml` and `get-el
 
 ## More Information
 
-- **Full XAML activity reference:** `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/`
 - **Per-activity docs:** individual `.md` files in the `activities/` folder (e.g., `Click.md`, `TypeInto.md`, `ApplicationCard.md`)
-- **Selector & target sub-skills and extras:** glob `../../references/activity-docs/UiPath.UIAutomation.Activities/**/*.md` to discover what's available
 - **XAML basics:** [xaml-basics-and-rules.md](xaml-basics-and-rules.md)
 - **Common pitfalls:** [common-pitfalls.md](common-pitfalls.md)

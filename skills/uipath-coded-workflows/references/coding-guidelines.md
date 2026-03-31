@@ -96,16 +96,9 @@ using System.Text.RegularExpressions;  // regex
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
 ### Validation Loop (Critical Rule #14)
-After every create or edit, validate the specific file until clean (max 5 fix attempts):
-```bash
-uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
-```
-- `validate` forces Studio to re-analyze the file AND returns errors in its JSON response — a single command for both
-- If errors are returned: fix the code, then run `validate` again on the same file
-- A file is only considered valid when `validate` returns zero errors
-- **Stop after 5 failed fix attempts** — present the remaining errors to the user; they may require domain knowledge or environment-specific fixes
-- Use `--file-path` to target the specific file you changed — faster than validating the whole project
-- `get-errors` only returns cached state — prefer `validate` when files have been changed outside Studio
+uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+
+@../shared/validation-loop.md
 
 ### Error Handling
 - **Fix compilation errors methodically** — Categorize: Syntax → Type → Logic. Use the validation loop above to iterate until clean.
@@ -194,5 +187,3 @@ C) <user-driven approach>
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |
 | **inspect-package cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
 | **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa create-project --use-studio` instead of writing `project.json` manually |
-| **"No application version found matching parentId=..."** | AppVersion reference is stale (OR was reset/cleared in Studio) or App was never properly created | Re-read `.objects/` metadata to get fresh AppVersion reference. If `.objects/` has no App, call `indicate-application` without `--parent-id` — it creates the App automatically |
-| **`.objects/` has subdirectories but no `.metadata` files** | Corrupted/incomplete App structure from a previous failed or partial creation | Clear the orphan directories and run `indicate-application` without `--parent-id` to create a fresh App |
