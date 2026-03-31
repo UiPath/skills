@@ -1,44 +1,53 @@
-# Validation & Fixing — RPA
+# Validation and fixing
+
+Read this file when: you are in the validate/fix loop and need detailed procedures for package resolution, JIT types, or debugging.
 
 @../shared/validation-loop.md
 
 RPA-specific validation procedures. Shared iteration loop, fix-one-thing rule, and smoke test are in the file above.
 
-## Package Error Resolution
+## Package error resolution
 
+```bash
+# Check current dependencies:
+Read: file_path="{projectRoot}/project.json"
+
+# Install or update (omit version for latest):
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --format json
 ```
-Read: file_path="{projectRoot}/project.json"     -> check current dependencies
 
-Bash: uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --use-studio
-```
+If `install-or-update-packages` fails:
+- Package not found: verify the exact package ID with `uip rpa find-activities`.
+- Network/feed error: user may need to check NuGet feed configuration in Studio settings.
 
-Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
+## Resolving dynamic activity custom types
 
-**If `install-or-update-packages` fails:**
-- **Package not found**: Verify the exact package ID — check spelling, use `uip rpa find-activities --use-studio` to discover the correct package name from an activity's assembly
-- **Network/feed error**: The user may need to check their NuGet feed configuration in Studio settings
-
-## Resolving Dynamic Activity Custom Types
-
-Dynamic activities (e.g., Integration Service connectors) retrieved via `uip rpa get-default-activity-xaml --use-studio` (with `--activity-type-id`) may use **JIT-compiled custom types** for their input/output properties. After the activity is added to the workflow, when you need to discover the property names and CLR types of these custom entities (e.g., to populate an `Assign` activity targeting a custom type property, or to create a variable of a custom type), read the JIT custom types schema:
+After adding a dynamic activity (connector) via `get-default-activity-xaml`, read the JIT custom types schema to discover property names and CLR types:
 
 ```
 Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
 ```
 
-## Focus Activity for Debugging
+See [jit-custom-types-schema.md](jit-custom-types-schema.md) for the full schema structure and type mapping.
 
-When `get-errors` returns an error referencing a specific activity (by IdRef or DisplayName), use `focus-activity` to highlight it in the Studio designer. This helps the user see the problematic activity in context and verify fixes visually:
+## Focus activity for debugging
+
+When `get-errors` returns an error referencing a specific activity, use `focus-activity` to highlight it in Studio:
 
 ```bash
-# Focus a specific activity by its IdRef (from the error output):
-uip rpa focus-activity --activity-id "Assign_1" --use-studio
-
-# Focus all activities sequentially (useful for walkthrough):
-uip rpa focus-activity --use-studio
+uip rpa focus-activity --activity-id "Assign_1" --format json
 ```
 
-This is especially useful when:
-- An error references an activity and you want the user to confirm the context
-- You've made a fix and want to show the user which activity was modified
-- The error is ambiguous and you need to verify which activity instance is affected
+## Fix order
+
+1. **Package errors**: missing namespace, unknown activity type. Install/update the package.
+2. **Structural errors**: invalid XML, missing closing tags. Read and edit the XAML.
+3. **Type errors**: wrong property type, invalid cast. Check activity docs for correct types.
+4. **Property errors**: unknown properties, misconfigured groups. Check activity docs or `get-default-activity-xaml`.
+5. **Logic errors**: wrong behavior, incorrect expressions. Read XAML and correct. Use `run-file` for runtime validation.
+
+## When stuck
+
+- Defer minor configuration details to the user (connections, placeholder values).
+- If an activity has unresolvable issues, consider `InvokeCode` as a last resort.
+- Do not retry the same fix more than 3 times. Explain the error to the user.

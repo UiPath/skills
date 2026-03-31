@@ -1,32 +1,34 @@
-# Discover Connector Capabilities (For IS/Connector Workflows)
+# Connector capabilities
 
-When the workflow involves Integration Service connectors (e.g., Salesforce, Jira, ServiceNow), explore the connector's capabilities before writing XAML:
+Read this file when: you are working with Integration Service connectors (Salesforce, Jira, ServiceNow, etc.) and need to discover activities, resources, or manage connections.
+
+## Discover connector capabilities
 
 ```bash
-# What activities does this connector offer?
-uip is activities list <connector-key> --output json
+# List activities for a connector:
+uip is activities list <connector-key> --format json
 
-# What data objects/resources does it expose?
-uip is resources list <connector-key> --output json
+# List data objects/resources:
+uip is resources list <connector-key> --format json
 
-# What fields does a specific resource have? (essential for configuring dynamic activity properties)
-uip is resources describe <connector-key> <object-name> --output json
+# Describe fields of a specific resource:
+uip is resources describe <connector-key> <object-name> --format json
 ```
 
-## Connection Management
+## Connection management
 
-**Check if a connection exists:**
 ```bash
-uip is connections list <connector-key> --output json
-```
+# Check if a connection exists:
+uip is connections list <connector-key> --format json
 
-**If no connection exists**, you have two options:
-1. **Create one** (requires user interaction for OAuth): `uip is connections create <connector-key>`
-2. **Use a placeholder** — insert the dynamic activity with an empty `connectionId` and inform the user they need to configure the connection in Studio
-
-**Verify a connection is active:**
-```bash
+# Verify a connection is active:
 uip is connections ping <connection-id>
+
+# Create a new connection (opens OAuth flow):
+uip is connections create <connector-key>
+
+# Re-authenticate an expired connection:
+uip is connections edit <connection-id>
 ```
 
-If the ping fails, offer to re-authenticate: `uip is connections edit <connection-id>`
+If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user to configure the connection in Studio.
