@@ -19,7 +19,7 @@ uip solution project add \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-Creates `<ProjectName>/` with `project.uiproj`, `flow_files/<ProjectName>.flow`, and `content/` files inside the solution directory.
+Creates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.
 
 ## uip flow validate
 
@@ -114,12 +114,12 @@ uip flow job traces <job-key> --output json
 Add and list nodes in a `.flow` file. Automatically manages the `definitions` array.
 
 ```bash
-uip flow node add flow_files/<ProjectName>.flow <nodeType> --output json \
+uip flow node add <ProjectName>.flow <nodeType> --output json \
   --input '{"expression": "..."}' \
   --label "My Node" \
   --position 300,400
 
-uip flow node list flow_files/<ProjectName>.flow --output json
+uip flow node list <ProjectName>.flow --output json
 ```
 
 `node add` inserts the node into `nodes` and its definition into `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.). After adding nodes, use `node list` to get the assigned IDs for wiring edges.
@@ -131,7 +131,7 @@ uip flow node list flow_files/<ProjectName>.flow --output json
 Add edges between nodes in a `.flow` file.
 
 ```bash
-uip flow edge add flow_files/<ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
+uip flow edge add <ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
   --source-port success \
   --target-port input
 ```

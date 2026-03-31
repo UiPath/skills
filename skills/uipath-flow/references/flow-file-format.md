@@ -1,6 +1,6 @@
 # UiPath Flow File Format
 
-The `.flow` file is a JSON document in `flow_files/<ProjectName>.flow`. It is the **only file you should edit** — `content/*.bpmn` is auto-generated from it.
+The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
 
 ## Top-level structure
 
@@ -25,15 +25,12 @@ The `.flow` file is a JSON document in `flow_files/<ProjectName>.flow`. It is th
 
 ```
 <ProjectName>/
-├── project.uiproj                   # { "Name": "...", "ProjectType": "Flow" }
-├── flow_files/
-│   └── <ProjectName>.flow           # ← edit this
-└── content/
-    ├── <ProjectName>.bpmn           # auto-generated — DO NOT edit
-    ├── entry-points.json            # input/output schema declarations
-    ├── operate.json                 # runtime options
-    ├── bindings_v2.json             # resource bindings
-    └── package-descriptor.json     # packaging manifest
+├── project.uiproj          # { "Name": "...", "ProjectType": "Flow" }
+├── <ProjectName>.flow      # ← edit this
+├── bindings_v2.json        # resource bindings
+├── entry-points.json       # input/output schema declarations
+├── operate.json            # runtime options
+└── package-descriptor.json # packaging manifest
 ```
 
 ## Node instance

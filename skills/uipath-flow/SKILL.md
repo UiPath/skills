@@ -31,7 +31,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 2. **ALWAYS discover connector capabilities via IS before planning.** Follow Step 4 for every connector node: fetch a connection (4a), call `registry get --connection-id` for enriched metadata (4b), and resolve reference fields via `uip is resources execute list` (4c). Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
-5. **Edit `flow_files/*.flow` only** — `content/*.bpmn` and `entry-points.json` are auto-generated and will be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
+5. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
 6. **`targetPort` is required on every edge** — `validate` rejects edges without it.
 7. **Every node type needs a `definitions` entry** — copy from `uip flow registry get <nodeType>` output. Never hand-write definitions.
 8. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
@@ -49,7 +49,7 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 
 ### Change a script body
 
-Edit the `inputs.script` string on the target node in `flow_files/<ProjectName>.flow`. Script nodes must return an object (`return { key: value }`), not a scalar.
+Edit the `inputs.script` string on the target node in `<ProjectName>.flow`. Script nodes must return an object (`return { key: value }`), not a scalar.
 
 ### Add a node between two existing nodes
 
@@ -297,14 +297,14 @@ In chat, output a **short summary only** (goal + key nodes + any open questions)
 
 ### Step 6 — Build the flow
 
-Edit `flow_files/<ProjectName>.flow` and `content/bindings_v2.json`. Never edit `content/<ProjectName>.bpmn` — it is auto-generated.
+Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
 **Prefer CLI commands for adding nodes and edges.** They handle definitions and port wiring automatically, eliminating the most common build errors. Fall back to direct JSON editing only for operations the CLI doesn't support yet (update, remove, rewire).
 
 #### Adding nodes
 
 ```bash
-uip flow node add flow_files/<ProjectName>.flow <nodeType> --output json \
+uip flow node add <ProjectName>.flow <nodeType> --output json \
   --input '{"expression": "$vars.fetchData.output.statusCode === 200"}' \
   --label "Check Status" \
   --position 300,400
@@ -317,13 +317,13 @@ The command automatically adds the node to the `nodes` array and its definition 
 After adding nodes, list them to get the assigned IDs for wiring:
 
 ```bash
-uip flow node list flow_files/<ProjectName>.flow --output json
+uip flow node list <ProjectName>.flow --output json
 ```
 
 #### Adding edges
 
 ```bash
-uip flow edge add flow_files/<ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
+uip flow edge add <ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
   --source-port success \
   --target-port input
 ```
@@ -348,7 +348,7 @@ For connector nodes, the node `inputs` should use **resolved IDs** from Step 4c,
 Run validation and fix errors iteratively until the flow is clean.
 
 ```bash
-uip flow validate flow_files/<ProjectName>.flow --output json
+uip flow validate <ProjectName>.flow --output json
 ```
 
 **Validation loop:**
