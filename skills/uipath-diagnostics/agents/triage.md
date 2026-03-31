@@ -25,16 +25,14 @@ Classify the problem, resolve all reference paths, and gather initial data.
 
 3. **Resolve investigation guides** — write to `state.json.investigation_guides`:
    - Always include `references/investigation_guide.md` (generic guide)
-   - Check if the matched product/package has an `investigation_guide.md` (linked from its summary). If yes, include its path too.
+   - Check if each matched product/package has an `investigation_guide.md` (linked from its summary). If yes, include its path too.
    - Read both guides and apply their data correlation rules during triage.
 
 4. **If the user provided an identifier** (job ID, queue name, etc.): run uip commands to fetch initial data. Write raw response, then write interpreted evidence summary.
 
 5. **Correlate data to the reported problem** — follow the data correlation rules from the investigation guides resolved in step 3. If data doesn't match: **discard it**, do NOT use unrelated data as a proxy, and ask for clarification.
 
-6. **Discover ALL matching playbooks** — read the matched product/package summary. Record **every** playbook that matches the symptoms in `state.json.matched_playbooks`, with its confidence level (from the summary's Confidence column) and full path. Other agents will read these paths directly — they will not scan the references folder.
-
-7. **Gather additional data from matched playbooks** — read the matched playbook(s) `## Context` sections to understand what conditions might cause the issue. If the playbook mentions data points that can be fetched with lightweight uip commands (e.g., asset existence, folder permissions, trigger status, process version), gather them now.
+6. **Discover ALL matching playbooks** — read the matched product/package summary for **every domain** in `state.json.domain`. Record **every** playbook that matches the symptoms in `state.json.matched_playbooks`, with its confidence level (from the summary's Confidence column) and full path. Do NOT override a playbook's confidence level — the confidence is set by the playbook author and reflects how structured the investigation path is. Other agents will read these paths directly — they will not scan the references folder.
 
 ## Boundaries
 

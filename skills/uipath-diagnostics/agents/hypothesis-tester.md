@@ -22,9 +22,10 @@ Gather evidence and evaluate ONE specific hypothesis.
 
 1. **Read the hypothesis** — understand confirm/eliminate criteria.
 2. **Read the investigation guides** from `state.json.investigation_guides`. Follow the data correlation rules to verify evidence relates to the correct entity, and the testing prerequisites to know what to gather before drawing conclusions. If you cannot get data for the correct entity, set `inconclusive` and explain the gap — do NOT use unrelated data.
-3. **Read the matched playbook** for this hypothesis (path in `state.json.matched_playbooks`). Always read `## Context` first for understanding. Then:
-   - If `## Investigation` exists → follow the steps. Each step produces evidence.
-   - If `## Investigation` is absent → reason freely from context and evidence.
+3. **Read the matched playbook** for this hypothesis (path in `state.json.matched_playbooks`). Always read `## Context` first for understanding. Then scope your work to the playbook's confidence level:
+   - **High confidence** (has `## Investigation` with 1-2 verification steps) → follow those steps only. This should be quick verification, not deep investigation.
+   - **Medium confidence** (has `## Investigation` with concrete diagnostic steps) → follow the steps. Each step produces evidence.
+   - **Low confidence** (no `## Investigation` or general guidance only) → reason freely from context and evidence.
 4. **Check existing evidence** — reuse data already in `evidence/`
 5. **Gather new evidence** using available tools:
    - uip CLI commands, `uip docsai ask` for documentation, source code, user input

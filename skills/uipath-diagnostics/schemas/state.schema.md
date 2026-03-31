@@ -26,12 +26,17 @@ Updated by: Orchestrator (phase transitions)
   "user_context": "Original problem description from the user",
   "investigation_guides": [
     "references/investigation_guide.md",
-    "references/products/orchestrator/investigation_guide.md"
+    "references/products/orchestrator/investigation_guide.md",
+    "references/products/maestro/investigation_guide.md"
   ],
   "matched_playbooks": [
     {
-      "confidence": "high | medium | low",
+      "confidence": "low",
       "path": "references/products/orchestrator/playbooks/job-stuck.md"
+    },
+    {
+      "confidence": "low",
+      "path": "references/products/maestro/playbooks/bpmn-job-stuck.md"
     }
   ],
   "requirements": {

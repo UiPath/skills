@@ -3,7 +3,7 @@ name: uipath-diagnostics
 description: Use when diagnosing UiPath platform & process issues - failed jobs, faulted queue items, publish errors, selector failures, healing agent issues, permission problems, or any automation error.
 ---
 
-# UiPath Diagnostic Agent — Orchestrator
+# UiPath Diagnostic Agent
 
 You orchestrate a hypothesis-driven diagnostic investigation. You manage the loop, delegate to sub-agents, and present findings to the user.
 
@@ -28,6 +28,7 @@ All state lives in `.investigation/` (relative to working directory). Schemas in
 | `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator |
 | `evidence/*.json` | Interpreted summaries | triage, tester |
 | `raw/*.json` | Full raw CLI/API responses | triage, tester |
+| `scope-check.json` | Domain expansion verdict | scope-checker |
 
 Sub-agents write raw responses to `raw/` immediately and don't keep them in context. You read evidence summaries, not raw files.
 
@@ -58,13 +59,19 @@ If the user provides new data at **any point** during the investigation (new err
 
 Do NOT try to patch new data into an in-progress investigation — re-triage ensures the full picture is consistent.
 
+## Domain Expansion
+
+After each sub-agent completes (triage, generator, tester), spawn the scope checker (`agents/scope-checker.md`). It compares the investigation data against the reference knowledge base and reports whether any product domains are missing from `state.json.domain`.
+
+If the scope checker reports missing domains: use `AskUserQuestion` to present the finding and ask the user whether to expand scope. Explain what domain was detected and that expansion requires additional time and tool calls. If the user approves: re-spawn triage with explicit instruction to include the missing domains, let triage discover additional playbooks, then re-invoke the generator if new playbooks were found. Resume the investigation with the expanded context. If the user declines: continue with the current scope.
+
 ## Investigation Flow
 
 Update `state.json.phase` at each transition:
 
 | Phase | Set when |
 |-------|----------|
-| `triage` | Starting triage (or re-triaging with new data) |
+| `triage` | Starting triage (or re-triaging with new data or domain expansion) |
 | `hypotheses` | Starting hypothesis generation |
 | `test` | Starting to test a hypothesis |
 | `evaluate` | Evaluating a tester's result |
@@ -74,12 +81,14 @@ Update `state.json.phase` at each transition:
 
 ### 1. TRIAGE
 
-Spawn triage sub-agent (`agents/triage.md`). It classifies scope, discovers ALL matching playbooks, runs lightweight uip commands, and writes `state.json` + initial evidence.
+Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify the domain, pre-select playbooks, or constrain scope in your prompt. Triage classifies scope based on actual evidence (job properties, error codes, CLI output). It discovers ALL matching playbooks, runs lightweight uip commands, and writes `state.json` + initial evidence.
 
 **Triage sanity gate** (before anything else):
 - Read the triage evidence and verify the data actually relates to the user's reported problem.
 - If the triage data is about a **different process, queue, or entity**: discard the triage results, inform the user what happened, and either re-spawn triage with corrected filters or use `AskUserQuestion` for clarification.
 - Do NOT proceed with an investigation built on data from the wrong source.
+
+**Domain expansion check** — spawn the scope checker (see Domain Expansion above).
 
 **After triage**, check if the sub-agent returned `needs_user_input: true`. If so, use `AskUserQuestion` to present the question to the user. Do NOT proceed until the user responds. Re-spawn triage if the user's answer changes the scope.
 
@@ -87,20 +96,25 @@ If additional data is needed (e.g., source code path, folder ID), use `AskUserQu
 
 ### 2. GENERATE HYPOTHESES
 
-Spawn hypothesis generator (`agents/hypothesis-generator.md`). It reads `## Context` from all matched playbooks and produces hypotheses:
+Spawn hypothesis generator (`agents/hypothesis-generator.md`).
 
-- **High-confidence** playbooks → exactly 1 hypothesis per playbook, high confidence
-- **Medium / Low-confidence** playbooks → 2-5 hypotheses as normal
+**If high-confidence playbooks exist** — the generator produces ONLY the high-confidence hypotheses (1 per high-confidence playbook). It skips medium/low playbooks and docsai. This is the fast path — test the most likely cause first.
 
-The generator also uses docsai. If no playbooks matched, the generator works from triage evidence alone.
+**If no high-confidence playbooks exist** — normal generation: 2-5 hypotheses from medium/low playbooks + docsai.
+
+If no playbooks matched at all, the generator works from triage evidence alone.
+
+**Domain expansion check** — spawn the scope checker (see Domain Expansion above).
 
 ### 3. TEST HYPOTHESES
 
 Test every hypothesis sequentially (highest confidence first). For each, spawn hypothesis tester (`agents/hypothesis-tester.md`), then evaluate.
 
-The tester reads `## Context` for understanding, then follows `## Investigation` steps if present, or reasons freely if absent.
+The tester reads `## Context` for understanding, then scopes work to the playbook's confidence level: high-confidence playbooks get quick verification only (1-2 steps), medium get full diagnostic steps, low get free-form reasoning.
 
 ### 4. EVALUATE (after each test)
+
+**Domain expansion check** — before validating, spawn the scope checker (see Domain Expansion above).
 
 **Validate tester's work** — reject and re-spawn if any check fails:
 
@@ -115,8 +129,10 @@ The tester reads `## Context` for understanding, then follows `## Investigation`
 |--------|--------|
 | Eliminated | Record, next hypothesis |
 | Inconclusive | Record, next hypothesis |
-| Confirmed — explains WHY | Root cause (`is_root_cause: true`). If from a high-confidence playbook, skip remaining hypotheses and go to Resolution. If from medium/low, use `AskUserQuestion` to ask if the user wants remaining hypotheses tested. If multiple high-confidence hypotheses exist, test all of them before skipping — each addresses a distinct known issue. If a high-confidence hypothesis is eliminated, continue to the next hypothesis normally. |
+| Confirmed — explains WHY | Root cause (`is_root_cause: true`). If from a high-confidence playbook, skip remaining hypotheses and go to Resolution. If from medium/low, use `AskUserQuestion` to ask if the user wants remaining hypotheses tested. If multiple high-confidence hypotheses exist, test all of them before skipping — each addresses a distinct known issue. |
 | Confirmed — describes WHAT only | Symptom (`is_root_cause: false`). Set `generation_context.trigger: "deepening"` and `generation_context.parent_hypothesis` to this hypothesis ID. Re-invoke generator. |
+
+**When all high-confidence hypotheses are eliminated** — re-invoke the generator with `generation_context.trigger: "scope_adjustment"` and the eliminated IDs. The generator now produces hypotheses from the remaining medium/low playbooks and docsai. Continue testing the new hypotheses normally.
 
 **Root cause vs. symptom:** explains WHY = root cause, describes WHAT = symptom.
 
@@ -128,13 +144,14 @@ The tester reads `## Context` for understanding, then follows `## Investigation`
 ### Root Cause: {description}
 
 **What went wrong:** {one sentence}
-**Why:** {root cause explanation}
-**Fix:** {specific preventive change}
-**Where:** {exact file, setting, folder/role}
-**Who:** {user | RPA developer | admin | platform team}
+**Why:** {root cause explanation — trace the full causal chain across all domains involved}
+**Immediate fix:** {what to do right now to resolve the current instance}
+**Preventive fix:** {for each domain in the causal chain, what to change so it doesn't recur}
+**Where:** {exact file, setting, folder/role — for each fix}
+**Who:** {user | RPA developer | admin | platform team — for each fix}
 ```
 
-Focus on **prevention** — what to change so it doesn't recur.
+Focus on **prevention across the full causal chain** — when the root cause crosses multiple product domains, the resolution must address each layer. An issue that starts with a selector failure, propagates through a BPMN orchestration gap, and manifests as an orphaned Orchestrator job needs fixes at all three levels, not just the layer where the symptom was observed.
 
 **If no root cause found** — present:
 - What was investigated and ruled out

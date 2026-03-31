@@ -53,4 +53,4 @@ Updated by: Hypothesis Tester (status, evidence), Orchestrator (root cause flag)
 - `generation_context` tells the generator what happened before (for re-invocation)
 - When deepening: orchestrator sets `generation_context.trigger: "deepening"` and `generation_context.parent_hypothesis` to the ID of the confirmed symptom before re-invoking the generator
 - `source`: `playbook` for playbook-derived, `docsai` for documentation-derived, `evidence` for evidence-derived
-- When a high-confidence hypothesis (from a high-confidence playbook) is confirmed, the orchestrator may skip testing remaining hypotheses — present the fix directly
+- When high-confidence playbooks exist, the generator produces ONLY high-confidence hypotheses (fast path). If all high-confidence hypotheses are eliminated, the orchestrator re-invokes the generator with `trigger: "scope_adjustment"` to produce from remaining medium/low playbooks. When a high-confidence hypothesis is confirmed, the orchestrator skips to resolution.

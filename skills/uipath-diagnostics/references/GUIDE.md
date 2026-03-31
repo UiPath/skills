@@ -66,32 +66,34 @@ All playbooks use the same three headers:
 
 | Section | What goes here | Who reads it |
 |---------|---------------|-------------|
-| `## Context` | What the issue is, what causes it, what to look for. Always present. | Triage (for initial data gathering). Generator (to produce hypotheses — 1 for high-confidence, 2-5 for medium/low). Tester (for understanding). |
+| `## Context` | What the issue is, what causes it, what to look for. Always present. | Generator (to produce hypotheses — 1 for high-confidence, 2-5 for medium/low). Tester (for understanding). Scope checker (for domain detection). |
 | `## Investigation` | Steps to diagnose or verify. Can be absent for low-confidence playbooks. | Tester (follows steps if present, reasons freely if absent). |
 | `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Orchestrator (presents fixes to the user). |
 
 Template: `templates/playbook.md`
 
+### Cross-Product References
+
+Playbooks may reference other product domains (e.g., an Orchestrator playbook mentioning "ProcessOrchestration" or "BPMN", a Maestro playbook referencing child Orchestrator jobs). When writing playbooks, use explicit product names when describing cross-domain behavior — the scope checker agent detects these references and flags missing domains for the orchestrator to expand scope.
+
 ## How Agents Use This
 
 ### Triage
 
-Reads `summary.md` to find the right product, then reads the product's `summary.md` to find ALL matching playbooks. Records every match with its confidence in `state.json`. Multiple playbooks may describe the same issue — all are recorded.
+Reads `summary.md` to find the right product, then reads the product's `summary.md` to find ALL matching playbooks. Records every match with its confidence in `state.json`. Multiple playbooks may describe the same issue — all are recorded. Triage does NOT read playbook contents or do cross-domain expansion — the scope checker handles domain detection separately.
 
 ### Hypothesis Generation
 
-The generator reads `## Context` from all matched playbooks and produces hypotheses. Playbook confidence determines how many:
-
-- **High confidence** → exactly 1 hypothesis per playbook, high confidence
-- **Medium / Low confidence** → 2-5 hypotheses as normal
+The generator reads `## Context` from matched playbooks and produces hypotheses. When high-confidence playbooks exist, the generator produces ONLY high-confidence hypotheses (1 per playbook) and skips medium/low playbooks and docsai — this is the fast path. If no high-confidence playbooks exist, or if re-invoked after high-confidence elimination, it generates 2-5 hypotheses from medium/low playbooks + docsai.
 
 Hypotheses are tested in confidence order. High-confidence hypotheses are tested first.
 
 ### Testing
 
-The tester reads `## Context` for understanding, then:
-- If `## Investigation` exists → follows the steps
-- If `## Investigation` is absent → reasons freely from context and evidence
+The tester reads `## Context` for understanding, then scopes work to the playbook's confidence level:
+- **High confidence** → follow the 1-2 verification steps only. Quick verification, not deep investigation.
+- **Medium confidence** → follow the concrete diagnostic steps.
+- **Low confidence** → reason freely from context and evidence.
 
 ### Investigation Guides
 

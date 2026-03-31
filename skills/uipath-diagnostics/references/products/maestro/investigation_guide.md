@@ -8,7 +8,7 @@ Before using any fetched data, verify it matches the user's reported problem:
 - **Instance** — the process instance ID matches the specific execution the user is investigating
 - **Folder** — data comes from the correct Orchestrator folder (permissions, triggers, and jobs are folder-scoped)
 - **Time window** — timestamps fall within the relevant period the user described
-- **Child Jobs** — if investigating a service task, verify the child job belongs to the correct parent instance
+- **Child Jobs** — if investigating a service task, verify the child job belongs to the correct parent instance. Always check the child job's **error message and final state** — the child's failure reason is often the actual root cause, not the parent's error code. Search for child jobs in all states (Faulted, Stopped, Successful, Running), not just the expected state.
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 

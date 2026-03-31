@@ -36,7 +36,9 @@ Do NOT browse `references/` yourself. Use the paths in `state.json`.
 | **Medium** | Causes, patterns | Concrete diagnostic steps | Fixes mapped to findings |
 | **Low** | Causes, patterns | General guidance or absent | Optional |
 
-Triage reads `## Context` for initial data gathering. Generator reads `## Context` to produce hypotheses (1 for high-confidence, 2-5 for medium/low). Tester follows `## Investigation` if present, reasons freely if absent. Orchestrator reads `## Resolution` to present fixes.
+Triage discovers matching playbooks but does not read their contents. Generator reads `## Context` to produce hypotheses — when high-confidence playbooks exist, it generates only from those (1 per playbook) and skips the rest. Tester follows `## Investigation` if present, scoping effort to the playbook's confidence level. Orchestrator reads `## Resolution` to present fixes.
+
+**Confidence is authoritative.** A playbook's confidence level (from its frontmatter and the product summary) reflects how structured and specific the playbook is. Do NOT override, upgrade, or downgrade a playbook's confidence based on how well the symptoms match. A strong symptom match with a low-confidence playbook is still low-confidence — the playbook lacks structured investigation steps regardless of match quality.
 
 ## Raw Data Rule
 
