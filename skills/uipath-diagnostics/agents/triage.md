@@ -23,10 +23,11 @@ Classify the problem, resolve all reference paths, and gather initial data.
    - If after 3 queries you can pin the issue: proceed with that classification
    - If after 3 queries you still cannot classify: **stop searching**. Set `needs_user_input: true` with a targeted question (include what you found so far so the user can confirm or redirect). Still write `state.json` with what you know.
 
-3. **Resolve investigation guides** — write to `state.json.investigation_guides`:
-   - Always include `references/investigation_guide.md` (generic guide)
-   - Check if each matched product/package has an `investigation_guide.md` (linked from its summary). If yes, include its path too.
-   - Read both guides and apply their data correlation rules during triage.
+3. **Resolve guides** — write to `state.json.investigation_guides` and `state.json.presentation_guides`:
+   - Always include `references/investigation_guide.md` (generic investigation guide)
+   - Check if each matched product/package has an `investigation_guide.md` (linked from its summary). If yes, include its path in `investigation_guides`.
+   - Check if each matched product/package has a `presentation.md`. If yes, include its path in `presentation_guides`.
+   - Read all resolved investigation guides and apply their data correlation rules during triage.
 
 4. **If the user provided an identifier** (job ID, queue name, etc.): run uip commands to fetch initial data. Write raw response, then write interpreted evidence summary.
 
@@ -36,7 +37,7 @@ Classify the problem, resolve all reference paths, and gather initial data.
 
 ## Boundaries
 
-- Only agent that reads `references/summary.md` and browses the knowledge base
+- Only investigation agent that reads `references/summary.md` and browses the knowledge base (the scope-checker also reads references, but for domain detection only)
 - Data-gathering uip commands only
 - Do NOT generate hypotheses — that's the generator's job
 - If you cannot get data about the specific entity the user reported (e.g., CLI lacks a queue-items command), **STOP and say so** — do NOT substitute with tangentially related data

@@ -15,7 +15,7 @@ Updated by: Orchestrator (phase transitions)
   "phase": "triage | hypotheses | test | evaluate | deepen | resolution | complete",
   "scope": {
     "level": "platform | product | feature | process | activity",
-    "domain": ["orchestrator", "maestro", "ui-automation"],
+    "domain": ["orchestrator", "maestro", "integration-service", "ui-automation"],
     "confidence": "high | medium | low"
   },
   "entry_point": {
@@ -28,6 +28,10 @@ Updated by: Orchestrator (phase transitions)
     "references/investigation_guide.md",
     "references/products/orchestrator/investigation_guide.md",
     "references/products/maestro/investigation_guide.md"
+  ],
+  "presentation_guides": [
+    "references/products/orchestrator/presentation.md",
+    "references/products/maestro/presentation.md"
   ],
   "matched_playbooks": [
     {
@@ -49,6 +53,10 @@ Updated by: Orchestrator (phase transitions)
 ## Investigation Guides
 
 Resolved by triage. Always includes the generic guide (`references/investigation_guide.md`). Includes the product-specific guide if one exists. Other agents read these paths directly — they do NOT scan the references folder themselves.
+
+## Presentation Guides
+
+Resolved by triage. Includes `presentation.md` for each matched product/package that has one. The orchestrator reads these before formatting results. Sub-agents also follow them when writing evidence summaries.
 
 ## Matched Playbooks
 

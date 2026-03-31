@@ -27,6 +27,15 @@ Agentic orchestration platform built on Orchestrator. BPMN-based process design 
 - [products/maestro/overview.md](./products/maestro/overview.md) — Product overview, dependencies, key concepts, and features
 - [products/maestro/summary.md](./products/maestro/summary.md) — All playbooks for Maestro issues
 
+## Integration Service
+
+Connector platform for third-party integrations (Salesforce, Outlook, SAP, Slack, etc.). Manages OAuth connections, exposes activities for automations and BPMN processes, and provides event-based triggers. Issues here involve connection failures, expired authentication, triggers not firing, and operation errors. Connection errors from Integration Service often surface through Maestro or Orchestrator as the calling product.
+
+CLI: `uip is --help`
+
+- [products/integration-service/overview.md](./products/integration-service/overview.md) — Product overview, connectors, connections, and CLI commands
+- [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
+
 ## UI Automation
 
 Activities for interacting with desktop and web application UIs. Robots use selectors (XML descriptors) to find and interact with UI elements. Issues here involve selector failures, element not found exceptions, timeout issues, Healing Agent problems, and data validation errors during UI interactions.

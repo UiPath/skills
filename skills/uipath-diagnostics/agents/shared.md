@@ -24,6 +24,7 @@ Use this to look up error messages, features, configuration, and troubleshooting
 
 All file paths are resolved by triage and stored in `state.json`. Read files from:
 - `state.json.investigation_guides` — data correlation rules and testing prerequisites
+- `state.json.presentation_guides` — product-specific display rules for entity names, IDs, labels
 - `state.json.matched_playbooks` — playbooks matched to the issue, with confidence level
 
 Do NOT browse `references/` yourself. Use the paths in `state.json`.
@@ -38,6 +39,8 @@ Do NOT browse `references/` yourself. Use the paths in `state.json`.
 
 Triage discovers matching playbooks but does not read their contents. Generator reads `## Context` to produce hypotheses — when high-confidence playbooks exist, it generates only from those (1 per playbook) and skips the rest. Tester follows `## Investigation` if present, scoping effort to the playbook's confidence level. Orchestrator reads `## Resolution` to present fixes.
 
+**All agents** should follow the presentation guides from `state.json.presentation_guides` when writing evidence summaries and user-facing text. Use human-readable names as defined by the product's presentation rules.
+
 **Confidence is authoritative.** A playbook's confidence level (from its frontmatter and the product summary) reflects how structured and specific the playbook is. Do NOT override, upgrade, or downgrade a playbook's confidence based on how well the symptoms match. A strong symptom match with a low-confidence playbook is still low-confidence — the playbook lacks structured investigation steps regardless of match quality.
 
 ## Raw Data Rule
@@ -51,6 +54,8 @@ Triage discovers matching playbooks but does not read their contents. Generator 
 Read the investigation guides from `state.json.investigation_guides` and follow their data correlation rules. If data doesn't match the user's reported problem, discard it.
 
 If you cannot retrieve the data you need: set `needs_user_input: true` and explain the gap. Do NOT substitute unrelated data or fabricate findings.
+
+**Do NOT infer behavior from unfamiliar fields.** If you encounter a field, setting, or property whose runtime behavior is not documented or verified through evidence, do NOT guess what it does or include it in the resolution. Presenting unverified assumptions as facts misleads the user. If a field looks relevant but its behavior is unknown, note it as "unverified — check documentation" rather than stating what it does.
 
 ## It Is OK to Not Find a Root Cause
 

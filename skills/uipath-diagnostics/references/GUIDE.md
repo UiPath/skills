@@ -10,7 +10,12 @@ references/
   investigation_guide.md                <- Generic investigation rules (all products).
   templates/                            <- Templates for creating new playbooks.
   products/{id}/                        <- One folder per product.
-  activity-packages/{id}/               <- One folder per activity package.
+    overview.md                         <- (optional) Product overview and dependencies.
+    investigation_guide.md              <- (optional) Product-specific investigation rules.
+    presentation.md                     <- (optional) Product-specific display rules.
+    summary.md                          <- (required) Playbook index with confidence levels.
+    playbooks/                          <- (required) Individual playbook files.
+  activity-packages/{id}/               <- One folder per activity package (same structure).
 ```
 
 ## Product / Activity Package Container
@@ -31,6 +36,10 @@ For example, in Orchestrator the agent must verify:
 - The logs, traces, and jobs are related to the actual robot that the user referenced
 
 Each product has different concerns. UI Automation needs to verify the correct activity and selector. Maestro needs to verify the correct BPMN process and task. This guide captures those product-specific verification rules.
+
+### presentation.md (optional)
+
+Product-specific display rules for how to format entity names, IDs, and labels in user-facing output. Defines how to refer to the product's entities (e.g., connections by display name, jobs by process name, instances by BPMN process name). Triage resolves these paths into `state.json.presentation_guides`. All agents follow them when writing evidence summaries. The orchestrator reads them before formatting results.
 
 ### summary.md (required)
 
@@ -66,7 +75,7 @@ All playbooks use the same three headers:
 
 | Section | What goes here | Who reads it |
 |---------|---------------|-------------|
-| `## Context` | What the issue is, what causes it, what to look for. Always present. | Generator (to produce hypotheses — 1 for high-confidence, 2-5 for medium/low). Tester (for understanding). Scope checker (for domain detection). |
+| `## Context` | What the issue is, what causes it, what to look for. Always present. | Generator (to produce hypotheses — 1 for high-confidence, 2-5 for medium/low). Tester (for understanding). |
 | `## Investigation` | Steps to diagnose or verify. Can be absent for low-confidence playbooks. | Tester (follows steps if present, reasons freely if absent). |
 | `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Orchestrator (presents fixes to the user). |
 

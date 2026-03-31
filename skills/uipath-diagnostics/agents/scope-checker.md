@@ -17,7 +17,8 @@ Write: `.investigation/scope-check.json`
   "checked_after": "triage | hypotheses | test",
   "current_domains": ["orchestrator"],
   "missing_domains": [],
-  "reasoning": "Why these domains should be added, or why current scope is sufficient"
+  "unnecessary_domains": [],
+  "reasoning": "Why domains should be added/removed, or why current scope is correct"
 }
 ```
 
@@ -26,11 +27,12 @@ Write: `.investigation/scope-check.json`
 1. **Read `references/summary.md`** — understand what product domains exist and what types of issues each covers. Follow links to product summaries, overviews, playbooks, and investigation guides as needed to understand domain boundaries.
 2. **Read `state.json`** — note the current `scope.domain` array.
 3. **Read all evidence files** in `.investigation/evidence/` and `hypotheses.json` if it exists.
-4. **Compare the investigation data against each product domain** described in `references/summary.md`:
+4. **Check for missing domains** — compare the investigation data against each product domain described in `references/summary.md`:
    - Do any job properties, error codes, entity types, error messages, or behavioral patterns in the evidence match a product domain not currently in `state.json.domain`?
    - Do any hypotheses, playbook references, or CLI commands reference capabilities or concepts described under a different product domain?
    - Does the product description in `references/summary.md` describe the type of issue being investigated, even if the current domain also partially covers it?
-5. **Write `scope-check.json`** with your findings. If `missing_domains` is empty, the current scope is sufficient.
+5. **Check for narrowing** — determine if any currently scoped domain is only the reporting layer (e.g., Orchestrator reported a faulted job, but the actual error is entirely within Integration Service or Maestro). A domain that only reported the symptom but has no playbooks relevant to the root cause should be listed in `unnecessary_domains`. This prevents irrelevant playbook matches and hypothesis generation.
+6. **Write `scope-check.json`** with your findings. If both `missing_domains` and `unnecessary_domains` are empty, the current scope is correct.
 
 ## Boundaries
 
