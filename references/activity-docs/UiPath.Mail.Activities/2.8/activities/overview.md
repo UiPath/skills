@@ -1,6 +1,6 @@
 # XAML Outlook Mail Activities (UiPath.Mail.Activities)
 
-Classic Outlook mail activity patterns for `UiPath.Mail.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml` — this file covers confirmed namespace and attribute patterns from real workflows only. **Not for `UiPath.MicrosoftOffice365.Activities`** — see `msoffice365-outlook-activities.md` for O365.
+Classic Outlook mail activity patterns for `UiPath.Mail.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml --use-studio` — this file covers confirmed namespace and attribute patterns from real workflows only. **Not for `UiPath.MicrosoftOffice365.Activities`** — see `msoffice365-outlook-activities.md` for O365.
 
 ## Package
 
@@ -36,7 +36,7 @@ Classic Outlook mail activity patterns for `UiPath.Mail.Activities`. Always get 
 
 ## IS Connection Pattern (Classic activities)
 
-When using Integration Service connection, add `UseISConnection="True"` and the `ConnectionDetailsBackupSlot` child to `GetOutlookMailMessages` and `SendOutlookMail`. Use `uip is connections list --format json` to discover available connection GUIDs. If no Outlook connection exists, create one: `uip is connections create <outlook-connector-key>`.
+When using Integration Service connection, add `UseISConnection="True"` and the `ConnectionDetailsBackupSlot` child to `GetOutlookMailMessages` and `SendOutlookMail`. Use `uip is connections list --output json` to discover available connection GUIDs. If no Outlook connection exists, create one: `uip is connections create <outlook-connector-key>`.
 
 ```xml
 <ui:GetOutlookMailMessages ... UseISConnection="True">
@@ -68,4 +68,4 @@ Without IS connection, omit `UseISConnection` and the child element entirely.
 | `ForEachEmailX` | Two args: `Argument1` (`snm:MailMessage` `"CurrentMail"`) + `Argument2` (`x:Int32` `"CurrentIndex"`) |
 | `SaveMailAttachments` | Uses `ui:` prefix even inside modern scope — it's a classic activity |
 | Email properties | `CurrentMail.Subject`, `CurrentMail.SenderEmailAddress()`, `CurrentMail.Date()`, `CurrentMail.Priority.AsText()`, `CurrentMail.Attachments.Count` |
-| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml --use-studio` for complete activity XAML |

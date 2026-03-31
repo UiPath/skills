@@ -56,7 +56,7 @@ The markdown body SHOULD follow this order:
 ## Content Rules
 
 - Skills MUST be self-contained — no references to other skills
-- CLI commands MUST include `--format json` when output is parsed programmatically
+- CLI commands MUST include `--output json` when output is parsed programmatically
 - All file links MUST use relative paths from the SKILL.md location
 - All file links MUST point to files that actually exist in the repo
 - No secrets, tokens, credentials, or personal filesystem paths

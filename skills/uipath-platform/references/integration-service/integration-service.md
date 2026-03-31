@@ -17,7 +17,7 @@ Interact with external services through UiPath Integration Service — discover 
 4. **Use `--refresh` once if results are unexpected** — The `list` subcommands cache locally. Retry **once** with `--refresh` when: results are empty, a recently created item is missing, or the user says data should exist. If still empty after refresh, inform the user the data does not exist — do not loop.
 5. **Always ping** — Verify every connection before use, even if it reports "Enabled"
 6. **Prompt, don't assume** — When multiple choices exist (connections, reference values), present options and let the user decide. Only auto-select when there is exactly one valid option.
-7. **Always use `--format json`** for commands whose output you need to parse or act on.
+7. **Always use `--output json`** for commands whose output you need to parse or act on.
 
 ---
 

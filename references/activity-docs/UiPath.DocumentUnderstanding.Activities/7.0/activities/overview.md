@@ -2,7 +2,7 @@
 
 Document Understanding (DU) activities for classification, extraction, validation, and PDF utilities. Package: `UiPath.DocumentUnderstanding.Activities`.
 
-Always get full XAML from `uip rpa get-default-activity-xaml` — the per-activity files cover confirmed patterns from real workflows only.
+Always get full XAML from `uip rpa get-default-activity-xaml --use-studio` — the per-activity files cover confirmed patterns from real workflows only.
 
 ## Variable Types
 
@@ -106,4 +106,4 @@ End If
 | MergePDFs inline | Use nested `IndividualPdfFiles` property with `scg:List`; set `CollectionPdfFiles="{x:Null}"` |
 | MergePDFs variable | Set `CollectionPdfFiles` to an `IEnumerable(Of IResource)` variable; omit `IndividualPdfFiles` |
 | OCR extraction | Set `ApplyOcr="True"` and `OcrEngine="UIPATH_DOCUMENT_OCR"` on `ExtractPDFText` for scanned PDFs |
-| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml --use-studio` for complete activity XAML |

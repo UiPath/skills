@@ -19,7 +19,7 @@ which uip > /dev/null 2>&1 && echo "uip found" || echo "uip NOT found — run: n
 if [ -d ".venv" ]; then source .venv/bin/activate; fi
 
 # 3. Set up the Python environment (detects Python, installs uipath package if needed)
-uip codedagents setup --format json
+uip codedagents setup --output json
 ```
 
 **Steps 2 and 3 are required.** Common errors if skipped:
@@ -30,7 +30,7 @@ Run these once per project environment. After setup succeeds, all `uip codedagen
 
 If `uip` is not found, install it with `npm install -g @uipath/cli`. If `npm` is missing, ask the user to install Node.js first. All commands in this skill use `uip codedagents <cmd>` — do **not** substitute with `uv run uipath`.
 
-**Do NOT add `--format json` to `uip codedagents` commands.** The `--format` flag is only valid for native `uip` commands (like `uip login`, `uip codedagents setup`). Commands forwarded to the Python CLI (`uip codedagents new`, `init`, `run`, `eval`, `deploy`, `push`, `pull`, `pack`, `publish`, `invoke`) do **not** accept `--format json` and will error.
+**Do NOT add `--output json` to `uip codedagents` commands.** The `--output` flag is only valid for native `uip` commands (like `uip login`, `uip codedagents setup`). Commands forwarded to the Python CLI (`uip codedagents new`, `init`, `run`, `eval`, `deploy`, `push`, `pull`, `pack`, `publish`, `invoke`) do **not** accept `--output json` and will error.
 
 ## Critical Rules
 
@@ -38,8 +38,8 @@ If `uip` is not found, install it with `npm install -g @uipath/cli`. If `npm` is
 - **Always create a smoke evaluation set.** Every agent must include `evaluations/eval-sets/smoke-test.json` with 2-3 basic test cases. Create it in the Evaluate step, not during Build.
 - **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: Simple Function, LangGraph, LlamaIndex, or OpenAI Agents.
 - **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that path does not exist and will cause `ImportError`). Always instantiate `UiPath()` inside functions/nodes, never at module level.
-- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker does not work from Claude's Bash tool. Always ask the user for environment, organization, and tenant name first, then run `uip login --format json` then `uip login tenant set "<TENANT>" --format json`.
-- **Skip auth if already authenticated.** Before asking for credentials, check if `.env` contains `UIPATH_URL` and `UIPATH_ACCESS_TOKEN` (or run `uip login status --format json` if available). If auth is already configured, skip the Auth step entirely and continue the flow.
+- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker does not work from Claude's Bash tool. Always ask the user for environment, organization, and tenant name first, then run `uip login --output json` then `uip login tenant set "<TENANT>" --output json`.
+- **Skip auth if already authenticated.** Before asking for credentials, check if `.env` contains `UIPATH_URL` and `UIPATH_ACCESS_TOKEN` (or run `uip login status --output json` if available). If auth is already configured, skip the Auth step entirely and continue the flow.
 - **Auth MUST be an interactive question (when needed).** If auth is NOT configured, your ENTIRE response must be a single direct question. Do NOT wrap it in bullet points, "Next Steps" headers, or status summaries. Just ask and stop:
 
   > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
@@ -73,7 +73,7 @@ When the user asks to create and deploy an agent end-to-end, follow these steps 
 
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
-Then STOP and wait for the user to reply. After they reply, run `uip login --format json followed by uip login tenant set "<TENANT>" --format json` and continue the flow. Never run `uip login` without `--tenant`.
+Then STOP and wait for the user to reply. After they reply, run `uip login --output json followed by uip login tenant set "<TENANT>" --output json` and continue the flow. Never run `uip login` without `--tenant`.
 6. **Run** — Test locally with `uip codedagents run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
 7. **Push** — Tell the user to navigate to `{UIPATH_URL with the tenant segment removed}/studio_/projects` (Studio Web is an organization-level service, so the URL should only include the organization, e.g. `https://alpha.uipath.com/OrgName/studio_/projects`), create a new **Coded Agent** project, and paste the project ID. Add `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagents push`. Required before evals. *(This step requires user input — wait for the project ID, then resume immediately.)*
 8. **Evaluate** — Create **both** the evaluator config and the eval set, then run evals.

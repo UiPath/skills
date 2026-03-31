@@ -47,7 +47,7 @@ Hovers the mouse over a specified UI element.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NHover
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NHover --use-studio
 ```
 ## Notes
 

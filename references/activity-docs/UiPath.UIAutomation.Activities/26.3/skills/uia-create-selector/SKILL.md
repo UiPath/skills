@@ -17,7 +17,7 @@ Generate a robust UiPath selector for an element described in natural language, 
 CLI="uip rpa uia"
 ```
 
-If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\"" --use-studio`. All subsequent `"$CLI" ...` commands will automatically include it.
 
 ## Input Parsing
 

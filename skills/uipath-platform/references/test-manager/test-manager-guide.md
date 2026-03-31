@@ -2,7 +2,7 @@
 
 CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <group> --help` to discover all commands and options.
 
-> **Always use `--format json`** when calling commands programmatically.
+> **Always use `--output json`** when calling commands programmatically.
 
 ## Overview
 
@@ -42,21 +42,21 @@ All commands require authentication (`uip login`). Command groups:
 ### Create and Run Tests
 
 ```bash
-uip tm project create --name "Invoice Tests" --project-key "INV" --format json
-uip tm testcase create --project-key "INV" --name "Validate Invoice" --format json
-uip tm testset create --project-key "INV" --name "Regression" --format json
-uip tm testset add-testcases --test-set-key "INV:1" --test-case-keys "INV:1" --format json
-uip tm testset execute --test-set-key "INV:1" --format json
-uip tm wait --execution-id "<EXEC_ID>" --format json
-uip tm report get --execution-id "<EXEC_ID>" --format json
+uip tm project create --name "Invoice Tests" --project-key "INV" --output json
+uip tm testcase create --project-key "INV" --name "Validate Invoice" --output json
+uip tm testset create --project-key "INV" --name "Regression" --output json
+uip tm testset add-testcases --test-set-key "INV:1" --test-case-keys "INV:1" --output json
+uip tm testset execute --test-set-key "INV:1" --output json
+uip tm wait --execution-id "<EXEC_ID>" --output json
+uip tm report get --execution-id "<EXEC_ID>" --output json
 ```
 
 ### Review Failed Tests
 
 ```bash
-uip tm report get --execution-id "<EXEC_ID>" --format json
-uip tm attachment download --execution-id "<EXEC_ID>" --only-failed --result-path ./failed/ --format json
-uip tm execution retry --execution-id "<EXEC_ID>" --format json
+uip tm report get --execution-id "<EXEC_ID>" --output json
+uip tm attachment download --execution-id "<EXEC_ID>" --only-failed --result-path ./failed/ --output json
+uip tm execution retry --execution-id "<EXEC_ID>" --output json
 ```
 
 ---

@@ -82,7 +82,7 @@ Configure auto-dismissal of JavaScript dialogs.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NApplicationCard
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NApplicationCard --use-studio
 ```
 ## Notes
 

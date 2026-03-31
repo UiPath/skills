@@ -48,7 +48,7 @@ Takes a screenshot of an application or UI element.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NTakeScreenshot
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NTakeScreenshot --use-studio
 ```
 ## Notes
 

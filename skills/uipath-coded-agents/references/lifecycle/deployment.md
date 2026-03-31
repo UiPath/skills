@@ -39,7 +39,7 @@ uip codedagents invoke <ENTRYPOINT> '{"query": "test"}'
 | `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` section |
 | `Pack failed: missing fields` | `pyproject.toml` incomplete | Ensure `name`, `version`, `description`, and `authors` are all set |
 | `Version already exists` | Same version already published | Bump the patch version in `pyproject.toml` before re-deploying |
-| `401 Unauthorized` | Auth expired or not configured | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+| `401 Unauthorized` | Auth expired or not configured | Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` |
 
 ## Additional Instructions
 
@@ -240,7 +240,7 @@ On re-deploy, always increment the patch number (e.g., `0.0.1` → `0.0.2` → `
 
 ## Typical Deployment Flow
 
-1. Authenticate with `uip login --format json` then `uip login tenant set "<TENANT>" --format json`
+1. Authenticate with `uip login --output json` then `uip login tenant set "<TENANT>" --output json`
 2. Test locally: `uip codedagents run main '<input-json>'`
 3. Bump version in `pyproject.toml` if re-deploying
 4. Deploy: `uip codedagents deploy --my-workspace`

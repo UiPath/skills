@@ -6,4 +6,4 @@
 |---------------|
 | `Sheet`, `Password`, `SecurePassword="{x:Null}"` |
 
-Use `uip rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.

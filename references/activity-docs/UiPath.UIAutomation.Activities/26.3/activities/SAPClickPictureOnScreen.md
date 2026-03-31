@@ -47,7 +47,7 @@ Clicks the picture displayed on a SAP GUI screen.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPClickPictureOnScreen
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPClickPictureOnScreen --use-studio
 ```
 ## Notes
 

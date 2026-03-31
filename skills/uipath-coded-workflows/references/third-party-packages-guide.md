@@ -64,4 +64,4 @@ With `project.json` dependency:
   - `RestSharp` (REST APIs)
   - `Polly` (retry/resilience patterns)
   - `Newtonsoft.Json` (JSON parsing - already included in most projects)
-- After identifying a package, run the `uip rpa inspect-package` command to discover exact APIs before coding
+- After identifying a package, run the `uip rpa inspect-package --use-studio` command to discover exact APIs before coding

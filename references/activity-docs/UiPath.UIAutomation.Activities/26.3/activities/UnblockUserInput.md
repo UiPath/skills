@@ -42,7 +42,7 @@ Unblock keyboard/mouse input that has been previously blocked by a 'Block User I
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NUnblockUserInput
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NUnblockUserInput --use-studio
 ```
 ## Notes
 

@@ -6,4 +6,4 @@
 |---------------|
 | `Workbook="[Excel]"`, `CodeFilePath`, `EntryMethodName`, `Result="{x:Null}"`; body contains `ueab:InvokeVBAArgumentX` children |
 
-Use `uip rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.

@@ -10,7 +10,7 @@ mkdir my-agent && cd my-agent
 # Copy pyproject.toml template, add framework dep if needed, then:
 uv sync
 source .venv/bin/activate           # activate venv BEFORE uip codedagents commands
-uip codedagents setup --format json # configure Python backend (once per env)
+uip codedagents setup --output json # configure Python backend (once per env)
 uip codedagents new my-agent        # name is REQUIRED
 uip codedagents init
 
@@ -139,7 +139,7 @@ uip codedagents --version
 
 ### 5. Authenticate
 
-Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` if your agent needs UiPath Cloud access.
+Run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` if your agent needs UiPath Cloud access.
 
 ## Simple Function Agent Details
 
@@ -188,7 +188,7 @@ my-agent/
 2. Run `uip codedagents new my-agent` to scaffold (if no code exists)
 3. Run `uv sync` to install dependencies
 4. Verify with `uip codedagents --version`
-5. Authenticate if needed: `uip login --format json` then `uip login tenant set "<TENANT>" --format json`
+5. Authenticate if needed: `uip login --output json` then `uip login tenant set "<TENANT>" --output json`
 6. Modify `main.py` with your `Input`, `Output` models and `main` function
 7. Run `uip codedagents init` to generate configuration
 8. Test with `uip codedagents run main '{"query": "test"}'`

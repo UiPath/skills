@@ -60,10 +60,10 @@ If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable),
 
 ```bash
 # Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 ---
@@ -74,13 +74,13 @@ When the Object Repository is empty or missing targets for the workflow, use the
 
 ```bash
 # Indicate a screen (creates App automatically if none exists)
-uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Indicate a screen under an existing App
-uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --parent-id "r-xxxxx/yyyyy" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "Dashboard" --description "Main dashboard screen" --parent-id "r-xxxxx/yyyyy" --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Indicate an element on a screen
-uip rpa indicate-element --name "SubmitButton" --description "Submit button on the form" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "SubmitButton" --description "Submit button on the form" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 After indication, re-read `.objects/` metadata to get the reference strings for use in XAML.

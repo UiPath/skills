@@ -125,14 +125,14 @@ Use the `indicate-application` / `indicate-element` commands to let the user poi
 
 ```bash
 # Indicate a screen — when no App exists, omit --parent-id (creates App automatically):
-cd "<PROJECT_DIR>" && rpa-tool indicate-application --name "Dashboard" --format json
+cd "<PROJECT_DIR>" && rpa-tool indicate-application --name "Dashboard" --output json
 
 # Indicate a screen — when adding to an existing App, use --parent-id with the AppVersion reference:
-cd "<PROJECT_DIR>" && rpa-tool indicate-application --name "Dashboard" --parent-id "r-xxxxx/yyyyy" --format json
+cd "<PROJECT_DIR>" && rpa-tool indicate-application --name "Dashboard" --parent-id "r-xxxxx/yyyyy" --output json
 
 # Indicate an element — use --parent-id with the screen reference (from ObjectRepository.cs or indicate-application result)
 # --activity-class-name is required for indicate-element
-cd "<PROJECT_DIR>" && rpa-tool indicate-element --name "WorkItems" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --format json
+cd "<PROJECT_DIR>" && rpa-tool indicate-element --name "WorkItems" --parent-id "r-xxxxx/zzzzz" --activity-class-name "Click" --output json
 ```
 
 > **`--parent-name` uses the AppVersion name** (e.g. `"1.0.0"`), NOT the App display name. Prefer `--parent-id` to avoid ambiguity. See [operations-guide.md](../operations-guide.md) for the full discovery procedure.
@@ -163,7 +163,7 @@ rpa-tool indicate-application \
   --description "The login screen of the application" \
   --project-dir "<PROJECT_DIR>" \
   --studio-dir "<STUDIO_DIR>" \
-  --format json
+  --output json
 # OR with --parent-name:
 rpa-tool indicate-application \
   --name "LoginScreen" \
@@ -172,7 +172,7 @@ rpa-tool indicate-application \
   --description "The login screen of the application" \
   --project-dir "<PROJECT_DIR>" \
   --studio-dir "<STUDIO_DIR>" \
-  --format json
+  --output json
 # Returns: a reference string for the newly created screen
 
 # Indicate the element (user points at the username field)
@@ -183,7 +183,7 @@ rpa-tool indicate-element \
   --description "The username input field on the login screen" \
   --project-dir "<PROJECT_DIR>" \
   --studio-dir "<STUDIO_DIR>" \
-  --format json
+  --output json
 
 # Re-read ObjectRepository.cs and use Descriptors.NewApplication.LoginScreen.UsernameField in code
 ```

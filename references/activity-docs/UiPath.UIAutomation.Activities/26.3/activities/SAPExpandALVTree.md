@@ -44,7 +44,7 @@ Expand parent ALV tree to the selected node. After indicating the SAP node eleme
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandALVTree
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandALVTree --use-studio
 ```
 ## Notes
 

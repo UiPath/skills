@@ -48,7 +48,7 @@ Use the activity to identify any cell inside SAP ALV Hierarchical Table. After t
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandALVHierarchicalTable
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandALVHierarchicalTable --use-studio
 ```
 ## Notes
 

@@ -18,9 +18,9 @@ Every `uip rpa` invocation accepts these flags:
 | `--studio-dir <path>` | Path to Studio installation directory | Auto-detected (see below) |
 | `--timeout <seconds>` | Timeout in seconds for Studio resolution | `300` |
 | `--verbose` | Enable verbose/debug logging | Off |
-| `--format <format>` | Output format: `json`, `table`, `yaml`, `plain` | `table` |
+| `--output <format>` | Output format: `json`, `table`, `yaml`, `plain` | `table` |
 
-> **Always use `--format json`** when calling `uip rpa` commands programmatically. The `table` format pads columns and can produce extremely large output (100KB+). JSON is compact and machine-readable.
+> **Always use `--output json`** when calling `uip rpa` commands programmatically. The `table` format pads columns and can produce extremely large output (100KB+). JSON is compact and machine-readable.
 
 ### STUDIO_DIR Resolution
 
@@ -47,7 +47,7 @@ See **SKILL.md -> Quick Start -> Step 0** for the full resolution logic.
 List running UiPath Studio instances and their IPC status.
 
 ```bash
-uip rpa list-instances --format json
+uip rpa list-instances --output json --use-studio
 ```
 
 No command-specific options.
@@ -62,7 +62,7 @@ Ensure a Studio instance is running. Resolution waterfall:
 3. Start a new instance via `--studio-dir` — poll until available
 
 ```bash
-uip rpa start-studio --project-dir "<PROJECT_DIR>" --format json
+uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 ---
@@ -72,7 +72,7 @@ uip rpa start-studio --project-dir "<PROJECT_DIR>" --format json
 Create a new UiPath project from a template.
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --format json
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Default | Description |
@@ -100,7 +100,7 @@ uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --format json
 Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance, so this is rarely required.
 
 ```bash
-uip rpa open-project --project-dir "<PROJECT_DIR>" --format json
+uip rpa open-project --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 No command-specific options.
@@ -112,8 +112,8 @@ No command-specific options.
 Validate a file or the entire project. Forces Studio to re-analyze the code.
 
 ```bash
-uip rpa validate --project-dir "<PROJECT_DIR>" --format json
-uip rpa validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa validate --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Default | Description |
@@ -154,10 +154,10 @@ Run or debug a workflow file using Studio.
 
 ```bash
 # Run (default — closes app on completion or error):
-uip rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Debug (pauses on error — keeps app open for inspection/repair):
-uip rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --command StartDebugging --format json
+uip rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
 ```
 
 | Parameter | Required | Description |
@@ -187,7 +187,7 @@ uip rpa run-file --file-path "<WORKFLOW_NAME>" --project-dir "<PROJECT_DIR>" --c
 Get unautomated test case IDs from Test Manager.
 
 ```bash
-uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --format json
+uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 No command-specific options.
@@ -199,7 +199,7 @@ No command-specific options.
 Get steps for specific test cases from Test Manager.
 
 ```bash
-uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --format json
+uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Description |
@@ -213,7 +213,7 @@ uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJ
 Open Studio's visual indicator for the user to point at an application window. Creates a **Screen** entry in the Object Repository under the specified AppVersion.
 
 ```bash
-uip rpa indicate-application --name "<SCREEN_NAME>" --description "<SCREEN_DESCRIPTION>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<SCREEN_NAME>" --description "<SCREEN_DESCRIPTION>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Description |
@@ -244,7 +244,7 @@ After indication, Studio regenerates `ObjectRepository.cs`. Re-read it to get th
 Open Studio's visual indicator for the user to point at a UI element. Creates an **Element** entry under an existing Screen. The screen must already exist.
 
 ```bash
-uip rpa indicate-element --name "<ELEMENT_NAME>" --description "<ELEMENT_DESCRIPTION>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ELEMENT_NAME>" --description "<ELEMENT_DESCRIPTION>" --parent-id "<SCREEN_REFERENCE>" --activity-class-name "<ACTIVITY_CLASS>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 | Parameter | Required | Description |

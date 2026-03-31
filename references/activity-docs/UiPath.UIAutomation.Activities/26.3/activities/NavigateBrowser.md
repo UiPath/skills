@@ -30,7 +30,7 @@ Allows basic navigation of the browser, like Go back, Go forward, Close, Refresh
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NNavigateBrowser
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NNavigateBrowser --use-studio
 ```
 ## Notes
 

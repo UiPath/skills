@@ -45,7 +45,7 @@ Expand parent tree to an active node or an active item. After indicating the SAP
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandTree
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPExpandTree --use-studio
 ```
 ## Notes
 

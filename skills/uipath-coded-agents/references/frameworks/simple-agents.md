@@ -148,4 +148,4 @@ The created agent will include:
 - Input/output fields are strongly typed with Pydantic
 - The agent works globally and can call any UiPath SDK services
 - Generated `entry-points.json` enables integration with UiPath Cloud
-- If you require authentication, run `uip login --format json` then `uip login tenant set "<TENANT>" --format json`.
+- If you require authentication, run `uip login --output json` then `uip login tenant set "<TENANT>" --output json`.

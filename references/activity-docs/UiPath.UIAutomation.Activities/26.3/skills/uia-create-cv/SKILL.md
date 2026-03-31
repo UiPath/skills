@@ -19,7 +19,7 @@ Determine the CV (Computer Vision) properties — `CvType` and `CvText` — for 
 CLI="uip rpa uia"
 ```
 
-If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\"" --use-studio`. All subsequent `"$CLI" ...` commands will automatically include it.
 
 ## Input Parsing
 

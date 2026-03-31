@@ -137,7 +137,7 @@ Links to reference documents in the `references/` folder for detailed topics.
 - **Lead with rules.** The Critical Rules section prevents the agent from making expensive mistakes. Put the most important constraints first.
 - **Be prescriptive, not descriptive.** Tell the agent exactly what to do, not just what's possible.
 - **Include CLI commands verbatim.** Show the exact commands with flags. Agents work best with copy-paste-ready instructions.
-- **Specify `--format json`** for any CLI commands whose output needs to be parsed programmatically.
+- **Specify `--output json`** for any CLI commands whose output needs to be parsed programmatically.
 - **Include anti-patterns.** A "What NOT to Do" section saves more time than a "What to Do" section.
 - **Link to references for depth.** Keep SKILL.md focused on workflow and rules. Move detailed API docs, schemas, and examples into `references/`.
 
@@ -182,7 +182,7 @@ Before submitting your PR, verify:
 - [ ] Frontmatter has `name` matching the folder name
 - [ ] Frontmatter `description` includes both TRIGGER and DO NOT TRIGGER conditions
 - [ ] Critical Rules section exists with numbered, actionable rules
-- [ ] CLI commands include exact flags and `--format json` where appropriate
+- [ ] CLI commands include exact flags and `--output json` where appropriate
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
@@ -240,7 +240,7 @@ Before submitting your PR, verify:
 ### CLI Commands
 
 - Always show the full command with all required flags
-- Use `--format json` when the output needs to be parsed
+- Use `--output json` when the output needs to be parsed
 - Use placeholders in angle brackets for user-provided values: `<PROJECT_DIR>`, `<FILE_PATH>`
 - Show expected output format when it helps understanding
 

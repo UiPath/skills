@@ -2,7 +2,7 @@
 
 Comprehensive guide for generating and editing UiPath UIAutomationNext XAML workflows. Covers activity templates, Object Repository integration, interaction patterns, and complete examples with annotated XAML.
 
-**Version note:** This reference targets `UiPath.UIAutomation.Activities` **25.10+**. For packages **below 25.10** (e.g. 24.10.x), several properties documented here do not exist — consult **[version-notes.md](./version-notes.md)** for version-specific differences and always verify with `uip rpa get-default-activity-xaml`.
+**Version note:** This reference targets `UiPath.UIAutomation.Activities` **25.10+**. For packages **below 25.10** (e.g. 24.10.x), several properties documented here do not exist — consult **[version-notes.md](./version-notes.md)** for version-specific differences and always verify with `uip rpa get-default-activity-xaml --use-studio`.
 
 ---
 
@@ -51,15 +51,15 @@ When the Object Repository is empty or missing targets for the workflow, use the
 
 ```bash
 # Step 1: Indicate the application/screen (user points at the app window)
-uip rpa indicate-application --name "MyBankingApp"
+uip rpa indicate-application --name "MyBankingApp --use-studio"
 
 # Step 2: Read .objects/ to find the Screen reference for use as --parent-id
 # IMPORTANT: --parent-name can fail if duplicate App names exist (e.g. from a failed
 # prior indicate-application call that left an orphan). Always prefer --parent-id.
 
 # Step 3: Indicate elements within that screen (user points at each element)
-uip rpa indicate-element --name "UsernameField" --activity-class-name "UiPath.UIAutomation.Activities.TypeInto" --parent-id "<screen-reference>"
-uip rpa indicate-element --name "LoginButton" --activity-class-name "UiPath.UIAutomation.Activities.ClickX" --parent-id "<screen-reference>"
+uip rpa indicate-element --name "UsernameField" --activity-class-name "UiPath.UIAutomation.Activities.TypeInto" --parent-id "<screen-reference> --use-studio"
+uip rpa indicate-element --name "LoginButton" --activity-class-name "UiPath.UIAutomation.Activities.ClickX" --parent-id "<screen-reference> --use-studio"
 ```
 
 **Indication pitfalls:**
@@ -456,4 +456,4 @@ Use `NCheckState` at the start of each subsequent card to verify the expected sc
 - `RetryScope` and `LogMessage` require `xmlns:ui="http://schemas.uipath.com/workflow/activities"`. Without it, the workflow won't compile.
 
 **9. Object Repository is empty**
-- If `.objects/` has no entries, you cannot build UIA workflows with object references. Use `uip rpa indicate-application` and `uip rpa indicate-element` to capture UI targets first, then re-read `.objects/` to get the reference strings.
+- If `.objects/` has no entries, you cannot build UIA workflows with object references. Use `uip rpa indicate-application --use-studio` and `uip rpa indicate-element --use-studio` to capture UI targets first, then re-read `.objects/` to get the reference strings.

@@ -44,7 +44,7 @@ Gets the child elements of the specified UI element.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NFindElements
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NFindElements --use-studio
 ```
 ## Notes
 

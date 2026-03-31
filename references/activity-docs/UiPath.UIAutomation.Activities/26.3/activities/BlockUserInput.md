@@ -43,7 +43,7 @@ Suppress keyboard/mouse input until the set key combination is pressed, or timeo
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NBlockUserInput
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NBlockUserInput --use-studio
 ```
 ## Notes
 

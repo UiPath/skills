@@ -38,7 +38,7 @@ uip codedagents pull --overwrite
 | `Your local version is behind the remote version. Aborted!` | Push requires interactive confirmation that CLI cannot provide | Use `uip codedagents push --overwrite` to force push |
 | Push deleted unexpected files | Push mirrors local state — removes remote files not present locally | This is by design. Review local files before pushing |
 | `Conflict on pull` | Remote and local both changed | Use `uip codedagents pull --overwrite` to force remote, or manually resolve differences |
-| `401 Unauthorized` | Auth expired | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+| `401 Unauthorized` | Auth expired | Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` |
 
 ## Additional Instructions
 
@@ -91,7 +91,7 @@ UIPATH_PROJECT_ID=12345 uip codedagents push
 
 ### Authentication
 
-Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to configure your credentials. This sets up:
+Run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` to configure your credentials. This sets up:
 - `UIPATH_URL` - Your UiPath instance URL
 - `UIPATH_ACCESS_TOKEN` - Bearer token for API access
 - `UIPATH_TENANT_NAME` - Your tenant identifier
@@ -391,7 +391,7 @@ uip codedagents push
 
 **Error:** Command fails with "Unauthorized" or "Invalid token"
 
-**Solution:** Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to refresh credentials.
+**Solution:** Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` to refresh credentials.
 
 ### "Files were unexpectedly deleted"
 

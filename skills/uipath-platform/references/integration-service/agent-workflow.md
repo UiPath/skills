@@ -31,7 +31,7 @@ Copy and track progress:
 ## Step 1: Find the Connector
 
 ```bash
-uip is connectors list --filter "<vendor>" --format json
+uip is connectors list --filter "<vendor>" --output json
 ```
 
 | Outcome | Action |
@@ -42,7 +42,7 @@ uip is connectors list --filter "<vendor>" --format json
 ## Step 2: Find a Connection
 
 ```bash
-uip is connections list "<connector-key>" --format json
+uip is connections list "<connector-key>" --output json
 ```
 
 - **Native**: Pick default enabled connection (`IsDefault: Yes`, `State: Enabled`).
@@ -55,7 +55,7 @@ See [connections.md — Selecting a Connection](connections.md#selecting-a-conne
 ## Step 3: Ping the Connection
 
 ```bash
-uip is connections ping "<connection-id>" --format json
+uip is connections ping "<connection-id>" --output json
 ```
 
 | Result | Action |
@@ -68,7 +68,7 @@ uip is connections ping "<connection-id>" --format json
 **4a. Check activities first** — activities are pre-built actions (e.g., "Send Email", "Create Invoice") that may directly accomplish the task:
 
 ```bash
-uip is activities list "<connector-key>" --format json
+uip is activities list "<connector-key>" --output json
 ```
 
 | Outcome | Action |
@@ -80,14 +80,14 @@ uip is activities list "<connector-key>" --format json
 
 ```bash
 uip is resources list "<connector-key>" \
-  --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --format json
+  --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --output json
 ```
 
 **4c. Describe the target resource** — get field metadata for the matched object:
 
 ```bash
 uip is resources describe "<connector-key>" "<object>" \
-  --connection-id "<id>" --operation <operation> --format json
+  --connection-id "<id>" --operation <operation> --output json
 ```
 
 | Describe outcome | Action |
@@ -104,7 +104,7 @@ If the user's task involves **event triggers** (e.g., "when a record is created"
 **4T-a. List trigger activities** to see what events the connector supports:
 
 ```bash
-uip is activities list "<connector-key>" --triggers --format json
+uip is activities list "<connector-key>" --triggers --output json
 ```
 
 Present trigger activities to the user. Note the **Operation** field (e.g., CREATED, UPDATED, DELETED).
@@ -113,7 +113,7 @@ Present trigger activities to the user. Note the **Operation** field (e.g., CREA
 
 ```bash
 uip is triggers objects "<connector-key>" "<OPERATION>" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 ```
 
 Present objects to the user and let them choose.
@@ -122,7 +122,7 @@ Present objects to the user and let them choose.
 
 ```bash
 uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 ```
 
 **4T-d. For non-CRUD trigger operations** — skip 4T-b. Use the activity's **ObjectName** as the `<object-name>` and go directly to 4T-c.
@@ -147,7 +147,7 @@ See [resources.md — Reference Fields](resources.md#reference-fields-critical) 
 
 ```bash
 uip is resources execute <verb> "<connector-key>" "<object>" \
-  --connection-id "<id>" --body '{"field": "value"}' --format json
+  --connection-id "<id>" --body '{"field": "value"}' --output json
 ```
 
 See [resources.md — Execute Operations](resources.md#execute-operations) for the verb table and options.
@@ -158,36 +158,36 @@ See [resources.md — Execute Operations](resources.md#execute-operations) for t
 
 ```bash
 # 1. Find connector
-uip is connectors list --filter "salesforce" --format json
+uip is connectors list --filter "salesforce" --output json
 # → Key: "uipath-salesforce-sfdc"
 
 # 2. Find connection
-uip is connections list "uipath-salesforce-sfdc" --format json
+uip is connections list "uipath-salesforce-sfdc" --output json
 # → Id: "abc-123", IsDefault: Yes, State: Enabled
 
 # 3. Ping
-uip is connections ping "abc-123" --format json
+uip is connections ping "abc-123" --output json
 # → Status: Enabled
 
 # 4a. Check activities first
-uip is activities list "uipath-salesforce-sfdc" --format json
+uip is activities list "uipath-salesforce-sfdc" --output json
 # → No matching activity for "create contact" → fall back to resources
 
 # 4b. List resources with operation
 uip is resources list "uipath-salesforce-sfdc" \
-  --connection-id "abc-123" --operation Create --format json
+  --connection-id "abc-123" --operation Create --output json
 # → includes "Contact"
 
 # 4c. Describe the target resource
 uip is resources describe "uipath-salesforce-sfdc" "Contact" \
-  --connection-id "abc-123" --operation Create --format json
+  --connection-id "abc-123" --operation Create --output json
 # → requiredFields: [LastName], optionalFields: [FirstName, Email, ...], referenceFields: []
 
 # 5. No referenceFields → skip resolution, go straight to execute
 
 # 6. Execute
 uip is resources execute create "uipath-salesforce-sfdc" "Contact" \
-  --connection-id "abc-123" --body '{"LastName": "Doe", "FirstName": "Jane"}' --format json
+  --connection-id "abc-123" --body '{"LastName": "Doe", "FirstName": "Jane"}' --output json
 ```
 
 ---
@@ -196,29 +196,29 @@ uip is resources execute create "uipath-salesforce-sfdc" "Contact" \
 
 ```bash
 # 1. Find connector
-uip is connectors list --filter "salesforce" --format json
+uip is connectors list --filter "salesforce" --output json
 # → Key: "uipath-salesforce-sfdc"
 
 # 2. Find connection
-uip is connections list "uipath-salesforce-sfdc" --format json
+uip is connections list "uipath-salesforce-sfdc" --output json
 # → Id: "228624", IsDefault: Yes, State: Enabled
 
 # 3. Ping
-uip is connections ping "228624" --format json
+uip is connections ping "228624" --output json
 # → Status: Enabled
 
 # 4T-a. List trigger activities
-uip is activities list "uipath-salesforce-sfdc" --triggers --format json
+uip is activities list "uipath-salesforce-sfdc" --triggers --output json
 # → Trigger activities with Operation: CREATED, UPDATED, DELETED
 
 # 4T-b. Get objects for CREATED operation
 uip is triggers objects "uipath-salesforce-sfdc" CREATED \
-  --connection-id "228624" --format json
+  --connection-id "228624" --output json
 # → [AccountHistory, Contact, Lead, ...]
 # → User picks "AccountHistory"
 
 # 4T-c. Get trigger metadata (fields) for AccountHistory
 uip is triggers describe "uipath-salesforce-sfdc" CREATED "AccountHistory" \
-  --connection-id "228624" --format json
+  --connection-id "228624" --output json
 # → Returns field definitions (names, types, descriptions)
 ```

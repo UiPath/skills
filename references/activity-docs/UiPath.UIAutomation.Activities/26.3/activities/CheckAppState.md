@@ -44,7 +44,7 @@ Ensures the automated app is in a specific state, by verifying if a UI element e
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NCheckState
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NCheckState --use-studio
 ```
 ## Notes
 

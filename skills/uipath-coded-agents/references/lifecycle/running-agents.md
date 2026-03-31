@@ -35,7 +35,7 @@ uip codedagents invoke <ENTRYPOINT> '{"query": "test"}'
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `Authorization required. Please run uipath auth` | Not authenticated before running | Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` first |
+| `Authorization required. Please run uipath auth` | Not authenticated before running | Run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` first |
 | `UIPATH_ORGANIZATION_ID...is required` | Missing org ID env variable (OpenAI Agents) | Ensure `.env` has `UIPATH_ORGANIZATION_ID` set after auth |
 | `Invalid input` | JSON doesn't match Input schema | Check `entry-points.json` for expected fields and types |
 | `Error during initialization: File not found: main` | `main.py` missing or not in project root | Create `main.py` in the project root directory |
@@ -174,7 +174,7 @@ Execute a published agent in your UiPath Cloud workspace.
 
 Before invoking an agent, ensure:
 - Agent is published to your workspace (`uip codedagents deploy --my-workspace`)
-- You're authenticated with UiPath Cloud (`uip login --format json` then `uip login tenant set "<TENANT>" --format json`)
+- You're authenticated with UiPath Cloud (`uip login --output json` then `uip login tenant set "<TENANT>" --output json`)
 - Project has `pyproject.toml` with the correct project name and version
 
 ### Execution

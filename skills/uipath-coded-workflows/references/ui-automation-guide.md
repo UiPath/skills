@@ -63,7 +63,7 @@ using <ProjectNamespace>.ObjectRepository;
 
 ### Step 2 — Check UILibrary NuGet packages
 
-Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package`.
+Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package --use-studio`.
 
 ### Step 3 — Configure the target via `uia-configure-target` skill
 
@@ -91,10 +91,10 @@ If you cannot use `uia-configure-target` (e.g., the skill docs are unavailable),
 
 ```bash
 # Indicate a screen (creates App automatically if none exists in .objects/)
-uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Indicate an element on a screen (use --parent-id from the indicate-application result)
-uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa indicate-element --name "<ElementName>" --description "<ElementDescription>" --parent-id "<screen-reference>" --activity-class-name "<ActivityType>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 After indication, re-read `ObjectRepository.cs` to get the actual descriptor paths.
@@ -135,11 +135,11 @@ Using an element descriptor on the wrong screen handle causes `"Target name 'X' 
    Note which windows (w-refs and titles) are already present.
 2. **Run the workflow:**
    ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --format json
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
    ```
 3. **When done** (success or failure) — **stop the debug session:**
    ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --format json
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json --use-studio
    ```
 4. **List windows again:**
    ```bash

@@ -8,7 +8,7 @@ This repository's primary audience is AI coding agents, not humans. Write accord
 
 - **Be prescriptive, not descriptive.** Say "Run this command" not "You could run this command."
 - **Include exact CLI commands** with all required flags. Agents copy-paste — don't make them guess.
-- **Use `--format json`** on any CLI command whose output the agent needs to parse.
+- **Use `--output json`** on any CLI command whose output the agent needs to parse.
 - **Specify error handling.** Tell the agent what to do when a command fails, not just the happy path.
 - **Number your rules.** Agents follow numbered lists more reliably than prose.
 - **Include anti-patterns.** "What NOT to do" sections prevent the most common and expensive mistakes.
@@ -32,7 +32,7 @@ This repository's primary audience is AI coding agents, not humans. Write accord
 
 Example:
 ```bash
-uip rpa validate --file-path "<FILE_PATH>" --project-dir "<PROJECT_DIR>" --format json
+uip rpa validate --file-path "<FILE_PATH>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 ## Cross-Platform Awareness

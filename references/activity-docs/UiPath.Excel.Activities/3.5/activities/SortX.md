@@ -6,4 +6,4 @@
 |---------------|
 | `Range`, `HasHeaders`; body `ActivityAction` (no type args), child `ueab:SortColumnX` inside |
 
-Use `uip rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.

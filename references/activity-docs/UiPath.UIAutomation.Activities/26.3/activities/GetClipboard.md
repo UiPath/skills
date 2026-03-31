@@ -43,7 +43,7 @@ Gets the system's Clipboard data.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NGetClipboard
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NGetClipboard --use-studio
 ```
 ## Notes
 

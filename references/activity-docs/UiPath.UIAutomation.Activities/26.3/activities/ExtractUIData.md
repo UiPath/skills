@@ -48,7 +48,7 @@ Leverages AI to facilitate the extraction of form data.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.Semantic.Activities.NExtractUIData
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Semantic.Activities.NExtractUIData --use-studio
 ```
 ## Notes
 

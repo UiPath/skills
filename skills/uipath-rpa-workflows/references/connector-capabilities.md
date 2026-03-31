@@ -4,20 +4,20 @@ When the workflow involves Integration Service connectors (e.g., Salesforce, Jir
 
 ```bash
 # What activities does this connector offer?
-uip is activities list <connector-key> --format json
+uip is activities list <connector-key> --output json
 
 # What data objects/resources does it expose?
-uip is resources list <connector-key> --format json
+uip is resources list <connector-key> --output json
 
 # What fields does a specific resource have? (essential for configuring dynamic activity properties)
-uip is resources describe <connector-key> <object-name> --format json
+uip is resources describe <connector-key> <object-name> --output json
 ```
 
 ## Connection Management
 
 **Check if a connection exists:**
 ```bash
-uip is connections list <connector-key> --format json
+uip is connections list <connector-key> --output json
 ```
 
 **If no connection exists**, you have two options:

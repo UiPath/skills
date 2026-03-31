@@ -28,7 +28,7 @@ Extracts a string and its information from an indicated UI element using the Goo
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.Core.Activities.GoogleCloudOCR
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Core.Activities.GoogleCloudOCR --use-studio
 ```
 ## Notes
 

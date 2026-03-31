@@ -42,7 +42,7 @@ Dismisses all popups that are on top of the application and block a target, usin
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NClosePopup
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NClosePopup --use-studio
 ```
 ## Notes
 

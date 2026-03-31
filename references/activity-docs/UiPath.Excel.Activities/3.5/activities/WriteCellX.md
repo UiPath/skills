@@ -6,4 +6,4 @@
 |---------------|
 | `Cell="[Excel.Sheet(&quot;Sheet1&quot;).Cell(&quot;A1&quot;)]"`, `Value` |
 
-Use `uip rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.

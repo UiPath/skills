@@ -46,7 +46,7 @@ Executes JavaScript code in the context of the web page corresponding to a UiEle
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NInjectJsScript
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NInjectJsScript --use-studio
 ```
 ## Notes
 

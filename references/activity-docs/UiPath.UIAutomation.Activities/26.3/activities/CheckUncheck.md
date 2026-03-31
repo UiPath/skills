@@ -45,7 +45,7 @@ Used to check, uncheck, or toggle a checkbox.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NCheck
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NCheck --use-studio
 ```
 ## Notes
 

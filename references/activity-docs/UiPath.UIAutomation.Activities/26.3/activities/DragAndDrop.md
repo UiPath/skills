@@ -47,7 +47,7 @@ Executes a drag and drop operation from the source UI element to the destination
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NDragAndDrop
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NDragAndDrop --use-studio
 ```
 ## Notes
 

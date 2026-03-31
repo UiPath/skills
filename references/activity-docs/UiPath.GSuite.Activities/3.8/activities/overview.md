@@ -1,6 +1,6 @@
 # XAML GSuite Activities
 
-Google Suite activity patterns for `UiPath.GSuite.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml` — this file covers confirmed patterns from real workflows only.
+Google Suite activity patterns for `UiPath.GSuite.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml --use-studio` — this file covers confirmed patterns from real workflows only.
 
 ## Package + Connection Pattern
 
@@ -11,7 +11,7 @@ All GSuite activities authenticate via two attributes:
 ConnectionId="<guid>" UseConnectionService="True"
 ```
 
-Use `uip is connections list --format json` to obtain the connection GUID. If no GSuite connection exists, create one: `uip is connections create <gsuite-connector-key>`. Verify it's active: `uip is connections ping <connection-id>`. All activity names end in `Connections` (e.g., `GetNewestEmailConnections`, `ReadRangeConnections`).
+Use `uip is connections list --output json` to obtain the connection GUID. If no GSuite connection exists, create one: `uip is connections create <gsuite-connector-key>`. Verify it's active: `uip is connections ping <connection-id>`. All activity names end in `Connections` (e.g., `GetNewestEmailConnections`, `ReadRangeConnections`).
 
 ## Model Types
 
@@ -42,4 +42,4 @@ Use `uip is connections list --format json` to obtain the connection GUID. If no
 | `ForEachEmailConnections` | Three-arg body: `Argument1` (`GmailMessage` `"CurrentEmail"`), `Argument2` (`Int32` `"CurrentEmailIndex"`) |
 | `ForEachFileFolderConnections` | One-arg body: `CurrentItem` as `GDriveRemoteItem` |
 | `RowAddedToSheetBottom` | Generic type param `System.Data.DataRow`; output `AddedRow: DataRow` |
-| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml --use-studio` for complete activity XAML |

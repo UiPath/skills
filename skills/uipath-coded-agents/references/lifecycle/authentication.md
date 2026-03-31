@@ -6,8 +6,8 @@ Set up authentication with UiPath Cloud or on-premise before running cloud comma
 
 ```bash
 # Interactive OAuth (recommended)
-uip login --format json
-uip login tenant set "MY_TENANT" --format json
+uip login --output json
+uip login tenant set "MY_TENANT" --output json
 
 # Unattended (automation/CI)
 uip login --client-id ID --client-secret SECRET --base-url URL
@@ -30,13 +30,13 @@ uip login --client-id ID --client-secret SECRET --base-url URL
 
   > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
 
-  Then STOP and wait for the user's reply. Only after they answer, run `uip login --format json followed by uip login tenant set "<TENANT>" --format json`.
+  Then STOP and wait for the user's reply. Only after they answer, run `uip login --output json followed by uip login tenant set "<TENANT>" --output json`.
 
 ## Troubleshooting
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `401 Unauthorized` from LLM Gateway | Token expired or wrong tenant | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+| `401 Unauthorized` from LLM Gateway | Token expired or wrong tenant | Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` |
 | `UIPATH_URL not found` | `.env` missing or not in project root | Check `.env` exists in the working directory with `UIPATH_URL` set |
 
 ## Additional Instructions
@@ -74,28 +74,28 @@ The CLI's interactive tenant picker cannot be used from Claude's Bash tool, so `
 
 ```bash
 # Once you have the tenant name:
-uip login --format json
-uip login tenant set "MY_TENANT" --format json
+uip login --output json
+uip login tenant set "MY_TENANT" --output json
 # Or for other environments:
-uip login --authority "https://staging.uipath.com/identity_" --it --format json
-uip login tenant set "MY_TENANT" --format json
-uip login --authority "https://alpha.uipath.com/identity_" --it --format json
-uip login tenant set "MY_TENANT" --format json
+uip login --authority "https://staging.uipath.com/identity_" --it --output json
+uip login tenant set "MY_TENANT" --output json
+uip login --authority "https://alpha.uipath.com/identity_" --it --output json
+uip login tenant set "MY_TENANT" --output json
 ```
 
 **If the user doesn't know their tenant name**, use a two-step flow:
 
 1. Log in first, then list available tenants:
    ```bash
-   uip login --format json
-   uip login tenant list --format json
+   uip login --output json
+   uip login tenant list --output json
    ```
 
 2. Present ALL tenant names to the user and ask them to pick one.
 
 3. Set the selected tenant:
    ```bash
-   uip login tenant set "SELECTED_TENANT" --format json
+   uip login tenant set "SELECTED_TENANT" --output json
    ```
 
 ### 🔐 Unattended Mode (For Automation)
@@ -144,7 +144,7 @@ The CLI respects proxy settings via:
 
 ### Browser Does Not Open
 
-**Symptom:** Running `uip login --format json` does not open a browser window.
+**Symptom:** Running `uip login --output json` does not open a browser window.
 
 **Solutions:**
 - Ensure you have a default browser configured on your system
@@ -156,8 +156,8 @@ The CLI respects proxy settings via:
 **Symptom:** Commands fail with "Unauthorized" or "401" after previously working.
 
 **Solutions:**
-- Re-run `uip login --format json` then `uip login tenant set "YOUR_TENANT" --format json` to refresh the token
-- Use `--force` (`-f`) flag to force a new token: `uip login --format json` (forces re-auth)
+- Re-run `uip login --output json` then `uip login tenant set "YOUR_TENANT" --output json` to refresh the token
+- Use `--force` (`-f`) flag to force a new token: `uip login --output json` (forces re-auth)
 - Check that `UIPATH_URL` and `UIPATH_ACCESS_TOKEN` environment variables are not stale in your `.env` file
 
 ### Tenant Not Found / Mismatch
@@ -165,7 +165,7 @@ The CLI respects proxy settings via:
 **Symptom:** `--tenant MY_TENANT` fails with "tenant not found" or returns no results.
 
 **Solutions:**
-- Run `uip login --format json` without `--tenant` first to see the full tenant list
+- Run `uip login --output json` without `--tenant` first to see the full tenant list
 - Verify the tenant name is spelled exactly as shown in the list (case-sensitive)
 - Ensure your UiPath account has access to the target tenant
 

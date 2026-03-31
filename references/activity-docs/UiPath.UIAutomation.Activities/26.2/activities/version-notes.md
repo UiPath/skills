@@ -1,6 +1,6 @@
 # UI Automation — Version-Specific Notes
 
-This file documents version-specific differences in `UiPath.UIAutomation.Activities` property support. Always use `uip rpa get-default-activity-xaml` to confirm the exact properties for your installed version.
+This file documents version-specific differences in `UiPath.UIAutomation.Activities` property support. Always use `uip rpa get-default-activity-xaml --use-studio` to confirm the exact properties for your installed version.
 
 ---
 
@@ -117,4 +117,4 @@ Properties like `HealingAgentBehavior`, `ClipboardMode`, `InteractionMode`, `Ope
 
 ## General Rule
 
-**Always run `uip rpa get-default-activity-xaml --activity-class-name "..."` before writing UIA XAML.** The default output is the ground truth for the installed version. Properties that don't exist in the installed version will cause `"Could not find member"` validation errors.
+**Always run `uip rpa get-default-activity-xaml --activity-class-name "..." --use-studio` before writing UIA XAML.** The default output is the ground truth for the installed version. Properties that don't exist in the installed version will cause `"Could not find member"` validation errors.

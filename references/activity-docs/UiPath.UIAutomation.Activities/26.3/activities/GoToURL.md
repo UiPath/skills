@@ -35,7 +35,7 @@ Navigates to the specified URL in the indicated web browser.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NGoToUrl
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NGoToUrl --use-studio
 ```
 ## Notes
 

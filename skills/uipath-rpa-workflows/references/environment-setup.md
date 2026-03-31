@@ -21,7 +21,7 @@ Store the project root path and use it consistently as `{projectRoot}` throughou
 ## Step 0.2: Verify Studio is Running
 
 ```bash
-uip rpa list-instances --format json
+uip rpa list-instances --output json
 ```
 
 **If no instances are found or Studio is not running:**
@@ -31,7 +31,7 @@ uip rpa start-studio
 
 **If Studio is running but the project is not open:**
 ```bash
-uip rpa open-project --project-dir "{projectRoot}"
+uip rpa open-project --project-dir "{projectRoot}" --use-studio
 ```
 
 **If Studio IPC connection fails** (error messages about connection refused, timeout, or pipe not found):
@@ -64,7 +64,7 @@ uip rpa new \
   --expression-language "VisualBasic" \
   --target-framework "Windows" \
   --description "Automates invoice processing" \
-  --format json
+  --output json
 ```
 
 **Note:** `uip rpa new` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.

@@ -40,7 +40,7 @@ Reads the message displayed in the Status Bar on the bottom of the SAP GUI windo
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPReadStatusbar
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NSAPReadStatusbar --use-studio
 ```
 ## Notes
 

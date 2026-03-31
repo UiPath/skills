@@ -19,7 +19,7 @@ Ensure a UI target (screen + elements) exists in the Object Repository. Checks f
 CLI="uip rpa uia"
 ```
 
-If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\""`. All subsequent `"$CLI" ...` commands will automatically include it.
+If `$PROJECT_DIR` is set, append it: `CLI="uip rpa uia --project-dir \"$PROJECT_DIR\"" --use-studio`. All subsequent `"$CLI" ...` commands will automatically include it.
 
 ## Input Parsing
 
@@ -44,7 +44,7 @@ Derive `$SCREEN_NAME` from `$WINDOW` by converting to Title Case (e.g., "google 
 The `uip rpa uia` subcommands require **`UiPath.UIAutomation.Activities` >= 26.3.1-beta.11555873**. Check the installed version:
 
 ```bash
-uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --format json
+uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --output json --use-studio
 ```
 
 Also check `project.json` in `$PROJECT_DIR` for the currently installed version under `dependencies`.
@@ -56,7 +56,7 @@ Also check `project.json` in `$PROJECT_DIR` for the currently installed version 
 If the user approves, run:
 
 ```bash
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "26.3.1-beta.11555873"}]' --project-dir "$PROJECT_DIR" --format json
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "26.3.1-beta.11555873"}]' --project-dir "$PROJECT_DIR" --output json
 ```
 
 Wait for restore to complete, then continue. If the user declines, warn that `uip rpa uia` commands will fail and fall back to the indication tools (Step 3 in the UI Automation Guide).

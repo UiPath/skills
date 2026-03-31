@@ -51,7 +51,7 @@ Sends one or more keyboard shortcuts to a UI element.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NKeyboardShortcuts
+uip rpa get-default-activity-xaml --activity-class-name UiPath.UIAutomationNext.Activities.NKeyboardShortcuts --use-studio
 ```
 ## Notes
 

@@ -54,7 +54,7 @@ Performs a given UI task, using AI, on the attached application.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.Semantic.Activities.NUITask
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Semantic.Activities.NUITask --use-studio
 ```
 ## Notes
 

@@ -44,22 +44,22 @@ Before interacting with Orchestrator, solutions, or Integration Service, the use
 
 **Interactive login (browser OAuth2):**
 ```bash
-uip login --format json
+uip login --output json
 ```
 
 For a custom authority (e.g., alpha.uipath.com):
 ```bash
-uip login --authority "https://alpha.uipath.com/identity_" --it --format json
+uip login --authority "https://alpha.uipath.com/identity_" --it --output json
 ```
 
 For non-interactive (CI/CD) scenarios, use client credentials:
 ```bash
-uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --format json
+uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --output json
 ```
 
 Check login status:
 ```bash
-uip login status --format json
+uip login status --output json
 ```
 
 ### Step 2 — Select a Tenant
@@ -67,15 +67,15 @@ uip login status --format json
 List available tenants and set the active one:
 
 ```bash
-uip login tenant list --format json
-uip login tenant set "<TENANT_NAME>" --format json
+uip login tenant list --output json
+uip login tenant set "<TENANT_NAME>" --output json
 ```
 
 ### Step 3 — Explore Orchestrator
 
 List folders to orient yourself:
 ```bash
-uip or folders list --format json
+uip or folders list --output json
 ```
 
 ### Step 4 — Work with Solutions or Orchestrator Resources
@@ -106,12 +106,12 @@ Some operations (creating projects, validating, running workflows, packing) requ
 
 1. **Check for a running instance first:**
    ```bash
-   rpa-tool list-instances --format json
+   rpa-tool list-instances --output json
    ```
 
 2. **If no instance is running, try the standard install location:**
    ```bash
-   rpa-tool start-studio --format json
+   rpa-tool start-studio --output json
    ```
 
 3. **If that fails (version too old, not found, etc.) — ASK THE USER where their Studio build is located.** Do NOT search the entire filesystem. Common locations include:
@@ -121,7 +121,7 @@ Some operations (creating projects, validating, running workflows, packing) requ
 
 4. **Once you have the path, pass it explicitly:**
    ```bash
-   rpa-tool start-studio --studio-dir "<STUDIO_DIR>" --format json
+   rpa-tool start-studio --studio-dir "<STUDIO_DIR>" --output json
    ```
 
 > **Never spend time searching for Studio automatically.** If the default doesn't work, ask immediately — the user knows where their build is.
@@ -198,12 +198,12 @@ Every `uip` command accepts:
 
 | Option | Description | Default |
 |---|---|---|
-| `--format <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
+| `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--help` / `-h` | Display help for the command | -- |
 | `--version` / `-v` | Display CLI version | -- |
 
-> **Always use `--format json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
+> **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
 
 ## Deployment Lifecycle
 
@@ -211,7 +211,7 @@ The typical deployment workflow for a UiPath automation:
 
 ```
 1. Develop    → Create/edit coded workflows or RPA projects locally
-2. Validate   → uip rpa validate
+2. Validate   → uip rpa validate --use-studio
 3. Pack       → uip solution pack
 4. Login      → uip login
 5. Publish    → uip solution publish

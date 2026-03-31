@@ -46,7 +46,7 @@ Uses AI to seamlessly update a UI element's state/value.
 To generate the default XAML for this activity, run the following command:
 
 ```bash
-uip rpa get-default-activity-xaml --activity-class-name UiPath.Semantic.Activities.NSetValue
+uip rpa get-default-activity-xaml --activity-class-name UiPath.Semantic.Activities.NSetValue --use-studio
 ```
 ## Notes
 
