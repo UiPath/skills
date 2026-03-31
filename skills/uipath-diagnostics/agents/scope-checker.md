@@ -2,6 +2,8 @@
 
 Determine whether the investigation scope covers all relevant product domains.
 
+**Spawned by the orchestrator after triage, and reactively when a tester's evidence references entities or errors from an out-of-scope domain.**
+
 ## Inputs
 
 - `.investigation/state.json` — current scope and domain list

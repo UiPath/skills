@@ -7,18 +7,18 @@ description: Use when diagnosing UiPath platform & process issues - failed jobs,
 
 You orchestrate a hypothesis-driven diagnostic investigation. You manage the loop, delegate to sub-agents, and present findings to the user.
 
-## Critical Rules
+All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md`.
+
+## 1. Critical Rules
 
 1. **You NEVER run uip commands, query endpoints, or read reference docs** — except presentation guides from `state.json.presentation_guides`. Sub-agents do everything else.
-2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester — it enforces playbook compliance, elimination checks, and execution path tracing.
+2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester.
 3. **You own all decisions:** phase transitions, root cause vs. symptom classification, when to present resolution.
 4. **You present all findings.** Sub-agents work silently.
 5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
-6. **When you need user input, use `AskUserQuestion`.** Do not proceed or spawn agents until the user responds.
-7. **No data, no investigation.** If a sub-agent cannot retrieve the data needed, STOP. Tell the user what's missing. Do NOT let sub-agents substitute unrelated data or fabricate findings.
-8. **No root cause is a valid outcome.** If all hypotheses are eliminated or inconclusive, that is not a failure. Present what was found, what was ruled out, and recommend the user open a UiPath support ticket with the evidence gathered.
+6. **When you need user input, use `AskUserQuestion`.** Do not proceed until the user responds.
 
-## Investigation State
+## 2. Investigation State
 
 All state lives in `.investigation/` (relative to working directory). Schemas in `schemas/`.
 
@@ -32,91 +32,43 @@ All state lives in `.investigation/` (relative to working directory). Schemas in
 
 Sub-agents write raw responses to `raw/` immediately and don't keep them in context. You read evidence summaries, not raw files.
 
-## Progress Tracking
-
-Use `TaskCreate` to create tasks for each investigation phase. Update them with `TaskUpdate` as work progresses. Adapt task subjects to the user's actual problem.
-
-At investigation start, create these tasks (subjects are examples — tailor to the problem):
-
-1. **Triage** — e.g., "Triage failed queue items in ProcessABCQueue"
-2. **Generate hypotheses** — e.g., "Generate hypotheses for queue item failures"
-3. **Test hypotheses** — e.g., "Test hypotheses and identify root causes"
-4. **Resolution** — e.g., "Present resolution with preventive fixes"
-
-Set each task to `in_progress` when starting it, `completed` when done. Add additional tasks as needed during the investigation (e.g., individual hypothesis tests, user clarification steps).
-
-## User Interaction
-
-Use `AskUserQuestion` whenever you need input from the user — clarifying the problem or any decision point. Do NOT proceed past a question until the user responds. Sub-agents can also ask for clarification via `needs_user_input`.
-
-## New Data from User
-
-If the user provides new data at **any point** during the investigation (new error messages, job IDs, logs, screenshots, clarifications that change the scope), go back to step 1 (TRIAGE):
-
-1. Re-spawn triage with the new data included in the prompt
-2. Let triage re-classify scope and re-gather evidence incorporating the new information
-3. Resume the investigation flow from the triage sanity gate with the updated state
-
-Do NOT try to patch new data into an in-progress investigation — re-triage ensures the full picture is consistent.
-
-## Domain Scope Management
-
-After each sub-agent completes (triage, generator, tester), spawn the scope checker (`agents/scope-checker.md`). It compares the investigation data against the reference knowledge base and reports whether any product domains should be added to or removed from `state.json.domain`.
-
-**If missing domains are found:** use `AskUserQuestion` to present the finding and ask the user whether to expand scope. Explain what domain was detected and that expansion requires additional time and tool calls. If the user approves: re-spawn triage with explicit instruction to include the missing domains, let triage discover additional playbooks, then re-invoke the generator if new playbooks were found. Resume the investigation with the expanded context. If the user declines: continue with the current scope.
-
-**If unnecessary domains are found:** remove them from `state.json.domain` and discard any matched playbooks from those domains. A domain is unnecessary when it only reported the symptom (e.g., Orchestrator reported a faulted job) but the actual error belongs entirely to another domain (e.g., Integration Service connection failure). Narrowing scope prevents irrelevant playbook matches and wasted hypothesis generation.
-
-## Investigation Flow
+## 3. Phase State Machine
 
 Update `state.json.phase` at each transition:
 
-| Phase | Set when |
-|-------|----------|
-| `triage` | Starting triage (or re-triaging with new data or domain expansion) |
-| `hypotheses` | Starting hypothesis generation |
-| `test` | Starting to test a hypothesis |
-| `evaluate` | Evaluating a tester's result |
-| `deepen` | Re-invoking generator to deepen a confirmed symptom |
-| `resolution` | Presenting findings to the user |
-| `complete` | Investigation finished (root cause found or no root cause) |
+| Phase | Entry condition | Next |
+|-------|----------------|------|
+| `triage` | User describes problem (or new data arrives) | `hypotheses` |
+| `hypotheses` | Triage complete, playbooks matched | `test` |
+| `test` | Hypotheses ready, testing next in confidence order | `evaluate` |
+| `evaluate` | Tester returns verdict | `deepen`, `test`, or `resolution` |
+| `deepen` | Confirmed symptom needs sub-hypotheses | `hypotheses` (re-invoke generator) |
+| `resolution` | Root cause found or all hypotheses exhausted | `complete` |
+| `complete` | Findings presented to user | — |
 
-### 1. TRIAGE
+## 4. Investigation Flow
 
-Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify the domain, pre-select playbooks, or constrain scope in your prompt. Triage classifies scope based on actual evidence (job properties, error codes, CLI output). It discovers ALL matching playbooks, runs lightweight uip commands, and writes `state.json` + initial evidence.
+### TRIAGE
 
-**Triage sanity gate** (before anything else):
-- Read the triage evidence and verify the data actually relates to the user's reported problem.
-- If the triage data is about a **different process, queue, or entity**: discard the triage results, inform the user what happened, and either re-spawn triage with corrected filters or use `AskUserQuestion` for clarification.
-- Do NOT proceed with an investigation built on data from the wrong source.
+Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify or constrain scope.
 
-**Domain expansion check** — spawn the scope checker (see Domain Scope Management above).
+**Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, re-spawn or ask for clarification.
 
-**After triage**, check if the sub-agent returned `needs_user_input: true`. If so, use `AskUserQuestion` to present the question to the user. Do NOT proceed until the user responds. Re-spawn triage if the user's answer changes the scope.
+**Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.domain`.
 
-If additional data is needed (e.g., source code path, folder ID), use `AskUserQuestion` to collect it before proceeding.
+**User input:** If triage returned `needs_user_input: true`, present the question via `AskUserQuestion`. When the user responds, **continue the existing triage agent** via `SendMessage` (the agent result includes the agent ID) — do NOT spawn a fresh triage agent. A fresh spawn re-reads all instructions and re-discovers everything from scratch. Only re-spawn triage if the user's answer fundamentally changes scope (different product, different entity type).
 
-### 2. GENERATE HYPOTHESES
+**Never skip the hypothesis loop.** Even if the triage evidence looks conclusive, always proceed through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root causes. A "clear" error message may have a non-obvious underlying cause that only the hypothesis-test cycle would surface.
 
-Spawn hypothesis generator (`agents/hypothesis-generator.md`).
+### GENERATE HYPOTHESES
 
-**If high-confidence playbooks exist** — the generator produces ONLY the high-confidence hypotheses (1 per high-confidence playbook). It skips medium/low playbooks and docsai. This is the fast path — test the most likely cause first.
+Spawn hypothesis generator (`agents/hypothesis-generator.md`). Behavior varies by confidence level per the table in shared.md.
 
-**If no high-confidence playbooks exist** — normal generation: 2-5 hypotheses from medium/low playbooks + docsai.
+### TEST HYPOTHESES
 
-If no playbooks matched at all, the generator works from triage evidence alone.
+Test every hypothesis sequentially (highest confidence first). For each, spawn hypothesis tester (`agents/hypothesis-tester.md`).
 
-**Domain expansion check** — spawn the scope checker (see Domain Scope Management above).
-
-### 3. TEST HYPOTHESES
-
-Test every hypothesis sequentially (highest confidence first). For each, spawn hypothesis tester (`agents/hypothesis-tester.md`), then evaluate.
-
-The tester reads `## Context` for understanding, then scopes work to the playbook's confidence level: high-confidence playbooks get quick verification only (1-2 steps), medium get full diagnostic steps, low get free-form reasoning.
-
-### 4. EVALUATE (after each test)
-
-**Domain expansion check** — before validating, spawn the scope checker (see Domain Scope Management above).
+### EVALUATE (after each test)
 
 **Validate tester's work** — reject and re-spawn if any check fails:
 
@@ -125,7 +77,7 @@ The tester reads `## Context` for understanding, then scopes work to the playboo
 | `elimination_checks` | All confidence levels | Missing or incomplete vs. `evidence_needed.to_eliminate` |
 | `execution_path_traced` | Medium and Low only | Downstream entities unverified (inferred instead of queried) |
 
-For high-confidence hypotheses, `elimination_checks` should be 1-2 quick checks matching the playbook's verification steps. `execution_path_traced` is not required.
+**Reactive scope check:** If the tester's evidence references entities or errors from a domain not currently in `state.json.domain`, spawn the scope-checker. Otherwise skip it — do not spawn the scope-checker routinely after every test.
 
 **Classify the result:**
 
@@ -133,16 +85,27 @@ For high-confidence hypotheses, `elimination_checks` should be 1-2 quick checks 
 |--------|--------|
 | Eliminated | Record, next hypothesis |
 | Inconclusive | Record, next hypothesis |
-| Confirmed — explains WHY | Root cause (`is_root_cause: true`). If from a high-confidence playbook, skip remaining hypotheses and go to Resolution. If from medium/low, use `AskUserQuestion` to ask if the user wants remaining hypotheses tested. If multiple high-confidence hypotheses exist, test all of them before skipping — each addresses a distinct known issue. |
-| Confirmed — describes WHAT only | Symptom (`is_root_cause: false`). Set `generation_context.trigger: "deepening"` and `generation_context.parent_hypothesis` to this hypothesis ID. Re-invoke generator. |
+| Confirmed — explains WHY | Root cause (`is_root_cause: true`). High-confidence: skip remaining, go to Resolution. Medium/low: ask user if they want remaining tested. Multiple high-confidence: test all before skipping. |
+| Confirmed — describes WHAT only | Symptom (`is_root_cause: false`). Set `generation_context.trigger: "deepening"` and `parent_hypothesis`. Re-invoke generator. |
 
-**When all high-confidence hypotheses are eliminated** — re-invoke the generator with `generation_context.trigger: "scope_adjustment"` and the eliminated IDs. The generator now produces hypotheses from the remaining medium/low playbooks and docsai. Continue testing the new hypotheses normally.
+**When all high-confidence hypotheses are eliminated:** Re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs. Generator now produces from medium/low playbooks + docsai.
 
-**Root cause vs. symptom:** explains WHY = root cause, describes WHAT = symptom.
+### NEW DATA FROM USER
 
-### 5. RESOLUTION
+If the user provides new data at any point (error messages, job IDs, logs, screenshots), go back to TRIAGE. Re-spawn triage with the new data. Do NOT patch new data into an in-progress investigation.
 
-**If root cause(s) found** — check the playbook that sourced the confirmed hypothesis. If it has a `## Resolution` section, present its concrete fixes. Otherwise, for each confirmed root cause present:
+## 5. Evaluation Rules
+
+**Root cause vs. symptom:** A finding that explains WHY the failure occurs is a root cause. A finding that describes WHAT happened (but not why) is a symptom — deepen it.
+
+**When to stop testing:**
+- High-confidence root cause confirmed → skip remaining hypotheses, go to Resolution
+- Medium/low root cause confirmed → ask user if they want to continue
+- All hypotheses exhausted (eliminated or inconclusive) → go to Resolution with "no root cause" outcome
+
+## 6. Resolution
+
+**If root cause(s) found** — check the playbook that sourced the confirmed hypothesis. If it has a `## Resolution` section, present its concrete fixes. Otherwise present:
 
 ```
 ### Root Cause: {description}
@@ -153,40 +116,58 @@ For high-confidence hypotheses, `elimination_checks` should be 1-2 quick checks 
 **Preventive fix:** {for each domain in the causal chain, what to change so it doesn't recur}
 **Where:** {exact file, setting, folder/role — for each fix}
 **Who:** {user | RPA developer | admin | platform team — for each fix}
+**Sources:** {for each fix step, the playbook section, docsai result, or evidence file that documents it}
 ```
 
-Focus on **prevention across the full causal chain** — when the root cause crosses multiple product domains, the resolution must address each layer. An issue that starts with a selector failure, propagates through a BPMN orchestration gap, and manifests as an orphaned Orchestrator job needs fixes at all three levels, not just the layer where the symptom was observed.
+Focus on **prevention across the full causal chain** — when the root cause crosses multiple product domains, address each layer.
 
-**If no root cause found** — present:
-- What was investigated and ruled out
-- Any partial findings or patterns observed
+**If no root cause found** — present what was investigated and ruled out. Use `AskUserQuestion` to offer: provide more data (re-triage), or open a UiPath support ticket with the evidence gathered.
 
-Then use `AskUserQuestion` to offer the user a choice:
-- **Provide more data** — the user may have additional error messages, logs, screenshots, or context that could help. If they provide new data, go back to step 1 (TRIAGE) with the new information.
-- **Open a UiPath support ticket** — recommend they include the evidence gathered during this investigation.
+**Evidence gate** (apply before writing ANY fix step):
+1. For each fix step, identify the source: playbook `## Resolution`, docsai result, or evidence file
+2. If a fix step references a field or setting, verify its behavior is documented in one of those sources
+3. If you cannot cite a source for a fix step's behavioral claim, do NOT include it. Instead write: "Check UiPath documentation for [field/setting] behavior before proceeding."
+4. Every fix step that survives this gate must include its source in the `**Sources:**` field
 
-**Before presenting** — spawn the formatter (`agents/formatter.md`) with your draft resolution text. The formatter checks all entity names against the presentation guides and evidence, and returns the corrected text. Present the formatter's output, not your draft.
+**Presentation checklist** (apply after evidence gate):
+1. Read all presentation guides from `state.json.presentation_guides`
+2. Check every entity name against the guides and raw evidence data
+3. Use display names from raw data, not API property names
+4. Show IDs only where needed for commands
+5. Use UI labels, not API field names
 
 **Investigation summary** (always shown at end):
 
 | # | Hypothesis | Confidence | Status | Root Cause? | Key Evidence | Resolution |
 |---|------------|------------|--------|-------------|--------------|------------|
 
-## Spawning Sub-Agents
+## 7. Operational Details
+
+### Progress Tracking
+
+Use `TaskCreate`/`TaskUpdate` for each investigation phase. Tailor subjects to the user's problem:
+1. Triage — e.g., "Triage failed queue items in ProcessABCQueue"
+2. Generate hypotheses — e.g., "Generate hypotheses for queue item failures"
+3. Test hypotheses — e.g., "Test hypotheses and identify root causes"
+4. Resolution — e.g., "Present resolution with preventive fixes"
+
+### Spawning Sub-Agents
 
 Use the Agent tool. Include in the prompt:
 1. Full instructions from the agent file (read it first, including `agents/shared.md`)
-2. Specific context for this invocation (user input, hypothesis to test, etc.)
+2. Specific context for this invocation
 3. The working directory path
 
-## Presentation Rules
+**Read agent files just-in-time** — read an agent's file only when you're about to spawn it. Do NOT read all agent files at startup. You only need `agents/shared.md` + the specific agent file for the current phase.
+
+### Presentation Rules
 
 **Generic rules (always apply):**
 - Use human-readable names, not raw IDs. Show IDs in parentheses only when needed for commands.
-- Use UI labels, not API property names. If no UI label found, describe the setting functionally.
+- Use UI labels, not API property names.
 
-**Product-specific rules:** before formatting results, read all presentation guides from `state.json.presentation_guides`. Apply their rules in addition to the generic rules above. Product-specific rules take precedence when they conflict with generic rules.
+**Product-specific rules:** Read all presentation guides from `state.json.presentation_guides`. Product-specific rules take precedence over generic rules.
 
-## Cleanup
+### Cleanup
 
 After investigation completes, offer to delete or preserve `.investigation/`.

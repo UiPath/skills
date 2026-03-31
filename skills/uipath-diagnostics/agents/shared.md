@@ -2,6 +2,25 @@
 
 All diagnostic sub-agents follow these rules.
 
+## Invariants
+
+These rules apply to ALL agents, ALL phases, ALL confidence levels. Never override them.
+
+1. **No fabrication.** If the data needed is unavailable, STOP and say so. Never invent log entries, timestamps, error codes, or correlations not present in raw data. Never substitute unrelated data as a proxy. Not finding a root cause is a valid outcome — report what was found, what was ruled out, and recommend the user open a support ticket.
+2. **Evidence-to-problem correlation.** Every piece of evidence must tie directly to the user's reported symptom — the correct process, queue, entity, and time window. When a data source (folder, queue, tenant) contains items from multiple processes, filter to only the process under investigation before fetching details or drawing conclusions. Discard data from unrelated processes. Do not surface unrelated warnings or errors.
+3. **Reference browsing.** Only triage and scope-checker may browse files under `references/`. All other agents use paths from `state.json` (investigation_guides, presentation_guides, matched_playbooks).
+4. **Do not infer from unfamiliar fields.** If you encounter a field, setting, or property whose runtime behavior is not documented in a playbook, docsai result, or verified evidence, do not guess what it does. Do not use it in fix steps, explanations, or conclusions. If the field looks relevant, write: "The field `{name}` is present but its runtime behavior is not documented — check UiPath documentation before acting on it."
+
+## Confidence-Level Behavior
+
+Every agent must follow this table. Do not redefine confidence behavior locally.
+
+| Confidence | Generator | Tester | Elimination | Exec-path required? |
+|---|---|---|---|---|
+| **High** | 1 hypothesis per matching playbook; skip others and docsai | 1-2 verification steps only | Quick check only | No |
+| **Medium** | 2-5 hypotheses from all matching playbooks | Follow all diagnostic steps in playbook | All `to_eliminate` items | Yes |
+| **Low** | 2-5 hypotheses from all playbooks + docsai | Free-form reasoning | All `to_eliminate` items | Yes |
+
 ## Startup
 
 1. Create `.investigation/`, `.investigation/evidence/`, `.investigation/raw/` if they don't exist
@@ -27,39 +46,17 @@ All file paths are resolved by triage and stored in `state.json`. Read files fro
 - `state.json.presentation_guides` — product-specific display rules for entity names, IDs, labels
 - `state.json.matched_playbooks` — playbooks matched to the issue, with confidence level
 
-Do NOT browse `references/` yourself. Use the paths in `state.json`.
+**Playbook structure** — all playbooks use `## Context`, `## Investigation` (optional), `## Resolution` (optional). Confidence determines how much structure a playbook provides, but does NOT change the invariants — those always apply.
 
-**Playbook structure** — all playbooks use `## Context`, `## Investigation` (optional), `## Resolution` (optional). Playbooks vary by confidence level:
+All agents should follow the presentation guides from `state.json.presentation_guides` when writing evidence summaries and user-facing text.
 
-| Confidence | `## Context` | `## Investigation` | `## Resolution` |
-|---|---|---|---|
-| **High** | Match pattern + root cause | Quick verification (1-2 steps) | Concrete fix |
-| **Medium** | Causes, patterns | Concrete diagnostic steps | Fixes mapped to findings |
-| **Low** | Causes, patterns | General guidance or absent | Optional |
-
-Triage discovers matching playbooks but does not read their contents. Generator reads `## Context` to produce hypotheses — when high-confidence playbooks exist, it generates only from those (1 per playbook) and skips the rest. Tester follows `## Investigation` if present, scoping effort to the playbook's confidence level. Orchestrator reads `## Resolution` to present fixes.
-
-**All agents** should follow the presentation guides from `state.json.presentation_guides` when writing evidence summaries and user-facing text. Use human-readable names as defined by the product's presentation rules.
-
-**Confidence is authoritative.** A playbook's confidence level (from its frontmatter and the product summary) reflects how structured and specific the playbook is. Do NOT override, upgrade, or downgrade a playbook's confidence based on how well the symptoms match. A strong symptom match with a low-confidence playbook is still low-confidence — the playbook lacks structured investigation steps regardless of match quality.
+**Confidence is authoritative.** A playbook's confidence level reflects how structured the playbook is. Do NOT override, upgrade, or downgrade it based on symptom match quality.
 
 ## Raw Data Rule
 
 - Write full raw responses to `.investigation/raw/` **immediately**
 - Do NOT keep raw data in context — write first, read back only specific fields if needed
 - Evidence files reference raw files via `raw_data_ref`
-
-## Data Integrity
-
-Read the investigation guides from `state.json.investigation_guides` and follow their data correlation rules. If data doesn't match the user's reported problem, discard it.
-
-If you cannot retrieve the data you need: set `needs_user_input: true` and explain the gap. Do NOT substitute unrelated data or fabricate findings.
-
-**Do NOT infer behavior from unfamiliar fields.** If you encounter a field, setting, or property whose runtime behavior is not documented or verified through evidence, do NOT guess what it does or include it in the resolution. Presenting unverified assumptions as facts misleads the user. If a field looks relevant but its behavior is unknown, note it as "unverified — check documentation" rather than stating what it does.
-
-## It Is OK to Not Find a Root Cause
-
-Not every investigation will identify a root cause. If you've exhausted available evidence and hypotheses without a clear answer, that is a valid outcome — not a failure. Report what you found, what was ruled out, and recommend the user open a UiPath support ticket with the evidence gathered.
 
 ## Requesting User Input
 
@@ -80,7 +77,6 @@ The orchestrator reads this file, presents the question via `AskUserQuestion`, a
 
 - Do NOT generate or execute code (no Python scripts, no inline code). Shell commands for file I/O and uip are fine.
 - Do NOT perform work outside your role (see your agent file for boundaries)
-- Do NOT browse `references/` — use paths from `state.json`
 
 ## Output Schemas
 

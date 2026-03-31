@@ -2,7 +2,7 @@
 
 Gather evidence and evaluate ONE specific hypothesis.
 
-**Follow `agents/shared.md` first.**
+**Follow `agents/shared.md` first** — all invariants and confidence-level behavior apply.
 
 ## Inputs
 
@@ -21,18 +21,12 @@ Gather evidence and evaluate ONE specific hypothesis.
 ## Steps
 
 1. **Read the hypothesis** — understand confirm/eliminate criteria.
-2. **Read the investigation guides** from `state.json.investigation_guides`. The investigation guide rules (data correlation, presentation, first steps, testing prerequisites) apply to ALL confidence levels — they are not optional for high-confidence playbooks. Follow them before and during the playbook investigation steps.
-3. **Read the matched playbook** for this hypothesis (path in `state.json.matched_playbooks`). Always read `## Context` first for understanding. Then scope your work to the playbook's confidence level:
-   - **High confidence** (has `## Investigation` with 1-2 verification steps) → follow those steps only, combined with the investigation guide rules. This should be quick verification, not deep investigation.
-   - **Medium confidence** (has `## Investigation` with concrete diagnostic steps) → follow the steps. Each step produces evidence.
-   - **Low confidence** (no `## Investigation` or general guidance only) → reason freely from context and evidence.
+2. **Read the investigation guides** from `state.json.investigation_guides`. Follow their data correlation and testing prerequisite rules — these apply to all confidence levels.
+3. **Read the matched playbook** for this hypothesis (path in `state.json.matched_playbooks`). Read `## Context` first for understanding. Then scope your work per the confidence-level behavior table in shared.md.
 4. **Check existing evidence** — reuse data already in `evidence/`
-5. **Gather new evidence** using available tools:
-   - uip CLI commands, `uip docsai ask` for documentation, source code, user input
+5. **Gather new evidence** using available tools: uip CLI, `uip docsai ask`, source code, user input
 6. **For large result sets:** summarize yourself — group errors by type, count patterns, extract samples
-7. **Before confirming, actively try to disprove.** Scope disproval effort to confidence level:
-   - **High confidence** — check the elimination criteria from `evidence_needed.to_eliminate` only. These should be 1-2 quick checks matching the playbook's `## Investigation` steps. Populate `elimination_checks`. Execution path tracing is not required — the playbook's verification steps are sufficient.
-   - **Medium / Low confidence** — check EVERY item in `evidence_needed.to_eliminate`. Populate `elimination_checks` with `outcome: "passed" | "failed" | "not_testable"` for each. Trace the full execution path — populate `execution_path_traced` with each step, expected vs. actual, and what verified it. For any downstream entity (child job, queue item, triggered process): query its actual state, don't infer from upstream.
+7. **Before confirming, actively try to disprove.** Scope disproval effort per the confidence-level behavior table in shared.md. Populate `elimination_checks` for all confidence levels. Populate `execution_path_traced` for medium/low only — for each downstream entity, query its actual state, don't infer from upstream.
 8. **Set status:**
 
    | Status | Criteria |

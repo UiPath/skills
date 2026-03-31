@@ -81,6 +81,8 @@ All playbooks use the same three headers:
 
 Template: `templates/playbook.md`
 
+> **Note:** The canonical confidence-level behavior table (how each agent acts per confidence level) is in `agents/shared.md`. Keep this guide aligned with that table.
+
 ### Cross-Product References
 
 Playbooks may reference other product domains (e.g., an Orchestrator playbook mentioning "ProcessOrchestration" or "BPMN", a Maestro playbook referencing child Orchestrator jobs). When writing playbooks, use explicit product names when describing cross-domain behavior — the scope checker agent detects these references and flags missing domains for the orchestrator to expand scope.
@@ -93,16 +95,11 @@ Reads `summary.md` to find the right product, then reads the product's `summary.
 
 ### Hypothesis Generation
 
-The generator reads `## Context` from matched playbooks and produces hypotheses. When high-confidence playbooks exist, the generator produces ONLY high-confidence hypotheses (1 per playbook) and skips medium/low playbooks and docsai — this is the fast path. If no high-confidence playbooks exist, or if re-invoked after high-confidence elimination, it generates 2-5 hypotheses from medium/low playbooks + docsai.
-
-Hypotheses are tested in confidence order. High-confidence hypotheses are tested first.
+The generator reads `## Context` from matched playbooks and produces hypotheses per the confidence-level behavior table in `agents/shared.md`. Hypotheses are tested in confidence order (high first).
 
 ### Testing
 
-The tester reads `## Context` for understanding, then scopes work to the playbook's confidence level:
-- **High confidence** → follow the 1-2 verification steps only. Quick verification, not deep investigation.
-- **Medium confidence** → follow the concrete diagnostic steps.
-- **Low confidence** → reason freely from context and evidence.
+The tester reads `## Context` for understanding, then scopes work per the confidence-level behavior table in `agents/shared.md`.
 
 ### Investigation Guides
 
