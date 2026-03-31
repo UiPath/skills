@@ -166,7 +166,7 @@ Run `uip flow registry <subcommand> --help` for additional options (e.g., `--for
 
 ## Integration Service commands (for connector binding and reference resolution)
 
-When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4d** of the flow authoring workflow.
+When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4e** of the flow authoring workflow.
 
 ```bash
 # Connections

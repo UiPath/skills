@@ -173,9 +173,29 @@ uip flow registry get <nodeType> --connection-id <connection-id> --output json
 
 This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
 
-#### 4c. Resolve reference fields
+#### 4c. Describe the resource and read full metadata
 
-Check `inputDefinition.fields` from the `registry get` response for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
+Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
+
+```bash
+# 1. Describe to trigger fetch + cache (extract the objectName from the connector node type)
+uip is resources describe "<connector-key>" "<objectName>" \
+  --connection-id "<id>" --operation Create --output json
+# → response includes metadataFile path
+
+# 2. Read the full cached metadata
+cat <metadataFile path from response>
+```
+
+The full metadata contains:
+- **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
+- **`requestFields`** — body fields with `type`, `required`, `description`, and `reference` objects for ID resolution
+- **`path`** — the API endpoint path (use this as the `endpoint` in `node configure`)
+- **`responseFields`** — response schema
+
+#### 4d. Resolve reference fields
+
+Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
 
 ```bash
 # Example: resolve Slack channel "#test-slack" to its ID
@@ -188,18 +208,18 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including: identifying reference fields, dependency chains (resolve parent fields before children), pagination, describe failures, and fallback strategies.
 
-#### 4d. Validate required fields against user prompt
+#### 4e. Validate required fields against user prompt
 
-**Check every required field** in `inputDefinition.fields` against what the user provided. This is a hard gate — do NOT proceed to planning or building until all required fields have values.
+**Check every required field** — both `requestFields` and `parameters` where `required: true` — against what the user provided. This is a hard gate — do NOT proceed to planning or building until all required fields have values. For query/path parameters with a `defaultValue`, use the default if the user didn't specify one.
 
-1. Collect all fields where `required: true` from each connector node's metadata
+1. Collect all required fields from the metadata (`requestFields` + `parameters`)
 2. For each required field, check if the user's prompt contains a value
-3. If any required field is missing, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected
+3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected
 4. Only after all required fields are accounted for, proceed to planning
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
 
-After completing Steps 4a–4d, you should have for each connector node: a bound connection ID, enriched field metadata, and resolved values for all reference fields. Carry this information into the planning step.
+After completing Steps 4a–4e, you should have for each connector node: a bound connection ID, enriched field metadata, the endpoint path, and resolved values for all reference fields. Carry this information into the planning step.
 
 ### Step 5 — Plan the flow (interactive)
 
