@@ -1,6 +1,172 @@
-# Flow Planning Guide
+# Planning Phase 2: Implementation Resolution
 
-Reference for selecting nodes, wiring them correctly, and avoiding common mistakes when planning and building UiPath Flows.
+Resolve all implementation details for the approved architectural plan. This phase takes the `.arch.plan.md` and produces an `.impl.plan.md` with concrete, build-ready values. The node catalog, wiring rules, and flow patterns below are also used during the build step.
+
+> **Prerequisite:** The user must have explicitly approved the architectural plan (`.arch.plan.md`) before starting this phase.
+>
+> **Skip the resolution steps (1–7)** if the flow uses only OOTB nodes (Script, HTTP, Decision, Switch, Loop, Merge, End, Terminate, Delay, Transform, Mock). OOTB nodes do not require registry lookups, connection binding, or reference resolution — proceed directly to the build step. The node catalog and wiring reference below are still needed for building.
+
+---
+
+## Implementation Resolution Process
+
+### Step 1 — Identify Nodes Needing Resolution
+
+Scan the approved `.arch.plan.md` node table and connector summary. Identify:
+
+| Category | How to identify | Action |
+| --- | --- | --- |
+| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Steps 2a–2d |
+| Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 |
+| Mock placeholders | Node type is `core.logic.mock` | Run Step 4 |
+| OOTB nodes | Everything else | No resolution needed |
+
+If no nodes need resolution, skip to Step 6.
+
+### Step 2 — Resolve Connector Nodes
+
+For each connector node, run these sub-steps in order.
+
+#### 2a. Find the connector node type
+
+```bash
+uip flow registry pull --force
+uip flow registry search "<service-name>" --output json
+```
+
+Find the node type matching the intended operation from the `.arch.plan.md` connector summary. Confirm it has `category: "connector"` in the results.
+
+#### 2b. Bind a connection
+
+Extract the connector key from the node type (`uipath.connector.<connector-key>.<activity>`).
+
+```bash
+uip is connections list "<connector-key>" --output json
+```
+
+1. Pick the default enabled connection (`IsDefault: Yes`, `State: Enabled`)
+2. If no connection exists, **stop and tell the user** — they must create one before proceeding
+3. Verify the connection is healthy:
+
+```bash
+uip is connections ping "<connection-id>" --output json
+```
+
+Record the connection ID for `bindings_v2.json` during the build step.
+
+#### 2c. Get enriched metadata and resolve reference fields
+
+```bash
+uip flow registry get <nodeType> --connection-id <connection-id> --output json
+```
+
+Check `inputDefinition.fields` for fields with a `reference` object — these require ID lookups:
+
+```bash
+uip is resources execute list "<connector-key>" "<resource>" \
+  --connection-id "<id>" --output json
+```
+
+Use resolved IDs (not display names) in the node inputs. Present options to the user when multiple matches exist.
+
+#### 2d. Validate required fields
+
+Check every `required: true` field in `inputDefinition.fields` against what the user provided. If any required field is missing, **ask the user before proceeding** — list the missing fields with their `displayName` and expected value type.
+
+Do NOT proceed until all required fields have values.
+
+### Step 3 — Resolve Resource Nodes
+
+For each resource node (RPA process, agent, flow, API workflow, human task):
+
+```bash
+uip flow registry pull --force
+uip flow registry search "<resource-name>" --output json
+```
+
+1. If found: record the exact node type (e.g., `uipath.core.rpa-workflow.invoice-abc123`)
+2. If not found: keep the `core.logic.mock` placeholder and note the gap
+
+```bash
+uip flow registry get "<node-type>" --output json
+```
+
+Record `inputDefinition` and `outputDefinition` for the node table.
+
+### Step 4 — Replace Mock Nodes
+
+For each `core.logic.mock` node in the architectural plan:
+
+1. Check if the resource has been published since planning: `uip flow registry search "<name>" --output json`
+2. If published: replace the mock with the real resource node type, update inputs/outputs
+3. If not published: keep the mock and include it in the "Mock Placeholders" section of the output
+
+### Step 5 — Replace Placeholders
+
+Update the node table from the `.arch.plan.md`:
+
+- Replace `<PLACEHOLDER>` values with resolved IDs
+- Replace `connector: <service>` annotations with actual node types
+- Replace `resource: <name>` annotations with actual node types
+- Update inputs with resolved reference field values
+- Update outputs based on `outputDefinition` from registry
+
+### Step 6 — Write the Implementation Plan
+
+Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (same location as the `.arch.plan.md`).
+
+#### Output Format
+
+```markdown
+# <SolutionName> Implementation Plan
+
+## Resolved Node Table
+
+| # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+
+## Resolved Edge Table
+
+(Copy from `.arch.plan.md` — update only if node IDs changed due to mock replacement)
+
+## Bindings
+
+| Connector Key | Connection ID | Activity | Verified |
+| --- | --- | --- | --- |
+
+## Variables
+
+(Copy from `.arch.plan.md` Inputs and Outputs section)
+
+## Mock Placeholders (if any)
+
+| Node ID | Intended Resource | Skill to Use | Status |
+| --- | --- | --- | --- |
+
+## Changes from Architectural Plan
+
+- List what changed between `.arch.plan.md` and this plan
+```
+
+#### Column Additions
+
+The implementation plan adds these columns beyond the architectural plan:
+
+- **Connection ID**: The bound IS connection UUID (connector nodes only)
+- **Verified**: Whether the connection was pinged successfully
+
+### Step 7 — Get Approval
+
+Present a short summary in chat:
+
+1. How many nodes were resolved
+2. Any mock placeholders remaining
+3. Any required fields that need user input
+4. Any connections that need to be created
+
+Tell the user to review `<SolutionName>.impl.plan.md`. Do NOT proceed to the build step until the user explicitly approves.
+
+---
 
 ## Product Heuristics
 
@@ -412,13 +578,15 @@ When wiring to dynamic ports, the port ID must match the configured item's `id`.
 ## Common Flow Patterns
 
 ### Linear Pipeline
-```
+
+```text
 Trigger → Action A → Action B → Action C → End
 ```
 Simple sequential processing. Each node's output port (`success` for Script, `default` for HTTP, `output` for Transform) connects to the next node's `input`.
 
 ### Conditional Branch
-```
+
+```text
 Trigger → Fetch Data → Decision ──true──→ Process → End
                           │
                           └──false──→ Log Skip → End
@@ -426,7 +594,8 @@ Trigger → Fetch Data → Decision ──true──→ Process → End
 Branch on a condition. Each path needs its own End node (or both can merge to one).
 
 ### Parallel Processing with Merge
-```
+
+```text
                     ┌→ Call API A ─┐
 Trigger → Split ────┤              ├→ Merge → Combine Results → End
                     └→ Call API B ─┘
@@ -434,7 +603,8 @@ Trigger → Split ────┤              ├→ Merge → Combine Results 
 Wire one node's output to multiple downstream nodes. Use Merge to wait for all before continuing.
 
 ### Error Handling
-```
+
+```text
 Trigger → HTTP Request ──default──→ Decision($vars.httpCall.error) ──true──→ Log Error → Terminate
                                         │
                                         └──false──→ Process → End
@@ -442,7 +612,8 @@ Trigger → HTTP Request ──default──→ Decision($vars.httpCall.error) �
 Check `$vars.nodeId.error` after action nodes. Use a Decision to branch on error presence, then route to a handler or Terminate.
 
 ### Orchestration (Mixed Resource Types)
-```
+
+```text
 Trigger → Script (prepare) → RPA Process (extract) → Agent (classify) → Decision →
   approved: Script (format) → End
   rejected: Human Task (review) → End
@@ -450,7 +621,8 @@ Trigger → Script (prepare) → RPA Process (extract) → Agent (classify) → 
 Flow composes different automation types into one business process. Each resource node's output feeds the next via `$vars`.
 
 ### Subflow Composition
-```
+
+```text
 Trigger → Subflow (validate) → Decision (valid?) →
   true: Subflow (process) → End
   false: Script (log) → Terminate
@@ -458,10 +630,9 @@ Trigger → Subflow (validate) → Decision (valid?) →
 Use subflows to encapsulate reusable logic. Each subflow has isolated scope — pass data via inputs/outputs.
 
 ### Scheduled Batch Processing
-```
+
+```text
 Scheduled Trigger (R/PT1H) → HTTP (fetch batch) → Loop (items) →
   Queue Create (per item) → End Loop → Script (summary) → End
 ```
 Combine scheduled triggers with loops and queues for recurring batch jobs.
-
-

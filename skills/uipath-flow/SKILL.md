@@ -260,38 +260,50 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 After completing Steps 4a–4d, you should have for each connector node: a bound connection ID, enriched field metadata, and resolved values for all reference fields. Carry this information into the planning step.
 
-### Step 5 — Plan the flow (interactive)
+### Step 5 — Plan the flow (two phases)
 
 **Required when creating a new flow or adding multiple nodes.** Only skip this step for small targeted edits to an *existing* flow (e.g., changing a script body, renaming a node, tweaking one connection). When in doubt, plan.
 
-**Before planning, read [references/flow-planning-guide.md](references/flow-planning-guide.md)** for the complete node catalog, node selection heuristics (when to use Decision vs Switch, Loop vs ForEach, connector vs HTTP, End vs Terminate), expression/variable syntax, wiring rules, and common flow patterns.
+Planning is split into two phases:
+- **Phase 1 — Architectural Design:** Design the flow topology (nodes, edges, inputs/outputs) and produce a mermaid diagram. No registry lookups or connection binding.
+- **Phase 2 — Implementation Resolution:** Resolve connector details, bind connections, resolve reference fields, and finalize the plan with implementation-ready details.
 
-Generate a plan as a **markdown file** with a mermaid diagram and structured details. This lets the user (and PMs) review the flow topology before any code is written.
+#### 5a. Architectural Design (Phase 1)
 
-#### 5a. Write the plan file
+**Read [references/planning-phase-architectural.md](references/planning-phase-architectural.md)** for the node type catalog, selection heuristics, wiring rules, topology patterns, mermaid validation rules, and the full output format.
 
-Write `flow-plan.md` in the project directory with the following sections. For subsequent updates (Step 5c), edit `flow-plan.md` directly.
+Follow the process in that guide to produce a `<SolutionName>.arch.plan.md` in the **solution directory** (the folder containing the `.uipx` file) containing:
+1. Summary
+2. Mermaid flow diagram (validated against the mermaid syntax rules in the guide)
+3. Node table with suspected inputs/outputs
+4. Edge table with source/target ports
+5. Inputs & Outputs (workflow-level variables)
+6. Connector summary (if applicable)
+7. Open questions (if any)
 
-**Required sections:**
+Present a **short summary in chat** (goal + key nodes + open questions). Tell the user to review the full plan in `<SolutionName>.arch.plan.md`.
 
-1. **Summary** — 2-3 sentences describing what the flow does end-to-end
-2. **Flow Diagram** — a mermaid diagram showing all nodes, edges, and branching logic. Use `subgraph` blocks to group related sections (e.g., "Data Ingestion", "Processing", "Notification"). For flows with 20+ nodes, subgraphs are essential for readability. Use direction TB (top-bottom) for most flows; LR (left-right) only for very linear flows with few branches.
-3. **Node table** — markdown table with columns: `#`, `Name`, `Category`, `Node Type`, `Description`. Category is one of: trigger, action, script, control, connector, agent.
-4. **Edges** — markdown table with columns: `#`, `Source Node`, `Source Port`, `Target Node`, `Target Port`, `Description`. One row per edge. Source/target ports must match the node type's standard ports (see [references/flow-file-format.md](references/flow-file-format.md)).
-5. **Connector details** (omit if no connectors) — markdown table with columns: `Node`, `Connector Key`, `Operation`, `Required Inputs`, `Connection`. Mark connection status as found or not found.
-6. **Inputs & Outputs** — markdown table with columns: `Direction`, `Name`, `Type`, `Description`
-7. **Open questions** (omit if none) — bulleted list, each prefixed with `**[REQUIRED]**`
+**Do NOT proceed to Phase 2 until the user explicitly approves the architectural plan.**
 
-#### 5b. Present the plan for review
+#### 5b. Implementation Resolution (Phase 2)
 
-In chat, output a **short summary only** (goal + key nodes + any open questions). Tell the user to review the full plan in `flow-plan.md`.
+**Read [references/planning-phase-implementation.md](references/planning-phase-implementation.md)** for the implementation resolution process.
+
+Phase 2 takes the approved architectural plan and resolves all implementation details:
+- Run `uip flow registry search` and `registry get` for connector and resource nodes
+- Bind Integration Service connections
+- Resolve reference fields via `uip is resources execute list`
+- Validate required fields against user-provided values
+- Replace `<PLACEHOLDER>` values with resolved IDs
+- Replace `core.logic.mock` nodes with real resource nodes (if published)
+- Write `<SolutionName>.impl.plan.md` with resolved details
 
 #### 5c. Iterate until approved
 
 **Do NOT proceed to Step 6 until the user explicitly approves the plan.** The iteration loop:
 
 1. User reviews the plan and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
-2. Update `flow-plan.md` with the changes
+2. Update `<SolutionName>.impl.plan.md` with the changes
 3. Summarize what changed in chat
 4. Repeat until the user says the plan is approved
 
@@ -414,8 +426,8 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | I need to... | Read these |
 |---|---|
 | **Edit an existing flow** | Common Edits section |
-| **Generate a flow plan** | [references/flow-planning-guide.md](references/flow-planning-guide.md) + Step 5 |
-| **Choose the right node type** | [references/flow-planning-guide.md — Node Selection Guide](references/flow-planning-guide.md#node-selection-guide) |
+| **Generate a flow plan** | [references/planning-phase-architectural.md](references/planning-phase-architectural.md) + [references/planning-phase-implementation.md](references/planning-phase-implementation.md) + Step 5 |
+| **Choose the right node type** | [references/planning-phase-architectural.md — Node Selection Heuristics](references/planning-phase-architectural.md#node-selection-heuristics) |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
@@ -473,7 +485,8 @@ When you finish building or editing a flow, report to the user:
 
 ## References
 
-- **[Flow Planning Guide](references/flow-planning-guide.md)** — Node catalog, node selection heuristics, wiring rules, and common patterns. **Read this first when planning a new flow.**
+- **[Planning Phase 1: Architectural Design](references/planning-phase-architectural.md)** — Node type catalog, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
+- **[Planning Phase 2: Implementation Resolution](references/planning-phase-implementation.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), plus the full node catalog, wiring rules, and flow patterns needed for building. **Read this after the architectural plan is approved.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates

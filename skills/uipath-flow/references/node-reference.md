@@ -1,6 +1,6 @@
 # Node Reference
 
-Complete catalog of node types not fully covered in the [planning guide](flow-planning-guide.md). For OOTB nodes already documented there (Script, HTTP, Decision, Switch, Loop, Merge, End, Terminate, Mock), see the planning guide.
+Complete catalog of node types not fully covered in the [architectural planning guide](planning-phase-architectural.md). For OOTB nodes already documented there (Script, HTTP, Decision, Switch, Loop, Merge, End, Terminate, Mock), see the architectural planning guide. For implementation resolution (registry lookups, connection binding, reference field resolution), see the [implementation planning guide](planning-phase-implementation.md).
 
 ---
 
