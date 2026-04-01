@@ -128,14 +128,14 @@ uip flow node list <ProjectName>.flow --output json
 
 ### uip flow node configure
 
-Configure a **connector** node with connection details and parameter values. Run this after `node add` for connector nodes.
+Configure a **connector** node with connection details, method info, and parameter values. Run this after `node add` for connector nodes.
 
 ```bash
 uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
-  --detail '{"connectionId": "<id>", "folderKey": "<key>", "bodyParameters": {...}}'
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "GET", "endpoint": "/Resource/{id}", "operation": "Retrieve", "bodyParameters": {...}}'
 ```
 
-The `--detail` JSON accepts: `connectionId` (required), `folderKey` (required), `bodyParameters`, `queryParameters`, `pathParameters`. The command auto-derives the HTTP method, endpoint path template, and operation type from the registry (`connectorMethodInfo`). It also copies output definitions to the node instance and sets `inputMetadata`.
+The `--detail` JSON accepts: `connectionId` (required), `folderKey` (required), `method` (required — HTTP method from `connectorMethodInfo`), `endpoint` (required — path template from `connectorMethodInfo`), `operation` (required — e.g. `Retrieve`, `Create`, `List`), `bodyParameters`, `queryParameters`, `pathParameters`. Get the `method`, `endpoint`, and `operation` values from the `connectorMethodInfo` field in the `registry get` response. The command also sets `inputMetadata`. Output variables are handled automatically by `node add` via the definition's `outputDefinition`.
 
 ## uip flow edge
 

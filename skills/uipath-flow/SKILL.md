@@ -232,6 +232,8 @@ uip flow registry get <nodeType> --connection-id <connection-id> --output json
 
 This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
 
+The response also includes `connectorMethodInfo` with the real HTTP `method` (e.g. `GET`, `POST`), `path` template (e.g. `/ConversationsInfo/{conversationsInfoId}`), and `operation` type (e.g. `Retrieve`, `Create`). **Save these three values** — you must pass them to `node configure` later.
+
 #### 4c. Describe the resource and read full metadata
 
 Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
@@ -249,7 +251,7 @@ cat <metadataFile path from response>
 The full metadata contains:
 - **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
 - **`requestFields`** — body fields with `type`, `required`, `description`, and `reference` objects for ID resolution
-- **`path`** — the API endpoint path (auto-derived by `node configure`; informational only)
+- **`path`** — the API endpoint path (also available in `connectorMethodInfo` from `registry get`)
 - **`responseFields`** — response schema
 
 #### 4d. Resolve reference fields
@@ -368,10 +370,10 @@ After adding a connector node with `node add`, configure it with the resolved co
 
 ```bash
 uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
-  --detail '{"connectionId": "<id>", "folderKey": "<key>", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}'
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "POST", "endpoint": "/issues", "operation": "Create", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}'
 ```
 
-The command auto-derives the HTTP method, endpoint path, and operation type from the registry (`connectorMethodInfo`), populates `inputs.detail`, copies output definitions to the node instance, and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4c, not display names.
+The `method`, `endpoint`, and `operation` values come from `connectorMethodInfo` in the `registry get` response (Step 4b). The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4c, not display names.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
