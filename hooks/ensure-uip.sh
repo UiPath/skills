@@ -65,29 +65,6 @@ ensure_npm() {
   fi
 }
 
-ensure_github_packages_registry() {
-  # @uipath packages are hosted on GitHub Packages, not the public npm registry.
-  # Configure the @uipath scope to point there and authenticate with a token.
-  local current_registry
-  current_registry="$(npm config get @uipath:registry 2>/dev/null || echo "")"
-
-  if [ "$current_registry" != "https://npm.pkg.github.com" ]; then
-    echo "Configuring @uipath npm scope to use GitHub Packages registry..." >&2
-    npm config set @uipath:registry https://npm.pkg.github.com
-  fi
-
-  if [ -z "${GH_NPM_REGISTRY_TOKEN:-}" ]; then
-    echo "Error: GH_NPM_REGISTRY_TOKEN environment variable is not set." >&2
-    echo "This token is required to install @uipath packages from GitHub Packages." >&2
-    echo "Set it in your shell profile:" >&2
-    echo "  export GH_NPM_REGISTRY_TOKEN=ghp_your_token_here" >&2
-    exit 2
-  fi
-
-  # Set the auth token for npm.pkg.github.com
-  npm config set //npm.pkg.github.com/:_authToken "$GH_NPM_REGISTRY_TOKEN"
-}
-
 # npm install -g always re-downloads and re-installs, even if the same version
 # is already present. This is slow for a synchronous session hook and also
 # re-triggers package lifecycle scripts (e.g. servo runs preinstall hooks
@@ -126,7 +103,6 @@ ensure_uip_tool() {
 
 # ── main ─────────────────────────────────────────────────────────────
 ensure_npm
-ensure_github_packages_registry
 ensure_npm_package @uipath/cli
 if is_windows; then
   ensure_npm_package @uipath/servo
