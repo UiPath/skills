@@ -290,19 +290,31 @@ C# requires `xmlns:mca="clr-namespace:Microsoft.CSharp.Activities;assembly=Syste
 
 ---
 
-## Reference files (load on demand only)
+## Reference files — progressive loading
+
+### ADVANCED — load when the task matches (MANDATORY for the listed triggers)
+
+These files MUST be loaded before starting the indicated task. Do not skip them.
+
+| File | MANDATORY when | Why |
+|------|---------------|-----|
+| [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) | Creating or editing any XAML file | File template, expression syntax, property binding rules, XAML examples |
+| [common-pitfalls.md](./references/common-pitfalls.md) | Hit a validation error you cannot diagnose in 1 attempt | OverloadGroup patterns, type gotchas, ForEach/Iterator issues, scope errors |
+| [cli-reference.md](./references/cli-reference.md) | Need exact parameters for a CLI command not shown above | Full command reference with all options |
+| [validation-and-fixing.md](./references/validation-and-fixing.md) | More than 2 fix cycles on the same error | Fix order, package resolution, JIT types, focus-activity debugging |
+| [environment-setup.md](./references/environment-setup.md) | Studio is not running, or creating a new project | Project root detection, start-studio, open-project, auth |
+| [exception-and-type-patterns.md](./references/exception-and-type-patterns.md) | Using TryCatch, Throw, or `s:` types (DateTime, Exception, Guid) | The `s:` prefix rule, TryCatch XAML pattern (3 places), type mappings |
+| [excel-workbook-activities.md](./references/excel-workbook-activities.md) | Working with Excel read/write/filter | Classic vs Business activities, Read/Write/Filter XAML with LINQ |
+| [discovery-and-resolution.md](./references/discovery-and-resolution.md) | Stuck on activity resolution, need full discovery workflow | 9-step discovery flow, activity doc lookup, provider disambiguation, examples |
+
+### EXPERT — load only when specifically needed (rare / edge cases)
 
 | File | Load when |
 |------|----------|
-| [xaml-basics-and-rules.md](./references/xaml-basics-and-rules.md) | Creating a new XAML file (need file template) |
-| [common-pitfalls.md](./references/common-pitfalls.md) | Hit a validation error you cannot diagnose from the message alone |
-| [cli-reference.md](./references/cli-reference.md) | Need exact parameters for a CLI command not shown above |
-| [environment-setup.md](./references/environment-setup.md) | Studio is not running, or creating a new project for the first time |
-| [validation-and-fixing.md](./references/validation-and-fixing.md) | Deep in the validate/fix loop and need advanced debugging |
-| [project-structure.md](./references/project-structure.md) | Need to understand project.json fields or folder layout |
-| [excel-workbook-activities.md](./references/excel-workbook-activities.md) | Working with Excel read/write/filter operations |
-| [exception-and-type-patterns.md](./references/exception-and-type-patterns.md) | Using TryCatch, or "type not defined" errors on DateTime/Exception/Guid |
-| [jit-custom-types-schema.md](./references/jit-custom-types-schema.md) | Working with dynamic/connector activities that need JIT types |
+| [project-structure.md](./references/project-structure.md) | Need to understand project.json fields, folder layout, or package versions |
+| [jit-custom-types-schema.md](./references/jit-custom-types-schema.md) | Working with dynamic/connector activities that produce JIT custom types |
+| [connector-capabilities.md](./references/connector-capabilities.md) | Building Integration Service connector workflows |
+| [ui-automation-guide.md](./references/ui-automation-guide.md) | Building UI automation with screen element targets |
 
 ---
 
