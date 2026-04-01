@@ -135,7 +135,7 @@ uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
   --detail '{"connectionId": "<id>", "folderKey": "<key>", "bodyParameters": {...}}'
 ```
 
-The `--detail` JSON accepts: `connectionId` (required), `folderKey` (required), `bodyParameters`, `queryParameters`, `pathParameters`. The `endpoint` field is optional — the command auto-derives the HTTP method and endpoint path template from the registry (`connectorMethodInfo`). It also copies output definitions to the node instance and sets `inputMetadata`.
+The `--detail` JSON accepts: `connectionId` (required), `folderKey` (required), `bodyParameters`, `queryParameters`, `pathParameters`. The command auto-derives the HTTP method, endpoint path template, and operation type from the registry (`connectorMethodInfo`). It also copies output definitions to the node instance and sets `inputMetadata`.
 
 ## uip flow edge
 

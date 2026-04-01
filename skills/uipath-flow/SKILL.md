@@ -249,7 +249,7 @@ cat <metadataFile path from response>
 The full metadata contains:
 - **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
 - **`requestFields`** — body fields with `type`, `required`, `description`, and `reference` objects for ID resolution
-- **`path`** — the API endpoint path (auto-derived by `node configure`, no need to provide manually)
+- **`path`** — the API endpoint path (auto-derived by `node configure`; informational only)
 - **`responseFields`** — response schema
 
 #### 4d. Resolve reference fields
@@ -278,7 +278,7 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
 
-After completing Steps 4a–4e, you should have for each connector node: a bound connection ID, enriched field metadata, the endpoint path, and resolved values for all reference fields. Carry this information into the planning step.
+After completing Steps 4a–4e, you should have for each connector node: a bound connection ID, enriched field metadata, and resolved values for all reference fields. Carry this information into the planning step.
 
 ### Step 5 — Plan the flow (two phases)
 
@@ -371,7 +371,7 @@ uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
   --detail '{"connectionId": "<id>", "folderKey": "<key>", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}'
 ```
 
-The command auto-derives the HTTP method and endpoint path from the registry (`connectorMethodInfo`), populates `inputs.detail`, copies output definitions to the node instance, and creates workflow-level `bindings` entries. You do **not** need to provide `endpoint` — it is resolved automatically. Use **resolved IDs** from Step 4c, not display names.
+The command auto-derives the HTTP method, endpoint path, and operation type from the registry (`connectorMethodInfo`), populates `inputs.detail`, copies output definitions to the node instance, and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4c, not display names.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
