@@ -29,9 +29,8 @@ Goal: get the error message and match playbooks as fast as possible.
    - Check if each matched product/package has an `investigation_guide.md` or `presentation.md`. If yes, include their paths.
    - Read all resolved investigation guides and apply their data correlation rules.
 4. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, set `needs_user_input: true`, ask for the missing detail. Do NOT continue when you can't reach the primary entity.
-5. **Job selection** — if multiple jobs exist for the identified process, default to the most recent faulted job. Do NOT fetch details for multiple jobs.
-6. **Fetch job details only** — run `uip or jobs get <key>` (with appropriate folder context). This gives: state, error message, error type, faulted activity, machine, timestamps. Write to raw/, write evidence summary.
-7. **Match playbooks** — read the product/package summary for every domain in `state.json.domain`. Match playbooks against the error message/type from job details. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
+5. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), default to the most recent. Do NOT fetch details for multiple entities. Write to raw/, write evidence summary.
+6. **Match playbooks** — read the product/package summary for every domain in `state.json.domain`. Match playbooks against the error message/type from the fetched data. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
 
 ### Confidence Gate
 
@@ -43,11 +42,9 @@ Goal: get the error message and match playbooks as fast as possible.
 
 Goal: collect richer data for medium/low confidence matching and hypothesis generation.
 
-8. **Fetch job logs** — `uip or jobs logs <key>`. Write to raw/, write evidence summary.
-9. **Fetch job traces** — `uip or jobs traces <key>` (if available). Write to raw/, write evidence summary.
-10. **Domain-specific enrichment** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section (e.g., Healing Agent data for UI Automation, connection ping for Integration Service, Maestro instance/incidents). Write each to raw/.
-11. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`.
-12. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
+8. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
+9. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`.
+10. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
 
 ## Boundaries
 

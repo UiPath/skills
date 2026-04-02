@@ -31,9 +31,8 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 ## Available Tools
 
 ### uip CLI
-The primary tool for interacting with the UiPath platform. Always use `--format json` for structured output.
+The primary tool for interacting with the UiPath platform. Output defaults to json in non-interactive mode. Use `--output json` if you need to force json output explicitly.
 - Discover commands: `uip --help` or `uip <subcommand> --help`
-- Some commands support `-o, --output <path>` to save results directly to a directory.
 
 ### Documentation Search
 Search UiPath documentation and knowledge base:

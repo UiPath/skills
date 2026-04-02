@@ -95,9 +95,11 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 
 ## 6. Resolution
 
-Spawn the presenter agent (`agents/presenter.md`) with the confirmed hypothesis IDs. The presenter:
+Spawn the presenter agent (`agents/presenter.md`) with the confirmed hypothesis IDs and **all domains from `state.json.domain`**. Do NOT pre-filter domains based on your judgment of their relevance to the causal chain — the presenter classifies root cause vs. propagation domains and searches docsai for each. Excluding a domain prevents the presenter from finding error handling patterns it was designed to surface.
+
+The presenter:
 - Assembles fixes from playbook `## Resolution` sections across all domains in the causal chain
-- Searches docsai for fixes when playbooks lack a `## Resolution`
+- Searches docsai for error handling and propagation patterns for every propagation domain
 - Applies all presentation rules (entity names from raw data, display names, UI labels)
 - Gates every fix step against documented sources
 

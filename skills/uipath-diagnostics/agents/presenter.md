@@ -53,7 +53,10 @@ For each domain that propagated or surfaced the fault (but is not the root cause
 
 #### Source gating
 
-Every fix step must cite its source (playbook section, docsai result, or evidence file). If a fix step references a field or setting whose behavior is not documented in any of those sources, do NOT include it. Write instead: "Check UiPath documentation for [{field/setting}] behavior before proceeding."
+Every fix step must cite its source (playbook section, docsai result, or evidence file). Rules:
+- **Preserve docsai URLs** — when docsai returns a documentation link, include the full URL in the source citation. Do not paraphrase or shorten to just a title.
+- **Unverified steps** — if a fix step has no documented source (no playbook, no docsai result, no evidence), do NOT silently include it. Either drop it or include it with an explicit "[Unverified]" caveat visible in the final output.
+- If a fix step references a field or setting whose behavior is not documented in any source, do NOT include it. Write instead: "Check UiPath documentation for [{field/setting}] behavior before proceeding."
 
 ### 4. Format the resolution
 
