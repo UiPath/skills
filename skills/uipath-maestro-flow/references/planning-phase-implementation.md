@@ -221,16 +221,7 @@ Use this decision order — prefer higher tiers:
 
 ### Agent Nodes vs Workflow Logic
 
-| Use an Agent node when... | Use Script/Decision/Switch when... |
-|---|---|
-| Input is ambiguous or unstructured (free text, emails, support tickets) | Input is structured and well-defined (JSON, form data) |
-| The task requires reasoning or judgment (triage, classification, summarization) | The task is deterministic (if X then Y, map/filter/transform) |
-| Branching depends on context that can't be reduced to simple conditions | Branching conditions are explicit and enumerable |
-| You need natural language generation (draft emails, summaries) | You need data transformation or computation |
-
-**Anti-pattern:** Don't use an agent node for tasks that can be done with a Decision + Script. Agents are slower, more expensive (LLM tokens), and less predictable. Use them where their flexibility is actually needed.
-
-**Hybrid pattern:** Use workflow nodes for the deterministic parts (fetch data, transform, route) and agent nodes for the ambiguous parts (classify intent, draft response, extract entities). The flow orchestrates; the agent reasons.
+See [nodes/agent.md](nodes/agent.md) for the full decision heuristic table, anti-patterns, and hybrid patterns. The short version: use agents for ambiguous/unstructured input that requires reasoning; use Script/Decision/Switch for deterministic, structured logic.
 
 ---
 
@@ -437,52 +428,37 @@ See [node-reference.md — Subflow](node-reference.md) for the full JSON structu
 
 ### Connector Nodes
 
-Connector nodes are dynamically loaded from Integration Service and are not part of the OOTB registry. They appear after `uip login` + `uip flow registry pull`.
-
-Connector nodes typically have:
-- `category: "connector"`
-- Complex `inputs` with `detail` object containing operation-specific fields
-- `application` and `connection` fields for IS authentication
-- Display labels from the connector's metadata
+Connector nodes call external services via Integration Service. See [nodes/is-connector.md](nodes/is-connector.md) for the full configuration guide including connection binding, `inputs.detail` structure, and debugging.
 
 **To find connector nodes:**
 ```bash
 uip flow registry search <service> --output json
 ```
 
-Search broadly by service name, then check the `category` field in results to confirm it's a connector node.
-
-**Before using a connector node:** Always discover its capabilities via IS commands (see Step 4 in SKILL.md). The registry tells you the node exists; IS tells you what it can do and what fields are required.
+Before using a connector node, run Steps 2a–2d above to bind a connection and resolve reference fields.
 
 ### Agent Nodes
 
-Built-in agent nodes for AI-powered reasoning within flows:
-
-| Node Type | Description |
-|---|---|
-| `uipath.agent.autonomous` | Autonomous agent — reasons and acts independently |
-| `uipath.agent.conversational` | Conversational agent — interactive dialogue |
-
-Available after login: `uip flow registry search "uipath.agent" --output json`
-
-See [orchestration-guide.md — Built-in Agent Nodes](orchestration-guide.md) for when to use agent vs script nodes.
+Flow has two built-in agent types (`uipath.agent.autonomous`, `uipath.agent.conversational`) and can invoke published agents as resource nodes (`uipath.core.agent.{key}`). See [nodes/agent.md](nodes/agent.md) for agent decision heuristics, configuration, and debugging.
 
 ### Resource Nodes (External Automations)
 
-Resource nodes invoke published UiPath automations from within a flow. They appear in the registry after login.
+Resource nodes invoke published UiPath automations. See category-specific guides for implementation details and debugging:
+- **RPA Process:** [nodes/rpa.md](nodes/rpa.md)
+- **Agent:** [nodes/agent.md](nodes/agent.md)
 
-| Category | Node Type Pattern | Description |
-|---|---|---|
-| RPA Process | `uipath.core.rpa-workflow.{key}` | Run a published RPA workflow |
-| Agent | `uipath.core.agent.{key}` | Run a published AI agent |
-| Agentic Process | `uipath.core.agentic-process.{key}` | Run an orchestration process |
-| Flow | `uipath.core.flow.{key}` | Run another flow as a subprocess |
-| API Workflow | `uipath.core.api-workflow.{key}` | Call a published API function |
-| Web App (Human Task) | `uipath.core.human-task.{key}` | Pause for human input via a UiPath App |
+| Category | Node Type Pattern |
+|---|---|
+| RPA Process | `uipath.core.rpa-workflow.{key}` |
+| Agent | `uipath.core.agent.{key}` |
+| Agentic Process | `uipath.core.agentic-process.{key}` |
+| Flow | `uipath.core.flow.{key}` |
+| API Workflow | `uipath.core.api-workflow.{key}` |
+| Human Task | `uipath.core.human-task.{key}` |
 
 **Discovery:** `uip flow registry search "<resource-name>" --output json`
 
-**If the resource doesn't exist yet:** Use a `core.logic.mock` placeholder and tell the user which skill to use to create it. See [orchestration-guide.md](orchestration-guide.md) for the full "create new" workflow.
+**If the resource doesn't exist yet:** Use a `core.logic.mock` placeholder. See [orchestration-guide.md](orchestration-guide.md) for the "create new" workflow.
 
 ---
 

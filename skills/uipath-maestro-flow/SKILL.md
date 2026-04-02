@@ -470,6 +470,9 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
 | **Orchestrate RPA, agents, apps** | [references/orchestration-guide.md](references/orchestration-guide.md) |
+| **Configure a connector node** | [references/nodes/is-connector.md](references/nodes/is-connector.md) + Step 4 |
+| **Configure an agent node** | [references/nodes/agent.md](references/nodes/agent.md) |
+| **Configure an RPA resource node** | [references/nodes/rpa.md](references/nodes/rpa.md) |
 | **Create a resource that doesn't exist yet** | [references/orchestration-guide.md — Create New Workflow](references/orchestration-guide.md) |
 | **Add data transform nodes** | [references/node-reference.md — Data Transform](references/node-reference.md) |
 | **Create a subflow** | [references/node-reference.md — Subflow](references/node-reference.md) + Common Edits |
@@ -518,5 +521,6 @@ When you finish building or editing a flow, report to the user:
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Orchestration Guide](references/orchestration-guide.md)** — How to orchestrate RPA processes, agents, apps, other flows, and API workflows. Includes resource node types, "create new" workflow, queue integration, and human task patterns
-- **[Node Reference](references/node-reference.md)** — Complete catalog of nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes, and agent nodes
+- **[Node Reference](references/node-reference.md)** — Complete catalog of OOTB nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes
+- **Node Category Guides** — Category-specific implementation and debug guides (away-team-owned): [IS Connectors](references/nodes/is-connector.md), [Agent](references/nodes/agent.md), [RPA](references/nodes/rpa.md). See [contribution template](references/nodes/_contribution-template.md) for adding new categories
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 9).

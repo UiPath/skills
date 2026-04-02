@@ -67,7 +67,7 @@ Connector nodes call external services via Integration Service. They are **not**
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | Node type pattern: `uipath.connector.<connector-key>.<activity>`. Phase 2 resolves the exact type, connection, and fields |
 | A connector exists but lacks the specific endpoint                                  | HTTP Request within the connector (connector handles auth, you supply path/payload)                                       |
 
-**In this phase:** Note the connector as `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue"). Phase 2 will run `registry search`, bind connections, and resolve fields.
+**In this phase:** Note the connector as `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue"). Phase 2 will run `registry search`, bind connections, and resolve fields. See [nodes/is-connector.md](nodes/is-connector.md) for implementation details and debugging.
 
 ### Agent Nodes
 
@@ -85,6 +85,8 @@ Connector nodes call external services via Integration Service. They are **not**
 | Branching depends on context that can't be reduced to simple conditions | Branching conditions are explicit and enumerable          |
 | You need natural language generation (draft emails, summaries)          | You need data transformation or computation               |
 
+See [nodes/agent.md](nodes/agent.md) for implementation details, hybrid patterns, and debugging.
+
 ### Resource Nodes (External Automations)
 
 Resource nodes invoke published UiPath automations. They appear in the registry after login.
@@ -98,7 +100,7 @@ Resource nodes invoke published UiPath automations. They appear in the registry 
 | API Workflow    | `uipath.core.api-workflow.{key}`    | Need to call a published API function                        |
 | Human Task      | `uipath.core.human-task.{key}`      | Need to pause for human input via a UiPath App               |
 
-**In this phase:** If the resource exists, note it as `resource: <name> (<category>)`. If it does not exist yet, use `core.logic.mock` as a placeholder and note what needs to be created. Phase 2 will resolve the exact node type from the registry.
+**In this phase:** If the resource exists, note it as `resource: <name> (<category>)`. If it does not exist yet, use `core.logic.mock` as a placeholder and note what needs to be created. Phase 2 will resolve the exact node type from the registry. See category-specific guides: [nodes/rpa.md](nodes/rpa.md), [nodes/agent.md](nodes/agent.md).
 
 ### Placeholders
 

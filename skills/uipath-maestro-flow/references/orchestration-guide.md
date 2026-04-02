@@ -38,32 +38,20 @@ uip flow registry get "uipath.core.rpa-workflow.{key}" --output json
 
 The `{key}` is the resource's unique identifier from Orchestrator (typically a GUID or slug).
 
+**Category-specific guides:** [nodes/rpa.md](nodes/rpa.md), [nodes/agent.md](nodes/agent.md). See [nodes/_contribution-template.md](nodes/_contribution-template.md) for adding new categories.
+
 ---
 
 ## Built-in Agent Nodes
 
 In addition to published agent resources, Flow has two built-in agent node types:
 
-| Node Type | Description | Use Case |
-|---|---|---|
-| `uipath.agent.autonomous` | Autonomous agent that reasons and acts independently | Classification, triage, summarization, multi-step reasoning |
-| `uipath.agent.conversational` | Conversational agent for interactive dialogues | Chat-based workflows, user Q&A |
-
-These are OOTB nodes (available without publishing anything). Discover them via:
-
-```bash
-uip flow registry search "uipath.agent" --output json
-```
-
-### Agent Node vs Script Node Decision
-
-| Situation | Use |
+| Node Type | Description |
 |---|---|
-| Deterministic logic, known rules | Script node |
-| Ambiguous input, needs reasoning | Agent node |
-| Data transformation, filtering | Script or Transform node |
-| Natural language generation | Agent node |
-| Classification with fuzzy categories | Agent node |
+| `uipath.agent.autonomous` | Autonomous agent — reasons and acts independently |
+| `uipath.agent.conversational` | Conversational agent — interactive dialogue |
+
+See [nodes/agent.md](nodes/agent.md) for detailed configuration, decision heuristics (agent vs script), and debugging.
 
 ---
 
