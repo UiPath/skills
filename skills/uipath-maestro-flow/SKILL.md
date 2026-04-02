@@ -202,85 +202,16 @@ At this point you know **which connector node types** to use (e.g., `uipath.conn
 
 ### Step 4 — Bind connections, fetch metadata, and resolve references (when using connectors)
 
-**Skip this step if the flow only uses OOTB nodes.** When the flow uses Integration Service connectors (e.g., Jira, Slack, Salesforce), follow these sub-steps in order:
+**Skip this step if the flow only uses OOTB nodes.** When the flow uses Integration Service connectors (e.g., Jira, Slack, Salesforce), **read [references/nodes/is.md](references/nodes/is.md)** and follow the Configuration Workflow. The steps are:
 
-#### 4a. Fetch and bind connections
+1. Fetch and bind a connection (`uip is connections list` → pick default enabled → `ping` to verify)
+2. Get enriched node definitions with `--connection-id` (returns `connectorMethodInfo` with method/path)
+3. Describe the resource and read the cached metadataFile for full field details
+4. Resolve reference fields via `uip is resources execute list` (get IDs, not display names)
+5. Validate all required fields have values — **ask the user** if any are missing
+6. Configure the node with `uip flow node configure --detail`
 
-For each connector used in the flow, extract the connector key from the node type (`uipath.connector.<connector-key>.<activity-name>`) and fetch a connection. **If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
-
-```bash
-# 1. List available connections
-uip is connections list "<connector-key>" --output json
-
-# 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
-
-# 3. Verify the connection is healthy
-uip is connections ping "<connection-id>" --output json
-```
-
-Once you have the connection ID, write it into `content/bindings_v2.json`. See [references/flow-file-format.md — Bindings](references/flow-file-format.md) for the schema and examples.
-
-**Read [/uipath:uipath-platform — Integration Service — connections.md](/uipath:uipath-platform) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
-
-#### 4b. Get enriched node definitions with connection
-
-Call `registry get` with `--connection-id` to fetch connection-aware metadata including custom fields:
-
-```bash
-uip flow registry get <nodeType> --connection-id <connection-id> --output json
-```
-
-This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
-
-The response also includes `connectorMethodInfo` with the real HTTP `method` (e.g. `GET`, `POST`) and `path` template (e.g. `/ConversationsInfo/{conversationsInfoId}`). **Save these two values** — you must pass them to `node configure` later.
-
-#### 4c. Describe the resource and read full metadata
-
-Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
-
-```bash
-# 1. Describe to trigger fetch + cache (extract the objectName from the connector node type)
-uip is resources describe "<connector-key>" "<objectName>" \
-  --connection-id "<id>" --operation Create --output json
-# → response includes metadataFile path
-
-# 2. Read the full cached metadata
-cat <metadataFile path from response>
-```
-
-The full metadata contains:
-- **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
-- **`requestFields`** — body fields with `type`, `required`, `description`, and `reference` objects for ID resolution
-- **`path`** — the API endpoint path (also available in `connectorMethodInfo` from `registry get`)
-- **`responseFields`** — response schema
-
-#### 4d. Resolve reference fields
-
-Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
-
-```bash
-# Example: resolve Slack channel "#test-slack" to its ID
-uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
-  --connection-id "<id>" --output json
-# → { "id": "C1234567890", "name": "test-slack" }
-```
-
-Use the resolved IDs (not display names) in the flow's node `inputs`. Present options to the user when multiple matches exist.
-
-**Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including: identifying reference fields, dependency chains (resolve parent fields before children), pagination, describe failures, and fallback strategies.
-
-#### 4e. Validate required fields against user prompt
-
-**Check every required field** — both `requestFields` and `parameters` where `required: true` — against what the user provided. This is a hard gate — do NOT proceed to planning or building until all required fields have values. For query/path parameters with a `defaultValue`, use the default if the user didn't specify one.
-
-1. Collect all required fields from the metadata (`requestFields` + `parameters`)
-2. For each required field, check if the user's prompt contains a value
-3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected
-4. Only after all required fields are accounted for, proceed to planning
-
-> **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
-
-After completing Steps 4a–4e, you should have for each connector node: a bound connection ID, enriched field metadata, and resolved values for all reference fields. Carry this information into the planning step.
+After completing these steps, you should have for each connector node: a bound connection ID, enriched field metadata, and resolved values for all reference fields. Carry this information into the planning step.
 
 ### Step 5 — Plan the flow (two phases)
 
@@ -470,9 +401,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
 | **Orchestrate RPA, agents, apps** | [references/orchestration-guide.md](references/orchestration-guide.md) |
-| **Configure a connector node** | [references/nodes/is-connector.md](references/nodes/is-connector.md) + Step 4 |
-| **Configure an agent node** | [references/nodes/agent.md](references/nodes/agent.md) |
-| **Configure an RPA resource node** | [references/nodes/rpa.md](references/nodes/rpa.md) |
+| **Configure a connector node** | [references/nodes/is.md](references/nodes/is.md) |
 | **Create a resource that doesn't exist yet** | [references/orchestration-guide.md — Create New Workflow](references/orchestration-guide.md) |
 | **Add data transform nodes** | [references/node-reference.md — Data Transform](references/node-reference.md) |
 | **Create a subflow** | [references/node-reference.md — Subflow](references/node-reference.md) + Common Edits |
@@ -522,5 +451,5 @@ When you finish building or editing a flow, report to the user:
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Orchestration Guide](references/orchestration-guide.md)** — How to orchestrate RPA processes, agents, apps, other flows, and API workflows. Includes resource node types, "create new" workflow, queue integration, and human task patterns
 - **[Node Reference](references/node-reference.md)** — Complete catalog of OOTB nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes
-- **Node Category Guides** — Category-specific implementation and debug guides (away-team-owned): [IS Connectors](references/nodes/is-connector.md), [Agent](references/nodes/agent.md), [RPA](references/nodes/rpa.md). See [contribution template](references/nodes/_contribution-template.md) for adding new categories
+- **[Integration Service Nodes](references/nodes/is.md)** — Complete guide for IS connector and trigger nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json` schema, IS CLI commands, and debugging. See [contribution template](references/nodes/_contribution-template.md) for adding new node category guides
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 9).

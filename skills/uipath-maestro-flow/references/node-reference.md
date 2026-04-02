@@ -462,5 +462,5 @@ See [orchestration-guide.md — Queue Integration](orchestration-guide.md) for f
 | `core.trigger.scheduled` | trigger | → `output` | `timerType`, `timerPreset`, `timerValue` |
 | `core.action.queue.create` | tool | `input` → `output`, `error` | `queue`, `itemData`, `priority` |
 | `core.action.queue.create-and-wait` | tool | `input` → `output`, `error` | `queue`, `itemData`, `priority` |
-| `uipath.agent.autonomous` | agent | `input` → `output`, `error` | See [nodes/agent.md](nodes/agent.md) |
-| `uipath.agent.conversational` | agent | `input` → `output`, `error` | See [nodes/agent.md](nodes/agent.md) |
+| `uipath.agent.autonomous` | agent | `input` → `output`, `error` | Agent-specific (via registry) |
+| `uipath.agent.conversational` | agent | `input` → `output`, `error` | Agent-specific (via registry) |

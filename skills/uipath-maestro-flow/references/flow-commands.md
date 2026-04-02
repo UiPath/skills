@@ -172,23 +172,7 @@ Run `uip flow registry <subcommand> --help` for additional options (e.g., `--for
 
 ## Integration Service commands (for connector binding and reference resolution)
 
-When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4e** of the flow authoring workflow.
-
-```bash
-# Connections
-uip is connections list "<connector-key>" --output json
-uip is connections ping "<connection-id>" --output json
-uip is connections create "<connector-key>"
-
-# Enriched node metadata (pass connection for custom fields)
-uip flow registry get <nodeType> --connection-id <connection-id> --output json
-
-# Reference resolution
-uip is resources execute list "<connector-key>" "<resource>" \
-  --connection-id "<id>" --output json
-```
-
-Run `uip is connections --help` or `uip is resources --help` for all options.
+See [nodes/is.md](nodes/is.md) for the full IS CLI command reference and connector configuration workflow (connection binding, enriched metadata, reference resolution, `node configure`).
 
 ## Global options (all commands)
 
