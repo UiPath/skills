@@ -110,7 +110,7 @@ Before including any content in the issue:
 
 | Skill detected | Title prefix |
 |---|---|
-| uipath-flow | `[Flow]` |
+| uipath-maestro-flow | `[Flow]` |
 | uipath-coded-workflows | `[Coded Workflows]` |
 | uipath-rpa-workflows | `[RPA Workflows]` |
 | uipath-coded-agents | `[Agents]` |
@@ -221,7 +221,7 @@ Show the user the **issue URL** after creation.
 | `skill-content` | `#0075ca` | Wrong or missing skill instructions |
 | `cli-gap` | `#e4e669` | Missing CLI command or option |
 | `expression-error` | `#f9d0c4` | Jint expression or runtime issue |
-| `uipath-flow` | `#1d76db` | Flow skill |
+| `uipath-maestro-flow` | `#1d76db` | Flow skill |
 | `uipath-coded-workflows` | `#1d76db` | Coded Workflows skill |
 | `uipath-rpa-workflows` | `#1d76db` | RPA Workflows skill |
 | `uipath-coded-agents` | `#1d76db` | Agents skill |

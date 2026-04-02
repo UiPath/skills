@@ -50,7 +50,7 @@ Skill folders follow the naming convention: `uipath-<domain>` or `uipath-<tool>`
 
 - Use **kebab-case** (lowercase, hyphens between words)
 - Prefix with `uipath-` for UiPath-related skills
-- Be descriptive but concise: `uipath-coded-workflows`, `uipath-servo`, `uipath-flow`
+- Be descriptive but concise: `uipath-coded-workflows`, `uipath-servo`, `uipath-maestro-flow`
 
 ### 2. Create the Folder Structure
 

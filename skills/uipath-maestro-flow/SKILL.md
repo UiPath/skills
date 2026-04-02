@@ -1,5 +1,5 @@
 ---
-name: uipath-flow
+name: uipath-maestro-flow
 description: "This skill should be used when the user wants to 'create a new Flow project', 'scaffold a flow with uip flow init', 'add a node to my flow', 'connect nodes in my flow', 'validate a .flow file', 'debug a flow', 'run a flow', 'discover flow node types', 'orchestrate RPA and agents', 'add variables to a flow', 'manage flow expressions', 'create a subflow', 'add a scheduled trigger', 'add data transform nodes', or when the user is editing a .flow file, wiring nodes and edges, working with definitions or ports, managing variables and expressions, orchestrating external resources (RPA, agents, apps, other flows), or asks about the .flow JSON format or uip flow CLI commands. TRIGGER when: user mentions Flow, .flow files, flow nodes, flow orchestration, or wants to compose multiple UiPath automations. DO NOT TRIGGER when: user is working with XAML/RPA workflows (use uipath-rpa-workflows), coded C# workflows (use uipath-coded-workflows), Python agents (use uipath-coded-agents), or web apps (use uipath-coded-apps) — unless they want to orchestrate these from a flow."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep

@@ -185,7 +185,7 @@ Switch to the relevant skill to create and publish the resource:
 - **RPA Process** — Use `uipath-coded-workflows` to create a C# coded workflow, or `uipath-rpa-workflows` for XAML (requires Studio Desktop)
 - **Agent** — Use `uipath-coded-agents` to create a Python agent
 - **Web App** — Use `uipath-coded-apps` to create a .NET/React app
-- **Sub-Flow** — Create another flow project using the same `uipath-flow` skill
+- **Sub-Flow** — Create another flow project using the same `uipath-maestro-flow` skill
 
 After creating and publishing the resource, it will appear in the Orchestrator resource catalog.
 
