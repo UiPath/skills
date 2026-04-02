@@ -43,6 +43,27 @@ Organization (cloud.uipath.com)
 - **bindings_v2.json** — maps folder references and variable bindings for deployed mode
 - **debug_overwrites.json** — redirects folder bindings during debug mode (not used in deployed mode)
 
+## CLI
+
+```
+uip maestro process list|get|run          — list/get/run Maestro processes
+uip maestro instances list|get            — list/get process instances
+uip maestro instances incidents <id>      — get full incidents for an instance (includes errorDetails)
+uip maestro instances element-executions  — get element execution history
+uip maestro instances variables           — get instance variables
+uip maestro instances asset               — get BPMN XML
+uip maestro instances cursors             — get current execution positions
+uip maestro processes incidents <key>     — get full incidents for a process (includes errorDetails)
+uip maestro incidents list                — tenant-level incident SUMMARIES ONLY (no errorDetails)
+```
+
+Key commands for diagnostics:
+- `uip maestro instances incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incidents list`.
+- `uip maestro instances element-executions <instance-id> -f <folder-key>` — what each BPMN element did
+- `uip maestro processes incidents <process-key> --folder-key <fk>` — incidents across all instances of a process
+
+**WARNING:** `uip maestro incidents list` returns only aggregated summaries (counts, error codes) without `errorDetails`. It does NOT contain stack traces or full error messages. Always use instance-level or process-level incident commands for diagnostics.
+
 ## Features
 
 - **BPMN Process Design** — visual process editor in Studio Web with swimlanes, gateways, and markers

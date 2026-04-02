@@ -13,6 +13,11 @@ Before using any fetched data, verify it matches the user's reported problem:
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
+## Interpreting Query Results
+
+- **Empty results or 404** — before concluding an entity doesn't exist, verify the container (folder, tenant, instance) is still accessible. If the container was deleted or returns 404, all scoped queries are unreliable. Widen the search (different folder, broader time window, different state filters) or flag as a data gap and ask the user. Never treat empty results from an inaccessible container as proof of absence.
+- **Live infrastructure data** — machine connectivity, license counts, connection health, and robot availability reflect current state, not historical state. For incidents older than 24 hours, this data shows what's true NOW, not what was true when the incident happened. Use it as context only — machines could have been online 6 months ago and gone offline since. Never use current infrastructure snapshots as causal evidence for past incidents.
+
 ## Testing Prerequisites
 
 Gather and verify these before drawing conclusions on any hypothesis:

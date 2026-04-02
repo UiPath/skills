@@ -22,4 +22,5 @@
 | File Handling Issues | Medium | Files not passed correctly, attachment not found, file type incompatibility | [file-handling.md](./playbooks/file-handling.md) |
 | Multi-Instance Parallel Marker | Medium | Parallel marker failures, collection size limits, NoneType errors | [multi-instance-parallel.md](./playbooks/multi-instance-parallel.md) |
 | Expression Evaluation and Input Errors | Medium | Null inputs, missing parameters, GUID parse errors | [expression-evaluation-errors.md](./playbooks/expression-evaluation-errors.md) |
+| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted — chase child error as root cause, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
 | BPMN Job Stuck | Low | Instance stuck with no progress or error — disconnected connection, child job not created, or backend delay | [bpmn-job-stuck.md](./playbooks/bpmn-job-stuck.md) |
