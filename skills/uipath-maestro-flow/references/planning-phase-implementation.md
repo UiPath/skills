@@ -16,7 +16,7 @@ Scan the approved `.arch.plan.md` node table and connector summary. Validate eac
 
 | Category | How to identify | Action |
 | --- | --- | --- |
-| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Steps 2a–2d (bind connection, resolve reference fields, validate required inputs) |
+| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow the relevant node guide in `nodes/`) |
 | Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 (registry search, confirm node type) |
 | Mock placeholders | Node type is `core.logic.mock` | Run Step 4 (check if published, replace if available) |
 | OOTB nodes | Everything else (Script, HTTP, Decision, Loop, etc.) | Run Step 1a below (validate with registry) |
@@ -44,13 +44,7 @@ Update your node table if any ports or required fields differ from the planning 
 
 ### Step 2 — Resolve Connector Nodes
 
-For each connector node, follow the Configuration Workflow in the relevant node guide (`nodes/`):
-
-1. Find the connector node type via `uip flow registry search`
-2. Bind a connection (list, pick default enabled, ping to verify)
-3. Get enriched metadata with `--connection-id`
-4. Resolve reference fields (get IDs, not display names)
-5. Validate all required fields have values — ask the user if any are missing
+For each connector node, follow the Configuration Workflow in the relevant node guide (`nodes/`). The guide covers connection binding, metadata retrieval, field resolution, and validation.
 
 Record the connection ID and resolved field values for the build step.
 
@@ -148,7 +142,7 @@ graph TD
 
 The implementation plan adds these columns beyond the architectural plan:
 
-- **Connection ID**: The bound IS connection UUID (connector nodes only)
+- **Connection ID**: The bound connection UUID (connector nodes only)
 - **Verified**: Whether the connection was pinged successfully
 
 ### Step 7 — Get Approval
@@ -172,7 +166,7 @@ These are org-wide "when to use what" rules that can't be encoded in individual 
 
 ### Connecting to External Services
 
-See [planning-phase-architectural.md — Selecting External Service Nodes](planning-phase-architectural.md) for the 4-tier decision order (IS connector → HTTP within connector → standalone HTTP → RPA).
+See [planning-phase-architectural.md — Selecting External Service Nodes](planning-phase-architectural.md) for the 4-tier decision order (connector → HTTP within connector → standalone HTTP → RPA).
 
 ### Agent Nodes vs Workflow Logic
 

@@ -28,8 +28,8 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 ## Critical Rules
 
 1. **Do NOT `registry get` built-in nodes during Phase 1 (architectural planning).** The planning guide and node reference already document all OOTB node types with their ports, inputs, and output variables — sufficient for designing flow topology. However, **Phase 2 (implementation resolution) REQUIRES registry validation of all node types**, even OOTB nodes, to confirm ports and inputs match the current product state. Only run connector/resource `registry get` during Phase 1 if needed for decision-making. **Exception:** When building the flow (Step 6), you DO need `registry get` for any node type to populate the `definitions` array in the `.flow` file — definitions must be copied from registry output, never hand-written.
-2. **ALWAYS discover connector capabilities via IS before planning.** Follow Step 4 and [references/nodes/is-activity.md](references/nodes/is-activity.md) for every connector node: fetch a connection, call `registry get --connection-id` for enriched metadata, and resolve reference fields via `uip is resources execute list`. Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
-3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
+2. **ALWAYS follow the relevant node guide in `references/nodes/` for every connector node.** The guide covers capability discovery, connection binding, and field resolution — required before planning. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
+3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. See the relevant node guide in `references/nodes/` for the connection check command.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 5. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
 6. **`targetPort` is required on every edge** — `validate` rejects edges without it.
@@ -198,20 +198,18 @@ uip flow registry search agent
 
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector nodes are also available.
 
-At this point you know **which connector node types** to use (e.g., `uipath.connector.uipath-atlassian-jira.create-issue`). Do **not** run `registry get` yet — you need a connection ID first to get enriched metadata. For OOTB nodes (scripts, HTTP, branching), you can call `registry get` immediately since they don't need a connection.
+At this point you know **which node types** to use. For OOTB nodes (scripts, HTTP, branching), you can call `registry get` immediately. For connector nodes, do **not** run `registry get` yet — proceed to Step 4 first.
 
 ### Step 4 — Bind connections, fetch metadata, and resolve references (when using connectors)
 
-**Skip this step if the flow only uses OOTB nodes.** When the flow uses Integration Service connectors (e.g., Jira, Slack, Salesforce), **read [references/nodes/is-activity.md](references/nodes/is-activity.md)** and follow the Configuration Workflow. The steps are:
+**Skip this step if the flow only uses OOTB nodes.** For each connector node, read the relevant node guide in `references/nodes/` and follow its Configuration Workflow. The guide covers:
 
-1. Fetch and bind a connection (`uip is connections list` → pick default enabled → `ping` to verify)
-2. Get enriched node definitions with `--connection-id` (returns `connectorMethodInfo` with method/path)
-3. Describe the resource and read the cached metadataFile for full field details
-4. Resolve reference fields via `uip is resources execute list` (get IDs, not display names)
-5. Validate all required fields have values — **ask the user** if any are missing
-6. Configure the node with `uip flow node configure --detail`
+1. Connection discovery and binding
+2. Enriched metadata retrieval
+3. Field and reference resolution
+4. Node configuration via `uip flow node configure`
 
-After completing these steps, you should have for each connector node: a bound connection ID, enriched field metadata, and resolved values for all reference fields. Carry this information into the planning step.
+After completing these steps, you should have for each connector node: a bound connection, field metadata, and resolved values for all reference fields. Carry this information into the planning step.
 
 ### Step 5 — Plan the flow (two phases)
 
@@ -296,14 +294,14 @@ The command automatically adds `targetPort` and validates the edge structure.
 
 #### Configuring connector nodes
 
-After adding a connector node with `node add`, configure it with the resolved connection and field values from Step 4:
+After adding a connector node with `node add`, configure it using the resolved values from Step 4:
 
 ```bash
-uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
-  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "POST", "endpoint": "/issues", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}'
+uip flow node configure <ProjectName>.flow <nodeId> \
+  --detail '<JSON from node guide>'
 ```
 
-The `method` and `endpoint` values come from `connectorMethodInfo` in the `registry get` response (see [references/nodes/is-activity.md — Step 2](references/nodes/is-activity.md)). The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from reference resolution, not display names.
+The `--detail` JSON structure varies by node type — see the relevant node guide in `references/nodes/` for the exact schema and examples. The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs**, not display names.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
@@ -365,7 +363,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 
 - **Never guess node schemas** — use the planning guide for OOTB nodes, `registry get` for connector/unknown nodes. Guessed port names or input fields cause silent wiring failures.
 - **Never `registry get` built-in nodes during Phase 1 planning** — the planning guide already documents all OOTB node types with ports and inputs. Redundant lookups waste tokens. However, Phase 2 **requires** registry validation of all node types to confirm the current product state before building.
-- **Never skip IS discovery for connector nodes** — the registry tells you a node exists; only IS tells you what operations and fields it supports. Skipping this is the #1 cause of broken connector nodes.
+- **Never skip capability discovery for connector nodes** — the registry tells you a node exists; only the node guide's discovery workflow tells you what operations and fields it supports. Skipping this is the #1 cause of broken connector nodes.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.
 - **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
@@ -430,7 +428,7 @@ When you finish building or editing a flow, report to the user:
 2. **What was built** — summary of nodes added, edges wired, and logic implemented
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
 4. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
-5. **Missing connections** — any connector nodes that need IS connections the user must create
+5. **Missing connections** — any connector nodes that need connections the user must create
 6. **Next step** — ask if the user wants to debug the flow (do not run debug automatically)
 7. **Publish offer** — ask if the user wants to publish to Studio Web (do not publish automatically). If yes, run `solution bundle` + `solution upload` and share the Studio Web URL.
 8. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, say `/report-issue` to file a bug report."
