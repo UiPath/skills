@@ -2,15 +2,32 @@
 
 ## Data Correlation
 
-Before using any fetched data, verify it matches the user's reported problem:
+Before fetching ANY job, queue, or asset data, resolve identity first:
 
-- **Process/Release** — job release name matches the user's project or process name
+1. **Folder** — resolve the folder ID/key. All Orchestrator data is folder-scoped. If the folder is inaccessible, STOP — nothing else will be valid without it.
+2. **Process** — identify the process name (from user input, working directory `project.json`, or package name). All subsequent queries filter by this process.
+3. **Time window** — establish the relevant period from the user's report.
+
+Only after identity is resolved, fetch data and verify every result against it:
+
+- **Process/Release** — job release name matches the identified process
 - **Queue** — queue name matches what the user reported (if queue-related)
-- **Folder** — data comes from the correct Orchestrator folder
-- **Time window** — timestamps fall within the relevant period the user described
 - **Robot/Machine** — if the user mentioned a specific robot or machine, verify the data belongs to it
+- **Timestamps** — fall within the established time window
 
-If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
+If data doesn't match: **discard it**. Do NOT fetch details for jobs or items from other processes. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
+
+4. **Job selection** — if multiple jobs exist for the identified process, present the list to the user (showing state, timestamp, error summary) and ask which one to investigate. If the user said "latest" or didn't specify, default to the most recent faulted job and state this assumption explicitly. Do NOT fetch details for multiple jobs — investigate one at a time.
+
+## Job Data Bundle
+
+For every job under investigation, gather these in order. Write each to `raw/` immediately.
+
+1. **Job details** — `uip or jobs get <key> --folder-key <fk> --output json`
+2. **Job logs** — `uip or jobs logs <key> --folder-key <fk> --output json`
+3. **Job traces** — `uip or jobs traces <key> --folder-key <fk> --output json` (if the command is available)
+
+This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
 
 ## Testing Prerequisites
 
