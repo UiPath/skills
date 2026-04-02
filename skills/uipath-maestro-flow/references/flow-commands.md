@@ -163,9 +163,9 @@ The `Data.Node` object from `registry get` is what you paste into your `.flow` f
 
 Run `uip flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
 
-## Integration Service commands (for connector binding and reference resolution)
+## Connector commands (binding and reference resolution)
 
-See the relevant node guide in `nodes/` for IS CLI commands and the connector configuration workflow.
+See the relevant node guide in `nodes/` for connector CLI commands and the configuration workflow.
 
 ## Global options (all commands)
 

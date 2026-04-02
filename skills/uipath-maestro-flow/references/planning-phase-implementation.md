@@ -220,7 +220,7 @@ Execute custom JavaScript code. Use for data transformation, computation, format
 
 #### HTTP Request (`core.action.http`)
 
-Make REST API calls. Supports branching on response status, retries, and authentication via Integration Service connections.
+Make REST API calls. Supports branching on response status, retries, and connection-based authentication.
 
 | | |
 |--|--|
@@ -239,7 +239,7 @@ Make REST API calls. Supports branching on response status, retries, and authent
 - `retryCount` — Number of retries on failure (default: 0)
 - `branches` — Array of `{ id, name, conditionExpression }` for response routing
 - `authenticationType` — `manual` or from a connector connection
-- `application`, `connection` — For IS-authenticated requests
+- `application`, `connection` — For connection-authenticated requests
 
 **Dynamic ports:** Each entry in `branches` creates a `branch-{item.id}` output port. If no branch condition matches, flow goes to `default`.
 
@@ -386,7 +386,7 @@ See [node-reference.md — Subflow](node-reference.md) for the full JSON structu
 
 ### Connector Nodes
 
-Connector nodes call external services via Integration Service. See the relevant node guide in `nodes/` for the full configuration guide including connection binding, `inputs.detail` structure, and debugging.
+Connector nodes call external services. See the relevant node guide in `nodes/` for the full configuration guide including connection binding, `inputs.detail` structure, and debugging.
 
 **To find connector nodes:**
 ```bash
