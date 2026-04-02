@@ -67,7 +67,7 @@ Connector nodes call external services via Integration Service. They are **not**
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | Node type pattern: `uipath.connector.<connector-key>.<activity>`. Phase 2 resolves the exact type, connection, and fields |
 | A connector exists but lacks the specific endpoint                                  | HTTP Request within the connector (connector handles auth, you supply path/payload)                                       |
 
-**In this phase:** Note the connector as `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue"). Phase 2 will run `registry search`, bind connections, and resolve fields. See [nodes/is.md](nodes/is.md) for implementation details and debugging.
+**In this phase:** Note the connector as `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue"). Phase 2 will run `registry search`, bind connections, and resolve fields. See [nodes/is-activity.md](nodes/is-activity.md) for implementation details and debugging.
 
 ### Agent Nodes
 

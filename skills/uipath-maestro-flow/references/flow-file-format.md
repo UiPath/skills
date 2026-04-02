@@ -216,4 +216,4 @@ The packaging/debug step derives `entry-points.json` from these variable declara
 
 When a flow uses Integration Service connector nodes, the runtime needs to know **which authenticated connection** to use for each connector. This is configured in `content/bindings_v2.json`.
 
-See [nodes/is.md — Bindings](nodes/is.md) for the full `bindings_v2.json` schema, Connection resource field reference, single/multi-connector JSON examples, other resource types (EventTrigger, Property, Queue, TimeTrigger), and the connection fetching workflow.
+See [nodes/is-activity.md — Bindings](nodes/is-activity.md) for the full `bindings_v2.json` schema, Connection resource field reference, single/multi-connector JSON examples, other resource types (EventTrigger, Property, Queue, TimeTrigger), and the connection fetching workflow.

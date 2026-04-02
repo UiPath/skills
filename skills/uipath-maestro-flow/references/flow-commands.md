@@ -172,7 +172,7 @@ Run `uip flow registry <subcommand> --help` for additional options (e.g., `--for
 
 ## Integration Service commands (for connector binding and reference resolution)
 
-See [nodes/is.md](nodes/is.md) for the full IS CLI command reference and connector configuration workflow (connection binding, enriched metadata, reference resolution, `node configure`).
+See [nodes/is-activity.md](nodes/is-activity.md) for the full IS CLI command reference and connector configuration workflow (connection binding, enriched metadata, reference resolution, `node configure`).
 
 ## Global options (all commands)
 

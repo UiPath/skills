@@ -437,7 +437,7 @@ See [node-reference.md — Subflow](node-reference.md) for the full JSON structu
 
 ### Connector Nodes
 
-Connector nodes call external services via Integration Service. See [nodes/is.md](nodes/is.md) for the full configuration guide including connection binding, `inputs.detail` structure, and debugging.
+Connector nodes call external services via Integration Service. See [nodes/is-activity.md](nodes/is-activity.md) for the full configuration guide including connection binding, `inputs.detail` structure, and debugging.
 
 **To find connector nodes:**
 ```bash
