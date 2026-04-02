@@ -22,13 +22,15 @@ Every SKILL.md MUST begin with valid YAML frontmatter containing at minimum:
 ```yaml
 ---
 name: uipath-<name>
-description: "<what it does>. TRIGGER when: <activation conditions>. DO NOT TRIGGER when: <exclusion conditions>."
+description: "[PREVIEW] <what it does>. TRIGGER when: <activation conditions>. DO NOT TRIGGER when: <exclusion conditions>."
 ---
 ```
 
 ### Validation Rules
 
 - `name` MUST exactly match the parent folder name
+- `description` MUST be under 1024 characters. If it exceeds this limit, shorten the text while preserving both TRIGGER and DO NOT TRIGGER clauses
+- `description` MUST start with `[PREVIEW]` when the skill is first created. Remove the tag only when the skill is considered stable
 - `description` MUST include both "TRIGGER when:" and "DO NOT TRIGGER when:" clauses
 - Frontmatter MUST be valid YAML (no tabs, proper quoting of strings with colons)
 
