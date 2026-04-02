@@ -85,6 +85,31 @@ Identify:
 
 ---
 
+## Step 2b — Proactive HITL Recommendation
+
+**If the user did NOT explicitly mention HITL**, scan the business description for these signals before proceeding:
+
+| Signal | Pattern | Why a human checkpoint matters |
+|---|---|---|
+| "agent writes to", "updates", "posts to" an external system | Write-back validation | Prevents incorrect writes to production systems |
+| "if confidence is low", "when uncertain", "edge case" | Exception escalation | Agent cannot resolve autonomously |
+| "approves", "reviews", "signs off", "four-eyes" | Approval gate | Business or compliance requirement |
+| "fills in missing", "validates extraction", "corrects" | Data enrichment | Automation produced incomplete data |
+| "compliance", "regulatory", "audit trail" | Compliance checkpoint | Mandated human sign-off |
+
+**When a signal is found, say this before doing anything else:**
+
+> "I noticed that [quote the specific part of their description]. This is a [pattern name] — a point where [brief consequence if no human reviews]. I recommend inserting a Human-in-the-Loop step here so that [human role] can [action] before the automation [continues/writes/sends]. Should I add it?"
+
+Wait for confirmation. Do not proceed to schema design until the user confirms.
+
+**Example:**
+> User: "Build an automation that reads support tickets, uses AI to generate an RCA, and updates the ticket in ServiceNow."
+>
+> Agent: "I noticed that the automation writes AI-generated content directly back to ServiceNow. This is a write-back validation pattern — if the RCA is incorrect and nobody reviews it, wrong data goes into production tickets. I recommend inserting a Human-in-the-Loop step so that a support lead can review and optionally edit the RCA before the update is applied. Should I add it?"
+
+---
+
 ## Step 3 — Extract the Schema Through Conversation
 
 Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
@@ -179,10 +204,36 @@ uip flow validate <file> --format json
 **If no downstream nodes exist yet** for cancelled/timeout, wire them to the nearest end node or omit and note them as TODOs for the user.
 
 **Runtime variables available after the HITL node:**
-- `<NodeId>.result` — object containing all `outputs` and `inOuts` the human filled in
-- `<NodeId>.status` — `"completed"`, `"cancelled"`, or `"timeout"`
+- `$vars.<NodeId>.result` — object containing all `outputs` and `inOuts` the human filled in
+- `$vars.<NodeId>.result.<fieldName>` — access individual fields
+- `$vars.<NodeId>.status` — `"completed"`, `"cancelled"`, or `"timeout"`
 
-Reference in downstream script nodes: `=<NodeId>.result.fieldName`
+**How to use HITL output in a downstream script node:**
+
+```javascript
+// In a script node that runs after the HITL node completes
+const reviewResult = $vars.rcaReview1.result;
+const proposedUpdate = reviewResult.proposedUpdate;  // inOut field the human edited
+const reviewNotes = reviewResult.notes;              // output field the human filled in
+
+if ($vars.rcaReview1.status === "completed") {
+    // Use the human-reviewed value for the write-back
+    await updateServiceNow(ticketId, proposedUpdate);
+}
+```
+
+**If no downstream nodes exist yet** for `cancelled`/`timeout`, create placeholder end nodes first:
+
+```bash
+# Create end nodes for the non-happy paths
+uip flow node add <file> --type uipath.end --label "Cancelled" --id cancelEnd1
+uip flow node add <file> --type uipath.end --label "Timeout" --id timeoutEnd1
+
+# Then wire all three handles
+uip flow edge add <file> --source <NodeId>:completed --target <next-node-id>:input
+uip flow edge add <file> --source <NodeId>:cancelled --target cancelEnd1:input
+uip flow edge add <file> --source <NodeId>:timeout   --target timeoutEnd1:input
+```
 
 **Complete example — invoice approval:**
 
