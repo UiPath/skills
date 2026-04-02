@@ -7,7 +7,7 @@ metadata:
 
 # UiPath Human-in-the-Loop Assistant
 
-Recognizes when a business process needs a human decision point, designs the task schema, and wires the HITL node into the automation — Flow, Maestro, or Coded Agent.
+Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Coded Agent.
 
 ## When to Use This Skill
 
@@ -22,9 +22,22 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ---
 
-## Step 1 — Detect the Surface
+## Step 0 — Resolve the `uip` binary
 
-Before designing anything, identify what type of automation is being built. Run these checks in order:
+```bash
+UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
+$UIP --version
+```
+
+Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
+
+> **Local dev note:** If working inside the uipcli repo, replace `uip` with `bun run start`.
+
+---
+
+## Step 1 — Detect the Surface and Find the Flow File
+
+Run these checks in order:
 
 ```bash
 # Check for a .flow file (Flow project)
@@ -43,32 +56,62 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | `agent.json` | **Coded Agent** | Partial — escalation CLI in-flight |
 | `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
 
-If the user mentioned a specific file path, use that directly.
+**If the user mentioned a specific file path**, use that directly.
+
+**If no `.flow` file exists and surface is Flow**, create one first:
+
+```bash
+uip flow init <ProjectName>
+# Creates: <ProjectName>/flow_files/<ProjectName>.flow
+```
+
+The flow file path will be `<ProjectName>/flow_files/<ProjectName>.flow`.
 
 ---
 
-## Step 2 — Read Business Context and Identify the HITL Point
+## Step 2 — Read the Business Context
 
-Read the relevant automation file to understand what the process does:
+If a `.flow` file already exists, read it to understand the current nodes and edges:
 
-- **Flow**: read the `.flow` file — identify nodes, edges, variable context
-- **Coded Agent**: read `agent.json` and the agent source files
-- **Maestro**: read the `.bpmn` file and declared process variables
+```bash
+cat <path-to-flow-file>
+```
 
-Then identify:
-1. **Where** in the process the human decision point belongs (after which node/step)
-2. **What data** the human needs to see (inputs into the task)
-3. **What data** the human must provide back (outputs from the task)
-4. **What actions** the human can take (outcomes — e.g. Approve/Reject, Retry/Skip)
-5. **What happens next** on each outcome (which path the automation takes)
-
-If the business description is ambiguous about what the human sees or decides, ask one focused question before proceeding.
+Identify:
+1. **Where** in the process the human decision point belongs (after which existing node)
+2. **What the human needs to see** — data produced by upstream nodes
+3. **What the human must provide back** — data needed by downstream nodes
+4. **What actions they can take** — the named outcome buttons
 
 ---
 
-## Step 3 — Design the Schema
+## Step 3 — Extract the Schema Through Conversation
 
-The HITL schema uses a flat list format — **not JSON Schema**:
+Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
+
+| What you need to know | Question to ask |
+|---|---|
+| What the reviewer sees | "What information does the reviewer need to make their decision?" |
+| What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
+| What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
+| Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
+| Priority | "Is this normal priority, or high/critical?" |
+
+**Common business descriptions → schema translations:**
+
+| Business description | Schema shape |
+|---|---|
+| "Human reviews and approves/rejects an invoice" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |
+| "Reviewer checks agent-drafted email before sending" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |
+| "Escalate to human when confidence < 0.7" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |
+| "Human fills in missing vendor data" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |
+| "Approve before writing to ServiceNow" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |
+
+---
+
+## Step 4 — Design the Schema
+
+The CLI accepts this format for `--schema`:
 
 ```json
 {
@@ -79,107 +122,84 @@ The HITL schema uses a flat list format — **not JSON Schema**:
 }
 ```
 
-| Field | Purpose | Human can… |
+| Field | Human can… | Use for |
 |---|---|---|
-| `inputs` | Data passed into the task | Read only |
-| `outputs` | Data the human fills in | Write |
-| `inOuts` | Data the human can read and modify | Read + Write |
-| `outcomes` | Named action buttons | Click one to complete |
+| `inputs` | Read only | Context the human needs to make a decision |
+| `outputs` | Write | Data the automation needs back |
+| `inOuts` | Read + modify | Data the human can see and optionally correct |
+| `outcomes` | Click one | Named action buttons |
 
 **Supported types:** `string`, `number`, `boolean`, `date`
 
-### Design rules
+**Design rules:**
+- `inputs`: everything the human needs to decide — IDs, amounts, context
+- `outputs`: only what downstream nodes actually use
+- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
+- Keep it focused — don't add fields the automation won't use
 
-- `inputs`: include everything the human needs to make their decision — IDs, amounts, context
-- `outputs`: include only what the automation needs back from the human
-- `outcomes`: at minimum one. Use named outcomes that match the business action (e.g. `Approve`/`Reject`, not just `Submit`)
-- Keep schemas focused — only ask for what the automation actually uses downstream
-
-### Common patterns
-
-**Approval gate:**
-```json
-{
-  "inputs":   [{ "name": "invoiceId", "type": "string" }, { "name": "amount", "type": "number" }],
-  "outcomes": [{ "name": "Approve", "type": "string" }, { "name": "Reject", "type": "string" }]
-}
-```
-
-**Data enrichment:**
-```json
-{
-  "inputs":   [{ "name": "rawExtract", "type": "string" }],
-  "outputs":  [{ "name": "vendorName", "type": "string" }, { "name": "costCenter", "type": "string" }],
-  "outcomes": [{ "name": "Submit", "type": "string" }]
-}
-```
-
-**Exception escalation:**
-```json
-{
-  "inputs":   [{ "name": "agentReasoning", "type": "string" }, { "name": "confidenceScore", "type": "number" }],
-  "outputs":  [{ "name": "action", "type": "string" }, { "name": "notes", "type": "string" }],
-  "outcomes": [{ "name": "Retry", "type": "string" }, { "name": "Skip", "type": "string" }, { "name": "Escalate", "type": "string" }]
-}
-```
-
-**Write-back validation (human approves before agent writes to external system):**
-```json
-{
-  "inputs":   [{ "name": "proposedChange", "type": "string" }, { "name": "targetSystem", "type": "string" }],
-  "inOuts":   [{ "name": "finalValue", "type": "string" }],
-  "outcomes": [{ "name": "Approve", "type": "string" }, { "name": "Reject", "type": "string" }]
-}
-```
+**Show the designed schema to the user and confirm before running the CLI.**
 
 ---
 
-## Step 4 — Add the HITL Node
+## Step 5 — Run the CLI
 
 ### Surface: Flow
 
+**Full sequence:**
+
 ```bash
+# 1. Add the HITL node
 uip flow hitl add <path-to-flow-file> \
-  --schema '<json-schema-string>' \
-  --label "<human-readable label>" \
+  --schema '<schema-json>' \
+  --label "<Label>" \
   --priority normal \
   --timeout PT24H
+
+# Note the NodeId returned in Data.NodeId
+
+# 2. Wire the output handles
+uip flow edge add <file> --source <NodeId>:completed --target <next-node-id>:input
+uip flow edge add <file> --source <NodeId>:cancelled --target <cancel-node-id>:input
+uip flow edge add <file> --source <NodeId>:timeout   --target <timeout-node-id>:input
+
+# 3. Validate
+uip flow validate <file> --format json
 ```
+
+**CLI options:**
 
 | Option | Values | Default |
 |---|---|---|
-| `--schema` | JSON string (see Step 3) | `{ outcomes: [{ name: "Submit" }] }` |
+| `--schema` | JSON string (Step 4 format) | `{ outcomes: [{ name: "Submit" }] }` |
 | `--label` | canvas label | `"Human in the Loop"` |
 | `--priority` | `low` `normal` `high` `critical` | `normal` |
-| `--timeout` | ISO 8601 duration | `PT24H` |
+| `--timeout` | ISO 8601 duration (PT24H, PT48H, P7D) | `PT24H` |
 | `--position` | `x,y` canvas coordinates | `0,0` |
 
-The command returns `NodeId` — save it for edge wiring.
+**If no downstream nodes exist yet** for cancelled/timeout, wire them to the nearest end node or omit and note them as TODOs for the user.
 
-**After adding — wire the edges:**
+**Runtime variables available after the HITL node:**
+- `<NodeId>.result` — object containing all `outputs` and `inOuts` the human filled in
+- `<NodeId>.status` — `"completed"`, `"cancelled"`, or `"timeout"`
 
-The HITL node has three output handles: `completed`, `cancelled`, `timeout`. Wire all three:
+Reference in downstream script nodes: `=<NodeId>.result.fieldName`
+
+**Complete example — invoice approval:**
 
 ```bash
-# Completed → happy path
-uip flow edge add <file> --source <hitl-node-id>:completed --target <next-node-id>:input
+uip flow init InvoiceApproval
 
-# Cancelled → cancellation handler
-uip flow edge add <file> --source <hitl-node-id>:cancelled --target <cancel-node-id>:input
+uip flow hitl add InvoiceApproval/flow_files/InvoiceApproval.flow \
+  --schema '{"inputs":[{"name":"invoiceId","type":"string"},{"name":"amount","type":"number"}],"outcomes":[{"name":"Approve","type":"string"},{"name":"Reject","type":"string"}]}' \
+  --label "Invoice Review" \
+  --priority normal
 
-# Timeout → timeout handler
-uip flow edge add <file> --source <hitl-node-id>:timeout --target <timeout-node-id>:input
-```
+# Returns: { "NodeId": "invoiceReview1", ... }
 
-The node also produces two runtime variables:
-- `<hitl-node-id>.result` — the data the human filled in
-- `<hitl-node-id>.status` — `"completed"`, `"cancelled"`, or `"timeout"`
+uip flow edge add InvoiceApproval/flow_files/InvoiceApproval.flow \
+  --source invoiceReview1:completed --target end:input
 
-Reference these in subsequent script nodes as `=<hitl-node-id>.result.fieldName`.
-
-**Validate after wiring:**
-```bash
-uip flow validate <file> --format json
+uip flow validate InvoiceApproval/flow_files/InvoiceApproval.flow --format json
 ```
 
 See [../uipath-flow/references/flow-hitl.md](../uipath-flow/references/flow-hitl.md) for the complete Flow HITL reference.
@@ -188,7 +208,7 @@ See [../uipath-flow/references/flow-hitl.md](../uipath-flow/references/flow-hitl
 
 ### Surface: Coded Agent
 
-The Coded Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, guide the user to configure the escalation manually in `agent.json` and insert the `interrupt(CreateTask(...))` call in the agent source.
+The Coded Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
 
 **`agent.json` escalation entry:**
 ```json
@@ -196,7 +216,7 @@ The Coded Agent escalation CLI (`uip agent escalation add`) is currently in-flig
   "escalations": [
     {
       "name": "<escalation-name>",
-      "inputSchema": { "inputs": [...], "inOuts": [...] },
+      "inputSchema":  { "inputs": [...], "inOuts": [...] },
       "outputSchema": { "outputs": [...], "outcomes": [...] }
     }
   ]
@@ -218,17 +238,17 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer, using the schema designed in Step 3 as the configuration reference. Note that in Maestro, field names in `outputs`/`inOuts` must exactly match the declared process variable names and types.
+The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 4. Note: in Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 
-## Step 5 — Report to the User
+## Step 6 — Report to the User
 
 After completing the wiring:
 
-1. **What was inserted** — node ID, label, and insertion point in the automation
-2. **Schema summary** — what the human will see and what they must provide
-3. **Edges wired** — which handles were connected and to which nodes
-4. **Runtime variables** — how to reference `result` and `status` in downstream nodes
-5. **Validation result** — pass/fail, and any errors to fix
-6. **Next step** — validate locally, then pack and publish via `uipath-development` skill
+1. **What was inserted** — node ID, label, insertion point
+2. **Schema summary** — what the human will see (`inputs`), fill in (`outputs`/`inOuts`), and click (`outcomes`)
+3. **Edges wired** — which handles were connected and to which nodes; any handles left unwired
+4. **Runtime variables** — `<NodeId>.result` and `<NodeId>.status` and how to reference them
+5. **Validation result** — pass or errors to fix
+6. **Next step** — pack and publish when ready via `uipath-development` skill
