@@ -1,0 +1,21 @@
+name: Validate Skills
+
+on:
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - '.github/workflows/validate-skills.yml'
+
+jobs:
+  validate-descriptions:
+    runs-on: ubuntu-latest
+    name: Validate skill descriptions
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check description lengths
+        run: |
+          FILES=$(git diff origin/${{ github.base_ref }}...HEAD --name-only --diff-filter=ACM | grep 'skills/.*/SKILL\.md$' || true)
+          bash hooks/validate-skill-descriptions.sh $FILES

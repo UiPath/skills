@@ -174,6 +174,16 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 - Keep hooks idempotent — safe to run multiple times
 - Set appropriate timeouts (default: 180 seconds)
 
+### Git Hooks
+
+This repository uses pre-commit hooks to validate skill descriptions (1024-character limit). To enable them:
+
+```bash
+bash scripts/setup-hooks.sh
+```
+
+This configures git to use `.githooks/` and enables the skill description validator.
+
 ## Quality Checklist
 
 Before submitting your PR, verify:
@@ -181,6 +191,7 @@ Before submitting your PR, verify:
 ### SKILL.md
 - [ ] Frontmatter has `name` matching the folder name
 - [ ] Frontmatter `description` includes both TRIGGER and DO NOT TRIGGER conditions
+- [ ] Frontmatter `description` is under 1024 characters (enforced by pre-commit hook)
 - [ ] Critical Rules section exists with numbered, actionable rules
 - [ ] CLI commands include exact flags and `--output json` where appropriate
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
