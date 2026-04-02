@@ -23,7 +23,7 @@ Gather evidence and evaluate ONE specific hypothesis.
 1. **Read the hypothesis** — understand confirm/eliminate criteria.
 2. **Read the investigation guides** from `state.json.investigation_guides`. Follow their data correlation and testing prerequisite rules — these apply to all confidence levels.
 3. **Read the matched playbook** for this hypothesis (path in `state.json.matched_playbooks`). Read `## Context` first for understanding. Then scope your work per the confidence-level behavior table in shared.md.
-4. **Check existing evidence** — reuse data already in `evidence/`
+4. **Check existing data** — check `raw/` and `evidence/` for data already fetched by triage or previous testers. Reuse if the same entity was already queried.
 5. **Gather new evidence** using available tools: uip CLI, `uip docsai ask`, source code, user input
 6. **For large result sets:** summarize yourself — group errors by type, count patterns, extract samples
 7. **Before confirming, actively try to disprove.** Scope disproval effort per the confidence-level behavior table in shared.md. Populate `elimination_checks` for all confidence levels. Populate `execution_path_traced` for medium/low only — for each downstream entity, query its actual state, don't infer from upstream.
