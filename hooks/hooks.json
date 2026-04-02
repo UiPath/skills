@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/ensure-uip.sh\"",
+            "timeout": 180,
+            "once": true,
+            "statusMessage": "Checking uip, servo and rpa-tool installation..."
+          }
+        ]
+      }
+    ]
+  }
+}

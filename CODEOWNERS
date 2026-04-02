@@ -1,0 +1,25 @@
+# Default owners for the entire repo
+* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar
+
+# Hooks
+/hooks/ @DragosUnguru
+
+# Activity references
+/references/ @DragosUnguru
+
+# RPA workflows skill
+/skills/uipath-rpa-workflows/ @DragosUnguru @RaduAna-Maria
+
+# Coded workflows skill
+/skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-coded-workflows/references/integration-service.md @baishalighosh @ojalkumar-pixel @shyamgupta52
+
+# Platform skill
+/skills/uipath-platform/ @gabrielavaduva
+/skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
+
+# Coded agents skill
+/skills/uipath-coded-agents/ @chandusailella
+
+# Flow skill
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden
