@@ -27,7 +27,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Critical Rules
 
-1. **Do NOT `registry get` built-in nodes during planning.** The planning guide and node reference already document all OOTB node types with their ports, inputs, and output variables. Only run `uip flow registry get <nodeType> --output json` for **connector nodes**, **resource nodes**, and **unknown/new node types** not in the guides. **Exception:** When building the flow (Step 6), you DO need `registry get` for any node type to populate the `definitions` array in the `.flow` file — definitions must be copied from registry output, never hand-written.
+1. **Do NOT `registry get` built-in nodes during Phase 1 (architectural planning).** The planning guide and node reference already document all OOTB node types with their ports, inputs, and output variables — sufficient for designing flow topology. However, **Phase 2 (implementation resolution) REQUIRES registry validation of all node types**, even OOTB nodes, to confirm ports and inputs match the current product state. Only run connector/resource `registry get` during Phase 1 if needed for decision-making. **Exception:** When building the flow (Step 6), you DO need `registry get` for any node type to populate the `definitions` array in the `.flow` file — definitions must be copied from registry output, never hand-written.
 2. **ALWAYS discover connector capabilities via IS before planning.** Follow Step 4 for every connector node: fetch a connection (4a), call `registry get --connection-id` for enriched metadata (4b), and resolve reference fields via `uip is resources execute list` (4c). Without this, `inputs.detail` will be wrong and `$vars` references will be unresolvable — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node. Run `uip is connections list <connector-key>` — if no connection exists, tell the user before proceeding.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
@@ -312,13 +312,14 @@ Present a **short summary in chat** (goal + key nodes + open questions). Tell th
 **Read [references/planning-phase-implementation.md](references/planning-phase-implementation.md)** for the implementation resolution process.
 
 Phase 2 takes the approved architectural plan and resolves all implementation details:
-- Run `uip flow registry search` and `registry get` for connector and resource nodes
+- Validate all node types (OOTB and connector) via `uip flow registry get` to confirm ports, inputs, and outputs
+- Run `uip flow registry search` and `registry get` for connector and resource nodes to resolve exact types
 - Bind Integration Service connections
 - Resolve reference fields via `uip is resources execute list`
 - Validate required fields against user-provided values
 - Replace `<PLACEHOLDER>` values with resolved IDs
 - Replace `core.logic.mock` nodes with real resource nodes (if published)
-- Write `<SolutionName>.impl.plan.md` with resolved details
+- Write `<SolutionName>.impl.plan.md` with resolved details and mermaid diagram
 
 #### 5c. Iterate until approved
 
@@ -434,7 +435,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 ## Anti-Patterns
 
 - **Never guess node schemas** — use the planning guide for OOTB nodes, `registry get` for connector/unknown nodes. Guessed port names or input fields cause silent wiring failures.
-- **Never `registry get` built-in nodes** — the planning guide already documents all OOTB node types with ports and inputs. Redundant registry calls waste tokens and time.
+- **Never `registry get` built-in nodes during Phase 1 planning** — the planning guide already documents all OOTB node types with ports and inputs. Redundant lookups waste tokens. However, Phase 2 **requires** registry validation of all node types to confirm the current product state before building.
 - **Never skip IS discovery for connector nodes** — the registry tells you a node exists; only IS tells you what operations and fields it supports. Skipping this is the #1 cause of broken connector nodes.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.

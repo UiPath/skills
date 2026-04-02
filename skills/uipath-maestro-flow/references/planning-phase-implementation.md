@@ -4,24 +4,43 @@ Resolve all implementation details for the approved architectural plan. This pha
 
 > **Prerequisite:** The user must have explicitly approved the architectural plan (`.arch.plan.md`) before starting this phase.
 >
-> **Skip the resolution steps (1–7)** if the flow uses only OOTB nodes (Script, HTTP, Decision, Switch, Loop, Merge, End, Terminate, Delay, Transform, Mock). OOTB nodes do not require registry lookups, connection binding, or reference resolution — proceed directly to the build step. The node catalog and wiring reference below are still needed for building.
+> **Always validate with the registry,** even for OOTB nodes. This phase ensures that every node type (built-in or connector-based) is confirmed against the current registry state. Port names, input requirements, and output schemas can change — do not assume OOTB nodes match the planning guides without verification.
 
 ---
 
 ## Implementation Resolution Process
 
-### Step 1 — Identify Nodes Needing Resolution
+### Step 1 — Identify Nodes and Validate with Registry
 
-Scan the approved `.arch.plan.md` node table and connector summary. Identify:
+Scan the approved `.arch.plan.md` node table and connector summary. Validate each node type against the registry to confirm ports, inputs, and outputs are current:
 
 | Category | How to identify | Action |
 | --- | --- | --- |
-| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Steps 2a–2d |
-| Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 |
-| Mock placeholders | Node type is `core.logic.mock` | Run Step 4 |
-| OOTB nodes | Everything else | No resolution needed |
+| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Steps 2a–2d (bind connection, resolve reference fields, validate required inputs) |
+| Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 (registry search, confirm node type) |
+| Mock placeholders | Node type is `core.logic.mock` | Run Step 4 (check if published, replace if available) |
+| OOTB nodes | Everything else (Script, HTTP, Decision, Loop, etc.) | Run Step 1a below (validate with registry) |
 
-If no nodes need resolution, skip to Step 6.
+**All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.**
+
+#### Step 1a — Validate All OOTB Node Types with Registry
+
+Even built-in nodes can change. Confirm each OOTB node type against the registry:
+
+```bash
+uip flow registry pull --force
+uip flow registry get <nodeType> --output json
+```
+
+For each OOTB node type in your plan, record:
+- Input port names (must match `targetPort` in edges)
+- Output port names (must match `sourcePort` in edges)
+- Required input fields (`required: true` in `inputDefinition`)
+- Output variable schema (`outputDefinition`)
+
+Example: If your plan shows `core.action.script`, run `uip flow registry get core.action.script --output json` and confirm the expected port names (`input`, `success`) and that `script` input is required.
+
+Update your node table if any ports or required fields differ from the planning guide.
 
 ### Step 2 — Resolve Connector Nodes
 
@@ -125,6 +144,21 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 | # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 
+## Flow Diagram (Mermaid)
+
+Copy the mermaid diagram from `.arch.plan.md`, then update node labels if any node types changed due to mock replacement or connector resolution. Use the same diagram from architectural planning — it remains the visual reference for the flow structure.
+
+```mermaid
+graph TD
+    trigger(Manual Trigger)
+    action1[Resolved Action 1]
+    decision{Resolved Decision}
+    end1(Done)
+    trigger -->|output| action1
+    action1 -->|success| decision
+    decision -->|true| end1
+```
+
 ## Resolved Edge Table
 
 (Copy from `.arch.plan.md` — update only if node IDs changed due to mock replacement)
@@ -146,6 +180,8 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 ## Changes from Architectural Plan
 
 - List what changed between `.arch.plan.md` and this plan
+- Record any node type changes (connector resolutions, mock replacements)
+- Note any port or input field changes discovered during registry validation
 ```
 
 #### Column Additions
@@ -159,12 +195,14 @@ The implementation plan adds these columns beyond the architectural plan:
 
 Present a short summary in chat:
 
-1. How many nodes were resolved
-2. Any mock placeholders remaining
-3. Any required fields that need user input
-4. Any connections that need to be created
+1. Registry validation results — confirm all OOTB node ports and inputs match the plan
+2. How many connector/resource nodes were resolved
+3. Any port or input field changes discovered during validation
+4. Any mock placeholders remaining
+5. Any required fields that need user input
+6. Any connections that need to be created
 
-Tell the user to review `<SolutionName>.impl.plan.md`. Do NOT proceed to the build step until the user explicitly approves.
+Tell the user to review `<SolutionName>.impl.plan.md`, including the updated mermaid diagram and registry confirmations. Do NOT proceed to the build step until the user explicitly approves.
 
 ---
 
