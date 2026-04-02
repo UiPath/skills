@@ -18,8 +18,8 @@
 /skills/uipath-platform/ @gabrielavaduva
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 
-# Coded agents skill
-/skills/uipath-coded-agents/ @chandusailella
+# Agents skill (coded + low-code)
+/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden
