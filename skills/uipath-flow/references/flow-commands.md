@@ -83,9 +83,15 @@ Debug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.
 
 ```bash
 UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
+
+# Pass input arguments to the flow
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> \
+  --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. Always run `uip flow validate` first.
+
+Use `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).
 
 Run `uip flow debug --help` to discover additional options.
 
@@ -126,6 +132,17 @@ uip flow node list <ProjectName>.flow --output json
 
 > **Shell quoting tip:** If `--input` JSON contains special characters, write it to a temp file: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
 
+### uip flow node configure
+
+Configure a **connector** node with connection details, method info, and parameter values. Run this after `node add` for connector nodes.
+
+```bash
+uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
+  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "GET", "endpoint": "/Resource/{id}", "bodyParameters": {...}}'
+```
+
+The `--detail` JSON accepts: `connectionId` (required), `folderKey` (required), `method` (required — HTTP method from `connectorMethodInfo`), `endpoint` (required — path template from `connectorMethodInfo`), `bodyParameters`, `queryParameters`, `pathParameters`. Get the `method` and `endpoint` values from the `connectorMethodInfo` field in the `registry get` response.
+
 ## uip flow edge
 
 Add edges between nodes in a `.flow` file.
@@ -155,7 +172,7 @@ Run `uip flow registry <subcommand> --help` for additional options (e.g., `--for
 
 ## Integration Service commands (for connector binding and reference resolution)
 
-When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4d** of the flow authoring workflow.
+When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4e** of the flow authoring workflow.
 
 ```bash
 # Connections
