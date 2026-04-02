@@ -114,6 +114,10 @@ Replace `core.trigger.manual` with `core.trigger.scheduled`:
 3. Add the `eventDefinition` to `model`: `"eventDefinition": "bpmn:TimerEventDefinition"`
 4. See [references/plugins/scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) for presets
 
+### Add an inline agent node
+
+Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. See [references/inline-agent-guide.md](references/inline-agent-guide.md) for the full step-by-step workflow, node structure, and directory layout.
+
 ### Add a resource node (RPA process, agent, etc.)
 
 See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md)) for the full workflow. Summary:
