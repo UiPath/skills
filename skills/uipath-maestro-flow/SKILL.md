@@ -65,6 +65,7 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 | **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md) |
 | **Add a resource node** | Discover via registry, add with CLI or JSON, wire edges. Use `core.logic.mock` if unpublished. | [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 
+
 ## Quick Start
 
 These steps are for **creating a new flow from scratch**. For existing projects, use the Common Edits section above or skip to the relevant step.
