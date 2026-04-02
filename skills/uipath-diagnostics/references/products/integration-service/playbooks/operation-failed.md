@@ -25,10 +25,10 @@ What to look for:
 
 ## Investigation
 
-1. Identify the connector, activity, and input parameters from the error or binding
-2. Run `uip is connections ping <connection-id>` to confirm the connection is healthy
-3. Run `uip is activities list <connector-key>` to verify the activity exists and is supported
-4. Run `uip is resources describe <connector-key> <object-name>` to check required fields and operations
+1. **Read the connection resource file** — if source code is available, find and read the connection JSON (see "Connection Resource File" in [overview.md](../overview.md)) to identify the connector and connection
+2. `uip is connections ping <connection-id>` — confirm the connection is healthy
+3. `uip is activities list <connector-key>` — verify the activity exists and is supported
+4. `uip is resources describe <connector-key> <object-name>` — check required fields and operations
 5. Check if the external service API has changed or if rate limits apply
 
 ## Resolution

@@ -26,10 +26,10 @@ What to look for:
 
 ## Investigation
 
-1. Identify the connector and connection used by the trigger
-2. Run `uip is connections ping <connection-id>` to verify the connection is active
+1. **Read the connection resource file** — if source code is available, find and read the connection JSON (see "Connection Resource File" in [overview.md](../overview.md)) to identify the connector and connection
+2. `uip is connections ping <connection-id>` — verify the connection is active
 3. Check folder permissions for the robot account — verify "Triggers" permission exists
-4. Run `uip is triggers objects <connector-key> <operation>` to verify the trigger object type is correct
+4. `uip is triggers objects <connector-key> <operation>` — verify the trigger object type is correct
 5. Check if the issue is debug-only or deploy-only (identity and bindings differ)
 
 ## Resolution

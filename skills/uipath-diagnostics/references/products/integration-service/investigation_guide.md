@@ -21,6 +21,14 @@ Always identify the specific connection before doing anything else:
 
 If the connection identity is still unclear, ask the user which connection or connector is involved.
 
+## Domain-Specific Data Gathering
+
+After the Orchestrator job data bundle (job details, logs, traces) is collected and the connection is identified:
+
+1. **Connection status** — `uip is connections ping <connection-id> --format json` to check if it's active
+2. **Connection details** — `uip is connections list --format json` to find connector type, status, and folder scope
+3. **Connection resource file** — if source code is available, read the connection resource JSON from the project (see "Connection Resource File" in [overview.md](./overview.md) for path pattern)
+
 ## Testing Prerequisites
 
 When testing hypotheses for Integration Service issues, gather and verify these before drawing conclusions:

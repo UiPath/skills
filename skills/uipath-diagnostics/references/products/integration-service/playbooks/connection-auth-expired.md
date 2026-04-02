@@ -24,9 +24,9 @@ What to look for:
 
 ## Investigation
 
-1. **Identify the connection** — if source code is available, read the connection resource file (see "Connection Resource File" in [overview.md](../overview.md)) to get the connector name and connection ID
-2. Run `uip is connections ping <connection-id>` to confirm the connection is inactive
-3. Check when the connection last worked successfully (from job/instance history)
+1. **Read the connection resource file** — if source code is available, find and read the connection JSON (see "Connection Resource File" in [overview.md](../overview.md)) to get the connector name and connection ID
+2. `uip is connections ping <connection-id>` — confirm the connection is inactive
+3. Check when the connection last worked successfully (from job/instance history in triage evidence)
 
 ## Resolution
 
