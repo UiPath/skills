@@ -61,15 +61,32 @@ Every fix step must cite its source (playbook section, docsai result, or evidenc
 ### 4. Format the resolution
 
 ```
-### Root Cause: {description}
+Root Cause: {description}
 
-**What went wrong:** {one sentence}
-**Why:** {root cause explanation — trace the full causal chain across all domains}
-**Immediate fix:** {what to do right now to resolve the current instance}
-**Preventive fix:** {for each domain in the causal chain, what to change so it doesn't recur}
-**Where:** {exact file, setting, folder/role — for each fix}
-**Who:** {user | RPA developer | admin | platform team — for each fix}
-**Sources:** {for each fix step, the source that documents it}
+What went wrong: {one sentence}
+
+Why: {root cause explanation — trace the full causal chain across all domains}
+
+Evidence:
+- {bullet list — quote specific field values, error messages, IDs, timestamps, and state from raw/evidence files that confirm the root cause and reveal gaps}
+
+Immediate fix:
+
+1. {What to do — concrete action with exact navigation path or command}
+  - Why: {cite evidence that makes this step necessary}
+  - Where: {exact file, UI path, setting, or command}
+  - Who: {RPA developer | admin | platform team | process owner}
+  - Source: {playbook path or docsai URL}
+2. {next step, same structure}
+
+Preventive fix:
+
+1. {Domain} -- {What to change — concrete action}
+  - Why: {cite specific evidence showing the gap this fix addresses}
+  - Where: {exact file, UI path, setting}
+  - Who: {RPA developer | admin | platform team}
+  - Source: {playbook path or docsai URL}
+2. {next domain, same structure}
 ```
 
 **If no root cause found** — present what was investigated and ruled out, and recommend providing more data or opening a UiPath support ticket.
