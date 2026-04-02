@@ -38,7 +38,7 @@ Quick routing by range:
 After the Orchestrator job data bundle (job details, logs, traces) is collected:
 
 1. **Determine runtime type** — check the job's `RuntimeType` or `Source` field. If it's a ProcessOrchestration job (Maestro BPMN), gather Maestro-specific data below. Standard Orchestrator jobs don't need these steps.
-2. **Maestro instance** — `uip maestro instances list -f <folder-key> --format json` to find the instance, then `uip maestro instances get <instance-id> -f <folder-key>` for details
+2. **Maestro instance** — `uip maestro instances list -f <folder-key>` to find the instance (use `--process-key` or `--error-code` to narrow down), then `uip maestro instances get <instance-id> -f <folder-key>` for details
 3. **Full incident details** — `uip maestro instances incidents <instance-id> -f <folder-key>`. This returns `errorDetails` with stack traces. Do NOT use `uip maestro incidents list` — that returns summaries only without error details.
 4. **Element executions** — `uip maestro instances element-executions <instance-id> -f <folder-key>` to see what each BPMN element did and where execution stopped
 5. **Child jobs** — if the BPMN process has service tasks, list child jobs and check their state and error messages. The child's failure reason is often the actual root cause.

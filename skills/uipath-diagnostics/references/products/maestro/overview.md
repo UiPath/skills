@@ -46,15 +46,19 @@ Organization (cloud.uipath.com)
 ## CLI
 
 ```
-uip maestro process list|get|run          — list/get/run Maestro processes
-uip maestro instances list|get            — list/get process instances
-uip maestro instances incidents <id>      — get full incidents for an instance (includes errorDetails)
-uip maestro instances element-executions  — get element execution history
-uip maestro instances variables           — get instance variables
-uip maestro instances asset               — get BPMN XML
-uip maestro instances cursors             — get current execution positions
-uip maestro processes incidents <key>     — get full incidents for a process (includes errorDetails)
-uip maestro incidents list                — tenant-level incident SUMMARIES ONLY (no errorDetails)
+uip maestro process list|get|run                    — list/get/run Maestro processes
+uip maestro job traces|status <job-key>             — stream traces or get status for a Maestro job
+uip maestro instances list [-f <folder-key>]        — list instances. Filters: --process-key, --error-code, --limit, --offset
+uip maestro instances get <id> [-f <folder-key>]    — get instance details
+uip maestro instances incidents <id> [-f <fk>]      — full incidents with errorDetails and stack traces
+uip maestro instances element-executions <id> [-f <fk>] — element execution history
+uip maestro instances variables <id> [-f <fk>]      — instance variables. Filter: --parent-element-id
+uip maestro instances asset <id> [-f <fk>]          — BPMN XML asset
+uip maestro instances cursors <id> [-f <fk>]        — current execution cursor positions
+uip maestro instances retry <id> [-f <fk>]          — retry a faulted instance
+uip maestro instances pause|resume|cancel <id> [-f <fk>] — lifecycle control
+uip maestro processes incidents <key> [--folder-key <fk>] — incidents across all instances of a process
+uip maestro incidents list                           — tenant-level incident SUMMARIES ONLY (no errorDetails)
 ```
 
 Key commands for diagnostics:

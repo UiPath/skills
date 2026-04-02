@@ -27,7 +27,7 @@ What to look for:
 ## Investigation
 
 1. **Read the connection resource file** — if source code is available, find and read the connection JSON (see "Connection Resource File" in [overview.md](../overview.md) for path pattern and field reference). Use `spec.connectorName` as the exact display name in all findings — do NOT guess from the activity package name.
-2. `uip is connections list <connector-key> --folder-key <folder-key> --format json` — check if a connection for that connector exists in the runner's folder
+2. `uip is connections list <connector-key> --folder-key <folder-key>` — check if a connection for that connector exists in the runner's folder
 3. If found: `uip is connections ping <connection-id>` — verify it is active and enabled
 
 ## Resolution

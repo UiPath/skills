@@ -4,7 +4,7 @@
 
 Before fetching ANY job, queue, or asset data, resolve identity first:
 
-1. **Folder** — resolve the folder ID/key. All Orchestrator data is folder-scoped. If the folder is inaccessible, STOP — nothing else will be valid without it.
+1. **Folder** — resolve the folder key (GUID). All Orchestrator data is folder-scoped. Use `uip or folders list-current-user` to find all accessible folders (Personal, Solution, and Standard). `uip or folders list` only returns Standard folders — it misses Personal and Solution types. Use `uip or folders get <key-or-path>` to confirm details. If the folder is inaccessible, STOP — nothing else will be valid without it.
 2. **Process** — identify the process name (from user input, working directory `project.json`, or package name). All subsequent queries filter by this process.
 3. **Time window** — establish the relevant period from the user's report.
 
@@ -23,9 +23,9 @@ If data doesn't match: **discard it**. Do NOT fetch details for jobs or items fr
 
 For every job under investigation, gather these in order. Write each to `raw/` immediately.
 
-1. **Job details** — `uip or jobs get <key> --folder-key <fk> --output json`
-2. **Job logs** — `uip or jobs logs <key> --folder-key <fk> --output json`
-3. **Job traces** — `uip or jobs traces <key> --folder-key <fk> --output json` (if the command is available)
+1. **Job details** — `uip or jobs get <key>` — state, input/output arguments, timing, machine info, error details. No folder needed — resolved from key.
+2. **Job logs** — `uip or jobs logs <key>` — robot execution logs, newest-first. Use `--level Error` to quickly find errors. Use `--limit` to control how many entries (default 50). Folder inferred from key.
+3. **Job traces** — `uip or jobs traces <key>` — LLM interactions, tool calls, agent decisions. Only available for Agent-type processes. Folder inferred from key.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
 
