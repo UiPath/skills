@@ -21,7 +21,7 @@ uip rpa run-file --file-path <relative-path> --command <Command> [--input-argume
 | `--input-arguments` | JSON object with project-level input arguments. Only for `StartExecution`, `StartDebugging`, `TestActivity`, and `StartDebuggingFromHere` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--input-variables` | JSON object with workflow-level variable values. Only for `TestActivity` and `StartDebuggingFromHere` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--log-level` | Minimum log level: `Verbose`, `Trace`, `Information` (default), `Warning`, `Error`, `Critical` |
-| `--format` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
+| `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
 
 ### Debug Commands
 
