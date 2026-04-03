@@ -76,6 +76,24 @@ claude plugin marketplace add https://github.com/UiPath/skills
 claude plugin install uipath@uipath-marketplace
 ```
 
+#### Or, prompt your agent
+
+<!-- Keep skill list in sync with Skill Catalog table above -->
+
+Copy the prompt below and paste it to Claude Code.
+
+```text
+Install UiPath skills: run `npm install -g @uipath/cli && uip skills install` then add a "UiPath Skills" section to CLAUDE.md listing the available skills with these trigger descriptions:
+- uipath-coded-workflows — Create, edit, build, and run coded automations (.cs)
+- uipath-rpa-workflows — Generate and edit RPA workflows (XAML)
+- uipath-maestro-flow — Create and validate Flow projects (.flow JSON)
+- uipath-platform — Auth, Orchestrator, CLI tools, Integration Service
+- uipath-coded-agents — Scaffold, build, run, evaluate, deploy coded agents
+- uipath-coded-apps — Build, sync, publish, deploy Coded Web Applications
+- uipath-servo — Desktop and browser UI automation and testing
+Then ask me which skills I want to activate.
+```
+
 ### OpenAI Codex CLI
 
 This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
@@ -90,9 +108,45 @@ This repository is configured as a Codex CLI skill provider. The `AGENTS.md` fil
 > git checkout -- .
 > ```
 
+#### Or, prompt your agent
+
+<!-- Keep skill list in sync with Skill Catalog table above -->
+
+Copy the prompt below and paste it to Codex CLI.
+
+```text
+Install UiPath skills: run `npm install -g @uipath/cli && uip skills install` then add a "UiPath Skills" section to AGENTS.md listing the available skills with these trigger descriptions:
+- uipath-coded-workflows — Create, edit, build, and run coded automations (.cs)
+- uipath-rpa-workflows — Generate and edit RPA workflows (XAML)
+- uipath-maestro-flow — Create and validate Flow projects (.flow JSON)
+- uipath-platform — Auth, Orchestrator, CLI tools, Integration Service
+- uipath-coded-agents — Scaffold, build, run, evaluate, deploy coded agents
+- uipath-coded-apps — Build, sync, publish, deploy Coded Web Applications
+- uipath-servo — Desktop and browser UI automation and testing
+Then ask me which skills I want to activate.
+```
+
 ### Cursor IDE
 
 Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
+
+#### Or, prompt your agent
+
+<!-- Keep skill list in sync with Skill Catalog table above -->
+
+Copy the prompt below and paste it into Cursor's chat.
+
+```text
+Install UiPath skills: run `npm install -g @uipath/cli && uip skills install` then add a UiPath Skills rule to .cursor/rules/uipath-skills.mdc listing the available skills with these trigger descriptions:
+- uipath-coded-workflows — Create, edit, build, and run coded automations (.cs)
+- uipath-rpa-workflows — Generate and edit RPA workflows (XAML)
+- uipath-maestro-flow — Create and validate Flow projects (.flow JSON)
+- uipath-platform — Auth, Orchestrator, CLI tools, Integration Service
+- uipath-coded-agents — Scaffold, build, run, evaluate, deploy coded agents
+- uipath-coded-apps — Build, sync, publish, deploy Coded Web Applications
+- uipath-servo — Desktop and browser UI automation and testing
+Then ask me which skills I want to activate.
+```
 
 ## Contributing
 
