@@ -219,6 +219,149 @@ Do not modify `filePath`, `uniqueId`, or `type`.
 
 Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fixed.
 
+## Resources (v1.1.0)
+
+`agent.json` version `"1.1.0"` adds a `resources[]` array for tools, contexts, and escalations. Use `"version": "1.1.0"` when the agent needs any resources. Use `"version": "1.0.0"` for schema-only agents with no tools.
+
+### Tool resource (`$resourceType: "tool"`)
+
+```jsonc
+{
+  "$resourceType": "tool",
+  "id": "<uuid>",              // Stable; generate once, never change
+  "referenceKey": "<uuid>",    // Used for binding lookup
+  "name": "MyProcess",
+  "type": "process",           // See type table below
+  "location": "external",      // "external" | "solution"
+  "description": "What this tool does (shown to LLM for tool selection)",
+  "inputSchema": {
+    "type": "object",
+    "properties": { "param1": { "type": "string" } },
+    "required": ["param1"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": { "result": { "type": "string" } }
+  },
+  "isEnabled": true,
+  "properties": {
+    "processName": "MyProcess",
+    "folderPath": "Shared"      // "solution_folder" for solution-internal; actual path for external
+  }
+}
+```
+
+**`type` values:**
+
+| Value | Use when |
+|-------|----------|
+| `process` | Calling an RPA process (XAML workflow) in Orchestrator |
+| `agent` | Calling another low-code agent |
+| `integration` | Calling an Integration Service connector activity |
+| `api` | Direct REST API call |
+| `mcp` | MCP (Model Context Protocol) server tool |
+
+**`location` and `folderPath`:**
+
+| `location` | `folderPath` | Meaning |
+|------------|-------------|---------|
+| `"solution"` | `"solution_folder"` | Resource is another project within this same solution |
+| `"external"` | `"Shared"` (or actual path) | Resource lives in Orchestrator, outside this solution |
+
+### Context resource (`$resourceType: "context"`)
+
+```jsonc
+{
+  "$resourceType": "context",
+  "contextType": "index",       // "index" | "attachments" | "dataFabricEntitySet"
+  "indexName": "MyIndex",
+  "folderPath": "solution_folder",
+  "settings": {
+    "query": { "variant": "dynamic" },
+    "retrievalMode": "semantic", // "semantic" | "structured" | "deepRAG" | "batchTransform"
+    "resultCount": 3,
+    "threshold": 0,
+    "fileExtension": "All"
+  }
+}
+```
+
+### Escalation resource (`$resourceType: "escalation"`)
+
+```jsonc
+{
+  "$resourceType": "escalation",
+  "id": "<uuid>",
+  "name": "Human Review",
+  "description": "Escalate to a human reviewer when uncertain",
+  "isEnabled": true,
+  "channels": [
+    {
+      "name": "ActionCenter",
+      "type": "ActionCenter",
+      "inputSchema": { ... },
+      "properties": { ... }
+    }
+  ]
+}
+```
+
+### v1.1.0 agent.json template (with resources)
+
+```jsonc
+{
+  "version": "1.1.0",
+  "type": "lowCode",
+  "projectId": "<uuid>",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "targetRuntime": "pythonAgent",
+    "showProjectCreationExperience": false
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant.",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "You are a helpful assistant." }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{input.userInput}}",
+      "contentTokens": [
+        { "type": "variable", "rawString": "input.userInput" }
+      ]
+    }
+  ],
+  "inputSchema": {
+    "type": "object",
+    "required": ["userInput"],
+    "properties": {
+      "userInput": { "type": "string", "description": "User input" }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "content": { "type": "string", "description": "Agent response" }
+    }
+  },
+  "resources": [
+    // tool, context, and escalation entries here
+  ]
+}
+```
+
 ## Auto-Generated Files (do not edit)
 
 | File | Managed By |
