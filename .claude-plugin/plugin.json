@@ -8,6 +8,6 @@
   "license": "MIT",
   "homepage": "https://github.com/UiPath/skills",
   "repository": "https://github.com/UiPath/skills",
-  "keywords": ["uipath", "automation", "rpa", "workflows", "code", "xaml", "studio", "ui-automation", "ui-testing", "desktop", "browser", "coded-apps", "webapp", "nupkg", "coded-agents", "agent", "langgraph", "llamaindex", "openai-agents"],
+  "keywords": ["uipath", "automation", "rpa", "workflows", "code", "xaml", "studio", "ui-automation", "ui-testing", "desktop", "browser", "coded-apps", "webapp", "nupkg", "coded-agents", "agent", "langgraph", "llamaindex", "openai-agents", "maestro"],
   "skills": "./skills/"
 }

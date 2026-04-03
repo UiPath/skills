@@ -108,3 +108,4 @@ if is_windows; then
   ensure_npm_package @uipath/servo
 fi
 ensure_uip_tool @uipath/rpa-tool
+ensure_uip_tool @uipath/maestro-tool
