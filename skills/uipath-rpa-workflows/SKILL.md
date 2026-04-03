@@ -34,6 +34,8 @@ Use the default (table) only when displaying results directly to the user for re
 
 For the full CLI command reference (all tools, parameters, and error recovery), see **[references/cli-reference.md](./references/cli-reference.md)**.
 
+Key commands at a glance: `find-activities`, `get-default-activity-xaml`, `get-errors`, `install-or-update-packages`, `run-file`, `list-workflow-examples`, `get-workflow-example`, `search-templates`. For IS connectors: `is connectors list/get`, `is connections list/create/ping`, `is activities list`, `is resources list/describe/execute`.
+
 ---
 
 ## Supporting References
@@ -138,11 +140,11 @@ If unclear which file to edit, **ask the user** rather than guessing.
 
 ## Phase 0: Environment Readiness
 
-Ensure Studio Desktop is running, connected, and targeting the correct project. See **[references/environment-setup.md](./references/environment-setup.md)** for the full setup procedure (project root detection, Studio verification, authentication).
+Ensure Studio Desktop is running, connected, and targeting the correct project. See **[references/environment-setup.md](./references/environment-setup.md)** for the full setup procedure (project root detection, Studio verification, authentication, project creation).
 
 **Quick check:** Find `project.json` to establish `{projectRoot}`, run `uip rpa list-instances --output json` to verify Studio, and `uip rpa open-project` if needed.
 
-**Expression language for new projects:** Prefer `VisualBasic` for Windows target framework projects.
+**Creating a new project (only when explicitly requested or no project exists):** Use `uip rpa new` with `--template-id` for built-in templates or `--template-package-id` for NuGet template packages (discover them with `uip rpa search-templates`). See [environment-setup.md Step 0.4](./references/environment-setup.md#step-04-creating-a-new-project). Prefer `VisualBasic` expression language for Windows target framework projects.
 
 ## Precondition: Project Context
 
