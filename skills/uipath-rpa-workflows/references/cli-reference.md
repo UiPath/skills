@@ -91,6 +91,27 @@ uip rpa focus-activity --output json --use-studio
 
 ---
 
+### search-templates
+
+Search for project templates on configured NuGet feeds. Does not require a project to be open.
+
+```bash
+uip rpa search-templates --query "<SEARCH_TERM>" --output json
+uip rpa search-templates --limit 10 --include-prerelease --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--query` | No | Filter by name or description. Omit to list all available templates |
+| `--limit` | No | Max results (default 20) |
+| `--include-prerelease` | No | Include prerelease versions (default false) |
+
+Returns a JSON array with fields: `packageId`, `version`, `title`, `description`, `authors`, `source`, `tags`.
+
+Use the `packageId` and `version` from results with `uip rpa new --template-package-id` to create a project from that template.
+
+---
+
 ### close-project
 
 Close the current project in Studio.

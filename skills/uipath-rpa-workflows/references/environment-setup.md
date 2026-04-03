@@ -54,7 +54,9 @@ If you encounter auth errors (401, 403, "not authenticated") during any phase, p
 
 ## Step 0.4: Creating a New Project
 
-When the user needs a brand-new UiPath project (not just a new workflow in an existing project):
+When the user needs a brand-new UiPath project (not just a new workflow in an existing project).
+
+### From a Built-in Template
 
 ```bash
 uip rpa new \
@@ -69,7 +71,7 @@ uip rpa new \
 
 **Note:** `uip rpa new` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
 
-### Parameters
+#### Parameters
 
 | Parameter | Options | Default | Notes |
 |-----------|---------|---------|-------|
@@ -79,6 +81,54 @@ uip rpa new \
 | `--expression-language` | `VisualBasic`, `CSharp` | (template default) | Expression syntax for XAML workflows |
 | `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
 | `--description` | Any string | (none) | Project description in project.json |
+
+### From a NuGet Template Package
+
+Use when the user asks for a domain-specific template, references a specific template package by name, or wants to browse available templates.
+
+**1. Search for available templates:**
+
+```bash
+uip rpa search-templates --query "<SEARCH_TERM>" --output json
+```
+
+Does not require a project to be open. Returns a JSON array of `TemplateSearchResult` objects:
+
+```json
+[
+  {
+    "packageId": "UiPath.Template.SAPExample",
+    "version": "2.0.0",
+    "title": "SAP Automation Template",
+    "description": "Pre-configured project for SAP GUI automation",
+    "authors": "UiPath",
+    "source": "https://feed.example.com/v3/index.json",
+    "tags": ["SAP", "ERP"]
+  }
+]
+```
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `--query` | string | (none) | Filter by name or description. Omit to list all |
+| `--limit` | integer | 20 | Maximum results |
+| `--include-prerelease` | flag | false | Include prerelease versions |
+
+**2. Create from the chosen template:**
+
+```bash
+uip rpa new \
+  --name "MySAPAutomation" \
+  --location "/path/to/parent/directory" \
+  --template-package-id "<PACKAGE_ID>" \
+  --template-package-version "<VERSION>" \
+  --output json
+```
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `--template-package-id` | string | (none) | NuGet package ID from `search-templates` results. **Overrides `--template-id` when set** |
+| `--template-package-version` | string | (latest) | Omit to use the latest available version |
 
 ### After Creation
 
