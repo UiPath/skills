@@ -75,7 +75,7 @@ Extract from login status: `tenantName`, `organizationName`, `baseUrl` only. **S
 | Skill | Capture |
 |---|---|
 | **Flow** | `uip flow validate <file> --output json`, `.flow` file content (first 150 lines), project directory listing |
-| **Coded Workflows** | `project.json` dependencies section, `uip rpa validate` output, list of `.cs` files |
+| **Coded Workflows** | `project.json` dependencies section, `uip rpa get-errors` output, list of `.cs` files |
 | **RPA Workflows** | `project.json` dependencies section, `uip rpa get-errors` output, list of `.xaml` files |
 | **Agents** | `pyproject.toml`, `bindings.json` (redact connection values), directory listing |
 | **Apps** | `package.json` (name, version, dependencies only), `.uipath/` listing |

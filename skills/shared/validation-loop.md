@@ -16,14 +16,12 @@ After every file create or edit, validate the specific file until clean.
 
 ```
 REPEAT:
-  1. uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+  1. uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
   2. IF 0 errors -> EXIT to Smoke Test
   3. Identify the highest-priority error
   4. Fix one thing (see rule above)
   5. GOTO 1
 ```
-
-**`validate` vs `get-errors`:** Both force re-validation by default. `get-errors` additionally accepts `--skip-validation` to return cached errors without re-analyzing. Either command works in this loop.
 
 **Target the specific file:** Use `--file-path` to validate only the file you changed -- faster than validating the whole project.
 
@@ -37,11 +35,11 @@ REPEAT:
 4. DO NOT assume edits worked without checking.
 5. DO NOT bundle multiple fixes in one iteration. Fix the root cause, re-run, verify. Never add a speculative change alongside the actual fix -- changing two things at once makes it impossible to tell which one resolved the issue or whether the extra change introduced a new problem.
 
-See [cli-reference.md](cli-reference.md) for full `validate` and `run-file` command documentation.
+See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` command documentation.
 
 ## Smoke Test
 
-`validate` (static analysis) and `run-file` (runtime compilation) use different validation paths. Some errors -- such as invalid enum values on activity properties -- pass static validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
+`get-errors` (static analysis) and `run-file` (runtime compilation) use different validation paths. Some errors -- such as invalid enum values on activity properties -- pass static validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
 
 After reaching 0 validation errors, run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect:
 

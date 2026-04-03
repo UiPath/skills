@@ -9,7 +9,7 @@ CLI reference for `uip rpa` -- communicates with UiPath Studio over named pipes 
 ```bash
 uip --help                              # top-level command groups
 uip rpa --help                          # all rpa subcommands
-uip rpa validate --help                 # parameters for a specific command
+uip rpa get-errors --help               # parameters for a specific command
 ```
 
 ---
@@ -119,23 +119,6 @@ No command-specific options.
 ---
 
 ## Commands -- Validation and Execution
-
-### validate
-
-Validate a file or the entire project. Forces Studio to re-analyze the code.
-
-```bash
-uip rpa validate --project-dir "<PROJECT_DIR>" --output json --use-studio
-uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
-
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `--file-path` | No | -- | File to validate (relative to project directory). If omitted, validates the whole project. |
-
-`validate` forces re-analysis AND returns errors -- a single command for both. `get-errors` also re-validates by default (use `--skip-validation` for cached-only).
-
----
 
 ### run-file
 

@@ -294,7 +294,7 @@ Show 1-2 representative code skeletons that demonstrate how to write new code in
 ## Quick Reference
 
 - **Run**: `uip rpa run-file --file-path "{{MAIN_FILE}}" --project-dir "{{PROJECT_DIR}}"`
-- **Validate**: `uip rpa validate --project-dir "{{PROJECT_DIR}}"`
+- **Validate**: `uip rpa get-errors --project-dir "{{PROJECT_DIR}}"`
 - **Key files to read first**: {{TOP_3_FILES}}
 ````
 

@@ -211,7 +211,7 @@ The typical deployment workflow for a UiPath automation:
 
 ```
 1. Develop    → Create/edit coded workflows or RPA projects locally
-2. Validate   → uip rpa validate --use-studio
+2. Validate   → uip rpa get-errors --use-studio
 3. Pack       → uip solution pack
 4. Login      → uip login
 5. Publish    → uip solution publish

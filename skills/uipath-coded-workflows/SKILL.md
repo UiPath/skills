@@ -114,7 +114,7 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
 12. **ALWAYS ensure required package dependencies are in `project.json`** when using a service. Each service on `CodedWorkflow` requires its corresponding NuGet package — without it you get `CS0103: The name 'xxx' does not exist in the current context`. See the Service-to-Package mapping below.
 13. **Use Coded Source Files for reusable code** — extract models, helper classes, utilities, and shared logic into plain `.cs` files that don't inherit from `CodedWorkflow`. These have NO `.cs.json`, NO entry point, NO fileInfoCollection, and NO `[Workflow]`/`[TestCase]` attribute.
 14. **ALWAYS validate each file until error-free after creating or editing it.** Never consider a file "done" until validation returns no errors. Follow this loop after every create/edit:
-    1. Run `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio` — this forces Studio to re-analyze the specific file and returns a JSON result with validation status and any errors found
+    1. Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio` — this forces Studio to re-analyze the specific file and returns a JSON result with validation status and any errors found
     2. If errors exist in the response: read the error messages, fix the code, and go back to step 1
     3. Repeat until validation returns zero errors (max 5 fix attempts)
     4. Only then proceed to run the workflow or report success to the user

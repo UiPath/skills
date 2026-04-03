@@ -96,7 +96,7 @@ using System.Text.RegularExpressions;  // regex
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
 ### Validation Loop (Critical Rule #14)
-uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
+uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
 
 @../shared/validation-loop.md
 
