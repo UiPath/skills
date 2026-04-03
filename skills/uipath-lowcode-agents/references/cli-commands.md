@@ -40,13 +40,16 @@ uip solution project add --project-path "<AGENT_PROJECT_DIR>" --output json
 
 Run from the solution directory.
 
-### Upload to Studio Web
+### Bundle and Upload to Studio Web
+
+Bundle packages the solution directory into a `.uis` file; upload sends it to Studio Web.
 
 ```bash
+uip solution bundle "<SOLUTION_PATH>" -d "<OUTPUT_DIR>" --output json
 uip solution upload --output json
 ```
 
-Run from the solution directory. Requires login. Use for uploading to Studio Web for visual development.
+Run from the solution directory. Bundle first, then upload. Requires login.
 
 ### Pack Solution for Orchestrator
 
@@ -114,7 +117,8 @@ cd MyAgent
 uip lowcodeagents validate --output json
 cd ..
 
-# 4. Upload to Studio Web (for visual development)
+# 4. Bundle + upload to Studio Web (for visual development)
+uip solution bundle . -d ./dist --output json
 uip solution upload --output json
 
 # 5. Pack + publish + deploy to Orchestrator
@@ -137,6 +141,7 @@ uip solution deploy run \
 | Scaffold agent | `uip lowcodeagents init "<NAME>" --output json` | Solution directory |
 | Register project | `uip solution project add --project-path "<PATH>" --output json` | Solution directory |
 | Validate | `uip lowcodeagents validate --output json` | Agent project directory |
+| Bundle for Studio Web | `uip solution bundle . -d ./dist --output json` | Solution directory |
 | Upload to Studio Web | `uip solution upload --output json` | Solution directory |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory |

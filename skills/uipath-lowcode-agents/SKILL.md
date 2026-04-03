@@ -150,7 +150,8 @@ Read [references/agent-json-format.md](references/agent-json-format.md) for the 
 Ask the user before proceeding.
 
 ```bash
-# Upload to Studio Web (for visual development)
+# Bundle + upload to Studio Web (for visual development)
+uip solution bundle . -d ./dist --output json
 uip solution upload --output json
 
 # Or pack + publish + deploy to Orchestrator
