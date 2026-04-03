@@ -134,6 +134,10 @@ uip rpa close-project --output json --use-studio
 | **Get JIT type definitions** | `Read` `{projectRoot}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See [Step 1.2](../SKILL.md#step-12-discover-activity-documentation-primary-source) for the `.local/docs/` discovery flow |
 
+## Debugging with `run-file`
+
+The `uip rpa run-file` command supports full interactive debugging beyond simple execution: breakpoints, step-by-step execution, isolated activity testing, exception handling, and runtime state inspection. For the complete debug command reference and common debugging workflows, see **[debugging.md](debugging.md)**.
+
 ## Connector Capabilities
 
 For RPA-specific connector workflow patterns (activity/resource discovery, connection management, schema inspection), see [connector-capabilities.md](connector-capabilities.md).

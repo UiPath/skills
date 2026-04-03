@@ -42,3 +42,5 @@ This is especially useful when:
 - An error references an activity and you want the user to confirm the context
 - You've made a fix and want to show the user which activity was modified
 - The error is ambiguous and you need to verify which activity instance is affected
+
+For full runtime debugging capabilities (breakpoints, stepping, `TestActivity`, `StartDebuggingFromHere`, exception handling), see **[debugging.md](debugging.md)**.

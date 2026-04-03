@@ -86,6 +86,7 @@ Detailed procedures extracted from the main workflow phases:
 - **[cli-reference.md](./references/cli-reference.md)** — Full `uip` CLI command reference guide (all tools, parameters, commands)
 - **[environment-setup.md](./references/environment-setup.md)** — Phase 0 details: project root detection, Studio verification, authentication, and new project creation
 - **[validation-and-fixing.md](./references/validation-and-fixing.md)** — Package resolution, JIT custom types, focus-activity debugging, validation iteration loop, smoke testing
+- **[debugging.md](./references/debugging.md)** — Full `uip rpa run-file` debugging reference: all debug commands (`StartDebugging`, `StepOver`, `StepInto`, `TestActivity`, `StartDebuggingFromHere`, etc.), input variables vs arguments, output format, and common debugging workflows
 - **[connector-capabilities.md](./references/connector-capabilities.md)** — IS connector discovery, resource schema inspection, connection management
 
 ### Domain Reference Files
@@ -529,7 +530,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --skip-validation --o
 **5. Logic Errors** — Wrong behavior, incorrect expressions, business logic issues
 - `Read` the XAML to understand current flow → `Edit` to correct
 - Verify expression syntax matches project language (VB.NET vs C#)
-- Use `uip rpa run-file --use-studio` for runtime validation if static checks pass. **For UI automation workflows:** always use `--command StartDebugging` (not `StartExecution`) — a debug session pauses on error instead of tearing down the application. See [shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md) for the full debug procedure (baseline windows, start debug, stop, cleanup).
+- Use `uip rpa run-file --use-studio` for runtime validation if static checks pass. For the full debug command reference (breakpoints, stepping, `TestActivity`, `StartDebuggingFromHere`, exception handling, output format), see **[references/debugging.md](./references/debugging.md)**. **For UI automation workflows:** always use `--command StartDebugging` (not `StartExecution`) — a debug session pauses on error instead of tearing down the application. See [shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md) for the full debug procedure (baseline windows, start debug, stop, cleanup).
 
 **When stuck on one error:** consider deferring to the user if it's a minor configuration detail (e.g., fill in a connection, update a placeholder value). Just inform the user about what needs to be updated. If failing to resolve an activity altogether, consider using code activities as a last resort (find `InvokeCode.md` under the latest version folder in `../../references/activity-docs/UiPath.System.Activities/`).
 
@@ -608,7 +609,7 @@ Before handover, verify:
 - [ ] All required activities are present
 - [ ] Error handling (Try-Catch) is included where appropriate
 - [ ] `get-errors` returns 0 errors (or remaining errors are documented as user-deferred)
-- [ ] Smoke test with `run-file` considered (if workflow is safe to run). **For UI automation workflows:** use `--command StartDebugging` and follow the full debug procedure in [shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md)
+- [ ] Smoke test with `run-file` considered (if workflow is safe to run). For advanced debugging (breakpoints, stepping, isolated activity testing), see [references/debugging.md](./references/debugging.md). **For UI automation workflows:** use `--command StartDebugging` and follow the full debug procedure in [shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md)
 
 **User Communication:**
 - [ ] User has been informed of any limitations
