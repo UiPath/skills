@@ -11,7 +11,7 @@ This is a powerful complement to `get-errors` (static validation). While `get-er
 All commands share these base parameters:
 
 ```bash
-uip rpa run-file --file-path <relative-path> --command <Command> [--input-arguments '<json>'] [--input-variables '<json>'] [--log-level <level>] [--format json]
+uip rpa run-file --file-path <relative-path> --command <Command> [--input-arguments '<json>'] [--input-variables '<json>'] [--log-level <level>] [--output json]
 ```
 
 | Parameter | Description |
@@ -211,17 +211,17 @@ The most common pattern: set a breakpoint on the focused activity, start debuggi
 uip rpa focus-activity --activity-id "Assign_1"
 
 # 2. Toggle a breakpoint on the focused activity
-uip rpa run-file --file-path "GetStockPrices.xaml" --command ToggleBreakpoint --format json
+uip rpa run-file --file-path "GetStockPrices.xaml" --command ToggleBreakpoint --output json
 
 # 3. Start debugging — execution pauses at the breakpoint
-uip rpa run-file --file-path "GetStockPrices.xaml" --command StartDebugging --format json
+uip rpa run-file --file-path "GetStockPrices.xaml" --command StartDebugging --output json
 
 # 4. Inspect the Output entries (variable values, activity properties, execution state)
 # Then step through or continue:
-uip rpa run-file --file-path "GetStockPrices.xaml" --command StepOver --format json
+uip rpa run-file --file-path "GetStockPrices.xaml" --command StepOver --output json
 
 # 5. When done, stop the session
-uip rpa run-file --file-path "GetStockPrices.xaml" --command Stop --format json
+uip rpa run-file --file-path "GetStockPrices.xaml" --command Stop --output json
 ```
 
 ### 2. Test a Single Activity in Isolation
@@ -236,7 +236,7 @@ uip rpa focus-activity --activity-id "DeserializeJson_1"
 uip rpa run-file --file-path "GetBucharestTemperature.xaml" \
   --command TestActivity \
   --input-variables '{"temperature": "\"200\""}' \
-  --format json
+  --output json
 
 # 3. Check the output:
 #    - errors array → validation/compilation issues (e.g., wrong expression syntax)
@@ -256,13 +256,13 @@ uip rpa focus-activity --activity-id "HttpRequest_1"
 uip rpa run-file --file-path "GetBucharestTemperature.xaml" \
   --command StartDebuggingFromHere \
   --input-variables '{"apiUrl": "\"https://api.example.com/weather\""}' \
-  --format json
+  --output json
 
 # 3. The debugger runs from the focused activity — step through or continue
-uip rpa run-file --file-path "GetBucharestTemperature.xaml" --command StepOver --format json
+uip rpa run-file --file-path "GetBucharestTemperature.xaml" --command StepOver --output json
 
 # 4. Stop when done
-uip rpa run-file --file-path "GetBucharestTemperature.xaml" --command Stop --format json
+uip rpa run-file --file-path "GetBucharestTemperature.xaml" --command Stop --output json
 ```
 
 ### 4. Exception Investigation
@@ -271,8 +271,8 @@ When `Continue` or a step command hits an exception, the debugger pauses and ret
 
 ```bash
 # Start debugging and continue to let it run
-uip rpa run-file --file-path "MyWorkflow.xaml" --command StartDebugging --format json
-uip rpa run-file --file-path "MyWorkflow.xaml" --command Continue --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command StartDebugging --output json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command Continue --output json
 
 # If an exception occurs, the debugger pauses. Inspect the Output entries:
 # - Look for entries with error/exception details in the Name and Value fields
@@ -281,13 +281,13 @@ uip rpa run-file --file-path "MyWorkflow.xaml" --command Continue --format json
 
 # Then choose how to proceed:
 # Option A: Retry the failed activity (e.g., transient network error)
-uip rpa run-file --file-path "MyWorkflow.xaml" --command ContinueRetry --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command ContinueRetry --output json
 
 # Option B: Ignore the exception and continue past it
-uip rpa run-file --file-path "MyWorkflow.xaml" --command ContinueIgnore --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command ContinueIgnore --output json
 
 # Option C: Stop and fix the root cause
-uip rpa run-file --file-path "MyWorkflow.xaml" --command Stop --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command Stop --output json
 ```
 
 ### 5. Runtime Validation After Edits
@@ -296,13 +296,13 @@ Use debugging to verify that a fix actually works at runtime, beyond what `get-e
 
 ```bash
 # 1. Run static validation first
-uip rpa get-errors --file-path "MyWorkflow.xaml" --format json
+uip rpa get-errors --file-path "MyWorkflow.xaml" --output json
 
 # 2. If 0 static errors, start a debug session to validate runtime behavior
-uip rpa run-file --file-path "MyWorkflow.xaml" --command StartDebugging --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command StartDebugging --output json
 
 # 3. Continue past the fixed area and inspect variable state
-uip rpa run-file --file-path "MyWorkflow.xaml" --command Continue --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command Continue --output json
 
 # 4. Check the response for:
 #    - Output entries show expected variable values
@@ -310,7 +310,7 @@ uip rpa run-file --file-path "MyWorkflow.xaml" --command Continue --format json
 #    - Errors array is empty or contains only warnings
 
 # 5. Stop
-uip rpa run-file --file-path "MyWorkflow.xaml" --command Stop --format json
+uip rpa run-file --file-path "MyWorkflow.xaml" --command Stop --output json
 ```
 
 ### 6. Debugging with Input Arguments
@@ -322,7 +322,7 @@ Pass input arguments when the workflow has In arguments that need values:
 uip rpa run-file --file-path "ProcessOrder.xaml" \
   --command StartDebugging \
   --input-arguments '{"orderId": "ORD-12345", "customerEmail": "test@example.com"}' \
-  --format json
+  --output json
 ```
 
 `--input-arguments` is valid with `StartExecution`, `StartDebugging`, `TestActivity`, and `StartDebuggingFromHere`. For `StartExecution`/`StartDebugging`, values are plain JSON. For `TestActivity`/`StartDebuggingFromHere`, values must be VB/C# expressions.
@@ -349,7 +349,7 @@ A practical example — a workflow makes an HTTP request and tries to deserializ
 
 ## Best Practices
 
-- **Always use `--format json`** for debug commands when you need to parse the output programmatically. The structured output makes it easy to inspect variables and identify exceptions.
+- **Always use `--output json`** for debug commands when you need to parse the output programmatically. The structured output makes it easy to inspect variables and identify exceptions.
 - **Set breakpoints strategically** — place them just before the activity you suspect is failing, not at the very start. This avoids stepping through dozens of unrelated activities.
 - **Use `focus-activity` before `ToggleBreakpoint`** to target a specific activity by its IdRef. Without focusing first, the breakpoint is set on whatever activity or workflow is currently focused in Studio.
 - **Use `TestActivity` for quick feedback** — it runs a single activity in isolation, which is faster than debugging the entire workflow. Pre-set variables with `--input-variables` so the activity has the data it needs.
