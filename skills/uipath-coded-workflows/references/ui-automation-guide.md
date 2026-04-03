@@ -1,6 +1,6 @@
 # UI Automation Guide for Coded Workflows
 
-Quick reference for UI automation in coded workflows using the `uiAutomation` service.
+C#-specific patterns for UI automation using the `uiAutomation` service.
 
 ### Prerequisites
 
@@ -10,6 +10,8 @@ See [../shared/uia-prerequisites.md](../shared/uia-prerequisites.md).
 **Service accessor:** `uiAutomation` (type `IUiAutomationAppService`)
 
 > **For full API details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` (pick the version folder closest to what is installed in the project).
+
+@../shared/ui-automation-guide.md
 
 ---
 
@@ -36,7 +38,7 @@ formScreen.TypeInto(Descriptors.MyApp.Form.Email, "test@example.com");  // OK
 formScreen.Click(Descriptors.MyApp.Home.Loans);  // FAILS
 ```
 
-**When navigating multi-screen flows:** perform all interactions for one screen before attaching to the next.
+**When navigating multi-screen flows:** perform all interactions for one screen before attaching to the next. See [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md).
 
 ## Target Resolution
 
@@ -52,7 +54,7 @@ Each method on `UiTargetApp` accepts targets in multiple forms:
 
 **MANDATORY for any workflow that uses `uiAutomation.*` calls.** Follow this decision tree in **strict order** — stop at the first step that yields the descriptor you need.
 
-> **CRITICAL:** Steps 1 → 2 → 3 → 4 MUST be followed sequentially. NEVER skip to Step 4 (UITask).
+> Steps 1 → 2 → 3 → 4 MUST be followed sequentially. NEVER skip to Step 4 (UITask).
 
 ### Step 1 — Check the project's Object Repository
 
@@ -67,15 +69,16 @@ using <ProjectNamespace>.ObjectRepository;
 
 Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package --use-studio`.
 
-### Step 3 — Configure the target via `uia-configure-target` skill
+For UILibrary packages, use the **package** namespace, not the project namespace:
+```csharp
+using <PackageNamespace>.ObjectRepository;
+```
 
-See [../shared/uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
+### Step 3 — Configure the target
+
+See [../shared/uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) for the full configure-target workflow.
 
 After the skill completes, re-read `ObjectRepository.cs` and search for the returned reference IDs to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
-
-#### Multi-Step UI Flows (Advancing Application State)
-
-See [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md).
 
 ### Step 4 — UITask / ScreenPlay (last resort only)
 
@@ -83,20 +86,10 @@ ScreenPlay (`UITask`) is an AI-powered agent that performs UI interactions witho
 
 ---
 
-## Common Pitfalls
+## Coded-Specific Pitfalls
 
-### Web Dropdowns and `SelectItem`
-
-`SelectItem` may fail on web `<select>` dropdowns. **Workaround:** use `TypeInto` instead:
-
-```csharp
-// Instead of: formScreen.SelectItem(Descriptors.MyApp.Form.Term, "12");
-formScreen.TypeInto(Descriptors.MyApp.Form.Term, "12");  // Works reliably
-```
-
-### Screen Handle Mismatch
-
-Using an element descriptor on the wrong screen handle causes `"Target name 'X' is not part of the current screen."`. Always use the correct handle for each screen's elements.
+- **Missing ObjectRepository using** — without `using <ProjectNamespace>.ObjectRepository;`, you get `CS0103: The name 'Descriptors' does not exist in the current context`
+- **Screen handle mismatch** — using an element descriptor on the wrong screen handle causes `"Target name 'X' is not part of the current screen."` Always use the correct handle for each screen's elements.
 
 ---
 
@@ -106,11 +99,9 @@ See [../shared/uia-debug-workflow.md](../shared/uia-debug-workflow.md).
 
    uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
    uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json --use-studio
+
 ---
 
 ## Runtime Selector Failures
 
 See [../shared/uia-selector-recovery.md](../shared/uia-selector-recovery.md).
-
-
-

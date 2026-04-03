@@ -1,6 +1,6 @@
 # UI Automation Guide for RPA Workflows
 
-Quick reference for UI automation in XAML/RPA workflows using UiPath UIAutomation activities.
+XAML-specific patterns for UI automation using UiPath UIAutomation activities.
 
 ### Prerequisites
 
@@ -9,6 +9,8 @@ See [../shared/uia-prerequisites.md](../shared/uia-prerequisites.md).
 **Required package:** `UiPath.UIAutomation.Activities`
 
 > **For full activity details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/` (pick the version folder closest to what is installed in the project).
+
+@../shared/ui-automation-guide.md
 
 ---
 
@@ -20,21 +22,14 @@ Every UI automation workflow starts with an **Application Card** (`uix:NApplicat
 
 ### Target Configuration
 
-Each UI activity targets an element via the **Target** property, which includes:
-- **Selector** — XML path that uniquely identifies the UI element
-- **Anchor** — optional nearby reference element for more robust targeting
-- **CV (Computer Vision)** — fallback visual targeting using screenshots
-- **Fuzzy selector** — tolerant matching for dynamic attributes
+Follow [uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) to generate the Application Card's `TargetApp` and each activity's `TargetAnchorable`. The skill returns ready-to-use XAML attributes — copy them exactly into your workflow:
 
----
+- **Screen XAML** → goes into `<uix:NApplicationCard.TargetApp>` as a `<uix:TargetApp ... />` element
+- **Element XAML** → goes into `<uix:NGetText.Target>` (or Click, TypeInto, etc.) as a `<uix:TargetAnchorable ... />` element
 
-## Configuring Targets (Object Repository)
+When an element is reused across multiple activities, use the same returned XAML snippet for each one.
 
-See [../shared/uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
-
-The skill returns ready-to-use XAML snippets — use them directly in your workflow. When an element is reused across multiple activities, use the same returned snippet for each one.
-
-### Multi-Step UI Flows (Advancing Application State)
+### Multi-Step UI Flows
 
 See [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md).
 
@@ -54,16 +49,13 @@ See [../shared/uia-multi-step-flows.md](../shared/uia-multi-step-flows.md).
 | **Check App State** | Verifies if a UI element exists (conditional branching) |
 | **Take Screenshot** | Captures a screenshot of an app or element |
 | **Extract Table Data** | Extracts tabular data from a web page or application |
-| **ScreenPlay** | AI-powered UI task execution (last resort for brittle selectors) |
+| **ScreenPlay** | AI-powered UI task execution (last resort — non-deterministic and slow) |
 
 ---
 
-## Common Pitfalls
+## XAML-Specific Pitfalls
 
-- **Missing `xmlns:uix`** — every UIA workflow needs `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"`
-- **Wrong Object Repository references** — never copy references from examples; always use `uia-configure-target` to get them
-- **SelectItem on web dropdowns** — may fail on custom `<select>` elements; use Type Into as a workaround
-- **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow; use proper selectors first
+- **Missing `xmlns:uix`** — every UIA workflow needs `xmlns:uix="http://schemas.uipath.com/workflow/activities/uix"` on the root `<Activity>` element
 
 ---
 
