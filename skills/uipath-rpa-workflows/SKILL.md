@@ -104,7 +104,7 @@ For XAML structure, control flow, and domain-specific patterns not covered by ac
 - **Office 365 Outlook activities** (`UiPath.MicrosoftOffice365.Activities`) — O365 mail patterns, triggers, filter expressions. `.local/docs/` → fallback: `../../references/activity-docs/UiPath.MicrosoftOffice365.Activities/{closest}/activities/`.
 - **[project-structure.md](./references/project-structure.md)** — Project directory layout, project.json schema, common packages
 - **[jit-custom-types-schema.md](./references/jit-custom-types-schema.md)** - How to get JIT custom types of dynamic activities.
-- **[UI Automation guide](./references/ui-automation-guide.md)** (`UiPath.UIAutomation.Activities`) — UIA overview: selectors, target configuration, Object Repository, indication flow, sub-skills, and common pitfalls. **CRITICAL: read before generating/editing any UI Automation workflows.** For full activity details: `.local/docs/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/`.
+- **[UI Automation guide](./references/ui-automation-guide.md)** (`UiPath.UIAutomation.Activities`) — UIA overview: selectors, target configuration, Object Repository, indication flow, sub-skills, and common pitfalls. **CRITICAL: read before generating/editing any UI Automation workflows.** For full activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 #### UI Automation References
 
@@ -117,9 +117,9 @@ Shared UIA procedures (used by both coded and RPA skills):
 
 For XAML-specific patterns (application cards, target configuration, common activities, common pitfalls), see [ui-automation-guide.md](./references/ui-automation-guide.md).
 
-The UIA activity-docs version folder may contain additional guides (selector creation, target configuration, CV targeting, selector improvement). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+The UIA skills and docs (selector creation, target configuration, CV targeting, selector improvement) live in the project's local docs. Discover them by globbing: `Glob: pattern="**/*.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
 
-For full activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/activities/`.
+For full activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 ---
 

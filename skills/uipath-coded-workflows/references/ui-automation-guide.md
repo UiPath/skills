@@ -9,7 +9,7 @@ See [../shared/uia-prerequisites.md](../shared/uia-prerequisites.md).
 **Required package:** `UiPath.UIAutomation.Activities`
 **Service accessor:** `uiAutomation` (type `IUiAutomationAppService`)
 
-> **For full API details:** always check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` first. If unavailable, fall back to the bundled reference at `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` (pick the version folder closest to what is installed in the project).
+> **For full API details:** check `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 @../shared/ui-automation-guide.md
 

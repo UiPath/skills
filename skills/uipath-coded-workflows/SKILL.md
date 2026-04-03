@@ -133,9 +133,9 @@ Shared UIA procedures (used by both coded and RPA skills):
 
 For C#-specific patterns (workflow pattern, screen handle affinity, descriptor resolution, common pitfalls), see [ui-automation-guide.md](references/ui-automation-guide.md).
 
-The UIA activity-docs version folder contains skill files (`uia-configure-target`, `uia-improve-selector`) and additional guides (selector creation, CV targeting). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+The UIA skills and docs (including `uia-configure-target`, `uia-improve-selector`, selector creation, CV targeting) live in the project's local docs. Discover them by globbing: `Glob: pattern="**/*.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
 
-For full API details: `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/`.
+For full API details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 ## Task Navigation
 
@@ -146,7 +146,7 @@ Choose your task to find the right reference files. **For any activity package d
 | **Create a new project** | Quick Start above → [operations-guide.md § Initialize](references/operations-guide.md) |
 | **Add/edit a workflow** | [operations-guide.md § Add Workflow](references/operations-guide.md) → [coding-guidelines.md](references/coding-guidelines.md) |
 | **Add a test case** | [operations-guide.md § Add Test Case](references/operations-guide.md) |
-| **Write UI automation** | [ui-automation-guide.md](references/ui-automation-guide.md) → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` → [operations-guide.md § Indicate](references/operations-guide.md) |
+| **Write UI automation** | [ui-automation-guide.md](references/ui-automation-guide.md) → `.local/docs/packages/UiPath.UIAutomation.Activities/` → [operations-guide.md § Indicate](references/operations-guide.md) |
 | **Use Excel/Word/Mail/etc.** | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/coded/` |
 | **Call an Integration Service connector** | [references/integration-service.md](references/integration-service.md) — use [uipath-development skill](../uipath-platform//SKILL.md) first to resolve connector key, connection id, object name, httpMethod, path, and parameter types. **Before writing any Create/Update call:** run Step 1b in that guide to check for `"type": "multipart"` params in the raw metadata file — if found, pass `multipartParameters: new()` to `ExecuteAsync` |
 | **Use Office 365 / Google** | Service table below → [codedworkflow-reference.md § Integration Service](references/codedworkflow-reference.md) |
