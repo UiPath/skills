@@ -97,6 +97,10 @@
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
+# Genome skill
+/skills/uipath-genome-authoring/ @danmunteanu1
+/skills/uipath-genome-extraction/ @danmunteanu1
+
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 # Flow test tasks (general) — more specific subfolder rules below override this
