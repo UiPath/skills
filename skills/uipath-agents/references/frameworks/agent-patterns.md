@@ -27,7 +27,7 @@ See the **[Project Setup Guide](setup.md)** for:
 | [LangGraph Workflow](#langgraph-workflow-agent) | Multi-step LLM reasoning with routing | `StateGraph`, conditional edges, LLM chains |
 | [Human-in-the-Loop](#human-in-the-loop-agent) | Requires human approval or review | `interrupt()`, `CreateTask`, Action Center |
 | [RAG](#rag-agent) | Knowledge retrieval and Q&A | `ContextGroundingVectorStore`, retrieval chains |
-| [Chat](#chat-agent) | Conversational agents with tools | `create_agent()`, tool bindings |
+| [Chat](#chat-agent) | Conversational agents with tools | `create_react_agent()`, tool bindings |
 | [Multi-Agent Supervisor](#multi-agent-supervisor) | Complex tasks needing specialized sub-agents | Supervisor node, worker agents, routing |
 
 ---
@@ -279,7 +279,7 @@ async def main(input: Input) -> Output:
 
 ## Chat Agent
 
-Conversational agent with tool access, built using LangGraph's `create_agent()` helper. Minimal boilerplate for tool-using chat agents.
+Conversational agent with tool access, built using LangGraph's `create_react_agent()` helper. Minimal boilerplate for tool-using chat agents.
 
 **When to use:** Conversational assistants, tool-augmented chat, agents that need web search or API access.
 
@@ -407,7 +407,7 @@ graph = builder.compile()
 - **`@traced()`** — Apply to `main` and key helpers. LangGraph agents get tracing automatically.
 - **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking:
   ```python
-  from uipath.testing import mockable
+  from uipath.eval.mocks import mockable
 
   @mockable()
   async def fetch_customer_data(customer_id: str) -> dict:
