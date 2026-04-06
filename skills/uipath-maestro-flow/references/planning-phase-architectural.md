@@ -29,11 +29,13 @@ Each entry shows the node category, when to select it, and what implementation o
 | ------------------------ | ----------------------------------------------- | -------------------------------------------------------------- |
 | `core.trigger.manual`    | Flow is started on demand by a user or API call | Single implementation — no variants                            |
 | `core.trigger.scheduled` | Flow runs on a recurring schedule               | Presets: `R/PT1H`, `R/P1D`, `R/P1W`, custom ISO 8601 intervals |
+| IS connector trigger     | Flow starts when an external event fires (e.g., email received, issue created) | Node type: `uipath.connector.trigger.<key>.<trigger>`. Requires IS connection + event parameter config. See [nodes/is-trigger.md](nodes/is-trigger.md) |
 
 **Rules:**
 
 - Every flow must have exactly one trigger node
 - The trigger is always the first node in the topology
+- IS connector triggers replace the manual trigger as the start node — they cannot coexist with `core.trigger.manual` or `core.trigger.scheduled`
 
 ### Actions
 
@@ -127,6 +129,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | ----------------------------------- | ------------------- | --------------------------------------------- |
 | `core.trigger.manual`               | —                   | `output`                                      |
 | `core.trigger.scheduled`            | —                   | `output`                                      |
+| `uipath.connector.trigger.*`        | —                   | `output`                                      |
 | `core.action.script`                | `input`             | `success`                                     |
 | `core.action.http`                  | `input`             | `default`, `branch-{id}` (dynamic per branch) |
 | `core.action.transform`             | `input`             | `output`                                      |
