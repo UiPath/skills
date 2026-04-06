@@ -1,8 +1,7 @@
 ---
 name: uipath-report-issue
-description: "Report a skill issue with auto-captured context. TRIGGER when: user says 'report issue', 'report bug', 'something is wrong', 'file a bug', 'this isn't working', 'skill bug', or invokes /report-issue. DO NOT TRIGGER when: user is asking a question, requesting help, or describing expected behavior."
-metadata:
-  allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
+description: "Report a UiPath skill bug to GitHub with auto-captured context. Invoke when: user says 'report issue', 'report bug', 'file a bug', 'something is wrong', 'this isn't working', or /report-issue. Not for general questions or help."
+allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Skill Issue Reporter
