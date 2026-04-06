@@ -145,6 +145,34 @@ The `TargetAnalysis.FailureReason` field explains why the original selector fail
 - Element no longer exists (removed from application)
 - Multiple elements match the selector (ambiguous)
 
+## Applying HA Fixes
+
+When `healing-fixes.json` contains actionable fixes, present the findings to the user and ask which fix to apply. The project path is needed — if not already known, ask the user to provide it.
+
+### Applying `update-target` Fixes
+
+1. Match the XAML activity by `ActivityRefId` → `IdRef` attribute (unique within workflow)
+2. Check if the `uia-improve-selector` skill is available locally:
+   ```
+   Glob: pattern="**/uia-improve-selector/SKILL.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/"
+   ```
+3. **If the skill exists:** ask the user if they want to improve the selector using it. If yes, spawn a subagent with the Agent tool. The prompt must include: the `uia-improve-selector` SKILL.md path, the project folder, `--mode recover`, `--window <windowSelector>` (from the Object Repository screen entry), and `--partial <failingPartialSelector>` (the HA-recommended selector from `enhancedTarget`). The subagent re-analyzes the live DOM and returns a corrected selector. Update the Object Repository entry with the result.
+4. **If the skill does not exist:** update the activity's selector in XAML directly with the HA-recommended selector from `enhancedTarget`. Apply XML encoding per the XAML Selector Encoding rules above.
+5. Validate: `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio`
+
+### Applying `dismiss-popup` Fixes
+
+1. Ask the user if they want to add a Click activity before the failing activity to dismiss the detected popup
+2. If yes, use the `uip rpa` workflow skill to create the Click activity:
+   - Get the Click activity template: `uip rpa get-default-activity-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NClick" --output json --use-studio`
+   - Set the target on the Click activity using the `clickTarget` from the HA fix entry (this contains the selector and image for the popup dismiss element)
+   - Insert the Click activity immediately before the failing activity in the XAML (match by `ActivityRefId` → `IdRef`)
+3. The Click activity must be inside a `Use Application/Browser` (`NApplicationCard`) scope — verify the failing activity already has one
+4. After inserting the Click activity, verify it is correctly configured:
+   - Run `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio` to confirm the workflow still compiles with zero errors
+   - If validation errors appear on the new Click activity, diagnose and fix them before continuing (common issues: missing target, activity outside NApplicationCard scope, XML encoding errors in the selector)
+   - Use `uip rpa focus-activity --activity-id "<NEW_CLICK_IDREF>" --use-studio` to highlight the new activity in Studio so the user can visually confirm placement and target
+
 ## Prerequisites
 
 - Healing Agent must be enabled on the process (`AutopilotForRobots.Enabled: true`, `AutopilotForRobots.HealingEnabled: true`)
