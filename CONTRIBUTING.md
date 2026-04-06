@@ -85,21 +85,24 @@ SKILL.md is the most important file. It uses YAML frontmatter followed by markdo
 ```yaml
 ---
 name: uipath-<your-skill>
-description: "<What the skill does>. TRIGGER when: <conditions that should activate this skill>. DO NOT TRIGGER when: <conditions where a different skill is more appropriate>."
+description: "<identity> (<unique signal>). <core actions>. For <confusing-case>→<correct-skill>."
 ---
 ```
+
+> **250-character limit.** Claude Code truncates non-bundled skill descriptions at 250 characters in the system prompt — anything beyond is invisible to the model. The pre-commit hook enforces this. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 
 | Field | Description |
 |-------|-------------|
 | `name` | Exact skill identifier, must match the folder name |
-| `description` | Trigger conditions — include both **when to use** and **when NOT to use**. This is how the AI agent decides whether to activate your skill, so be explicit. |
+| `description` | Under 250 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
 
 **Optional frontmatter fields:**
 
 | Field | Description |
 |-------|-------------|
+| `allowed-tools` | Restricts which tools the skill can use (e.g., `Bash, Read, Write, Glob, Grep`) |
 | `user-invocable` | Defaults to `true`. Set to `false` if the skill should only be discoverable by the agent, not directly invocable by users |
 
 #### Content Structure
@@ -176,7 +179,7 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 
 ### Git Hooks
 
-This repository uses pre-commit hooks to validate skill descriptions (1024-character limit). To enable them:
+This repository uses pre-commit hooks to validate skill descriptions (250-character limit). To enable them:
 
 ```bash
 bash scripts/setup-hooks.sh
@@ -190,8 +193,8 @@ Before submitting your PR, verify:
 
 ### SKILL.md
 - [ ] Frontmatter has `name` matching the folder name
-- [ ] Frontmatter `description` includes both TRIGGER and DO NOT TRIGGER conditions
-- [ ] Frontmatter `description` is under 1024 characters (enforced by pre-commit hook)
+- [ ] Frontmatter `description` is under 250 characters (enforced by pre-commit hook)
+- [ ] Frontmatter `description` front-loads identity and unique signals, uses `→` redirects (not verbose TRIGGER/DO NOT TRIGGER)
 - [ ] Critical Rules section exists with numbered, actionable rules
 - [ ] CLI commands include exact flags and `--output json` where appropriate
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
