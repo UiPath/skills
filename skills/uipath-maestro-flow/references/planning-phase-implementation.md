@@ -50,21 +50,22 @@ Record the connection ID and resolved field values for the build step.
 
 ### Step 3 — Resolve Resource Nodes
 
-For each resource node (RPA process, agent, flow, API workflow, human task):
-
-```bash
-uip flow registry pull --force
-uip flow registry search "<resource-name>" --output json
-```
-
-1. If found: record the exact node type (e.g., `uipath.core.rpa-workflow.invoice-abc123`)
-2. If not found: keep the `core.logic.mock` placeholder and note the gap
+For each resource node (RPA process, agent, flow, API workflow, human task) identified during Phase 1 discovery:
 
 ```bash
 uip flow registry get "<node-type>" --output json
 ```
 
 Record `inputDefinition` and `outputDefinition` for the node table.
+
+If Phase 1 flagged a resource as not found, re-check in case it was published since planning:
+
+```bash
+uip flow registry pull --force
+uip flow registry search "<resource-name>" --output json
+```
+
+If still not found, keep the `core.logic.mock` placeholder and note the gap.
 
 ### Step 4 — Replace Mock Nodes
 
