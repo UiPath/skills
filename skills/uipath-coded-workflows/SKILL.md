@@ -1,6 +1,12 @@
 ---
 name: uipath-coded-workflows
-description: "Full coding assistant for UiPath coded automations — create, edit, build, pack, run, and debug coded workflows, test cases, and project configuration. TRIGGER when: Coded workflow project detected (project.json with UiPath dependencies AND .cs files with [Workflow]/[TestCase] attributes); User references coded workflows, coded automations, coded test cases, or C#-based UiPath automations; User asks to automate a task (Excel, email, web scraping, UI automation, database, PDF, queues, API calls, Integration Service connectors, etc.) and a UiPath coded workflow project exists nearby; User asks about UiPath activities or how to use them in code; User wants to call an Integration Service connector (Jira, Salesforce, ServiceNow, Slack, etc.) from a coded workflow using IntegrationConnectorService. DO NOT TRIGGER when: User is working with XAML/RPA workflows (use uipath-rpa-workflows instead), or asking about Orchestrator/deployment/CLI setup (use uipath-platform instead)."
+description: >
+  C# coded automation — create, edit, build, run coded workflows and test cases (.cs files,
+  uip rpa CLI). Use when user wants to automate a task with C# code, create UiPath test cases,
+  or add coded workflows to a Studio project. Direct match: user says "coded workflow",
+  "CodedWorkflow", "[Workflow]", "[TestCase]", "C# automation", or project has .cs files with
+  UiPath attributes. NOT for: XAML workflows (uipath-rpa-workflows), Python agents
+  (uipath-coded-agents), Orchestrator management (uipath-platform).
 ---
 
 # UiPath Coded Workflows Assistant
