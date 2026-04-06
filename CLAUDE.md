@@ -18,7 +18,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 4. **Update CODEOWNERS** when adding or modifying skill ownership
 5. **No cross-skill references** — each skill must work in isolation
 6. **No secrets or personal paths** in committed files
-7. **CLI commands must use `--format json`** when output is parsed programmatically
+7. **CLI commands must use `--output json`** when output is parsed programmatically
 
 ## File Conventions
 

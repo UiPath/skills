@@ -1,7 +1,7 @@
 ---
 name: uipath-servo
 description: >
-  Live UI automation via servo CLI — click, type, screenshot, inspect desktop and browser
+  [PREVIEW] Live UI automation via servo CLI — click, type, screenshot, inspect desktop and browser
   elements. Use when user mentions "servo", "screenshot", "click element", "UI tree",
   "snapshot window", or wants to interact with/test live UI (desktop or browser). Also use
   when user wants to verify UI state, check if an element exists, or debug UI automation

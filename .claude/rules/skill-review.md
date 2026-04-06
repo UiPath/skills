@@ -29,7 +29,7 @@ Does the skill follow the canonical layout and conventions?
 
 Is the skill internally consistent and consistent with other skills in this repo?
 
-- CLI commands use `--format json` uniformly when output is parsed
+- CLI commands use `--output json` uniformly when output is parsed
 - Placeholder style is consistent (`<UPPER_SNAKE_CASE>` in angle brackets)
 - Heading hierarchy does not skip levels
 - Code blocks have language identifiers

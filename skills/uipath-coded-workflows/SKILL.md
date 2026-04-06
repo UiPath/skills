@@ -25,6 +25,28 @@ Full coding assistant for creating, editing, managing and running UiPath coded a
 - User wants to **add helper/utility classes** or models to a project (Coded Source Files)
 - User wants to **validate, build, pack and run** a coded workflow project
 
+## Precondition: Project Context
+
+Before doing any work, check if `.claude/rules/project-context.md` exists in the project directory.
+
+**If the file exists** → check for staleness:
+1. Read the first line of `.claude/rules/project-context.md` to extract the metadata comment: `<!-- discovery-metadata: cs=N xaml=N deps=N -->`
+2. Count current files: Glob `**/*.cs` (excluding `.local/` and `.codedworkflows/`) and `**/*.xaml` in the project directory
+3. Count current dependencies: read `project.json` and count keys in the `.dependencies` object
+4. Compare the current counts against the stored metadata values
+5. For each count (cs, xaml, deps), compute the percentage difference: `abs(current - stored) / max(stored, 1) * 100`
+6. If **any individual count differs by 60–70% or more** → run the discovery flow below
+7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
+
+**If the file does NOT exist** → run the discovery flow below.
+**Discovery flow** (used for both missing and stale context):
+1. Trigger the `uipath-project-discovery-agent` and wait for it to complete
+2. The agent returns the generated context document as its response
+3. Write the returned content to **both**:
+   - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
+   - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
+4. Then proceed with the skill workflow
+
 ## Quick Start
 
 **Step 0 — Resolve `PROJECT_DIR` first** (applies to ALL operations below):
@@ -38,7 +60,7 @@ Before creating or modifying anything, you MUST determine which project to work 
 2. **Project name reference** — The user mentioned a project by name (e.g., "the MyAutomation project") → search the file system for a folder with that name containing a `project.json`.
 3. **Detect from running Studio** — No path or name given → run this command:
    ```bash
-   uip rpa list-instances --format json
+   uip rpa list-instances --output json --use-studio
    ```
    Parse the JSON response. If `Data` is a non-empty array, each entry has a `ProjectDirectory` field containing the absolute path of the open project. Use it:
    - **One instance** → use its `ProjectDirectory`.
@@ -60,9 +82,9 @@ Before creating or modifying anything, you MUST determine which project to work 
 
 **Creating a new project** (ONLY when no project is open and none exists at cwd or user gives a specific path):
 
-**ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually:
+**ALWAYS use `uip rpa create-project --use-studio`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually:
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --format json
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
 ```
 Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
 
@@ -84,8 +106,8 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
 
 ## Critical Rules
 
-1. **NEVER create a project without first confirming no project already exists.** Follow the Step 0a resolution order above: if the user gave an explicit path or project name, check whether `project.json` exists there. If no path was given, run `uip rpa list-instances --format json` — if a Studio instance is running with a `ProjectDirectory`, that IS the project. Only create a new project when you have confirmed no existing project matches AND the user explicitly requests creation (or no project exists at cwd). This prevents accidentally creating nested projects or working in the wrong directory.
-2. **Prefer UiPath built-in activities** for Orchestrator integration (`system.GetAsset`, `system.AddQueueItem`), UI automation (`uiAutomation.*`), and document handling (`excel.*`, `word.*`) — these provide reliability, logging, and Studio-level support. **Prefer plain .NET / third-party packages** for pure data transforms, HTTP calls to non-Orchestrator endpoints, parsing, string manipulation, and anything where code is clearly the right tool. When no built-in activity exists, find a well-known NuGet package — inspect it with `uip rpa inspect-package` first, then add it to `project.json`.
+1. **NEVER create a project without first confirming no project already exists.** Follow the Step 0a resolution order above: if the user gave an explicit path or project name, check whether `project.json` exists there. If no path was given, run `uip rpa list-instances --output json --use-studio` — if a Studio instance is running with a `ProjectDirectory`, that IS the project. Only create a new project when you have confirmed no existing project matches AND the user explicitly requests creation (or no project exists at cwd). This prevents accidentally creating nested projects or working in the wrong directory.
+2. **Prefer UiPath built-in activities** for Orchestrator integration (`system.GetAsset`, `system.AddQueueItem`), UI automation (`uiAutomation.*`), and document handling (`excel.*`, `word.*`) — these provide reliability, logging, and Studio-level support. **Prefer plain .NET / third-party packages** for pure data transforms, HTTP calls to non-Orchestrator endpoints, parsing, string manipulation, and anything where code is clearly the right tool. When no built-in activity exists, find a well-known NuGet package — inspect it with `uip rpa inspect-package --use-studio` first, then add it to `project.json`.
 3. **ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files — see below).
 4. **ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method (workflows/test cases only).
 5. **Generate the companion `.cs.json` metadata file** for each `.cs` workflow/test case file (NOT for Coded Source Files). When the project is managed in UiPath Studio, Studio may regenerate these — only create them when scaffolding new files outside Studio.
@@ -98,21 +120,28 @@ See [references/operations-guide.md § Initialize a New Project](references/oper
 12. **ALWAYS ensure required package dependencies are in `project.json`** when using a service. Each service on `CodedWorkflow` requires its corresponding NuGet package — without it you get `CS0103: The name 'xxx' does not exist in the current context`. See the Service-to-Package mapping below.
 13. **Use Coded Source Files for reusable code** — extract models, helper classes, utilities, and shared logic into plain `.cs` files that don't inherit from `CodedWorkflow`. These have NO `.cs.json`, NO entry point, NO fileInfoCollection, and NO `[Workflow]`/`[TestCase]` attribute.
 14. **ALWAYS validate each file until error-free after creating or editing it.** Never consider a file "done" until validation returns no errors. Follow this loop after every create/edit:
-    1. Run `uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --format json` — this forces Studio to re-analyze the specific file and returns a JSON result with validation status and any errors found
+    1. Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio` — this forces Studio to re-analyze the specific file and returns a JSON result with validation status and any errors found
     2. If errors exist in the response: read the error messages, fix the code, and go back to step 1
     3. Repeat until validation returns zero errors (max 5 fix attempts)
     4. Only then proceed to run the workflow or report success to the user
     5. If after 5 fix attempts errors persist, stop and present the remaining errors to the user — they may require domain knowledge, missing dependencies, or environment-specific fixes you cannot resolve autonomously
-    Note: `get-errors` returns the cached error state without re-analyzing — use `validate` instead when files have been changed outside Studio.
-15. **NEVER use UITask (ScreenPlay) as the primary UI automation approach.** For ANY workflow using `uiAutomation.*`, follow the Finding Descriptors hierarchy in [ui-automation-guide.md](references/ui-automation-guide.md): (1) Check Object Repository, (2) Check UILibrary NuGet packages, (3) Configure missing targets through the `uia-configure-target` skill flow (found in the UIA activity-docs — NOT via raw CLI commands), (4) UITask ONLY as last resort for brittle selectors. Do NOT skip steps or jump to UITask because configuring targets seems tedious. Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
+    Note: `get-errors` returns the cached error state without re-analyzing — use `validate` instead when files have been changed outside Studio. For the full fix-one-thing rule and iteration loop, see [shared/validation-loop.md](../shared/validation-loop.md).
+15. **For UI automation workflows**, follow the target configuration approach in [ui-automation-guide.md](references/ui-automation-guide.md). For shared UIA procedures (prerequisites, target configuration, debug workflow, selector recovery, multi-step flows), see the [shared/](../shared/) files referenced from that guide.
 
 ### UI Automation References
 
-For a quick overview of UI automation patterns, descriptor resolution, target configuration via `uia-configure-target`, runtime selector failure recovery, and common pitfalls, see [ui-automation-guide.md](references/ui-automation-guide.md).
+Shared UIA procedures (used by both coded and RPA skills):
+- [Prerequisites and version check](../shared/uia-prerequisites.md)
+- [Configure target workflows](../shared/uia-configure-target-workflows.md)
+- [Debug workflow procedure](../shared/uia-debug-workflow.md)
+- [Selector recovery](../shared/uia-selector-recovery.md)
+- [Multi-step UI flows](../shared/uia-multi-step-flows.md)
 
-The UIA activity-docs version folder contains skill files (`uia-configure-target`, `uia-improve-selector`) and additional guides (selector creation, CV targeting). Discover them by globbing: `Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+For C#-specific patterns (workflow pattern, screen handle affinity, descriptor resolution, common pitfalls), see [ui-automation-guide.md](references/ui-automation-guide.md).
 
-For full API details: `.local/docs/packages/UiPath.UIAutomation.Activities/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/`.
+The UIA skills and docs (including `uia-configure-target`, `uia-improve-selector`, selector creation, CV targeting) live in the project's local docs. Discover them by globbing: `Glob: pattern="**/*.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+
+For full API details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 ## Task Navigation
 
@@ -123,7 +152,7 @@ Choose your task to find the right reference files. **For any activity package d
 | **Create a new project** | Quick Start above → [operations-guide.md § Initialize](references/operations-guide.md) |
 | **Add/edit a workflow** | [operations-guide.md § Add Workflow](references/operations-guide.md) → [coding-guidelines.md](references/coding-guidelines.md) |
 | **Add a test case** | [operations-guide.md § Add Test Case](references/operations-guide.md) |
-| **Write UI automation** | [ui-automation-guide.md](references/ui-automation-guide.md) → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/coded/` → [operations-guide.md § Indicate](references/operations-guide.md) |
+| **Write UI automation** | [ui-automation-guide.md](references/ui-automation-guide.md) → `.local/docs/packages/UiPath.UIAutomation.Activities/` → [operations-guide.md § Indicate](references/operations-guide.md) |
 | **Use Excel/Word/Mail/etc.** | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/coded/` |
 | **Call an Integration Service connector** | [references/integration-service.md](references/integration-service.md) — use [uipath-development skill](../uipath-platform//SKILL.md) first to resolve connector key, connection id, object name, httpMethod, path, and parameter types. **Before writing any Create/Update call:** run Step 1b in that guide to check for `"type": "multipart"` params in the raw metadata file — if found, pass `multipartParameters: new()` to `ExecuteAsync` |
 | **Use Office 365 / Google** | Service table below → [codedworkflow-reference.md § Integration Service](references/codedworkflow-reference.md) |
@@ -139,7 +168,7 @@ Choose your task to find the right reference files. **For any activity package d
 | **Use Citrix** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.Citrix.Activities/{closest}/coded/` |
 | **Use Hyper-V** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.HyperV.Activities/{closest}/coded/` |
 | **Use NetIQ eDirectory** | Service table below → `.local/docs/` → fallback: `../../references/activity-docs/UiPath.NetIQeDirectory.Activities/{closest}/coded/` |
-| **Build/run/validate** | [uip-guide.md](references/uip-guide.md) |
+| **Build/run/validate** | [cli-reference.md](references/cli-reference.md) |
 | **Add a NuGet package** | [operations-guide.md § Add Dependency](references/operations-guide.md) → [third-party-packages-guide.md](references/third-party-packages-guide.md) |
 | **Troubleshoot errors** | [coding-guidelines.md § Common Issues](references/coding-guidelines.md) |
 | **Review coding rules** | [coding-guidelines.md](references/coding-guidelines.md) (using statements, best practices, anti-patterns) |
@@ -218,16 +247,16 @@ Check `project.json` → `dependencies` for the required package.
 
 ```bash
 # List latest versions including prerelease/beta (newest first) — DEFAULT
-uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --format json
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # List only stable versions (use when the user explicitly prefers stable)
-uip rpa get-versions --package-id <PackageId> --project-dir "<PROJECT_DIR>" --format json
+uip rpa get-versions --package-id <PackageId> --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Install a specific version
-uip rpa install-or-update-packages --packages '[{"id":"<PackageId>","version":"<version>"}]' --project-dir "<PROJECT_DIR>" --format json
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>","version":"<version>"}]' --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 # Install without specifying version (auto-resolves: prerelease Studio → latest preview, stable Studio → latest stable)
-uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --format json
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 **By default, use `--include-prerelease`** to get the absolute latest version (including beta/preview). Only omit it when the user explicitly asks for stable versions. Always prefer `uip rpa get-versions` over hardcoded version numbers — it queries the actual NuGet feeds configured for the project.
@@ -311,5 +340,5 @@ Available reference packages:
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
 2. **Validation status** — whether all files passed validation (or remaining errors if max retries hit)
-3. **How to run** — the `uip rpa run-file` command to execute the workflow (if applicable)
+3. **How to run** — the `uip rpa run-file --use-studio` command to execute the workflow (if applicable)
 4. **Next steps** — any follow-up actions the user should take (e.g. configure Integration Service connections, add Object Repository elements)

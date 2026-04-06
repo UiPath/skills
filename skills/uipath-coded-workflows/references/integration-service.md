@@ -94,7 +94,7 @@ If the describe output has `referenceFields`, resolve each one before calling `E
 
 ```bash
 uipcli is resources execute list "<connector-key>" "<referenced-object>" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 # Pick the correct id from the results
 ```
 

@@ -83,19 +83,19 @@ A reference field in the describe output:
 ```bash
 # 1. Describe → discover referenceFields: departmentId → "departments", contactId → "contacts"
 uip is resources describe "uipath-zoho-desk" "tickets" \
-  --connection-id "<id>" --operation Create --format json
+  --connection-id "<id>" --operation Create --output json
 
 # 2. Resolve references
-uip is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --format json
+uip is resources execute list "uipath-zoho-desk" "departments" --connection-id "<id>" --output json
 # → { "id": "1892000000006907", "name": "Engineering" }
-uip is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --format json
+uip is resources execute list "uipath-zoho-desk" "contacts" --connection-id "<id>" --output json
 # → { "id": "1892000000048009", "name": "John Doe" }
 
 # 3. Execute with resolved IDs
 uip is resources execute create "uipath-zoho-desk" "tickets" \
   --connection-id "<id>" \
   --body '{"departmentId": "1892000000006907", "subject": "Bug report", "contactId": "1892000000048009"}' \
-  --format json
+  --output json
 ```
 
 ---
@@ -120,7 +120,7 @@ fields.issuetype.id → reference.path: /project/{fields.project.key}/issuetypes
 **Wrong** — listing `issuetype` globally returns Bug types from ALL projects:
 ```bash
 uip is resources execute list "uipath-atlassian-jira" "issuetype" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 # → Bug (id=1), Bug (id=10004), Bug (id=12947), ... dozens of duplicates
 ```
 
@@ -128,12 +128,12 @@ uip is resources execute list "uipath-atlassian-jira" "issuetype" \
 ```bash
 # Step 1: Resolve project
 uip is resources execute list "uipath-atlassian-jira" "project" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 # → { "key": "ENGCE", "name": "Integration Service", "id": "10845" }
 
 # Step 2: Resolve issue types FOR that project (scoped path)
 uip is resources execute list "uipath-atlassian-jira" "project/ENGCE/issuetypes" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 # → { "id": "10004", "name": "Bug" }  ← only issue types valid for ENGCE
 ```
 
@@ -154,7 +154,7 @@ This pattern applies across connectors (Jira, Salesforce, ServiceNow, Zoho, etc.
 When describe metadata is unavailable (see [Describe Failures](#describe-failures)), infer reference fields from naming conventions:
 
 - Fields ending in **`Id`** (e.g., `PromotionId`, `AccountId`) typically reference the object with the matching base name (`Promotion`, `Account`).
-- List the inferred object to resolve the ID: `is resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --format json`
+- List the inferred object to resolve the ID: `is resources execute list "<connector-key>" "<base-name>" --connection-id "<id>" --output json`
 - Match the user's value by `Name` or `DisplayName` in the results.
 
 ### Example: Coupon → Promotion (no describe available)
@@ -163,13 +163,13 @@ When describe metadata is unavailable (see [Describe Failures](#describe-failure
 # User wants: create coupon "XYZ" for promotion "Chandu Test"
 # Infer: PromotionId → list Promotion objects
 uip is resources execute list "uipath-salesforce-sfdc" "Promotion" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 # → { "Id": "<promotion-id>", "Name": "Summer Sale" }
 
 # Use resolved Id in create
 uip is resources execute create "uipath-salesforce-sfdc" "Coupon" \
   --connection-id "<id>" \
-  --body '{"CouponCode": "SAVE20", "PromotionId": "<promotion-id>"}' --format json
+  --body '{"CouponCode": "SAVE20", "PromotionId": "<promotion-id>"}' --output json
 ```
 
 ---
@@ -210,6 +210,6 @@ List operations may return paginated results. Use `--query "limit=50&offset=0"` 
 
 ```bash
 uip is resources execute list "<connector-key>" "<object>" \
-  --connection-id "<id>" --query "limit=50&offset=0" --format json
+  --connection-id "<id>" --query "limit=50&offset=0" --output json
 # → next page: --query "limit=50&offset=50"
 ```

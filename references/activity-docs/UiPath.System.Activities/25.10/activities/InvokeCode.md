@@ -121,6 +121,44 @@ Code="For Each row As DataRow In dt.Rows&#xA;    row(&quot;Column1&quot;) = row(
 **Required namespace import:** `System.Net`
 **Required assembly reference:** `System.Net.WebClient`
 
+## Code Style Guidelines
+
+InvokeCode content must be clean, readable, and well-structured — even though it lives inside an XML attribute. Never write dense single-line code.
+
+**Rules:**
+1. **Always use multi-line code** — use `&#xA;` for line breaks. One statement per line.
+2. **Add comments** — explain each logical step with VB (`'`) or C# (`//`) comments. Comments also use `&#xA;` for the preceding newline.
+3. **Use descriptive variable names** — `cleaned`, `totalAmount`, `filteredRows` instead of `x`, `t`, `r`.
+4. **Structure consistently** — declare variables first, then logic, then assign output arguments last.
+5. **Indent with spaces** — use 2-4 spaces for blocks (For/Next, If/End If, Using/End Using) to show nesting.
+
+**Bad — single-line, no comments, cryptic names:**
+```xml
+Code="o = i.Trim().ToUpper().Replace(&quot;OLD&quot;, &quot;NEW&quot;)"
+```
+
+**Good — multi-line, commented, descriptive:**
+```xml
+Code="' Remove leading/trailing whitespace&#xA;Dim cleaned As String = rawInput.Trim()&#xA;&#xA;' Normalize to uppercase&#xA;Dim uppercased As String = cleaned.ToUpper()&#xA;&#xA;' Apply text replacement&#xA;result = uppercased.Replace(&quot;OLD&quot;, &quot;NEW&quot;)"
+```
+
+Equivalent VB code:
+```vb
+' Remove leading/trailing whitespace
+Dim cleaned As String = rawInput.Trim()
+
+' Normalize to uppercase
+Dim uppercased As String = cleaned.ToUpper()
+
+' Apply text replacement
+result = uppercased.Replace("OLD", "NEW")
+```
+
+**C# equivalent style:**
+```xml
+Code="// Remove leading/trailing whitespace&#xA;var cleaned = rawInput.Trim();&#xA;&#xA;// Normalize to uppercase&#xA;var uppercased = cleaned.ToUpper();&#xA;&#xA;// Apply text replacement&#xA;result = uppercased.Replace(&quot;OLD&quot;, &quot;NEW&quot;);"
+```
+
 ## When NOT to Use InvokeCode
 
 Stop and switch to a coded workflow when:

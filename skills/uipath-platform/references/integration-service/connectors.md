@@ -24,11 +24,11 @@ When no native connector exists for a vendor, use the HTTP connector (`uipath-ui
 
 ```bash
 # Search for vendor → not found → fall back to HTTP connector
-uip is connectors list --filter "apify" --format json
+uip is connectors list --filter "apify" --output json
 # → No connectors found
 
 # List HTTP connections and look for one named after the vendor
-uip is connections list "uipath-uipath-http" --format json
+uip is connections list "uipath-uipath-http" --output json
 ```
 
 The HTTP connector supports generic HTTP requests (GET, POST, PUT, PATCH, DELETE) to any REST API. The connection stores the authentication configuration (API keys, OAuth tokens, base URL).
@@ -47,7 +47,7 @@ The HTTP connector has a single resource: `http-request`.
 uip is resources execute create "uipath-uipath-http" "http-request" \
   --connection-id "<id>" \
   --body '{"method": "GET", "url": "https://api.example.com/v2/resource"}' \
-  --format json
+  --output json
 ```
 
 Body fields:

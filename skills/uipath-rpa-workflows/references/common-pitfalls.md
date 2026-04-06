@@ -140,6 +140,20 @@ Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `A
 - **TargetSession validation**: `TargetSession.Secondary` (or any non-Current value) requires `UnSafe=True`. Without it, validation fails.
 - **Persistence with isolation**: Using `ResumeInstanceId` with Safe mode (`UnSafe=false`) without persistence support throws `NotSupportedException`.
 
+## InvokeCode Language Property
+
+The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
+
+**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` — it is not a valid `NetLanguage` value. `"CSharp"` is the same in both.
+
+**What happens:** Using `Language="VisualBasic"` passes Studio validation but fails at runtime:
+```
+Failed to create a 'Language' from the text 'VisualBasic'.
+System.FormatException: VisualBasic is not a valid value for NetLanguage.
+```
+
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `references/activity-docs/UiPath.System.Activities/` for full details.
+
 ## HTTP Request Activity Complexity
 
 The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
@@ -162,7 +176,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
 
 **Connection lifecycle with CLI:**
-- **Discover connections**: `uip is connections list [connector-key] --format json` — find existing connection GUIDs
+- **Discover connections**: `uip is connections list [connector-key] --output json` — find existing connection GUIDs
 - **Verify connection health**: `uip is connections ping <connection-id>` — check if a connection is still active
 - **Create new connection**: `uip is connections create <connector-key>` — opens OAuth flow for user to authenticate
 - **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
@@ -205,7 +219,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `UiPath.UIAutomation.Activities` | `UiPath.UIAutomationNext.Activities` | Modern UI activities use "Next" namespace |
 | `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
 
-Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
+Use `uip rpa get-default-activity-xaml --use-studio` to get correct xmlns declarations — never guess namespace mappings.
 
 ## Portable vs Windows Framework Limitations
 
@@ -246,9 +260,9 @@ Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — ne
 2. Remove attributes that don't exist in the target version
 3. Cap `Version` attributes to the maximum supported by the target package
 4. Add `<AssemblyReference>netstandard</AssemblyReference>` if type resolution errors persist
-5. Use `uip rpa get-errors` to validate after changes
+5. Use `uip rpa get-errors --use-studio` to validate after changes
 
-**Prevention:** When using `uip rpa get-default-activity-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
+**Prevention:** When using `uip rpa get-default-activity-xaml --use-studio`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
 
 ## Expression Language Mismatch
 
@@ -286,7 +300,7 @@ Common validation error: `"The type 'Dictionary<,>' is defined in an assembly th
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages`.
+**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages --use-studio`.
 
 ## Invalid Use of `x:` Prefix for Non-Builtin CLR Types
 
@@ -404,7 +418,7 @@ Flowcharts and State Machines use `x:Name="__ReferenceID0"` and `{x:Reference __
 - `PropertyName="{x:Null}"` explicitly sets a property to null — this is serialized and persisted
 - Omitting a property entirely means "use the default value" — which may or may not be null
 - Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
-- When `uip rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
+- When `uip rpa get-default-activity-xaml --use-studio` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
 
 ## Literal Curly Braces in Attribute Values
 
@@ -454,7 +468,7 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 ### `get-errors --file-path` requires relative paths
 
-The `--file-path` parameter of `uip rpa get-errors` must be a path **relative to the project directory**:
+The `--file-path` parameter of `uip rpa get-errors --use-studio` must be a path **relative to the project directory**:
 - Correct: `--file-path "Workflows/SendEmail.xaml"`
 - Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
 
@@ -467,14 +481,14 @@ All `uip rpa` commands default to the current working directory as the project r
 ### Studio IPC connection failures
 
 `uip rpa` commands communicate with Studio Desktop via IPC. If Studio is not running, not responding, or has no project open, commands will fail with connection errors. Recovery steps:
-1. `uip rpa list-instances --format json` — check if Studio is running
+1. `uip rpa list-instances --output json --use-studio` — check if Studio is running
 2. `uip rpa start-studio` — start Studio if not running
-3. `uip rpa open-project --project-dir "..."` — open the project if Studio has no project loaded
+3. `uip rpa open-project --project-dir "..." --use-studio` — open the project if Studio has no project loaded
 4. If Studio is running but unresponsive, the user may need to restart it manually
 
 ### CLI output format for parsing
 
-Always use `--format json` when you need to parse CLI output programmatically. The default `table` format is human-readable but unreliable for parsing (column alignment varies, long values may be truncated). JSON output is structured and unambiguous.
+Always use `--output json` when you need to parse CLI output programmatically. The default `table` format is human-readable but unreliable for parsing (column alignment varies, long values may be truncated). JSON output is structured and unambiguous.
 
 ### DataTable.Select numeric comparisons on Excel-sourced data
 

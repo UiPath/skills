@@ -32,7 +32,7 @@ Triggers are event-based activities that fire when something happens in an exter
 ## List Trigger Activities
 
 ```bash
-uip is activities list "<connector-key>" --triggers --format json
+uip is activities list "<connector-key>" --triggers --output json
 ```
 
 Returns activities where `isTrigger=true`. The **Operation** field indicates the event type.
@@ -44,11 +44,11 @@ Returns activities where `isTrigger=true`. The **Operation** field indicates the
 List objects available for a specific trigger operation:
 
 ```bash
-uip is triggers objects "<connector-key>" "<OPERATION>" --format json
+uip is triggers objects "<connector-key>" "<OPERATION>" --output json
 
 # With connection (includes custom objects):
 uip is triggers objects "<connector-key>" "<OPERATION>" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 ```
 
 - `<OPERATION>` must be **uppercase**: CREATED, UPDATED, DELETED
@@ -62,11 +62,11 @@ uip is triggers objects "<connector-key>" "<OPERATION>" \
 Get field metadata for a trigger object:
 
 ```bash
-uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" --format json
+uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" --output json
 
 # With connection (includes custom fields):
 uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 ```
 
 Returns field definitions with names, types, and descriptions. Always requests `allFields=true` from the API.
@@ -108,19 +108,19 @@ Object with field definitions. Structure varies by connector but typically inclu
 
 ```bash
 # 1. List trigger activities for Salesforce
-uip is activities list "uipath-salesforce-sfdc" --triggers --format json
+uip is activities list "uipath-salesforce-sfdc" --triggers --output json
 # → Operations: CREATED, UPDATED, DELETED
 # → User selects CREATED
 
 # 2. Get objects for CREATED operation
 uip is triggers objects "uipath-salesforce-sfdc" CREATED \
-  --connection-id "228624" --format json
+  --connection-id "228624" --output json
 # → [AccountHistory, Contact, Lead, Opportunity, ...]
 # → User picks "AccountHistory"
 
 # 3. Get field metadata for AccountHistory
 uip is triggers describe "uipath-salesforce-sfdc" CREATED "AccountHistory" \
-  --connection-id "228624" --format json
+  --connection-id "228624" --output json
 # → Returns field definitions with types and descriptions
 ```
 
@@ -128,11 +128,11 @@ uip is triggers describe "uipath-salesforce-sfdc" CREATED "AccountHistory" \
 
 ```bash
 # 1. List trigger activities
-uip is activities list "uipath-some-connector" --triggers --format json
+uip is activities list "uipath-some-connector" --triggers --output json
 # → Name: "custom_event_trigger", Operation: "WEBHOOK", ObjectName: "WebhookPayload"
 
 # 2. Skip objects step — go directly to describe using ObjectName
 uip is triggers describe "uipath-some-connector" "WEBHOOK" "WebhookPayload" \
-  --connection-id "<id>" --format json
+  --connection-id "<id>" --output json
 # → Returns field definitions
 ```

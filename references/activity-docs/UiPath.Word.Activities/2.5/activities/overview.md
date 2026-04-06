@@ -1,6 +1,6 @@
 # XAML Word Document Activities
 
-Word document activity patterns for `UiPath.Word.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml` — this file covers confirmed patterns from real workflows only.
+Word document activity patterns for `UiPath.Word.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml --use-studio` — this file covers confirmed patterns from real workflows only.
 
 **Target:** Windows only (not Cross-platform / Studio Web Portable).
 
@@ -106,4 +106,4 @@ xmlns:ui="http://schemas.uipath.com/workflow/activities"
 | Export to PDF | Use `WordExportToPdf` inside scope; set `ReplaceExisting="True"` to overwrite |
 | Save vs SaveAs | `AutoSave="True"` on scope saves on close; use `WordSaveAs` to save to a different path |
 | Windows only | `UiPath.Word.Activities` does not support Cross-platform / Studio Web Portable target |
-| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml --use-studio` for complete activity XAML |

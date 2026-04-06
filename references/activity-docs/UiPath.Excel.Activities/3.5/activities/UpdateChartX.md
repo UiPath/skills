@@ -11,4 +11,4 @@ xmlns:ueabc="clr-namespace:UiPath.Excel.Activities.Business.ChartModifications;a
 |---------------|
 | `Chart`; body `ActivityAction` (no type args), child `ueabc:ChangeDataRangeModification` inside |
 
-Use `uip rpa get-default-activity-xaml` for full XAML.
+Use `uip rpa get-default-activity-xaml --use-studio` for full XAML.

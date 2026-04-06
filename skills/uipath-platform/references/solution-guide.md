@@ -39,7 +39,7 @@ Create → Add Projects → Pack → Publish → Deploy → Activate
 Create a new empty solution file:
 
 ```bash
-uip solution new "MySolution" --format json
+uip solution new "MySolution" --output json
 ```
 
 This creates `MySolution.uipx` in the current directory.
@@ -50,10 +50,10 @@ Add existing automation projects to the solution:
 
 ```bash
 # Add a project (auto-discovers nearest .uipx)
-uip solution project add ./ProjectA --format json
+uip solution project add ./ProjectA --output json
 
 # Add with explicit solution file
-uip solution project add ./ProjectB ./MySolution.uipx --format json
+uip solution project add ./ProjectB ./MySolution.uipx --output json
 ```
 
 The project folder must contain `project.uiproj` or `project.json`.
@@ -61,7 +61,7 @@ The project folder must contain `project.uiproj` or `project.json`.
 ### 3. Remove Projects from a Solution
 
 ```bash
-uip solution project remove ./ProjectA --format json
+uip solution project remove ./ProjectA --output json
 ```
 
 ### 4. Pack the Solution
@@ -69,13 +69,13 @@ uip solution project remove ./ProjectA --format json
 Pack the solution into a deployable .zip package:
 
 ```bash
-uip solution pack ./MySolution ./output --format json
+uip solution pack ./MySolution ./output --output json
 ```
 
 With version and custom name:
 
 ```bash
-uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --format json
+uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --output json
 ```
 
 ### 5. Publish the Package
@@ -83,14 +83,14 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 Upload the packed solution to UiPath (requires authentication):
 
 ```bash
-uip login --format json
-uip solution publish ./output/MySolution.1.0.0.zip --format json
+uip login --output json
+uip solution publish ./output/MySolution.1.0.0.zip --output json
 ```
 
 With tenant and location override:
 
 ```bash
-uip solution publish ./output/MySolution.1.0.0.zip --tenant "Production" --format json
+uip solution publish ./output/MySolution.1.0.0.zip --tenant "Production" --output json
 ```
 
 ---
@@ -100,7 +100,7 @@ uip solution publish ./output/MySolution.1.0.0.zip --tenant "Production" --forma
 ### Deploy a Solution
 
 ```bash
-uip solution deploy run -n "<deployment-name>" -c "<configuration-key>" [options] --format json
+uip solution deploy run -n "<deployment-name>" -c "<configuration-key>" [options] --output json
 ```
 
 | Option | Description | Default |
@@ -116,13 +116,13 @@ uip solution deploy run -n "<deployment-name>" -c "<configuration-key>" [options
 ### Check Deployment Status
 
 ```bash
-uip solution deploy status "<deployment-key>" --format json
+uip solution deploy status "<deployment-key>" --output json
 ```
 
 ### List Published Packages
 
 ```bash
-uip solution packages list --format json
+uip solution packages list --output json
 ```
 
 ---
@@ -152,13 +152,13 @@ jobs:
             --client-id "${{ secrets.UIPATH_CLIENT_ID }}" \
             --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" \
             --tenant "${{ secrets.UIPATH_TENANT }}" \
-            --format json
+            --output json
 
       - name: Pack solution
-        run: uip solution pack ./MySolution ./output --version "${{ github.sha }}" --format json
+        run: uip solution pack ./MySolution ./output --version "${{ github.sha }}" --output json
 
       - name: Publish solution
-        run: uip solution publish ./output/MySolution.*.zip --format json
+        run: uip solution publish ./output/MySolution.*.zip --output json
 ```
 
 ### Environment Promotion Pattern
@@ -171,13 +171,13 @@ PACKAGE=$1  # e.g., ./output/MySolution.1.0.0.zip
 
 # Deploy to Staging
 echo "Deploying to Staging..."
-uip login tenant set "Staging" --format json
-uip solution publish "$PACKAGE" --format json
+uip login tenant set "Staging" --output json
+uip solution publish "$PACKAGE" --output json
 
 # After manual approval, deploy to Production
 echo "Deploying to Production..."
-uip login tenant set "Production" --format json
-uip solution publish "$PACKAGE" --format json
+uip login tenant set "Production" --output json
+uip solution publish "$PACKAGE" --output json
 ```
 
 ---
@@ -188,19 +188,19 @@ uip solution publish "$PACKAGE" --format json
 
 ```bash
 # 1. Create solution
-uip solution new "InvoiceAutomation" --format json
+uip solution new "InvoiceAutomation" --output json
 
 # 2. Add projects
-uip solution project add ./InvoiceProcessor --format json
-uip solution project add ./InvoiceReporter --format json
+uip solution project add ./InvoiceProcessor --output json
+uip solution project add ./InvoiceReporter --output json
 
 # 3. Pack
-uip solution pack . ./output --version "1.0.0" --format json
+uip solution pack . ./output --version "1.0.0" --output json
 
 # 4. Login and publish
-uip login --format json
-uip login tenant set "Production" --format json
-uip solution publish ./output/InvoiceAutomation.1.0.0.zip --format json
+uip login --output json
+uip login tenant set "Production" --output json
+uip solution publish ./output/InvoiceAutomation.1.0.0.zip --output json
 ```
 
 ### Version Bumping
@@ -209,15 +209,15 @@ Always increment version when republishing:
 
 ```bash
 # Initial release
-uip solution pack ./MySolution ./output --version "1.0.0" --format json
+uip solution pack ./MySolution ./output --version "1.0.0" --output json
 
 # Bug fix
-uip solution pack ./MySolution ./output --version "1.0.1" --format json
+uip solution pack ./MySolution ./output --version "1.0.1" --output json
 
 # New feature
-uip solution pack ./MySolution ./output --version "1.1.0" --format json
+uip solution pack ./MySolution ./output --version "1.1.0" --output json
 
 # Breaking change
-uip solution pack ./MySolution ./output --version "2.0.0" --format json
+uip solution pack ./MySolution ./output --version "2.0.0" --output json
 ```
 

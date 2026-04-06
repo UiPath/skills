@@ -9,7 +9,7 @@ Activities are pre-built actions available for each connector (e.g., "Send Messa
 ## List Activities (Non-Trigger)
 
 ```bash
-uip is activities list "<connector-key>" --format json
+uip is activities list "<connector-key>" --output json
 ```
 
 This lists **non-trigger activities only** (actions, not event listeners).
@@ -17,7 +17,7 @@ This lists **non-trigger activities only** (actions, not event listeners).
 ## List Trigger Activities
 
 ```bash
-uip is activities list "<connector-key>" --triggers --format json
+uip is activities list "<connector-key>" --triggers --output json
 ```
 
 The `--triggers` flag filters to **trigger activities only** (`isTrigger=true`). These represent events the connector can fire (e.g., "Record Created", "Record Updated").

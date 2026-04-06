@@ -1,118 +1,143 @@
-# CLI Tool Reference
+# CLI Tool Reference — RPA
 
-Complete reference for all `uip` CLI commands and error recovery patterns.
+@../shared/cli-reference.md
 
-**The CLI is fully self-documenting.** Append `--help` at any level to progressively discover commands, subcommands, and parameters:
+This file covers RPA-specific commands only. Shared commands are in the file above.
+
+---
+
+## RPA-Specific Commands
+
+### find-activities
+
+Search for activities by keyword. Global search — not limited to installed packages.
+
 ```bash
-uip --help                                  # top-level command groups
-uip rpa --help                              # all rpa subcommands
-uip rpa get-default-activity-xaml --help     # parameters for a specific command
-uip is --help                               # Integration Service command groups
-uip is connections --help                   # IS connections subcommands
-uip is connections list --help              # parameters for a specific IS command
+uip rpa find-activities --query "<KEYWORD>" --output json --use-studio
+uip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json --use-studio
 ```
 
-## Installed Package Activity Documentation (Primary Discovery)
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--query` | Yes | Search keyword |
+| `--tags` | No | Filter by tags |
+| `--limit` | No | Max results (default 10) |
 
-Located at `{projectRoot}/.local/docs/packages/{PackageId}/`. See [Step 1.2](../SKILL.md#step-12-discover-activity-documentation-primary-source) for full details on structure, template, availability, and access patterns.
+---
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **Read activity doc directly** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/activities/{ActivityName}.md` | Package ID + activity simple class name. **Preferred when you know both.** |
-| **Read package overview** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/overview.md` | Package ID (e.g., `UiPath.WebAPI.Activities`) |
-| **List documented packages** | `Bash`: `ls {projectRoot}/.local/docs/packages/` | Project root directory |
-| **List documented activities of package** | `Bash`: `ls {projectRoot}/.local/docs/packages/{PackageId}/activities/` | Package ID |
-| **Search activity docs by keyword** | `Glob` with `**/*.md` in `{projectRoot}/.local/docs/packages/` to list files, then `Read` matches. **Do not use `Grep`** — `.local/` is gitignored/hidden and `Grep` skips it. | Glob pattern + Read |
+### get-default-activity-xaml
 
-## Core RPA Workflow Tools
+Get the default XAML template for an activity. Two modes depending on whether the activity is dynamic (connector-backed) or not.
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **Explore project files** | `Glob` with `**/*.xaml` pattern, or `Bash`: `ls -la {projectRoot}` | Project root directory |
-| **Find files by pattern** | `Glob` with pattern (e.g., `**/*Mail*.xaml`) | Glob pattern, path |
-| **Search XAML content** | `Grep` with regex pattern across `.xaml` files | Pattern, file/directory path |
-| **Read file contents** | `Read` tool | File path, offset, limit |
-| **Read project definition** | `Read` tool on `{projectRoot}/project.json` | File path |
-| **Explore object repository** | `Glob` `**/*` in `{projectRoot}/.objects/` + `Read` metadata files | `.objects/` path |
-| **Get full project context** | `Read` project.json + `Read` XAML files + `Glob`/`Read` `.objects/` + `Read` `.settings/` | Combine multiple reads |
-| **Search for activities** | `Bash`: `uip rpa find-activities --query "..." [--tags "..."] [--limit N] --format json` | `--query` (required), `--tags`, `--limit` (default 10) |
-| **Get default activity XAML (non-dynamic)** | `Bash`: `uip rpa get-default-activity-xaml --activity-class-name "..."` | `--activity-class-name` (fully qualified) |
-| **Get default activity XAML (dynamic)** | `Bash`: `uip rpa get-default-activity-xaml --activity-type-id "..." [--connection-id "..."]` | `--activity-type-id`, `--connection-id` (optional) |
-| **List workflow examples** | `Bash`: `uip rpa list-workflow-examples --tags service1,service2 [--prefix "..."] [--limit N] --format json` | `--tags` (comma-separated, required), `--prefix` (optional), `--limit` (default 10) |
-| **Get workflow example** | `Bash`: `uip rpa get-workflow-example --key "path/to/example.xaml"` | `--key` (blob path from list results) |
-| **Create new workflow file** | `Write` tool — create a new `.xaml` file with full XAML content | File path, XAML content |
-| **Edit existing workflow** | `Edit` tool — exact string replacement in `.xaml` files | File path, old_string, new_string |
-| **Get errors** | `Bash`: `uip rpa get-errors [--file-path "..."] [--skip-validation] --format json` | `--file-path` (relative to project dir), `--skip-validation` (use cached errors) |
-| **Get JIT type definitions** | `Read` tool on `{projectRoot}/.project/JitCustomTypesSchema.json` | File path |
-| **Install/update packages** | `Bash`: `uip rpa install-or-update-packages --packages '[{"id":"..."}]'` | `--packages` (JSON array; `version` optional — omit to auto-resolve latest) |
-| **Run workflow** | `Bash`: `uip rpa run-file --file-path "..." [--command StartExecution] [--input-arguments '...'] [--log-level ...]` | `--file-path` (required), `--command` (`StartExecution` default, `StartDebugging` for UI automation — pauses on error, keeps app open for selector repair), `--input-arguments` (JSON), `--log-level` |
+```bash
+# Non-dynamic activity:
+uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json --use-studio
 
-## Project Lifecycle Tools
+# Dynamic activity (connector-backed):
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json --use-studio
+```
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **Create new project** | `Bash`: `uip rpa new --name "..." [--template-id ...] [--location ...] [--expression-language ...] [--target-framework ...] [--description "..."]` | See [Creating New Projects](new-project-setup.md) |
-| **Open project in Studio** | `Bash`: `uip rpa open-project [--project-dir "..."]` | `--project-dir` (optional) |
-| **Close project** | `Bash`: `uip rpa close-project [--project-dir "..."]` | `--project-dir` (optional) |
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--activity-class-name` | One mode | Fully qualified class name (non-dynamic) |
+| `--activity-type-id` | One mode | Activity type ID (dynamic) |
+| `--connection-id` | No | Connection ID for dynamic activities |
 
-## Studio Management Tools
+---
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **List Studio instances** | `Bash`: `uip rpa list-instances --format json` | (none) |
-| **Start Studio** | `Bash`: `uip rpa start-studio` | (none) |
-| **Focus activity in designer** | `Bash`: `uip rpa focus-activity [--activity-id "..."]` | `--activity-id` (IdRef; omit to focus all sequentially) |
+### list-workflow-examples
 
-## UI Automation Indication Tools
+Search example workflows by service tags.
 
-Use these when building UI Automation workflows to capture selectors into the Object Repository. See **[ui-automation.md](ui-automation.md)** for the full UIA workflow.
+```bash
+uip rpa list-workflow-examples --tags "service1,service2" --output json --use-studio
+uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json --use-studio
+```
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **Indicate application/screen** | `Bash`: `uip rpa indicate-application [--name "..."] [--parent-id "..." \| --parent-name "..."] [--description "..."] [--activity-class-name "..."]` | `--name` (screen name in Object Repository), `--parent-id`/`--parent-name` (application ref), `--description` (optional, describes the screen for documentation) |
-| **Indicate UI element** | `Bash`: `uip rpa indicate-element --name "..." --activity-class-name "..." [--parent-id "..." \| --parent-name "..."] [--description "..."]` | `--name` (required), `--activity-class-name` (required, e.g. `UiPath.UIAutomation.Activities.TypeInto`), `--parent-id`/`--parent-name` (screen ref), `--description` (optional, describes the element for documentation) |
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--tags` | Yes | Comma-separated service tags |
+| `--prefix` | No | Filter by name prefix |
+| `--limit` | No | Max results (default 10) |
 
-**UI Automation indication workflow:**
-1. First indicate the application/screen: `uip rpa indicate-application --name "MyApp" --description "Main application window"` — the user points at the application window
-2. Then indicate individual elements within that screen: `uip rpa indicate-element --name "SubmitButton" --activity-class-name "UiPath.UIAutomation.Activities.ClickX" --parent-name "MyApp" --description "Submit button on the login form"` — the user points at the element
-3. The indicated elements are stored in the Object Repository (`.objects/`) and can be referenced in XAML via their `ObjectRepositoryReference`
-4. Read the resulting `.objects/` metadata to get the element IDs for use in workflow XAML
+---
 
-## Test Manager Tools
+### get-workflow-example
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **Get manual test cases** | `Bash`: `uip rpa get-manual-test-cases --format json` | (none) |
-| **Get manual test steps** | `Bash`: `uip rpa get-manual-test-steps --format json` | (none) |
+Retrieve the full XAML content of an example workflow.
 
-## Integration Service (IS) Tools
+```bash
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json --use-studio
+```
 
-| Action | How | Key Parameters |
-|--------|-----|----------------|
-| **List connectors** | `Bash`: `uip is connectors list [--filter "..."] --format json` | `--filter` (by name/key) |
-| **Get connector details** | `Bash`: `uip is connectors get <connector-key> --format json` | `connector-key` (required) |
-| **List connections** | `Bash`: `uip is connections list [connector-key] [--connection-id "..."] [--folder-key "..."] --format json` | `connector-key` (optional filter), `--connection-id`, `--folder-key` |
-| **Create connection (OAuth)** | `Bash`: `uip is connections create <connector-key> [--no-browser]` | `connector-key` (required), opens OAuth flow |
-| **Ping/verify connection** | `Bash`: `uip is connections ping <connection-id>` | `connection-id` (required) |
-| **Edit/re-auth connection** | `Bash`: `uip is connections edit <connection-id>` | `connection-id` (required), opens OAuth flow |
-| **List connector activities** | `Bash`: `uip is activities list <connector-key> --format json` | `connector-key` (required) |
-| **List connector resources** | `Bash`: `uip is resources list <connector-key> [--operation ...] --format json` | `connector-key`, `--operation` (List/Retrieve/Create/Update/Delete/Replace) |
-| **Describe resource schema** | `Bash`: `uip is resources describe <connector-key> <object-name> [--operation ...] --format json` | `connector-key`, `object-name`, `--operation` |
-| **Execute resource CRUD** | `Bash`: `uip is resources execute <op> <connector-key> <object-name>` | Operations: `create`, `list`, `get`, `update`, `replace`, `delete` |
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--key` | Yes | Blob path from `list-workflow-examples` results |
 
-## CLI Error Recovery
+---
 
-When `uip` commands fail, diagnose by error category:
+### focus-activity
 
-| Error Pattern | Cause | Recovery |
-|---------------|-------|----------|
-| `"connection refused"`, `"EPIPE"`, `"pipe not found"` | Studio IPC not available | Run `uip rpa start-studio`, then `uip rpa open-project --project-dir "..."` |
-| `"timeout"`, `"ETIMEDOUT"` | Command took too long | Increase timeout: `uip rpa --timeout 600 <command>`, or use `--skip-validation` for `get-errors` |
-| `"not authenticated"`, `401`, `403` | Auth required for cloud features | Run `uip login` and re-try |
-| `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uip rpa find-activities`; omit `version` to auto-resolve latest |
-| `"project not found"`, `"no project open"` | Wrong project-dir or project not open | Verify `--project-dir` path, run `uip rpa open-project` |
-| `"file not found"` in `get-errors` | Wrong `--file-path` (must be relative to project) | Use path relative to project root, not absolute |
-| `"Studio is busy"`, `"operation in progress"` | Studio is processing a previous request | Wait a few seconds and retry the command |
-| Any unrecognized error | Unknown | Check `--verbose` flag on parent: `uip rpa --verbose <command>` for debug details, inform the user |
+Focus an activity in the Studio designer view.
 
-**General strategy:** Do NOT retry the same failing command in a loop. Diagnose the root cause, apply the recovery action, then retry once. If it fails again, inform the user.
+```bash
+uip rpa focus-activity --activity-id "<IDREF>" --output json --use-studio
+uip rpa focus-activity --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--activity-id` | No | Activity IdRef. Omit to focus all activities sequentially. |
+
+---
+
+### search-templates
+
+Search for project templates on configured NuGet feeds. Does not require a project to be open.
+
+```bash
+uip rpa search-templates --query "<SEARCH_TERM>" --output json
+uip rpa search-templates --limit 10 --include-prerelease --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--query` | No | Filter by name or description. Omit to list all available templates |
+| `--limit` | No | Max results (default 20) |
+| `--include-prerelease` | No | Include prerelease versions (default false) |
+
+Returns a JSON array with fields: `packageId`, `version`, `title`, `description`, `authors`, `source`, `tags`.
+
+Use the `packageId` and `version` from results with `uip rpa new --template-package-id` to create a project from that template.
+
+---
+
+### close-project
+
+Close the current project in Studio.
+
+```bash
+uip rpa close-project --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--project-dir` | No | Project directory (defaults to current working directory) |
+
+## RPA Discovery Tools
+
+| Action | How |
+|--------|-----|
+| **Explore project files** | `Glob` with `**/*.xaml` pattern |
+| **Search XAML content** | `Grep` with regex across `.xaml` files |
+| **Explore object repository** | `Glob` `**/*` in `{projectRoot}/.objects/` + `Read` metadata |
+| **Get JIT type definitions** | `Read` `{projectRoot}/.project/JitCustomTypesSchema.json` |
+| **Activity docs** | See [Step 1.2](../SKILL.md#step-12-discover-activity-documentation-primary-source) for the `.local/docs/` discovery flow |
+
+## Debugging with `run-file`
+
+The `uip rpa run-file` command supports full interactive debugging beyond simple execution: breakpoints, step-by-step execution, isolated activity testing, exception handling, and runtime state inspection. For the complete debug command reference and common debugging workflows, see **[debugging.md](debugging.md)**.
+
+## Connector Capabilities
+
+For RPA-specific connector workflow patterns (activity/resource discovery, connection management, schema inspection), see [connector-capabilities.md](connector-capabilities.md).

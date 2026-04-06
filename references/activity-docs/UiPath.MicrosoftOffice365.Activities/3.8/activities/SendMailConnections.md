@@ -40,6 +40,6 @@ Null attributes: `ArgumentAttachmentPaths`, `AttachmentList`, `Bcc`, `Cc`, `Conn
 </umam:SendMailConnections>
 ```
 
-Additional BackupSlot children (get full structure from `uip rpa get-default-activity-xaml`):
+Additional BackupSlot children (get full structure from `uip rpa get-default-activity-xaml --use-studio`):
 - `AttachmentsArg` — type `umame:AttachmentInputMode`
 - `InputTypeArg` — type `umame:BodyInputType`

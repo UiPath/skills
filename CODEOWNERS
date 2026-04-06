@@ -18,8 +18,13 @@
 /skills/uipath-platform/ @gabrielavaduva
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 
-# Coded agents skill
-/skills/uipath-coded-agents/ @chandusailella
+# Agents skill (coded + low-code)
+/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
 
 # Flow skill
-/skills/uipath-flow/ @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden
+
+# Flow skill — node category guides (away team owned)
+# Add your team here when contributing a new node category file
+/skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden

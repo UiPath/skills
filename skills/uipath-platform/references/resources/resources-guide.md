@@ -2,7 +2,7 @@
 
 CLI tool for managing Orchestrator assets, queues, queue items, storage buckets, and files (`uip resources`).
 
-> Use `uip resources --help` to discover all commands and options. Use `--format json` when calling programmatically.
+> Use `uip resources --help` to discover all commands and options. Use `--output json` when calling programmatically.
 
 ## Overview
 
@@ -33,7 +33,7 @@ uip resources
 **Asset types:** Text (default), Bool, Integer, Credential, Secret, DBConnectionString, HttpConnectionString, WindowsCredential
 
 ```bash
-uip resources assets create 12345 "ApiKey" "sk-abc123" --type Secret --format json
+uip resources assets create 12345 "ApiKey" "sk-abc123" --type Secret --output json
 ```
 
 ### Queues & Queue Items
@@ -52,7 +52,7 @@ uip resources assets create 12345 "ApiKey" "sk-abc123" --type Secret --format js
 ```bash
 uip resources queue-items create 12345 "InvoiceQueue" \
   --specific-content '{"InvoiceId":"INV-001","Amount":1500}' \
-  -r "INV-001" -p High --format json
+  -r "INV-001" -p High --output json
 ```
 
 ### Storage Buckets & Files
@@ -68,7 +68,7 @@ uip resources queue-items create 12345 "InvoiceQueue" \
 
 ```bash
 uip resources storage-bucket-files write 12345 67890 "invoices/INV-001.pdf" \
-  --file ./INV-001.pdf --format json
+  --file ./INV-001.pdf --output json
 ```
 
 ---
@@ -78,23 +78,23 @@ uip resources storage-bucket-files write 12345 67890 "invoices/INV-001.pdf" \
 ### Environment Setup with Assets
 
 ```bash
-uip or folders list --format json
-uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --format json
-uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --format json
-uip resources assets create 12345 "MaxRetries" "3" --type Integer --format json
+uip or folders list --output json
+uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --output json
+uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --output json
+uip resources assets create 12345 "MaxRetries" "3" --type Integer --output json
 ```
 
 ### Dispatcher-Performer Queue Pattern
 
 ```bash
-uip resources queues create 12345 "InvoiceQueue" --max-retries 3 --auto-retry --format json
+uip resources queues create 12345 "InvoiceQueue" --max-retries 3 --auto-retry --output json
 
 uip resources queue-items create 12345 "InvoiceQueue" \
   --specific-content '{"InvoiceId":"INV-001","Amount":1500}' \
-  -r "INV-001" -p High --format json
+  -r "INV-001" -p High --output json
 
 uip resources queue-items set-result 12345 <item-id> \
-  --success --output '{"Status":"Approved"}' --format json
+  --success --output '{"Status":"Approved"}' --output json
 ```
 
 ---

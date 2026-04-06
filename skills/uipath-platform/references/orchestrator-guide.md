@@ -94,9 +94,9 @@ A job is a single execution of a process. Jobs have states:
 | `uip or folders delete <id>` | Delete a folder |
 
 ```bash
-uip or folders list --format json
-uip or folders create "Finance" --format json
-uip or folders create "Invoicing" --parent 12345 -d "Invoice processing" --format json
+uip or folders list --output json
+uip or folders create "Finance" --output json
+uip or folders create "Invoicing" --parent 12345 -d "Invoice processing" --output json
 ```
 
 ---
@@ -115,20 +115,20 @@ uip or folders create "Invoicing" --parent 12345 -d "Invoice processing" --forma
 Set up a new environment from scratch using the CLI:
 
 ```bash
-uip login --format json
-uip login tenant set "Production" --format json
+uip login --output json
+uip login tenant set "Production" --output json
 
-uip or folders create "Finance" --format json
+uip or folders create "Finance" --output json
 # Use the folder ID from the response (e.g., 12345) for nested folders
-uip or folders create "Invoicing" --parent 12345 --format json
-uip or folders create "Reporting" --parent 12345 --format json
+uip or folders create "Invoicing" --parent 12345 --output json
+uip or folders create "Reporting" --parent 12345 --output json
 
-uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --format json
-uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --format json
-uip resources assets create 12345 "MaxRetries" "3" --type Integer --format json
+uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --output json
+uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --output json
+uip resources assets create 12345 "MaxRetries" "3" --type Integer --output json
 
-uip solution pack ./MySolution ./output --version "1.0.0" --format json
-uip solution publish ./output/MySolution.1.0.0.zip --format json
+uip solution pack ./MySolution ./output --version "1.0.0" --output json
+uip solution publish ./output/MySolution.1.0.0.zip --output json
 ```
 
 ### Multi-Tenant Promotion
@@ -136,14 +136,14 @@ uip solution publish ./output/MySolution.1.0.0.zip --format json
 Promote an automation from development to production:
 
 ```bash
-uip solution pack ./MySolution ./output --version "1.0.0" --format json
+uip solution pack ./MySolution ./output --version "1.0.0" --output json
 
-uip login tenant set "Staging" --format json
-uip solution publish ./output/MySolution.1.0.0.zip --format json
+uip login tenant set "Staging" --output json
+uip solution publish ./output/MySolution.1.0.0.zip --output json
 
 # After validation, promote to production
-uip login tenant set "Production" --format json
-uip solution publish ./output/MySolution.1.0.0.zip --format json
+uip login tenant set "Production" --output json
+uip solution publish ./output/MySolution.1.0.0.zip --output json
 ```
 
 ### Accessing Assets from Code

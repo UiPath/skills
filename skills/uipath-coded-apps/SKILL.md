@@ -1,7 +1,7 @@
 ---
 name: uipath-coded-apps
 description: >
-  Coded web app lifecycle — push, pull, pack, publish, deploy via uip codedapp CLI. Use when
+  [PREVIEW] Coded web app lifecycle — push, pull, pack, publish, deploy via uip codedapp CLI. Use when
   user says "coded app", "codedapp", "web app" in UiPath context, "push to Studio Web",
   ".nupkg", or "uip codedapp". Also triggers when user mentions deploying a React/Angular/Vue
   app to UiPath. NOT for: Python agents (uipath-coded-agents), C# workflows
@@ -27,7 +27,7 @@ Comprehensive guide for building, syncing, packaging, publishing, and deploying 
 
 ## Critical Rules
 
-- **Always check login status before any cloud command.** Run `uip login status --format json` first. If not authenticated, ask the user for their environment and run `uip login`.
+- **Always check login status before any cloud command.** Run `uip login status --output json` first. If not authenticated, ask the user for their environment and run `uip login`.
 - **Never skip the build step.** The `dist/` directory must exist before `pack` or `push`. Always verify with `ls dist/`.
 - **Pack before publish, publish before deploy.** The commands form a pipeline — each step depends on the previous one producing its output.
 - **The `publish` command creates `app.config.json`.** This file is used by `deploy` to resolve the app name. Don't delete `.uipath/` between publish and deploy.
@@ -62,7 +62,7 @@ Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` comm
 ### Step 1 — Authenticate
 
 ```bash
-uip login status --format json
+uip login status --output json
 ```
 
 If not logged in:
@@ -218,7 +218,7 @@ Run the complete pipeline end-to-end: build → pack → publish → deploy.
 
 **IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?". Execute the entire flow automatically. Only pause when you genuinely need information from the user (auth credentials, app name). After getting that info, resume immediately.**
 
-1. **Auth** — Check `uip login status --format json`. If not logged in, ask the user for their environment (Production/Alpha/Staging) and run `uip login`.
+1. **Auth** — Check `uip login status --output json`. If not logged in, ask the user for their environment (Production/Alpha/Staging) and run `uip login`.
 
 2. **Build** — Run the project's build command:
    ```bash
