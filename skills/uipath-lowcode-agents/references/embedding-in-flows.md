@@ -33,19 +33,26 @@ An inline agent contains only the definition files — no entry-points.json, no 
 
 The flow project must already exist.
 
-### Step 2: Create the agent subdirectory
+### Step 2: Scaffold the inline agent
 
-Create a directory inside the flow project. Add `agent.json` with the same schema as a standalone agent (see [agent-json-format.md](agent-json-format.md)).
+Run from the flow project directory:
+
+```bash
+cd <FlowProject>
+uip low-code-agent init --inline --output json
+```
+
+This creates only `agent.json`, `resources/`, and `features/` — no `entry-points.json`, no `project.uiproj`.
 
 ### Step 3: Configure agent.json
 
-Same configuration as standalone: model settings, system/user messages with contentTokens, input/output schemas.
+Same configuration as standalone: model settings, system/user messages with contentTokens, input/output schemas. See [agent-json-format.md](agent-json-format.md).
 
 ### Step 4: Validate the agent definition
 
 ```bash
 cd <FlowProject>/<AgentName>
-uip lowcodeagents validate --output json
+uip low-code-agent validate --inline --output json
 ```
 
 ### Flow Wiring

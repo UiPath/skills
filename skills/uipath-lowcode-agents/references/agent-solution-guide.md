@@ -355,9 +355,9 @@ uip solution project add ./MySolution/Agent2 ./MySolution/MySolution.uipx --outp
 ### Edit and rebuild
 
 ```bash
-# After editing agent.json (tools, contexts, prompts, schema), regenerate .agent-builder/
-uip low-code-agent build ./MySolution/Agent --output json
-uip low-code-agent build ./MySolution/Agent2 --output json
+# After editing agent.json (tools, contexts, prompts, schema), validate
+uip low-code-agent validate ./MySolution/Agent --output json
+uip low-code-agent validate ./MySolution/Agent2 --output json
 ```
 
 ### Upload to Studio Web
