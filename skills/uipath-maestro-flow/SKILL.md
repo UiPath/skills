@@ -26,7 +26,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Critical Rules
 
-1. **Do NOT `registry get` built-in nodes during Phase 1 (architectural planning).** The planning guide and node reference already document all OOTB node types with their ports, inputs, and output variables — sufficient for designing flow topology. However, **Phase 2 (implementation resolution) REQUIRES registry validation of all node types**, even OOTB nodes, to confirm ports and inputs match the current product state. Only run connector/resource `registry get` during Phase 1 if needed for decision-making. **Exception:** When building the flow (Step 6), you DO need `registry get` for any node type to populate the `definitions` array in the `.flow` file — definitions must be copied from registry output, never hand-written.
+1. **Phase 1 registry rules: `search`/`list` YES, `get` NO.** Use `registry search` and `registry list` during Phase 1 to discover what connectors and resources exist — this informs node selection. Do NOT run `registry get` in Phase 1 — detailed metadata, connection binding, and reference resolution belong to Phase 2. The planning guide documents all OOTB node types with ports and inputs — sufficient for topology design without registry calls. **Phase 2 REQUIRES `registry get` validation of all node types**, even OOTB nodes, to confirm the current product state. **Exception:** When building the flow (Step 6), you also need `registry get` for any node type to populate the `definitions` array — definitions must be copied from registry output, never hand-written.
 2. **ALWAYS follow the relevant node guide in `references/nodes/` for every connector node.** The guide covers capability discovery, connection binding, and field resolution — required before planning. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. See the relevant node guide in `references/nodes/` for the connection check command.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
@@ -184,43 +184,27 @@ uip solution project add \
 
 This scaffolds a complete project inside a solution. See [references/flow-file-format.md](references/flow-file-format.md) for the full project structure.
 
-### Step 3 — Discover available node types
-
-Before editing the `.flow` file, check what nodes are available:
+### Step 3 — Refresh the registry
 
 ```bash
 uip flow registry pull                          # refresh local cache (expires after 30 min)
-uip flow registry list --output json            # list all cached node types
-uip flow registry search <keyword>              # search by name, tag, or category
-uip flow registry search agent
 ```
 
-> **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector nodes are also available.
+> **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available.
 
-At this point you know **which node types** to use. For OOTB nodes (scripts, HTTP, branching), you can call `registry get` immediately. For connector nodes, do **not** run `registry get` yet — proceed to Step 4 first.
+Discovery (`registry search`/`list`) and connector resolution (`registry get`, connection binding) happen during planning — see Step 4 below.
 
-### Step 4 — Bind connections, fetch metadata, and resolve references (when using connectors)
-
-**Skip this step if the flow only uses OOTB nodes.** For each connector node, read the relevant node guide in `references/nodes/` and follow its Configuration Workflow. The guide covers:
-
-1. Connection discovery and binding
-2. Enriched metadata retrieval
-3. Field and reference resolution
-4. Node configuration via `uip flow node configure`
-
-After completing these steps, you should have for each connector node: a bound connection, field metadata, and resolved values for all reference fields. Carry this information into the planning step.
-
-### Step 5 — Plan the flow (two phases)
+### Step 4 — Plan the flow (two phases)
 
 **Required when creating a new flow or adding multiple nodes.** Only skip this step for small targeted edits to an *existing* flow (e.g., changing a script body, renaming a node, tweaking one connection). When in doubt, plan.
 
 Planning is split into two phases:
-- **Phase 1 — Architectural Design:** Design the flow topology (nodes, edges, inputs/outputs) and produce a mermaid diagram. No registry lookups or connection binding.
-- **Phase 2 — Implementation Resolution:** Resolve connector details, bind connections, resolve reference fields, and finalize the plan with implementation-ready details.
+- **Phase 1 — Discovery & Architectural Design:** Discover available capabilities (`registry search`/`list`), then design the flow topology (nodes, edges, inputs/outputs) and produce a mermaid diagram. No `registry get` or connection binding.
+- **Phase 2 — Implementation Resolution:** Resolve connector details via `registry get`, bind connections, resolve reference fields, and finalize the plan with implementation-ready details.
 
-#### 5a. Architectural Design (Phase 1)
+#### 4a. Discovery & Architectural Design (Phase 1)
 
-**Read [references/planning-phase-architectural.md](references/planning-phase-architectural.md)** for the node type catalog, selection heuristics, wiring rules, topology patterns, mermaid validation rules, and the full output format.
+**Read [references/planning-phase-architectural.md](references/planning-phase-architectural.md)** for capability discovery, the node type catalog, selection heuristics, wiring rules, topology patterns, mermaid validation rules, and the full output format.
 
 Follow the process in that guide to produce a `<SolutionName>.arch.plan.md` in the **solution directory** (the folder containing the `.uipx` file) containing:
 1. Summary
@@ -235,7 +219,7 @@ Present a **short summary in chat** (goal + key nodes + open questions). Tell th
 
 **Do NOT proceed to Phase 2 until the user explicitly approves the architectural plan.**
 
-#### 5b. Implementation Resolution (Phase 2)
+#### 4b. Implementation Resolution (Phase 2)
 
 **Read [references/planning-phase-implementation.md](references/planning-phase-implementation.md)** for the implementation resolution process.
 
@@ -247,16 +231,16 @@ Phase 2 takes the approved architectural plan and resolves all implementation de
 - Replace `core.logic.mock` nodes with real resource nodes (if published)
 - Write `<SolutionName>.impl.plan.md` with resolved details and mermaid diagram
 
-#### 5c. Iterate until approved
+#### 4c. Iterate until approved
 
-**Do NOT proceed to Step 6 until the user explicitly approves the plan.** The iteration loop:
+**Do NOT proceed to Step 5 until the user explicitly approves the plan.** The iteration loop:
 
 1. User reviews the plan and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
 2. Update `<SolutionName>.impl.plan.md` with the changes
 3. Summarize what changed in chat
 4. Repeat until the user says the plan is approved
 
-### Step 6 — Build the flow
+### Step 5 — Build the flow
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
@@ -293,7 +277,7 @@ The command automatically adds `targetPort` and validates the edge structure.
 
 #### Configuring connector nodes
 
-After adding a connector node with `node add`, configure it using the resolved values from Step 4:
+After adding a connector node with `node add`, configure it using the resolved values from Phase 2:
 
 ```bash
 uip flow node configure <ProjectName>.flow <nodeId> \
@@ -308,7 +292,7 @@ The `--detail` JSON structure varies by node type — see the relevant node guid
 
 The CLI does not yet support: removing nodes, removing edges, updating existing node inputs (e.g., changing a script body), or rewiring existing edges. For these operations, edit the `.flow` JSON directly — see [references/flow-file-format.md](references/flow-file-format.md) and the Common Edits section above.
 
-### Step 7 — Validate loop
+### Step 6 — Validate loop
 
 Run validation and fix errors iteratively until the flow is clean.
 
@@ -318,7 +302,7 @@ uip flow validate <ProjectName>.flow --output json
 
 **Validation loop:**
 1. Run `uip flow validate`
-2. If valid → done, move to Step 8 (push to Studio Web)
+2. If valid → done, move to Step 7 (push to Studio Web)
 3. If errors → read the error messages, fix the `.flow` file
 4. Go to 1
 
@@ -328,7 +312,7 @@ Common error categories:
 - **Invalid node/edge references** — `sourceNodeId`/`targetNodeId` must reference existing node `id`s
 - **Duplicate IDs** — node and edge `id`s must be unique
 
-### Step 8 — Debug (cloud) — only when explicitly requested
+### Step 7 — Debug (cloud) — only when explicitly requested
 
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
@@ -338,9 +322,9 @@ UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
-> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
+> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
 
-### Step 9 — Publish to Studio Web
+### Step 8 — Publish to Studio Web
 
 **This is the default publish target.** When the user wants to publish, view, or share the flow, upload it to Studio Web using `solution bundle` + `solution upload`:
 
@@ -361,8 +345,8 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 ## Anti-Patterns
 
 - **Never guess node schemas** — use the planning guide for OOTB nodes, `registry get` for connector/unknown nodes. Guessed port names or input fields cause silent wiring failures.
-- **Never `registry get` built-in nodes during Phase 1 planning** — the planning guide already documents all OOTB node types with ports and inputs. Redundant lookups waste tokens. However, Phase 2 **requires** registry validation of all node types to confirm the current product state before building.
-- **Never skip capability discovery for connector nodes** — the registry tells you a node exists; only the node guide's discovery workflow tells you what operations and fields it supports. Skipping this is the #1 cause of broken connector nodes.
+- **Never `registry get` during Phase 1 planning** — use `registry search`/`list` for discovery, but save `registry get` for Phase 2. The planning guide documents all OOTB node types with ports and inputs. Phase 2 **requires** `registry get` validation of all node types to confirm the current product state before building.
+- **Never skip capability discovery for connector nodes** — run `registry search` during Phase 1 to confirm the connector exists and what operations it supports. Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.
 - **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
@@ -379,7 +363,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | I need to... | Read these |
 |---|---|
 | **Edit an existing flow** | Common Edits section |
-| **Generate a flow plan** | [references/planning-phase-architectural.md](references/planning-phase-architectural.md) + [references/planning-phase-implementation.md](references/planning-phase-implementation.md) + Step 5 |
+| **Generate a flow plan** | [references/planning-phase-architectural.md](references/planning-phase-architectural.md) + [references/planning-phase-implementation.md](references/planning-phase-implementation.md) + Step 4 |
 | **Choose the right node type** | [references/planning-phase-architectural.md — Node Selection Heuristics](references/planning-phase-architectural.md#node-selection-heuristics) |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
@@ -387,7 +371,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | **Wire nodes with edges** | [references/flow-file-format.md - Edges](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip flow registry search <keyword>` |
 | **Work with connector/resource nodes** | Relevant node guide in `references/nodes/` + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Publish to Studio Web** | Step 9 (solution bundle + upload) |
+| **Publish to Studio Web** | Step 8 (solution bundle + upload) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
@@ -434,7 +418,7 @@ When you finish building or editing a flow, report to the user:
 
 ## References
 
-- **[Planning Phase 1: Architectural Design](references/planning-phase-architectural.md)** — Node type catalog, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
+- **[Planning Phase 1: Discovery & Architectural Design](references/planning-phase-architectural.md)** — Capability discovery (`registry search`/`list`), node type catalog, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
 - **[Planning Phase 2: Implementation Resolution](references/planning-phase-implementation.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), plus the full node catalog, wiring rules, and flow patterns needed for building. **Read this after the architectural plan is approved.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
@@ -442,4 +426,4 @@ When you finish building or editing a flow, report to the user:
 - **[Orchestration Guide](references/orchestration-guide.md)** — How to orchestrate RPA processes, agents, apps, other flows, and API workflows. Includes resource node types, "create new" workflow, queue integration, and human task patterns
 - **[Node Reference](references/node-reference.md)** — Complete catalog of OOTB nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes
 - **[IS Activity Nodes](references/nodes/is-activity.md)** — Complete guide for IS connector activity nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json` schema, IS CLI commands, and debugging. See [contribution template](references/nodes/_contribution-template.md) for adding new node category guides
-- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 9).
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 8).
