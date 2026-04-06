@@ -6,8 +6,10 @@ Core concepts for UiPath workflow XAML files and rules for generating and/or edi
 
 Every UiPath XAML workflow file has this structure:
 
+**`x:Class` naming rule:** The value must match the file's relative path from the project root (without the `.xaml` extension), with folder separators replaced by **underscores** — not dots. For a root-level file `MyWorkflow.xaml` → `x:Class="MyWorkflow"`. For a file in a subfolder `Workflows/SendEmail.xaml` → `x:Class="Workflows_SendEmail"`. Using dots (e.g., `Workflows.SendEmail`) causes a validation error: *"Invalid ActivityBuilder name … Suggested name …"*.
+
 ```xml
-<Activity mc:Ignorable="sap sap2010 sads" x:Class="ProjectName.FileName"
+<Activity mc:Ignorable="sap sap2010 sads" x:Class="FolderName_FileName"
   xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"

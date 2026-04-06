@@ -1,12 +1,6 @@
 ---
 name: uipath-rpa-workflows
-description: >
-  XAML RPA workflow authoring — generate, edit, validate, run .xaml files in Studio Desktop
-  (uip rpa CLI). Use when user says "XAML", "RPA workflow", ".xaml file", "Studio Desktop",
-  "get-errors", or project has .xaml files with project.json. Also use for ambiguous automation
-  requests when the project context contains XAML files. NOT for: C# coded workflows
-  (uipath-coded-workflows), Python agents (uipath-coded-agents), Orchestrator management
-  (uipath-platform).
+description: "UiPath RPA workflows (.xaml) in Studio Desktop. Generate, edit, test, run XAML workflows via uip CLI. Excel, email, web, PDF, UI automation tasks. For coded C#→uipath-coded-workflows. For deploy/Orchestrator→uipath-platform."
 ---
 
 # RPA Workflow Architect
@@ -369,6 +363,8 @@ uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-24
 - `--activity-class-name`: For non-dynamic activities. Must be fully qualified (e.g., `UiPath.Core.Activities.WriteLine`)
 - `--activity-type-id`: For dynamic activities. Use `uip rpa find-activities --use-studio` to find the exact type ID
 - `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uip is connections list [connector-key]`
+
+**IMPORTANT — `.Item` child elements:** Do NOT copy `.Item` children with `ItemArgument` nodes into your generated XAML. Set the desired property directly on the activity element. See [common-pitfalls.md — ItemArgument and `.Item` Child Elements](./references/common-pitfalls.md#itemargument-and-item-child-elements-in-overloadgroup-activities) for details.
 
 **For JIT custom types**, read the schema file:
 

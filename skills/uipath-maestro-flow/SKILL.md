@@ -1,12 +1,7 @@
 ---
 name: uipath-maestro-flow
-description: >
-  Flow project authoring — create, edit, validate .flow JSON files with nodes and edges
-  (uip flow CLI). Use when user mentions ".flow file", "Flow project", "uip flow",
-  "flow validate", "nodes and edges", "flow registry", or is editing a .flow JSON file.
-  NOT for: XAML workflows, C# workflows, Python agents, or platform management.
-metadata:
-   allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+description: "[PREVIEW] UiPath Flow projects (.flow files) — orchestrate RPA, agents, apps. Create, edit, validate, run flows via uip CLI: nodes, variables, subflows, triggers. For XAML→uipath-rpa-workflows. For C#→uipath-coded-workflows."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath Flow Authoring Assistant

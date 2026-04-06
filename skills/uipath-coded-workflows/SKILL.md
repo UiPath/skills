@@ -1,12 +1,6 @@
 ---
 name: uipath-coded-workflows
-description: >
-  C# coded automation — create, edit, build, run coded workflows and test cases (.cs files,
-  uip rpa CLI). Use when user wants to automate a task with C# code, create UiPath test cases,
-  or add coded workflows to a Studio project. Direct match: user says "coded workflow",
-  "CodedWorkflow", "[Workflow]", "[TestCase]", "C# automation", or project has .cs files with
-  UiPath attributes. NOT for: XAML workflows (uipath-rpa-workflows), Python agents
-  (uipath-coded-agents), Orchestrator management (uipath-platform).
+description: "UiPath C# coded workflows (.cs with [Workflow]/[TestCase]). Create, edit, build, run, debug automations and test cases. Excel, email, web, PDF, API, Integration Service connectors. For XAML→uipath-rpa-workflows. For deploy→uipath-platform."
 ---
 
 # UiPath Coded Workflows Assistant

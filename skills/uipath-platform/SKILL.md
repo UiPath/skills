@@ -1,14 +1,7 @@
 ---
 name: uipath-platform
-description: >
-  UiPath platform ops — auth, Orchestrator resources, solutions, Integration Service, Test
-  Manager, uip CLI. Use when user asks about "Orchestrator", "assets", "queues", "storage
-  buckets", "uip login", "deploy solution", "Test Manager", "Integration Service", or general
-  UiPath platform/infrastructure questions. NOT for: Writing workflow code
-  (uipath-coded-workflows or uipath-rpa-workflows), building agents (uipath-coded-agents),
-  or building web apps (uipath-coded-apps).
-metadata:
-   allowed-tools: Bash, Read, Write, Glob, Grep
+description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, Test Manager, uip CLI. Not for writing workflow code."
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Development Environment Assistant
