@@ -198,11 +198,14 @@ Every `uip` command accepts:
 | Option | Description | Default |
 |---|---|---|
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
+| `--output-filter <expression>` | JMESPath expression to filter JSON output | -- |
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--help` / `-h` | Display help for the command | -- |
 | `--version` / `-v` | Display CLI version | -- |
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
+>
+> **Use `--output-filter` to extract specific fields** instead of piping output to `python3`, `jq`, or other post-processing tools. The filter uses [JMESPath](https://jmespath.org/) syntax. Example: `--output json --output-filter "Data[].{id: id, name: name}"`
 
 ## Deployment Lifecycle
 

@@ -72,7 +72,7 @@ For each `core.logic.mock` node in the architectural plan:
 
 1. Check if the resource has been published since planning: `uip flow registry search "<name>" --output json`
 2. If published: replace the mock with the real resource node type, update inputs/outputs
-3. If not published: keep the mock and include it in the "Mock Placeholders" section of the output
+3. If not published: keep the mock and note it in the "Open Questions" section for user resolution
 
 ### Step 5 — Replace Placeholders
 
@@ -93,10 +93,9 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 ```markdown
 # <SolutionName> Implementation Plan
 
-## Resolved Node Table
+## Summary
 
-| # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+2-3 sentences describing what the flow does end-to-end and what was resolved in this phase (connectors bound, resources confirmed, registry validations performed).
 
 ## Flow Diagram (Mermaid)
 
@@ -113,6 +112,11 @@ graph TD
     decision -->|true| end1
 ```
 
+## Resolved Node Table
+
+| # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+
 ## Resolved Edge Table
 
 (Copy from `.arch.plan.md` — update only if node IDs changed due to mock replacement)
@@ -122,20 +126,22 @@ graph TD
 | Connector Key | Connection ID | Activity | Verified |
 | --- | --- | --- | --- |
 
-## Variables
+## Global Variables
 
 (Copy from `.arch.plan.md` Inputs and Outputs section)
-
-## Mock Placeholders (if any)
-
-| Node ID | Intended Resource | Skill to Use | Status |
-| --- | --- | --- | --- |
 
 ## Changes from Architectural Plan
 
 - List what changed between `.arch.plan.md` and this plan
 - Record any node type changes (connector resolutions, mock replacements)
 - Note any port or input field changes discovered during registry validation
+
+## Open Questions
+
+Prefix each with `**[REQUIRED]**` or `**[OPTIONAL]**`. If there are no open questions, write "No open questions — all details resolved."
+
+- **[REQUIRED]** Which connection should be used for the Slack connector?
+- **[OPTIONAL]** Should the retry count be increased from the default?
 ```
 
 #### Column Additions

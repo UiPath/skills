@@ -187,6 +187,28 @@ uip is resources execute create "uipath-salesforce-sfdc" "Coupon" \
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
 
+### Filtering Results with `--output-filter`
+
+Use the global `--output-filter` flag with a JMESPath expression to extract specific fields from large responses if possible via JMESPath.
+
+```bash
+# Extract only id, name, and email from a user list
+uip is resources execute list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
+  --connection-id "<CONNECTION_ID>" \
+  --output json \
+  --output-filter "Data[].{id: id, name: name, email: profile.email}"
+```
+
+Common JMESPath patterns:
+
+| Pattern | Effect |
+|---|---|
+| `Data[]` | Return all records (unwrap the Data envelope) |
+| `Data[].name` | Return just the `name` field from each record |
+| `Data[].{id: id, name: name}` | Return selected fields as objects |
+| `Data[?status=='active']` | Filter records by field value |
+| `Data[0]` | Return only the first record |
+
 ---
 
 ## Read-Only Field Recovery
