@@ -59,4 +59,4 @@ jobs:
         working-directory: tests
         run: |
           coder-eval run tasks/**/*.yaml \
-            -e experiments/default.yaml --tags smoke --proxy -j 1
+            -e experiments/default.yaml --tags smoke --proxy -j 1 -v
