@@ -22,7 +22,6 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 - User wants to **create subflows** for reusable grouped logic
 - User wants to **add data transforms** — filter, map, group-by operations
 - User wants to **schedule a flow** with a recurring trigger
-- User wants to **trigger a flow from an external event** — e.g., "when an email arrives", "when a Jira issue is created"
 - User wants to **integrate with queues** — creating queue items for robot work distribution
 
 ## Critical Rules
@@ -114,15 +113,6 @@ Replace `core.trigger.manual` with `core.trigger.scheduled`:
 2. Add timer inputs: `timerType: "timeCycle"`, `timerPreset: "R/PT1H"` (or custom)
 3. Add the `eventDefinition` to `model`: `"eventDefinition": "bpmn:TimerEventDefinition"`
 4. See [references/node-reference.md — Scheduled Trigger](references/node-reference.md) for presets
-
-### Add an IS connector trigger
-
-Replace `core.trigger.manual` with an event-driven connector trigger:
-
-1. Follow the full Configuration Workflow in [references/nodes/is-trigger.md](references/nodes/is-trigger.md)
-2. Replace the start node with the connector trigger node (keep `id: "start"` to preserve edges)
-3. Update `definitions` — add the trigger definition from `registry get`, remove `core.trigger.manual` if unused
-4. Update `bindings_v2.json` — add `Connection`, `EventTrigger`, and `Property` resources
 
 ### Add a resource node (RPA process, agent, etc.)
 
