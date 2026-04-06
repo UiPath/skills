@@ -55,8 +55,30 @@ Many activities use `[OverloadGroup]` to define mutually exclusive property sets
 | CopyFile, Delete, ExtractFiles | `Path` (string) | `PathResource` / `File` (IResource) | — |
 | WorkbookActivityBase | `Workbook` (use open) | `WorkbookPath` (file string) | `WorkbookPathResource` (IResource) |
 | WordDocumentActivity | `FilePath` (string) | `PathResource` (ILocalResource) | — |
+| PDF activities (ReadPDFText, GetPDFPageCount, ExtractPDFPageRange, ManagePDFPassword, ExportPDFPageAsImage, ExtractImagesFromPDF, ReadXPSText) | `FileName` (string) | `ResourceFile` (IResource) | — |
 
 **Key rule**: Exactly ONE group must have values. Setting properties from multiple groups OR no groups both cause validation errors.
+
+### ItemArgument and `.Item` Child Elements in OverloadGroup Activities
+
+`uip rpa get-default-activity-xaml` returns activities with `.Item` child elements containing `ItemArgument` nodes. These are internal scaffolding for the FileName/ResourceFile overload group switching mechanism. **Do NOT include `.Item` child elements when writing XAML manually.** Simply set the desired overload group property (e.g., `FileName`) directly on the activity element and omit the `.Item` child entirely. Studio will auto-generate the internal `.Item` structure when it loads the workflow.
+
+**Example — correct (no `.Item` child):**
+```xml
+<upap:GetPDFPageCount DisplayName="Get PDF Page Count"
+    FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]" />
+```
+
+**Example — avoid (`.Item` child from `get-default-activity-xaml`):**
+```xml
+<upap:GetPDFPageCount FileName="[pdfPath]" ResourceFile="{x:Null}" PageCount="[pageCount]">
+    <upap:GetPDFPageCount.Item>
+      <upap:ItemArgument x:TypeArguments="upr:IResource" FileName="{x:Null}" ResourceFile="{x:Null}" />
+    </upap:GetPDFPageCount.Item>
+</upap:GetPDFPageCount>
+```
+
+Including the `.Item` child with misconfigured `ItemArgument` properties can cause `"None of the overload groups have all their required/optional activity arguments configured"` validation errors. This applies to all activities that use the `ItemArgument` pattern, including PDF, Excel, and other file-based activities.
 
 ## Conditional Property Requirements
 
@@ -72,6 +94,9 @@ Some properties are only required when another property has a specific value:
 | ExchangeScope (Interactive auth) | `AuthenticationMode = Interactive` | `ApplicationId` must be set |
 | ExchangeScope | `ApplicationId` is set | `DirectoryId` must also be set (and vice versa — both or neither) |
 | WordApplicationScope | `CreateNewFile = true` | Path must be local (not a URL) |
+| ConvertHtmlToPDF, ConvertTextToPDF | `InputMode = File` | `FileName` or `ResourceFile` must be set |
+| ConvertHtmlToPDF | `InputMode = Content` | `Html` must be set |
+| ConvertTextToPDF | `InputMode = Content` | `Text` must be set |
 
 ## Input Method Constraints (UIAutomation)
 

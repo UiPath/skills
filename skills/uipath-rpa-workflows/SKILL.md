@@ -364,6 +364,8 @@ uip rpa get-default-activity-xaml --activity-type-id "178a864d-90fd-43d3-a305-24
 - `--activity-type-id`: For dynamic activities. Use `uip rpa find-activities --use-studio` to find the exact type ID
 - `--connection-id`: Optional, only used for dynamic activities. Discover available connections using `uip is connections list [connector-key]`
 
+**IMPORTANT — `.Item` child elements:** Do NOT copy `.Item` children with `ItemArgument` nodes into your generated XAML. Set the desired property directly on the activity element. See [common-pitfalls.md — ItemArgument and `.Item` Child Elements](./references/common-pitfalls.md#itemargument-and-item-child-elements-in-overloadgroup-activities) for details.
+
 **For JIT custom types**, read the schema file:
 
 ```
