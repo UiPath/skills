@@ -26,26 +26,27 @@ Discover available capabilities, then design the flow topology — select node t
 
 **When to run:** The flow uses connector nodes (external services) or resource nodes (RPA processes, agents, other flows). **Skip** if the flow only uses OOTB nodes (scripts, HTTP, branching, loops).
 
-Discovery answers "what can I work with?" before you commit to a topology. This prevents designing around a connector that doesn't exist or an operation the connector doesn't support.
+Discovery answers "what can I work with?" before you commit to a topology. This prevents designing around a connector that doesn't exist, an operation the connector doesn't support, or an RPA process / agent that hasn't been published yet.
 
 ```bash
 uip flow registry pull                              # refresh local cache
-uip flow registry search <service-name> --output json  # check if a connector exists
+uip flow registry search <keyword> --output json    # search by service, resource name, or category
 uip flow registry search outlook --output json       # example: does an Outlook connector exist?
+uip flow registry search "invoice process" --output json  # example: is an RPA process published?
+uip flow registry search agent --output json         # example: what agents are available?
 uip flow registry list --output json                 # list all available node types
 ```
 
-> **Auth note:** Without `uip login`, the registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. If the flow requires connectors, verify login status first: `uip login status --output json`.
+> **Auth note:** Without `uip login`, the registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. If the flow requires connectors or resources, verify login status first: `uip login status --output json`.
 
 **What to record from discovery:**
-- Whether a connector exists for each external service in the requirements
-- Available operations (from search results) — e.g., "Outlook connector has `get-newest-email`, `send-email`, `set-email-categories`"
-- Whether a resource node exists for each RPA process, agent, or flow referenced in the requirements
-- Any gaps — services with no connector, resources not yet published
+- **Connectors:** Whether a connector exists for each external service, and available operations — inferred from node type names (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` → Outlook supports `get-newest-email`). Field details require `registry get --connection-id` in Phase 2.
+- **Resources:** Whether a published node exists for each RPA process, agent, or flow referenced in the requirements (e.g., `uipath.core.rpa-workflow.invoice-abc123`). Input/output schemas require `registry get` in Phase 2 (no connection needed for resources).
+- **Gaps:** Services with no connector → fall back to `core.action.http`. Resources not yet published → use `core.logic.mock` placeholder.
 
 Use these findings to select the right node types in the catalog below. If a connector doesn't exist, fall back to `core.action.http` or note it as a gap in Open Questions.
 
-> **Do NOT run `registry get` during discovery.** That fetches detailed metadata (port schemas, input definitions, connection binding) — save it for Phase 2. Discovery only needs `search` and `list` to confirm existence and available operations.
+> **Do NOT run `registry get` during discovery.** Search results give you node type names — enough to know what connectors and operations exist. Detailed field metadata (required fields, types, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2.
 
 ---
 
