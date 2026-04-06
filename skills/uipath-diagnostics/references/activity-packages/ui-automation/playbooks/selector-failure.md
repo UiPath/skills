@@ -36,10 +36,10 @@ When `healing-fixes.json` exists and contains a matching entry for the faulted a
 4. Check confidence score and strategy name
 
 **Resolution:**
-- For `update-target`: update the activity's selector in XAML with the HA-recommended selector
-- For `dismiss-popup`: add a Click activity before the failing activity to dismiss the popup
-- Match XAML activity by `ActivityRefId` -> `IdRef` attribute (unique within workflow)
-- Apply proper XML encoding when editing selectors: encode `&` first, then `<`, `>`, `'`, `"`
+
+Follow the fix-application procedures in [interpretations/healing-agent-data.md](../interpretations/healing-agent-data.md) (section "Applying HA Fixes"):
+- For `update-target`: see "Applying `update-target` Fixes" — uses `uia-improve-selector` skill if available, falls back to direct XAML edit
+- For `dismiss-popup`: see "Applying `dismiss-popup` Fixes" — creates a Click activity before the failing activity, validates the workflow compiles
 
 ### Scenario: healing-agent-disabled
 
