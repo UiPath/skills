@@ -1,6 +1,9 @@
 .PHONY: help install e2e e2e-flow
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
+export LLMGW_REQUESTING_PRODUCT ?= agent-gym
+export LLMGW_REQUESTING_FEATURE ?= agent-gym-local
+export LLMGW_TIMEOUT_SECONDS ?= 290
 
 help:  ## Show this help message
 	@echo "Available commands:"
