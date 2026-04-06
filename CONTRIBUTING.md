@@ -187,6 +187,29 @@ bash scripts/setup-hooks.sh
 
 This configures git to use `.githooks/` and enables the skill description validator.
 
+## Testing Skills
+
+Skills are tested end-to-end using [coder_eval](https://github.com/UiPath/coder_eval) — a framework that runs an AI agent against a task and scores the result. Tests live in `tests/tasks/<skill-name>/` and verify that the skill guides the agent to use the correct CLI commands, follow critical rules, and produce valid output.
+
+### Running Tests
+
+```bash
+cd tests
+make install   # one-time: install coder-eval from GitHub
+make e2e       # run all smoke tests
+make e2e-flow  # run maestro-flow tests only
+```
+
+### Adding Tests for a Skill
+
+1. Create `tests/tasks/<skill-name>/` matching your skill folder name
+2. Write one YAML task file per capability (e.g., `init_validate.yaml`, `registry_discovery.yaml`)
+3. Use minimal prompts — the goal is to test the skill's guidance quality, not hand-hold the agent
+4. Tag every task with `smoke` so it runs in CI
+5. Follow the task ID pattern: `skill-<domain>-<capability>`
+
+See `tests/README.md` for the full task YAML template and conventions.
+
 ## Quality Checklist
 
 Before submitting your PR, verify:
