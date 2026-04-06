@@ -1,108 +1,99 @@
-# UiPath CLI (uip) Command Reference
+# UiPath CLI (`uip`) Command Reference
 
-> **Quick reference index.** This lists only the most common commands. Every tool group has many more subcommands — use `--help` at any level to discover them (e.g., `uip or --help`, `uip resources --help`, `uip tm testcase --help`).
-
----
+> Index of common commands. Use `--help` at any level for full details. Always use `--output json` when parsing output.
 
 ## Authentication
 
 | Command | Description |
 |---|---|
 | `uip login` | Authenticate with UiPath Cloud |
-| `uip login status` | Show current login status |
-| `uip login tenant list` | List available tenants |
+| `uip login status` | Current login status |
+| `uip login tenant list` | List tenants |
 | `uip login tenant set <name>` | Set active tenant |
-| `uip logout` | End session and clear tokens |
+| `uip logout` | End session |
 
----
+## Orchestrator — [Guide](orchestrator-guide.md)
 
-## Orchestrator (`or`)
+### Folders
 
-Manage folders, jobs, and processes. See [orchestrator-guide.md](orchestrator-guide.md). Use `uip or --help` for all subcommands.
+| Command |
+|---|
+| `uip or folders list / create / get / edit / move / delete / runtimes` |
+
+### Jobs — [Guide](jobs-guide.md)
+
+| Command |
+|---|
+| `uip or jobs list / get / start / stop / restart / resume / logs / traces / healing-data / history` |
+
+### Processes — [Guide](processes-guide.md)
+
+| Command |
+|---|
+| `uip or processes list / get / create / update-version / rollback` |
+
+### Packages — [Guide](packages-guide.md)
+
+| Command |
+|---|
+| `uip or packages list / get / versions / entry-points / upload` |
+| `uip or feeds list` |
+| `uip or attachments download` |
+
+### Machines — [Guide](machines-guide.md)
+
+| Command |
+|---|
+| `uip or machines list / get / create / edit / delete / assign / unassign` |
+
+### Users & Roles — [Guide](access-control-guide.md)
+
+| Command |
+|---|
+| `uip or users list / list-in-folder / list-available / get / current / create / edit / delete / assign / unassign / assign-roles` |
+| `uip or roles list-permissions / list-roles / get-role / create-role / edit-role / delete-role / list-role-users / set-role-users / list-user-roles / assign` |
+
+### Licenses — [Guide](licenses-guide.md)
+
+| Command |
+|---|
+| `uip or licenses info / list / toggle` |
+
+## Resources — [Guide](resources/resources-guide.md)
+
+| Command |
+|---|
+| `uip resources assets list / create` |
+| `uip resources queues list / create` |
+| `uip resources queue-items list / create` |
+| `uip resources storage-buckets list / create` |
+
+## Solution — [Guide](solution-guide.md)
+
+| Command |
+|---|
+| `uip solution pack / publish / deploy run` |
+
+## Integration Service — [Guide](integration-service/)
+
+| Command |
+|---|
+| `uip is connectors list / connections list / connections create / connections ping` |
+
+## Test Manager — [Guide](test-manager/test-manager-guide.md)
+
+| Command |
+|---|
+| `uip tm project list / create` |
+| `uip tm testset create / execute` |
+| `uip tm testcase create` |
+| `uip tm wait / report get` |
+
+## Other
 
 | Command | Description |
 |---|---|
-| `uip or folders list` | List all folders |
-| `uip or folders create <name>` | Create a folder |
-| `uip or jobs start <folder-id> <release-key>` | Start a job |
-| `uip or processes list <folder-id>` | List processes in a folder |
-
----
-
-## Resources (`resources`)
-
-Manage assets, queues, and storage buckets. See [resources/resources-guide.md](resources/resources-guide.md). Use `uip resources --help` for all subcommands.
-
-| Command | Description |
-|---|---|
-| `uip resources assets list <folder-id>` | List assets |
-| `uip resources assets create <folder-id> <name> <value>` | Create an asset |
-| `uip resources queues list <folder-id>` | List queues |
-| `uip resources queues create <folder-id> <name>` | Create a queue |
-| `uip resources queue-items list <folder-id>` | List queue items |
-| `uip resources queue-items create <folder-id> <queue-name>` | Add item to queue |
-| `uip resources storage-buckets list <folder-id>` | List storage buckets |
-| `uip resources storage-buckets create <folder-id> <name>` | Create a bucket |
-
----
-
-## Solution (`solution`)
-
-Create, pack, publish, and deploy solutions. See [solution-guide.md](solution-guide.md). Use `uip solution --help` for all subcommands.
-
-| Command | Description |
-|---|---|
-| `uip solution pack <solutionPath> <outputPath>` | Pack solution into .zip |
-| `uip solution publish <packagePath>` | Publish solution package |
-| `uip solution deploy run` | Deploy a solution |
-
----
-
-## Integration Service (`is`)
-
-Manage connectors, connections, and resources. See [integration-service/](integration-service/). Use `uip is --help` for all subcommands.
-
-| Command | Description |
-|---|---|
-| `uip is connectors list` | List all connectors |
-| `uip is connections list [connector-key]` | List connections |
-| `uip is connections create <connector-key>` | Create a connection |
-| `uip is connections ping <connection-id>` | Test connection health |
-
----
-
-## Test Manager (`tm`)
-
-Manage test projects, test sets, test cases, and executions. See [test-manager/test-manager-guide.md](test-manager/test-manager-guide.md). Use `uip tm --help` for all subcommands.
-
-| Command | Description |
-|---|---|
-| `uip tm project list` | List test projects |
-| `uip tm project create` | Create test project |
-| `uip tm testset create` | Create test set |
-| `uip tm testset execute` | Execute a test set |
-| `uip tm testcase create` | Create test case |
-| `uip tm wait` | Wait for execution to complete |
-| `uip tm report get` | Get execution report |
-
----
-
-## Tools Management (`tools`)
-
-| Command | Description |
-|---|---|
-| `uip tools list` | List installed tools |
-| `uip tools search` | Search available tools |
-| `uip tools install <package-name>` | Install a tool |
-
----
-
-## Other Tool Groups
-
-Use `--help` to explore these:
-
-| Group | Command | Description |
-|---|---|---|
-| **RPA** | `uip rpa --help` | RPA workflow management (XAML) |
-| **MCP** | `uip mcp serve` | Start Model Context Protocol server |
-| **Coded Agents** | `uip codedagents --help` | Python-based agent development |
+| `uip tools list / search / install` | CLI tool extensions |
+| `uip rpa --help` | RPA workflow management |
+| `uip mcp serve` | Model Context Protocol server |
+| `uip codedagents --help` | Python agent development |
