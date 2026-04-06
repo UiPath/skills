@@ -39,14 +39,27 @@ uip flow registry list --output json                 # list all available node t
 
 > **Auth note:** Without `uip login`, the registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. If the flow requires connectors or resources, verify login status first: `uip login status --output json`.
 
+### Check connector connections
+
+For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` → key is `uipath-microsoft-outlook365`).
+
+```bash
+uip is connections list "<connector-key>" --output json
+```
+
+- If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for Phase 2.
+- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2.
+
+> This is a lightweight existence check, not full connection binding. Phase 2 will ping the connection, fetch enriched metadata, and resolve reference fields.
+
 **What to record from discovery:**
-- **Connectors:** Whether a connector exists for each external service, and available operations — inferred from node type names (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` → Outlook supports `get-newest-email`). Field details require `registry get --connection-id` in Phase 2.
+- **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
 - **Resources:** Whether a published node exists for each RPA process, agent, or flow referenced in the requirements (e.g., `uipath.core.rpa-workflow.invoice-abc123`). Input/output schemas require `registry get` in Phase 2 (no connection needed for resources).
-- **Gaps:** Services with no connector → fall back to `core.action.http`. Resources not yet published → use `core.logic.mock` placeholder.
+- **Gaps:** Services with no connector → fall back to `core.action.http`. Resources not yet published → use `core.logic.mock` placeholder. Connectors with no connection → flag in Open Questions for the user to create.
 
 Use these findings to select the right node types in the catalog below. If a connector doesn't exist, fall back to `core.action.http` or note it as a gap in Open Questions.
 
-> **Do NOT run `registry get` during discovery.** Search results give you node type names — enough to know what connectors and operations exist. Detailed field metadata (required fields, types, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2.
+> **Do NOT run `registry get` during discovery.** Search results give you node type names — enough to know what connectors and operations exist. `is connections list` confirms connection availability. Detailed field metadata (required fields, types, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2.
 
 ---
 
