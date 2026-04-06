@@ -1,8 +1,7 @@
 ---
 name: uipath-platform
-description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets, queues, storage buckets), solution lifecycle (pack, publish, deploy), Integration Service, resources management, Test Manager, and CLI tools. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes, storage buckets); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service connectors or connections; User wants to manage resources (assets, queues, storage buckets); User wants to use Test Manager; User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration. DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
-metadata: 
-   allowed-tools: Bash, Read, Write, Glob, Grep
+description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, Test Manager, uip CLI. Not for writing workflow code."
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Development Environment Assistant
