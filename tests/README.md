@@ -30,7 +30,7 @@ make e2e-flow
 # Run a single task
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   coder-eval run tasks/uipath-maestro-flow/init_validate.yaml \
-  -e experiments/default.yaml
+  -e experiments/default.yaml --proxy
 ```
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.

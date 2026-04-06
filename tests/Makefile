@@ -12,11 +12,11 @@ install:  ## Install coder-eval from GitHub
 e2e:  ## Run all skill e2e tests (smoke)
 	SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) \
 	  coder-eval run tasks/**/*.yaml \
-	  -e experiments/default.yaml --tags smoke -j 1
+	  -e experiments/default.yaml --tags smoke --proxy -j 1
 
 e2e-flow:  ## Run maestro-flow skill tests only
 	SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) \
 	  coder-eval run tasks/uipath-maestro-flow/*.yaml \
-	  -e experiments/default.yaml -j 1
+	  -e experiments/default.yaml --proxy -j 1
 
 .DEFAULT_GOAL := help

@@ -48,9 +48,12 @@ jobs:
       - name: Run e2e smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLMGW_URL: ${{ secrets.LLMGW_URL }}
           LLMGW_CLIENT_ID: ${{ secrets.LLMGW_CLIENT_ID }}
+          LLMGW_CLIENT_SECRET: ${{ secrets.LLMGW_CLIENT_SECRET }}
+          LLMGW_SEMANTIC_ORG_ID: ${{ secrets.LLMGW_SEMANTIC_ORG_ID }}
+          LLMGW_SEMANTIC_TENANT_ID: ${{ secrets.LLMGW_SEMANTIC_TENANT_ID }}
         working-directory: tests
         run: |
           coder-eval run tasks/**/*.yaml \
-            -e experiments/default.yaml --tags smoke -j 1
+            -e experiments/default.yaml --tags smoke --proxy -j 1
