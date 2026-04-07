@@ -53,6 +53,24 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
         working-directory: tests
+        id: e2e
         run: |
           coder-eval run tasks/**/*.yaml \
             -e experiments/default.yaml --tags smoke -j 1 -v
+        continue-on-error: true
+
+      - name: Print experiment report
+        if: always()
+        working-directory: tests
+        run: |
+          for f in runs/*/experiment.md runs/*/default/variant.md runs/*/default/*/task.json; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+              echo ""
+            fi
+          done
+
+      - name: Fail if tests failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1
