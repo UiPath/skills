@@ -423,7 +423,7 @@ Use these to pick the right node type when the choice isn't obvious.
 1. Add a `core.logic.mock` placeholder
 2. Note what needs to be created and which skill handles it:
    - Desktop/browser automation or coded workflow (C#) → `uipath-rpa`
-   - Agent → `uipath-coded-agents`
+   - Agent → `uipath-agents`
 3. Phase 2 will check whether the resource has been published and replace the mock
 
 ---

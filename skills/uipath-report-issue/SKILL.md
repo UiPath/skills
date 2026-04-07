@@ -111,7 +111,7 @@ Before including any content in the issue:
 |---|---|
 | uipath-maestro-flow | `[Flow]` |
 | uipath-rpa | `[RPA]` |
-| uipath-coded-agents | `[Agents]` |
+| uipath-agents | `[Agents]` |
 | uipath-coded-apps | `[Apps]` |
 | uipath-platform | `[Platform]` |
 | uipath-servo | `[Servo]` |
@@ -221,7 +221,7 @@ Show the user the **issue URL** after creation.
 | `expression-error` | `#f9d0c4` | Jint expression or runtime issue |
 | `uipath-maestro-flow` | `#1d76db` | Flow skill |
 | `uipath-rpa` | `#1d76db` | RPA skill |
-| `uipath-coded-agents` | `#1d76db` | Agents skill |
+| `uipath-agents` | `#1d76db` | Agents skill |
 | `uipath-coded-apps` | `#1d76db` | Apps skill |
 | `uipath-platform` | `#1d76db` | Platform skill |
 | `uipath-servo` | `#1d76db` | Servo skill |
