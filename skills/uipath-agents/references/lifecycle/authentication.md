@@ -128,10 +128,10 @@ uip --version
 If missing, install with `npm install -g @uipath/cli` (requires Node.js 18+). Then ensure the Python runtime is set up:
 
 ```bash
-uip codedagents setup --format json
+uip codedagent setup --format json
 ```
 
-> **Low-code agents:** No `pyproject.toml` or `uv sync` needed — only `uip codedagents setup` is required for the runtime.
+> **Low-code agents:** No `pyproject.toml` or `uv sync` needed — only `uip codedagent setup` is required for the runtime.
 
 ## Environment Setup
 

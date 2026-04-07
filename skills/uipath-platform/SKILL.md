@@ -87,8 +87,8 @@ Choose the appropriate operation from the Task Navigation table below.
 |---|---|
 | **Authenticate / manage tenants** | [references/uip-commands.md - Authentication](references/uip-commands.md) |
 | **Manage Orchestrator folders** | [references/orchestrator-guide.md - Folders](references/orchestrator-guide.md) |
-| **Manage assets** (via `resources assets`, NOT `or`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
-| **Manage resources** (assets, queues, queue items, storage buckets, files via `resources`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
+| **Manage assets** (via `resource assets`, NOT `or`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
+| **Manage resources** (assets, queues, queue items, storage buckets, files via `resource`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
@@ -182,13 +182,13 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 |---|---|---|---|
 | **Authentication** | `login`, `logout` | OAuth2, client credentials, PAT, tenant management | Available |
 | **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
-| **Resources** | `resources` | Assets, queues, queue items, storage buckets, bucket files | Available |
+| **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
 | **Solutions** | `solution` | Create, pack, publish, deploy solutions | Available |
 | **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
 | **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
 | **MCP** | `mcp` | Model Context Protocol server | Available |
-| **Coded Agents** | `codedagents` | Python agent lifecycle (setup, exec) | Available |
+| **Coded Agents** | `codedagent` | Python agent lifecycle (setup, exec) | Available |
 | **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
 
 ### Global Options

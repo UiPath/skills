@@ -1,6 +1,6 @@
 # UiPath CLI (uip) Command Reference
 
-> **Quick reference index.** This lists only the most common commands. Every tool group has many more subcommands — use `--help` at any level to discover them (e.g., `uip or --help`, `uip resources --help`, `uip tm testcase --help`).
+> **Quick reference index.** This lists only the most common commands. Every tool group has many more subcommands — use `--help` at any level to discover them (e.g., `uip or --help`, `uip resource --help`, `uip tm testcase --help`).
 
 ---
 
@@ -29,20 +29,20 @@ Manage folders, jobs, and processes. See [orchestrator-guide.md](orchestrator-gu
 
 ---
 
-## Resources (`resources`)
+## Resource (`resource`)
 
-Manage assets, queues, and storage buckets. See [resources/resources-guide.md](resources/resources-guide.md). Use `uip resources --help` for all subcommands.
+Manage assets, queues, and storage buckets. See [resources/resources-guide.md](resources/resources-guide.md). Use `uip resource --help` for all subcommands.
 
 | Command | Description |
 |---|---|
-| `uip resources assets list <folder-id>` | List assets |
-| `uip resources assets create <folder-id> <name> <value>` | Create an asset |
-| `uip resources queues list <folder-id>` | List queues |
-| `uip resources queues create <folder-id> <name>` | Create a queue |
-| `uip resources queue-items list <folder-id>` | List queue items |
-| `uip resources queue-items create <folder-id> <queue-name>` | Add item to queue |
-| `uip resources storage-buckets list <folder-id>` | List storage buckets |
-| `uip resources storage-buckets create <folder-id> <name>` | Create a bucket |
+| `uip resource assets list <folder-id>` | List assets |
+| `uip resource assets create <folder-id> <name> <value>` | Create an asset |
+| `uip resource queues list <folder-id>` | List queues |
+| `uip resource queues create <folder-id> <name>` | Create a queue |
+| `uip resource queue-items list <folder-id>` | List queue items |
+| `uip resource queue-items create <folder-id> <queue-name>` | Add item to queue |
+| `uip resource storage-buckets list <folder-id>` | List storage buckets |
+| `uip resource storage-buckets create <folder-id> <name>` | Create a bucket |
 
 ---
 
@@ -105,4 +105,4 @@ Use `--help` to explore these:
 |---|---|---|
 | **RPA** | `uip rpa --help` | RPA workflow management (XAML) |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
-| **Coded Agents** | `uip codedagents --help` | Python-based agent development |
+| **Coded Agents** | `uip codedagent --help` | Python-based agent development |
