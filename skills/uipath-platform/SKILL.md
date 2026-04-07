@@ -1,6 +1,6 @@
 ---
 name: uipath-platform
-description: "UiPath platform: connections, connectors, authentication, Orchestrator, assets, queues, storage buckets, deploy, publish, pack, Test Manager, CLI tools. TRIGGER when: User mentions connections or connectors; User wants to authenticate or login; User asks about Orchestrator resources; User wants to deploy, publish, or pack; User mentions Integration Service; User wants to use uip CLI commands. DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-rpa); User asks how to automate a task within a workflow."
+description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, Test Manager, uip CLI. Not for writing workflow code."
 metadata: 
    allowed-tools: Bash, Read, Write, Glob, Grep
 ---

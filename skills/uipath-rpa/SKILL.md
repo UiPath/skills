@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa
-description: "[PREVIEW] Full assistant for UiPath automations — coded workflows (C#), low-code RPA workflows (XAML), and hybrid projects. Create, edit, build, run, and debug automation projects. TRIGGER when: UiPath project detected (project.json with UiPath dependencies); User mentions coded workflows, XAML workflows, RPA, automations, test cases, or C#-based UiPath automations; User asks to automate a task and a UiPath project exists nearby; User asks about UiPath activities or Integration Service connectors. DO NOT TRIGGER when: Orchestrator/deployment/CLI setup (use uipath-platform); Agent lifecycle (use uipath-coded-agents)."
+description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, and hybrid projects. Create, edit, build, run, debug. For Orchestrator/deploy→uipath-platform. For agents→uipath-coded-agents."
 ---
 
 # UiPath RPA Assistant

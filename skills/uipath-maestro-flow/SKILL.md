@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "[PREVIEW] Create, edit, validate, debug, and run UiPath Flow projects (.flow files) using the uip CLI. Supports scaffolding flows, adding/connecting nodes, managing variables and expressions, subflows, scheduled triggers, and orchestrating external resources (RPA, agents, apps, other flows). TRIGGER when: user mentions Flow, .flow files, flow nodes, flow orchestration, uip flow CLI commands, or wants to compose multiple UiPath automations. DO NOT TRIGGER when: user is working with XAML/RPA workflows or coded C# workflows (use uipath-rpa), Python agents (use uipath-coded-agents), or web apps (use uipath-coded-apps) — unless they want to orchestrate these from a flow."
+description: "[PREVIEW] UiPath Flow projects (.flow files) — orchestrate RPA, agents, apps. Create, edit, validate, run flows via uip CLI: nodes, variables, subflows, triggers. For XAML or C# workflows→uipath-rpa."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
