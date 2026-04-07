@@ -18,6 +18,9 @@
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
 
+# Planner skill
+/skills/uipath-planner/ @RaduAna-Maria
+
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden
 

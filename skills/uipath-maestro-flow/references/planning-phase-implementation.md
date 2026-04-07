@@ -516,7 +516,7 @@ When a flow requires capabilities outside the flow skill's scope — an RPA proc
 1. Add a `core.logic.mock` placeholder node in the plan where the external component goes
 2. Tell the user what's needed and which skill to use:
    - Desktop/browser automation or coded workflow (C#) → `/uipath:uipath-rpa`
-   - Agent → `/uipath:uipath-coded-agents`
+   - Agent → `/uipath:uipath-agents`
 3. Once the user creates the component, replace the placeholder with the real node
 
 **Do not** attempt to invoke other skills automatically. Each skill should work independently — cross-skill chaining multiplies failure rates.
