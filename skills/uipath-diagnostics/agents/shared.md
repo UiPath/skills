@@ -43,14 +43,11 @@ Use this to look up error messages, features, configuration, and troubleshooting
 
 ## Reading Playbooks and Guides
 
-All file paths are resolved by triage and stored in `state.json`. Read files from:
+Read files from paths in `state.json`:
 - `state.json.investigation_guides` — data correlation rules and testing prerequisites
-- `state.json.presentation_guides` — product-specific display rules for entity names, IDs, labels
 - `state.json.matched_playbooks` — playbooks matched to the issue, with confidence level
 
 **Confidence is authoritative.** Do NOT override a playbook's confidence level based on symptom match quality.
-
-Follow `presentation_guides` when writing evidence summaries and user-facing text.
 
 ## Raw Data Rule
 

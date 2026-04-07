@@ -29,10 +29,6 @@ Updated by: Orchestrator (phase transitions)
     "references/products/orchestrator/investigation_guide.md",
     "references/products/maestro/investigation_guide.md"
   ],
-  "presentation_guides": [
-    "references/products/orchestrator/presentation.md",
-    "references/products/maestro/presentation.md"
-  ],
   "matched_playbooks": [
     {
       "confidence": "low",
@@ -54,10 +50,6 @@ Updated by: Orchestrator (phase transitions)
 
 Resolved by triage. Always includes the generic guide (`references/investigation_guide.md`). Includes the product-specific guide if one exists. Other agents read these paths directly — they do NOT scan the references folder themselves.
 
-## Presentation Guides
-
-Resolved by triage. Includes `presentation.md` for each matched product/package that has one. The orchestrator reads these before formatting results. Sub-agents also follow them when writing evidence summaries.
-
 ## Matched Playbooks
 
 Resolved by triage. Full paths to every playbook that matches the symptoms, with confidence level (high/medium/low). High-confidence playbooks have a specific error match and known cause. Medium have concrete diagnostic steps. Low provide general context. The generator uses confidence to decide how many hypotheses to produce per playbook.
@@ -71,8 +63,8 @@ Generic key-value store for data gathered during the investigation. Any agent ca
 
 ## Rules
 
-- Triage sub-agent creates this file and resolves all reference paths
-- Other agents read paths from `state.json` — they do NOT browse `references/` themselves
+- Triage sub-agent creates this file and resolves investigation guides, matched playbooks, and requirements
+- Other agents read paths from `state.json` — they do NOT browse `references/` themselves (exception: presenter discovers presentation guides directly from domain folders)
 - Orchestrator updates `phase` as the investigation progresses
 - Any agent can read `requirements`; triage and orchestrator write to it
 - The `scope` may be updated by the orchestrator when scope adjustment occurs

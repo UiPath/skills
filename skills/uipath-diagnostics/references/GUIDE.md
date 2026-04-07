@@ -39,7 +39,7 @@ Each product has different concerns. UI Automation needs to verify the correct a
 
 ### presentation.md (optional)
 
-Product-specific display rules for how to format entity names, IDs, and labels in user-facing output. Defines how to refer to the product's entities (e.g., connections by display name, jobs by process name, instances by BPMN process name). Triage resolves these paths into `state.json.presentation_guides`. All agents follow them when writing evidence summaries. The orchestrator reads them before formatting results.
+Product-specific display rules for how to format entity names, IDs, and labels in user-facing output. Defines how to refer to the product's entities (e.g., connections by display name, jobs by process name, instances by BPMN process name). The presenter agent discovers and reads these directly based on the domains in `state.json.scope.domain`.
 
 ### summary.md (required)
 

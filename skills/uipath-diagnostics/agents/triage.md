@@ -24,9 +24,9 @@ Goal: get the error message and match playbooks as fast as possible.
    - Read `references/summary.md` and follow its links to filter down to a specific product/package
    - If after 3 queries you can pin the issue: proceed
    - If after 3 queries you still cannot classify: **stop searching**. Write `needs_input.json` (see shared.md) with a targeted question. Still write `state.json` with what you know.
-3. **Resolve guides** — write to `state.json.investigation_guides` and `state.json.presentation_guides`:
+3. **Resolve investigation guides** — write to `state.json.investigation_guides`:
    - Always include `references/investigation_guide.md`
-   - Check if each matched product/package has an `investigation_guide.md` or `presentation.md`. If yes, include their paths.
+   - Check if each matched product/package has an `investigation_guide.md`. If yes, include its path.
    - Read all resolved investigation guides and apply their data correlation rules.
 4. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, write `needs_input.json` (see shared.md) asking for the missing detail. Do NOT continue when you can't reach the primary entity.
 5. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), default to the most recent. Do NOT fetch details for multiple entities. Write to raw/, write evidence summary.

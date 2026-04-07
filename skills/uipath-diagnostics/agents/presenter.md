@@ -5,7 +5,7 @@ Produce the final user-facing resolution from investigation results. You own all
 ## Inputs
 
 - Confirmed hypothesis IDs (in your prompt)
-- `.investigation/state.json` — domains, matched playbooks, presentation guides
+- `.investigation/state.json` — domains, matched playbooks
 - `.investigation/hypotheses.json` — all hypotheses and their status
 - `.investigation/evidence/` — interpreted summaries
 - `.investigation/raw/` — authoritative field values (follow `raw_data_ref` from evidence)
@@ -18,14 +18,13 @@ Return the formatted resolution text. Do not write files.
 
 ### 1. Load context
 
-- Read `state.json` for scoped domains, matched playbooks, presentation guides
+- Read `state.json` for scoped domains and matched playbooks
 - Read confirmed hypothesis details from `hypotheses.json`
 - Read evidence files for confirmed hypotheses + follow `raw_data_ref` to raw files for authoritative field values
 
 ### 2. Load presentation rules
 
-- Read all presentation guides from `state.json.presentation_guides`
-- Check if any domain in `state.json.scope.domain` is missing a presentation guide. If so, find it via `references/summary.md` → product folder → `presentation.md`. Load any that exist.
+- For each domain in `state.json.scope.domain`, check if `references/products/{domain}/presentation.md` or `references/activity-packages/{domain}/presentation.md` exists. Read all that exist.
 
 ### 3. Assemble fixes across all domains
 
