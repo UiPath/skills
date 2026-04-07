@@ -253,13 +253,14 @@ uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project
 
 ## UI Automation References
 
-Shared UIA procedures and guides:
+**MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) before any UI automation work** — mode-specific UIA patterns (coded vs XAML).
+
+Additional UIA procedures and guides:
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements
 - [uia-debug-workflow.md](references/uia-debug-workflow.md) — Running and debugging UI automation workflows
 - [uia-multi-step-flows.md](references/uia-multi-step-flows.md) — Advancing application state between screens
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow and indication fallback
-- [references/ui-automation-guide.md](references/ui-automation-guide.md) — Mode-specific UIA patterns (coded vs XAML)
 
 ## Completion Output
 
