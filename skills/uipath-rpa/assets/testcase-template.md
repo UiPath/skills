@@ -2,7 +2,7 @@
 
 Ready-to-use templates for UiPath coded test cases files. Replace placeholders in `{{PLACEHOLDER}}` format.
 
-> **Using statements:** These templates include only the minimal required usings. Add service-specific usings based on actual usage — see [coding-guidelines.md](../references/coding-guidelines.md) for the full mapping.
+> **Using statements:** These templates include only the minimal required usings. Add service-specific usings based on actual usage — see [coding-guidelines.md](../references/coded/coding-guidelines.md) for the full mapping.
 
 ---
 

@@ -67,6 +67,7 @@ Replace `<package-name-lowercase>` with the package ID in lowercase (e.g. `uipat
 
 ## When to Use
 
+- **First**, check for pre-generated coded API docs at `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` — these contain service API signatures and usage for coded workflows. Use `inspect-package` only when these docs are missing or insufficient.
 - You encounter an unknown activity/method not in reference files
 - The user's `project.json` has a different package version than reference docs
 - You need exact method signatures, parameter types, or enum values

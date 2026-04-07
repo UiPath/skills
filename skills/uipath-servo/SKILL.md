@@ -1,7 +1,8 @@
 ---
 name: uipath-servo
-description: "[PREVIEW] Live desktop/browser UI interaction via servo CLI — click, type, read, screenshot, verify, extract UI elements in running applications. For creating RPA workflows→uipath-rpa-workflows. For coded .cs→uipath-coded-workflows."
-allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
+description: "[PREVIEW] Live desktop/browser UI interaction via servo CLI — click, type, read, screenshot, verify, extract UI elements in running applications. For creating RPA or coded workflows→uipath-rpa."
+metadata:
+  allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
 ---
 
 # UI Automation with Servo
