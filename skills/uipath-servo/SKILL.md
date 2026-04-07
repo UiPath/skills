@@ -1,8 +1,7 @@
 ---
 name: uipath-servo
 description: "[PREVIEW] Interact with live desktop/browser apps — click buttons, type text, read values, take screenshots, inspect UI state, verify behavior, fill forms, navigate menus, and extract table data from running applications via Servo CLI."
-metadata:
-  allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
+allowed-tools: Bash(servo:*), Bash(npx:*), Bash(npm:*), Read, Grep
 ---
 
 # UI Interaction with Servo
