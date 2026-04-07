@@ -420,9 +420,61 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 
 ## x:Reference / __ReferenceID Naming
 
-Flowcharts and State Machines use `x:Name="__ReferenceID0"` and `{x:Reference __ReferenceID0}` to link nodes.
+Flowcharts, State Machines, and Long Running Workflows (ProcessDiagram) use `x:Name="__ReferenceID0"` and `<x:Reference>__ReferenceID0</x:Reference>` to link nodes.
 
-**Gotchas:**
+### Where `<x:Reference>` Goes
+
+`<x:Reference>` is used ONLY inside property elements to create cross-references between nodes:
+
+| Property Element | Container | Purpose |
+|-----------------|-----------|---------|
+| `Flowchart.StartNode` | Flowchart | Points to the first node |
+| `FlowStep.Next` | Flowchart | Links to the next node |
+| `FlowDecision.True` / `.False` | Flowchart | Branch targets |
+| `Transition.To` | State Machine | Transition destination state |
+| `StateMachine.InitialState` | State Machine | Starting state (attribute form: `{x:Reference ...}`) |
+| `ProcessDiagram.StartNode` | ProcessDiagram | Points to start event |
+| `EventNode.Next` / `TaskNode.Next` | ProcessDiagram | Links to next node |
+| `DecisionNode.True` / `.False` | ProcessDiagram | Branch targets |
+
+### Node Registration Rule
+
+All nodes in a Flowchart/ProcessDiagram must be registered as children of the container element. Two scenarios:
+
+1. **Direct children** of the container (e.g., `<FlowStep>` directly under `<Flowchart>`) — already registered. Do NOT also add a trailing `<x:Reference>`.
+2. **Inline definitions** inside property elements (e.g., `<FlowStep>` inside `<FlowDecision.True>`) — MUST add a trailing `<x:Reference>` entry as a direct child of the container.
+
+**Correct — inline node registered with trailing `<x:Reference>`:**
+```xml
+<Flowchart>
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowDecision x:Name="__ReferenceID0">        <!-- direct child — no trailing ref -->
+    <FlowDecision.True>
+      <FlowStep x:Name="__ReferenceID1">         <!-- inline definition -->
+        ...
+      </FlowStep>
+    </FlowDecision.True>
+  </FlowDecision>
+  <x:Reference>__ReferenceID1</x:Reference>      <!-- register inline node -->
+</Flowchart>
+```
+
+**Wrong — re-listing a direct child:**
+```xml
+<Flowchart>
+  <FlowStep x:Name="__ReferenceID0">             <!-- direct child -->
+    ...
+  </FlowStep>
+  <x:Reference>__ReferenceID0</x:Reference>      <!-- WRONG — already a direct child -->
+</Flowchart>
+```
+
+The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `EndNode`, `BoundaryNode`).
+
+### Other Gotchas
+
 - `__ReferenceID` values must be unique within the entire XAML file — duplicate IDs cause deserialization errors
 - When copy-pasting FlowStep/FlowDecision nodes, duplicate `__ReferenceID` values will be created — Studio auto-renumbers, but manual XAML editing doesn't
 - When copying from flowchart to sequence, elements may be ordered backwards due to node ordering in XAML
