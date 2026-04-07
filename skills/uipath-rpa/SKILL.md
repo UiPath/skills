@@ -269,3 +269,4 @@ When you finish a task, report to the user:
 2. **Validation status** — whether all files passed validation (or remaining errors)
 3. **How to run** — the `uip rpa run-file --use-studio` command (if applicable)
 4. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
+5. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."

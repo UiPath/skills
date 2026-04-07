@@ -430,7 +430,6 @@ When you finish building or editing a flow, report to the user:
 5. **Missing connections** — any connector nodes that need connections the user must create
 6. **Next step** — ask if the user wants to debug the flow (do not run debug automatically)
 7. **Publish offer** — ask if the user wants to publish to Studio Web (do not publish automatically). If yes, run `solution bundle` + `solution upload` and share the Studio Web URL.
-8. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, say `/report-issue` to file a bug report."
 
 ## References
 
@@ -443,3 +442,5 @@ When you finish building or editing a flow, report to the user:
 - **[Node Reference](references/node-reference.md)** — Complete catalog of OOTB nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes
 - **[IS Activity Nodes](references/nodes/is-activity.md)** — Complete guide for IS connector activity nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json` schema, IS CLI commands, and debugging. See [contribution template](references/nodes/_contribution-template.md) for adding new node category guides
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 9).
+
+> **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

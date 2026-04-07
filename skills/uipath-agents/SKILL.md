@@ -73,7 +73,7 @@ If still ambiguous, ask:
 which uip > /dev/null 2>&1 && echo "uip found" || echo "uip NOT found — run: npm install -g @uipath/cli"
 
 # 2. Set up the Python runtime (creates .venv — must run BEFORE activating it)
-uip codedagents setup --format json
+uip codedagent setup --format json
 
 # 3. Activate the virtual environment (required if .venv now exists)
 if [ -d ".venv" ]; then source .venv/bin/activate; fi
@@ -81,9 +81,9 @@ if [ -d ".venv" ]; then source .venv/bin/activate; fi
 
 If `uip` is not found, install with `npm install -g @uipath/cli`. If `npm` is missing, ask the user to install Node.js 18+ first. If `uv` is missing, install with `pip install uv`.
 
-**Do NOT add `--format json` to forwarded commands.** The `--format` flag is only valid for native `uip` commands (`uip login`, `uip codedagents setup`). Commands forwarded to the Python CLI (`new`, `init`, `run`, `eval`, `deploy`, `push`, `pull`, `pack`, `publish`, `invoke`) do **not** accept `--format json`.
+**Do NOT add `--format json` to forwarded commands.** The `--format` flag is only valid for native `uip` commands (`uip login`, `uip codedagent setup`). Commands forwarded to the Python CLI (`new`, `init`, `run`, `eval`, `deploy`, `push`, `pull`, `pack`, `publish`, `invoke`) do **not** accept `--format json`.
 
-**Why `uip codedagents` for low-code agents?** The `codedagents` name is historical. These commands are thin wrappers that forward to the `uipath` Python CLI, which auto-detects the agent type at runtime. `uip codedagents run agent.json '...'` works for low-code agents because the runtime sees `agent.json` and routes to the low-code execution path.
+**Why `uip codedagent` for low-code agents?** The `codedagent` name is historical. These commands are thin wrappers that forward to the `uipath` Python CLI, which auto-detects the agent type at runtime. `uip codedagent run agent.json '...'` works for low-code agents because the runtime sees `agent.json` and routes to the low-code execution path.
 
 ---
 
@@ -91,7 +91,7 @@ If `uip` is not found, install with `npm install -g @uipath/cli`. If `npm` is mi
 
 A low-code agent is fully defined by a single `agent.json` file. No Python code is written. The UiPath runtime compiles `agent.json` into a LangGraph ReAct agent at execution time using the built-in `basic-v2` engine.
 
-The primary CLI for low-code agents is **`uip agent`** (`@uipath/agent-tool`). It provides first-class resource management (`tool add`, `context add`, `escalation add`), schema validation, and Orchestrator process binding. For local test execution and evaluation runs, use `uip codedagents run/eval` (which auto-detects `agent.json`).
+The primary CLI for low-code agents is **`uip agent`** (`@uipath/agent-tool`). It provides first-class resource management (`tool add`, `context add`, `escalation add`), schema validation, and Orchestrator process binding. For local test execution and evaluation runs, use `uip codedagent run/eval` (which auto-detects `agent.json`).
 
 > **Do NOT stop between steps to ask "would you like me to continue?".** Execute the entire path automatically. Only pause when you genuinely need information from the user (auth credentials, Orchestrator folder paths, process names).
 
@@ -206,7 +206,7 @@ All resource types with examples: [lowcode/resources-reference.md](references/lo
 
 Test the agent using the Python CLI (auto-detects `agent.json`):
 ```bash
-uip codedagents run agent.json '{"input": "How do I reset my password?"}'
+uip codedagent run agent.json '{"input": "How do I reset my password?"}'
 ```
 
 The entrypoint for low-code agents is **always `agent.json`**. Input fields must match `inputSchema` in `agent.json`.
@@ -226,7 +226,7 @@ uip agent eval add "password-reset-question" \
 
 Then run evaluations locally:
 ```bash
-uip codedagents eval agent.json evaluations/eval-sets/smoke-test.json --no-report
+uip codedagent eval agent.json evaluations/eval-sets/smoke-test.json --no-report
 ```
 
 Add `--report` (and ensure `UIPATH_PROJECT_ID` is set in `.env`) to publish results to Studio Web.
@@ -251,9 +251,9 @@ uip agent publish ./my-agent
 uip agent deploy <packageVersionKey>
 ```
 
-**Alternative** — deploy directly via `uip codedagents`:
+**Alternative** — deploy directly via `uip codedagent`:
 ```bash
-uip codedagents deploy --my-workspace
+uip codedagent deploy --my-workspace
 ```
 
 Read [lifecycle/deployment.md](references/lifecycle/deployment.md).
@@ -295,8 +295,8 @@ uv add uipath-langchain        # LangGraph
 uv sync
 source .venv/bin/activate
 
-uip codedagents new my-agent   # scaffold main.py + framework config file
-uip codedagents init           # generate entry-points.json, bindings.json, .env
+uip codedagent new my-agent   # scaffold main.py + framework config file
+uip codedagent init           # generate entry-points.json, bindings.json, .env
 ```
 
 Read [lifecycle/setup.md](references/lifecycle/setup.md) for full setup details and the `uipath.json` structure.
@@ -322,7 +322,7 @@ Load these **only if the task requires the capability**:
 | Process / job invocation | [capabilities/process-invocation.md](references/capabilities/process-invocation.md) → Coded Agents section |
 | Custom tracing (`@traced()`) | [capabilities/tracing.md](references/capabilities/tracing.md) → Coded Agents section |
 
-After changing `Input`/`Output` models (or `StartEvent`/`StopEvent`), re-run `uip codedagents init` to regenerate schemas.
+After changing `Input`/`Output` models (or `StartEvent`/`StopEvent`), re-run `uip codedagent init` to regenerate schemas.
 
 If using platform resources (assets, queues, processes, buckets, etc.), sync `bindings.json` per [lifecycle/bindings-reference.md](references/lifecycle/bindings-reference.md).
 
@@ -352,7 +352,7 @@ Read [lifecycle/authentication.md](references/lifecycle/authentication.md) for a
 
 Test the agent locally:
 ```bash
-uip codedagents run main '{"query": "test"}'
+uip codedagent run main '{"query": "test"}'
 ```
 
 The entrypoint name comes from `entry-points.json` (e.g., `main`, `agent`). Check `entry-points.json` for the correct name — it is **not** the project name.
@@ -364,10 +364,10 @@ Read [lifecycle/running-agents.md](references/lifecycle/running-agents.md).
 Tell the user to open Studio Web at `https://cloud.uipath.com/{orgName}/studio_/projects`, create a new **Coded Agent** project, and share the project ID. Add `UIPATH_PROJECT_ID=<id>` to `.env`, then:
 
 ```bash
-uip codedagents push
+uip codedagent push
 ```
 
-If the push is rejected due to a version conflict, use `uip codedagents push --overwrite`.
+If the push is rejected due to a version conflict, use `uip codedagent push --overwrite`.
 
 ### B7 — Evaluate
 
@@ -411,7 +411,7 @@ Create the evaluator config and a smoke eval set, then run:
 ```
 
 ```bash
-uip codedagents eval main evaluations/eval-sets/smoke-test.json --no-report
+uip codedagent eval main evaluations/eval-sets/smoke-test.json --no-report
 ```
 
 Add `--report` (and ensure `UIPATH_PROJECT_ID` is set in `.env`) to publish results to Studio Web.
@@ -423,12 +423,12 @@ Read [lifecycle/evaluate.md](references/lifecycle/evaluate.md) and the [evaluato
 Bump the patch version in `pyproject.toml` if re-deploying (publishing the same version returns a 409 error):
 
 ```bash
-uip codedagents deploy --my-workspace
+uip codedagent deploy --my-workspace
 ```
 
 To invoke the deployed agent asynchronously from the CLI and get a monitoring URL:
 ```bash
-uip codedagents invoke main '{"query": "test"}'
+uip codedagent invoke main '{"query": "test"}'
 ```
 `invoke` always returns immediately — it starts a cloud job and prints a URL. There is no `--wait` flag.
 
@@ -457,16 +457,16 @@ Read [lifecycle/deployment.md](references/lifecycle/deployment.md).
 - **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that does not exist).
 - **Correct HITL imports: `from uipath.platform.common import CreateTask, WaitTask, InvokeProcess, WaitJob`** — the old `CreateAction`/`WaitAction` names and `uipath.models` module no longer exist.
 - **Correct `@mockable()` import: `from uipath.eval.mocks import mockable`** — not `from uipath.testing import mockable`.
-- **Always use lazy LLM initialization.** Never instantiate LLM clients or `UiPath()` at module level — `uip codedagents init` imports the file at scaffold time and module-level clients will fail because auth has not run yet.
-- **`uip codedagents pack` and `uip codedagents publish` as standalone commands are blocked** by the CLI wrapper. Use `uip codedagents deploy` (which runs them internally) instead.
+- **Always use lazy LLM initialization.** Never instantiate LLM clients or `UiPath()` at module level — `uip codedagent init` imports the file at scaffold time and module-level clients will fail because auth has not run yet.
+- **`uip codedagent pack` and `uip codedagent publish` as standalone commands are blocked** by the CLI wrapper. Use `uip codedagent deploy` (which runs them internally) instead.
 
 ### Low-Code Agents Only
 
 - **No `pyproject.toml` needed.** Low-code agents do not use Python packaging.
 - **No framework selection.** Low-code uses UiPath's built-in ReAct engine (`basic-v2`), powered by LangGraph under the hood. The developer never interacts with LangGraph directly.
 - **The entrypoint is always `agent.json`.** Use it wherever a coded agent would use `main` or another named entrypoint.
-- **`entry-points.json` is generated automatically.** Studio Web creates it on pull; `uip codedagents init` regenerates it from `agent.json`. Required for `push`/`deploy` but not for local `run`. Do not hand-edit it.
-- **`bindings.json` maps resource names to Orchestrator paths.** Same format as coded agents — generated by `uip codedagents init` and used for environment-specific resource overrides at deploy time.
+- **`entry-points.json` is generated automatically.** Studio Web creates it on pull; `uip codedagent init` regenerates it from `agent.json`. Required for `push`/`deploy` but not for local `run`. Do not hand-edit it.
+- **`bindings.json` maps resource names to Orchestrator paths.** Same format as coded agents — generated by `uip codedagent init` and used for environment-specific resource overrides at deploy time.
 
 ---
 
@@ -476,11 +476,11 @@ Read [lifecycle/deployment.md](references/lifecycle/deployment.md).
 |-------|-----------|-------|----------|
 | `Project authors cannot be empty` | Coded | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` |
 | `Version already exists` on deploy | Coded | Same version already published | Bump patch version in `pyproject.toml` (e.g. `0.0.1` → `0.0.2`) |
-| `Your local version is behind...Aborted!` | Both | Push rejected without confirmation | Use `uip codedagents push --overwrite` |
+| `Your local version is behind...Aborted!` | Both | Push rejected without confirmation | Use `uip codedagent push --overwrite` |
 | `agent.json not found` | Low-code | Missing agent definition file | Create `agent.json` per [lowcode/setup.md](references/lowcode/setup.md) |
 | `agent.json failed schema validation` | Low-code | Invalid JSON structure | Check against [lowcode/agent-json-reference.md](references/lowcode/agent-json-reference.md) |
 | `No entrypoints found` | Coded | Framework package not installed or config file missing | Run `uv sync`, check that `langgraph.json` / `llama_index.json` / `openai_agents.json` exists |
-| `UIPATH_PROJECT_ID not found` | Both | Agent not pushed to Studio Web yet | Create a project in Studio Web, add `UIPATH_PROJECT_ID=<id>` to `.env`, then `uip codedagents push` |
+| `UIPATH_PROJECT_ID not found` | Both | Agent not pushed to Studio Web yet | Create a project in Studio Web, add `UIPATH_PROJECT_ID=<id>` to `.env`, then `uip codedagent push` |
 | `401 Unauthorized` | Both | Auth token expired | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
 
 ---

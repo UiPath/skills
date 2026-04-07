@@ -6,7 +6,7 @@ Guide to creating new UiPath agents with AI-powered business logic implementatio
 
 ## Initial Setup
 
-Follow the [Project Setup Guide](setup.md) to create your project directory, scaffold with `uip codedagents new`, install dependencies, and authenticate. All subsequent commands use the `uip codedagents` CLI wrapper.
+Follow the [Project Setup Guide](setup.md) to create your project directory, scaffold with `uip codedagent new`, install dependencies, and authenticate. All subsequent commands use the `uip codedagent` CLI wrapper.
 
 ## Workflow
 
@@ -58,7 +58,7 @@ For lightweight agents using the OpenAI Agents SDK with tool calling and handoff
 
 ## LLM Usage
 
-> **CRITICAL: Never instantiate LLM services at module level.** `uip codedagents init` imports your file to introspect schemas — module-level `UiPathOpenAIService()` or `UiPathLlmChatService()` will fail because auth has not run yet. Always instantiate inside your `main` function or async handler.
+> **CRITICAL: Never instantiate LLM services at module level.** `uip codedagent init` imports your file to introspect schemas — module-level `UiPathOpenAIService()` or `UiPathLlmChatService()` will fail because auth has not run yet. Always instantiate inside your `main` function or async handler.
 
 The **UiPath LLM Gateway** provides access to Large Language Model capabilities for conversational AI, structured data extraction, and semantic search. It supports both OpenAI-compatible and UiPath's normalized API formats.
 
@@ -130,15 +130,15 @@ Describe your agent's functionality, then implement the main function (or graph 
 
 ### Step 4: Generate Entry Points
 
-Run `uip codedagents init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
+Run `uip codedagent init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
 
 ### Step 5: Create Smoke Evaluation Set
 
-**Required.** Create `evaluations/eval-sets/smoke-test.json` with 2-3 basic test cases, then run `uip codedagents eval`. Use `ExactMatchEvaluator` for deterministic agents or `LLMJudgeOutputEvaluator` for LLM agents.
+**Required.** Create `evaluations/eval-sets/smoke-test.json` with 2-3 basic test cases, then run `uip codedagent eval`. Use `ExactMatchEvaluator` for deterministic agents or `LLMJudgeOutputEvaluator` for LLM agents.
 
 ### Step 6: Deploy
 
-When deploying: add author to `pyproject.toml`, bump version if re-deploying, then run `uip codedagents deploy --my-workspace`.
+When deploying: add author to `pyproject.toml`, bump version if re-deploying, then run `uip codedagent deploy --my-workspace`.
 
 ## Generated Template Details
 
