@@ -264,3 +264,5 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Test Manager Guide](references/test-manager/test-manager-guide.md)** — Test projects, test sets, test cases, executions, reports, attachments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
+
+> **Trouble?** If something didn't work as expected, use `/feedback` to send a report.
