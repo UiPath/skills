@@ -14,9 +14,9 @@ Read the SKILL.md, then execute each TARGET step yourself. Only spawn `Agent` wh
 
 ## Skill Location
 
-The UIA activity-docs version folder contains the skill files. Discover them by globbing:
+The UIA skills and activity docs live in the project's local docs folder. Discover them by globbing:
 ```
-Glob: pattern="**/*.md" path="../../references/activity-docs/UiPath.UIAutomation.Activities/{closest}/"
+Glob: pattern="**/*.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/"
 ```
 These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
 

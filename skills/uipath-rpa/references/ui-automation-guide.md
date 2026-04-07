@@ -4,7 +4,7 @@ Quick reference for UI automation in UiPath workflows — covers both coded work
 
 ## Prerequisites
 
-See [uia-procedures.md § Prerequisites](uia-procedures.md#prerequisites).
+See [uia-prerequisites.md](../../shared/uia-prerequisites.md).
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
@@ -18,7 +18,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 
 1. **NEVER hand-write selectors.** Hand-written selectors will have invalid syntax, wrong attribute names, missing required attributes (`SearchSteps`, `ContentHash`, `Reference`), or target the wrong element. They fail validation or break at runtime.
 2. **NEVER guess selector attributes** from HTML/DOM structure, element tag names, or CSS classes. Selectors are generated from the live application tree by probing elements — not from source code inspection.
-3. **ALWAYS follow the target configuration steps** from [uia-configure-target-guide.md](uia-configure-target-guide.md). Use the returned XAML/references exactly as provided. Do not modify selectors, content hashes, or reference IDs.
+3. **ALWAYS follow the target configuration steps** from [uia-configure-target-workflows.md](../../shared/uia-configure-target-workflows.md). Use the returned XAML/references exactly as provided. Do not modify selectors, content hashes, or reference IDs.
 
 > This gate applies regardless of how simple the target seems. Even a `<webctrl tag='BODY' />` selector will fail validation without proper attributes. The cost of running target configuration is always lower than debugging hand-written selectors.
 
@@ -36,21 +36,21 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 
 ## Configuring Targets (Object Repository)
 
-See [uia-configure-target-guide.md](uia-configure-target-guide.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
+See [uia-configure-target-workflows.md](../../shared/uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
 ### Multi-Step UI Flows (Advancing Application State)
 
-See [uia-procedures.md § Multi-Step UI Flows](uia-procedures.md#multi-step-ui-flows).
+See [uia-multi-step-flows.md](../../shared/uia-multi-step-flows.md).
 
 ---
 
 ## Running & Debugging
 
-See [uia-procedures.md § Running UI Automation Workflows](uia-procedures.md#running-ui-automation-workflows-debug-sessions).
+See [uia-debug-workflow.md](../../shared/uia-debug-workflow.md).
 
 ### Runtime Selector Failures
 
-See [uia-procedures.md § Runtime Selector Failure Recovery](uia-procedures.md#runtime-selector-failure-recovery).
+See [uia-selector-recovery.md](../../shared/uia-selector-recovery.md).
 
 ---
 
@@ -125,7 +125,7 @@ using <PackageNamespace>.ObjectRepository;
 
 #### Step 3 — Configure the target
 
-See [uia-configure-target-guide.md](uia-configure-target-guide.md) for the full configure-target workflow.
+See [uia-configure-target-workflows.md](../../shared/uia-configure-target-workflows.md) for the full configure-target workflow.
 
 After the skill completes, re-read `ObjectRepository.cs` and search for the returned reference IDs to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
 
@@ -152,7 +152,7 @@ Every UI automation workflow starts with an **Application Card** (`uix:NApplicat
 
 #### Target Configuration
 
-Follow [uia-configure-target-guide.md](uia-configure-target-guide.md) to generate the Application Card's `TargetApp` and each activity's `TargetAnchorable`. The skill returns ready-to-use XAML attributes — copy them exactly into your workflow:
+Follow [uia-configure-target-workflows.md](../../shared/uia-configure-target-workflows.md) to generate the Application Card's `TargetApp` and each activity's `TargetAnchorable`. The skill returns ready-to-use XAML attributes — copy them exactly into your workflow:
 
 - **Screen XAML** → goes into `<uix:NApplicationCard.TargetApp>` as a `<uix:TargetApp ... />` element
 - **Element XAML** → goes into `<uix:NGetText.Target>` (or Click, TypeInto, etc.) as a `<uix:TargetAnchorable ... />` element

@@ -103,7 +103,7 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 | **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) → [coded/coding-guidelines.md](references/coded/coding-guidelines.md) |
 | **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
-| **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-guide.md](references/uia-configure-target-guide.md) |
+| **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [connector-capabilities.md](references/connector-capabilities.md) → [xaml/workflow-guide.md § Step 1.9](references/xaml/workflow-guide.md) |
@@ -230,8 +230,11 @@ uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project
 ## UI Automation References
 
 Shared UIA procedures and guides:
-- [references/uia-procedures.md](references/uia-procedures.md) — Prerequisites, debug sessions, multi-step flows, selector recovery
-- [references/uia-configure-target-guide.md](references/uia-configure-target-guide.md) — Target configuration workflow and indication fallback
+- [uia-prerequisites.md](../shared/uia-prerequisites.md) — Package version requirements
+- [uia-debug-workflow.md](../shared/uia-debug-workflow.md) — Running and debugging UI automation workflows
+- [uia-multi-step-flows.md](../shared/uia-multi-step-flows.md) — Advancing application state between screens
+- [uia-selector-recovery.md](../shared/uia-selector-recovery.md) — Fixing selectors that fail at runtime
+- [uia-configure-target-workflows.md](../shared/uia-configure-target-workflows.md) — Target configuration workflow and indication fallback
 - [references/ui-automation-guide.md](references/ui-automation-guide.md) — Mode-specific UIA patterns (coded vs XAML)
 
 ## Completion Output
