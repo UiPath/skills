@@ -1,8 +1,7 @@
 ---
 name: uipath-platform
 description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, Test Manager, uip CLI. Not for writing workflow code."
-metadata: 
-   allowed-tools: Bash, Read, Write, Glob, Grep
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Development Environment Assistant

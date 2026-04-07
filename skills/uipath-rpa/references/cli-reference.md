@@ -51,6 +51,7 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`.
 | Action | How | Key Parameters |
 |--------|-----|----------------|
 | **Read activity doc directly** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/activities/{ActivityName}.md` | Package ID + activity simple class name. **Preferred when you know both.** |
+| **Read coded API doc** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` | Package ID. **Use for coded workflows** — contains service API signatures and usage. |
 | **Read package overview** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/overview.md` | Package ID (e.g., `UiPath.WebAPI.Activities`) |
 | **List documented packages** | `Bash`: `ls {projectRoot}/.local/docs/packages/` | Project root directory |
 | **List documented activities** | `Bash`: `ls {projectRoot}/.local/docs/packages/{PackageId}/activities/` | Package ID |

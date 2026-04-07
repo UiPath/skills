@@ -2,15 +2,6 @@
 
 When to use coded workflows (C#), XAML workflows (low-code), Coded Source Files, or InvokeCode — and how they interact in hybrid projects.
 
-## When to Read This
-
-- Starting a new file in a hybrid project (both `.cs` and `.xaml` exist)
-- Deciding project type for a new project
-- Choosing between InvokeCode and a Coded Source File / Coded Workflow
-- User asked to "create a workflow" without specifying the mode
-
----
-
 ## Decision Flowchart
 
 Follow top-down. Stop at the first match.

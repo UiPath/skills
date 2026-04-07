@@ -60,6 +60,28 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 
 **Routing:** Once mode is determined, use the Task Navigation table below to find the right reference files. For guidance on **choosing** between coded and XAML approaches, see [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md).
 
+## Authoring Mode Selection
+
+**Default to matching the project's existing mode.** For new projects or ambiguous cases, default to XAML — it is the more common mode and has the widest activity coverage.
+
+| Scenario | Mode | Why |
+|----------|------|-----|
+| Standard RPA (Excel, email, file ops) | **XAML** (default) | Direct activity support, no code needed |
+| UI automation | **XAML** (default) | Full activity support; coded also works via `uiAutomation` service |
+| Integration Service connectors (XAML) | **XAML** | IS connector activities use XAML-specific dynamic activity config |
+| No matching activity for a subtask | **Coded fallback** | Small .cs invoked from XAML via `Invoke Workflow File` |
+| Complex data transforms, HTTP, parsing | **Coded** | C# is more natural than nested XAML activities |
+| Custom data models / DTOs | **Coded Source File** | XAML cannot define types — plain `.cs`, no `CodedWorkflow` base |
+| Unit tests with assertions | **Coded Test Case** | `[TestCase]` with Arrange/Act/Assert |
+| User explicitly requests coded/XAML | **User's choice** | Never second-guess explicit preference |
+
+**Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
+
+    Main.xaml                  ← orchestration (XAML)
+      └── InvokeWorkflowFile → ProcessData.cs  ← coded logic
+
+For the full decision flowchart, InvokeCode extraction rules, and detailed hybrid patterns, see [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md).
+
 ## Critical Rules
 
 ### Common Rules (Both Modes)
@@ -69,7 +91,7 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
-6. **For UI automation workflows**, follow the target configuration approach in [references/ui-automation-guide.md](references/ui-automation-guide.md). Use `uia-configure-target` — never manually craft selectors.
+6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
 7. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 
 ### Coded-Specific Rules
@@ -86,12 +108,12 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 ### XAML-Specific Rules
 
 16. **[XAML] Activity docs are the source of truth** — check `{projectRoot}/.local/docs/packages/{PackageId}/` first. Always.
-17. **[XAML] Know before you write** — understand project structure, packages, expression language, existing patterns before generating XAML.
+17. **[XAML] MUST understand project structure** — read `project.json`, check expression language, scan existing patterns. NEVER generate XAML blind.
 18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
 20. **[XAML] NEVER touch ViewState** in XAML files — it's designer layout metadata.
 21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
-22. **[XAML] Read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
+22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
 
 ## Task Navigation
 
@@ -115,6 +137,8 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 | **Understand project structure** | Both | [project-structure.md](references/project-structure.md) |
 
 ## Coded Workflows Quick Reference
+
+Coded workflows use standard C# development: create file → write code → validate → run. Activity discovery (`find-activities`, `get-default-activity-xaml`) is XAML-specific — for coded mode, check `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` first for service API docs, then fall back to `inspect-package`. See [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md).
 
 ### Three Types of .cs Files
 

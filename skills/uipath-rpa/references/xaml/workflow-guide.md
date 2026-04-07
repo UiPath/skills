@@ -5,10 +5,10 @@ Discovery-first approach with iterative error-driven refinement for generating a
 ## Core Principles
 
 1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
-2. **Know Before You Write** — Never generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
+2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
-4. **Start Minimal, Iterate to Correct** — Build one activity at a time. Write the smallest working XAML, validate with `uip rpa get-errors --use-studio`, fix what breaks, repeat.
-5. **Validate After Every Change** — Never assume an edit succeeded. Always confirm with `uip rpa get-errors --use-studio`.
+4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa get-errors --use-studio`, fix what breaks, repeat.
+5. **Validate After Every Change** — **MUST** validate with `get-errors` after every change. **NEVER** assume an edit succeeded.
 6. **Fix Errors by Category** — Triage in order: Package → Structure → Type → Activity Properties → Logic.
 
 ---
@@ -72,7 +72,7 @@ Every `activities/{ActivityName}.md` follows: Header → Metadata → Properties
 | **Know package, not activity** | `Read` the `overview.md`, then read the identified activity doc |
 | **Don't know package** | `Glob` with `**/*.md` in `{projectRoot}/.local/docs/packages/`. `.local/` is gitignored — use `Glob` + `Read`, not `Grep` |
 | **Docs exist but activity undocumented** | Use other docs as structural reference, fall back to `get-default-activity-xaml` |
-| **No docs for package** | Update the package first — this often adds docs. If still none, fall back to Steps 1.4-1.7 |
+| **No docs for package** | Update the package first — this often adds docs. **Caution:** major version jumps (e.g., 23.x → 26.x) may deprecate activities — prefer minor/patch updates. If still no docs, fall back to Steps 1.4-1.7 |
 | **Package not installed** | Install it first — both docs and `get-default-activity-xaml` require it |
 | **No `.local/docs/` at all** | Use fallback flow starting at Step 1.3 |
 
@@ -156,11 +156,11 @@ See [../connector-capabilities.md](../connector-capabilities.md) for the full pr
 
 ## Phase 2: Generate or Edit
 
-### UI Automation — Target Configuration Gate
+### UI Automation — Target Configuration Gate (MANDATORY)
 
-Before writing any XAML with UI activities, every UI element target must be configured through the `uia-configure-target` skill flow. See [uia-configure-target-workflows.md](../uia-configure-target-workflows.md).
+Before writing any XAML with UI activities, every UI element target **MUST** be configured through the `uia-configure-target` skill flow. See [uia-configure-target-workflows.md](../uia-configure-target-workflows.md).
 
-Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow. Do NOT launch the target application before running `uia-configure-target`.
+**NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow. **NEVER** launch the target application before running `uia-configure-target`.
 
 ### For CREATE Requests
 
@@ -190,7 +190,7 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 ## Phase 3: Validate & Fix Loop
 
-Repeats until 0-error state or errors cannot be resolved automatically.
+**MUST** repeat until 0-error state or max 5 fix attempts. After 5 attempts, stop and present remaining errors to the user.
 
 ### Step 3.1: Check for Errors
 
@@ -230,16 +230,16 @@ For detailed procedures, see [../validation-guide.md](../validation-guide.md).
 
 ## Anti-Patterns
 
-- Generate large, complex workflows in one go
-- Manually craft UI selectors outside of `uia-configure-target` skill flow
-- Assume a create/edit succeeded without validating
-- Stop the iteration loop before correctly rendering all activities
-- Guess properties, types, or configurations without checking docs
-- Use incorrect keys with `uip rpa get-workflow-example` (always from list results)
-- Pass absolute paths to `--file-path` in `get-errors` (must be relative)
-- Ask user to choose provider without checking project signals first
-- Retry failing CLI commands in a loop without diagnosing root cause
-- Skip Phase 0 (Studio readiness)
-- Use connector activities without checking connection existence
-- Ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
-- Generate full XAML from scratch without using `get-default-activity-xaml` as a starting point
+- **NEVER** generate large, complex workflows in one go
+- **NEVER** manually craft UI selectors outside of `uia-configure-target` skill flow
+- **NEVER** assume a create/edit succeeded without validating
+- **NEVER** stop the iteration loop before correctly rendering all activities
+- **NEVER** guess properties, types, or configurations without checking docs
+- **NEVER** use incorrect keys with `uip rpa get-workflow-example` (always from list results)
+- **NEVER** pass absolute paths to `--file-path` in `get-errors` (must be relative)
+- **NEVER** ask user to choose provider without checking project signals first
+- **NEVER** retry failing CLI commands in a loop without diagnosing root cause
+- **NEVER** skip Phase 0 (Studio readiness)
+- **NEVER** use connector activities without checking connection existence
+- **NEVER** ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
+- **NEVER** generate full XAML from scratch without using `get-default-activity-xaml` as a starting point
