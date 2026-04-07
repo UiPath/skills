@@ -1,6 +1,6 @@
 # Proposal: `uipath-lattice-flow` Skill
 
-> **Status:** Draft v2 — updated with review feedback
+> **Status:** Draft v3 — dynamic resource node architecture added
 > **Date:** 2026-04-07
 > **Codename:** lattice (7 chars, matching "maestro")
 
@@ -267,8 +267,12 @@ skills/uipath-lattice-flow/
 │   ├── edge-wiring-guide.md              # Edge rules, port mappings, standard ports by node type
 │   ├── variables-guide.md                # Variables, expressions, output mapping, scoping
 │   ├── subflow-guide.md                  # Subflow structure, isolated scope, input/output passing
-│   ├── dynamic-nodes-guide.md            # How to use registry for connectors/resources (deferred)
-│   ├── bindings-guide.md                 # bindings_v2.json format, connection binding
+│   ├── dynamic-nodes/                    # Phase 2: Dynamic resource node guides
+│   │   ├── resource-node-guide.md        #   Shared structure, model object, static vs registry fields
+│   │   ├── rpa-workflow-guide.md         #   RPA workflow specifics + examples from reference flows
+│   │   ├── agent-guide.md                #   Agent specifics + examples from reference flows
+│   │   └── api-workflow-guide.md         #   API workflow specifics + construction pattern
+│   ├── bindings-guide.md                 # bindings_v2.json format (empty for resource-only flows)
 │   ├── validation-checklist.md           # Structural validation rules (manual pre-flight)
 │   └── nodes/                            # One file per OOTB node type
 │       ├── trigger-manual.md             # core.trigger.manual
@@ -312,8 +316,11 @@ The skill definition with frontmatter, critical rules, and two workflows (new fl
 | `edge-wiring-guide.md` | Standard ports by node type, edge JSON format, connection rules, constraint validation | `handleConfiguration` from `.registration.json` files |
 | `variables-guide.md` | Variable declaration (in/out/inout), type system, `=js:` expressions, output mapping on End nodes, `variableUpdates` | `@uipath/flow-schema` variable schemas + maestro-flow's existing `variables-and-expressions.md` |
 | `subflow-guide.md` | Subflow JSON structure, isolated scope, input/output passing, Start/End node requirements | Example subflow `.flow` files from test-data |
-| `dynamic-nodes-guide.md` | When and how to use the registry for connector/resource nodes — the bridge to CLI when OOTB isn't enough | maestro-flow's orchestration and IS activity guides |
-| `bindings-guide.md` | `bindings_v2.json` schema, connection resource entries, connector binding metadata | IS activity guide from maestro-flow |
+| `dynamic-nodes/resource-node-guide.md` | Shared structure for all resource nodes — `model` object template, handle config, static vs registry fields, registry CLI commands | flow-core `resource-type-metadata.ts`, `node-manifest-builder.ts` |
+| `dynamic-nodes/rpa-workflow-guide.md` | RPA-specific: serviceType, category, icon, construction from registry output, full example from hr-onboarding | hr-onboarding reference flow |
+| `dynamic-nodes/agent-guide.md` | Agent-specific: serviceType, category, icon, construction pattern, examples from devconnect-email and release-notes-generator | Reference flows + flow-core |
+| `dynamic-nodes/api-workflow-guide.md` | API workflow-specific: serviceType, category, construction pattern | flow-core `orchestrator.ts` |
+| `bindings-guide.md` | `bindings_v2.json` format — empty for resource-only flows, populated only for connector nodes (out of scope) | IS activity guide from maestro-flow |
 | `validation-checklist.md` | Numbered checklist of structural rules the agent verifies after each edit (replaces `uip flow validate` for basic checks) | `uip flow validate` error categories + Zod schema constraints |
 
 #### Node Reference Docs (14 files)
@@ -441,16 +448,16 @@ Build and edit UiPath Flow projects by writing .flow JSON directly. OOTB node sc
 | Wire nodes together | [references/edge-wiring-guide.md](references/edge-wiring-guide.md) |
 | Add variables and expressions | [references/variables-guide.md](references/variables-guide.md) |
 | Create a subflow | [references/subflow-guide.md](references/subflow-guide.md) |
-| Use connector or resource nodes | [references/dynamic-nodes-guide.md](references/dynamic-nodes-guide.md) |
-| Configure connector bindings | [references/bindings-guide.md](references/bindings-guide.md) |
+| Use RPA workflow, agent, or API workflow nodes | [references/dynamic-nodes/](references/dynamic-nodes/) — resource node guides |
+| Understand bindings_v2.json | [references/bindings-guide.md](references/bindings-guide.md) |
 | Validate my flow | [references/validation-checklist.md](references/validation-checklist.md) |
 | Look up a specific node type | [references/nodes/](references/nodes/) — one file per OOTB node |
 
 ## Anti-Patterns
 
-- **Never guess a definition block** — always copy from the node reference doc. Guessed definitions have wrong port schemas and cause validation failures.
+- **Never guess a definition block** — always copy from the node reference doc (OOTB) or registry output (dynamic). Guessed definitions have wrong port schemas and cause validation failures.
 - **Never skip the validation checklist** — common errors (missing targetPort, duplicate IDs, orphaned edges) are easy to miss in raw JSON.
-- **Never construct connector/resource nodes without the registry** — their schemas are dynamic and tenant-specific. Use `references/dynamic-nodes-guide.md`.
+- **Never construct dynamic resource nodes without the registry** — RPA workflow, agent, and API workflow nodes need registry data for inputDefinition and outputDefinition. Use `references/dynamic-nodes/`.
 - **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
 - **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
 ```
@@ -472,11 +479,156 @@ Build and edit UiPath Flow projects by writing .flow JSON directly. OOTB node sc
 
 `uipath-lattice-flow` is intended to **fully replace** `uipath-maestro-flow`.
 
-**Phase 1 (initial release):** Ship with full OOTB node support. Dynamic node guide included but marked as deferred. Both skills may coexist briefly during transition.
+### Phase 1: OOTB Nodes (initial release)
 
-**Phase 2 (dynamic nodes):** Add full connector and resource node support. At this point, maestro-flow is retired and its `description` is updated to redirect: `"Retired→uipath-lattice-flow"`.
+Ship with full support for the 14 OOTB node types. All schemas bundled, templates from reference flows, full entity documentation. Both skills coexist briefly during transition.
 
-**Phase 3 (cleanup):** Remove `uipath-maestro-flow` from the repo. Update `uipath-planner` routing table.
+### Phase 2: Dynamic Resource Nodes
+
+Add support for dynamic resource nodes in this order:
+
+1. **RPA Workflow** (`uipath.core.rpa-workflow.*`) — most common resource type in reference flows
+2. **Agent** (`uipath.core.agent.*`) — used in 4 of 8 reference flows
+3. **API Workflow** (`uipath.core.api-workflow.*`) — same pattern as RPA, different serviceType
+
+At this point, maestro-flow is retired and its `description` is updated to redirect: `"Retired→uipath-lattice-flow"`.
+
+### Phase 3: Cleanup
+
+Remove `uipath-maestro-flow` from the repo. Update `uipath-planner` routing table.
+
+> **Connectors** (`uipath.connector.*`) are out of scope for this proposal. They have a fundamentally different architecture (IS connections, enriched metadata, reference field resolution) and can be addressed in a future phase.
+
+## Dynamic Resource Nodes — Architecture
+
+Dynamic resource nodes (RPA Workflow, Agent, API Workflow) share a common structure. Understanding this is critical for Phase 2.
+
+### Shared Structure
+
+All three types share identical `handleConfiguration`, `supportsErrorHandling`, and `debug` fields. They differ only in `model.serviceType`, `model.bindings.resourceSubType`, `model.bindings.orchestratorType`, `display.icon`, and `category`:
+
+| Field | RPA Workflow | Agent | API Workflow |
+|---|---|---|---|
+| `model.serviceType` | `Orchestrator.StartJob` | `Orchestrator.StartAgentJob` | `Orchestrator.ExecuteApiWorkflowAsync` |
+| `model.bindings.resourceSubType` | `Process` | `Agent` | `Api` |
+| `model.bindings.orchestratorType` | `process` | `agent` | `api` |
+| `model.bindings.resource` | `process` | `process` | `process` |
+| `category` | `rpa-workflow` | `agent` | `api-workflow` |
+| `display.icon` | `rpa` | `autonomous-agent` | `api` |
+| Node type pattern | `uipath.core.rpa-workflow.{entityKey}` | `uipath.core.agent.{entityKey}` | `uipath.core.api-workflow.{entityKey}` |
+
+The `{entityKey}` is the Orchestrator Release Key GUID (lowercased, non-alphanumeric chars replaced with `-`).
+
+### `model` Object — Complete Shape
+
+```json
+{
+  "type": "bpmn:ServiceTask",
+  "serviceType": "<see table above>",
+  "version": "v2",
+  "bindings": {
+    "resource": "process",
+    "resourceSubType": "<Process|Agent|Api>",
+    "resourceKey": "<orchestrator-release-key-guid>",
+    "orchestratorType": "<process|agent|api>",
+    "values": {
+      "name": "<ProcessName>",
+      "folderPath": "<FolderPath>"
+    }
+  },
+  "projectId": "<optional-orchestrator-project-guid>",
+  "context": [
+    { "name": "name", "type": "string", "value": "=bindings.bXXXXX", "default": "<ProcessName>" },
+    { "name": "folderPath", "type": "string", "value": "=bindings.bYYYYY", "default": "<FolderPath>" },
+    { "name": "_label", "type": "string", "value": "<ProcessName>" }
+  ]
+}
+```
+
+### Handle Configuration (Same for All Resource Types)
+
+```json
+"handleConfiguration": [
+  { "position": "left", "handles": [
+    { "id": "input", "type": "target", "handleType": "input" }
+  ]},
+  { "position": "right", "handles": [
+    { "id": "output", "type": "source", "handleType": "output" },
+    { "id": "error", "label": "Error", "type": "source", "handleType": "output",
+      "visible": "{inputs.errorHandlingEnabled}", "constraints": { "maxConnections": 1 } }
+  ]}
+]
+```
+
+### Inputs and Outputs
+
+Inputs and outputs are **resource-specific** — they come from the Orchestrator process's argument definitions. This is why the registry is still required: the agent cannot know what arguments a published RPA workflow accepts without querying the platform.
+
+**Node instance `inputs`** — keyed by argument name:
+```json
+"inputs": {
+  "in_SenderEmailID": "{{ $vars.manualTrigger1.output.prehireemail }}",
+  "in_WaitDurationInSeconds": 180
+}
+```
+
+**Definition `inputDefinition`** — JSON Schema for arguments:
+```json
+"inputDefinition": {
+  "type": "object",
+  "properties": {
+    "in_SenderEmailID": { "type": "string" },
+    "in_WaitDurationInSeconds": { "type": "number" }
+  }
+}
+```
+
+**Definition `outputDefinition`** — output variable schemas:
+```json
+"outputDefinition": {
+  "out_EmailContent": { "type": "string", "source": "=out_EmailContent", "var": "out_EmailContent" },
+  "error": { "type": "object", "source": "=Error", "var": "error", "schema": { ... } }
+}
+```
+
+### What's Static vs What Needs the Registry
+
+| Information | Static? | Notes |
+|---|---|---|
+| `handleConfiguration` | Yes | Same for all resource types |
+| `model.serviceType` | Yes | Derived from resource type (see table) |
+| `model.bindings` structure | Yes | Template is fixed; values come from registry |
+| `display.icon`, `iconBackground` | Yes | Fixed per resource type |
+| `supportsErrorHandling` | Yes | Always `true` |
+| `debug.runtime` | Yes | Always `"bpmnEngine"` |
+| `resourceKey` (GUID) | **No** | Must query registry/orchestrator |
+| Process name, folder path | **No** | Must query registry |
+| `inputDefinition` (argument types) | **No** | Must query orchestrator for each process |
+| `outputDefinition` (return types) | **No** | Must query orchestrator |
+| `form` (properties panel) | **No** | Derived from inputDefinition |
+
+### What the Skill Will Provide for Dynamic Nodes
+
+1. **Base template reference doc** — the static parts of a resource node definition, parameterized by resource type. Agent fills in the blanks from registry output.
+2. **Registry interaction guide** — exact CLI commands to discover resources and fetch their schemas:
+   ```bash
+   uip flow registry pull --force
+   uip flow registry search "<name>" --output json
+   uip flow registry get "uipath.core.rpa-workflow.<key>" --output json
+   ```
+3. **Step-by-step construction guide** — how to take registry output and construct the node instance + definition entry in the `.flow` file.
+4. **No `bindings_v2.json` needed** — resource nodes resolve via `model.bindings`, not `bindings_v2.json`. The bindings file only applies to connector nodes (out of scope).
+
+### Proposed Reference Docs for Phase 2
+
+```
+references/
+├── dynamic-nodes/
+│   ├── resource-node-guide.md        # Shared structure, model object, static fields
+│   ├── rpa-workflow-guide.md         # RPA-specific: serviceType, category, examples from hr-onboarding
+│   ├── agent-guide.md                # Agent-specific: serviceType, category, examples from devconnect/release-notes
+│   └── api-workflow-guide.md         # API-specific: serviceType, category, construction pattern
+```
 
 ## Example Prompts (Same Results, Different Approach)
 
@@ -499,41 +651,61 @@ These prompts would activate `uipath-lattice-flow` and produce the same `.flow` 
 
 ## Build Plan
 
-### Phase 1: Foundation (SKILL.md + schema + scaffolding + validation)
-1. Write `SKILL.md` with frontmatter and workflows
-2. Write `flow-schema-guide.md` from `@uipath/flow-schema` Zod schemas
-3. Write `project-scaffolding-guide.md` from `uip flow init` output analysis
-4. Write `validation-checklist.md` from `uip flow validate` error categories
-5. Create `minimal-flow-template.json` from test-data examples
+### Phase 1: OOTB Nodes
 
-### Phase 2: Node references (14 node docs)
+#### 1a. Foundation (SKILL.md + schema + scaffolding + validation)
+1. Write `SKILL.md` with frontmatter and workflows
+2. Write `flow-schema-guide.md` — all entity types from `@uipath/flow-schema`
+3. Write `project-scaffolding-guide.md` from `uip flow init` output analysis
+4. Write `validation-checklist.md` from `uip flow validate` error categories + Zod constraints
+5. Create `minimal-flow-template.json` and `project-scaffold-template.json` from reference flows
+
+#### 1b. Node references (14 OOTB node docs)
 6. Convert each `.registration.json` into an agent-readable markdown doc
 7. Extract definition blocks, port tables, input schemas, examples
 8. Create `edge-wiring-guide.md` summarizing all ports across all nodes
 
-### Phase 3: Variables, subflows, templates
-9. Write `variables-guide.md` (can reuse content from maestro-flow)
-10. Write `subflow-guide.md` from test-data subflow examples
-11. Create remaining templates (decision, loop, HTTP patterns)
+#### 1c. Variables, subflows, remaining templates
+9. Write `variables-guide.md` (reuse content from maestro-flow + Zod schema)
+10. Write `subflow-guide.md` from reference flow examples
+11. Create remaining 6 templates from reference flows
+12. Write `bindings-guide.md` (minimal — `bindings_v2.json` is empty for OOTB-only flows)
 
-### Phase 4: Dynamic nodes and bindings
-12. Write `dynamic-nodes-guide.md` — bridge to registry/CLI
-13. Write `bindings-guide.md` for connector connection configuration
+#### 1d. Integration
+13. Update CODEOWNERS
+14. Update README.md skill catalog
 
-### Phase 5: Integration
-14. Update CODEOWNERS
-15. Update README.md skill catalog
-16. Update `uipath-planner` routing table (if applicable)
+### Phase 2: Dynamic Resource Nodes
+
+#### 2a. RPA Workflow support
+15. Write `references/dynamic-nodes/resource-node-guide.md` — shared structure, static vs registry fields
+16. Write `references/dynamic-nodes/rpa-workflow-guide.md` — RPA-specific fields, examples from hr-onboarding reference flow
+17. Update SKILL.md critical rules and workflows for resource nodes
+
+#### 2b. Agent support
+18. Write `references/dynamic-nodes/agent-guide.md` — agent-specific fields, examples from devconnect-email and release-notes-generator reference flows
+
+#### 2c. API Workflow support
+19. Write `references/dynamic-nodes/api-workflow-guide.md` — API-specific fields, construction pattern
+
+#### 2d. Retire maestro-flow
+20. Update `uipath-maestro-flow` description to redirect: `"Retired→uipath-lattice-flow"`
+21. Update `uipath-planner` routing table
+
+### Phase 3: Cleanup
+22. Remove `uipath-maestro-flow` from the repo
 
 ## Resolved Questions
 
-1. **Scope of dynamic nodes** — In scope but deferred. OOTB nodes are the priority for initial release. Dynamic node guide will be included but marked as future work.
+1. **Scope of dynamic nodes** — RPA workflow, Agent, and API workflow nodes are in scope (Phase 2), in that priority order. Connectors are **out of scope** for this proposal.
 2. **Template source** — Using the 8 reference flows from `coder_eval/tasks/uipath_flow/reference_flows/` (not the 23 test files from flow-workbench).
 3. **Long-term direction** — Lattice-flow will **fully replace** maestro-flow. Three-phase replacement strategy defined above.
 4. **Schema coverage** — `flow-schema-guide.md` will document **all** entity types from `@uipath/flow-schema` (Workflow, NodeInstance, EdgeInstance, NodeManifest, HandleConfig, ConnectionConstraint, WorkflowVariables, WorkflowVariable, NodeVariable, ArgumentBinding, VariableUpdate, SubflowEntry, WorkflowConnection, Metadata), not just nodes and edges.
+5. **Dynamic node phasing** — RPA Workflow first (most common), then Agent (used in 4/8 reference flows), then API Workflow (same pattern, different serviceType). All share a common base structure documented in `resource-node-guide.md`.
 
 ## Open Questions
 
 1. **`blank-node` (`core.action.blank`)** — Present in OOTB registry but not observed in any reference flow. Include in node docs or skip?
 2. **`stickyNote`** — Used in sales-pipeline-hygiene for annotations. Include as a node reference doc or document as a non-functional element?
 3. **Agent nodes (`uipath.agent.autonomous`, `uipath.agent.conversational`)** — These are OOTB (always available after login). Should they be bundled as node reference docs alongside the 14 OOTB nodes, or treated as dynamic?
+4. **Agentic Process (`uipath.core.agentic-process.*`)** — Same pattern as RPA/Agent/API. Should it be included in Phase 2 or deferred?
