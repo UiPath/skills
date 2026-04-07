@@ -18,7 +18,7 @@ Always retrieve the error code from the incident before doing anything else. If 
 
 Error codes appear in the Maestro incident detail view. Ask the user for the incident ID or process instance ID if not provided. If neither is available, work from the error message text.
 
-Full error code reference: [error-codes.md](./error-codes.md) — all error codes by subsystem with numeric values and messages.
+Full error code reference: [error_codes.md](./error_codes.md) — all error codes by subsystem with numeric values and messages.
 
 Quick routing by range:
 

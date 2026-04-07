@@ -14,7 +14,8 @@
 | Attachment Not Found After Retention | High | Files disappear when job retention deletes the owning job | [attachment-not-found.md](./playbooks/attachment-not-found.md) |
 | No Suitable Runtime Machine (409) | High | HTTP 409, no Unattended/NonProduction robots available in folder | [no-suitable-runtime-machine.md](./playbooks/no-suitable-runtime-machine.md) |
 | Argument Mismatch (400) | High | HTTP 400, argument values did not match definitions | [argument-mismatch-400.md](./playbooks/argument-mismatch-400.md) |
-| Integration Service Failure (404) | High | HTTP 404 during IS call, resource or endpoint not found | [integration-service-404.md](./playbooks/integration-service-404.md) |
+| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted — chase child error as root cause, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
+| Integration Service Failure (404) | Medium | HTTP 404 during IS call, resource or endpoint not found | [integration-service-404.md](./playbooks/integration-service-404.md) |
 | Debug vs Deploy Mismatch | Medium | Process works in debug but fails after deploy — identity, permissions, or bindings | [debug-vs-deploy.md](./playbooks/debug-vs-deploy.md) |
 | Deployment Failure | Medium | Solution deployment fails — duplicate entry points, trigger conflicts, or stale references | [deployment-failure.md](./playbooks/deployment-failure.md) |
 | Variable and Expression Errors | Medium | Missing output variables, assignment errors, case sensitivity in gateway conditions | [variable-expression-errors.md](./playbooks/variable-expression-errors.md) |
@@ -22,5 +23,4 @@
 | File Handling Issues | Medium | Files not passed correctly, attachment not found, file type incompatibility | [file-handling.md](./playbooks/file-handling.md) |
 | Multi-Instance Parallel Marker | Medium | Parallel marker failures, collection size limits, NoneType errors | [multi-instance-parallel.md](./playbooks/multi-instance-parallel.md) |
 | Expression Evaluation and Input Errors | Medium | Null inputs, missing parameters, GUID parse errors | [expression-evaluation-errors.md](./playbooks/expression-evaluation-errors.md) |
-| Service Task Child Job Faulted (170002) | High | Error 170002, child job faulted — chase child error as root cause, add boundary error event | [service-task-child-job-faulted.md](./playbooks/service-task-child-job-faulted.md) |
 | BPMN Job Stuck | Low | Instance stuck with no progress or error — disconnected connection, child job not created, or backend delay | [bpmn-job-stuck.md](./playbooks/bpmn-job-stuck.md) |

@@ -25,11 +25,11 @@ Return the formatted resolution text. Do not write files.
 ### 2. Load presentation rules
 
 - Read all presentation guides from `state.json.presentation_guides`
-- Check if any domain in `state.json.domain` is missing a presentation guide. If so, find it via `references/summary.md` → product folder → `presentation.md`. Load any that exist.
+- Check if any domain in `state.json.scope.domain` is missing a presentation guide. If so, find it via `references/summary.md` → product folder → `presentation.md`. Load any that exist.
 
 ### 3. Assemble fixes across all domains
 
-For each domain in `state.json.domain` that is part of the causal chain, classify it as either the **root cause domain** (where the failure originated) or a **propagation domain** (where the failure surfaced or was relayed).
+For each domain in `state.json.scope.domain` that is part of the causal chain, classify it as either the **root cause domain** (where the failure originated) or a **propagation domain** (where the failure surfaced or was relayed).
 
 #### Root cause domain
 

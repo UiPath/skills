@@ -12,9 +12,9 @@ What this looks like:
 - Questions about how to loop over items
 
 What can cause it:
-- JS expression InvalidCastException (see marker-invalid-cast playbook for the specific bug)
+- JS expression InvalidCastException (see [marker-invalid-cast](marker-invalid-cast.md) for the specific bug)
 - Batch concurrency limit exceeded — parallel markers have a limit of 50 items. For complex objects, use fewer than 50 due to a 2-second timeout risk
-- NoneType errors in parallel steps — bug where `file.mime_type` is None causes crashes when `.lower()` is called (fix deployed to alpha/staging)
+- NoneType errors in parallel steps — bug where `file.mime_type` is None causes crashes when `.lower()` is called (fixed in later releases)
 - Input collection variable is not of type array
 
 What to look for:
@@ -31,7 +31,7 @@ What to look for:
 
 ## Resolution
 
-- **If JS expression error:** switch to C# expressions (see marker-invalid-cast playbook)
+- **If JS expression error:** switch to C# expressions (see [marker-invalid-cast](marker-invalid-cast.md))
 - **If collection too large:** reduce batch size below 50 for complex objects; simple items (strings, file references) support larger lists
 - **If NoneType error:** add null checks for properties like `mime_type` before calling methods on them
 - **To set up a loop:** add a multi-instance marker on the task node, configure the input collection (must be array type), use the iterator variable on inputs within the task

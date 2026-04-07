@@ -11,7 +11,7 @@ What this looks like:
 - InvalidCastException: System.Object[] to ExpressionList
 
 What can cause it:
-- Bug in Jint-based JS expression evaluator where JS arrays cannot be cast to the internal ExpressionList type expected by the BPMN engine (tracked via MST-7017)
+- Bug in Jint-based JS expression evaluator where JS arrays cannot be cast to the internal ExpressionList type expected by the BPMN engine
 
 ## Investigation
 

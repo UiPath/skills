@@ -74,6 +74,8 @@ When you need user input, write a file `.investigation/needs_input.json` and the
 
 The orchestrator reads this file, presents the question via `AskUserQuestion`, and re-spawns you with the answer.
 
+**`needs_input.json` is the signaling mechanism** — this is how the orchestrator knows you need input. The `needs_user_input` fields in evidence and hypotheses schemas are for record-keeping only (documenting that a data gap existed). Always write `needs_input.json` to actually request user input.
+
 ## Constraints
 
 - Do NOT generate or execute code (no Python scripts, no inline code). Shell commands for file I/O and uip are fine.
@@ -81,4 +83,4 @@ The orchestrator reads this file, presents the question via `AskUserQuestion`, a
 
 ## Output Schemas
 
-See `schemas/` for the canonical JSON schemas: `state.schema.md`, `hypotheses.schema.md`, `evidence.schema.md`.
+See `schemas/` for the canonical JSON schemas: `state.schema.md`, `hypotheses.schema.md`, `evidence.schema.md`, `scope-check.schema.md`.

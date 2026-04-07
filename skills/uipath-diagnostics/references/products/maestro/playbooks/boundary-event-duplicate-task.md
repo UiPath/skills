@@ -12,9 +12,9 @@ What this looks like:
 - Error boundary events not logging incidents
 
 What can cause it:
-- Both Error and Timer boundary events attached to the same task — previously boundary events were not canceled when the attached task faulted (fixed in PO.BpmnEngine PR #2903)
+- Both Error and Timer boundary events attached to the same task — previously boundary events were not canceled when the attached task faulted (fixed in later releases)
 - Error boundary events suppressing incident logging — this is expected BPMN behavior: boundary error events catch errors and redirect the flow, so incidents only appear for uncaught errors
-- For Data Fabric tasks: error output (detail, category) is not exposed on boundary events unlike API Workflow tasks (tracked via MST-4663)
+- For Data Fabric tasks: error output (detail, category) is not exposed on boundary events unlike API Workflow tasks (known limitation)
 
 What to look for:
 - Check which boundary events are attached to the task
@@ -30,6 +30,6 @@ What to look for:
 
 ## Resolution
 
-- **If duplicate execution due to boundary event bug:** update to the version containing PO.BpmnEngine PR #2903 fix
+- **If duplicate execution due to boundary event bug:** update to the latest version containing the boundary event cancellation fix
 - **If missing incidents:** this is expected BPMN behavior when error boundary events catch the error; incidents only appear for uncaught errors
-- **If Data Fabric error output needed:** track MST-4663 for the fix; workaround is to use API Workflow tasks instead
+- **If Data Fabric error output needed:** workaround is to use API Workflow tasks instead (Data Fabric boundary event error output is a known limitation)

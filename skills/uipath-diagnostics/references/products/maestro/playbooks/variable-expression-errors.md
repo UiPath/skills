@@ -16,8 +16,8 @@ What can cause it:
 - Drag/drop swimlane bug — moving task nodes in swimlanes can clear root-level variable references
 - Variable name case sensitivity in exclusive gateway conditions (e.g., "customer" vs "Customer")
 - Emoji characters in condition expressions causing evaluation failures
-- Salesforce Execute Connector SOQL "=" operator falsely flagged as assignment (hotfix in S188.1)
-- Sub-process variable propagation — error detail and category fields may not propagate to parent process (fix via MST-7284)
+- Salesforce Execute Connector SOQL "=" operator falsely flagged as assignment (fixed in later releases)
+- Sub-process variable propagation — error detail and category fields may not propagate to parent process (known limitation, check latest release notes)
 
 What to look for:
 - Check which expression or variable is failing
@@ -37,4 +37,4 @@ What to look for:
 - **If missing variable references:** re-create the output variable references on the affected task node
 - **If case mismatch:** fix the variable name or condition expression to match exactly
 - **If emoji/special characters:** remove special characters from expressions
-- **If SOQL assignment error:** update to S188.1 hotfix or rewrite the filter expression
+- **If SOQL assignment error:** update to the latest version or rewrite the filter expression

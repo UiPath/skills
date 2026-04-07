@@ -54,7 +54,7 @@ Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description
 
 **Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, re-spawn or ask for clarification.
 
-**Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.domain`.
+**Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.scope.domain`.
 
 **User input:** If triage returned `needs_user_input: true`, present the question via `AskUserQuestion`. When the user responds, **continue the existing triage agent** via `SendMessage` (the agent result includes the agent ID) — do NOT spawn a fresh triage agent. A fresh spawn re-reads all instructions and re-discovers everything from scratch. Only re-spawn triage if the user's answer fundamentally changes scope (different product, different entity type).
 
@@ -95,7 +95,7 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 
 ## 6. Resolution
 
-Spawn the presenter agent (`agents/presenter.md`) with the confirmed hypothesis IDs and **all domains from `state.json.domain`**. Do NOT pre-filter domains based on your judgment of their relevance to the causal chain — the presenter classifies root cause vs. propagation domains and searches docsai for each. Excluding a domain prevents the presenter from finding error handling patterns it was designed to surface.
+Spawn the presenter agent (`agents/presenter.md`) with the confirmed hypothesis IDs and **all domains from `state.json.scope.domain`**. Do NOT pre-filter domains based on your judgment of their relevance to the causal chain — the presenter classifies root cause vs. propagation domains and searches docsai for each. Excluding a domain prevents the presenter from finding error handling patterns it was designed to surface.
 
 The presenter:
 - Assembles fixes from playbook `## Resolution` sections across all domains in the causal chain

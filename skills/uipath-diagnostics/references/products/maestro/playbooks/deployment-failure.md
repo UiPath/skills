@@ -12,7 +12,7 @@ What this looks like:
 
 What can cause it:
 - Duplicate entry points — multiple start points with the same ID cause deployment or runtime 404 errors
-- Cross-tenant solution deployment trigger conflicts (SOL-6121) — deploying to a tenant that already has triggers from a previous version
+- Cross-tenant solution deployment trigger conflicts — deploying to a tenant that already has triggers from a previous version
 - Manually deleted triggers from Orchestrator UI creating stale ServiceKey references and duplicate trigger name errors
 - IS/packaging sync issues (see specific playbooks for EMAIL_RECEIVED, DateTime inputs)
 
@@ -32,5 +32,5 @@ What to look for:
 ## Resolution
 
 - **If duplicate entry points:** delete the duplicate start points in Studio Web and republish
-- **If cross-tenant trigger conflict (SOL-6121):** deploy to a fresh tenant as a workaround; fix scheduled for s190 release
+- **If cross-tenant trigger conflict:** deploy to a fresh tenant as a workaround; check latest release notes for a permanent fix
 - **If stale trigger references:** do not manually delete triggers from Orchestrator UI; redeploy the solution cleanly

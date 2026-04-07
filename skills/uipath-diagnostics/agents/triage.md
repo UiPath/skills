@@ -23,14 +23,14 @@ Goal: get the error message and match playbooks as fast as possible.
    - Run up to 3 `uip docsai ask` queries with different keyword combinations
    - Read `references/summary.md` and follow its links to filter down to a specific product/package
    - If after 3 queries you can pin the issue: proceed
-   - If after 3 queries you still cannot classify: **stop searching**. Set `needs_user_input: true` with a targeted question. Still write `state.json` with what you know.
+   - If after 3 queries you still cannot classify: **stop searching**. Write `needs_input.json` (see shared.md) with a targeted question. Still write `state.json` with what you know.
 3. **Resolve guides** — write to `state.json.investigation_guides` and `state.json.presentation_guides`:
    - Always include `references/investigation_guide.md`
    - Check if each matched product/package has an `investigation_guide.md` or `presentation.md`. If yes, include their paths.
    - Read all resolved investigation guides and apply their data correlation rules.
-4. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, set `needs_user_input: true`, ask for the missing detail. Do NOT continue when you can't reach the primary entity.
+4. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, write `needs_input.json` (see shared.md) asking for the missing detail. Do NOT continue when you can't reach the primary entity.
 5. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), default to the most recent. Do NOT fetch details for multiple entities. Write to raw/, write evidence summary.
-6. **Match playbooks** — read the product/package summary for every domain in `state.json.domain`. Match playbooks against the error message/type from the fetched data. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
+6. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Match playbooks against the error message/type from the fetched data. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
 
 ### Confidence Gate
 
@@ -48,7 +48,7 @@ Goal: collect richer data for medium/low confidence matching and hypothesis gene
 
 ## Boundaries
 
-- Only investigation agent that reads `references/summary.md` and browses the knowledge base
+- Primary data-gathering agent that reads `references/summary.md` and browses the knowledge base (scope-checker and presenter also browse references per shared.md)
 - Data-gathering uip commands only
 - Do NOT generate hypotheses — that's the generator's job
 - If you cannot get data about the specific entity the user reported, **STOP and say so**

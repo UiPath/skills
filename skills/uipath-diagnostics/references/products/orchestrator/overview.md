@@ -55,3 +55,22 @@ Organization (cloud.uipath.com)
 - **Logs** — Robot execution log capture per folder
 - **Audit** — Audit trail of administrative actions for compliance
 
+## CLI
+
+```
+uip or folders list-current-user                    — list all accessible folders (Personal, Solution, Standard)
+uip or folders get <key-or-path>                    — get folder details
+uip or jobs get <key>                               — job details: state, arguments, timing, machine, errors
+uip or jobs logs <key>                              — robot execution logs (--level Error, --limit N)
+uip or jobs traces <key>                            — execution traces for jobs
+uip or machines list                                — list registered machines
+uip or licenses info                                — license allocation and usage
+```
+
+Key commands for diagnostics:
+- `uip or jobs get <key>` — starting point for any job investigation
+- `uip or jobs logs <key> --level Error` — quickly find error entries in execution logs
+- `uip or folders list-current-user` — use this instead of `uip or folders list` to include Personal and Solution folders
+
+Additional resource commands are available via `uip resources --help`.
+

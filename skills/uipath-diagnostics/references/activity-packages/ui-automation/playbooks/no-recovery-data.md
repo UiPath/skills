@@ -31,5 +31,5 @@ What can cause it:
 
 - Verify the activity uses modern UI activities (`UiPath.UIAutomationNext.*`) for full HA support
 - Check Semantic Proxy and LLM Gateway health on the deployment
-- Check robot machine connectivity to cloud services and has the correct permisions
+- Check robot machine connectivity to cloud services and has the correct permissions
 - If HA consistently fails to produce data, escalate to platform team with the job ID and robot logs

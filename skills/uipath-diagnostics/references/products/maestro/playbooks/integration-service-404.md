@@ -1,5 +1,5 @@
 ---
-confidence: high
+confidence: medium
 ---
 
 # Integration Service Failure (404)

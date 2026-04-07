@@ -13,7 +13,7 @@ What this looks like:
 
 What can cause it:
 - File inputs defined as variables instead of arguments — files must be passed as arguments to appear in the debug input panel
-- Job retention policy deleting the job that owns an attachment (see attachment-not-found playbook for retention-specific cases)
+- Job retention policy deleting the job that owns an attachment (see [attachment-not-found](attachment-not-found.md) for retention-specific cases)
 - Box connector "Update Variables" option not saving the source value in XML for File types (frontend bug in IntsvcActivityConfig v2)
 - File type incompatibility between ILocalResource (Studio Desktop) and File (Studio Web) with newer agent expectations
 - Robot version incompatibility — older Robot versions do not produce File objects with metadata that agents expect

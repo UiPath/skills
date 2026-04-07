@@ -30,7 +30,7 @@ Write: `.investigation/scope-check.json`
 2. **Read `state.json`** — note the current `scope.domain` array.
 3. **Read all evidence files** in `.investigation/evidence/` and `hypotheses.json` if it exists.
 4. **Check for missing domains** — compare the investigation data against each product domain described in `references/summary.md`:
-   - Do any job properties, error codes, entity types, error messages, or behavioral patterns in the evidence match a product domain not currently in `state.json.domain`?
+   - Do any job properties, error codes, entity types, error messages, or behavioral patterns in the evidence match a product domain not currently in `state.json.scope.domain`?
    - Do any hypotheses, playbook references, or CLI commands reference capabilities or concepts described under a different product domain?
    - Does the product description in `references/summary.md` describe the type of issue being investigated, even if the current domain also partially covers it?
 5. **Check for narrowing** — determine if any currently scoped domain is only the reporting layer (e.g., Orchestrator reported a faulted job, but the actual error is entirely within Integration Service or Maestro). A domain that only reported the symptom but has no playbooks relevant to the root cause should be listed in `unnecessary_domains`. This prevents irrelevant playbook matches and hypothesis generation.

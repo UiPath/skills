@@ -77,7 +77,7 @@ All playbooks use the same three headers:
 |---------|---------------|-------------|
 | `## Context` | What the issue is, what causes it, what to look for. Always present. | Generator (to produce hypotheses — 1 for high-confidence, 2-5 for medium/low). Tester (for understanding). |
 | `## Investigation` | Steps to diagnose or verify. Can be absent for low-confidence playbooks. | Tester (follows steps if present, reasons freely if absent). |
-| `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Orchestrator (presents fixes to the user). |
+| `## Resolution` | Known fixes. Can be absent if the fix depends on what the investigation finds. | Presenter (assembles fixes for the user). |
 
 Template: `templates/playbook.md`
 

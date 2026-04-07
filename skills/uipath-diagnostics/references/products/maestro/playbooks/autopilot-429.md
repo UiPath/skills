@@ -11,7 +11,7 @@ What this looks like:
 - HTTP 429 error
 
 What can cause it:
-- Rate limiting on the Maestro backend or LLM Gateway side when using Autopilot features (tracked via MST-7255)
+- Rate limiting on the Maestro backend or LLM Gateway side when using Autopilot features
 
 ## Investigation
 
@@ -21,4 +21,4 @@ What can cause it:
 ## Resolution
 
 - Retry after a short wait
-- No permanent fix available yet (tracked via MST-7255)
+- No permanent fix available yet
