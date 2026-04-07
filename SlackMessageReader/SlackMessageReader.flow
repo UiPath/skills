@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "kind": "Flow",
+  "entry": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.start",
+      "next": "readSlackMessage"
+    },
+    {
+      "id": "readSlackMessage",
+      "type": "uipath.connector.uipath-salesforce-slack.slack-http-request",
+      "inputs": {
+        "detail": {
+          "connectionId": "${CONNECTION_ID}",
+          "relativeUrl": "conversations.history",
+          "httpMethod": "GET",
+          "queryParameters": {
+            "channel": "C074M703U8G",
+            "limit": "1"
+          },
+          "body": ""
+        }
+      },
+      "outputs": {
+        "response": "slackResponse"
+      },
+      "next": "logResult"
+    },
+    {
+      "id": "logResult",
+      "type": "core.log",
+      "inputs": {
+        "message": "${slackResponse}"
+      },
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "core.end"
+    }
+  ]
+}

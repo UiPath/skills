@@ -1,0 +1,11 @@
+{
+  "name": "SlackMessageReader",
+  "description": "Reads the latest message from a Slack channel using the UiPath Integration Services Slack connector.",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": true
+  },
+  "entryPoints": [
+    "SlackMessageReader.flow"
+  ]
+}
