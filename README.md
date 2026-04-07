@@ -52,6 +52,8 @@ The repository contains skills for building and managing UiPath automation proje
 | **uipath-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
 | **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
 | **uipath-servo** | Desktop and browser UI automation and testing — click, type, read, verify, screenshot, and extract UI elements |
+| **uipath-planner** | Task planner — plans multi-skill execution order, disambiguates overlapping skills, detects project type |
+| **uipath-feedback** | Send bug reports or improvement suggestions to UiPath via `uip feedback send` |
 
 ## Agents
 
@@ -77,21 +79,18 @@ claude plugin install uipath@uipath-marketplace
 
 ### OpenAI Codex CLI
 
-This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+Skills can be used with Codex CLI by symlinking the project instructions and skills directory:
 
-> **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
-> ```bash
-> git clone -c core.symlinks=true https://github.com/UiPath/skills
-> ```
-> If you've already cloned without symlink support, re-enable and re-checkout:
-> ```bash
-> git config core.symlinks true
-> git checkout -- .
-> ```
+```bash
+ln -s CLAUDE.md AGENTS.md
+mkdir -p .agents && ln -s ../skills .agents/skills
+```
+
+> **Windows users:** Clone with symlinks enabled: `git clone -c core.symlinks=true https://github.com/UiPath/skills`
 
 ### Cursor IDE
 
-Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
+Skills can be used with Cursor by copying project rules into `.cursor/rules/`.
 
 ## Contributing
 
@@ -110,7 +109,7 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide, including:
 3. Add your skill under `skills/uipath-<name>/` with a `SKILL.md`
 4. Submit a pull request
 
-For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/uipath-claude-plugins/issues).
+For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/skills/issues).
 
 ## Resources
 
