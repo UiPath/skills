@@ -26,6 +26,12 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/uipcli
+          token: ${{ secrets.GH_PAT }}
+          path: .uipcli
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -36,14 +42,20 @@ jobs:
         with:
           node-version: '20'
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Install coder-eval
         working-directory: .coder_eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      - name: Install uip CLI
-        run: npm install -g @uipath/cli
+      - name: Build and install uip CLI from source
+        working-directory: .uipcli
+        run: |
+          bun install
+          bun run build
+          cd packages/cli && npm link
 
       - name: Run e2e smoke tests
         env:
