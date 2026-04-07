@@ -54,7 +54,7 @@ Key fields:
 ```
 uip is connectors list|get              — browse available connectors
 uip is connections list|create|ping|edit — manage authenticated connections
-uip is activities list                   — list connector activities (--triggers for trigger-only)
+uip is activities list <connector-key>   — list connector activities (--triggers for trigger-only)
 uip is resources list|describe|execute   — interact with connector resources
 uip is triggers objects|describe         — explore trigger metadata
 ```

@@ -111,7 +111,7 @@ Present the presenter's output verbatim to the user. After presenting:
 
 ## 7. Operational Details
 
-**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, and working directory path in the prompt.
+**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.investigation/` in the prompt.
 
 **Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
 

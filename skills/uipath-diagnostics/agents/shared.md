@@ -10,9 +10,10 @@ ALL agents, ALL phases, ALL confidence levels. Never override.
 2. **Evidence-to-problem correlation.** Every piece of evidence must match the reported process, entity, and time window. Filter before fetching. Discard unrelated data.
 3. **Reference browsing.** Only triage, scope-checker, and presenter browse `references/`. All others use paths from `state.json`.
 4. **No inference from undocumented fields.** If a field's behavior isn't in a playbook or docsai result, don't guess. Flag it as unverified.
-5. **No CLI discovery.** Read the product overview CLI section, not `--help`. High-confidence playbooks have exact commands — follow them.
+5. **No CLI discovery.** Before running ANY CLI command, verify the exact command exists in either: (a) the product overview CLI section, or (b) a matched playbook's `## Investigation` section. If the command is not documented in either source, do NOT run it. Do NOT guess command names, flags, or subcommands. Do NOT use `--help` to discover commands.
 6. **Empty ≠ absent.** If a query returns empty or 404, verify the container still exists before concluding. Deleted/inaccessible container = data gap, not proof of absence.
 7. **Live state ≠ historical state.** Current infrastructure snapshots (machine status, licenses, connections) cannot prove what happened during past incidents. Context only for incidents older than 24 hours.
+8. **CLI retry cap.** Max 2 retries per unique command (3 attempts total). If the same command fails 3 times with the same error, stop trying it. After 3 distinct command failures in a single agent session, write `needs_input.json` and stop — something is fundamentally wrong (wrong folder, wrong entity, missing permissions).
 
 ## Confidence-Level Behavior
 
@@ -32,14 +33,17 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 
 ### uip CLI
 The primary tool for interacting with the UiPath platform. Output defaults to json in non-interactive mode. Use `--output json` if you need to force json output explicitly.
-- Discover commands: `uip --help` or `uip <subcommand> --help`
+- Commands are documented in each product's overview CLI section and in playbook `## Investigation` sections. See invariant #5.
 
 ### Documentation Search
 Search UiPath documentation and knowledge base:
 ```
-uip docsai ask "<question>" --source [docs, technical_solution_articles]
+uip docsai ask "<question>" --source <source>
 ```
-Use this to look up error messages, features, configuration, and troubleshooting guidance.
+- `--source docs` — official UiPath product documentation (default)
+- `--source technical_solution_articles` — support knowledge base articles and known issue resolutions
+
+Use `--source docs` for feature behavior, configuration, and API reference. Use `--source technical_solution_articles` for known bugs, workarounds, and troubleshooting steps from support cases.
 
 ## Reading Playbooks and Guides
 

@@ -58,15 +58,16 @@ uip maestro instances cursors <id> [-f <fk>]        — current execution cursor
 uip maestro instances retry <id> [-f <fk>]          — retry a faulted instance
 uip maestro instances pause|resume|cancel <id> [-f <fk>] — lifecycle control
 uip maestro processes incidents <key> [--folder-key <fk>] — incidents across all instances of a process
-uip maestro incidents list                           — tenant-level incident SUMMARIES ONLY (no errorDetails)
+uip maestro incident summary                         — tenant-level incident SUMMARIES ONLY (no errorDetails)
+uip maestro incident get <incident-id>               — get a single incident by ID
 ```
 
 Key commands for diagnostics:
-- `uip maestro instances incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incidents list`.
+- `uip maestro instances incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incident summary`.
 - `uip maestro instances element-executions <instance-id> -f <folder-key>` — what each BPMN element did
 - `uip maestro processes incidents <process-key> --folder-key <fk>` — incidents across all instances of a process
 
-**WARNING:** `uip maestro incidents list` returns only aggregated summaries (counts, error codes) without `errorDetails`. It does NOT contain stack traces or full error messages. Always use instance-level or process-level incident commands for diagnostics.
+**WARNING:** `uip maestro incident summary` returns only aggregated summaries (counts, error codes) without `errorDetails`. It does NOT contain stack traces or full error messages. Always use instance-level or process-level incident commands for diagnostics.
 
 ## Features
 

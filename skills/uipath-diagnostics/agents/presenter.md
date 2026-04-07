@@ -67,16 +67,28 @@ What went wrong: {one sentence}
 Why: {root cause explanation — trace the full causal chain across all domains}
 
 Evidence:
-- {bullet list — quote specific field values, error messages, IDs, timestamps, and state from raw/evidence files that confirm the root cause and reveal gaps}
+
+### {Domain} (Root Cause)
+- {bullet list — quote specific field values, error messages, IDs, timestamps, and state using this domain's presentation rules}
+
+### {Domain} (Propagation)
+- {bullet list — quote specific field values, error messages, IDs, timestamps, and state using this domain's presentation rules}
 
 Immediate fix:
 
+### {Domain} (Root Cause)
 1. {What to do — concrete action with exact navigation path or command}
   - Why: {cite evidence that makes this step necessary}
   - Where: {exact file, UI path, setting, or command}
   - Who: {RPA developer | admin | platform team | process owner}
   - Source: {playbook path or docsai URL}
-2. {next step, same structure}
+
+### {Domain} (Propagation)
+1. {What to do — concrete action with exact navigation path or command}
+  - Why: {cite evidence that makes this step necessary}
+  - Where: {exact file, UI path, setting, or command}
+  - Who: {RPA developer | admin | platform team | process owner}
+  - Source: {playbook path or docsai URL}
 
 Preventive fix:
 

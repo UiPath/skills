@@ -61,16 +61,19 @@ Organization (cloud.uipath.com)
 uip or folders list-current-user                    — list all accessible folders (Personal, Solution, Standard)
 uip or folders get <key-or-path>                    — get folder details
 uip or jobs get <key>                               — job details: state, arguments, timing, machine, errors
-uip or jobs logs <key>                              — robot execution logs (--level Error, --limit N)
-uip or jobs traces <key>                            — execution traces for jobs
+uip or jobs logs <key>                               — robot execution logs (--level Error, --limit N). Folder inferred from key.
+uip or jobs traces <key>                             — LlmOps execution traces for agentic jobs only (LLM interactions, tool calls, agent decisions)
+uip or jobs history <key>                            — job state transition history (Pending → Running → Faulted, with timestamps)
 uip or machines list                                — list registered machines
 uip or licenses info                                — license allocation and usage
 ```
 
 Key commands for diagnostics:
+- `uip or folders list-current-user` — resolve folder key first; use this instead of `uip or folders list` to include Personal and Solution folders
 - `uip or jobs get <key>` — starting point for any job investigation
 - `uip or jobs logs <key> --level Error` — quickly find error entries in execution logs
-- `uip or folders list-current-user` — use this instead of `uip or folders list` to include Personal and Solution folders
+- `uip or jobs traces <key>` — LlmOps traces (agentic jobs only)
+- `uip or jobs history <key>` — job state transition history with timestamps
 
 Additional resource commands are available via `uip resources --help`.
 

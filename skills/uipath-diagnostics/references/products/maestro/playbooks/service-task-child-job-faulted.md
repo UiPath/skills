@@ -23,10 +23,11 @@ What to look for:
 
 ## Investigation
 
-1. Get full incident details via `uip maestro instances incidents <instance-id>`
-2. Identify the faulted service task from element executions
-3. Find and inspect the child job — its error message drives the root cause investigation
-4. Check whether a boundary error event is attached to the service task
+1. Get full incident details: `uip maestro instances incidents <instance-id> -f <folder-key> --output json`
+2. Get element executions to identify the faulted service task: `uip maestro instances element-executions <instance-id> -f <folder-key> --output json`
+3. Find the child job key from the incident's `errorDetails` and inspect it: `uip or jobs get <child-job-key> --output json` — the child's error message drives the root cause investigation
+4. Get child job logs for execution detail: `uip or jobs logs <child-job-key> --level Error --output json`
+5. Check whether a boundary error event is attached to the service task (visible in element executions)
 
 ## Resolution
 

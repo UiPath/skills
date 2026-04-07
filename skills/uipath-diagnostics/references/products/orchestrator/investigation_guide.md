@@ -4,7 +4,7 @@
 
 Before fetching ANY job, queue, or asset data, resolve identity first:
 
-1. **Folder** — resolve the folder key (GUID). All Orchestrator data is folder-scoped. Use `uip or folders list-current-user` to find all accessible folders (Personal, Solution, and Standard). `uip or folders list` only returns Standard folders — it misses Personal and Solution types. Use `uip or folders get <key-or-path>` to confirm details. If the folder is inaccessible, STOP — nothing else will be valid without it.
+1. **Folder** — resolve the folder key (GUID). All Orchestrator data is folder-scoped. Use `uip or folders list-current-user` to find all accessible folders (Personal, Solution, and Standard). `uip or folders list` only returns Standard folders — it misses Personal and Solution types. Use `uip or folders get <key-or-path>` to confirm details. If the folder is inaccessible, STOP — nothing else will be valid without it. **After resolving the folder, verify it contains the target entity** (e.g., run `uip or jobs get <key>` or a scoped query for the expected process/queue). If the target entity is not found in the resolved folder, try other folders from `folders list-current-user` before continuing. Do NOT proceed with a folder that returns empty results for the target entity.
 2. **Process** — identify the process name (from user input, working directory `project.json`, or package name). All subsequent queries filter by this process.
 3. **Time window** — establish the relevant period from the user's report.
 
@@ -23,9 +23,10 @@ If data doesn't match: **discard it**. Do NOT fetch details for jobs or items fr
 
 For every job under investigation, gather these in order. Write each to `raw/` immediately.
 
-1. **Job details** — `uip or jobs get <key>` — state, input/output arguments, timing, machine info, error details. No folder needed — resolved from key.
-2. **Job logs** — `uip or jobs logs <key>` — robot execution logs, newest-first. Use `--level Error` to quickly find errors. Use `--limit` to control how many entries (default 50). Folder inferred from key.
-3. **Job traces** — `uip or jobs traces <key>` — LLM interactions, tool calls, agent decisions. Only available for Agent-type processes. Folder inferred from key.
+1. **Job details** — `uip or jobs get <key>` — state, input/output arguments, timing, machine info, error details
+2. **Job logs** — `uip or jobs logs <key>` — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to quickly find errors. Use `--limit` to control how many entries (default 50)
+3. **Job history** — `uip or jobs history <key>` — job state transition history (timestamps for each state change: Pending → Running → Faulted). Useful for identifying delays and lifecycle issues.
+4. **Job traces (agentic only)** — `uip or jobs traces <key>` — LlmOps execution traces for Agent-type processes only (LLM interactions, tool calls, agent decisions). Not available for standard RPA jobs.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
 

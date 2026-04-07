@@ -27,7 +27,7 @@ What to look for:
 ## Investigation
 
 1. Check the job's error message or PendingReason from triage evidence to identify which variant
-2. `uip or machines list --type Template --output json` — check if any machine template has `UnattendedSlots > 0`
+2. `uip or machines list --output json` — check if any machine has `UnattendedSlots > 0`. Use `--scope` to filter by scope (Default, Serverless, AutomationCloudRobot, ElasticRobot)
 3. `uip or licenses info --output json` — check available Unattended runtime count at the tenant level
 
 ## Resolution

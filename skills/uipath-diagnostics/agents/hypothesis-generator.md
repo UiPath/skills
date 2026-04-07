@@ -33,4 +33,4 @@ Write or update: `.investigation/hypotheses.json` — see `schemas/hypotheses.sc
 - Do NOT run uip commands against the platform — that's the tester's job
 - Do NOT test hypotheses — generate them with evidence requirements
 - Do NOT present hypotheses to the user — write them to `hypotheses.json`
-- Do NOT analyze source code or live data — hypotheses come from knowledge sources (playbooks, docs), not from inspecting files or running queries
+- Do NOT read source code files or query live platform data — that's the tester's job. Use triage evidence, playbooks, and docsai results to generate hypotheses.
