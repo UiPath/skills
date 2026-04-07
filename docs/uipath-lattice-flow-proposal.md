@@ -1,6 +1,6 @@
 # Proposal: `uipath-lattice-flow` Skill
 
-> **Status:** Draft — pending review
+> **Status:** Draft v2 — updated with review feedback
 > **Date:** 2026-04-07
 > **Codename:** lattice (7 chars, matching "maestro")
 
@@ -32,7 +32,9 @@ The 14 OOTB `.registration.json` files in `flow-workbench` contain everything an
 | Dynamic nodes (connectors, resources) | `uip flow registry search/get` + `node configure` | Still needs registry for discovery + schema pull — but JSON construction is direct | Partial |
 | Project scaffolding | `uip flow init` | Agent creates the 6 project files from templates | Yes |
 
-**The hard constraint:** Dynamic nodes (connectors like Jira, Slack, Salesforce; resources like RPA processes, agents) still require the registry for schema discovery. Their definitions are tenant-specific and version-sensitive. The skill will include a guide for these cases but cannot eliminate the registry dependency.
+**The hard constraint:** Dynamic nodes (connectors like Jira, Slack, Salesforce; resources like RPA processes, agents) still require the registry for schema discovery. Their definitions are tenant-specific and version-sensitive. The skill will include a guide for these cases but cannot eliminate the registry dependency. Dynamic node support is in scope but deferred — OOTB nodes are the priority.
+
+**Long-term goal:** This skill is intended to **fully replace** `uipath-maestro-flow`. Once dynamic node support is complete, `uipath-maestro-flow` will be retired.
 
 ## Source Material
 
@@ -43,9 +45,216 @@ The following resources in `flow-workbench` provide the ground truth for this sk
 | OOTB node schemas | `packages/registry/src/registry/ootb/*.registration.json` | Complete definition blocks, port configs, input schemas, defaults |
 | Zod schema | `packages/flow-schema/src/workflow.ts` | Canonical `.flow` file validation schema |
 | flow-core factory API | `packages/flow-core/src/index.ts` | Programmatic workflow construction functions |
-| Example `.flow` files | `packages/cli/test-data/` | 23 real flow files covering all patterns |
+| Reference `.flow` files | `coder_eval/tasks/uipath_flow/reference_flows/` | 8 production-quality reference flows (see catalog below) |
+| Zod workflow schema | `packages/flow-schema/src/workflow.ts` | All entity types: nodes, edges, variables, bindings, subflows, metadata, connections |
 | Node categories | `packages/registry/src/util/categories.ts` | Category IDs, names, sort orders |
 | Dynamic node generation | `packages/registry/src/registry/uipath-v1/index.ts` | How platform APIs produce node definitions |
+
+## Reference Flows Catalog
+
+Source: `/home/tmatup/root/coder_eval/tasks/uipath_flow/reference_flows/`
+
+These 8 production-quality flows are the template source for this skill. Each contains a `metadata.yaml` and `reference.flow`.
+
+| Flow | Nodes | Edges | OOTB Node Types | Dynamic Node Types | Complexity |
+|---|---|---|---|---|---|
+| **calculator-multiply** | 2 | 1 | manual-trigger, script | — | Simple |
+| **dice-roller** | 2 | 1 | manual-trigger, script | — | Simple |
+| **send-date-email** | 4 | 3 | manual-trigger, script, terminate | outlook-send-email | Simple |
+| **sales-pipeline-cleanup** | 5 | 5 | manual-trigger, loop, end | salesforce-list, salesforce-delete | Simple |
+| **devconnect-email** | 7 | 6 | manual-trigger, switch, script | outlook(x2), slack, agent | Medium |
+| **release-notes-generator** | 10 | 11 | manual-trigger, transform, loop, filter, mock | jira, confluence, slack, agent(x2) | Complex |
+| **sales-pipeline-hygiene** | 16 | 14 | manual-trigger, scheduled-trigger, loop, switch, end | salesforce(x3), slack(x2), agent | Complex |
+| **hr-onboarding** | 23 | 24 | manual-trigger, decision(x2), merge, delay, terminate, end(x2), script, http, mock(x2) | outlook(x4), slack, process(x4), agent(x2), rpa-workflow | Very Complex |
+
+### Template Selection
+
+| Template to create | Source flow | Why |
+|---|---|---|
+| `minimal-flow-template.json` | dice-roller | Smallest valid flow (2 nodes, 1 edge) |
+| `project-scaffold-template.json` | calculator-multiply | Has global input variables — good scaffold with inputs |
+| `decision-flow-template.json` | devconnect-email | Switch/branching with multiple paths |
+| `loop-flow-template.json` | sales-pipeline-cleanup | Cleanest loop pattern |
+| `http-flow-template.json` | hr-onboarding (subset) | HTTP request node with downstream handling |
+| `scheduled-trigger-template.json` | sales-pipeline-hygiene | Scheduled trigger pattern |
+| `connector-flow-template.json` | send-date-email | Simplest script-to-connector pattern |
+| `multi-agent-template.json` | release-notes-generator | Agent nodes with loop and data transforms |
+
+## .flow Schema Entity Types
+
+Source: `@uipath/flow-schema` (`packages/flow-schema/src/workflow.ts`)
+
+The `flow-schema-guide.md` reference doc must document **all** entity types in the `.flow` file, not just nodes and edges. The full entity inventory:
+
+### Top-Level: `Workflow`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` (identifier pattern) | Required | Unique workflow ID |
+| `version` | `string` (semver) | Required | e.g., `"1.0.0"` |
+| `name` | `string` (min 1 char) | Required | Human-readable name |
+| `description` | `string` | Optional | |
+| `runtime` | `'maestro' \| 'api-function'` | Optional | Defaults to `'maestro'` |
+| `nodes` | `NodeInstance[]` | Required | All workflow nodes |
+| `edges` | `EdgeInstance[]` | Required | All connections between nodes |
+| `definitions` | `NodeManifest[]` | Required | Cached node definitions |
+| `bindings` | `any[]` | Optional | UiPath artifact bindings |
+| `variables` | `WorkflowVariables` | Optional | Workflow-level variables |
+| `connection` | `WorkflowConnection` | Optional | Execution/debug connection config |
+| `metadata` | `Metadata` | Optional | Authoring metadata |
+| `subflows` | `Record<string, SubflowEntry>` | Optional | Keyed by parent node ID |
+
+### `NodeInstance`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` | Required | Unique node identifier |
+| `type` | `string` | Required | e.g., `'core.action.script'`, `'uipath.connector.*'` |
+| `typeVersion` | `string` | Required | e.g., `'1.0.0'` |
+| `display` | `{ label?, description? }` | Optional | Display overrides |
+| `inputs` | `Record<string, unknown>` | Optional | Input field values |
+| `outputs` | `Record<string, Record<string, unknown>>` | Optional | Output mappings (user-authored `source` expressions) |
+| `model` | `object` | Optional | BPMN type, serviceType, bindings, context |
+| `variableUpdates` | `Record<string, unknown>[]` | Optional | Variable assignment expressions |
+| `parentId` | `string` | Optional | ID of parent loop node |
+| `ui` | `{ position: {x, y}, size?: {width, height} }` | Optional | Canvas position/size |
+
+### `EdgeInstance`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` | Required | Unique edge identifier |
+| `sourceNodeId` | `string` | Required | Source node ID |
+| `sourcePort` | `string` | Required | Handle ID on source node (defaults to `'default'`) |
+| `targetNodeId` | `string` | Required | Target node ID |
+| `targetPort` | `string` | Required | Handle ID on target node (defaults to `'default'`) |
+| `data` | `Record<string, string>` | Optional | e.g., `{ label: '...' }` |
+
+### `NodeManifest` (Definition entry)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `nodeType` | `string` | Required | Must match a node's `type` field |
+| `version` | `string` (min 1) | Required | |
+| `category` | `string` | Optional | e.g., `'data-operations'`, `'control-flow'` |
+| `display` | `{ label: string }` | Optional | |
+| `handleConfiguration` | `Array<{ handles: HandleConfig[] }>` | Required | Port/handle definitions |
+| `inputDefinition` | `Record<string, unknown>` | Optional | JSON Schema for inputs |
+| `inputDefaults` | `Record<string, unknown>` | Optional | Default input values |
+| `outputDefinition` | `Record<string, unknown>` | Optional | Output schemas |
+| `tags` | `string[]` | Optional | |
+| `sortOrder` | `number` | Optional | |
+| `form` | `object` | Optional | Properties panel layout |
+| `model` | `{ type, serviceType?, expansion?, ... }` | Optional | BPMN mapping and extensions |
+
+### `HandleConfig` (Port definition within a manifest)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` | Required | Unique handle ID (e.g., `'input'`, `'success'`, `'true'`) |
+| `type` | `'target' \| 'source'` | Required | |
+| `handleType` | `string` | Required | |
+| `label` | `string` | Optional | Supports templates: `{inputs.trueLabel \|\| 'True'}` |
+| `repeat` | `string` | Optional | Dynamic handles: `"inputs.branches"` creates N handles |
+| `constraints` | `ConnectionConstraint` | Optional | Connection validation rules |
+
+### `ConnectionConstraint`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `minConnections` | `number` | Optional | |
+| `maxConnections` | `number` | Optional | |
+| `forbiddenSources` | `HandleTarget[]` | Optional | e.g., `[{ nodeType: "uipath.agent.resource.*" }]` |
+| `forbiddenTargets` | `HandleTarget[]` | Optional | |
+| `forbiddenTargetCategories` | `string[]` | Optional | |
+| `allowedTargetCategories` | `string[]` | Optional | |
+| `customValidation` | `string` | Optional | Template expression evaluating to boolean |
+| `validationMessage` | `string` | Optional | |
+
+### `WorkflowVariables`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `globals` | `WorkflowVariable[]` | Optional | Workflow-level inputs/outputs |
+| `nodes` | `NodeVariable[]` | Optional | Node output capture variables |
+| `variableUpdates` | `Record<string, VariableUpdate[]>` | Optional | Per-node assignments, keyed by nodeId |
+
+### `WorkflowVariable` (Global variable)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` (min 1) | Required | Used in expressions as `$vars.{id}` |
+| `direction` | `'in' \| 'out' \| 'inout'` | Required | `in`=external input, `out`=workflow output, `inout`=mutable state |
+| `type` | `string` | Required | Default: `'string'`. Also: `'number'`, `'object'`, `'array'` |
+| `subType` | `string` | Optional | Array item type |
+| `schema` | `Record<string, unknown>` | Optional | JSON Schema for complex types |
+| `defaultValue` | `unknown` | Optional | Only for `direction='in'` |
+| `description` | `string` | Optional | |
+| `triggerNodeId` | `string` | Optional | Root workflow `direction='in'` only |
+
+### `NodeVariable` (Node output variable)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` (min 1) | Required | Used in expressions as `$vars.{id}` |
+| `type` | `string` | Required | Default: `'string'` |
+| `subType` | `string` | Optional | |
+| `schema` | `Record<string, unknown>` | Optional | |
+| `description` | `string` | Optional | |
+| `binding` | `ArgumentBinding` | Required | Which node output provides the value |
+
+### `ArgumentBinding`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `nodeId` | `string` | Required | Source node ID |
+| `outputId` | `string` | Required | Output port ID on the source node |
+
+### `VariableUpdate`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `variableId` | `string` | Required | Target `WorkflowVariable` ID |
+| `expression` | `string` | Required | e.g., `"=js:$vars.counter + 1"` |
+
+### `SubflowEntry`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `nodes` | `NodeInstance[]` | Required | Child nodes |
+| `edges` | `EdgeInstance[]` | Required | Edges between child nodes |
+| `variables` | `WorkflowVariables` | Optional | Subflow-scoped variables |
+
+### `WorkflowConnection`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `type` | `'cloud' \| 'local'` | Required | |
+| `environment` | `'cloud' \| 'staging' \| 'alpha'` | Optional | Cloud only |
+| `organizationId` | `string` | Optional | Cloud only |
+| `tenantId` | `string` | Optional | Cloud only |
+| `tenantName` | `string` | Optional | Cloud only |
+| `localUrl` | `string` (URL) | Optional | Local only |
+
+### `Metadata`
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `createdAt` | `string` (ISO 8601) | Required | |
+| `updatedAt` | `string` (ISO 8601) | Required | |
+| `author` | `string` | Optional | |
+| `tags` | `string[]` | Optional | |
+| `description` | `string` | Optional | |
+
+### Key Constants and Validation Rules
+
+| Constant | Value | Usage |
+|---|---|---|
+| `VALID_IDENTIFIER_PATTERN` | `/^[a-zA-Z_][a-zA-Z0-9_]*$/` | Node/variable IDs |
+| `RESERVED_WORDS` | JS/Python reserved words | Blocked from use as IDs |
+| `BINDINGS_PATH_PREFIX` | `'=bindings.'` | Prefix for binding expressions |
+| Expression prefix | `=js:` | Required for all Jint expressions |
+| Template syntax | `{{...}}` | Mustache-style in handle labels |
 
 ## Proposed Skill Structure
 
@@ -53,12 +262,12 @@ The following resources in `flow-workbench` provide the ground truth for this sk
 skills/uipath-lattice-flow/
 ├── SKILL.md                              # Skill definition
 ├── references/
-│   ├── flow-schema-guide.md              # .flow JSON structure, top-level keys, validation rules
+│   ├── flow-schema-guide.md              # Full .flow JSON schema — all entity types documented above
 │   ├── project-scaffolding-guide.md      # How to create the 6 project files from scratch
 │   ├── edge-wiring-guide.md              # Edge rules, port mappings, standard ports by node type
 │   ├── variables-guide.md                # Variables, expressions, output mapping, scoping
 │   ├── subflow-guide.md                  # Subflow structure, isolated scope, input/output passing
-│   ├── dynamic-nodes-guide.md            # How to use registry for connectors/resources
+│   ├── dynamic-nodes-guide.md            # How to use registry for connectors/resources (deferred)
 │   ├── bindings-guide.md                 # bindings_v2.json format, connection binding
 │   ├── validation-checklist.md           # Structural validation rules (manual pre-flight)
 │   └── nodes/                            # One file per OOTB node type
@@ -78,11 +287,14 @@ skills/uipath-lattice-flow/
 │       └── control-terminate.md          # core.event.terminate
 ├── assets/
 │   └── templates/
-│       ├── minimal-flow-template.json    # Smallest valid .flow (start -> script -> end)
-│       ├── project-scaffold-template.json # All 6 project files structure
-│       ├── decision-flow-template.json   # Branch pattern (decision + two paths)
-│       ├── loop-flow-template.json       # Loop pattern (foreach over collection)
-│       └── http-flow-template.json       # HTTP request with response branching
+│       ├── minimal-flow-template.json    # Smallest valid flow (dice-roller: 2 nodes, 1 edge)
+│       ├── project-scaffold-template.json # Project with input variables (calculator-multiply)
+│       ├── decision-flow-template.json   # Switch/branching pattern (devconnect-email subset)
+│       ├── loop-flow-template.json       # Loop pattern (sales-pipeline-cleanup subset)
+│       ├── http-flow-template.json       # HTTP request with handling (hr-onboarding subset)
+│       ├── scheduled-trigger-template.json # Scheduled trigger (sales-pipeline-hygiene subset)
+│       ├── connector-flow-template.json  # Script-to-connector pattern (send-date-email)
+│       └── multi-agent-template.json     # Agent nodes with loop + transforms (release-notes-generator subset)
 ```
 
 ### File Descriptions
@@ -95,7 +307,7 @@ The skill definition with frontmatter, critical rules, and two workflows (new fl
 
 | File | Purpose | Source Material |
 |---|---|---|
-| `flow-schema-guide.md` | Complete `.flow` JSON structure — top-level keys, node shape, edge shape, definitions array format | `@uipath/flow-schema` Zod schemas |
+| `flow-schema-guide.md` | Complete `.flow` JSON schema — all entity types (Workflow, NodeInstance, EdgeInstance, NodeManifest, HandleConfig, ConnectionConstraint, WorkflowVariables, WorkflowVariable, NodeVariable, ArgumentBinding, VariableUpdate, SubflowEntry, WorkflowConnection, Metadata), validation rules, constants, expression syntax | `@uipath/flow-schema` Zod schemas (see entity inventory above) |
 | `project-scaffolding-guide.md` | How to create a valid project directory (`.flow`, `project.uiproj`, `bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) | `uip flow init` output + flow-workbench project structure |
 | `edge-wiring-guide.md` | Standard ports by node type, edge JSON format, connection rules, constraint validation | `handleConfiguration` from `.registration.json` files |
 | `variables-guide.md` | Variable declaration (in/out/inout), type system, `=js:` expressions, output mapping on End nodes, `variableUpdates` | `@uipath/flow-schema` variable schemas + maestro-flow's existing `variables-and-expressions.md` |
@@ -152,24 +364,27 @@ Copy this verbatim into the `definitions` array:
 - ...
 ```
 
-#### Templates
+#### Templates (8 files)
 
-| Template | Pattern | Nodes | Purpose |
+Sourced from the 8 reference flows in `coder_eval/tasks/uipath_flow/reference_flows/`, distilled to minimal working examples with dynamic nodes stripped to OOTB-only where possible.
+
+| Template | Source Flow | Nodes | Pattern |
 |---|---|---|---|
-| `minimal-flow-template.json` | Start -> Script -> End | 3 | Smallest valid flow — starting point for any new flow |
-| `project-scaffold-template.json` | N/A | N/A | All 6 project file structures with placeholder values |
-| `decision-flow-template.json` | Start -> Script -> Decision -> [Path A, Path B] -> End | 6 | Branching logic pattern |
-| `loop-flow-template.json` | Start -> ForEach -> [Script in loop body] -> End | 4 | Iteration pattern |
-| `http-flow-template.json` | Start -> HTTP -> Decision (status check) -> End | 5 | API call with response handling |
-
-Templates are sourced from the 23 example `.flow` files in `flow-workbench/packages/cli/test-data/`, distilled to minimal working examples.
+| `minimal-flow-template.json` | dice-roller | 2 | Start -> Script (smallest valid flow) |
+| `project-scaffold-template.json` | calculator-multiply | 2 | Start -> Script with global input variables |
+| `decision-flow-template.json` | devconnect-email | ~5 | Switch/branching with multiple paths |
+| `loop-flow-template.json` | sales-pipeline-cleanup | ~4 | Loop iteration pattern |
+| `http-flow-template.json` | hr-onboarding subset | ~4 | HTTP request with response handling |
+| `scheduled-trigger-template.json` | sales-pipeline-hygiene | ~3 | Scheduled trigger + basic flow |
+| `connector-flow-template.json` | send-date-email | ~3 | Script output feeding a connector |
+| `multi-agent-template.json` | release-notes-generator subset | ~5 | Agent nodes with loop + data transforms |
 
 ## SKILL.md Draft
 
 ```yaml
 ---
 name: uipath-lattice-flow
-description: "[PREVIEW] Direct .flow JSON authoring — create, edit, validate flows without CLI. OOTB node schemas bundled. For CLI-based flow authoring->uipath-maestro-flow."
+description: "[PREVIEW] Direct .flow JSON authoring — create, edit, validate UiPath Flow projects (.flow files). OOTB node schemas bundled. For XAML or C# workflows→uipath-rpa."
 ---
 ```
 
@@ -217,15 +432,6 @@ Build and edit UiPath Flow projects by writing .flow JSON directly. OOTB node sc
 3. **Make the JSON edit** — add/modify/remove nodes, edges, or variables.
 4. **Validate** — walk through `references/validation-checklist.md`.
 
-## When to Fall Back to uipath-maestro-flow
-
-Use `uipath-maestro-flow` (CLI-based) when you need:
-- **Connector nodes** (Jira, Slack, Salesforce, etc.) — schemas are tenant-specific
-- **Resource nodes** (RPA processes, agents, apps) — schemas come from Orchestrator
-- **Registry discovery** — finding what connectors or resources exist in a tenant
-- **Flow debugging** — `uip flow debug` uploads and executes the flow in the cloud
-- **Publishing** — `uip solution bundle` + `uip solution upload` for Studio Web
-
 ## Reference Navigation
 
 | I need to... | Read this |
@@ -251,26 +457,26 @@ Use `uipath-maestro-flow` (CLI-based) when you need:
 
 ## Key Differences from maestro-flow
 
-| Aspect | maestro-flow | lattice-flow |
+| Aspect | maestro-flow (being replaced) | lattice-flow (replacement) |
 |---|---|---|
 | Primary approach | CLI commands (`uip flow node add`, etc.) | Direct JSON manipulation |
-| Node schemas | Fetched from registry at runtime | Bundled as reference docs |
+| Node schemas | Fetched from registry at runtime | Bundled as reference docs (OOTB); registry for dynamic |
 | Definitions array | Must `registry get` every time | Pre-baked in node reference docs |
 | Planning model | 2-phase (architectural -> implementation) | Template-first (pick template -> customize) |
-| Dynamic nodes | Full CLI workflow | Guide for when/how to use registry (fallback) |
+| Dynamic nodes | Full CLI workflow | Registry guide included (deferred priority) |
 | Offline capable | No (needs registry + auth) | Yes, for OOTB flows |
 | Validation | `uip flow validate` (required) | Structural checklist + optional CLI validation |
-| Best for | Full-featured flows with connectors/resources | OOTB-only flows, rapid prototyping, learning |
+| Schema documentation | Minimal (nodes/edges only) | Full entity coverage (all Zod schema types) |
 
-## Coexistence Strategy
+## Replacement Strategy
 
-Both skills would exist simultaneously:
+`uipath-lattice-flow` is intended to **fully replace** `uipath-maestro-flow`.
 
-- **lattice-flow** — default for OOTB flows, offline work, prototyping
-- **maestro-flow** — required when connectors, resources, or cloud operations are involved
-- The `description` fields use `->` redirects to steer agents between them
+**Phase 1 (initial release):** Ship with full OOTB node support. Dynamic node guide included but marked as deferred. Both skills may coexist briefly during transition.
 
-The `uipath-planner` skill would be updated to route to the appropriate skill based on whether the flow needs dynamic nodes.
+**Phase 2 (dynamic nodes):** Add full connector and resource node support. At this point, maestro-flow is retired and its `description` is updated to redirect: `"Retired→uipath-lattice-flow"`.
+
+**Phase 3 (cleanup):** Remove `uipath-maestro-flow` from the repo. Update `uipath-planner` routing table.
 
 ## Example Prompts (Same Results, Different Approach)
 
@@ -319,8 +525,15 @@ These prompts would activate `uipath-lattice-flow` and produce the same `.flow` 
 15. Update README.md skill catalog
 16. Update `uipath-planner` routing table (if applicable)
 
+## Resolved Questions
+
+1. **Scope of dynamic nodes** — In scope but deferred. OOTB nodes are the priority for initial release. Dynamic node guide will be included but marked as future work.
+2. **Template source** — Using the 8 reference flows from `coder_eval/tasks/uipath_flow/reference_flows/` (not the 23 test files from flow-workbench).
+3. **Long-term direction** — Lattice-flow will **fully replace** maestro-flow. Three-phase replacement strategy defined above.
+4. **Schema coverage** — `flow-schema-guide.md` will document **all** entity types from `@uipath/flow-schema` (Workflow, NodeInstance, EdgeInstance, NodeManifest, HandleConfig, ConnectionConstraint, WorkflowVariables, WorkflowVariable, NodeVariable, ArgumentBinding, VariableUpdate, SubflowEntry, WorkflowConnection, Metadata), not just nodes and edges.
+
 ## Open Questions
 
-1. **Scope of dynamic nodes** — Should lattice-flow handle connector/resource nodes at all, or explicitly hand off to maestro-flow for those? Current proposal includes a guide but makes the handoff clear.
-2. **Template count** — 5 templates cover the most common patterns. The flow-workbench has 23 test `.flow` files we could mine for more.
-3. **Long-term direction** — Should lattice-flow eventually replace maestro-flow, or permanently coexist?
+1. **`blank-node` (`core.action.blank`)** — Present in OOTB registry but not observed in any reference flow. Include in node docs or skip?
+2. **`stickyNote`** — Used in sales-pipeline-hygiene for annotations. Include as a node reference doc or document as a non-functional element?
+3. **Agent nodes (`uipath.agent.autonomous`, `uipath.agent.conversational`)** — These are OOTB (always available after login). Should they be bundled as node reference docs alongside the 14 OOTB nodes, or treated as dynamic?
