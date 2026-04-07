@@ -52,6 +52,8 @@ jobs:
 
       - name: Build and install uip CLI from source
         working-directory: .uipcli
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
         run: |
           bun install
           bun run build
