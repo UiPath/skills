@@ -1,0 +1,140 @@
+task_id: skill-datafabric-e2e-entity-record-lifecycle
+description: >
+  E2E lifecycle test: agent performs a complete Data Fabric CRUD cycle against
+  a live tenant — checks login, discovers or creates a test entity, inserts
+  records, queries with a filter, updates one record, verifies the update, then
+  deletes the test records. Tests the full Discover → Act → Verify workflow.
+tags: [uipath-data-fabric, e2e, entities, records]
+
+agent:
+  type: claude-code
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Perform a complete Data Fabric CRUD lifecycle using the uipath-data-fabric skill.
+
+  Steps (follow in order, use --output json on every uip df command):
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login — use
+     whatever tenant is currently active.
+
+  2. Discover entities: list native-only entities. If an entity named
+     "CodeEvalTest" already exists, use its ID. If not, create it with:
+       - label (text)
+       - score (number)
+       - active (boolean)
+
+  3. Insert two records:
+       - { "label": "alpha", "score": 10, "active": true }
+       - { "label": "beta",  "score": 5,  "active": false }
+     Save the record IDs from the insert responses.
+
+  4. Query records where active = true. Confirm at least one result is returned.
+
+  5. Update the "alpha" record: set score to 99.
+     Use the record ID from step 3 in the update body as "Id".
+
+  6. Verify the update: fetch the record with `records get` and confirm score = 99.
+
+  7. Delete only the two records you inserted (use the IDs from step 3).
+
+  Save a report to report.json:
+  {
+    "entity_id": "<ID of CodeEvalTest entity>",
+    "entity_existed_already": <true or false>,
+    "records_inserted": ["<id1>", "<id2>"],
+    "query_result_count": <number of records returned by active=true query>,
+    "updated_record_id": "<ID of alpha record>",
+    "score_after_update": <score value from records get>,
+    "records_deleted": ["<id1>", "<id2>"]
+  }
+
+  Do NOT ask for approval or confirmation.
+  Do NOT pause between steps.
+  Do NOT delete the entity itself — only delete the two records you inserted.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before any operation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed native-only entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted at least 2 records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried records with a filter body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a record"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the update with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the test records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Report confirms full lifecycle completed with correct values"
+    path: "report.json"
+    assertions:
+      - expression: "length(records_inserted)"
+        operator: gte
+        expected: 2
+      - expression: "score_after_update"
+        operator: equals
+        expected: 99
+      - expression: "query_result_count"
+        operator: gte
+        expected: 1
+      - expression: "length(records_deleted)"
+        operator: gte
+        expected: 2
+    weight: 3.0
+    pass_threshold: 0.75

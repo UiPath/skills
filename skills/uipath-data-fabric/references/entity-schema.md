@@ -4,17 +4,23 @@
 
 ```bash
 uip df entities create "MyEntity" \
-  --description "Optional description" \
-  --fields '[
-    {"name":"title","type":"text"},
-    {"name":"score","type":"number"},
-    {"name":"active","type":"boolean"},
-    {"name":"createdDate","type":"date"}
-  ]' \
+  --body '{
+    "fields": [
+      {"fieldName":"title","type":"text"},
+      {"fieldName":"score","type":"number"},
+      {"fieldName":"active","type":"boolean"},
+      {"fieldName":"createdDate","type":"date"}
+    ],
+    "displayName": "My Entity",
+    "description": "Optional description"
+  }' \
   --output json
 ```
 
-Response includes `EntityId` — save this for subsequent operations.
+- `fields` array is **required**. Each entry must include `fieldName`.
+- `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
+- Response: `{ Code: "EntityCreated", Data: { ID: "<entity-id>" } }` — save the ID for subsequent operations.
+- Alternatively use `--file <path>` pointing to a JSON file with the same structure.
 
 ## Supported Field Types
 
@@ -27,38 +33,69 @@ Response includes `EntityId` — save this for subsequent operations.
 | `boolean` | BIT | Flags, status |
 | `datetime` | DATETIME2 | Timestamps |
 | `date` | DATE | Calendar dates |
+| `file` | NVARCHAR(200) | Binary file attachment (manage with `files upload/download/delete`) |
 
 ## Field Definition Object
 
 ```json
 {
-  "name": "fieldName",
+  "fieldName": "myField",
   "type": "text",
   "displayName": "Optional display label",
   "isRequired": false
 }
 ```
 
-- `name` is required and becomes the technical name (lowercase, no spaces)
+- `fieldName` is required and becomes the technical name (lowercase, no spaces)
 - `type` defaults to `"text"` if omitted
 
-## Adding / Removing Fields
+## Not Supported
 
-Fields can be added or removed after entity creation:
+| Operation | Action |
+|-----------|--------|
+| Delete an entity | No command exists — tell the user it is not supported |
+| Remove / delete a field | Not supported — do not pass `removeFields` in `entities update` (CLI errors) |
+| Change a field's data type | Not supported via `updateFields` — type is set at creation only |
+
+---
+
+## Updating an Entity
+
+Use `entities update` to add fields, modify field metadata, or update entity-level properties.
 
 ```bash
-# Add a field
-uip df entities add-field <entity-id> myNewField --type decimal --output json
+# Add new fields to an existing entity
+uip df entities update <entity-id> \
+  --body '{"addFields":[{"fieldName":"priority","type":"number"},{"fieldName":"tags","type":"text"}]}' \
+  --output json
 
-# Remove a field
-uip df entities remove-field <entity-id> myOldField --output json
+# Update entity display name and description
+uip df entities update <entity-id> \
+  --body '{"displayName":"Updated Name","description":"New description"}' \
+  --output json
+
+# Add fields and update metadata in one call
+uip df entities update <entity-id> \
+  --body '{
+    "addFields": [{"fieldName":"region","type":"text"}],
+    "displayName": "Regional Entity"
+  }' \
+  --output json
 ```
 
-**Warning**: Removing a field deletes all data stored in that field for every record.
+Supported keys in the update body:
+
+| Key | Description |
+|-----|-------------|
+| `addFields` | Array of field definition objects to add |
+| `updateFields` | Array of field updates (modify existing field metadata) |
+| `displayName` | New display name for the entity |
+| `description` | New description |
+| `isRbacEnabled` | Toggle RBAC on the entity |
 
 ## System Fields
 
-Every entity has auto-created system fields: `Id`, `CreatedOn`, `CreatedBy`, `UpdatedOn`, `UpdatedBy`. These are read-only and excluded from field manipulation commands.
+Every entity has auto-created system fields: `Id`, `CreatedOn`, `CreatedBy`, `UpdatedOn`, `UpdatedBy`. These are read-only and must not be included in field definitions or CSV imports.
 
 ## Listing and Inspecting Entities
 

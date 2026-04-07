@@ -28,9 +28,9 @@ uip df files download <entity-id> <record-id> <field-name> \
   --output json
 ```
 
-- If `--destination` is omitted, the file is saved using the original filename or `<field-name>.bin`
+- If `--destination` is omitted, the file is saved as `<record-id>_<field-name>.bin` in the current directory
 
-Response: `{ Code: "FileDownloaded", Data: { OutputPath, ContentType } }`
+Response: `{ Code: "FileDownloaded", Data: { EntityId, RecordId, FieldName, OutputPath } }`
 
 ## Delete a File
 
@@ -38,7 +38,7 @@ Response: `{ Code: "FileDownloaded", Data: { OutputPath, ContentType } }`
 uip df files delete <entity-id> <record-id> <field-name> --output json
 ```
 
-Response: `{ Code: "FileDeleted" }`
+Response: `{ Code: "FileDeleted", Data: { EntityId, RecordId, FieldName } }`
 
 ## Full Workflow
 

@@ -6,7 +6,11 @@
 uip df records import <entity-id> --file data.csv --output json
 ```
 
-Response: `{ Code: "RecordsImported", Data: { SuccessCount, FailureCount, Errors } }`
+Response: `{ Code: "RecordsImported", Data: { InsertedRecords, TotalRecords, ErrorFileLink? } }`
+
+- `InsertedRecords` — number of rows successfully imported
+- `TotalRecords` — total rows in the CSV (including failures)
+- `ErrorFileLink` — download URL for a CSV of failed rows (only present if there were failures)
 
 ## CSV Format Requirements
 
@@ -57,5 +61,5 @@ uip df records list <entity-id> --output json
 ## Notes
 
 - Partial success is possible: some rows may import while others fail
-- Check `FailureCount` and `Errors` in the response to identify problem rows
+- Check `InsertedRecords` vs `TotalRecords` to detect failures; download `ErrorFileLink` for the failed-row CSV
 - Large imports are processed server-side; there is no row limit documented but keep files reasonable in size
