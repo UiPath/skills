@@ -1,6 +1,6 @@
 ---
 name: uipath-servo
-description: "[PREVIEW] Live desktop/browser UI interaction via servo CLI — click, type, read, screenshot, verify, extract UI elements in running applications. For creating RPA or coded workflows→uipath-rpa."
+description: "[PREVIEW] Interact with live desktop/browser apps — click buttons, type text, read values, take screenshots, inspect UI state, verify behavior, fill forms, navigate menus, and extract table data from running applications via Servo CLI."
 metadata:
   allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
 ---
@@ -8,6 +8,7 @@ metadata:
 # UI Interaction with Servo
 
 > **Servo is a standalone command-line tool.** It is NOT a subcommand of `uip` — you run it directly from your terminal.
+> **Not for creating/editing workflows.** For creating RPA or coded workflows, use the `uipath-rpa` skill.
 
 **Windows only.** Run via npx or install globally:
 
