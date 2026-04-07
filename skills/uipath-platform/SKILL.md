@@ -97,7 +97,7 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
 | **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
-| **Build/run/validate coded workflows** | [/uipath-coded-workflows:uipath-coded-workflows](/uipath-coded-workflows:uipath-coded-workflows) |
+| **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
 ## Resolving UiPath Studio
 
@@ -198,11 +198,14 @@ Every `uip` command accepts:
 | Option | Description | Default |
 |---|---|---|
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
+| `--output-filter <expression>` | JMESPath expression to filter JSON output | -- |
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--help` / `-h` | Display help for the command | -- |
 | `--version` / `-v` | Display CLI version | -- |
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
+>
+> **Use `--output-filter` to extract specific fields** instead of piping output to `python3`, `jq`, or other post-processing tools. The filter uses [JMESPath](https://jmespath.org/) syntax. Example: `--output json --output-filter "Data[].{id: id, name: name}"`
 
 ## Deployment Lifecycle
 
@@ -260,4 +263,4 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
 - **[Test Manager Guide](references/test-manager/test-manager-guide.md)** — Test projects, test sets, test cases, executions, reports, attachments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
-- **[Coded Workflows](/uipath-coded-workflows:uipath-coded-workflows)** — Building coded automation projects
+- **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects

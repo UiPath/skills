@@ -89,7 +89,7 @@ This returns the definition with `inputDefinition` (required inputs, types) and 
 ### Step 3 — Add the node to the flow
 
 ```bash
-uip flow node add flow_files/<Project>.flow "<node-type>" --output json \
+uip flow node add <Project>.flow "<node-type>" --output json \
   --input '{"documentPath": "/invoices/batch1"}' \
   --label "Process Invoices"
 ```
@@ -97,8 +97,8 @@ uip flow node add flow_files/<Project>.flow "<node-type>" --output json \
 ### Step 4 — Wire edges and validate
 
 ```bash
-uip flow edge add flow_files/<Project>.flow <upstreamId> <resourceNodeId> --output json
-uip flow validate flow_files/<Project>.flow --output json
+uip flow edge add <Project>.flow <upstreamId> <resourceNodeId> --output json
+uip flow validate <Project>.flow --output json
 ```
 
 ### Resource Node JSON Structure
@@ -163,7 +163,7 @@ While building the flow plan (Step 5 in SKILL.md), identify nodes that need reso
 Use `core.logic.mock` nodes as temporary stand-ins:
 
 ```bash
-uip flow node add flow_files/<Project>.flow core.logic.mock --output json \
+uip flow node add <Project>.flow core.logic.mock --output json \
   --label "Extract Invoice Data [TODO: RPA]" \
   --position 400,200
 ```
@@ -174,7 +174,7 @@ In your completion output, list each placeholder and the skill needed:
 
 | Placeholder | Resource Type | Skill to Use |
 |---|---|---|
-| Extract Invoice Data | RPA Process | `uipath-rpa-workflows` (XAML, needs Studio) or `uipath-coded-workflows` (C#, CLI-only) |
+| Extract Invoice Data | RPA Process | `uipath-rpa` (XAML or C#) |
 | Classify Document | Agent | `uipath-coded-agents` (Python) |
 | Review Form | Web App | `uipath-coded-apps` (.NET/React) |
 
@@ -182,7 +182,7 @@ In your completion output, list each placeholder and the skill needed:
 
 Switch to the relevant skill to create and publish the resource:
 
-- **RPA Process** — Use `uipath-coded-workflows` to create a C# coded workflow, or `uipath-rpa-workflows` for XAML (requires Studio Desktop)
+- **RPA Process** — Use `uipath-rpa` to create a coded workflow (C#) or XAML workflow
 - **Agent** — Use `uipath-coded-agents` to create a Python agent
 - **Web App** — Use `uipath-coded-apps` to create a .NET/React app
 - **Sub-Flow** — Create another flow project using the same `uipath-maestro-flow` skill

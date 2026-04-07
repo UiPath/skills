@@ -1,4 +1,4 @@
-# Phase 0: Environment Readiness
+# Environment Setup
 
 **Goal:** Ensure Studio Desktop is running, connected, and targeting the correct project before any other operations.
 
@@ -6,22 +6,27 @@
 
 The `uip rpa` commands use `--project-dir` to target a specific project (defaults to current working directory). **If the current working directory is NOT the UiPath project root, all commands will fail or target the wrong project.**
 
-```bash
-# Check if project.json exists in the CWD
-ls {cwd}/project.json
-```
+**Resolution order** (use the first rule that matches):
+1. **Explicit path** — The user provided a directory path → use it as-is.
+2. **Project name reference** — The user mentioned a project by name → search for a folder with that name containing `project.json`.
+3. **Detect from running Studio** — No path or name given → run:
+   ```bash
+   uip rpa list-instances --output json --use-studio
+   ```
+   Parse the JSON response. If `Data` is a non-empty array, each entry has a `ProjectDirectory` field. Use it:
+   - **One instance** → use its `ProjectDirectory`.
+   - **Multiple instances** → pick the best match or ask the user.
+4. **Fall back to current working directory** — If `Data` is an empty array.
 
 If the CWD is not the project root:
 - Locate the project root by finding `project.json`: `Glob: pattern="**/project.json"`
-- **Pass `--project-dir` explicitly** to every `uip rpa` command, or
-- Ask the user where their project is located
-
-Store the project root path and use it consistently as `{projectRoot}` throughout all subsequent operations.
+- **Pass `--project-dir` explicitly** to every `uip rpa` command
+- Store the project root path and use it consistently as `{projectRoot}`
 
 ## Step 0.2: Verify Studio is Running
 
 ```bash
-uip rpa list-instances --output json
+uip rpa list-instances --output json --use-studio
 ```
 
 **If no instances are found or Studio is not running:**
@@ -54,9 +59,9 @@ If you encounter auth errors (401, 403, "not authenticated") during any phase, p
 
 ## Step 0.4: Creating a New Project
 
-When the user needs a brand-new UiPath project (not just a new workflow in an existing project).
+**ALWAYS use `uip rpa create-project --use-studio`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
 
-### From a Built-in Template
+### For XAML Projects
 
 ```bash
 uip rpa new \
@@ -66,10 +71,18 @@ uip rpa new \
   --expression-language "VisualBasic" \
   --target-framework "Windows" \
   --description "Automates invoice processing" \
-  --output json
+  --output json --use-studio
 ```
 
-**Note:** `uip rpa new` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+**Expression language for XAML projects:** Prefer `VisualBasic` for Windows target framework projects.
+
+### For Coded Projects
+
+```bash
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json --use-studio
+```
+
+Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
 
 #### Parameters
 
@@ -81,6 +94,8 @@ uip rpa new \
 | `--expression-language` | `VisualBasic`, `CSharp` | (template default) | Expression syntax for XAML workflows |
 | `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
 | `--description` | Any string | (none) | Project description in project.json |
+
+**Note:** `uip rpa new` / `uip rpa create-project` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
 
 ### From a NuGet Template Package
 
@@ -122,7 +137,7 @@ uip rpa new \
   --location "/path/to/parent/directory" \
   --template-package-id "<PACKAGE_ID>" \
   --template-package-version "<VERSION>" \
-  --output json
+  --output json --use-studio
 ```
 
 | Parameter | Type | Default | Notes |
@@ -132,6 +147,6 @@ uip rpa new \
 
 ### After Creation
 
-1. Open the project in Studio: `uip rpa open-project --project-dir "/path/to/MyAutomation"`
-2. The project root is now `/path/to/parent/directory/MyAutomation/`
-3. Proceed to Phase 1 (Discovery) using the new project root
+1. Open the project in Studio: `uip rpa open-project --project-dir "/path/to/MyAutomation" --use-studio`
+2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
+3. Proceed with the skill workflow using the new project root

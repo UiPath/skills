@@ -52,7 +52,7 @@ The markdown body SHOULD follow this order:
 
 | Item | Pattern | Example |
 |------|---------|---------|
-| Skill folder | `uipath-<kebab-case>` | `uipath-coded-workflows` |
+| Skill folder | `uipath-<kebab-case>` | `uipath-rpa` |
 | Reference files | `<topic>-<type>.md` | `commands-reference.md` |
 | Guide files | `<topic>-guide.md` | `orchestrator-guide.md` |
 | Template files | `<name>-template.<ext>` | `codedworkflow-template.md` |
