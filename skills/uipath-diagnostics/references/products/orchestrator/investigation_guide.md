@@ -53,7 +53,6 @@ When testing hypotheses for Orchestrator issues, gather and verify these before 
 1. **Folder context** — confirm the folder the process runs in; permissions, jobs and assets are folder-scoped
 2. **Process version** — confirm the deployed package version matches what the user expects
 3. **Robot assignment** — verify the robot/machine template is assigned to the folder and has capacity
-4. **Session configuration** — if the job faulted with a logon/session error, check whether the process has `requiresUserInteraction` (via `uip or processes get`). If true, the robot needs an active Windows session. Cross-reference with the user's "Login to Console" setting and whether they were logged into the machine. This setting is only visible in the Orchestrator UI (Tenant → Users → Access Rules → Advanced Robot Options) — ask the user to check it.
-5. **Execution logs** — use job traces/logs to reconstruct the actual execution path, don't infer from job status alone
-6. **Timing** — check job start/end times, queue transaction durations, and trigger schedules against reported symptoms
-7. **Dependencies** — check `## Dependencies` in `overview.md` for cross-product issues (e.g., Identity Server, Elasticsearch, SQL Server)
+4. **Execution logs** — use job traces/logs to reconstruct the actual execution path, don't infer from job status alone
+5. **Timing** — check job start/end times, queue transaction durations, and trigger schedules against reported symptoms
+6. **Dependencies** — check `## Dependencies` in `overview.md` for cross-product issues (e.g., Identity Server, Elasticsearch, SQL Server)
