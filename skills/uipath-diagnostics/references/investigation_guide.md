@@ -24,6 +24,27 @@ Gather and verify these before drawing conclusions on any hypothesis:
 5. **Recent changes** — ask whether anything changed recently (deployments, config updates, infrastructure) that correlates with when the issue started
 6. **Dependencies** — check upstream and downstream systems; a failure in one layer often manifests as symptoms in another
 
+## Expected Outcome — Establish Before Investigating
+
+Before starting any investigation, establish what the user expects from the diagnostics — do they want to understand the root cause, get a fix, confirm a suspicion, or something else?
+
+1. **Try to infer** the expected outcome from the user's problem description and how they framed the request
+2. **If you cannot infer**, present the user with the options you identified (e.g., "Are you looking for the root cause, a quick fix, or help understanding why this happens intermittently?") and let them choose
+3. **If you have no options**, ask the user directly what outcome they need from this investigation
+
+Do NOT begin triage or hypothesis generation until the expected outcome is clear. It determines what depth of investigation is appropriate and what a useful resolution looks like.
+
+## Tool Boundary — uip CLI Only
+
+All platform interaction MUST go through `uip` CLI commands. Do NOT work around CLI limitations by:
+
+- Calling Orchestrator REST APIs directly (e.g., via `curl` or any HTTP client)
+- Reading auth tokens from `%APPDATA%/uipath-cli/.auth` or any other credential store
+- Using undocumented or internal API endpoints
+- Constructing OData URLs manually
+
+If the `uip` CLI does not provide a command for the data you need, that data is **unavailable**. Report the gap to the user and continue the investigation with what you have. Do NOT attempt to bypass the CLI, and do NOT suggest or mention internal API endpoints, OData URLs, auth token locations, or any other workaround to the user — even as a "for your information" or "if you want to do it yourself" suggestion.
+
 ## Scope Boundary — Internal Platform Issues
 
 This diagnostic tool operates from the **client perspective**. Do NOT attempt to investigate internal platform issues (implementation bugs, server-side defects, infrastructure internals). You have no visibility into them and testing hypotheses about them wastes the user's time.
