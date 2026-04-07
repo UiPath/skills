@@ -1,13 +1,13 @@
 ---
 name: uipath-servo
-description: "[PREVIEW] Live desktop/browser UI interaction via servo CLI — click, type, read, screenshot, verify, extract UI elements in running applications. For creating RPA or coded workflows→uipath-rpa."
-metadata:
-  allowed-tools: Bash(servo:*), Bash(npx *@uipath/servo*), Read, Grep
+description: "[PREVIEW] Interact with live desktop/browser apps — click buttons, type text, read values, take screenshots, inspect UI state, verify behavior, fill forms, navigate menus, and extract table data from running applications via Servo CLI."
+allowed-tools: Bash(servo:*), Bash(npx:*), Bash(npm:*), Read, Grep
 ---
 
-# UI Automation with Servo
+# UI Interaction with Servo
 
 > **Servo is a standalone command-line tool.** It is NOT a subcommand of `uip` — you run it directly from your terminal.
+> **Not for creating/editing workflows.** For creating RPA or coded workflows, use the `uipath-rpa` skill.
 
 **Windows only.** Run via npx or install globally:
 
@@ -39,7 +39,7 @@ servo screenshot w1
 
 ## Commands
 
-All commands accept --help`, `--timeout` and `--visualize` (shows a visual indicator of the target element).
+All commands accept `--help`. Most commands accept `--timeout` and `--visualize` (shows a visual indicator of the target element).
 
 Commands that write output files accept `--filename <path>` to override the output file path.
 
@@ -47,7 +47,8 @@ Commands that write output files accept `--filename <path>` to override the outp
 
 ```bash
 servo targets                           # List windows (w-refs) and browser tabs (b-refs)
-servo targets --exclude Windows         # Browser tabs only
+servo targets --no-filter               # Show ALL top-level targets (disables automatic filtering)
+servo targets --exclude Windows         # Browsers only
 servo snapshot w1                       # Capture UI tree with element refs (e-refs)
 servo snapshot b1                       # Snapshot a browser tab
 servo snapshot w1 --framework UiaOnly   # Use specific UI framework
@@ -56,26 +57,39 @@ servo snapshot w1 --framework UiaOnly   # Use specific UI framework
 ### Interact
 
 ```bash
-servo click e5                                # Click (left, single)
-servo click e5 --button Right                 # Right-click
-servo click e5 --type Double                  # Double-click
-servo click e5 -i ControlApi                  # Click via element API (background windows)
-servo click e5 --offset "10,-5"               # Click with pixel offset from center (default origin)
-servo click e5 --origin TopLeft --offset "5,-10"  # Origin: Center, TopLeft, TopRight, BottomLeft, BottomRight, TopCenter, BottomCenter, LeftCenter, RightCenter
-servo click e5 --modifiers Ctrl               # Ctrl+click (e.g. multi-select in lists)
-servo click e5 -m "Ctrl,Shift"                # Ctrl+Shift+click
-servo hover e4                                # Hover over element
-servo type e3 "some text"                     # Type into element
-servo type e3 "text" --clear-before           # Clear field, then type (implies --click-before)
-servo type e3 "text" --click-before           # Click field before typing (auto-enabled for HardwareEvents)
-servo type e3 "text" -i ControlApi            # Use ControlApi (may auto-clear)
-servo type e3 "text" -i WebBrowserDebugger    # Use browser debugger protocol (recommended for Chrome/Edge)
-servo type e3 "[d(ctrl)]a[u(ctrl)]"           # Select all (Ctrl+A)
-servo select e8 "Option B"                    # Select "Option" from dropdown/list
-servo wheel e5 --direction Down -c 10         # Scroll down 10 clicks
-servo focus e5                                # Bring element into view and focus
-servo window w2 BringToForeground             # Bring window to front
-servo window w1 Maximize                      # Maximize, Minimize, Restore, Close, Hide, Show
+servo click e5                                   # Click (left, single)
+servo click e5 --button Right                    # Right-click
+servo click e5 --type Double                     # Double-click
+servo click e5 -i ControlApi                     # Click via element API (background windows)
+servo click e5 --offset "10,-5"                  # Click with pixel offset from center (default origin)
+servo click e5 --origin TopLeft --offset "5,-10" # Origin: Center, TopLeft, TopRight, BottomLeft, BottomRight, TopCenter, BottomCenter, LeftCenter, RightCenter
+servo click e5 --modifiers Ctrl                  # Ctrl+click (e.g. multi-select in lists)
+servo click e5 -m "Ctrl,Shift"                   # Ctrl+Shift+click
+servo hover e4                                   # Hover over element
+servo type e3 "some text"                        # Type into element
+servo type e3 "text" --clear-before              # Clear field, then type (implies --click-before)
+servo type e3 "text" --click-before              # Click field before typing (auto-enabled for HardwareEvents)
+servo type e3 "text" -i ControlApi               # Use ControlApi (may auto-clear)
+servo type e3 "text" -i WebBrowserDebugger       # Use browser debugger protocol (recommended for Chrome/Edge)
+servo type e3 "[d(ctrl)]a[u(ctrl)]"              # Select all (Ctrl+A)
+servo select e8 "Option B"                       # Select "Option" from dropdown/list
+servo wheel e5 --direction Down -c 10            # Scroll down 10 clicks
+servo focus e5                                   # Bring element into view and focus
+servo window foreground w2                       # Bring window to front
+servo window close b1                            # Close browser tab
+servo window maximize w1                         # Actions: close, maximize, minimize, restore, hide, show, foreground
+servo browser open                               # Open default browser
+servo browser open "https://example.com" -b Edge # Open in specific browser (Brave, Chrome, Edge, Firefox, Vivaldi)
+servo browser navigate b1 "https://example.com"  # Navigate tab to URL
+servo browser eval b1 "() => document.title"     # Execute JavaScript in tab
+servo browser eval e5 "(el) => el.textContent"   # Execute JavaScript on element
+servo browser eval b1 "() => document.title" --world Isolated  # Run in isolated world (avoids conflicts with page scripts)
+servo browser tab-new b1 "https://example.com"   # Open new tab with URL
+servo browser tab-close b1                       # Close tab
+servo browser tab-select b2                      # Switch to tab
+servo browser go-back b1                         # Navigate back
+servo browser go-forward b1                      # Navigate forward
+servo browser reload b1                          # Reload page
 ```
 
 ### Inspect
@@ -86,6 +100,7 @@ servo get-all e5                        # Read all attributes
 servo get-attribute-names e5            # List available attribute names
 servo screenshot                        # Full desktop screenshot
 servo screenshot w1                     # Window screenshot
+servo screenshot b2 --full-page         # Full browser tab screenshot
 servo screenshot e5                     # Element screenshot
 servo extract-table e5                  # Extract table data as markdown
 servo highlight e5                      # Draw red border
@@ -96,12 +111,12 @@ servo selector e5                       # Get UiPath selector string
 ### Manage
 
 ```bash
-servo server --start                    # Start server manually
-servo server --stop                     # Stop server
-servo server --status                   # Check server status
-servo server --start -s sess1           # Start server for specific session
-servo server --stop -s sess1            # Stop server for specific session
-servo server --kill-all                 # Kill all server processes (last resort)
+servo server start                      # Start server manually
+servo server stop                       # Stop server
+servo server status                     # Check server status
+servo server start -s sess1             # Start server for specific session
+servo server stop -s sess1              # Stop server for specific session
+servo server kill-all                   # Kill all server processes (last resort)
 servo clean                             # Delete output files
 ```
 
@@ -278,8 +293,8 @@ servo snapshot w1             # Verify result
 **Empty/partial snapshot** -- Wrong framework or window not ready:
 
 ```bash
-servo window w1 BringToForeground      # Ensure window is visible
-servo window w1 Maximize               # Maximize to see all elements
+servo window foreground w1             # Ensure window is visible
+servo window maximize w1               # Maximize to see all elements
 servo snapshot w1 --framework UiaOnly  # Try different framework
 ```
 
@@ -314,7 +329,7 @@ servo click e10                                  # Click a child element that ma
 **Connection error** -- Server in a bad state:
 
 ```bash
-servo server --kill-all                # Kill all servers, then retry
+servo server kill-all                  # Kill all servers, then retry
 servo targets                          # Reconnects automatically
 ```
 
@@ -330,11 +345,11 @@ servo click e5 -s sess1
 
 Each session has its own server, refs, and state.
 
-**Cleanup:** When automation is done, stop all servers -- both named and default sessions:
+**Cleanup:** When done, stop all servers -- both named and default sessions:
 
 ```bash
-servo server --stop                    # Stop default session
-servo server --stop -s sess1           # Stop named session
+servo server stop                      # Stop default session
+servo server stop -s sess1             # Stop named session
 ```
 
 ## Application Guides
@@ -343,20 +358,36 @@ servo server --stop -s sess1           # Stop named session
 
 **Prerequisites:** UiPath browser extensions must be installed for b-refs to appear in `servo targets`. Install: https://docs.uipath.com/studio/standalone/latest/user-guide/about-extensions
 
-**Targeting:** Use b-refs (not w-refs) for web content -- b-refs provide the DOM tree.
+**Targeting:** Use b-refs (not w-refs) for web content -- b-refs provide the DOM tree. Browser tabs appear nested under their parent window in `servo targets`.
 
 ```bash
 servo targets
-# - Window "My Page - Google Chrome" [ref=w1]
-# - Browser "My Page" [ref=b1]
+# - Window "Example Domain - Google Chrome" [ref=w1]:
+#   - /process: chrome.exe
+#   - /class: Chrome_WidgetWin_1
+#   - BrowserTab "Example Domain" [ref=b1] [selected]:
+#     - /url: https://example.com/
+#   - BrowserTab "HTML5 Test Page" [ref=b2] [file URL]:
+#     - /url: file:///C:/Pages/index.html
 
-servo snapshot b1                       # Preferred: snapshot the browser tab
+servo snapshot b1   # Preferred: snapshot the browser tab
 ```
 
-**IMPORTANT: Internal browser pages (new tab, settings, bookmarks, downloads etc.) are NOT available as b-refs.** The browser extension cannot access these pages, so they will only appear as w-refs in `servo targets`.
+The active tab is marked `[selected]`. Some tabs have states that signal access limitations:
 
-- Discarded tabs show `[discarded]` state -- servo attempts to activate them automatically before interaction
-- After page navigation, re-snapshot to get fresh refs
+- `[discarded]` -- Suspended by the browser to save memory. Servo attempts to restore it automatically on first interaction.
+- `[internal page]` -- Browser internal pages (new tab, settings, etc.). Cannot snapshot or interact with page elements. Browser tab commands (navigate, reload, close, etc.) may still work. Use the parent w-ref for element-level interaction as a desktop application.
+- `[extension store]` -- Web store pages. Same limitations as internal pages.
+- `[file URL]` -- Local file URLs. Same limitations unless "Allow access to file URLs" is enabled for the UiPath extension.
+
+**Browser windows without tabs:** When a browser window has no BrowserTab children, `servo targets` adds a state to the parent window to explain why:
+
+- `[extension missing]` -- The UiPath browser extension is not available. It may not be installed or may be disabled.
+- `[incognito]` -- The extension is installed but cannot access this window (likely incognito/private). Allow the extension to run in incognito mode in the browser's extension settings.
+
+In both cases, you can still use the w-ref to control the browser as a desktop application.
+
+After page navigation, re-snapshot to get fresh refs.
 
 **Input methods:**
 - Chromium (Chrome, Edge): Use `-i WebBrowserDebugger`. Fallback: ControlApi, then HardwareEvents.
@@ -387,7 +418,7 @@ servo snapshot w1                              # New transaction screen loaded w
 **Reading table data:** Snapshots only show rows currently in view. Maximize first for more rows in snapshot:
 
 ```bash
-servo extract-table e15 --timeout 120    # Extracts entire table, not just visible rows
+servo extract-table e15 --timeout 300    # Extracts entire table, not just visible rows
 ```
 
 To interact with specific rows not in view, scroll and re-snapshot:
