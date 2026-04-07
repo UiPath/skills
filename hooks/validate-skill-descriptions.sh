@@ -1,6 +1,7 @@
 #!/bin/bash
 # Validate skill description lengths
-# Enforces 1024-character limit on all SKILL.md descriptions
+# Enforces 250-character limit on all SKILL.md descriptions
+# (Claude Code truncates non-bundled skill descriptions at 250 chars in the system prompt)
 #
 # Usage:
 #   validate-skill-descriptions.sh [file1 file2 ...]
@@ -8,7 +9,7 @@
 
 set -e
 
-LIMIT=1024
+LIMIT=250
 FAILED=0
 
 # Determine which files to check
@@ -46,6 +47,7 @@ done
 if [ "$FAILED" -eq 1 ]; then
   echo ""
   echo "Skill description validation failed. Descriptions must be ≤ $LIMIT characters."
+  echo "Claude Code truncates plugin skill descriptions at 250 chars in the system prompt."
   echo "Edit the 'description' field in SKILL.md frontmatter and try again."
   exit 1
 fi

@@ -497,7 +497,7 @@ There are **no CLI commands** for adding or removing variables. Manage variables
 
 ### Adding a workflow input variable
 
-1. Open `flow_files/<ProjectName>.flow`
+1. Open `<ProjectName>.flow`
 2. Add the variable object to `variables.globals`
 3. Run `uip flow validate` to check for errors
 
