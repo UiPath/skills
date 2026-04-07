@@ -19,16 +19,24 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
+├── .claude/rules/             # Project-level Claude Code rules
+├── .githooks/                 # Git pre-commit hook scripts
+├── .github/workflows/         # CI validation workflows
+├── agents/                    # Standalone agent definitions
+├── docs/                      # Onboarding and contributor guides
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.)
-│   └── ensure-uip.sh         # Cross-platform tool installation script
+│   ├── ensure-uip.sh         # Cross-platform tool installation script
+│   └── validate-skill-descriptions.sh  # 250-char description validator
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
+├── scripts/                   # Developer utilities (setup-hooks.sh)
 ├── skills/                    # Individual skill implementations
 │   └── uipath-<name>/        # One folder per skill
 │       ├── SKILL.md           # Skill definition (required)
 │       ├── references/        # Supporting reference documents (optional)
 │       └── assets/            # Templates, examples, static files (optional)
+├── CLAUDE.md                  # Project instructions for Claude Code
 ├── CODEOWNERS                 # GitHub ownership by skill/path
 ├── README.md                  # Project overview and quick start
 ├── CONTRIBUTING.md            # This file
@@ -272,4 +280,4 @@ Before submitting your PR, verify:
 
 ## Questions?
 
-For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/uipath-claude-plugins/issues).
+For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/skills/issues).
