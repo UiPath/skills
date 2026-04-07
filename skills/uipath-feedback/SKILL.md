@@ -184,7 +184,7 @@ Truncate the full description to 4000 characters max. Note if content was trunca
 Write sanitized copies of relevant project files to a temp directory:
 
 ```bash
-mkdir -p /tmp/uip-feedback-attachments
+mkdir -p "${TMPDIR:-${TMP:-/tmp}}/uip-feedback-attachments"
 ```
 
 Copy and sanitize files based on skill context:
@@ -235,7 +235,7 @@ Parse the JSON output. On success, show the user a confirmation with any referen
 Clean up temp attachments:
 
 ```bash
-rm -rf /tmp/uip-feedback-attachments
+rm -rf "${TMPDIR:-${TMP:-/tmp}}/uip-feedback-attachments"
 ```
 
 ### Step 5 -- Report result
