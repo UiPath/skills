@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync. For C# workflows→uipath-coded-workflows. For XAML→uipath-rpa-workflows."
+description: "UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync. For C# or XAML workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
