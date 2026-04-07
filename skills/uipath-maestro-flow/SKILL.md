@@ -430,7 +430,6 @@ When you finish building or editing a flow, report to the user:
 5. **Missing connections** — any connector nodes that need connections the user must create
 6. **Next step** — ask if the user wants to debug the flow (do not run debug automatically)
 7. **Publish offer** — ask if the user wants to publish to Studio Web (do not publish automatically). If yes, run `solution bundle` + `solution upload` and share the Studio Web URL.
-8. **Next actions** — suggest relevant follow-ups based on what was built
 
 ## References
 
