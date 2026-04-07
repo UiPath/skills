@@ -93,7 +93,7 @@ For each connector, extract the connector key from the node type (`uipath.connec
 
 ```bash
 # 1. List available connections
-uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --folder-key "<folder-key>" --output json
 
 # 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
 
@@ -104,6 +104,8 @@ uip is connections ping "<connection-id>" --output json
 **If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
 
 **If no connection exists**, tell the user before proceeding — they must create one in the IS portal or via `uip is connections create "<connector-key>"`.
+
+**Folder key note**: The `--folder-key` parameter specifies which Orchestrator folder to list/create connections in. If omitted, the CLI defaults to UiPath's Personal Workspace folder. If you have the folder path but not the folder key, refer to the Orchestrator CLI documentation to get the key first.
 
 **Read [/uipath:uipath-platform — Integration Service — connections.md](/uipath:uipath-platform) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
 
@@ -184,7 +186,7 @@ The `method` and `endpoint` values come from `connectorMethodInfo` in the `regis
 
 ```bash
 # Connections
-uip is connections list "<connector-key>" --output json      # list connections for a connector
+uip is connections list "<connector-key>" --folder-key "<folder-key>" --output json      # list connections for a connector
 uip is connections ping "<connection-id>" --output json      # verify connection health
 uip is connections create "<connector-key>"                  # create new connection (interactive)
 

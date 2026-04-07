@@ -133,11 +133,15 @@ These steps are for **creating a new flow from scratch**. For existing projects,
 The `uip` CLI is installed via npm. If `uip` is not on PATH (common in nvm environments), resolve it first:
 
 ```bash
-UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
-$UIP --version
+which uip || npm list -g @uipath/uipcli
 ```
 
-Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
+If not found, install:
+```bash
+npm install -g @uipath/uipcli
+```
+
+Verify with `uip --version`. Use `uip` directly in all subsequent commands.
 
 ### Step 1 — Check login status
 
