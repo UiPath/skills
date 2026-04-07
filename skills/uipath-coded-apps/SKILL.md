@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "[PREVIEW] UiPath Coded Web Applications (.uipath dir, app.config.json). Create, push/pull source to Studio Web, package .nupkg, publish, deploy via uip codedapp CLI. For C# workflows→uipath-coded-workflows. For XAML→uipath-rpa-workflows."
+description: "[PREVIEW] UiPath Coded Web Applications (.uipath dir, app.config.json). Create, push/pull source to Studio Web, package .nupkg, publish, deploy via uip codedapp CLI. For C# workflows or XAML→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 

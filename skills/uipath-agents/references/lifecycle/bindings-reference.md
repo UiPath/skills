@@ -7,7 +7,7 @@ Synchronize UiPath platform resource references in agent Python code with the `b
 ## When to Use
 
 - After adding, removing, or modifying UiPath SDK resource calls in agent code
-- Before packaging/deploying an agent with the [deployment reference](deployment.md) (`uip codedagents pack` / `uip codedagents publish`)
+- Before packaging/deploying an agent with the [deployment reference](deployment.md) (`uip codedagent pack` / `uip codedagent publish`)
 - When resource override configuration in Orchestrator is missing entries or shows stale resources
 - To audit existing bindings.json for correctness
 

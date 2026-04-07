@@ -46,7 +46,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
 
-> **Why `create-project` instead of manual files?** It generates correct schema versions, metadata directories, and default dependencies — manual creation risks subtle errors. See [json-template.md](../assets/json-template.md) for reference-only templates.
+> **Why `create-project` instead of manual files?** It generates correct schema versions, metadata directories, and default dependencies — manual creation risks subtle errors. See [json-template.md](../../assets/json-template.md) for reference-only templates.
 
 ## Add a Workflow File to Existing Project
 
@@ -388,8 +388,8 @@ namespace MyProjectName
 
 **Workflow order:** Configure ALL missing targets FIRST, then write the workflow code using real descriptor paths.
 
-**Full configure-target workflow and rules:** [uia-configure-target-workflows.md](../../shared/uia-configure-target-workflows.md)
-**Target configuration and selector recovery:** [ui-automation-guide.md](ui-automation-guide.md)
+**Full configure-target workflow and rules:** [uia-configure-target-workflows.md](../uia-configure-target-workflows.md)
+**Target configuration and selector recovery:** [ui-automation-guide.md](../ui-automation-guide.md)
 
 **Key reminders:**
 - Add `using <ProjectNamespace>.ObjectRepository;` to any file referencing `Descriptors.*`

@@ -19,7 +19,7 @@ Does the skill follow the canonical layout and conventions?
 - `name` matches the folder name exactly
 - `description` is under 250 characters (Claude Code truncates non-bundled skill descriptions at 250 chars — run `hooks/validate-skill-descriptions.sh` to verify)
 - `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters
-- `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa-workflows`)
+- `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
 - `description` starts with `[PREVIEW]` for new/unstable skills
 - SKILL.md body follows the expected section order: Title, When to Use, Critical Rules, Workflow/Quick Start, Reference Navigation, Anti-patterns
 - Reference files use kebab-case naming with `-guide.md` / `-template.md` suffixes
@@ -88,7 +88,7 @@ How effectively can an AI agent follow these instructions?
 Is the skill ready for public use as a plugin?
 
 - `description` in frontmatter is detailed enough for the plugin system to match it correctly — not too broad (false triggers on unrelated requests), not too narrow (misses valid use cases)
-- `description` uses compact `→` redirects to prevent conflicts with commonly confused sibling skills (e.g., `For XAML→uipath-rpa-workflows`)
+- `description` uses compact `→` redirects to prevent conflicts with commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
 - `description` passes the 250-character validation hook (`hooks/validate-skill-descriptions.sh`)
 - The skill does not assume any state that the plugin's SessionStart hook doesn't guarantee
 - No hardcoded paths, tokens, or environment-specific assumptions

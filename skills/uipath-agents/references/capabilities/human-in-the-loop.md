@@ -13,7 +13,7 @@ Pause agent execution for human approval, external processes, or job monitoring 
 > from langgraph.checkpoint.memory import MemorySaver
 > graph = builder.compile(checkpointer=MemorySaver())
 > ```
-> UiPath's managed runtime provides a production checkpointer automatically when the agent is deployed — `MemorySaver` is for local `uip codedagents run` only.
+> UiPath's managed runtime provides a production checkpointer automatically when the agent is deployed — `MemorySaver` is for local `uip codedagent run` only.
 
 ```
 Agent Running → interrupt(model) → Pause → External Work → Resume with Result

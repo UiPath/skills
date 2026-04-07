@@ -64,6 +64,38 @@ InvoiceTests/
 └── PageHelpers.cs              # Source file: UI interaction helpers
 ```
 
+## Example — Hybrid Project (XAML Orchestrator + Coded Logic)
+
+```
+OrderProcessing/
+├── project.json
+├── Main.xaml                    # XAML orchestrator: sequences steps, handles retries
+├── ScrapeOrderPortal.xaml       # XAML: UI automation with visual selector builder
+├── SendConfirmationEmail.xaml   # XAML: Mail activities (straightforward)
+├── ProcessOrder.cs              # Coded workflow: 12 validation rules + LINQ transforms
+├── ProcessOrder.cs.json
+├── OrderModels.cs               # Coded source file: Order, LineItem, ValidationResult DTOs
+├── TransformHelpers.cs          # Coded source file: date parsing, currency conversion
+└── TestProcessOrder.cs          # Coded test case: unit tests for ProcessOrder logic
+    TestProcessOrder.cs.json
+```
+
+### Why Hybrid Here
+
+- **ScrapeOrderPortal.xaml** — UI automation benefits from XAML's visual selector builder and recording tools
+- **ProcessOrder.cs** — Order validation has 12 business rules with nested conditions; coded C# is clearer and testable
+- **OrderModels.cs** — Typed DTOs used by both XAML (via typed arguments) and coded workflows, eliminating DataTable column-name guessing
+- **SendConfirmationEmail.xaml** — Simple Mail activity, no logic — XAML is the simpler choice
+- **Main.xaml** — Orchestration is linear (scrape → process → email); XAML Sequence is readable
+
+### Data Flow
+
+1. `Main.xaml` invokes `ScrapeOrderPortal.xaml` → returns `DataTable` via Out argument
+2. `Main.xaml` invokes `ProcessOrder.cs` via Invoke Workflow File → passes raw data, returns validated `Order` objects
+3. `Main.xaml` invokes `SendConfirmationEmail.xaml` → passes validated order data
+
+For the full decision framework on when to use coded vs XAML, see [../references/coded-vs-xaml-guide.md](../references/coded-vs-xaml-guide.md).
+
 ## Project Structure Decision Tree
 
 **Is it a single, simple task?**
@@ -83,3 +115,6 @@ InvoiceTests/
 
 **Does it have complex business rules?**
 - ✅ Yes → Isolate in Coded Source Files for reusability and testability
+
+**Does it need both UI automation AND complex logic?**
+- ✅ Yes → Hybrid: XAML for UI automation + orchestration, Coded for business logic + data models. See [../references/coded-vs-xaml-guide.md](../references/coded-vs-xaml-guide.md)
