@@ -395,6 +395,30 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 
 ---
 
+## Invalid Array Syntax in TypeArguments — `x:String()`
+
+**Symptom:** Studio fails to open the workflow with: `Character ')' was unexpected in string 'x:String()'. Invalid XAML type name.`
+
+**Root cause:** VB.NET uses `String()` to declare a string array, but XAML `x:TypeArguments` uses parentheses only for generic type parameters (e.g., `scg:List(x:String)`). Writing `x:String()` is not valid XAML — it is neither a generic nor a recognized type.
+
+**Wrong — VB.NET array syntax does not work in XAML:**
+```xml
+<Variable x:TypeArguments="x:String()" Name="fileList" />
+<OutArgument x:TypeArguments="x:String()">[fileList]</OutArgument>
+<InArgument x:TypeArguments="x:String()">[Directory.GetFiles(folderPath)]</InArgument>
+```
+
+**Correct — use `scg:List(x:String)` for collections:**
+```xml
+<Variable x:TypeArguments="scg:List(x:String)" Name="fileList" />
+<OutArgument x:TypeArguments="scg:List(x:String)">[fileList]</OutArgument>
+<InArgument x:TypeArguments="scg:List(x:String)">[New List(Of String)(Directory.GetFiles(folderPath))]</InArgument>
+```
+
+Note: APIs that return `String[]` (like `Directory.GetFiles()`) must be wrapped in `New List(Of String)(...)` (VB) or `new List<string>(...)` (C#) to match the `List` type.
+
+---
+
 ## Variable Scope and "Not Declared" Errors
 
 **Error:** `"'variableName' is not declared. It may be inaccessible due to its protection level"`

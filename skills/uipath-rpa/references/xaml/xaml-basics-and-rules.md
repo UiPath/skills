@@ -170,6 +170,21 @@ Add `Variable` elements inside the workflow container's `.Variables` block:
 
 Variables are scoped to their containing activity (Sequence, Flowchart, etc.).
 
+**Collection and array variables:** Use `scg:List(x:String)` for lists, `scg:Dictionary(x:String, x:Int32)` for dictionaries. Do **NOT** use `x:String()` — parentheses in `x:TypeArguments` denote generics, not arrays. VB.NET array syntax (`String()`) is invalid in XAML TypeArguments and causes `Character ')' was unexpected in string 'x:String()'. Invalid XAML type name.` at load time.
+
+```xml
+<!-- WRONG — x:String() is not valid XAML -->
+<Variable x:TypeArguments="x:String()" Name="fileList" />
+
+<!-- CORRECT — use scg:List for collections -->
+<Variable x:TypeArguments="scg:List(x:String)" Name="fileList" />
+```
+
+When converting array-returning APIs (e.g., `Directory.GetFiles()` returns `String[]`), wrap in a `New List(Of String)(...)` (VB) or `new List<string>(...)` (C#) expression:
+```xml
+<InArgument x:TypeArguments="scg:List(x:String)">[New List(Of String)(Directory.GetFiles(folderPath))]</InArgument>
+```
+
 **IMPORTANT — `x:` and `s:` are XML namespace aliases, not separate type systems.**
 `x:String` and `s:String` both refer to `System.String`; the prefix only determines which namespace schema resolves the name. The `x:` XAML language schema registers a small fixed set of types (`x:String`, `x:Int32`, `x:Int64`, `x:Double`, `x:Boolean`, `x:Byte`, `x:Single`, `x:Decimal`, `x:Char`, `x:Object`, `x:TimeSpan`). Any other CLR type — including `DateTime`, `DateTimeOffset`, `Guid`, etc. — is not registered in that schema and must be reached through `s:` (`xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"`).
 Using `x:DateTime` or `x:DateTimeOffset` produces `Cannot create unknown type` at load time.
