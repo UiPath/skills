@@ -158,7 +158,7 @@ See [../connector-capabilities.md](../connector-capabilities.md) for the full pr
 
 ### UI Automation — Target Configuration Gate
 
-Before writing any XAML with UI activities, every UI element target must be configured through the `uia-configure-target` skill flow. See [uia-configure-target-workflows.md](../../../shared/uia-configure-target-workflows.md).
+Before writing any XAML with UI activities, every UI element target must be configured through the `uia-configure-target` skill flow. See [uia-configure-target-workflows.md](../uia-configure-target-workflows.md).
 
 Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow. Do NOT launch the target application before running `uia-configure-target`.
 
@@ -208,7 +208,7 @@ uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json --use-s
 2. **Structural Errors** — Fix XML structure. Cross-check against [xaml-basics-and-rules.md](xaml-basics-and-rules.md).
 3. **Type Errors** — Check activity doc for correct types and enum values. For JIT types: [jit-custom-types-schema.md](jit-custom-types-schema.md).
 4. **Activity Properties Errors** — Read activity doc for properties, conditional groups, valid configurations. Fallback: `get-default-activity-xaml`. Watch for OverloadGroup conflicts.
-5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `--command StartDebugging`. See [uia-debug-workflow.md](../../../shared/uia-debug-workflow.md).
+5. **Logic Errors** — Verify expression syntax matches project language. For UI automation: use `--command StartDebugging`. See [uia-debug-workflow.md](../uia-debug-workflow.md).
 
 **When stuck:** Defer to user for minor config details. If failing to resolve an activity, consider InvokeCode as a last resort.
 

@@ -388,7 +388,7 @@ namespace MyProjectName
 
 **Workflow order:** Configure ALL missing targets FIRST, then write the workflow code using real descriptor paths.
 
-**Full configure-target workflow and rules:** [uia-configure-target-workflows.md](../../../shared/uia-configure-target-workflows.md)
+**Full configure-target workflow and rules:** [uia-configure-target-workflows.md](../uia-configure-target-workflows.md)
 **Target configuration and selector recovery:** [ui-automation-guide.md](../ui-automation-guide.md)
 
 **Key reminders:**
