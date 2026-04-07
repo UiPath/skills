@@ -167,57 +167,28 @@ The `services` property provides access to:
 
 ## IRunningJobInformation Properties
 
-`GetRunningJobInformation()` returns an `IRunningJobInformation` instance (from `UiPath.Robot.Activities.Api`). Properties are gated by feature version — older robot/Orchestrator versions may return `null`/default for newer properties.
+`GetRunningJobInformation()` returns an `IRunningJobInformation` instance (from `UiPath.Robot.Activities.Api`). Key properties:
 
-| Property | Type | Feature Version | Description |
-|----------|------|-----------------|-------------|
-| `JobId` | `Guid` | V1 | Identifier of the current job |
-| `ProcessName` | `string` | V1 | Name of the currently running process |
-| `ProcessVersion` | `string` | V1 | Version of the currently running process |
-| `WorkflowFilePath` | `string` | V1 | Relative path to the currently executing workflow file |
-| `InitiatedBy` | `string` | V2 | Application that started the job (`"Orchestrator"`, `"Studio"`, `"StudioX"`, `"StudioPro"`, `"Assistant"`, `"CommandLine"`, `"RobotAPI"`) |
-| `FolderId` | `long?` | V3 | Orchestrator folder numeric ID |
-| `FolderName` | `string` | V3 | Orchestrator folder display name |
-| `TenantId` | `string` | V3 | Tenant identifier |
-| `TenantKey` | `string` | V3 | Tenant key |
-| `TenantName` | `string` | V3 | Tenant display name |
-| `RobotName` | `string` | V3 | Name of the executing robot |
-| `LicenseType` | `string` | V3 | Robot license type |
-| `RuntimeGovernanceEnabled` | `bool` | V3 | Whether runtime governance is active |
-| `OrganizationId` | `string` | V5 | Organization identifier |
-| `PictureInPictureMode` | `PictureInPictureMode` | V6 | PiP session mode (`Main`, `PictureInPictureSession`, `PictureInPictureDesktop`) |
-| `ProjectDirectory` | `string` | V7 | Project directory path (for libraries, points to the process directory) |
-| `TargetFramework` | `ProjectTargetFramework` | V8 | Target framework (`Legacy`, `Windows`, `Portable`) |
-| `ProcessKey` | `string` | V9 | Process key of the currently running process |
-| `ProjectId` | `string` | V9 | Project identifier |
-| `ResumeSuspended` | `bool` | V9 | `true` if the job was resumed after suspension |
-| `IsChildExecutor` | `bool` | V9 | `true` if started from another executor by an activity |
-| `InternalArgumentsDictionary` | `IReadOnlyDictionary<string, string>` | V9 | Job-specific activity settings (values are serialized JSON) |
-| `UserEmail` | `string` | V10 | Logged-in user's email address |
-| `FolderKey` | `Guid` | V11 | Folder GUID key |
-| `FolderKeyPath` | `string` | V11 | Dot-separated path of folder GUIDs |
+| Property | Type | Description |
+|----------|------|-------------|
+| `JobId` | `Guid` | Current job identifier |
+| `ProcessName` | `string` | Running process name |
+| `ProcessVersion` | `string` | Running process version |
+| `OrganizationId` | `string` | Organization identifier |
+| `TenantId` | `string` | Tenant identifier |
+| `TenantName` | `string` | Tenant display name |
+| `FolderId` | `long?` | Orchestrator folder numeric ID |
+| `FolderName` | `string` | Orchestrator folder display name |
+| `FolderKey` | `Guid` | Orchestrator folder GUID key |
+| `RobotName` | `string` | Executing robot name |
+| `UserEmail` | `string` | Logged-in user's email |
+| `InitiatedBy` | `string` | What started the job (`"Orchestrator"`, `"Studio"`, `"Assistant"`, etc.) |
 
 ### Usage Example
 
 ```csharp
-[Workflow]
-public void Execute()
-{
-    var jobInfo = GetRunningJobInformation();
-
-    // Tenant context
-    Log($"Tenant: {jobInfo.TenantName} (ID: {jobInfo.TenantId})");
-
-    // Folder context
-    Log($"Folder: {jobInfo.FolderName} (ID: {jobInfo.FolderId})");
-
-    // Organization
-    Log($"Org ID: {jobInfo.OrganizationId}");
-
-    // Job metadata
-    Log($"Job {jobInfo.JobId} running {jobInfo.ProcessName} v{jobInfo.ProcessVersion}");
-    Log($"Initiated by: {jobInfo.InitiatedBy}, Robot: {jobInfo.RobotName}");
-}
+var jobInfo = GetRunningJobInformation();
+Log($"Org: {jobInfo.OrganizationId}, Tenant: {jobInfo.TenantName}, Folder: {jobInfo.FolderName}");
 ```
 
 ## Extending CodedWorkflow with Before/After Hooks
