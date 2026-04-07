@@ -3,7 +3,7 @@
 ## Basic List (All Records)
 
 ```bash
-uip df records list <entity-id> --limit 50 --offset 0 --format json
+uip df records list <entity-id> --limit 50 --offset 0 --output json
 ```
 
 Response: `{ TotalCount: N, Records: [...] }`
@@ -13,7 +13,7 @@ Response: `{ TotalCount: N, Records: [...] }`
 ```bash
 uip df records query <entity-id> \
   --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"status","operator":"=","value":"active"}]}}' \
-  --format json
+  --output json
 ```
 
 ### Query Request Schema
@@ -84,13 +84,13 @@ uip df records query <entity-id> \
 
 ```bash
 # Single record
-uip df records insert <entity-id> --body '{"name":"Alice","score":95}' --format json
+uip df records insert <entity-id> --body '{"name":"Alice","score":95}' --output json
 
 # Multiple records (array)
-uip df records insert <entity-id> --body '[{"name":"Alice","score":95},{"name":"Bob","score":82}]' --format json
+uip df records insert <entity-id> --body '[{"name":"Alice","score":95},{"name":"Bob","score":82}]' --output json
 
 # From JSON file
-uip df records insert <entity-id> --file records.json --format json
+uip df records insert <entity-id> --file records.json --output json
 ```
 
 ## Update Records
@@ -98,11 +98,11 @@ uip df records insert <entity-id> --file records.json --format json
 Records must include the `Id` field:
 
 ```bash
-uip df records update <entity-id> --body '{"Id":"<record-id>","score":100}' --format json
+uip df records update <entity-id> --body '{"Id":"<record-id>","score":100}' --output json
 ```
 
 ## Delete Records
 
 ```bash
-uip df records delete <entity-id> <id1> <id2> <id3> --format json
+uip df records delete <entity-id> <id1> <id2> <id3> --output json
 ```

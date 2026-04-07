@@ -11,7 +11,7 @@ uip df entities create "MyEntity" \
     {"name":"active","type":"boolean"},
     {"name":"createdDate","type":"date"}
   ]' \
-  --format json
+  --output json
 ```
 
 Response includes `EntityId` — save this for subsequent operations.
@@ -48,10 +48,10 @@ Fields can be added or removed after entity creation:
 
 ```bash
 # Add a field
-uip df entities add-field <entity-id> myNewField --type decimal --format json
+uip df entities add-field <entity-id> myNewField --type decimal --output json
 
 # Remove a field
-uip df entities remove-field <entity-id> myOldField --format json
+uip df entities remove-field <entity-id> myOldField --output json
 ```
 
 **Warning**: Removing a field deletes all data stored in that field for every record.

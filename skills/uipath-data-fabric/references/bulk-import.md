@@ -3,7 +3,7 @@
 ## Import Records from CSV
 
 ```bash
-uip df records import <entity-id> --file data.csv --format json
+uip df records import <entity-id> --file data.csv --output json
 ```
 
 Response: `{ Code: "RecordsImported", Data: { SuccessCount, FailureCount, Errors } }`
@@ -11,7 +11,7 @@ Response: `{ Code: "RecordsImported", Data: { SuccessCount, FailureCount, Errors
 ## CSV Format Requirements
 
 - **Header row is required** and must exactly match entity field names (case-sensitive)
-- Use `uip df entities get <entity-id> --format json` to discover exact field names before importing
+- Use `uip df entities get <entity-id> --output json` to discover exact field names before importing
 - System fields (`Id`, `CreatedOn`, `CreatedBy`, `UpdatedOn`, `UpdatedBy`) must NOT appear in the CSV
 
 ### Example CSV
@@ -29,8 +29,8 @@ For the entity with fields: `name` (text), `score` (number), `active` (boolean),
 
 ```bash
 # 1. Discover entity and field names
-uip df entities list --format json
-uip df entities get <entity-id> --format json   # note exact field names
+uip df entities list --output json
+uip df entities get <entity-id> --output json   # note exact field names
 
 # 2. Create CSV with matching headers
 cat > /tmp/data.csv <<EOF
@@ -40,10 +40,10 @@ Bob,82,true
 EOF
 
 # 3. Import
-uip df records import <entity-id> --file /tmp/data.csv --format json
+uip df records import <entity-id> --file /tmp/data.csv --output json
 
 # 4. Verify
-uip df records list <entity-id> --format json
+uip df records list <entity-id> --output json
 ```
 
 ## Error Handling
