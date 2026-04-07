@@ -81,7 +81,7 @@ using System.Text.RegularExpressions;  // regex
 ### API Discovery
 - **ALWAYS search for existing .cs files BEFORE generating new code** — Learn from existing patterns
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
-- **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see [ui-automation-guide.md](ui-automation-guide.md)) in strict order. Do NOT write any UI code until descriptors are resolved:
+- **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see [ui-automation-guide.md](../ui-automation-guide.md)) in strict order. Do NOT write any UI code until descriptors are resolved:
   1. Read `ObjectRepository.cs` — use existing descriptors if present
   2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa inspect-package --use-studio`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles snapshot capture, element discovery, selector generation, selector improvement, and OR registration. Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow. Fallback: `indicate-application` / `indicate-element` if the skill docs are unavailable
@@ -98,7 +98,7 @@ using System.Text.RegularExpressions;  // regex
 ### Validation Loop (Critical Rule #14)
 uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
 
-@../shared/validation-loop.md
+@../validation-guide.md
 
 ### Error Handling
 - **Fix compilation errors methodically** — Categorize: Syntax → Type → Logic. Use the validation loop above to iterate until clean.

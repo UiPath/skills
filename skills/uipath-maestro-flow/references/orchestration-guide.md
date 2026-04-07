@@ -174,7 +174,7 @@ In your completion output, list each placeholder and the skill needed:
 
 | Placeholder | Resource Type | Skill to Use |
 |---|---|---|
-| Extract Invoice Data | RPA Process | `uipath-rpa-workflows` (XAML, needs Studio) or `uipath-coded-workflows` (C#, CLI-only) |
+| Extract Invoice Data | RPA Process | `uipath-rpa` (XAML or C#) |
 | Classify Document | Agent | `uipath-coded-agents` (Python) |
 | Review Form | Web App | `uipath-coded-apps` (.NET/React) |
 
@@ -182,7 +182,7 @@ In your completion output, list each placeholder and the skill needed:
 
 Switch to the relevant skill to create and publish the resource:
 
-- **RPA Process** — Use `uipath-coded-workflows` to create a C# coded workflow, or `uipath-rpa-workflows` for XAML (requires Studio Desktop)
+- **RPA Process** — Use `uipath-rpa` to create a coded workflow (C#) or XAML workflow
 - **Agent** — Use `uipath-coded-agents` to create a Python agent
 - **Web App** — Use `uipath-coded-apps` to create a .NET/React app
 - **Sub-Flow** — Create another flow project using the same `uipath-maestro-flow` skill

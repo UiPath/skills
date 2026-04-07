@@ -111,8 +111,7 @@ Before including any content in the issue:
 | Skill detected | Title prefix |
 |---|---|
 | uipath-maestro-flow | `[Flow]` |
-| uipath-coded-workflows | `[Coded Workflows]` |
-| uipath-rpa-workflows | `[RPA Workflows]` |
+| uipath-rpa | `[RPA]` |
 | uipath-coded-agents | `[Agents]` |
 | uipath-coded-apps | `[Apps]` |
 | uipath-platform | `[Platform]` |
@@ -222,8 +221,7 @@ Show the user the **issue URL** after creation.
 | `cli-gap` | `#e4e669` | Missing CLI command or option |
 | `expression-error` | `#f9d0c4` | Jint expression or runtime issue |
 | `uipath-maestro-flow` | `#1d76db` | Flow skill |
-| `uipath-coded-workflows` | `#1d76db` | Coded Workflows skill |
-| `uipath-rpa-workflows` | `#1d76db` | RPA Workflows skill |
+| `uipath-rpa` | `#1d76db` | RPA skill |
 | `uipath-coded-agents` | `#1d76db` | Agents skill |
 | `uipath-coded-apps` | `#1d76db` | Apps skill |
 | `uipath-platform` | `#1d76db` | Platform skill |
