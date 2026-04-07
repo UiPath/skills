@@ -1,6 +1,6 @@
 ---
 name: uipath-feedback
-description: "Send bug reports or improvement suggestions to UiPath via uip feedback send. TRIGGER: 'report issue', 'feedback', 'something is wrong', /feedback, /report-issue. For questions->uipath-platform."
+description: "Send bug reports or improvement suggestions to UiPath via uip feedback send. TRIGGER: 'report issue', 'feedback', 'something is wrong', /uipath-feedback."
 allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---
@@ -119,7 +119,7 @@ Apply all rules from the [Sanitization Rules](#sanitization-rules) section below
 
 #### 2h. Only if context is insufficient
 
-If the agent genuinely cannot determine what happened (e.g., user typed `/feedback` with no prior context in the conversation), ask **one** structured question:
+If the agent genuinely cannot determine what happened (e.g., user typed `/uipath-feedback` with no prior context in the conversation), ask **one** structured question:
 
 > I'll send feedback to UiPath. Please tell me:
 > 1. **What were you trying to do?**
@@ -252,7 +252,7 @@ Feedback sent successfully.
 ```
 Could not send feedback automatically.
 - Report saved to: ./feedback-report.md
-- You can submit it manually or retry with `/feedback` later.
+- You can submit it manually or retry with `/uipath-feedback` later.
 ```
 
 Always clean up temp attachments regardless of success or failure.
