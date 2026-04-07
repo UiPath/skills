@@ -57,7 +57,6 @@ If ambiguous, infer from the conversation. Do NOT ask the user -- pick the best 
 ```bash
 uip --version 2>&1
 uip login status --output json 2>&1
-uname -s -r 2>&1
 ```
 
 From login status, extract only: `tenantName`, `organizationName`, `baseUrl`. Strip everything else.
