@@ -14,12 +14,12 @@ Resolve all implementation details for the approved architectural plan. This pha
 
 Scan the approved `.arch.plan.md` node table and connector summary. Validate each node type against the registry to confirm ports, inputs, and outputs are current:
 
-| Category | How to identify | Action |
-| --- | --- | --- |
-| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow [connector/impl.md](plugins/connector/impl.md)) |
-| Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 (follow the relevant resource plugin: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [agentic-process](plugins/agentic-process/impl.md), [flow](plugins/flow/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md)) |
-| Mock placeholders | Node type is `core.logic.mock` | Run Step 4 (check if published, replace if available) |
-| OOTB nodes | Everything else (Script, HTTP, Decision, Loop, etc.) | Run Step 1a below (validate with registry using the relevant plugin's `impl.md`) |
+| Category          | How to identify                                                      | Action                                                                                                                                                                                                                                                                     |
+| ----------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connector nodes   | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow [connector/impl.md](plugins/connector/impl.md))                                                                                                                                                                                                         |
+| Resource nodes    | Node type starts with `uipath.core.*` or Notes say "resource:"       | Run Step 3 (follow the relevant resource plugin: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [agentic-process](plugins/agentic-process/impl.md), [flow](plugins/flow/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md)) |
+| Mock placeholders | Node type is `core.logic.mock`                                       | Run Step 4 (check if published, replace if available)                                                                                                                                                                                                                      |
+| OOTB nodes        | Everything else (Script, HTTP, Decision, Loop, etc.)                 | Run Step 1a below (validate with registry using the relevant plugin's `impl.md`)                                                                                                                                                                                           |
 
 **All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.**
 
@@ -34,30 +34,31 @@ uip flow registry get <nodeType> --output json
 
 **Plugin impl.md files for registry validation:**
 
-| Node Type | Plugin impl.md |
-| --- | --- |
-| `core.action.script` | [script/impl.md](plugins/script/impl.md) |
-| `core.action.http` | [http/impl.md](plugins/http/impl.md) |
-| `core.action.transform` | [transform/impl.md](plugins/transform/impl.md) |
-| `core.logic.delay` | [delay/impl.md](plugins/delay/impl.md) |
-| `core.logic.decision` | [decision/impl.md](plugins/decision/impl.md) |
-| `core.logic.switch` | [switch/impl.md](plugins/switch/impl.md) |
-| `core.logic.loop` | [loop/impl.md](plugins/loop/impl.md) |
-| `core.logic.merge` | [merge/impl.md](plugins/merge/impl.md) |
-| `core.control.end` | [end/impl.md](plugins/end/impl.md) |
-| `core.logic.terminate` | [terminate/impl.md](plugins/terminate/impl.md) |
-| `core.subflow` | [subflow/impl.md](plugins/subflow/impl.md) |
-| `core.trigger.scheduled` | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
-| `core.action.queue.*` | [queue/impl.md](plugins/queue/impl.md) |
-| `uipath.core.agent.*` | [agent/impl.md](plugins/agent/impl.md) |
-| `uipath.core.rpa.*` | [rpa/impl.md](plugins/rpa/impl.md) |
-| `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md) |
-| `uipath.core.flow.*` | [flow/impl.md](plugins/flow/impl.md) |
-| `uipath.core.api-workflow.*` | [api-workflow/impl.md](plugins/api-workflow/impl.md) |
-| `uipath.core.hitl.*` | [hitl/impl.md](plugins/hitl/impl.md) |
-| `uipath.connector.*` | [connector/impl.md](plugins/connector/impl.md) |
+| Node Type                       | Plugin impl.md                                                 |
+| ------------------------------- | -------------------------------------------------------------- |
+| `core.action.script`            | [script/impl.md](plugins/script/impl.md)                       |
+| `core.action.http`              | [http/impl.md](plugins/http/impl.md)                           |
+| `core.action.transform`         | [transform/impl.md](plugins/transform/impl.md)                 |
+| `core.logic.delay`              | [delay/impl.md](plugins/delay/impl.md)                         |
+| `core.logic.decision`           | [decision/impl.md](plugins/decision/impl.md)                   |
+| `core.logic.switch`             | [switch/impl.md](plugins/switch/impl.md)                       |
+| `core.logic.loop`               | [loop/impl.md](plugins/loop/impl.md)                           |
+| `core.logic.merge`              | [merge/impl.md](plugins/merge/impl.md)                         |
+| `core.control.end`              | [end/impl.md](plugins/end/impl.md)                             |
+| `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/impl.md)                 |
+| `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
+| `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
+| `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
+| `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
+| `uipath.core.rpa.*`             | [rpa/impl.md](plugins/rpa/impl.md)                             |
+| `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md)     |
+| `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
+| `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
+| `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
+| `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 
 For each node type, record:
+
 - Input port names (must match `targetPort` in edges)
 - Output port names (must match `sourcePort` in edges)
 - Required input fields (`required: true` in `inputDefinition`)
@@ -114,7 +115,7 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 
 #### Output Format
 
-```markdown
+````markdown
 # <SolutionName> Implementation Plan
 
 ## Summary
@@ -135,11 +136,12 @@ graph TD
     action1 -->|success| decision
     decision -->|true| end1
 ```
+````
 
 ## Resolved Node Table
 
-| # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| #   | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
+| --- | ------- | ---- | --------- | ------ | ------- | ------------- | ----- |
 
 ## Resolved Edge Table
 
@@ -148,7 +150,7 @@ graph TD
 ## Bindings
 
 | Connector Key | Connection ID | Activity | Verified |
-| --- | --- | --- | --- |
+| ------------- | ------------- | -------- | -------- |
 
 ## Global Variables
 
@@ -166,7 +168,8 @@ Prefix each with `**[REQUIRED]**` or `**[OPTIONAL]**`. If there are no open ques
 
 - **[REQUIRED]** Which connection should be used for the Slack connector?
 - **[OPTIONAL]** Should the retry count be increased from the default?
-```
+
+````
 
 #### Column Additions
 
@@ -225,13 +228,15 @@ $vars.fetchData.output.body             // HTTP response body
 $vars.fetchData.output.statusCode       // HTTP status code
 $vars.someNode.error.message            // Error information
 iterator.currentItem                     // Loop item (inside loop body)
-```
+````
 
 **Expression prefixes:**
+
 - `=js:` — Full JavaScript expression evaluated by Jint: `=js:$vars.count > 10`
 - `{ }` — Template interpolation for string fields: `Order {$vars.orderId} is {$vars.status}`
 
 **Variable directions** (`variables.globals`):
+
 - `in` — External input (read-only after start)
 - `out` — Workflow output (must be mapped on End nodes)
 - `inout` — State variable (updated via `variableUpdates`)
@@ -250,14 +255,15 @@ iterator.currentItem                     // Loop item (inside loop body)
 
 Some nodes enforce connection rules via `constraints` in their handle configuration:
 
-| Constraint | Meaning |
-| --- | --- |
-| `minConnections: N` | Handle must have at least N edges (validation error if not met) |
-| `maxConnections: N` | Handle accepts at most N edges |
-| `forbiddenSourceCategories: ["trigger"]` | Cannot receive connections from trigger nodes |
-| `forbiddenTargetCategories: ["trigger"]` | Cannot connect output to trigger nodes |
+| Constraint                               | Meaning                                                         |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| `minConnections: N`                      | Handle must have at least N edges (validation error if not met) |
+| `maxConnections: N`                      | Handle accepts at most N edges                                  |
+| `forbiddenSourceCategories: ["trigger"]` | Cannot receive connections from trigger nodes                   |
+| `forbiddenTargetCategories: ["trigger"]` | Cannot connect output to trigger nodes                          |
 
 **Key rules:**
+
 - Trigger nodes can only have outgoing connections (no input port)
 - End/Terminate nodes can only have incoming connections (no output port)
 - Control flow outputs generally cannot loop back to triggers
@@ -266,137 +272,9 @@ Some nodes enforce connection rules via `constraints` in their handle configurat
 ### Dynamic Ports
 
 Some nodes create ports based on their configuration:
+
 - **HTTP Request** — One port per `branches` entry: `branch-{id}`. See [http/impl.md](plugins/http/impl.md).
 - **Switch** — One port per `cases` entry: `case-{id}`. See [switch/impl.md](plugins/switch/impl.md).
 - **Loop** — `success` port fires after completion, `output` port carries aggregated results. See [loop/impl.md](plugins/loop/impl.md).
 
 When wiring to dynamic ports, the port ID must match the configured item's `id`.
-
----
-
-## Common Flow Patterns
-
-### Linear Pipeline
-
-```text
-Trigger -> Action A -> Action B -> Action C -> End
-```
-Simple sequential processing. Each node's output port (`success` for Script, `default` for HTTP, `output` for Transform) connects to the next node's `input`.
-
-### Conditional Branch
-
-```text
-Trigger -> Fetch Data -> Decision --true--> Process -> End
-                          |
-                          +--false--> Log Skip -> End
-```
-Branch on a condition. Each path needs its own End node (or both can merge to one).
-
-### Parallel Processing with Merge
-
-```text
-                    +-> Call API A -+
-Trigger -> Split ---+              +-> Merge -> Combine Results -> End
-                    +-> Call API B -+
-```
-Wire one node's output to multiple downstream nodes. Use Merge to wait for all before continuing.
-
-### Error Handling
-
-```text
-Trigger -> HTTP Request --default--> Decision($vars.httpCall.error) --true--> Log Error -> Terminate
-                                        |
-                                        +--false--> Process -> End
-```
-Check `$vars.nodeId.error` after action nodes. Use a Decision to branch on error presence, then route to a handler or Terminate.
-
-### Orchestration (Mixed Resource Types)
-
-```text
-Trigger -> Script (prepare) -> RPA Process (extract) -> Agent (classify) -> Decision ->
-  approved: Script (format) -> End
-  rejected: Human Task (review) -> End
-```
-Flow composes different automation types into one business process. Each resource node's output feeds the next via `$vars`.
-
-### Subflow Composition
-
-```text
-Trigger -> Subflow (validate) -> Decision (valid?) ->
-  true: Subflow (process) -> End
-  false: Script (log) -> Terminate
-```
-Use subflows to encapsulate reusable logic. Each subflow has isolated scope — pass data via inputs/outputs. See [subflow/impl.md](plugins/subflow/impl.md).
-
-### Scheduled Batch Processing
-
-```text
-Scheduled Trigger (R/PT1H) -> HTTP (fetch batch) -> Loop (items) ->
-  Queue Create (per item) -> End Loop -> Script (summary) -> End
-```
-Combine scheduled triggers with loops and queues for recurring batch jobs.
-
----
-
-## Node Selection Guide
-
-Quick decision guide. For full details, read the linked plugin.
-
-### "I need to run custom logic"
-Use **Script**. See [script/impl.md](plugins/script/impl.md).
-
-### "I need to call an external API"
-- **First choice:** Check if a **connector node** exists. See [connector/impl.md](plugins/connector/impl.md).
-- **Second choice:** Use **HTTP Request**. See [http/impl.md](plugins/http/impl.md).
-
-### "I need to branch based on a condition"
-- **Two paths:** [decision/impl.md](plugins/decision/impl.md)
-- **Three or more paths:** [switch/impl.md](plugins/switch/impl.md)
-- **Branch on HTTP response:** [http/impl.md](plugins/http/impl.md) branches
-
-### "I need to transform data"
-- **Standard map/filter/group-by:** [transform/impl.md](plugins/transform/impl.md)
-- **Custom logic:** [script/impl.md](plugins/script/impl.md)
-
-### "I need to iterate over a collection"
-[loop/impl.md](plugins/loop/impl.md)
-
-### "I need to run things in parallel"
-Wire multiple outputs from one node to different downstream nodes. Use [merge/impl.md](plugins/merge/impl.md) to synchronize.
-
-### "I need to end the flow"
-- **Normal completion:** [end/impl.md](plugins/end/impl.md)
-- **Abort on error:** [terminate/impl.md](plugins/terminate/impl.md)
-
-### "I need to wait before continuing"
-[delay/impl.md](plugins/delay/impl.md)
-
-### "I need to distribute work to robots"
-[queue/impl.md](plugins/queue/impl.md)
-
-### "I need to group related steps"
-[subflow/impl.md](plugins/subflow/impl.md)
-
-### "I need to invoke an RPA process"
-[rpa/impl.md](plugins/rpa/impl.md)
-
-### "I need to invoke an agent, agentic process, flow, or API workflow"
-[agent](plugins/agent/impl.md), [agentic-process](plugins/agentic-process/impl.md), [flow](plugins/flow/impl.md), [api-workflow](plugins/api-workflow/impl.md)
-
-### "I need human approval or input"
-[hitl/impl.md](plugins/hitl/impl.md)
-
-### "I need to run the flow on a schedule"
-[scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md)
-
-### "I need error handling"
-Nodes expose error information via `$vars.nodeId.error`. Use a [decision](plugins/decision/impl.md) after an action to check for errors and branch to a handler or [terminate](plugins/terminate/impl.md).
-
-### "The flow needs something I can't build with flow nodes"
-1. Add a `core.logic.mock` placeholder node
-2. Tell the user what's needed and which skill to use:
-   - Desktop/browser automation or coded workflow (C#) -> `/uipath:uipath-rpa`
-   - Agent -> `/uipath:uipath-agents`
-3. Once the user creates the component, replace the placeholder with the real node via the relevant resource plugin's `impl.md`
-
-**Do not** attempt to invoke other skills automatically.
