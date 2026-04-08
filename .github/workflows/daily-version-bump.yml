@@ -1,8 +1,6 @@
 name: Daily Version Bump
 
 on:
-  push:
-    branches: [fix/bump_version_test3]
   schedule:
     - cron: '0 7 * * *' # every day at 07:00 UTC
   workflow_dispatch:
