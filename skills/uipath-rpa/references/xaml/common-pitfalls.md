@@ -159,6 +159,26 @@ Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `A
 - **ForEachRow**: DelegateInArgument name must be a valid C#/VB identifier — CacheMetadata validates this.
 - **DeleteRowsX inside ExcelForEachRowX**: Attempting to delete the current row during iteration throws a runtime error ("Cannot delete current row").
 
+## IResource / ILocalResource — String Path Conversion
+
+Many activities (O365, GSuite, Mail, file operations) require `IResource` or `ILocalResource` properties, not string paths. Passing a string where `IResource` is expected causes a validation error. `LocalResource(string)` constructor is internal — you cannot use it in XAML expressions.
+
+**Use `LocalResource.FromPath()` to convert a string path to `ILocalResource`:**
+
+```xml
+<!-- C# expression project -->
+<InArgument x:TypeArguments="upr:ILocalResource">
+  <CSharpValue x:TypeArguments="upr:ILocalResource">LocalResource.FromPath(filePath)</CSharpValue>
+</InArgument>
+```
+
+Requires namespace `UiPath.Platform.ResourceHandling` in the XAML header:
+```xml
+<x:String>UiPath.Platform.ResourceHandling</x:String>
+```
+
+This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `SendMail` attachments, `MoveFile`, `CopyFile`, `CompressZipFiles`, and any other activity with `IResource`/`ILocalResource` properties.
+
 ## InvokeWorkflow Gotchas
 
 - **Auto-appends .xaml**: If the `WorkflowFileName` has no file extension, `.xaml` is appended automatically. Passing `"workflow.txt"` becomes `"workflow.txt.xaml"`.
