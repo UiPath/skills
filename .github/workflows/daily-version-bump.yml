@@ -2,7 +2,7 @@ name: Daily Version Bump
 
 on:
   schedule:
-    - cron: '30 14 * * *' # every day at 07:00 UTC/ 09:00 or 10:00 EET depending on daylight saving time
+    - cron: '40 13 * * *' # every day at 07:00 UTC/ 09:00 or 10:00 EET depending on daylight saving time
   workflow_dispatch:
     inputs:
       assignees:
