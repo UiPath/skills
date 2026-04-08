@@ -1,7 +1,5 @@
 # UiPath SDK Services Reference
 
-> **Agent type: Coded agents only.** Low-code agents configure platform services declaratively via `agent.json` resources — no Python SDK needed. See [lowcode/resources-reference.md](../lowcode/resources-reference.md).
-
 Complete reference for all platform services available through the UiPath Python SDK.
 
 ## SDK Initialization
@@ -198,8 +196,7 @@ result = sdk.agenthub.invoke(agent_name="system-agent", input_data={"query": "He
 
 ```python
 servers = sdk.mcp.list()
-server = sdk.mcp.retrieve(slug="my-mcp-server", folder_path="MyFolder")
-server = await sdk.mcp.retrieve_async(slug="my-mcp-server", folder_path="MyFolder")
+server = sdk.mcp.retrieve(name="my-mcp-server")
 ```
 
 ## Resource Catalog

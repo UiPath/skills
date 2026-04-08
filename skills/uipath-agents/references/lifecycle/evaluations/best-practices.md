@@ -205,22 +205,11 @@ eval-sets/
 ## CI/CD Integration
 
 ```bash
-uip codedagent eval <agent> evaluations/eval-sets/smoke-test.json \
-  --no-report \
+uip codedagent eval <agent> evaluations/eval-sets/smoke-tests.json \
   --workers 4 \
   --mocker-cache \
   --output-file eval-results.json
 ```
-
-**Low-code agents:**
-```bash
-uip codedagent eval agent.json evaluations/eval-sets/smoke-test.json \
-  --no-report \
-  --workers 4 \
-  --output-file eval-results.json
-```
-
-> Add `--report` (and ensure `UIPATH_PROJECT_ID` is set in `.env`) to publish results to Studio Web.
 
 ## Evaluator Selection Quick Guide
 

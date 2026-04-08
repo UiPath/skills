@@ -13,16 +13,8 @@ uip codedagent eval <entrypoint> <eval-file> \
   --output-file eval-results.json
 ```
 
-**Low-code agent:**
-```bash
-uip codedagent eval agent.json <eval-file> \
-  --workers 4 \
-  --no-report \
-  --output-file eval-results.json
-```
-
 **Parameters:**
-- `<entrypoint>` - Agent entry point name from `entry-points.json` (coded agents) or `agent.json` (low-code agents)
+- `<entrypoint>` - Agent entry point name from `entry-points.json`
 - `<eval-file>` - Path to evaluation set file
 - `--workers` - Number of parallel workers (1-8)
 - `--no-report` - Don't report to UiPath Cloud

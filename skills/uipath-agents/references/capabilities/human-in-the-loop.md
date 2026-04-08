@@ -1,19 +1,8 @@
 # Human-in-the-Loop & Interrupt/Resume
 
-> **Agent type: Both coded and low-code agents.** Coded agents use LangGraph's `interrupt()` with UiPath platform models (`CreateTask`, `WaitTask`, `InvokeProcess`, `WaitJob`) — see the [Coded Agents](#coded-agents) sections below. Low-code agents declare an `escalation` resource in `agent.json` — see the [Low-Code Agents](#low-code-agents) section.
-
 Pause agent execution for human approval, external processes, or job monitoring using LangGraph's `interrupt()` function.
 
-## Coded Agents
-
 ## How Interrupts Work
-
-> **Required: compile the graph with a `checkpointer`.** Without a checkpointer, `interrupt()` will pause execution but the graph cannot resume — the state is lost. Use `MemorySaver` for local development and testing:
-> ```python
-> from langgraph.checkpoint.memory import MemorySaver
-> graph = builder.compile(checkpointer=MemorySaver())
-> ```
-> UiPath's managed runtime provides a production checkpointer automatically when the agent is deployed — `MemorySaver` is for local `uip codedagent run` only.
 
 ```
 Agent Running → interrupt(model) → Pause → External Work → Resume with Result
@@ -156,58 +145,6 @@ class GraphState(MessagesState):
 - Provide structured choices (approve/reject), not open-ended questions
 - Handle all possible return statuses in resumption logic
 - Route to appropriate assignees based on task type
-
-## Low-Code Agents
-
-For low-code agents, human-in-the-loop is configured declaratively by adding an `escalation` resource to the `"resources"` array in `agent.json`. No Python code or `interrupt()` is required — the agent runtime handles pausing and resuming automatically when it decides to escalate.
-
-```json
-{
-  "$resourceType": "escalation",
-  "name": "Manager Approval",
-  "description": "Escalate to a human manager when the action exceeds the agent's authority or confidence. Provide a summary of what you are asking to approve.",
-  "escalationType": 0,
-  "isAgentMemoryEnabled": false,
-  "channels": [
-    {
-      "name": "Channel",
-      "type": "actionCenter",
-      "description": "Approval channel for sensitive actions.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "Content": { "type": "string" },
-          "Comment": { "type": "string", "description": "Context for the reviewer" }
-        }
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "Comment": { "type": "string", "description": "Reviewer's response or decision" }
-        }
-      },
-      "outcomeMapping": { "approve": "continue", "reject": "continue" },
-      "recipients": [
-        { "type": 1, "value": "user-or-group-uuid", "displayName": "Review Team" }
-      ],
-      "properties": {
-        "appName": "HITL App",
-        "appVersion": 1,
-        "resourceKey": "action-center-app-uuid",
-        "isActionableMessageEnabled": false
-      }
-    }
-  ]
-}
-```
-
-**`isAgentMemoryEnabled`:** Set to `true` to have the agent learn from resolved escalations and auto-resolve similar cases in the future. Keep `false` for privacy-sensitive workflows.
-
-**`recipients[].type`:** `1` = User ID, `2` = Group ID, `3` = User email.
-
-For the full `escalation` resource schema and all options, see [lowcode/resources-reference.md](../lowcode/resources-reference.md).
-
----
 
 ## Troubleshooting
 

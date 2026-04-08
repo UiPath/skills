@@ -1,7 +1,5 @@
 # File Synchronization
 
-> **Agent type: Both coded and low-code agents.** The same `uip codedagent push` / `pull` commands work for both. For coded agents the primary files synced are `main.py`, `pyproject.toml`, `uv.lock`, and config JSONs. For low-code agents the primary file is `agent.json` (no `pyproject.toml` or `uv.lock`).
-
 Sync project files between local development and remote Studio Web storage.
 
 ## Quick Reference
@@ -20,9 +18,12 @@ uip codedagent pull --overwrite
 
 ## Documentation
 
-- **[Authentication](authentication.md)** — Required before push or pull
-- **[Deployment](deployment.md)** — Deploy after syncing
-- **[Running Agents](running-agents.md)** — Test locally before pushing changes
+- **[File Sync Guide](file-sync.md)** — Complete sync workflow
+  - Push and pull commands with all options
+  - `UIPATH_PROJECT_ID` setup
+  - Conflict resolution strategies
+  - Common workflows (clone, collaborate, CI/CD)
+  - Troubleshooting
 
 ## Prerequisites
 
@@ -37,7 +38,7 @@ uip codedagent pull --overwrite
 | `Your local version is behind the remote version. Aborted!` | Push requires interactive confirmation that CLI cannot provide | Use `uip codedagent push --overwrite` to force push |
 | Push deleted unexpected files | Push mirrors local state — removes remote files not present locally | This is by design. Review local files before pushing |
 | `Conflict on pull` | Remote and local both changed | Use `uip codedagent pull --overwrite` to force remote, or manually resolve differences |
-| `401 Unauthorized` | Auth expired | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+| `401 Unauthorized` | Auth expired | Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` |
 
 ## Additional Instructions
 
@@ -90,7 +91,7 @@ UIPATH_PROJECT_ID=12345 uip codedagent push
 
 ### Authentication
 
-Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to configure your credentials. This sets up:
+Run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` to configure your credentials. This sets up:
 - `UIPATH_URL` - Your UiPath instance URL
 - `UIPATH_ACCESS_TOKEN` - Bearer token for API access
 - `UIPATH_TENANT_NAME` - Your tenant identifier
@@ -178,8 +179,6 @@ uip codedagent push --overwrite
 ```bash
 uip codedagent push --nolock
 ```
-
-> **Low-code agents:** The `--nolock` flag is not relevant (no `uv.lock` file).
 
 **Push without syncing resources:**
 ```bash
@@ -320,8 +319,6 @@ uip codedagent push
 | `uv.lock` | Dependency lock file (can skip with `--nolock`) |
 | `.py`, `.json`, `.yaml` files | Project source files |
 
-> **Low-code agents:** The primary file synced is `agent.json`. No `pyproject.toml`, `main.py`, or `uv.lock` files are involved.
-
 ### Files Excluded from Sync
 
 - `__pycache__/` - Python cache
@@ -329,8 +326,6 @@ uip codedagent push
 - `.env` - Environment variables (don't sync secrets!)
 - `.uipath/` - Build artifacts
 - Other files based on `packOptions` in `uipath.json`
-
-> **After pulling on a new machine:** `.env` is excluded from sync for security. After pulling, manually recreate `.env` with `UIPATH_PROJECT_ID=<id>` and re-run `uip login --format json` + `uip login tenant set "<TENANT>" --format json` to restore credentials.
 
 ---
 
@@ -396,7 +391,7 @@ uip codedagent push
 
 **Error:** Command fails with "Unauthorized" or "Invalid token"
 
-**Solution:** Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to refresh credentials.
+**Solution:** Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` to refresh credentials.
 
 ### "Files were unexpectedly deleted"
 
