@@ -1,6 +1,6 @@
 # Proposal: `uipath-lattice-flow` Skill
 
-> **Status:** Draft v3 — dynamic resource node architecture added
+> **Status:** Draft v4 — CLI source analysis and replaceability assessment added
 > **Date:** 2026-04-07
 > **Codename:** lattice (7 chars, matching "maestro")
 
@@ -30,11 +30,13 @@ The 14 OOTB `.registration.json` files in `flow-workbench` contain everything an
 | Variables | Manual JSON editing (no CLI exists) | Same approach — already direct JSON in maestro-flow | Yes |
 | Validation | `uip flow validate` | Agent follows structural rules from schema docs; optional CLI as final check | Yes |
 | Dynamic nodes (connectors, resources) | `uip flow registry search/get` + `node configure` | Still needs registry for discovery + schema pull — but JSON construction is direct | Partial |
-| Project scaffolding | `uip flow init` | Agent creates the 6 project files from templates | Yes |
+| Project scaffolding | `uip flow init` | Agent creates the 2 project files directly | Yes |
 
-**The hard constraint:** Dynamic nodes (connectors like Jira, Slack, Salesforce; resources like RPA processes, agents) still require the registry for schema discovery. Their definitions are tenant-specific and version-sensitive. The skill will include a guide for these cases but cannot eliminate the registry dependency. Dynamic node support is in scope but deferred — OOTB nodes are the priority.
+**Key takeaway from CLI source analysis:** Of the 16 `uip flow` CLI commands, **12 are fully replaceable** with direct JSON manipulation, 2 are partially replaceable, and only 2 truly require the CLI (`registry pull` for network calls, `debug` for cloud execution). The project scaffold is simpler than expected (2 files, not 6), and all ID generation, variable regeneration, and validation algorithms are deterministic and documentable. This confirms the skill is viable.
 
-**Long-term goal:** This skill is intended to **fully replace** `uipath-maestro-flow`. Once dynamic node support is complete, `uipath-maestro-flow` will be retired.
+**The remaining hard constraint:** Dynamic nodes (resources like RPA processes, agents, API workflows) still require `registry pull` + `registry get` to fetch their input/output schemas. Connectors are out of scope. The skill will document the registry interaction for dynamic nodes but cannot eliminate the network dependency for schema discovery.
+
+**Long-term goal:** This skill is intended to **fully replace** `uipath-maestro-flow`. Once dynamic resource node support is complete, `uipath-maestro-flow` will be retired.
 
 ## Source Material
 
@@ -49,6 +51,125 @@ The following resources in `flow-workbench` provide the ground truth for this sk
 | Zod workflow schema | `packages/flow-schema/src/workflow.ts` | All entity types: nodes, edges, variables, bindings, subflows, metadata, connections |
 | Node categories | `packages/registry/src/util/categories.ts` | Category IDs, names, sort orders |
 | Dynamic node generation | `packages/registry/src/registry/uipath-v1/index.ts` | How platform APIs produce node definitions |
+| Flow CLI source code | `cli/packages/flow-tool/src/` | Exact implementation of all `uip flow` commands — JSON manipulation logic, ID generation, validation rules |
+
+## CLI Command Replaceability Analysis
+
+Source: `cli/packages/flow-tool/src/` — the implementation of all `uip flow` commands.
+
+### Summary
+
+| Command | Replaceable? | Notes |
+|---|---|---|
+| `flow init` | **Yes** | Creates only 2 files: `project.uiproj` + `<name>.flow`. No other scaffold files. |
+| `flow node add` | **Partially** | JSON manipulation is replaceable. Needs manifest from registry cache for dynamic nodes; OOTB manifests are bundled in this skill. |
+| `flow node list` | **Yes** | Reads `workflow.nodes` |
+| `flow node delete` | **Yes** | JSON manipulation with cascade cleanup (edges, definitions, variables) |
+| `flow node configure` | **Yes** | Pure JSON manipulation of `inputs.detail` + bindings |
+| `flow edge add` | **Yes** | JSON insert with port validation against handleConfiguration |
+| `flow edge list/delete` | **Yes** | Read/filter `workflow.edges` |
+| `flow binding add/list/delete` | **Yes** | JSON manipulation |
+| `flow variable add/list/delete` | **Yes** | JSON manipulation |
+| `flow registry pull` | **No** | Network call to Orchestrator manifest API |
+| `flow registry list/search` | **Yes** | Local cache read (`~/.uipath/nodes/index.json`) |
+| `flow registry get` (OOTB/resource) | **Yes** | Local cache read |
+| `flow registry get` (connector) | **Partially** | Cache read + optional IS API call for field enrichment |
+| `flow validate` | **Partially** | Structural checks replaceable; full semantic rules in compiled `@uipath/flow-schema` |
+| `flow debug` | **No** | Uploads to Studio Web, runs remote debug session |
+| `flow pack` | **No** | Complex nupkg packaging |
+
+### Key Implementation Details
+
+These details from the CLI source code must be documented in the skill's reference guides:
+
+#### Project Scaffold (from `flow init`)
+
+`flow init` creates only **2 files** (not 6 as previously assumed):
+
+**`project.uiproj`:**
+```json
+{
+  "Name": "<name>",
+  "ProjectType": "Flow"
+}
+```
+
+**`<name>.flow`:** A minimal workflow with one `core.trigger.manual` start node at position `{x:256, y:144}`, id `"start"`, empty edges/bindings, one definition entry for the trigger, and `metadata.createdAt`/`updatedAt` timestamps. The flow `id` and the trigger's `model.entryPointId` are both UUIDs.
+
+> Other files (`entry-points.json`, `operate.json`, `package-descriptor.json`, `bindings_v2.json`) are generated at pack/deploy time, not at init.
+
+#### Node ID Generation Algorithm
+
+1. Take the display label (or `--label` override)
+2. Split on non-alphanumeric characters
+3. Join as camelCase (first word lowercase, rest capitalized)
+4. Strip `"createNew"` prefix if present
+5. Append numeric suffix starting at `1`, incrementing until unique among existing node IDs
+6. Result: `sendMessage1`, `httpRequest1`, `decision2`, etc.
+
+**Constraint:** IDs must match `/^[a-zA-Z_][a-zA-Z0-9_]*$/` and not be a JS/Python reserved word.
+
+#### Edge ID Generation Algorithm
+
+Format: `{sourceId}-{sourcePort}-{targetId}-{targetPort}`
+
+- Uses `"default"` if a port is null
+- Appends `-2`, `-3`, etc. on collision
+
+Example: `start-output-httpRequest1-input`
+
+#### Binding ID Generation
+
+Format: `b` + 8 random alphanumeric characters (e.g., `bXk9mNpQr`)
+
+#### `variables.nodes` Auto-Regeneration (Critical)
+
+**Every time a node is added or removed**, the CLI completely regenerates `workflow.variables.nodes` from scratch:
+
+1. For each node in `workflow.nodes`:
+   - Check if the node has `outputs` defined on the instance
+   - If not, fall back to the matching definition's `outputDefinition`
+   - For each output key, emit a `NodeVariable`:
+     ```json
+     {
+       "id": "<nodeId>.<outputKey>",
+       "type": "<outputType>",
+       "binding": { "nodeId": "<nodeId>", "outputId": "<outputKey>" }
+     }
+     ```
+2. Replace `workflow.variables.nodes` entirely with the regenerated array
+
+**This means:** when an agent adds a node manually to JSON, they MUST also regenerate `variables.nodes`. The skill's validation checklist must include this step.
+
+#### Definition Deduplication
+
+- `workflow.definitions` is deduped by `nodeType:version` key
+- When adding: skip if a definition with the same `nodeType` + `version` already exists
+- When deleting a node: remove the definition only if no other node uses the same `type:typeVersion`
+
+#### Binding Deduplication
+
+- Deduped by `resourceKey` + `propertyAttribute` pair
+- If a binding with the same key+attr exists, the new one is silently discarded
+
+#### Process/Agent Node Bindings (from `node add`)
+
+When adding a resource node (RPA workflow, agent, API workflow), the CLI:
+1. Extracts the GUID from the trailing part of the nodeType
+2. Creates two bindings: `name` and `folderPath`
+3. Updates `model.context` entries to reference `=bindings.<bindingId>`
+
+This is the mechanism that connects the node to its Orchestrator resource at runtime.
+
+#### Validation Rules (from `flow validate`)
+
+Structural checks the agent can replicate:
+1. **Edge references** — all `sourceNodeId`/`targetNodeId` must exist in `workflow.nodes`
+2. **Definition coverage** — every node's `type:typeVersion` must have a matching `definitions` entry (warning only)
+3. **Unique IDs** — no duplicate node IDs or edge IDs
+4. **Zod parse** — `.flow` file must pass the `workflowSchema` Zod validation
+
+Full semantic validation (from compiled `@uipath/flow-schema` built-in rules) cannot be replicated — use `uip flow validate` as a final check when available.
 
 ## Reference Flows Catalog
 
@@ -271,7 +392,8 @@ skills/uipath-lattice-flow/
 │   │   ├── resource-node-guide.md        #   Shared structure, model object, static vs registry fields
 │   │   ├── rpa-workflow-guide.md         #   RPA workflow specifics + examples from reference flows
 │   │   ├── agent-guide.md                #   Agent specifics + examples from reference flows
-│   │   └── api-workflow-guide.md         #   API workflow specifics + construction pattern
+│   │   ├── api-workflow-guide.md         #   API workflow specifics + construction pattern
+│   │   └── agentic-process-guide.md     #   Agentic process specifics + construction pattern
 │   ├── bindings-guide.md                 # bindings_v2.json format (empty for resource-only flows)
 │   ├── validation-checklist.md           # Structural validation rules (manual pre-flight)
 │   └── nodes/                            # One file per OOTB node type
@@ -287,6 +409,7 @@ skills/uipath-lattice-flow/
 │       ├── logic-foreach.md              # core.logic.foreach
 │       ├── logic-merge.md                # core.logic.merge
 │       ├── logic-mock.md                 # core.logic.mock (placeholder)
+│       ├── action-blank.md               # core.action.blank
 │       ├── control-end.md                # core.event.end
 │       └── control-terminate.md          # core.event.terminate
 ├── assets/
@@ -312,7 +435,7 @@ The skill definition with frontmatter, critical rules, and two workflows (new fl
 | File | Purpose | Source Material |
 |---|---|---|
 | `flow-schema-guide.md` | Complete `.flow` JSON schema — all entity types (Workflow, NodeInstance, EdgeInstance, NodeManifest, HandleConfig, ConnectionConstraint, WorkflowVariables, WorkflowVariable, NodeVariable, ArgumentBinding, VariableUpdate, SubflowEntry, WorkflowConnection, Metadata), validation rules, constants, expression syntax | `@uipath/flow-schema` Zod schemas (see entity inventory above) |
-| `project-scaffolding-guide.md` | How to create a valid project directory (`.flow`, `project.uiproj`, `bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) | `uip flow init` output + flow-workbench project structure |
+| `project-scaffolding-guide.md` | How to create a valid project directory (`.flow` + `project.uiproj` — only 2 files needed). ID generation algorithms for nodes, edges, and bindings. `variables.nodes` regeneration rules. | `flow init` source code (`cli/packages/flow-tool/src/commands/init.ts`) |
 | `edge-wiring-guide.md` | Standard ports by node type, edge JSON format, connection rules, constraint validation | `handleConfiguration` from `.registration.json` files |
 | `variables-guide.md` | Variable declaration (in/out/inout), type system, `=js:` expressions, output mapping on End nodes, `variableUpdates` | `@uipath/flow-schema` variable schemas + maestro-flow's existing `variables-and-expressions.md` |
 | `subflow-guide.md` | Subflow JSON structure, isolated scope, input/output passing, Start/End node requirements | Example subflow `.flow` files from test-data |
@@ -320,8 +443,9 @@ The skill definition with frontmatter, critical rules, and two workflows (new fl
 | `dynamic-nodes/rpa-workflow-guide.md` | RPA-specific: serviceType, category, icon, construction from registry output, full example from hr-onboarding | hr-onboarding reference flow |
 | `dynamic-nodes/agent-guide.md` | Agent-specific: serviceType, category, icon, construction pattern, examples from devconnect-email and release-notes-generator | Reference flows + flow-core |
 | `dynamic-nodes/api-workflow-guide.md` | API workflow-specific: serviceType, category, construction pattern | flow-core `orchestrator.ts` |
+| `dynamic-nodes/agentic-process-guide.md` | Agentic process-specific: serviceType (`Orchestrator.StartAgenticProcess`), category, construction pattern | flow-core `resource-type-metadata.ts` |
 | `bindings-guide.md` | `bindings_v2.json` format — empty for resource-only flows, populated only for connector nodes (out of scope) | IS activity guide from maestro-flow |
-| `validation-checklist.md` | Numbered checklist of structural rules the agent verifies after each edit (replaces `uip flow validate` for basic checks) | `uip flow validate` error categories + Zod schema constraints |
+| `validation-checklist.md` | Numbered checklist of structural rules: edge references exist, definition coverage, unique IDs, `variables.nodes` regenerated, `targetPort` present on all edges. Full semantic validation still needs `uip flow validate`. | `flow-validate-service.ts` source + Zod schema constraints |
 
 #### Node Reference Docs (14 files)
 
@@ -490,6 +614,7 @@ Add support for dynamic resource nodes in this order:
 1. **RPA Workflow** (`uipath.core.rpa-workflow.*`) — most common resource type in reference flows
 2. **Agent** (`uipath.core.agent.*`) — used in 4 of 8 reference flows
 3. **API Workflow** (`uipath.core.api-workflow.*`) — same pattern as RPA, different serviceType
+4. **Agentic Process** (`uipath.core.agentic-process.*`) — same pattern, `Orchestrator.StartAgenticProcess`
 
 At this point, maestro-flow is retired and its `description` is updated to redirect: `"Retired→uipath-lattice-flow"`.
 
@@ -507,15 +632,15 @@ Dynamic resource nodes (RPA Workflow, Agent, API Workflow) share a common struct
 
 All three types share identical `handleConfiguration`, `supportsErrorHandling`, and `debug` fields. They differ only in `model.serviceType`, `model.bindings.resourceSubType`, `model.bindings.orchestratorType`, `display.icon`, and `category`:
 
-| Field | RPA Workflow | Agent | API Workflow |
-|---|---|---|---|
-| `model.serviceType` | `Orchestrator.StartJob` | `Orchestrator.StartAgentJob` | `Orchestrator.ExecuteApiWorkflowAsync` |
-| `model.bindings.resourceSubType` | `Process` | `Agent` | `Api` |
-| `model.bindings.orchestratorType` | `process` | `agent` | `api` |
-| `model.bindings.resource` | `process` | `process` | `process` |
-| `category` | `rpa-workflow` | `agent` | `api-workflow` |
-| `display.icon` | `rpa` | `autonomous-agent` | `api` |
-| Node type pattern | `uipath.core.rpa-workflow.{entityKey}` | `uipath.core.agent.{entityKey}` | `uipath.core.api-workflow.{entityKey}` |
+| Field | RPA Workflow | Agent | API Workflow | Agentic Process |
+|---|---|---|---|---|
+| `model.serviceType` | `Orchestrator.StartJob` | `Orchestrator.StartAgentJob` | `Orchestrator.ExecuteApiWorkflowAsync` | `Orchestrator.StartAgenticProcess` |
+| `model.bindings.resourceSubType` | `Process` | `Agent` | `Api` | `ProcessOrchestration` |
+| `model.bindings.orchestratorType` | `process` | `agent` | `api` | `agentic-process` |
+| `model.bindings.resource` | `process` | `process` | `process` | `process` |
+| `category` | `rpa-workflow` | `agent` | `api-workflow` | `agentic-process` |
+| `display.icon` | `rpa` | `autonomous-agent` | `api` | `agentic-process` |
+| Node type pattern | `uipath.core.rpa-workflow.{entityKey}` | `uipath.core.agent.{entityKey}` | `uipath.core.api-workflow.{entityKey}` | `uipath.core.agentic-process.{entityKey}` |
 
 The `{entityKey}` is the Orchestrator Release Key GUID (lowercased, non-alphanumeric chars replaced with `-`).
 
@@ -627,7 +752,8 @@ references/
 │   ├── resource-node-guide.md        # Shared structure, model object, static fields
 │   ├── rpa-workflow-guide.md         # RPA-specific: serviceType, category, examples from hr-onboarding
 │   ├── agent-guide.md                # Agent-specific: serviceType, category, examples from devconnect/release-notes
-│   └── api-workflow-guide.md         # API-specific: serviceType, category, construction pattern
+│   ├── api-workflow-guide.md         # API-specific: serviceType, category, construction pattern
+│   └── agentic-process-guide.md     # Agentic process-specific: serviceType, category, construction pattern
 ```
 
 ## Example Prompts (Same Results, Different Approach)
@@ -688,12 +814,15 @@ These prompts would activate `uipath-lattice-flow` and produce the same `.flow` 
 #### 2c. API Workflow support
 19. Write `references/dynamic-nodes/api-workflow-guide.md` — API-specific fields, construction pattern
 
-#### 2d. Retire maestro-flow
-20. Update `uipath-maestro-flow` description to redirect: `"Retired→uipath-lattice-flow"`
-21. Update `uipath-planner` routing table
+#### 2d. Agentic Process support
+20. Write `references/dynamic-nodes/agentic-process-guide.md` — agentic-process-specific fields, construction pattern
+
+#### 2e. Retire maestro-flow
+21. Update `uipath-maestro-flow` description to redirect: `"Retired→uipath-lattice-flow"`
+22. Update `uipath-planner` routing table
 
 ### Phase 3: Cleanup
-22. Remove `uipath-maestro-flow` from the repo
+23. Remove `uipath-maestro-flow` from the repo
 
 ## Resolved Questions
 
@@ -703,9 +832,9 @@ These prompts would activate `uipath-lattice-flow` and produce the same `.flow` 
 4. **Schema coverage** — `flow-schema-guide.md` will document **all** entity types from `@uipath/flow-schema` (Workflow, NodeInstance, EdgeInstance, NodeManifest, HandleConfig, ConnectionConstraint, WorkflowVariables, WorkflowVariable, NodeVariable, ArgumentBinding, VariableUpdate, SubflowEntry, WorkflowConnection, Metadata), not just nodes and edges.
 5. **Dynamic node phasing** — RPA Workflow first (most common), then Agent (used in 4/8 reference flows), then API Workflow (same pattern, different serviceType). All share a common base structure documented in `resource-node-guide.md`.
 
-## Open Questions
+## Resolved Open Questions
 
-1. **`blank-node` (`core.action.blank`)** — Present in OOTB registry but not observed in any reference flow. Include in node docs or skip?
-2. **`stickyNote`** — Used in sales-pipeline-hygiene for annotations. Include as a node reference doc or document as a non-functional element?
-3. **Agent nodes (`uipath.agent.autonomous`, `uipath.agent.conversational`)** — These are OOTB (always available after login). Should they be bundled as node reference docs alongside the 14 OOTB nodes, or treated as dynamic?
-4. **Agentic Process (`uipath.core.agentic-process.*`)** — Same pattern as RPA/Agent/API. Should it be included in Phase 2 or deferred?
+1. **`blank-node` (`core.action.blank`)** — Include in node docs (15 OOTB nodes total instead of 14).
+2. **`stickyNote`** — Document as a non-functional annotation element in `flow-schema-guide.md`, not as a node reference doc.
+3. **Agent nodes (`uipath.agent.autonomous`, `uipath.agent.conversational`)** — Treat as dynamic. They require login and are covered in Phase 2 under the agent guide.
+4. **Agentic Process (`uipath.core.agentic-process.*`)** — Include in Phase 2 alongside RPA/Agent/API.
