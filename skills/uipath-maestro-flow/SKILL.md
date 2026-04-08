@@ -41,6 +41,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 13. **Use `=js:` prefix for all expressions** — the runtime uses a Jint-based JavaScript engine (ES2020 subset). See [references/variables-and-expressions.md](references/variables-and-expressions.md) for supported features and constraints.
 14. **For resources not yet published, use mock placeholders** — add a `core.logic.mock` node, tell the user which skill to use for creation, then replace the mock after publishing. See [references/orchestration-guide.md](references/orchestration-guide.md).
 15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
+16. **Always use horizontal layout** — Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` values and the same `y` baseline (e.g., `y: 144`). Never stack nodes vertically.
 
 ## Common Edits (existing flows)
 

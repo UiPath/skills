@@ -46,8 +46,8 @@ Examples:
 | Position in flow | Anywhere (action node) | Start node only (replaces manual trigger) |
 | `--connection-id` on `registry get` | Optional (enriches metadata) | **Required** (fails without it) |
 | Metadata returned | `inputDefinition`, `outputResponseDefinition`, `connectorMethodInfo` | `eventParameters`, `filterFields`, `outputResponseDefinition`, `eventMode` |
-| Configuration | `node configure --detail` (method, endpoint, bodyParameters) | Direct `.flow` JSON edit (event params + filter expression) |
-| Bindings | `Connection` resource | `Connection` + `EventTrigger` + `Property` resources |
+| Configuration | `node configure --detail` (method, endpoint, bodyParameters) | `node configure --detail` (eventMode, eventParameters, filterExpression) |
+| Bindings | `Connection` resource | `Connection` + `EventTrigger` + `Property` resources (auto-generated) |
 
 ### Discovery
 
@@ -192,166 +192,62 @@ Check every field in `eventParameters.fields` where `required: true`. All requir
 3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`
 4. Only proceed after all required event parameters are resolved
 
-### Step 5 — Discover trigger metadata for bindings
+### Step 5 — Replace the manual trigger with the connector trigger node
 
-Fetch the trigger object metadata to build the `EventTrigger` binding:
-
-```bash
-uip is triggers describe "<connector-key>" "<operation>" "<objectName>" \
-  --connection-id "<id>" --output json
-```
-
-This returns the trigger metadata needed for the `EventTrigger` resource in `bindings_v2.json`.
-
-### Step 6 — Build the trigger node in the .flow file
-
-Replace the `core.trigger.manual` start node with the connector trigger node. The trigger node is always the first node in the flow (position x=200).
-
-```json
-{
-  "id": "start",
-  "type": "uipath.connector.trigger.<connector-key>.<trigger-name>",
-  "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 200, "y": 144 } },
-  "display": { "label": "Email Received" },
-  "inputs": {
-    "eventParameters": {
-      "parentFolderId": "<RESOLVED_FOLDER_ID>"
-    },
-    "filterExpression": "((fields.fromAddress<`someone@example.com`>))"
-  },
-  "model": {
-    "type": "bpmn:StartEvent",
-    "eventDefinition": "bpmn:SignalEventDefinition",
-    "context": [
-      { "name": "connectorKey", "type": "string", "value": "uipath-microsoft-outlook365" },
-      { "name": "operation", "type": "string", "value": "EMAIL_RECEIVED" },
-      { "name": "objectName", "type": "string", "value": "Message" },
-      { "name": "connection", "type": "string", "value": "<bindings.uipath-microsoft-outlook365 connection>" }
-    ]
-  }
-}
-```
-
-**Key points:**
-- `model.type` is `bpmn:StartEvent` — this is a start node
-- `model.context.connection` uses a `<bindings.*>` placeholder, resolved at runtime via `bindings_v2.json`
-- `inputs.eventParameters` holds the resolved event parameter values from Step 3
-- `inputs.filterExpression` holds the filter using the syntax `((fields.<fieldName><`value`>))` — omit if no filters are needed
-- The `id` should be `"start"` (replacing the manual trigger) so existing edge wiring from `start` is preserved
-
-### Step 7 — Populate definitions
-
-Same as any node — fetch the definition from the registry and add it to `definitions`:
+The trigger node replaces the default `core.trigger.manual` start node. Use CLI commands:
 
 ```bash
-uip flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+# 1. Delete the manual trigger (also removes its edges and orphaned definition)
+uip flow node delete <PROJECT>.flow start --output json
+
+# 2. Add the connector trigger node
+uip flow node add <PROJECT>.flow <triggerNodeType> \
+  --label "Email Received" --position 200,144 --output json
+# → Note the generated node ID from the response (e.g., "emailReceived1")
+
+# 3. Re-wire the edge from the new trigger to the next node
+uip flow edge add <PROJECT>.flow <newTriggerId> <nextNodeId> \
+  --source-port output --target-port input --output json
 ```
 
-Copy `Data.Node` into the `definitions` array. Remove the old `core.trigger.manual` definition if no other node uses it.
+### Step 6 — Configure the trigger node
+
+Use `node configure` with trigger-specific `--detail` fields:
+
+```bash
+uip flow node configure <PROJECT>.flow <triggerId> --detail '{
+  "connectionId": "<CONNECTION_ID>",
+  "folderKey": "<FOLDER_KEY>",
+  "eventMode": "<EVENT_MODE>",
+  "eventParameters": { "<paramName>": "<RESOLVED_VALUE>" },
+  "filterExpression": "((fields.<fieldName><`value`>))"
+}'
+```
+
+**`--detail` fields for triggers:**
+
+| Field | Required | Description |
+|---|---|---|
+| `connectionId` | Yes | Connection UUID from Step 1 |
+| `folderKey` | Yes | Orchestrator folder key for the connection |
+| `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
+| `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
+| `filterExpression` | No | Filter using `((fields.<fieldName><`value`>))` syntax — omit to trigger on all events |
+
+The command populates `inputs.detail` (including the internal `configuration` blob) and creates workflow-level connection bindings.
+
+> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
 ---
 
-## Bindings — `bindings_v2.json`
+## Bindings
 
-Trigger nodes require more binding resources than activity nodes. A connector activity needs only a `Connection` resource; a connector trigger needs `Connection` + `EventTrigger` + `Property` resources.
+Trigger nodes require more binding resources than activity nodes: `Connection` + `EventTrigger` + `Property` resources. **`node configure` and the packaging pipeline handle all of these automatically:**
 
-### Connection resource
+- **Connection bindings** — created in the `.flow` file by `node configure` (Step 6)
+- **EventTrigger + Property bindings** — generated into `bindings_v2.json` during `flow debug` or packaging from the trigger node's `inputs.detail`
 
-Same structure as IS activity nodes — see [is-activity.md — Bindings](is-activity.md#bindings--bindings_v2json).
-
-### EventTrigger resource
-
-| Field | Description |
-|---|---|
-| `resource` | Always `"EventTrigger"` |
-| `key` | A generated UUID |
-| `id` | `"EventTrigger" + <key>` (concatenated, no separator) |
-| `value.EventTriggerId.defaultValue` | The trigger type ID (from `is triggers describe`) |
-| `value.EventTriggerId.isExpression` | Always `false` |
-| `value.EventTriggerId.displayName` | Human-readable label (e.g., `"Email Received trigger"`) |
-| `metadata.Connector` | Connector key (must match the node's `model.context.connectorKey`) |
-| `metadata.Operation` | Event operation name (e.g., `"EMAIL_RECEIVED"`) |
-| `metadata.ObjectName` | IS object name (e.g., `"Message"`) |
-| `metadata.BindingsVersion` | Always `"2.2"` |
-
-### Property resource (one per event parameter)
-
-Each required event parameter gets its own `Property` resource:
-
-| Field | Description |
-|---|---|
-| `resource` | Always `"Property"` |
-| `key` | A generated UUID |
-| `id` | `"Property" + <key>` (concatenated, no separator) |
-| `value.<paramName>.defaultValue` | The resolved parameter value (e.g., folder ID) |
-| `value.<paramName>.isExpression` | Always `false` |
-| `value.<paramName>.displayName` | The parameter's display name from `eventParameters` |
-| `metadata.ParentResourceKey` | The `key` of the `EventTrigger` resource this parameter belongs to |
-| `metadata.BindingsVersion` | Always `"2.2"` |
-
-### Example — Outlook email trigger
-
-```json
-{
-  "version": "2.0",
-  "resources": [
-    {
-      "resource": "Connection",
-      "key": "a1b2c3d4-0000-0000-0000-000000000001",
-      "id": "Connectiona1b2c3d4-0000-0000-0000-000000000001",
-      "value": {
-        "ConnectionId": {
-          "defaultValue": "a1b2c3d4-0000-0000-0000-000000000001",
-          "isExpression": false,
-          "displayName": "uipath-microsoft-outlook365 connection"
-        }
-      },
-      "metadata": {
-        "ActivityName": "Email Received",
-        "BindingsVersion": "2.2",
-        "DisplayLabel": "uipath-microsoft-outlook365 connection",
-        "UseConnectionService": "true",
-        "Connector": "uipath-microsoft-outlook365"
-      }
-    },
-    {
-      "resource": "EventTrigger",
-      "key": "b2c3d4e5-0000-0000-0000-000000000002",
-      "id": "EventTriggerb2c3d4e5-0000-0000-0000-000000000002",
-      "value": {
-        "EventTriggerId": {
-          "defaultValue": "b2c3d4e5-0000-0000-0000-000000000002",
-          "isExpression": false,
-          "displayName": "Email Received trigger"
-        }
-      },
-      "metadata": {
-        "Connector": "uipath-microsoft-outlook365",
-        "Operation": "EMAIL_RECEIVED",
-        "ObjectName": "Message",
-        "BindingsVersion": "2.2"
-      }
-    },
-    {
-      "resource": "Property",
-      "key": "c3d4e5f6-0000-0000-0000-000000000003",
-      "id": "Propertyc3d4e5f6-0000-0000-0000-000000000003",
-      "value": {
-        "parentFolderId": {
-          "defaultValue": "AAMkAGI2THVSAAA=",
-          "isExpression": false,
-          "displayName": "Email folder"
-        }
-      },
-      "metadata": {
-        "ParentResourceKey": "b2c3d4e5-0000-0000-0000-000000000002",
-        "BindingsVersion": "2.2"
-      }
-    }
-  ]
-}
-```
+You do **not** need to manually create or edit `bindings_v2.json` for trigger nodes.
 
 ---
 
@@ -364,6 +260,11 @@ uip flow registry pull --force                                # refresh registry
 
 # Enriched trigger metadata (--connection-id REQUIRED)
 uip flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+
+# Node lifecycle
+uip flow node delete <PROJECT>.flow start --output json       # remove manual trigger
+uip flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
+uip flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
 # Trigger object metadata
 uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json
@@ -388,18 +289,16 @@ uip is resources execute list "<connector-key>" "<resource>" \
 |---|---|---|
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip flow registry pull --force` |
-| Connection not found in bindings | `bindings_v2.json` missing `Connection` resource | Add the `Connection` resource (see Bindings section) |
-| EventTrigger binding missing | `bindings_v2.json` missing `EventTrigger` resource | Add `EventTrigger` with correct `Operation` and `ObjectName` metadata |
-| Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and add matching `Property` bindings |
+| Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
+| Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
 | Filter expression syntax error | Wrong filter format | Use `((fields.<fieldName><`value`>))` syntax |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
-| `model.context` missing operation | Node added without context entries | Ensure `model.context` includes `connectorKey`, `operation`, `objectName`, and `connection` |
+| `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
 
 ### Debug Tips
 
 1. **Always verify the connection is healthy** before debugging trigger issues — run `uip is connections ping "<id>"`
-2. **Check all three binding resource types** — trigger nodes need `Connection` + `EventTrigger` + `Property` (not just `Connection`)
-3. **`flow validate` does NOT catch trigger-specific issues** — missing event parameters, wrong reference IDs, and expired connections are caught only at runtime
-4. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
-5. **Filter expressions are optional** — omit `filterExpression` from inputs if the user wants all events to trigger the flow
-6. **`node configure` does NOT work for trigger nodes** — it sets `inputs.detail` which is an activity-only concept. Edit the `.flow` file directly for trigger node inputs
+2. **`flow validate` does NOT catch trigger-specific issues** — missing event parameters, wrong reference IDs, and expired connections are caught only at runtime
+3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
+4. **Filter expressions are optional** — omit `filterExpression` from `--detail` if the user wants all events to trigger the flow
+5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
