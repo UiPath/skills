@@ -1,7 +1,5 @@
 # LlamaIndex Integration Guide
 
-> **Agent type: Coded agents only.** Low-code agents use the built-in ReAct engine (`basic-v2`) configured declaratively via `agent.json` — no framework or Python code needed. See the [low-code setup guide](../lowcode/setup.md).
-
 How to build LlamaIndex agents that work with the UiPath platform. This guide covers project structure, entrypoint detection, LLM models, and common pitfalls.
 
 ## Scaffolding a New Project
@@ -58,7 +56,6 @@ description = "My LlamaIndex agent"
 requires-python = ">=3.11"
 
 dependencies = [
-    "uipath",
     "uipath-llamaindex",
 ]
 
@@ -152,8 +149,7 @@ class IntermediateEvent(Event):
     processed_query: str
 
 class MyAgent(Workflow):
-    # UiPathOpenAI is instantiated inside each step to comply with lazy-init rules.
-    # Do NOT use class-level attributes for LLM clients.
+    llm = UiPathOpenAI()
 
     @step
     async def process_query(self, ev: QueryEvent) -> IntermediateEvent:
@@ -161,8 +157,7 @@ class MyAgent(Workflow):
 
     @step
     async def generate_answer(self, ev: IntermediateEvent) -> AnswerEvent:
-        llm = UiPathOpenAI()  # instantiated inside step, not at class level
-        response = await llm.acomplete(
+        response = await self.llm.acomplete(
             f"Answer this question: {ev.processed_query}"
         )
         return AnswerEvent(answer=str(response))
@@ -321,21 +316,18 @@ class AnalysisEvent(Event):
     analysis: str
 
 class AnalysisAgent(Workflow):
-    # UiPathOpenAI is instantiated inside each step to comply with lazy-init rules.
-    # Do NOT use class-level attributes for LLM clients.
+    llm = UiPathOpenAI()
 
     @step
     async def analyze(self, ev: QueryEvent) -> AnalysisEvent:
-        llm = UiPathOpenAI()  # instantiated inside step, not at class level
-        response = await llm.acomplete(
+        response = await self.llm.acomplete(
             f"Analyze this question and identify the key topic: {ev.query}"
         )
         return AnalysisEvent(analysis=str(response))
 
     @step
     async def answer(self, ev: AnalysisEvent) -> ResultEvent:
-        llm = UiPathOpenAI()  # instantiated inside step, not at class level
-        response = await llm.acomplete(
+        response = await self.llm.acomplete(
             f"Based on this analysis: {ev.analysis}\nProvide a concise answer."
         )
         return ResultEvent(answer=str(response), confidence=0.85)

@@ -111,7 +111,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 17. **[XAML] MUST understand project structure** — read `project.json`, check expression language, scan existing patterns. NEVER generate XAML blind.
 18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
-20. **[XAML] NEVER touch ViewState** in XAML files — it's designer layout metadata.
+20. **[XAML] ViewState handling depends on the operation.** When editing existing files, do NOT modify ViewState on nodes you are not changing. When generating new Flowchart/StateMachine/ProcessDiagram workflows, generate ViewState for each node (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). For Sequences, ViewState is optional.
 21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
 
@@ -125,6 +125,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) → [coded/coding-guidelines.md](references/coded/coding-guidelines.md) |
 | **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
+| **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
@@ -194,6 +195,7 @@ XAML workflows follow a **discovery-first, phase-based approach**: Discovery →
 | **Sequence** | Linear step-by-step logic; most common for simple automations |
 | **Flowchart** | Branching/looping logic with multiple decision points |
 | **State Machine** | Long-running processes with distinct states and transitions |
+| **Long Running Workflow** | BPMN-style horizontal flow; event-driven processes with long waits |
 
 ### Expression Language
 
@@ -228,6 +230,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 - [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) — XAML anatomy, safety rules, editing operations (read before any XAML work)
 - [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) — Activity gotchas, scope requirements, property conflicts
+- [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 
 ## Resolving Packages & Activity Docs

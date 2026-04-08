@@ -57,9 +57,12 @@ If ambiguous, infer from the conversation. Do NOT ask the user -- pick the best 
 ```bash
 uip --version 2>&1
 uip login status --output json 2>&1
+uip tools list 2>&1
 ```
 
 From login status, extract only: `tenantName`, `organizationName`, `baseUrl`. Strip everything else.
+
+From tools list, extract tool `name` and `version` from each row.
 
 #### 2c. Capture skill-specific diagnostics
 
@@ -160,6 +163,7 @@ Build the `--description` content:
 ## Environment
 - Skill context: {detected skill name}
 - uip version: {version}
+- CLI tools: {name version, name version, ...}
 - OS: {os info}
 - Tenant: {tenant} ({org})
 
@@ -174,6 +178,46 @@ Build the `--description` content:
 - **Tool & Skill Gaps**: {tools/commands that failed, were missing, or needed workarounds}
 - **Friction**: {where the agent got stuck, retried, or misunderstood conventions}
 - **Top 3 Improvements**: {specific skill/tool changes that would have helped most}
+```
+
+#### Formatting rules
+
+1. Use `## ` (two hashes + space) for EVERY section header. NEVER use numbered lists, letters, or bold text as section separators.
+2. Use the EXACT section names from the template above. Do not rename, reword, or add sections.
+3. Each `## ` header MUST be preceded by a blank line and followed by a blank line.
+4. Use `-` for unordered bullet points.
+5. For numbered items within a section body, use `1.`, `2.`, etc. on their own lines. Do not escape the dots.
+6. Do NOT escape markdown characters. No `\*`, `\#`, `\-`, `\.`. Write `**bold**`, not `\*\*bold\*\*`.
+7. The description MUST be plain markdown. No Jira wiki markup, no HTML, no ADF.
+8. Do NOT include the user's email in the description body. Pass it only via the `--email` flag.
+
+#### Example of a well-formatted description
+
+```
+## What happened
+When running `uip flow validate` on a flow with nested loops, the CLI returned a generic "expression error" with no line number or variable name, making it impossible to locate the issue.
+
+## Error
+ExpressionError: Invalid expression at unknown location — currentItem is not defined
+
+## Environment
+- Skill context: Flow
+- uip version: 0.1.20
+- CLI tools: docsai-tool 0.1.12
+- OS: Windows 11 Enterprise 10.0.26100
+- Tenant: demo (aro)
+
+## Diagnostics
+- Project type: Flow (.flow)
+- Key files: MyProcess.flow
+- Last failed command: uip flow validate MyProcess.flow --output json
+
+## Session retrospective
+- **Intent**: Build a flow that iterates over invoice line items and flags duplicates
+- **Outcome**: Partial — flow runs but the nested loop variable reference fails at runtime
+- **Tool & Skill Gaps**: (1) uip flow validate gave no location info for expression errors. (2) No way to inspect available variables inside a loop scope.
+- **Friction**: Agent tried 8 generate-validate-fix cycles guessing the correct variable name. The error message never identified which expression failed.
+- **Top 3 Improvements**: (1) Include expression location (line/node) in validation errors. (2) Add a CLI command to list variables in scope at a given point. (3) Document loop variable naming conventions in the Flow skill.
 ```
 
 Truncate the full description to 4000 characters max. Note if content was truncated.
@@ -277,3 +321,5 @@ Apply these rules to ALL content before it is included in the description or att
 6. **Do not retry after user says "no".** Respect the decision. Ask if they want to adjust something or cancel entirely.
 7. **Do not modify the user's description without showing them.** The preview is the contract.
 8. **Do not send duplicate feedback.** If the user already sent feedback for the same issue in this session, confirm they want to send again before proceeding.
+9. **Do not use numbered lists as section headers.** Sections MUST use `## Header` format. Writing `1. What happened  2. Error  3. Environment` produces unreadable Jira issues.
+10. **Do not put the user email in the description body.** Pass it only via the `--email` flag. Including it in the description violates sanitization rule #6.

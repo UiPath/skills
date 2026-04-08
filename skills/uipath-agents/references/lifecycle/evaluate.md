@@ -1,7 +1,5 @@
 # Evaluate UiPath Agents
 
-> **Agent type: Both coded and low-code agents.** The same `uip codedagent eval` command and evaluation file format works for both. For coded agents the entrypoint is the name from `entry-points.json` (e.g. `main`). For low-code agents it is always `agent.json`. The `@mockable()` decorator for mocking external calls is only available to coded agents.
-
 Design and run tests for your agents using the UiPath evaluation framework.
 
 ## Prerequisites
@@ -26,14 +24,8 @@ uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-repo
 # With output file
 uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --output-file results.json
 
-# Cache LLM evaluator responses for reproducible reruns and lower API cost
-uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --mocker-cache
-
 # Report results to Studio Web (requires auth + UIPATH_PROJECT_ID)
 uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --report --workers 4
-
-# Low-code agent
-uip codedagent eval agent.json evaluations/eval-sets/smoke-test.json
 ```
 
 ## Documentation
@@ -73,24 +65,10 @@ Example `evaluations/evaluators/llm-judge-trajectory.json`:
 
 ## Mocking External Calls
 
-> **Note:** Both mocking approaches below are only available for coded (Python) agents. Low-code agents cannot mock external tool calls — all resources declared in `agent.json` will be called for real during eval.
-
-### Mocking Approaches
-
-| Approach | How | Requires |
-|---|---|---|
-| `@mockable()` Python decorator | Marks a function as mock-able at the Python level | Decorator in agent code |
-| `mockingStrategy: mockito` in eval set | Replaces specific function calls in the eval set JSON | `@mockable()` in agent code + `mockingStrategy` in eval set |
-| `mockingStrategy: llm` in eval set | Simulates LLM responses without real API calls | Only `mockingStrategy` in eval set; no code change needed |
-
-`@mockable()` and `mockingStrategy: mockito` work together — the decorator makes the function interceptable, and the eval set JSON specifies the replacement values. `mockingStrategy: llm` is independent and simulates the LLM layer only.
-
-### Using `@mockable()`
-
 Apply `@mockable()` to functions that call external services:
 
 ```python
-from uipath.eval.mocks import mockable
+from uipath.testing import mockable
 
 @mockable(example_calls=[
     {"args": {"query": "weather in NYC"}, "return_value": {"temp": 72, "condition": "sunny"}},

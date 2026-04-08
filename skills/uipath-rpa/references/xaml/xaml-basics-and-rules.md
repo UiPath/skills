@@ -73,37 +73,146 @@ Linear, step-by-step execution. Best for straightforward processes.
 
 ### Flowchart
 Branching logic with decision nodes. Best for complex decision flows.
+
+**Key pattern:** All FlowStep/FlowDecision/FlowSwitch nodes are direct children of `<Flowchart>`. Use `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`) to cross-reference nodes.
+
 ```xml
-<Flowchart DisplayName="My Flowchart">
+<Flowchart DisplayName="My Flowchart" sap2010:WorkflowViewState.IdRef="Flowchart_1">
   <Flowchart.StartNode>
-    <FlowStep x:Name="__ReferenceID0">
-      <!-- Start activity and connections -->
-    </FlowStep>
+    <x:Reference>__ReferenceID0</x:Reference>
   </Flowchart.StartNode>
-  <!-- FlowStep, FlowDecision, FlowSwitch nodes -->
+  <FlowStep x:Name="__ReferenceID0">
+    <!-- Activity here -->
+    <FlowStep.Next>
+      <x:Reference>__ReferenceID1</x:Reference>
+    </FlowStep.Next>
+  </FlowStep>
+  <FlowDecision x:Name="__ReferenceID1">
+    <FlowDecision.Condition>
+      <CSharpValue x:TypeArguments="x:Boolean">condition</CSharpValue>
+    </FlowDecision.Condition>
+    <FlowDecision.True>
+      <x:Reference>__ReferenceID0</x:Reference>
+    </FlowDecision.True>
+    <!-- FlowDecision.False omitted = end of flow -->
+  </FlowDecision>
 </Flowchart>
 ```
 
+**Node registration:** If a node is defined inline within a property element (e.g., inside `FlowStep.Next`) instead of as a direct Flowchart child, it needs a trailing `<x:Reference>` entry as a direct child of `<Flowchart>`. See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for details.
+
+**Expression language:** VB projects use `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />` instead of `<CSharpValue>`.
+
+**ViewState is needed** for usable Flowchart layout. See [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout) for coordinate systems, sizes, and recipes.
+
 ### State Machine
-State-based workflow with transitions. Best for long-running processes with distinct states.
+State-based workflow with transitions. Best for long-running processes with distinct states (e.g., REFramework).
+
 ```xml
-<StateMachine DisplayName="My State Machine">
-  <StateMachine.States>
-    <State DisplayName="Initial State">
-      <State.Transitions>
-        <Transition DisplayName="To Next" To="{x:Reference __ReferenceID1}" />
-      </State.Transitions>
-    </State>
-  </StateMachine.States>
+<StateMachine InitialState="{x:Reference __ReferenceID0}" DisplayName="My State Machine"
+              sap2010:WorkflowViewState.IdRef="StateMachine_1">
+  <State x:Name="__ReferenceID0" DisplayName="Initial State">
+    <State.Entry>
+      <Sequence DisplayName="Initialize">
+        <!-- Activities when entering state -->
+      </Sequence>
+    </State.Entry>
+    <State.Transitions>
+      <Transition DisplayName="To Processing">
+        <Transition.Condition>[condition]</Transition.Condition>
+        <Transition.To>
+          <x:Reference>__ReferenceID1</x:Reference>
+        </Transition.To>
+      </Transition>
+    </State.Transitions>
+  </State>
+  <State x:Name="__ReferenceID1" DisplayName="Processing">
+    <!-- State.Entry, State.Transitions -->
+  </State>
+  <State x:Name="__ReferenceID2" DisplayName="End" IsFinal="True" />
 </StateMachine>
 ```
+
+**Key patterns:**
+- `InitialState` attribute references the starting State
+- States are direct children of `<StateMachine>` (no wrapper element)
+- `IsFinal="True"` marks the terminal state
+- Transitions use `<Transition.To><x:Reference>__ReferenceID</x:Reference></Transition.To>` child element pattern
+
+**ViewState is needed** for usable State Machine layout. See [canvas-layout-guide.md § State Machine Layout](canvas-layout-guide.md#4-state-machine-layout) for coordinate systems, transition connection points, and recipes.
+
+### Long Running Workflow (ProcessDiagram)
+BPMN-style horizontal flow for event-driven, long-running processes. Uses `upa:ProcessDiagram` with `EventNode`, `TaskNode`, `DecisionNode`, and `EndNode`.
+
+Requires additional namespaces:
+```xml
+xmlns:upa="clr-namespace:UiPath.Process.Activities;assembly=UiPath.Process.Activities"
+xmlns:upas="clr-namespace:UiPath.Process.Activities.Shared;assembly=UiPath.Process.Activities"
+```
+
+```xml
+<upa:ProcessDiagram DisplayName="Long Running Workflow" sap2010:WorkflowViewState.IdRef="ProcessDiagram_1">
+  <upa:ProcessDiagram.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </upa:ProcessDiagram.StartNode>
+  <upa:EventNode x:Name="__ReferenceID0" DisplayName="Manual Trigger">
+    <upa:EventNode.Behavior>
+      <upa:StartBehavior>
+        <upa:StartBehavior.DesignerMetadata>
+          <upas:DesignerMetadata NodeType="StartEvent.Interrupting.None" />
+        </upa:StartBehavior.DesignerMetadata>
+      </upa:StartBehavior>
+    </upa:EventNode.Behavior>
+    <upa:EventNode.Next>
+      <upa:TaskNode x:Name="__ReferenceID1" DisplayName="Process">
+        <upa:TaskNode.Behavior>
+          <upa:NodeBehavior>
+            <upa:NodeBehavior.DesignerMetadata>
+              <upas:DesignerMetadata NodeType="Task.None" />
+            </upa:NodeBehavior.DesignerMetadata>
+          </upa:NodeBehavior>
+        </upa:TaskNode.Behavior>
+        <Sequence DisplayName="Process Steps">
+          <!-- Activities here -->
+        </Sequence>
+      </upa:TaskNode>
+    </upa:EventNode.Next>
+  </upa:EventNode>
+  <!-- Register inline nodes -->
+  <x:Reference>__ReferenceID1</x:Reference>
+</upa:ProcessDiagram>
+```
+
+**Key patterns:**
+- Flows **left-to-right** (horizontal), not top-to-bottom
+- `EventNode` = start/end circles, `TaskNode` = activity rectangles, `DecisionNode` = diamond (True/False branches), `EndNode` = end circle
+- `BoundaryNode` attaches to `TaskNode.BoundaryNodes` for error handling
+- Same `<x:Reference>` node registration rules as Flowchart — inline nodes need trailing registration
+
+**ViewState is needed.** See [canvas-layout-guide.md § Long Running Workflow](canvas-layout-guide.md#5-long-running-workflow-processdiagram-layout) for horizontal layout recipes.
 
 ## XAML Safety Rules
 
 Critical rules to follow when editing XAML files to prevent validation errors and workflow corruption.
 
-### NEVER Touch ViewState
-The `<sap2010:WorkflowViewState.ViewStateManager>` section contains designer layout metadata. **Never modify it.** UiPath Studio manages this automatically. Corrupting ViewState can break the workflow in the visual designer.
+### ViewState Rules
+
+ViewState controls how activities appear in the visual designer. Rules differ by workflow type and operation:
+
+**Sequences:** ViewState is optional — Studio auto-manages `IsExpanded` state. No coordinates needed.
+
+**Flowcharts, State Machines, Long Running Workflows:** ViewState determines node positions on the 2D canvas. Without it, Studio stacks all nodes at (0,0) — producing an unusable overlapping layout. Studio will auto-arrange when the file is opened, but the result may not match your intended layout.
+
+**When editing existing files:**
+- Do NOT modify the global `<sap2010:WorkflowViewState.ViewStateManager>` section — it can corrupt the designer layout
+- Do NOT modify existing ViewState on nodes you are not changing
+- When adding new nodes to a Flowchart/StateMachine, read existing node positions first to avoid overlap
+
+**When generating new Flowchart/StateMachine/ProcessDiagram files:**
+- Generate ViewState (ShapeLocation, ShapeSize, ConnectorLocation) for every node to produce a usable layout
+- See [canvas-layout-guide.md](canvas-layout-guide.md) for coordinate systems, standard sizes, and layout recipes
+
+> **Why the distinction?** The `uip rpa` commands communicate with Studio via IPC, and Studio regenerates layout when opening files. However, auto-arrange produces arbitrary layouts. If you need a specific visual structure (e.g., decision tree, loop pattern), generate ViewState explicitly.
 
 ### Preserve xmlns Declarations
 Never remove existing `xmlns` attributes from the root `<Activity>` element. Only add new ones as needed. Removing a namespace declaration that is referenced anywhere in the file will cause validation errors.

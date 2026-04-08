@@ -1,7 +1,5 @@
 # Agent Patterns
 
-> **Agent type: Coded agents only.** Low-code agents use the built-in ReAct engine (`basic-v2`) configured declaratively via `agent.json` — no framework or Python code needed. For low-code resource patterns (tools, context, escalation), see [lowcode/resources-reference.md](../lowcode/resources-reference.md).
-
 Common implementation patterns for building UiPath coded agents, from simple functions to multi-agent orchestrations.
 
 > **Note:** These patterns are general architectural concepts. The code examples use **LangGraph** and the **UiPath Python SDK**. The same patterns apply to LlamaIndex and OpenAI Agents — see their respective integration references.
@@ -298,20 +296,9 @@ class GraphOutput(BaseModel):
 system_prompt = """You are a helpful assistant that answers questions.
 Use the search tool to find current information when needed."""
 
-# NOTE: LLM and graph are created inside a node to comply with lazy-init rules.
-# create_react_agent is used here as a sub-graph called from the outer node.
-async def agent_node(state: GraphState) -> dict:
-    llm = UiPathAzureChatOpenAI()
-    tools = [TavilySearch(max_results=3)]
-    react_graph = create_react_agent(llm, tools=tools, prompt=system_prompt)
-    result = await react_graph.ainvoke({"messages": state["messages"]})
-    return {"messages": result["messages"], "answer": result["messages"][-1].content}
-
-builder = StateGraph(GraphState, input=GraphInput, output=GraphOutput)
-builder.add_node("agent", agent_node)
-builder.add_edge(START, "agent")
-builder.add_edge("agent", END)
-graph = builder.compile()
+llm = UiPathAzureChatOpenAI()
+tools = [TavilySearch(max_results=3)]
+graph = create_react_agent(llm, tools=tools, prompt=system_prompt)
 ```
 
 **Key points:**
@@ -353,26 +340,22 @@ class GraphInput(BaseModel):
 class GraphOutput(BaseModel):
     answer: str
 
-def make_supervisor(_ignored):
-    # LLM is instantiated inside the closure so it is never created at module level.
+def make_supervisor(llm):
+    router_llm = llm.with_structured_output(Router)
     async def supervisor(state: State) -> dict:
-        llm = UiPathAzureChatOpenAI()
-        router_llm = llm.with_structured_output(Router)
         response = await router_llm.ainvoke(state["messages"])
         return {"next": response["next"]}
     return supervisor
 
-# Workers and supervisor instantiate LLM inside their functions — never at module level.
+llm = UiPathAzureChatOpenAI()
+research_agent = create_react_agent(llm, tools=[search_tool], prompt="You research.")
+code_agent = create_react_agent(llm, tools=[repl_tool], prompt="You write code.")
 
 async def research_node(state: State):
-    llm = UiPathAzureChatOpenAI()
-    research_agent = create_react_agent(llm, tools=[search_tool], prompt="You research.")
     result = await research_agent.ainvoke(state)
     return {"messages": [HumanMessage(content=result["messages"][-1].content, name="researcher")]}
 
 async def code_node(state: State):
-    llm = UiPathAzureChatOpenAI()
-    code_agent = create_react_agent(llm, tools=[repl_tool], prompt="You write code.")
     result = await code_agent.ainvoke(state)
     return {"messages": [HumanMessage(content=result["messages"][-1].content, name="coder")]}
 
@@ -383,7 +366,7 @@ def route_supervisor(state: State) -> str:
         case _: return END
 
 builder = StateGraph(State, input=GraphInput, output=GraphOutput)
-builder.add_node("supervisor", make_supervisor(None))  # LLM created inside supervisor closure
+builder.add_node("supervisor", make_supervisor(UiPathAzureChatOpenAI()))
 builder.add_node("researcher", research_node)
 builder.add_node("coder", code_node)
 builder.add_edge(START, "supervisor")
@@ -405,14 +388,5 @@ graph = builder.compile()
 
 - **Pydantic models** — Every agent defines `Input`/`Output` (or `GraphInput`/`GraphOutput`) as `BaseModel` subclasses. Run `uip codedagent init` after changing them.
 - **`@traced()`** — Apply to `main` and key helpers. LangGraph agents get tracing automatically.
-- **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking:
-  ```python
-  from uipath.eval.mocks import mockable
-
-  @mockable()
-  async def fetch_customer_data(customer_id: str) -> dict:
-      """Call the real CRM API — replaced with mock data during evaluations."""
-      return await crm_client.get_customer(customer_id)
-  ```
-  During evaluations, if the eval set provides a `mockingStrategy: mockito` entry matching the function name and arguments, the mock value is returned instead of calling the real API. During normal execution the real function runs.
+- **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking.
 - **Async** — All patterns support `async def main(...)`. SDK methods have `_async` variants.

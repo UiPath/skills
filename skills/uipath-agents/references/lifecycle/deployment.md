@@ -1,17 +1,16 @@
 # Deploy UiPath Agents
 
-> **Agent type: Both coded and low-code agents.** The `deploy`, `pack`, `publish`, and `invoke` commands work for both types. Coded agents require a `pyproject.toml` with `name`/`version`/`authors` and version bumping before re-deploy. Low-code agents only need `agent.json` and `entry-points.json` — no Python packaging.
-
 Package, publish, and invoke your agents in UiPath Cloud.
 
 ## Quick Reference
 
 ```bash
-# Pack + publish in one command (recommended)
+# Pack + publish in one command
 uip codedagent deploy --my-workspace
 
-# Note: uip codedagent pack and uip codedagent publish as standalone
-# commands are blocked by the CLI wrapper. Use deploy instead.
+# Or step by step
+uip codedagent pack
+uip codedagent publish --my-workspace
 
 # Invoke published agent — use entrypoint name from entry-points.json, NOT project name
 uip codedagent invoke <ENTRYPOINT> '{"query": "test"}'
@@ -19,15 +18,19 @@ uip codedagent invoke <ENTRYPOINT> '{"query": "test"}'
 
 ## Documentation
 
-- **[Authentication](authentication.md)** — Set up credentials before deploying
-- **[Running Agents](running-agents.md)** — Test locally before deploying
-- **[File Sync](file-sync.md)** — Push to Studio Web before deploying for the first time
+- **[Deployment Guide](deployment.md)** — Complete deployment workflow
+  - `uip codedagent pack` — Package into .nupkg with validation
+  - `uip codedagent publish` — Upload to Orchestrator feed (--my-workspace, --tenant, --folder)
+  - `uip codedagent deploy` — Combined pack + publish
+  - `uip codedagent invoke` — Execute published agents in cloud
+  - Pack options (`packOptions` in `uipath.json`)
+  - Configuration files and environment variables
 
 ## Prerequisites
 
 - Authentication configured — if not authenticated, use the [authentication reference](authentication.md) first
 - `entry-points.json` exists (run `uip codedagent init`)
-- `pyproject.toml` has `name`, `version`, `description`, `authors` (**coded agents only** — low-code agents do not need this)
+- `pyproject.toml` has `name`, `version`, `description`, `authors`
 
 ## Troubleshooting
 
@@ -36,7 +39,7 @@ uip codedagent invoke <ENTRYPOINT> '{"query": "test"}'
 | `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` section |
 | `Pack failed: missing fields` | `pyproject.toml` incomplete | Ensure `name`, `version`, `description`, and `authors` are all set |
 | `Version already exists` | Same version already published | Bump the patch version in `pyproject.toml` before re-deploying |
-| `401 Unauthorized` | Auth expired or not configured | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
+| `401 Unauthorized` | Auth expired or not configured | Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` |
 
 ## Additional Instructions
 
@@ -52,17 +55,13 @@ Package, publish, and invoke your UiPath coded agent in the cloud.
 ## Deployment Workflow
 
 ```
-uip codedagent init → uip codedagent run (test) → uip codedagent deploy → uip codedagent invoke
-                                                     (pack + publish combined)
+uip codedagent init → uip codedagent run (test) → uip codedagent pack → uip codedagent publish → uip codedagent invoke
+                                       \___________ uip codedagent deploy ___________/
 ```
 
 ## Pack
 
 Package your project into a `.nupkg` file for deployment.
-
-> **Low-code agents:** The `pack` step is handled automatically by `deploy`. No `pyproject.toml` version bumping is needed.
-
-> **⚠️ `uip codedagent pack` as a standalone command is blocked** by the CLI wrapper and will return an error. Use `uip codedagent deploy` instead — it runs pack and publish internally. If you need the `.nupkg` file without publishing, use `uip codedagent deploy` and retrieve it from `.uipath/`.
 
 ```bash
 uip codedagent pack
@@ -122,8 +121,6 @@ Description: UiPath Coded Agent - My agent description
 Authors:     Your Name
 ```
 
-> **Low-code agents:** The `.nupkg` contains `agent.json`, `entry-points.json`, `bindings_v2.json`, and `operate.json` — no `main.py`, `pyproject.toml`, or `uv.lock`. The `Pack` step also does not require a version bump; only coded agents need version bumping before re-deploy.
-
 The package is saved as `.uipath/my-agent.0.1.0.nupkg`.
 
 ---
@@ -131,8 +128,6 @@ The package is saved as `.uipath/my-agent.0.1.0.nupkg`.
 ## Publish
 
 Upload a packaged project to a UiPath feed.
-
-> **⚠️ `uip codedagent publish` as a standalone command is blocked** by the CLI wrapper and will return an error. Use `uip codedagent deploy` which combines pack + publish in one step.
 
 ```bash
 uip codedagent publish
@@ -220,7 +215,7 @@ To run and test your published agent, use `uip codedagent invoke <entrypoint> '<
 | `uipath.json` | `uip codedagent init` | `pack` | Runtime options, pack options |
 | `pyproject.toml` | You | `pack`, `invoke` | Project name, version, dependencies |
 | `entry-points.json` | `uip codedagent init` | `pack`, `invoke` | Entry point definitions with schemas |
-| `bindings.json` | `uip codedagent init` | `pack` | Developer-facing runtime bindings (converted to `bindings_v2.json` inside the `.nupkg` by `pack`) |
+| `bindings.json` | `uip codedagent init` | `pack` | Runtime bindings |
 
 ### Environment Variables
 
@@ -234,7 +229,7 @@ These are set automatically by `uip login`.
 
 ## Version Bumping
 
-Publishing fails with `409 Conflict` (shown as "Version already exists" in some CLI versions) if the version was already published. **Before re-deploying, bump the patch version** in `pyproject.toml`:
+Publishing fails with `409 Package already exists` if the version was already published. **Before re-deploying, bump the patch version** in `pyproject.toml`:
 
 ```toml
 [project]
@@ -245,7 +240,7 @@ On re-deploy, always increment the patch number (e.g., `0.0.1` → `0.0.2` → `
 
 ## Typical Deployment Flow
 
-1. Authenticate with `uip login --format json` then `uip login tenant set "<TENANT>" --format json`
+1. Authenticate with `uip login --output json` then `uip login tenant set "<TENANT>" --output json`
 2. Test locally: `uip codedagent run main '<input-json>'`
 3. Bump version in `pyproject.toml` if re-deploying
 4. Deploy: `uip codedagent deploy --my-workspace`

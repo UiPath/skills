@@ -1,7 +1,5 @@
 # Build UiPath Agents
 
-> **Note:** This guide covers coded (Python) agent build. For low-code agents, edit `agent.json` directly — see [lowcode/agent-json-reference.md](../lowcode/agent-json-reference.md).
-
 Implement agent logic using UiPath SDK and framework-specific patterns.
 
 ## Reference Lookup
@@ -23,7 +21,7 @@ Load capability references **only if the task requires them** — do not preload
 | Human approval / interrupt | `../capabilities/human-in-the-loop.md` | agent needs human-in-the-loop or pause/resume |
 | RAG / context grounding | `../capabilities/context-grounding.md` | agent searches organization documents |
 | Platform API calls | `../capabilities/sdk-services.md` | agent uses UiPath platform services directly |
-| Tracing / monitoring | `../capabilities/tracing.md` | agent needs custom `@traced()` tracing (Simple Function only — LangGraph, LlamaIndex, and OpenAI Agents all trace automatically via openinference instrumentation) |
+| Tracing / monitoring | `../capabilities/tracing.md` | agent needs custom tracing (Simple Function only — LangGraph traces automatically) |
 
 ## Framework Reference
 

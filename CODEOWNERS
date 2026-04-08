@@ -8,7 +8,7 @@
 /references/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
@@ -24,8 +24,14 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden
 
+# HITL skill
+/skills/uipath-human-in-the-loop/ @dushyant-uipath @rohan-uipath
+
 # Flow skill — node category guides (away team owned)
 # Add your team here when contributing a new node category file
 /skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/nodes/is-trigger.md @baishalighosh @chandusailella @bai-uipath @rockymadden
+
+# Diagnostics
+/skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil

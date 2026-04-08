@@ -1,7 +1,5 @@
 # Creating UiPath Agents
 
-> **Agent type: Coded agents only.** Low-code agents use the built-in ReAct engine (`basic-v2`) configured declaratively via `agent.json` — no framework or Python code needed. See the [low-code setup guide](../lowcode/setup.md).
-
 Guide to creating new UiPath agents with AI-powered business logic implementation.
 
 ## Initial Setup
@@ -58,8 +56,6 @@ For lightweight agents using the OpenAI Agents SDK with tool calling and handoff
 
 ## LLM Usage
 
-> **CRITICAL: Never instantiate LLM services at module level.** `uip codedagent init` imports your file to introspect schemas — module-level `UiPathOpenAIService()` or `UiPathLlmChatService()` will fail because auth has not run yet. Always instantiate inside your `main` function or async handler.
-
 The **UiPath LLM Gateway** provides access to Large Language Model capabilities for conversational AI, structured data extraction, and semantic search. It supports both OpenAI-compatible and UiPath's normalized API formats.
 
 ### Service Options
@@ -68,13 +64,11 @@ The **UiPath LLM Gateway** provides access to Large Language Model capabilities 
 ```python
 from uipath.llm_gateway import UiPathOpenAIService
 
-async def main(input: Input) -> Output:
-    service = UiPathOpenAIService()  # instantiated inside function, not at module level
-    response = await service.chat_completions(messages=[
-        {"role": "system", "content": "You are helpful."},
-        {"role": "user", "content": input.query}
-    ])
-    return Output(answer=response["choices"][0]["message"]["content"])
+service = UiPathOpenAIService()
+response = await service.chat_completions(messages=[
+    {"role": "system", "content": "You are helpful."},
+    {"role": "user", "content": "What is AI?"}
+])
 ```
 
 **UiPathLlmChatService** — For advanced enterprise features (tool calling, function calling):
@@ -154,4 +148,4 @@ The created agent will include:
 - Input/output fields are strongly typed with Pydantic
 - The agent works globally and can call any UiPath SDK services
 - Generated `entry-points.json` enables integration with UiPath Cloud
-- If you require authentication, run `uip login --format json` then `uip login tenant set "<TENANT>" --format json`.
+- If you require authentication, run `uip login --output json` then `uip login tenant set "<TENANT>" --output json`.
