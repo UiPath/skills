@@ -1,8 +1,8 @@
-# Coded Workflows (via uipath-coded-workflows skill)
+# Coded Workflows (via uipath-rpa skill)
 
-For anything beyond simple inline snippets, use **coded workflows** — full C# files (`.cs`) that inherit from `CodedWorkflow` and are managed by the `uipath-coded-workflows` skill.
+For anything beyond simple inline snippets, use **coded workflows** — full C# files (`.cs`) that inherit from `CodedWorkflow` and are managed by the `uipath-rpa` skill.
 
-**Invoke the `uipath-coded-workflows` skill** for creating, editing, or managing coded workflow files. That skill handles:
+**Invoke the `uipath-rpa` skill** for creating, editing, or managing coded workflow files. That skill handles:
 - Project initialization and configuration (`project.json`, dependencies)
 - Creating `.cs` workflow files with proper `[Workflow]` attributes and `.cs.json` metadata
 - Service injection (`excel`, `mail`, `uiAutomation`, etc.) via NuGet package dependencies

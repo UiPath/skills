@@ -7,7 +7,7 @@ This guide covers how to execute your evaluation sets and understand the results
 ### Command
 
 ```bash
-uip codedagents eval <entrypoint> <eval-file> \
+uip codedagent eval <entrypoint> <eval-file> \
   --workers 4 \
   --no-report \
   --output-file eval-results.json
@@ -15,7 +15,7 @@ uip codedagents eval <entrypoint> <eval-file> \
 
 **Low-code agent:**
 ```bash
-uip codedagents eval agent.json <eval-file> \
+uip codedagent eval agent.json <eval-file> \
   --workers 4 \
   --no-report \
   --output-file eval-results.json
@@ -96,7 +96,7 @@ A test fails if:
 ### Using Parallel Workers
 
 ```bash
-uip codedagents eval <entrypoint> <eval-file> --workers 8
+uip codedagent eval <entrypoint> <eval-file> --workers 8
 ```
 
 **Worker count recommendations:**
@@ -109,29 +109,29 @@ uip codedagents eval <entrypoint> <eval-file> --workers 8
 For evaluators using LLMs (LLMJudge, Trajectory), enable mocker cache:
 
 ```bash
-uip codedagents eval <entrypoint> <eval-file> --mocker-cache
+uip codedagent eval <entrypoint> <eval-file> --mocker-cache
 ```
 
 Benefits: Faster re-runs, reproducible results, lower API costs.
 
 ## Integration with UiPath Cloud
 
-To report evaluation results to Studio Web for visualization and tracking, use `--report`. This requires authentication and `UIPATH_PROJECT_ID` set in `.env` (obtained by pushing the agent to Studio Web via `uip codedagents push`).
+To report evaluation results to Studio Web for visualization and tracking, use `--report`. This requires authentication and `UIPATH_PROJECT_ID` set in `.env` (obtained by pushing the agent to Studio Web via `uip codedagent push`).
 
 ```bash
-uip codedagents eval <entrypoint> <eval-file> --report --workers 4
+uip codedagent eval <entrypoint> <eval-file> --report --workers 4
 ```
 
 For local-only evaluations (no cloud connection needed), use `--no-report`:
 
 ```bash
-uip codedagents eval <entrypoint> <eval-file> --no-report --workers 4
+uip codedagent eval <entrypoint> <eval-file> --no-report --workers 4
 ```
 
 ## Troubleshooting
 
 ### All Tests Fail
-- Verify agent is working correctly with `uip codedagents run`
+- Verify agent is working correctly with `uip codedagent run`
 - Check evaluation set references correct agent
 - Ensure evaluator files exist and are valid
 - Review agent input/output schemas

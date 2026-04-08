@@ -11,13 +11,13 @@ Scaffold a new project or initialize an existing one for UiPath agent developmen
 mkdir my-agent && cd my-agent
 # Copy pyproject.toml template, add framework dep if needed, then:
 uv sync
-source .venv/bin/activate           # activate venv BEFORE uip codedagents commands
-uip codedagents setup --format json # configure Python backend (once per env)
-uip codedagents new my-agent        # name is REQUIRED
-uip codedagents init
+source .venv/bin/activate           # activate venv BEFORE uip codedagent commands
+uip codedagent setup --format json # configure Python backend (once per env)
+uip codedagent new my-agent        # name is REQUIRED
+uip codedagent init
 
 # Existing project — just generate entry points
-uip codedagents init
+uip codedagent init
 ```
 
 ## Documentation
@@ -26,7 +26,7 @@ uip codedagents init
   - Prerequisites (Python 3.11+, uv)
   - Choosing agent type (Simple, LangGraph, LlamaIndex, OpenAI Agents)
   - Creating and scaffolding projects
-  - Running `uip codedagents init` and what it generates
+  - Running `uip codedagent init` and what it generates
   - `uipath.json` structure and configuration
   - Simple function agent details (Input/Output models, project structure)
 
@@ -39,16 +39,16 @@ A `pyproject.toml` template is available in [assets/templates/pyproject.toml](..
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `No entrypoints found in uipath.json` | Framework package not installed or config file missing | Ensure `uipath-langchain` (or equivalent) is in deps and `langgraph.json` exists |
-| `NameError: name 'StateGraph' is not defined` | `uip codedagents init` imports `main.py` but `langgraph` not installed | Run `uv sync` to install all dependencies before `uip codedagents init` |
+| `NameError: name 'StateGraph' is not defined` | `uip codedagent init` imports `main.py` but `langgraph` not installed | Run `uv sync` to install all dependencies before `uip codedagent init` |
 | `No solution found` for Python 3.10 | `requires-python` set too low | Set `requires-python = ">=3.11"` — UiPath SDK requires Python 3.11+ |
 | `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` section |
 
 ## Additional Instructions
 
-- **STOP: You must know which framework to use before running setup.** If no framework has been selected yet, ask the user to choose (Simple Function, LangGraph, LlamaIndex, or OpenAI Agents). The framework determines which dependency to add and what `uip codedagents new` scaffolds.
+- **STOP: You must know which framework to use before running setup.** If no framework has been selected yet, ask the user to choose (Simple Function, LangGraph, LlamaIndex, or OpenAI Agents). The framework determines which dependency to add and what `uip codedagent new` scaffolds.
 - Read the [setup reference](setup.md) before making assumptions about project structure.
-- **Use lazy LLM initialization** so `uip codedagents init` works without auth. Never instantiate LLM clients at module level — create them inside functions/nodes.
-- After changing Input/Output models, re-run `uip codedagents init` to regenerate schemas.
+- **Use lazy LLM initialization** so `uip codedagent init` works without auth. Never instantiate LLM clients at module level — create them inside functions/nodes.
+- After changing Input/Output models, re-run `uip codedagent init` to regenerate schemas.
 
 ---
 
@@ -72,7 +72,7 @@ Set up a new UiPath coded agent project from scratch.
 | **LlamaIndex** | `llama_index.json` | `main.py` (Workflow instance) | `uipath-llamaindex` | See build skill |
 | **OpenAI Agents** | `openai_agents.json` | `main.py` (Agent instance) | `uipath-openai-agents` | See build skill |
 
-Each integration guide is **self-contained** — it covers project structure, dependencies, input/output patterns, `uip codedagents init`, and complete examples.
+Each integration guide is **self-contained** — it covers project structure, dependencies, input/output patterns, `uip codedagent init`, and complete examples.
 
 The rest of this page covers the **common setup steps** shared by all agent types, plus details specific to **simple function agents**.
 
@@ -105,12 +105,12 @@ Finally, to install dependencies, run:
 uv sync
 ```
 
-### 2. Scaffold with `uip codedagents new`
+### 2. Scaffold with `uip codedagent new`
 
-If there is **no existing agent code**, use `uip codedagents new` to scaffold the project. It generates necessary integration-specific config file based on which integration package is installed. It may also modify dependencies in `pyproject.toml`.
+If there is **no existing agent code**, use `uip codedagent new` to scaffold the project. It generates necessary integration-specific config file based on which integration package is installed. It may also modify dependencies in `pyproject.toml`.
 
 ```bash
-uip codedagents new my-agent
+uip codedagent new my-agent
 ```
 
 **What it generates per integration:**
@@ -124,7 +124,7 @@ uip codedagents new my-agent
 
 **Which template is used** depends on which integration package is installed. If `uipath-langchain` is installed, you get a LangGraph scaffold. If none of the integration packages are installed, you get the base scaffold.
 
-> **Skip this step** if the project already has `main.py` or `graph.py` with agent code. `uip codedagents new` is only for starting from scratch.
+> **Skip this step** if the project already has `main.py` or `graph.py` with agent code. `uip codedagent new` is only for starting from scratch.
 
 After scaffolding, modify the generated `main.py` to implement your actual agent logic.
 
@@ -137,7 +137,7 @@ uv sync
 ### 4. Verify SDK
 
 ```bash
-uip codedagents --version
+uip codedagent --version
 ```
 
 ### 5. Authenticate
@@ -190,29 +190,29 @@ my-agent/
 1. Create project directory
 2. Copy `pyproject.toml` from `assets/templates/pyproject.toml` (replace placeholders)
 3. Add framework dependency if needed (e.g., `uv add uipath-langchain`)
-4. Run `uv sync` to install dependencies (must happen **before** `uip codedagents new`)
+4. Run `uv sync` to install dependencies (must happen **before** `uip codedagent new`)
 5. Run `source .venv/bin/activate` to activate the virtual environment
-6. Run `uip codedagents setup --format json` to configure the Python runtime
-7. Run `uip codedagents new my-agent` to scaffold `main.py` and framework config (framework template is selected based on installed packages — `uv sync` must run first)
+6. Run `uip codedagent setup --format json` to configure the Python runtime
+7. Run `uip codedagent new my-agent` to scaffold `main.py` and framework config (framework template is selected based on installed packages — `uv sync` must run first)
 8. Modify `main.py` with your agent logic
-9. Run `uip codedagents init` to generate `entry-points.json`, `bindings.json`, and `.env`
-10. Test with `uip codedagents run main '{"query": "test"}'`
+9. Run `uip codedagent init` to generate `entry-points.json`, `bindings.json`, and `.env`
+10. Test with `uip codedagent run main '{"query": "test"}'`
 
-## Running `uip codedagents init`
+## Running `uip codedagent init`
 
 After creating your entrypoint file, generate project configuration:
 
 ```bash
-uip codedagents init
+uip codedagent init
 ```
 
 This works for **all agent types**. The CLI auto-detects the agent type by checking for config files (`langgraph.json`, `llama_index.json`, `openai_agents.json`) via registered middleware. If none are found, it falls back to simple function agent detection.
 
 ### Simple Function Agents — Entrypoint Registration
 
-For simple function agents (no LangGraph/LlamaIndex/OpenAI Agents), `uip codedagents init` does NOT auto-discover entrypoints. You must register them in `uipath.json` under `"functions"` **before** running `uip codedagents init` (or re-run init after adding them).
+For simple function agents (no LangGraph/LlamaIndex/OpenAI Agents), `uip codedagent init` does NOT auto-discover entrypoints. You must register them in `uipath.json` under `"functions"` **before** running `uip codedagent init` (or re-run init after adding them).
 
-After the first `uip codedagents init` creates `uipath.json`, edit it to add your function mapping:
+After the first `uip codedagent init` creates `uipath.json`, edit it to add your function mapping:
 
 ```json
 {
@@ -222,7 +222,7 @@ After the first `uip codedagents init` creates `uipath.json`, edit it to add you
 }
 ```
 
-The format is `"entrypoint_name": "file.py:function_name"`. Then re-run `uip codedagents init` to generate the entry points.
+The format is `"entrypoint_name": "file.py:function_name"`. Then re-run `uip codedagent init` to generate the entry points.
 
 LangGraph, LlamaIndex, and OpenAI Agents integrations auto-discover entrypoints from their respective config files (`langgraph.json`, `llama_index.json`, `openai_agents.json`) — no manual registration needed.
 
@@ -244,11 +244,11 @@ LangGraph, LlamaIndex, and OpenAI Agents integrations auto-discover entrypoints 
 
 ### When to Re-run
 
-Re-run `uip codedagents init` whenever you modify your input/output models to regenerate the JSON schemas in `entry-points.json`.
+Re-run `uip codedagent init` whenever you modify your input/output models to regenerate the JSON schemas in `entry-points.json`.
 
 ## uipath.json Structure
 
-The main project configuration file (generated by `uip codedagents init`):
+The main project configuration file (generated by `uip codedagent init`):
 
 ```json
 {
@@ -270,4 +270,4 @@ The main project configuration file (generated by `uip codedagents init`):
 **Key fields:**
 - **`runtimeOptions.isConversational`** - Set `true` for conversational/chat agents
 - **`packOptions`** - Control which files are included when packaging for deployment
-- **`functions`** - Entrypoint name → file:function mappings. Format: `"<entrypoint_name>": "<file_path>:<function_name>"`. Example: `"main": "main.py:main"` means the entrypoint is named `main` and is called with `uip codedagents run main`.
+- **`functions`** - Entrypoint name → file:function mappings. Format: `"<entrypoint_name>": "<file_path>:<function_name>"`. Example: `"main": "main.py:main"` means the entrypoint is named `main` and is called with `uip codedagent run main`.

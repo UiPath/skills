@@ -1,6 +1,6 @@
 # Low-Code Agent Setup Guide
 
-> **Agent type: Low-code agents only.** Coded agents are set up with `pyproject.toml`, `uv sync`, and `uip codedagents new` — see [lifecycle/setup.md](../lifecycle/setup.md).
+> **Agent type: Low-code agents only.** Coded agents are set up with `pyproject.toml`, `uv sync`, and `uip codedagent new` — see [lifecycle/setup.md](../lifecycle/setup.md).
 
 This guide explains how to set up a UiPath low-code agent project for local development, testing, and deployment using the `uip` CLI.
 
@@ -19,7 +19,7 @@ Before you begin, ensure the following tools are installed:
   ```bash
   uip --version
   ```
-  > **Note:** The Python `uipath` package (the agent runtime) is **not** installed manually. It is installed automatically when you run `uip codedagents setup`.
+  > **Note:** The Python `uipath` package (the agent runtime) is **not** installed manually. It is installed automatically when you run `uip codedagent setup`.
 - **UiPath account credentials** — You need access to a UiPath Automation Cloud tenant. Authentication tokens are stored in `.env`.
 
 ---
@@ -28,17 +28,17 @@ Before you begin, ensure the following tools are installed:
 
 The `uip agent` tool (`@uipath/agent-tool`, part of `@uipath/cli`) is the native CLI specifically designed for low-code agents. It provides first-class resource management, schema validation, and a dedicated publish/deploy pipeline through AutomationSolutions.
 
-### `uip agent` vs `uip codedagents` for low-code
+### `uip agent` vs `uip codedagent` for low-code
 
-| Action | `uip agent` | `uip codedagents` |
+| Action | `uip agent` | `uip codedagent` |
 |---|---|---|
 | Create new project | `uip agent init <name>` | Create `agent.json` manually or pull |
 | Manage tools/context/escalations | `uip agent tool/context/escalation add` | Edit `agent.json` directly |
 | Validate schema | `uip agent validate` | Not available |
-| Local run | `uip codedagents run agent.json '...'` | Same — both forward to Python CLI |
-| Push to Studio Web | `uip agent push` | `uip codedagents push` |
-| Publish + deploy | `uip agent publish` then `uip agent deploy <key>` | `uip codedagents deploy --my-workspace` |
-| Remote job management | `uip agent run start/status/list` | `uip codedagents invoke agent.json` |
+| Local run | `uip codedagent run agent.json '...'` | Same — both forward to Python CLI |
+| Push to Studio Web | `uip agent push` | `uip codedagent push` |
+| Publish + deploy | `uip agent publish` then `uip agent deploy <key>` | `uip codedagent deploy --my-workspace` |
+| Remote job management | `uip agent run start/status/list` | `uip codedagent invoke agent.json` |
 
 ### Quick `uip agent` scaffold workflow
 
@@ -66,7 +66,7 @@ uip agent publish                            # → returns a packageVersionKey
 uip agent deploy <packageVersionKey>         # → deploys to Orchestrator
 ```
 
-Both paths produce an `agent.json` that works with `uip codedagents run/eval`. Use `uip agent` when you want structured resource management; use the manual `agent.json` approach when you prefer direct JSON editing.
+Both paths produce an `agent.json` that works with `uip codedagent run/eval`. Use `uip agent` when you want structured resource management; use the manual `agent.json` approach when you prefer direct JSON editing.
 
 ---
 
@@ -83,7 +83,7 @@ Use this path when you have already designed an agent in **UiPath Studio Web Age
 3. In your terminal, create a local directory and pull the agent definition:
    ```bash
    mkdir my-agent && cd my-agent
-   uip codedagents pull
+   uip codedagent pull
    ```
    The CLI will prompt you to select the tenant, folder, and agent. It downloads `agent.json` and an optional `bindings.json` into the current directory.
 4. Verify the files were created:
@@ -93,7 +93,7 @@ Use this path when you have already designed an agent in **UiPath Studio Web Age
    # bindings.json   (if the agent has deployed resource bindings)
    ```
 
-> **Note:** `uip codedagents pull` keeps your local `agent.json` in sync with Studio Web. Re-run it whenever the cloud definition changes.
+> **Note:** `uip codedagent pull` keeps your local `agent.json` in sync with Studio Web. Re-run it whenever the cloud definition changes.
 
 ---
 
@@ -171,31 +171,31 @@ For production agents with tools, context, or escalation, see [resources-referen
 
 Low-code agents do **not** require you to create or activate a Python virtual environment just to edit `agent.json`. You can open and modify the file in any editor directly.
 
-However, a virtual environment **is** created automatically when you run the agent locally. The `uip codedagents setup` command bootstraps the Python runtime environment required to execute the agent:
+However, a virtual environment **is** created automatically when you run the agent locally. The `uip codedagent setup` command bootstraps the Python runtime environment required to execute the agent:
 
 ```bash
-uip codedagents setup --format json
+uip codedagent setup --format json
 ```
 
 Run this once per project (or after updating dependencies). It creates a `.venv` directory in your project folder with all necessary runtime packages.
 
-> You do **not** need to call `uip codedagents setup` merely to edit `agent.json`. However, it **is** required before running the agent locally (`uip codedagents run`) or running evaluations (`uip codedagents eval`).
+> You do **not** need to call `uip codedagent setup` merely to edit `agent.json`. However, it **is** required before running the agent locally (`uip codedagent run`) or running evaluations (`uip codedagent eval`).
 
 ---
 
-## `uip codedagents init` Generates Supporting Files
+## `uip codedagent init` Generates Supporting Files
 
-Running `uip codedagents init` on a low-code project reads `agent.json` and generates:
+Running `uip codedagent init` on a low-code project reads `agent.json` and generates:
 - **`entry-points.json`** — Mirrors `inputSchema`/`outputSchema` from `agent.json` in the standard entrypoint format used by Orchestrator and Studio Web.
 - **`bindings.json`** — If not already present, creates an empty bindings file.
 
 This step is **optional for local `run`** (the runtime reads schemas directly from `agent.json`), but **required before push/deploy** so that Orchestrator and Studio Web know the agent's I/O contract.
 
 ```bash
-uip codedagents init
+uip codedagent init
 ```
 
-> **Note:** Studio Web generates `entry-points.json` automatically when you pull. You only need to run `uip codedagents init` manually if you created `agent.json` from scratch.
+> **Note:** Studio Web generates `entry-points.json` automatically when you pull. You only need to run `uip codedagent init` manually if you created `agent.json` from scratch.
 
 ---
 
@@ -237,14 +237,14 @@ my-agent/
 | File / Directory | Purpose |
 |---|---|
 | `agent.json` | The complete agent definition: model, prompts, input/output schemas, resources, features. This is the primary file to edit. |
-| `entry-points.json` | I/O schema contract consumed by Orchestrator and Studio Web. Generated by `uip codedagents init` or Studio Web. |
+| `entry-points.json` | I/O schema contract consumed by Orchestrator and Studio Web. Generated by `uip codedagent init` or Studio Web. |
 | `bindings.json` | Maps logical resource names to actual Orchestrator folder paths and process names. Used for environment-specific overrides. |
-| `project.uiproj` | Project type metadata (`ProjectType: "Agent"`). Generated by `uip codedagents pull` (from Studio Web) or by `uip codedagents init` when creating from scratch. |
+| `project.uiproj` | Project type metadata (`ProjectType: "Agent"`). Generated by `uip codedagent pull` (from Studio Web) or by `uip codedagent init` when creating from scratch. |
 | `flow-layout.json` | Visual node positions from the Studio Web canvas. Ignored by the runtime. |
 | `.agent-builder/` | Copies of `agent.json`, `bindings.json`, `entry-points.json` used by the execution runtime. Auto-populated — do not edit directly. |
 | `resources/` | Individual resource JSON files generated by Studio Web. The runtime reads resources from `agent.json`, not from this directory. |
 | `.env` | Stores `UIPATH_URL`, `UIPATH_ACCESS_TOKEN`, and other secrets. Never commit this file. |
-| `evaluations/eval-sets/` | Evaluation input/expected-output pairs for `uip codedagents eval`. |
+| `evaluations/eval-sets/` | Evaluation input/expected-output pairs for `uip codedagent eval`. |
 | `evaluations/evaluators/` | Evaluator configuration files (LLM judge, exact match, etc.). |
 
 ---
@@ -269,13 +269,13 @@ Once `agent.json` is in place and `.env` is configured:
 
 ```bash
 # First-time runtime setup (only needed once)
-uip codedagents setup --format json
+uip codedagent setup --format json
 
 # Generate entry-points.json (optional for local run, required before push/deploy)
-uip codedagents init
+uip codedagent init
 
 # Run the agent with a test input
-uip codedagents run agent.json '{"task": "Summarise the quarterly report."}'
+uip codedagent run agent.json '{"task": "Summarise the quarterly report."}'
 ```
 
 ---
@@ -289,11 +289,11 @@ Before deploying for the first time, register the agent in Studio Web and link y
 3. Add `UIPATH_PROJECT_ID=<project-id>` to your `.env` file.
 4. Push the local files to Studio Web:
    ```bash
-   uip codedagents push
+   uip codedagent push
    ```
 5. Then deploy to Orchestrator:
    ```bash
-   uip codedagents deploy --my-workspace
+   uip codedagent deploy --my-workspace
    ```
 
 This packages and uploads the agent to your personal workspace, making it available in Studio Web and for API invocation.

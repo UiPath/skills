@@ -205,7 +205,7 @@ eval-sets/
 ## CI/CD Integration
 
 ```bash
-uip codedagents eval <agent> evaluations/eval-sets/smoke-test.json \
+uip codedagent eval <agent> evaluations/eval-sets/smoke-test.json \
   --no-report \
   --workers 4 \
   --mocker-cache \
@@ -214,7 +214,7 @@ uip codedagents eval <agent> evaluations/eval-sets/smoke-test.json \
 
 **Low-code agents:**
 ```bash
-uip codedagents eval agent.json evaluations/eval-sets/smoke-test.json \
+uip codedagent eval agent.json evaluations/eval-sets/smoke-test.json \
   --no-report \
   --workers 4 \
   --output-file eval-results.json

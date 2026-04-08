@@ -1,21 +1,65 @@
-# Planning Phase 1: Architectural Design
+# Planning Phase 1: Discovery & Architectural Design
 
-Design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
+Discover available capabilities, then design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
 
-> **This phase does NOT run `uip flow registry get`, bind connections, or resolve reference fields.** Those are handled in [Planning Phase 2: Implementation](planning-phase-implementation.md). The goal here is to get the shape of the flow right.
+> **Registry rules for this phase:**
+> - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
+> - **`registry get` is NOT allowed** — detailed metadata, connection binding, and reference field resolution are handled in [Planning Phase 2: Implementation](planning-phase-implementation.md).
 
 ---
 
 ## Process
 
 1. Analyze the user's requirements
-2. Select node types from the catalog below
-3. Define edges (how nodes connect)
-4. Identify suspected inputs and outputs for each node
-5. Generate a mermaid diagram
-6. Validate the mermaid syntax (see [Mermaid Validation Rules](#mermaid-validation-rules))
-7. Present the plan for user review
-8. Iterate until approved, then hand off to [Planning Phase 2: Implementation](planning-phase-implementation.md)
+2. **Discover capabilities** — if the flow uses connector or resource nodes, run `registry search` / `registry list` to confirm they exist and identify available operations (see [Capability Discovery](#capability-discovery))
+3. Select node types from the catalog below
+4. Define edges (how nodes connect)
+5. Identify suspected inputs and outputs for each node
+6. Generate a mermaid diagram
+7. Validate the mermaid syntax (see [Mermaid Validation Rules](#mermaid-validation-rules))
+8. Present the plan for user review
+9. Iterate until approved, then hand off to [Planning Phase 2: Implementation](planning-phase-implementation.md)
+
+---
+
+## Capability Discovery
+
+**When to run:** The flow uses connector nodes (external services) or resource nodes (RPA processes, agents, other flows). **Skip** if the flow only uses OOTB nodes (scripts, HTTP, branching, loops).
+
+Discovery answers "what can I work with?" before you commit to a topology. This prevents designing around a connector that doesn't exist, an operation the connector doesn't support, or an RPA process / agent that hasn't been published yet.
+
+```bash
+# Registry should already be refreshed (Step 3 in Quick Start runs `registry pull`)
+uip flow registry search <keyword> --output json    # search by service, resource name, or category
+uip flow registry search outlook --output json       # example: does an Outlook connector exist?
+uip flow registry search "invoice process" --output json  # example: is an RPA process published?
+uip flow registry search agent --output json         # example: what agents are available?
+uip flow registry list --output json                 # list all available node types
+```
+
+> **Auth note:** Without `uip login`, the registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. If the flow requires connectors or resources, verify login status first: `uip login status --output json`.
+
+### Check connector connections
+
+For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` → key is `uipath-microsoft-outlook365`).
+
+```bash
+uip is connections list "<connector-key>" --output json
+```
+
+- If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for Phase 2.
+- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2.
+
+> This is a lightweight existence check, not full connection binding. Phase 2 will ping the connection, fetch enriched metadata, and resolve reference fields.
+
+**What to record from discovery:**
+- **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
+- **Resources:** Whether a published node exists for each RPA process, agent, or flow referenced in the requirements (e.g., `uipath.core.rpa-workflow.invoice-abc123`). Input/output schemas require `registry get` in Phase 2 (no connection needed for resources).
+- **Gaps:** Services with no connector → fall back to `core.action.http`. Resources not yet published → use `core.logic.mock` placeholder. Connectors with no connection → flag in Open Questions for the user to create.
+
+Use these findings to select the right node types in the catalog below. If a connector doesn't exist, fall back to `core.action.http` or note it as a gap in Open Questions.
+
+> **Do NOT run `registry get` during discovery.** Search results give you node type names — enough to know what connectors and operations exist. `is connections list` confirms connection availability. Detailed field metadata (required fields, types, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2.
 
 ---
 
@@ -69,7 +113,7 @@ Connector nodes call external services via Integration Service. They are **not**
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | Node type pattern: `uipath.connector.<connector-key>.<activity>`. Phase 2 resolves the exact type, connection, and fields |
 | A connector exists but lacks the specific endpoint                                  | HTTP Request within the connector (connector handles auth, you supply path/payload)                                       |
 
-**In this phase:** Note the connector as `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue"). Phase 2 will run `registry search`, bind connections, and resolve fields.
+**In this phase:** Use [Capability Discovery](#capability-discovery) results to confirm the connector exists and note it as `connector: <service-name>` with the intended operation (e.g., "connector: Jira — create issue"). If discovery found no connector, fall back to `core.action.http` or flag the gap in Open Questions. Phase 2 will run `registry get`, bind connections, and resolve fields.
 
 ### Agent Nodes
 
@@ -425,9 +469,8 @@ Use these to pick the right node type when the choice isn't obvious.
 
 1. Add a `core.logic.mock` placeholder
 2. Note what needs to be created and which skill handles it:
-   - Desktop/browser automation → `uipath-rpa-workflows`
-   - Coded workflow (C#) → `uipath-coded-workflows`
-   - Agent → `uipath-coded-agents`
+   - Desktop/browser automation or coded workflow (C#) → `uipath-rpa`
+   - Agent → `uipath-agents`
 3. Phase 2 will check whether the resource has been published and replace the mock
 
 ---

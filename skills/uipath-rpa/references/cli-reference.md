@@ -51,6 +51,7 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`.
 | Action | How | Key Parameters |
 |--------|-----|----------------|
 | **Read activity doc directly** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/activities/{ActivityName}.md` | Package ID + activity simple class name. **Preferred when you know both.** |
+| **Read coded API doc** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` | Package ID. **Use for coded workflows** — contains service API signatures and usage. |
 | **Read package overview** | `Read` tool on `{projectRoot}/.local/docs/packages/{PackageId}/overview.md` | Package ID (e.g., `UiPath.WebAPI.Activities`) |
 | **List documented packages** | `Bash`: `ls {projectRoot}/.local/docs/packages/` | Project root directory |
 | **List documented activities** | `Bash`: `ls {projectRoot}/.local/docs/packages/{PackageId}/activities/` | Package ID |
@@ -177,6 +178,22 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 **Error recovery:**
 - **Package not found** -- verify the exact package ID; use `--help` or activity docs to discover the correct name.
 - **Network/feed error** -- check NuGet feed configuration in Studio settings.
+
+---
+
+### get-versions
+
+Get available versions for a NuGet package.
+
+```bash
+uip rpa get-versions --package-id <PackageId> --output json --use-studio
+uip rpa get-versions --package-id <PackageId> --include-prerelease --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--package-id` | Yes | NuGet package ID to query |
+| `--include-prerelease` | No | Include prerelease versions (default false) |
 
 ---
 
@@ -382,3 +399,149 @@ When `uip` commands fail, diagnose by error category:
 | Any unrecognized error | Unknown | Check `--verbose` flag: `uip rpa --verbose <command>` for debug details, inform the user |
 
 **General strategy:** Do NOT retry the same failing command in a loop. Diagnose the root cause, apply the recovery action, then retry once. If it fails again, inform the user.
+
+---
+
+## RPA-Specific Commands
+
+### find-activities
+
+Search for activities by keyword. Global search -- not limited to installed packages.
+
+```bash
+uip rpa find-activities --query "<KEYWORD>" --output json --use-studio
+uip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--query` | Yes | Search keyword |
+| `--tags` | No | Filter by tags |
+| `--limit` | No | Max results (default 10) |
+
+---
+
+### get-default-activity-xaml
+
+Get the default XAML template for an activity. Two modes depending on whether the activity is dynamic (connector-backed) or not.
+
+```bash
+# Non-dynamic activity:
+uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json --use-studio
+
+# Dynamic activity (connector-backed):
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--activity-class-name` | One mode | Fully qualified class name (non-dynamic) |
+| `--activity-type-id` | One mode | Activity type ID (dynamic) |
+| `--connection-id` | No | Connection ID for dynamic activities |
+
+---
+
+### list-workflow-examples
+
+Search example workflows by service tags.
+
+```bash
+uip rpa list-workflow-examples --tags "service1,service2" --output json --use-studio
+uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--tags` | Yes | Comma-separated service tags |
+| `--prefix` | No | Filter by name prefix |
+| `--limit` | No | Max results (default 10) |
+
+---
+
+### get-workflow-example
+
+Retrieve the full XAML content of an example workflow.
+
+```bash
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--key` | Yes | Blob path from `list-workflow-examples` results |
+
+---
+
+### focus-activity
+
+Focus an activity in the Studio designer view.
+
+```bash
+uip rpa focus-activity --activity-id "<IDREF>" --output json --use-studio
+uip rpa focus-activity --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--activity-id` | No | Activity IdRef. Omit to focus all activities sequentially. |
+
+---
+
+### search-templates
+
+Search for project templates on configured NuGet feeds. Does not require a project to be open.
+
+```bash
+uip rpa search-templates --query "<SEARCH_TERM>" --output json
+uip rpa search-templates --limit 10 --include-prerelease --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--query` | No | Filter by name or description. Omit to list all available templates |
+| `--limit` | No | Max results (default 20) |
+| `--include-prerelease` | No | Include prerelease versions (default false) |
+
+Returns a JSON array with fields: `packageId`, `version`, `title`, `description`, `authors`, `source`, `tags`.
+
+Use the `packageId` and `version` from results with `uip rpa new --template-package-id` to create a project from that template.
+
+---
+
+### close-project
+
+Close the current project in Studio.
+
+```bash
+uip rpa close-project --output json --use-studio
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--project-dir` | No | Project directory (defaults to current working directory) |
+
+### RPA Discovery Tools
+
+| Action | How |
+|--------|-----|
+| **Explore project files** | `Glob` with `**/*.xaml` pattern |
+| **Search XAML content** | `Grep` with regex across `.xaml` files |
+| **Explore object repository** | `Glob` `**/*` in `{projectRoot}/.objects/` + `Read` metadata |
+| **Get JIT type definitions** | `Read` `{projectRoot}/.project/JitCustomTypesSchema.json` |
+| **Activity docs** | See the Installed Package Activity Documentation section above |
+
+## Debugging with `run-file`
+
+The `uip rpa run-file` command supports full interactive debugging beyond simple execution: breakpoints, step-by-step execution, isolated activity testing, exception handling, and runtime state inspection. For the complete debug command reference and common debugging workflows, see **[debugging.md](debugging.md)**.
+
+### Connector Capabilities
+
+For RPA-specific connector workflow patterns (activity/resource discovery, connection management, schema inspection), see [connector-capabilities.md](connector-capabilities.md).
+
+---
+
+## Coded-Specific Commands
+
+### inspect-package
+
+Inspect a NuGet package to discover its API surface (classes, methods, properties). See [coded/inspect-package-guide.md](coded/inspect-package-guide.md) for full usage.

@@ -50,15 +50,7 @@ Record the connection ID and resolved field values for the build step.
 
 ### Step 3 — Resolve Resource Nodes
 
-For each resource node (RPA process, agent, flow, API workflow, human task):
-
-```bash
-uip flow registry pull --force
-uip flow registry search "<resource-name>" --output json
-```
-
-1. If found: record the exact node type (e.g., `uipath.core.rpa-workflow.invoice-abc123`)
-2. If not found: keep the `core.logic.mock` placeholder and note the gap
+For each resource node (RPA process, agent, flow, API workflow, human task) identified during Phase 1 discovery:
 
 ```bash
 uip flow registry get "<node-type>" --output json
@@ -66,13 +58,22 @@ uip flow registry get "<node-type>" --output json
 
 Record `inputDefinition` and `outputDefinition` for the node table.
 
+If Phase 1 flagged a resource as not found, re-check in case it was published since planning:
+
+```bash
+uip flow registry pull --force
+uip flow registry search "<resource-name>" --output json
+```
+
+If still not found, keep the `core.logic.mock` placeholder and note the gap.
+
 ### Step 4 — Replace Mock Nodes
 
 For each `core.logic.mock` node in the architectural plan:
 
 1. Check if the resource has been published since planning: `uip flow registry search "<name>" --output json`
 2. If published: replace the mock with the real resource node type, update inputs/outputs
-3. If not published: keep the mock and include it in the "Mock Placeholders" section of the output
+3. If not published: keep the mock and note it in the "Open Questions" section for user resolution
 
 ### Step 5 — Replace Placeholders
 
@@ -93,10 +94,9 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 ```markdown
 # <SolutionName> Implementation Plan
 
-## Resolved Node Table
+## Summary
 
-| # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+2-3 sentences describing what the flow does end-to-end and what was resolved in this phase (connectors bound, resources confirmed, registry validations performed).
 
 ## Flow Diagram (Mermaid)
 
@@ -113,6 +113,11 @@ graph TD
     decision -->|true| end1
 ```
 
+## Resolved Node Table
+
+| # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+
 ## Resolved Edge Table
 
 (Copy from `.arch.plan.md` — update only if node IDs changed due to mock replacement)
@@ -122,20 +127,22 @@ graph TD
 | Connector Key | Connection ID | Activity | Verified |
 | --- | --- | --- | --- |
 
-## Variables
+## Global Variables
 
 (Copy from `.arch.plan.md` Inputs and Outputs section)
-
-## Mock Placeholders (if any)
-
-| Node ID | Intended Resource | Skill to Use | Status |
-| --- | --- | --- | --- |
 
 ## Changes from Architectural Plan
 
 - List what changed between `.arch.plan.md` and this plan
 - Record any node type changes (connector resolutions, mock replacements)
 - Note any port or input field changes discovered during registry validation
+
+## Open Questions
+
+Prefix each with `**[REQUIRED]**` or `**[OPTIONAL]**`. If there are no open questions, write "No open questions — all details resolved."
+
+- **[REQUIRED]** Which connection should be used for the Slack connector?
+- **[OPTIONAL]** Should the retry count be increased from the default?
 ```
 
 #### Column Additions
@@ -509,9 +516,8 @@ When a flow requires capabilities outside the flow skill's scope — an RPA proc
 
 1. Add a `core.logic.mock` placeholder node in the plan where the external component goes
 2. Tell the user what's needed and which skill to use:
-   - Desktop/browser automation → `/uipath:uipath-rpa-workflows`
-   - Coded workflow (C#) → `/uipath:uipath-coded-workflows`
-   - Agent → `/uipath:uipath-coded-agents`
+   - Desktop/browser automation or coded workflow (C#) → `/uipath:uipath-rpa`
+   - Agent → `/uipath:uipath-agents`
 3. Once the user creates the component, replace the placeholder with the real node
 
 **Do not** attempt to invoke other skills automatically. Each skill should work independently — cross-skill chaining multiplies failure rates.

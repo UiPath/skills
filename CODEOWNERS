@@ -7,12 +7,9 @@
 # Activity references
 /references/ @DragosUnguru
 
-# RPA workflows skill
-/skills/uipath-rpa-workflows/ @DragosUnguru @RaduAna-Maria
-
-# Coded workflows skill
-/skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria
-/skills/uipath-coded-workflows/references/integration-service.md @baishalighosh @ojalkumar-pixel @shyamgupta52
+# RPA skill (coded + XAML workflows)
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva
@@ -20,6 +17,9 @@
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
+
+# Planner skill
+/skills/uipath-planner/ @RaduAna-Maria
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden

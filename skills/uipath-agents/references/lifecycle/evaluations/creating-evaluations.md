@@ -19,7 +19,7 @@ Before creating evaluations, ensure your project has the right files:
 - `entry-points.json` - Agent definitions with input/output schemas
 - `evaluations/` directory for test cases
 
-If missing, create and initialise the agent first (`uip codedagents new` + `uip codedagents init`).
+If missing, create and initialise the agent first (`uip codedagent new` + `uip codedagent init`).
 
 **Low-code agents:**
 - `agent.json` - Agent definition (input/output schemas come from here)
