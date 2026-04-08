@@ -1,7 +1,5 @@
 # OpenAI Agents Integration Guide
 
-> **Agent type: Coded agents only.** Low-code agents use the built-in ReAct engine (`basic-v2`) configured declaratively via `agent.json` — no framework or Python code needed. See the [low-code setup guide](../lowcode/setup.md).
-
 A lightweight integration for running OpenAI Agents SDK agents on the UiPath platform. This guide covers project structure, entrypoint detection, LLM models, and common pitfalls.
 
 > **Note:** This is a streamlined integration focused on agent execution and streaming. It does **not** support Human-in-the-Loop (HITL), state persistence/checkpointing, or UiPath process invocation from within agents. For workflows that need those features, use the [LangGraph](langgraph-integration.md) or [LlamaIndex](llamaindex-integration.md) integrations instead.

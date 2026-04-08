@@ -1,10 +1,6 @@
 # Context Grounding Guide
 
-> **Agent type: Both coded and low-code agents.** Coded agents use the Python SDK (`ContextGroundingRetriever`, `ContextGroundingVectorStore`) — see the [Coded Agents](#coded-agents) sections below. Low-code agents declare a `context` resource in `agent.json` — see the [Low-Code Agents](#low-code-agents) section.
-
 How to use UiPath's Context Grounding Service to ground LLM responses in your organization's specific information through semantic document search.
-
-## Coded Agents
 
 ## Overview
 
@@ -56,8 +52,6 @@ results = await vector_store.asimilarity_search(query="company policies", k=5)
 - `similarity_search_with_score()` - Get documents with similarity scores
 - `asimilarity_search()` - Async similarity search
 
-> **Bindings:** `ContextGroundingVectorStore(index_name="...", folder_path="...")` creates an `index` binding in `bindings.json` — the same format as `sdk.context_grounding.retrieve_async`. Add an `index` entry to `bindings.json` so the index name can be overridden per environment in Orchestrator. See [lifecycle/bindings-reference.md](../lifecycle/bindings-reference.md).
-
 ## LangGraph Integration
 
 ### Using Retriever as an Agent Tool
@@ -75,9 +69,10 @@ class GraphState(MessagesState):
     query: str
     answer: str | None = None
 
+retriever = ContextGroundingRetriever(index_name="company_docs")
+
 async def retrieve_context(state: GraphState) -> Command:
     """Retrieve relevant documents from context grounding."""
-    retriever = ContextGroundingRetriever(index_name="company_docs")
     documents = await retriever.ainvoke(state["query"])
     context = "\n".join([doc.page_content for doc in documents])
     return Command(update={
@@ -115,19 +110,17 @@ from langchain.chains import RetrievalQA
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 from uipath_langchain.agent.tools import ContextGroundingVectorStore
 
-async def run_rag(query: str) -> str:
-    llm = UiPathAzureChatOpenAI()
-    vector_store = ContextGroundingVectorStore(index_name="company_docs")
-    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+llm = UiPathAzureChatOpenAI()
+vector_store = ContextGroundingVectorStore(index_name="company_docs")
+retriever = vector_store.as_retriever(search_kwargs={"k": 5})
 
-    rag_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever
-    )
+rag_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever
+)
 
-    result = await rag_chain.ainvoke(query)
-    return result["result"]
+result = await rag_chain.ainvoke("What are our current policies?")
 ```
 
 ## Agent Integration
@@ -227,35 +220,6 @@ async def summarize_documents(topic: str) -> str:
 - **Result Limit**: Set appropriate `k` values to limit returned documents
 - **Caching**: Cache retriever results when the same query is used multiple times
 - **Index Selection**: Use specific index names to avoid unnecessary searches across all data
-
-## Low-Code Agents
-
-For low-code agents, context grounding is configured declaratively by adding a `context` resource to the `"resources"` array in `agent.json`. No Python SDK or code is required — the runtime performs retrieval automatically before each reasoning step.
-
-```json
-{
-  "$resourceType": "context",
-  "name": "Company Knowledge Base",
-  "description": "Search company documentation for relevant information. Query this whenever the user asks about products, policies, or internal procedures.",
-  "contextType": "index",
-  "folderPath": "MyFolder",
-  "indexName": "company-docs-index",
-  "settings": {
-    "resultCount": 5,
-    "retrievalMode": "Semantic",
-    "threshold": 0.7,
-    "query": { "variant": "dynamic" }
-  }
-}
-```
-
-**`contextType` options:** `"index"` (vector/keyword search), `"attachments"` (runtime file attachments), `"datafabricentityset"` (Data Fabric structured data).
-
-**`retrievalMode` options:** `Semantic` (vector similarity), `Structured` (keyword/filter), `DeepRAG` (multi-step re-ranking), `BatchTransform` (bulk transform), `DataFabric` (structured query).
-
-For the full `context` resource schema and all options, see [lowcode/resources-reference.md](../lowcode/resources-reference.md).
-
----
 
 ## Troubleshooting
 

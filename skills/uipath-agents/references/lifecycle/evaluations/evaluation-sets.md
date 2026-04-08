@@ -79,8 +79,6 @@ evaluations/eval-sets/
 - **id** - Unique within this eval set. Convention: `test-<number>-<scenario>`
 - **name** - Human-readable description
 - **inputs** - Must match the agent's input schema from `entry-points.json`
-
-  > **Low-code agents:** inputs must match `inputSchema` in `agent.json`.
 - **evaluationCriterias** - Map of evaluator ID to criteria for that evaluator
 - **mockingStrategy** - (Optional) Mock external calls
 
@@ -124,8 +122,6 @@ evaluations/eval-sets/
 ## Mocking Strategies
 
 ### Function Mocking (mockito)
-
-> **Note:** The `mockito` mocking strategy is only available for coded (Python) agents.
 
 ```json
 "mockingStrategy": {

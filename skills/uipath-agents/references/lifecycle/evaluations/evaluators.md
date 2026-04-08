@@ -166,7 +166,7 @@ Validates tool call outputs.
 **Eval criteria:**
 ```json
 "ToolCallOutputEvaluator": {
-  "toolOutputs": [{ "name": "get_temperature", "output": "{\"temperature\": 25.0, \"unit\": \"fahrenheit\"}" }]
+  "toolOutputs": [{ "name": "get_temperature", "output": "{'temperature': 25.0, 'unit': 'fahrenheit'}" }]
 }
 ```
 
@@ -195,8 +195,6 @@ Validates tool call outputs.
 ---
 
 ## Custom Evaluators
-
-> **Note:** Custom Python evaluators are only available for coded agents.
 
 Create custom Python evaluators in `evaluations/custom_evaluators/`:
 

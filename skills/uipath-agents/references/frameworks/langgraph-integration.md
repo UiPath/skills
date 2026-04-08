@@ -1,7 +1,5 @@
 # LangGraph Integration Guide
 
-> **Agent type: Coded agents only.** Low-code agents use the built-in ReAct engine (`basic-v2`) configured declaratively via `agent.json` — no framework or Python code needed. See the [low-code setup guide](../lowcode/setup.md).
-
 How to build LangGraph agents that work with the UiPath platform. This guide covers project structure, entrypoint detection, LLM models, and common pitfalls.
 
 ## Scaffolding a New Project
