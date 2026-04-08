@@ -17,37 +17,25 @@ If `uip` is not found, install with `npm install -g @uipath/cli`. If `npm` is mi
 
 ## Project Type Detection
 
-Determine the agent mode before proceeding. Check the working directory:
+Determine the agent mode before proceeding:
 
-1. **Coded mode** — `pyproject.toml` with `uipath` dependency exists and `.py` agent files are present
-2. **Low-code mode** — `agent.json` exists with `"type": "lowCode"`, `project.uiproj` present
-3. **Solution with both** — solution directory contains agent projects of different types → route per-task using [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md)
-4. **New project** — neither marker exists → use Mode Selection below or ask the user
+1. **Check for existing project files** in the working directory:
+   - `pyproject.toml` with `uipath` dependency + `.py` files → **Coded**
+   - `agent.json` with `"type": "lowCode"` + `project.uiproj` → **Low-code**
+2. **No existing project found** → ask the user:
+   > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?
+3. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
 
 **After detection, read the quickstart for that mode before doing anything else:**
 
 - **Coded** → read [references/coded/quickstart.md](references/coded/quickstart.md)
 - **Low-code** → read [references/lowcode/quickstart.md](references/lowcode/quickstart.md)
 
-## Mode / Framework Selection
-
-If no existing project is detected, choose the mode based on the user's request:
-
-| Option | Best for |
-|--------|----------|
-| **Low-Code (Agent Builder)** | Simple prompt+tools agent, flow integration, solution-based deployment, no custom code |
-| **Simple Function** (coded) | Deterministic logic, no LLM, Python |
-| **LangGraph** (coded) | Complex multi-step reasoning, tool use, interrupts, human-in-the-loop |
-| **LlamaIndex** (coded) | RAG-heavy, event-driven workflows, knowledge retrieval |
-| **OpenAI Agents** (coded) | Lightweight LLM agents with tools and handoffs |
-
-Read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for detailed decision criteria, interop patterns, and solution-level mixing.
-
 ## Task Navigation
 
 | I need to... | Mode | Read first | Then |
 |---|---|---|---|
-| Choose coded vs low-code | Both | [coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) | |
+| Help user choose coded vs low-code | Both | [coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) | |
 | Authenticate | Both | [authentication.md](references/authentication.md) | |
 | Create/build/deploy coded agent | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/lifecycle/*`, `coded/frameworks/*` |
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |

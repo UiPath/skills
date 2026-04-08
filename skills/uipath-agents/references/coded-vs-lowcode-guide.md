@@ -1,39 +1,26 @@
 # Coded vs Low-Code Agent Selection Guide
 
-Use this guide to determine whether to build a **coded** (Python) or **low-code** (agent.json) agent.
+Reference for comparing **coded** (Python) and **low-code** (agent.json) agents. Use this when the user needs help deciding which mode to choose.
 
-## Decision Flowchart
+## Capability Matrix
 
-Follow these steps in priority order. Stop at the first match.
-
-| Priority | Check | Result |
-|----------|-------|--------|
-| 0 | User explicitly specified a mode? | **Use their choice** — never override |
-| 1 | Existing project detected? (`pyproject.toml` = coded, `agent.json` with `"type": "lowCode"` = low-code) | **Match the project's mode** |
-| 2 | Needs to be embedded in a `.flow` file? | **Low-code** — only low-code agents support inline flow integration |
-| 3 | Needs custom Python logic, external libraries, or programmatic control? | **Coded** |
-| 4 | Needs a specific framework (LangGraph, LlamaIndex, OpenAI Agents)? | **Coded** |
-| 5 | Needs agent evaluations with evaluator configs? | **Coded** — eval framework is coded-only |
-| 6 | Simple prompt + tools agent, no custom code needed? | **Low-code** |
-| 7 | Part of a solution with flows? | **Low-code** |
-| 8 | Default / ambiguous | **Ask the user** |
-
-## Mode Selection Table
-
-| Scenario | Mode | Reason |
-|----------|------|--------|
-| Simple prompt-based agent with tools (RPA, IS connectors) | **Low-code** | Declarative JSON config, no code needed |
-| Agent embedded inline in a flow | **Low-code** | Only low-code supports `uipath.agent.autonomous` nodes |
-| Multi-agent solution (parent orchestrates tool agents) | **Low-code** | Solution-level resource wiring, `uip solution` deployment |
-| Complex multi-step reasoning with conditional routing | **Coded** | LangGraph StateGraph with conditional edges |
-| RAG / knowledge retrieval with custom chunking | **Coded** | LlamaIndex or LangGraph with ContextGroundingVectorStore |
-| Agent needs external Python libraries (pandas, requests, etc.) | **Coded** | Low-code has no custom code execution |
-| Agent needs human-in-the-loop with LangGraph interrupts | **Coded** | `interrupt()` pattern is Python-only |
-| Agent needs automated evaluation suite | **Coded** | `uip codedagent eval` is coded-only |
-| Agent with custom data transforms or HTTP calls | **Coded** | Python is more natural than JSON config |
-| Lightweight LLM agent with tools and handoffs | **Coded** | OpenAI Agents framework |
-| Deterministic logic, no LLM | **Coded** | Simple Function agent |
-| User explicitly requests a mode | **User's choice** | Never second-guess |
+| Capability | Low-code | Coded |
+|---|:---:|:---:|
+| Build without writing Python | ✅ | ❌ |
+| Call UiPath processes / API workflows as tools | ✅ | ✅ |
+| Use Integration Service connectors | ✅ | ✅ |
+| RAG over Context Grounding index | ✅ | ✅ |
+| Use third-party Python libraries | ❌ | ✅ |
+| Custom LLM state machine (LangGraph StateGraph) | ❌ | ✅ |
+| Human-in-the-loop | ✅ escalation | ✅ `interrupt()` |
+| Complex conditional HITL resume logic | ❌ | ✅ |
+| Studio Web Agent Builder canvas | ✅ | Optional |
+| `@mockable()` for evaluation isolation | ❌ | ✅ |
+| Full runtime control over LLM prompts | ❌ | ✅ |
+| Multi-model / multi-framework strategies | ❌ | ✅ |
+| Fastest path to first working agent | ✅ | ❌ |
+| Embed agent inline in a flow | ✅ | ❌ |
+| Solution-level deployment with resource provisioning | ✅ | ❌ |
 
 ## Key Differences
 
