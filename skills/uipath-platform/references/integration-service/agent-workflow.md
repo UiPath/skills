@@ -37,7 +37,8 @@ uip is connectors list --filter "<vendor>" --output json
 | Outcome | Action |
 |---|---|
 | Single native connector found | Use its **`Key`**. Proceed to Step 2. |
-| Multiple connectors found | Prefer the catalog connector (`uipath-` prefixed key) over custom ones (`custom-`/`design-` prefixed). See [connectors.md — Official vs Custom Connectors](connectors.md#official-vs-custom-connectors). |
+| Multiple connectors, mix of catalog and custom | Drop `custom-`/`design-` prefixed keys, use the `uipath-` prefixed one. See [connectors.md — Official vs Custom Connectors](connectors.md#official-vs-custom-connectors). |
+| Multiple catalog (`uipath-`) connectors | Present the list to the user and ask which one to use. Do NOT auto-select. |
 | Not found | Fall back to HTTP connector (`uipath-uipath-http`). See [connectors.md — HTTP Connector Fallback](connectors.md#http-connector-fallback). |
 
 ## Step 2: Find a Connection

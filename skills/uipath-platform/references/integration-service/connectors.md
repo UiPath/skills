@@ -28,12 +28,24 @@ A tenant may have both a **catalog** (official) connector and a **custom** conne
 | `custom-` | Custom tenant connector |
 | `design-` | Custom tenant connector (rare) |
 
-**Always prefer the `uipath-` prefixed connector** unless the user explicitly requests a custom one. If no `uipath-` match exists, fall back to `custom-`/`design-` connectors.
+### Selection rules
+
+1. **Filter out custom connectors first.** Drop any `custom-`/`design-` prefixed keys unless the user explicitly requests a custom connector.
+2. **Single catalog match** → use it automatically.
+3. **Multiple catalog matches** → present the list to the user and ask which one to use. A vendor can have multiple official connectors serving different purposes (e.g., Snowflake DB vs Snowflake Cortex, or multiple Microsoft connectors). Never auto-select in this case.
+4. **No catalog match, only custom** → fall back to `custom-`/`design-` connectors.
 
 ```bash
+# Example: catalog vs custom — auto-select the catalog connector
 uip is connectors list --filter "google sheets" --output json
 # → Key: "uipath-googlesheets-googlesheets"  ← catalog — use this one
 # → Key: "custom-google-sheets-abc"           ← custom — skip unless user asks
+
+# Example: multiple catalog connectors — present choice to user
+uip is connectors list --filter "snowflake" --output json
+# → Key: "uipath-snowflake-db"      Name: "Snowflake DB"
+# → Key: "uipath-snowflake-cortex"  Name: "Snowflake Cortex"
+# → Ask the user which one to use — do NOT auto-select
 ```
 
 ---
