@@ -1,8 +1,10 @@
 name: Daily Version Bump
 
 on:
+  push:
+    branches: [fix/bump_version_test3]
   schedule:
-    - cron: '40 13 * * *' # every day at 07:00 UTC/ 09:00 or 10:00 EET depending on daylight saving time
+    - cron: '0 7 * * *' # every day at 07:00 UTC
   workflow_dispatch:
     inputs:
       assignees:
