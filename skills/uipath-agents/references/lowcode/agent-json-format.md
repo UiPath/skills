@@ -4,7 +4,7 @@ Schemas for the core agent definition files.
 
 ## Project Directory Structure
 
-After `uip low-code-agent init <name>`:
+After `uip agent init <name>`:
 
 ```
 <AgentName>/

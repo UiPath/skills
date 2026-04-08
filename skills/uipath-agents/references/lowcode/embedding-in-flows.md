@@ -39,7 +39,7 @@ Run from the flow project directory:
 
 ```bash
 cd <FlowProject>
-uip low-code-agent init --inline --output json
+uip agent init --inline --output json
 ```
 
 This creates only `agent.json`, `resources/`, and `features/` — no `entry-points.json`, no `project.uiproj`.
@@ -52,7 +52,7 @@ Same configuration as standalone: model settings, system/user messages with cont
 
 ```bash
 cd <FlowProject>/<AgentName>
-uip low-code-agent validate --inline --output json
+uip agent validate --inline --output json
 ```
 
 ### Flow Wiring

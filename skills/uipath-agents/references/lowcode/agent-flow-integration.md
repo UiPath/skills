@@ -155,7 +155,7 @@ content/
 
 ### Prerequisites
 
-1. An agent project exists in the same solution (created via `uip low-code-agent init` + `uip solution project add`)
+1. An agent project exists in the same solution (created via `uip agent init` + `uip solution project add`)
 2. The solution has been uploaded to Studio Web at least once so the agent process resource key is assigned
 
 ### Node type format

@@ -4,12 +4,12 @@ Use `--output json` on all `uip` commands when parsing output.
 
 ## Agent Commands
 
-### `uip low-code-agent init`
+### `uip agent init`
 
 Scaffold a new agent project inside a solution directory.
 
 ```bash
-uip low-code-agent init "<AGENT_NAME>" --output json
+uip agent init "<AGENT_NAME>" --output json
 ```
 
 Run from the solution directory. Creates agent.json, entry-points.json, project.uiproj, and default eval/feature/resource directories.
@@ -19,17 +19,17 @@ Run from the solution directory. Creates agent.json, entry-points.json, project.
 Scaffold an inline agent inside a flow project directory.
 
 ```bash
-uip low-code-agent init --inline --output json
+uip agent init --inline --output json
 ```
 
 Run from the flow project directory. Creates only agent.json, resources/, and features/ — no entry-points.json, no project.uiproj. The inline agent is governed by the parent flow project.
 
-### `uip low-code-agent validate`
+### `uip agent validate`
 
 Validate agent project structure and schemas.
 
 ```bash
-uip low-code-agent validate --output json
+uip agent validate --output json
 ```
 
 Run from the agent project directory. Checks schema validity and consistency between agent.json and entry-points.json. Run after every change.
@@ -39,7 +39,7 @@ Run from the agent project directory. Checks schema validity and consistency bet
 Validate an inline agent inside a flow project.
 
 ```bash
-uip low-code-agent validate --inline --output json
+uip agent validate --inline --output json
 ```
 
 Run from the inline agent's subdirectory within the flow project. Validates agent.json without requiring entry-points.json or project.uiproj.
@@ -129,12 +129,12 @@ uip login status --output json
 # 2. Create solution and scaffold agent
 uip solution new "MySolution" --output json
 cd MySolution
-uip low-code-agent init "MyAgent" --output json
+uip agent init "MyAgent" --output json
 uip solution project add --project-path "MyAgent" --output json
 
 # 3. Edit agent.json, then validate
 cd MyAgent
-uip low-code-agent validate --output json
+uip agent validate --output json
 cd ..
 
 # 4. Bundle + upload to Studio Web (for visual development)
@@ -158,11 +158,11 @@ uip solution deploy run \
 | Task | Command | Run From |
 |------|---------|----------|
 | Create solution | `uip solution new "<NAME>" --output json` | Any directory |
-| Scaffold agent | `uip low-code-agent init "<NAME>" --output json` | Solution directory |
-| Scaffold inline agent | `uip low-code-agent init --inline --output json` | Flow project directory |
+| Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory |
+| Scaffold inline agent | `uip agent init --inline --output json` | Flow project directory |
 | Register project | `uip solution project add --project-path "<PATH>" --output json` | Solution directory |
-| Validate | `uip low-code-agent validate --output json` | Agent project directory |
-| Validate inline agent | `uip low-code-agent validate --inline --output json` | Inline agent subdirectory |
+| Validate | `uip agent validate --output json` | Agent project directory |
+| Validate inline agent | `uip agent validate --inline --output json` | Inline agent subdirectory |
 | Bundle for Studio Web | `uip solution bundle . -d ./dist --output json` | Solution directory |
 | Upload to Studio Web | `uip solution upload --output json` | Solution directory |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory |

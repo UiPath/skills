@@ -344,8 +344,8 @@ uip solution new "MySolution" --output json
 # → MySolution.uipx + SolutionStorage.json
 
 # Scaffold agent projects (creates ONLY agent project files)
-uip low-code-agent init ./MySolution/Agent --model gpt-4o-2024-11-20 --output json
-uip low-code-agent init ./MySolution/Agent2 --model gpt-4o-2024-11-20 --output json
+uip agent init ./MySolution/Agent --model gpt-4o-2024-11-20 --output json
+uip agent init ./MySolution/Agent2 --model gpt-4o-2024-11-20 --output json
 
 # Link agent projects to solution
 uip solution project add ./MySolution/Agent ./MySolution/MySolution.uipx --output json
@@ -356,8 +356,8 @@ uip solution project add ./MySolution/Agent2 ./MySolution/MySolution.uipx --outp
 
 ```bash
 # After editing agent.json (tools, contexts, prompts, schema), validate
-uip low-code-agent validate ./MySolution/Agent --output json
-uip low-code-agent validate ./MySolution/Agent2 --output json
+uip agent validate ./MySolution/Agent --output json
+uip agent validate ./MySolution/Agent2 --output json
 ```
 
 ### Upload to Studio Web

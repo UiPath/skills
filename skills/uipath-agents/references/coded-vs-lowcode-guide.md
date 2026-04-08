@@ -27,7 +27,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Aspect | Coded | Low-code |
 |--------|-------|----------|
 | Language | Python | Declarative JSON (`agent.json`) |
-| CLI | `uip codedagent` | `uip low-code-agent` + `uip solution` |
+| CLI | `uip codedagent` | `uip agent` + `uip solution` |
 | Project marker | `pyproject.toml` + `.py` files | `agent.json` + `project.uiproj` |
 | Frameworks | LangGraph, LlamaIndex, OpenAI Agents, Simple Function | None (prompt + tools config) |
 | Deployment | `uip codedagent deploy` | `uip solution pack/publish/deploy` |
