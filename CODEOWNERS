@@ -7,19 +7,30 @@
 # Activity references
 /references/ @DragosUnguru
 
-# RPA workflows skill
-/skills/uipath-rpa-workflows/ @DragosUnguru @RaduAna-Maria
-
-# Coded workflows skill
-/skills/uipath-coded-workflows/ @DragosUnguru @RaduAna-Maria
-/skills/uipath-coded-workflows/references/integration-service.md @baishalighosh @ojalkumar-pixel @shyamgupta52
+# RPA skill (coded + XAML workflows)
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva
+/skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 
-# Coded agents skill
-/skills/uipath-coded-agents/ @chandusailella
+# Agents skill (coded + low-code)
+/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
+
+# Planner skill
+/skills/uipath-planner/ @RaduAna-Maria
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden
+
+# HITL skill
+/skills/uipath-human-in-the-loop/ @dushyant-uipath @rohan-uipath
+
+# Flow skill — node category guides (away team owned)
+# Add your team here when contributing a new node category file
+/skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden
+
+# Diagnostics
+/skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil

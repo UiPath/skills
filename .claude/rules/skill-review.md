@@ -17,13 +17,16 @@ Does the skill follow the canonical layout and conventions?
 
 - SKILL.md has valid YAML frontmatter with `name` and `description`
 - `name` matches the folder name exactly
-- `description` includes TRIGGER and DO NOT TRIGGER conditions
+- `description` is under 250 characters (Claude Code truncates non-bundled skill descriptions at 250 chars — run `hooks/validate-skill-descriptions.sh` to verify)
+- `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters
+- `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
+- `description` starts with `[PREVIEW]` for new/unstable skills
 - SKILL.md body follows the expected section order: Title, When to Use, Critical Rules, Workflow/Quick Start, Reference Navigation, Anti-patterns
 - Reference files use kebab-case naming with `-guide.md` / `-template.md` suffixes
 - Folder organization is logical (references/, assets/, scripts/)
 - No orphaned files (every file is reachable from SKILL.md)
 
-**Red flags:** missing frontmatter fields, name mismatch, no Critical Rules section, unreachable files.
+**Red flags:** missing frontmatter fields, name mismatch, description over 250 chars, verbose TRIGGER/DO NOT TRIGGER clauses, frontmatter fields nested under `metadata:`, no Critical Rules section, unreachable files.
 
 ### 2. Consistency (1-5)
 
@@ -85,13 +88,14 @@ How effectively can an AI agent follow these instructions?
 Is the skill ready for public use as a plugin?
 
 - `description` in frontmatter is detailed enough for the plugin system to match it correctly — not too broad (false triggers on unrelated requests), not too narrow (misses valid use cases)
-- DO NOT TRIGGER conditions prevent conflicts with other skills in the marketplace
+- `description` uses compact `→` redirects to prevent conflicts with commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
+- `description` passes the 250-character validation hook (`hooks/validate-skill-descriptions.sh`)
 - The skill does not assume any state that the plugin's SessionStart hook doesn't guarantee
 - No hardcoded paths, tokens, or environment-specific assumptions
 - Works on all platforms the skill claims to support
 - CODEOWNERS entry exists
 
-**Red flags:** description that triggers on generic terms, missing DO NOT TRIGGER for sibling skills, hardcoded localhost URLs or personal paths, no CODEOWNERS entry.
+**Red flags:** description that triggers on generic terms, missing `→` redirects for sibling skills, description over 250 chars, hardcoded localhost URLs or personal paths, no CODEOWNERS entry.
 
 ## Output Format
 

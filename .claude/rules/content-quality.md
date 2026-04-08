@@ -32,7 +32,7 @@ This repository's primary audience is AI coding agents, not humans. Write accord
 
 Example:
 ```bash
-uip rpa validate --file-path "<FILE_PATH>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa get-errors --file-path "<FILE_PATH>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 ## Cross-Platform Awareness

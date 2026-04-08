@@ -22,14 +22,19 @@ Every SKILL.md MUST begin with valid YAML frontmatter containing at minimum:
 ```yaml
 ---
 name: uipath-<name>
-description: "<what it does>. TRIGGER when: <activation conditions>. DO NOT TRIGGER when: <exclusion conditions>."
+description: "<identity> (<unique signal>). <core actions>. For <confusing-case>→<correct-skill>."
 ---
 ```
 
 ### Validation Rules
 
 - `name` MUST exactly match the parent folder name
-- `description` MUST include both "TRIGGER when:" and "DO NOT TRIGGER when:" clauses
+- `description` MUST be under 250 characters. Claude Code truncates non-bundled skill descriptions at 250 chars in the system prompt — anything beyond is invisible to the model
+- `description` MUST start with `[PREVIEW]` when the skill is first created. Remove the tag only when the skill is considered stable
+- `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters
+- `description` MUST include compact redirects for commonly confused sibling skills using `→` notation (e.g., `For XAML→uipath-rpa`)
+- `description` MUST NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — these waste characters and get truncated
+- All frontmatter fields (`allowed-tools`, `user-invocable`, etc.) MUST be at the top level — NOT nested under a `metadata:` key (Claude Code only reads top-level fields)
 - Frontmatter MUST be valid YAML (no tabs, proper quoting of strings with colons)
 
 ## SKILL.md Body Structure
@@ -47,7 +52,7 @@ The markdown body SHOULD follow this order:
 
 | Item | Pattern | Example |
 |------|---------|---------|
-| Skill folder | `uipath-<kebab-case>` | `uipath-coded-workflows` |
+| Skill folder | `uipath-<kebab-case>` | `uipath-rpa` |
 | Reference files | `<topic>-<type>.md` | `commands-reference.md` |
 | Guide files | `<topic>-guide.md` | `orchestrator-guide.md` |
 | Template files | `<name>-template.<ext>` | `codedworkflow-template.md` |

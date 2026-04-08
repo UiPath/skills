@@ -1,8 +1,7 @@
 ---
 name: uipath-platform
-description: "UiPath development environment assistant — authentication, Orchestrator management (folders, assets, queues, storage buckets), solution lifecycle (pack, publish, deploy), Integration Service, resources management, Test Manager, CLI tools, and general UiPath platform knowledge. TRIGGER when: User asks about UiPath platform operations (authentication, Orchestrator, folders, assets, robots, queues, packages, processes, storage buckets); User asks about solution lifecycle (pack, publish, deploy, activate); User references Integration Service (connectors, connections, activities, resources); User wants to manage resources (assets, queues, queue items, storage buckets, bucket files); User wants to use Test Manager (projects, test sets, test cases, executions, results, reports); User wants to use uip CLI commands; User asks about environment setup, credentials, or tenant configuration; User asks general UiPath platform questions (folders, robots, queues, triggers, machine policies). DO NOT TRIGGER when: User is writing or editing workflow code (use uipath-coded-workflows or uipath-rpa-workflows instead), or asking how to automate a specific task within a workflow."
-metadata: 
-   allowed-tools: Bash, Read, Write, Glob, Grep
+description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, Test Manager, uip CLI. Not for writing workflow code."
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Development Environment Assistant
@@ -88,8 +87,8 @@ Choose the appropriate operation from the Task Navigation table below.
 |---|---|
 | **Authenticate / manage tenants** | [references/uip-commands.md - Authentication](references/uip-commands.md) |
 | **Manage Orchestrator folders** | [references/orchestrator-guide.md - Folders](references/orchestrator-guide.md) |
-| **Manage assets** (via `resources assets`, NOT `or`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
-| **Manage resources** (assets, queues, queue items, storage buckets, files via `resources`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
+| **Manage assets** (via `resource assets`, NOT `or`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
+| **Manage resources** (assets, queues, queue items, storage buckets, files via `resource`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
@@ -98,7 +97,7 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
 | **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
-| **Build/run/validate coded workflows** | [/uipath-coded-workflows:uipath-coded-workflows](/uipath-coded-workflows:uipath-coded-workflows) |
+| **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
 ## Resolving UiPath Studio
 
@@ -183,13 +182,13 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 |---|---|---|---|
 | **Authentication** | `login`, `logout` | OAuth2, client credentials, PAT, tenant management | Available |
 | **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
-| **Resources** | `resources` | Assets, queues, queue items, storage buckets, bucket files | Available |
+| **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
 | **Solutions** | `solution` | Create, pack, publish, deploy solutions | Available |
 | **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
 | **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
 | **MCP** | `mcp` | Model Context Protocol server | Available |
-| **Coded Agents** | `codedagents` | Python agent lifecycle (setup, exec) | Available |
+| **Coded Agents** | `codedagent` | Python agent lifecycle (setup, exec) | Available |
 | **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
 
 ### Global Options
@@ -199,11 +198,14 @@ Every `uip` command accepts:
 | Option | Description | Default |
 |---|---|---|
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
+| `--output-filter <expression>` | JMESPath expression to filter JSON output | -- |
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--help` / `-h` | Display help for the command | -- |
 | `--version` / `-v` | Display CLI version | -- |
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
+>
+> **Use `--output-filter` to extract specific fields** instead of piping output to `python3`, `jq`, or other post-processing tools. The filter uses [JMESPath](https://jmespath.org/) syntax. Example: `--output json --output-filter "Data[].{id: id, name: name}"`
 
 ## Deployment Lifecycle
 
@@ -211,7 +213,7 @@ The typical deployment workflow for a UiPath automation:
 
 ```
 1. Develop    → Create/edit coded workflows or RPA projects locally
-2. Validate   → uip rpa validate --use-studio
+2. Validate   → uip rpa get-errors --use-studio
 3. Pack       → uip solution pack
 4. Login      → uip login
 5. Publish    → uip solution publish
@@ -261,4 +263,6 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
 - **[Test Manager Guide](references/test-manager/test-manager-guide.md)** — Test projects, test sets, test cases, executions, reports, attachments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
-- **[Coded Workflows](/uipath-coded-workflows:uipath-coded-workflows)** — Building coded automation projects
+- **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
+
+> **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

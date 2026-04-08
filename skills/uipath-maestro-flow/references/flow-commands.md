@@ -134,14 +134,7 @@ uip flow node list <ProjectName>.flow --output json
 
 ### uip flow node configure
 
-Configure a **connector** node with connection details, method info, and parameter values. Run this after `node add` for connector nodes.
-
-```bash
-uip flow node configure flow_files/<ProjectName>.flow <nodeId> \
-  --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "GET", "endpoint": "/Resource/{id}", "bodyParameters": {...}}'
-```
-
-The `--detail` JSON accepts: `connectionId` (required), `folderKey` (required), `method` (required — HTTP method from `connectorMethodInfo`), `endpoint` (required — path template from `connectorMethodInfo`), `bodyParameters`, `queryParameters`, `pathParameters`. Get the `method` and `endpoint` values from the `connectorMethodInfo` field in the `registry get` response.
+Configure a connector node with connection details and parameter values. Run after `node add` for connector nodes. See the relevant node guide in `nodes/` for the full `--detail` JSON schema.
 
 ## uip flow edge
 
@@ -170,25 +163,9 @@ The `Data.Node` object from `registry get` is what you paste into your `.flow` f
 
 Run `uip flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
 
-## Integration Service commands (for connector binding and reference resolution)
+## Connector commands (binding and reference resolution)
 
-When a flow uses connector nodes, you need IS commands to fetch connections and resolve reference fields. These are used in **Steps 4a–4e** of the flow authoring workflow.
-
-```bash
-# Connections
-uip is connections list "<connector-key>" --output json
-uip is connections ping "<connection-id>" --output json
-uip is connections create "<connector-key>"
-
-# Enriched node metadata (pass connection for custom fields)
-uip flow registry get <nodeType> --connection-id <connection-id> --output json
-
-# Reference resolution
-uip is resources execute list "<connector-key>" "<resource>" \
-  --connection-id "<id>" --output json
-```
-
-Run `uip is connections --help` or `uip is resources --help` for all options.
+See the relevant node guide in `nodes/` for connector CLI commands and the configuration workflow.
 
 ## Global options (all commands)
 

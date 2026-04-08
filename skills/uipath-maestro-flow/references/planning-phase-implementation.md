@@ -4,88 +4,53 @@ Resolve all implementation details for the approved architectural plan. This pha
 
 > **Prerequisite:** The user must have explicitly approved the architectural plan (`.arch.plan.md`) before starting this phase.
 >
-> **Skip the resolution steps (1–7)** if the flow uses only OOTB nodes (Script, HTTP, Decision, Switch, Loop, Merge, End, Terminate, Delay, Transform, Mock). OOTB nodes do not require registry lookups, connection binding, or reference resolution — proceed directly to the build step. The node catalog and wiring reference below are still needed for building.
+> **Always validate with the registry,** even for OOTB nodes. This phase ensures that every node type (built-in or connector-based) is confirmed against the current registry state. Port names, input requirements, and output schemas can change — do not assume OOTB nodes match the planning guides without verification.
 
 ---
 
 ## Implementation Resolution Process
 
-### Step 1 — Identify Nodes Needing Resolution
+### Step 1 — Identify Nodes and Validate with Registry
 
-Scan the approved `.arch.plan.md` node table and connector summary. Identify:
+Scan the approved `.arch.plan.md` node table and connector summary. Validate each node type against the registry to confirm ports, inputs, and outputs are current:
 
 | Category | How to identify | Action |
 | --- | --- | --- |
-| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Steps 2a–2d |
-| Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 |
-| Mock placeholders | Node type is `core.logic.mock` | Run Step 4 |
-| OOTB nodes | Everything else | No resolution needed |
+| Connector nodes | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow the relevant node guide in `nodes/`) |
+| Resource nodes | Node type starts with `uipath.core.*` or Notes say "resource:" | Run Step 3 (registry search, confirm node type) |
+| Mock placeholders | Node type is `core.logic.mock` | Run Step 4 (check if published, replace if available) |
+| OOTB nodes | Everything else (Script, HTTP, Decision, Loop, etc.) | Run Step 1a below (validate with registry) |
 
-If no nodes need resolution, skip to Step 6.
+**All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.**
+
+#### Step 1a — Validate All OOTB Node Types with Registry
+
+Even built-in nodes can change. Confirm each OOTB node type against the registry:
+
+```bash
+uip flow registry pull --force
+uip flow registry get <nodeType> --output json
+```
+
+For each OOTB node type in your plan, record:
+- Input port names (must match `targetPort` in edges)
+- Output port names (must match `sourcePort` in edges)
+- Required input fields (`required: true` in `inputDefinition`)
+- Output variable schema (`outputDefinition`)
+
+Example: If your plan shows `core.action.script`, run `uip flow registry get core.action.script --output json` and confirm the expected port names (`input`, `success`) and that `script` input is required.
+
+Update your node table if any ports or required fields differ from the planning guide.
 
 ### Step 2 — Resolve Connector Nodes
 
-For each connector node, run these sub-steps in order.
+For each connector node, follow the Configuration Workflow in the relevant node guide (`nodes/`). The guide covers connection binding, metadata retrieval, field resolution, and validation.
 
-#### 2a. Find the connector node type
-
-```bash
-uip flow registry pull --force
-uip flow registry search "<service-name>" --output json
-```
-
-Find the node type matching the intended operation from the `.arch.plan.md` connector summary. Confirm it has `category: "connector"` in the results.
-
-#### 2b. Bind a connection
-
-Extract the connector key from the node type (`uipath.connector.<connector-key>.<activity>`).
-
-```bash
-uip is connections list "<connector-key>" --output json
-```
-
-1. Pick the default enabled connection (`IsDefault: Yes`, `State: Enabled`)
-2. If no connection exists, **stop and tell the user** — they must create one before proceeding
-3. Verify the connection is healthy:
-
-```bash
-uip is connections ping "<connection-id>" --output json
-```
-
-Record the connection ID for `bindings_v2.json` during the build step.
-
-#### 2c. Get enriched metadata and resolve reference fields
-
-```bash
-uip flow registry get <nodeType> --connection-id <connection-id> --output json
-```
-
-Check `inputDefinition.fields` for fields with a `reference` object — these require ID lookups:
-
-```bash
-uip is resources execute list "<connector-key>" "<resource>" \
-  --connection-id "<id>" --output json
-```
-
-Use resolved IDs (not display names) in the node inputs. Present options to the user when multiple matches exist.
-
-#### 2d. Validate required fields
-
-Check every `required: true` field in `inputDefinition.fields` against what the user provided. If any required field is missing, **ask the user before proceeding** — list the missing fields with their `displayName` and expected value type.
-
-Do NOT proceed until all required fields have values.
+Record the connection ID and resolved field values for the build step.
 
 ### Step 3 — Resolve Resource Nodes
 
-For each resource node (RPA process, agent, flow, API workflow, human task):
-
-```bash
-uip flow registry pull --force
-uip flow registry search "<resource-name>" --output json
-```
-
-1. If found: record the exact node type (e.g., `uipath.core.rpa-workflow.invoice-abc123`)
-2. If not found: keep the `core.logic.mock` placeholder and note the gap
+For each resource node (RPA process, agent, flow, API workflow, human task) identified during Phase 1 discovery:
 
 ```bash
 uip flow registry get "<node-type>" --output json
@@ -93,13 +58,22 @@ uip flow registry get "<node-type>" --output json
 
 Record `inputDefinition` and `outputDefinition` for the node table.
 
+If Phase 1 flagged a resource as not found, re-check in case it was published since planning:
+
+```bash
+uip flow registry pull --force
+uip flow registry search "<resource-name>" --output json
+```
+
+If still not found, keep the `core.logic.mock` placeholder and note the gap.
+
 ### Step 4 — Replace Mock Nodes
 
 For each `core.logic.mock` node in the architectural plan:
 
 1. Check if the resource has been published since planning: `uip flow registry search "<name>" --output json`
 2. If published: replace the mock with the real resource node type, update inputs/outputs
-3. If not published: keep the mock and include it in the "Mock Placeholders" section of the output
+3. If not published: keep the mock and note it in the "Open Questions" section for user resolution
 
 ### Step 5 — Replace Placeholders
 
@@ -120,6 +94,25 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 ```markdown
 # <SolutionName> Implementation Plan
 
+## Summary
+
+2-3 sentences describing what the flow does end-to-end and what was resolved in this phase (connectors bound, resources confirmed, registry validations performed).
+
+## Flow Diagram (Mermaid)
+
+Copy the mermaid diagram from `.arch.plan.md`, then update node labels if any node types changed due to mock replacement or connector resolution. Use the same diagram from architectural planning — it remains the visual reference for the flow structure.
+
+```mermaid
+graph TD
+    trigger(Manual Trigger)
+    action1[Resolved Action 1]
+    decision{Resolved Decision}
+    end1(Done)
+    trigger -->|output| action1
+    action1 -->|success| decision
+    decision -->|true| end1
+```
+
 ## Resolved Node Table
 
 | # | Node ID | Name | Node Type | Inputs | Outputs | Connection ID | Notes |
@@ -134,37 +127,43 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 | Connector Key | Connection ID | Activity | Verified |
 | --- | --- | --- | --- |
 
-## Variables
+## Global Variables
 
 (Copy from `.arch.plan.md` Inputs and Outputs section)
-
-## Mock Placeholders (if any)
-
-| Node ID | Intended Resource | Skill to Use | Status |
-| --- | --- | --- | --- |
 
 ## Changes from Architectural Plan
 
 - List what changed between `.arch.plan.md` and this plan
+- Record any node type changes (connector resolutions, mock replacements)
+- Note any port or input field changes discovered during registry validation
+
+## Open Questions
+
+Prefix each with `**[REQUIRED]**` or `**[OPTIONAL]**`. If there are no open questions, write "No open questions — all details resolved."
+
+- **[REQUIRED]** Which connection should be used for the Slack connector?
+- **[OPTIONAL]** Should the retry count be increased from the default?
 ```
 
 #### Column Additions
 
 The implementation plan adds these columns beyond the architectural plan:
 
-- **Connection ID**: The bound IS connection UUID (connector nodes only)
+- **Connection ID**: The bound connection UUID (connector nodes only)
 - **Verified**: Whether the connection was pinged successfully
 
 ### Step 7 — Get Approval
 
 Present a short summary in chat:
 
-1. How many nodes were resolved
-2. Any mock placeholders remaining
-3. Any required fields that need user input
-4. Any connections that need to be created
+1. Registry validation results — confirm all OOTB node ports and inputs match the plan
+2. How many connector/resource nodes were resolved
+3. Any port or input field changes discovered during validation
+4. Any mock placeholders remaining
+5. Any required fields that need user input
+6. Any connections that need to be created
 
-Tell the user to review `<SolutionName>.impl.plan.md`. Do NOT proceed to the build step until the user explicitly approves.
+Tell the user to review `<SolutionName>.impl.plan.md`, including the updated mermaid diagram and registry confirmations. Do NOT proceed to the build step until the user explicitly approves.
 
 ---
 
@@ -174,12 +173,7 @@ These are org-wide "when to use what" rules that can't be encoded in individual 
 
 ### Connecting to External Services
 
-Use this decision order — prefer higher tiers:
-
-1. **Pre-built Integration Service connector** — Use when a connector exists and its activities cover your use case. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically. Always check first: `uip flow registry search <service> --output json`.
-2. **HTTP Request within a connector** — Use when a connector exists but lacks the specific API endpoint you need. The connector still manages authentication; you just supply the path and payload.
-3. **Standalone HTTP Request node** (`core.action.http`) — Use for one-off API calls to services without connectors, or during prototyping when you need quick iteration. You handle auth manually (headers, tokens).
-4. **RPA workflow node** — Use only when the target system has no API at all (legacy desktop apps, terminal-based systems, browser flows that can't be done via API). RPA requires robot infrastructure and is orders of magnitude slower than API-based approaches.
+See [planning-phase-architectural.md — Selecting External Service Nodes](planning-phase-architectural.md) for the 4-tier decision order (connector → HTTP within connector → standalone HTTP → RPA).
 
 ### Agent Nodes vs Workflow Logic
 
@@ -233,7 +227,7 @@ Execute custom JavaScript code. Use for data transformation, computation, format
 
 #### HTTP Request (`core.action.http`)
 
-Make REST API calls. Supports branching on response status, retries, and authentication via Integration Service connections.
+Make REST API calls. Supports branching on response status, retries, and connection-based authentication.
 
 | | |
 |--|--|
@@ -252,7 +246,7 @@ Make REST API calls. Supports branching on response status, retries, and authent
 - `retryCount` — Number of retries on failure (default: 0)
 - `branches` — Array of `{ id, name, conditionExpression }` for response routing
 - `authenticationType` — `manual` or from a connector connection
-- `application`, `connection` — For IS-authenticated requests
+- `application`, `connection` — For connection-authenticated requests
 
 **Dynamic ports:** Each entry in `branches` creates a `branch-{item.id}` output port. If no branch condition matches, flow goes to `default`.
 
@@ -399,22 +393,14 @@ See [node-reference.md — Subflow](node-reference.md) for the full JSON structu
 
 ### Connector Nodes
 
-Connector nodes are dynamically loaded from Integration Service and are not part of the OOTB registry. They appear after `uip login` + `uip flow registry pull`.
-
-Connector nodes typically have:
-- `category: "connector"`
-- Complex `inputs` with `detail` object containing operation-specific fields
-- `application` and `connection` fields for IS authentication
-- Display labels from the connector's metadata
+Connector nodes call external services. See the relevant node guide in `nodes/` for the full configuration guide including connection binding, `inputs.detail` structure, and debugging.
 
 **To find connector nodes:**
 ```bash
 uip flow registry search <service> --output json
 ```
 
-Search broadly by service name, then check the `category` field in results to confirm it's a connector node.
-
-**Before using a connector node:** Always discover its capabilities via IS commands (see Step 4 in SKILL.md). The registry tells you the node exists; IS tells you what it can do and what fields are required.
+Before using a connector node, run Steps 2a–2d above to bind a connection and resolve reference fields.
 
 ### Agent Nodes
 
@@ -440,7 +426,7 @@ Resource nodes invoke published UiPath automations from within a flow. They appe
 | Agentic Process | `uipath.core.agentic-process.{key}` | Run an orchestration process |
 | Flow | `uipath.core.flow.{key}` | Run another flow as a subprocess |
 | API Workflow | `uipath.core.api-workflow.{key}` | Call a published API function |
-| Web App (Human Task) | `uipath.core.human-task.{key}` | Pause for human input via a UiPath App |
+| Human Task | `uipath.core.human-task.{key}` | Pause for human input via a UiPath App |
 
 **Discovery:** `uip flow registry search "<resource-name>" --output json`
 
@@ -530,9 +516,8 @@ When a flow requires capabilities outside the flow skill's scope — an RPA proc
 
 1. Add a `core.logic.mock` placeholder node in the plan where the external component goes
 2. Tell the user what's needed and which skill to use:
-   - Desktop/browser automation → `/uipath:uipath-rpa-workflows`
-   - Coded workflow (C#) → `/uipath:uipath-coded-workflows`
-   - Agent → `/uipath:uipath-coded-agents`
+   - Desktop/browser automation or coded workflow (C#) → `/uipath:uipath-rpa`
+   - Agent → `/uipath:uipath-agents`
 3. Once the user creates the component, replace the placeholder with the real node
 
 **Do not** attempt to invoke other skills automatically. Each skill should work independently — cross-skill chaining multiplies failure rates.
