@@ -18,6 +18,26 @@ Connectors are pre-built integrations to external applications. Each connector h
 
 ---
 
+## Official vs Custom Connectors
+
+A tenant may have both a **catalog** (official) connector and a **custom** connector for the same vendor. When `uip is connectors list --filter "<vendor>"` returns multiple results, distinguish them by **Key prefix**:
+
+| Key prefix | Type |
+|---|---|
+| `uipath-` | Catalog (official) connector |
+| `custom-` | Custom tenant connector |
+| `design-` | Custom tenant connector (rare) |
+
+**Always prefer the `uipath-` prefixed connector** unless the user explicitly requests a custom one. If no `uipath-` match exists, fall back to `custom-`/`design-` connectors.
+
+```bash
+uip is connectors list --filter "google sheets" --output json
+# → Key: "uipath-googlesheets-googlesheets"  ← catalog — use this one
+# → Key: "custom-google-sheets-abc"           ← custom — skip unless user asks
+```
+
+---
+
 ## HTTP Connector Fallback
 
 When no native connector exists for a vendor, use the HTTP connector (`uipath-uipath-http`) to call REST APIs directly.
