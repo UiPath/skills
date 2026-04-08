@@ -8,15 +8,15 @@
     {
       "name": "uipath",
       "source": "./",
-      "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, and UI testing",
-      "version": "0.0.13",
+      "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
+      "version": "0.0.14",
       "author": {
         "name": "UiPath"
       },
       "homepage": "https://github.com/UiPath/skills",
       "repository": "https://github.com/UiPath/skills",
       "license": "MIT",
-      "keywords": ["uipath", "automation", "rpa", "code", "workflow", "ui-automation", "ui-testing", "desktop", "browser"]
+      "keywords": ["uipath", "automation", "rpa", "code", "workflow", "ui-automation", "ui-testing", "desktop", "browser", "diagnostics"]
     }
   ]
 }
