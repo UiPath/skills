@@ -281,6 +281,38 @@ uip is resources execute list "<connector-key>" "<resource>" \
 
 ---
 
+## Testing Trigger Flows
+
+`uip flow debug` works with trigger-based flows, but unlike manual triggers the flow does **not** execute immediately. The debug session registers a live webhook/poll with the external service and waits for a real event.
+
+### Testing workflow
+
+1. **Warn the user** — explain that debug will start a live listener and they must produce the event themselves (e.g., send a Slack message, create a Jira issue)
+2. Run `uip flow debug .` — uploads to Studio Web, starts the debug session, and begins polling (~10 min timeout)
+3. **User triggers the event** in the external service (e.g., sends a message in the configured Slack channel)
+4. The flow fires, executes all nodes, and debug reports the result
+5. If no event arrives before the timeout, the session ends with no execution
+
+```bash
+uip flow debug . --output json
+# → Session starts, listening for trigger event...
+# → User must now produce the event in the external service
+# → Flow executes when event arrives
+```
+
+### Key differences from manual-trigger debug
+
+| Aspect | Manual trigger | Connector trigger |
+|---|---|---|
+| Execution start | Immediate | Waits for external event |
+| User action needed | None | Must produce the event manually |
+| Timeout risk | Low (runs immediately) | High (~10 min window) |
+| What gets registered | Nothing | Live webhook or polling subscription |
+
+> **Do NOT run `flow debug` for trigger flows without telling the user first.** They need to know they must produce the event within the timeout window.
+
+---
+
 ## Debug
 
 ### Common Errors
