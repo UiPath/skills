@@ -284,7 +284,7 @@ A mermaid flowchart showing all nodes, edges, and branching logic.
 
 **Requirements:**
 
-- Use `graph TD` (top-down) for most flows; `graph LR` (left-right) only for very linear flows with few branches. Do NOT use `flowchart` — it is not supported by all mermaid renderers.
+- Use `graph LR` (left-right) for all flows — Flow uses a horizontal canvas. Do NOT use `graph LR` (top-down) — it produces vertical diagrams that conflict with the horizontal node layout. Do NOT use `flowchart` — it is not supported by all mermaid renderers.
 - Use `subgraph` blocks to group related sections — required for flows with 10+ nodes
 - Label every edge with the port name (e.g., `-->|success|`, `-->|true|`, `-->|false|`)
 - **Labels must be plain text only** — no special characters inside shape delimiters. The following break mermaid parsing:
@@ -306,7 +306,7 @@ A mermaid flowchart showing all nodes, edges, and branching logic.
 
 ````markdown
 ```mermaid
-graph TD
+graph LR
     trigger(Manual Trigger)
     fetchOrders[Fetch Orders]
     checkStatus{Check Status}
@@ -385,7 +385,7 @@ LLM-generated mermaid frequently contains syntax errors. After generating the di
 
 ### Syntax Rules
 
-1. **First line must be `graph TD` or `graph LR`** — use `graph` not `flowchart` (the `flowchart` keyword is not supported by all renderers). `TD` = top-down, `LR` = left-right.
+1. **First line must be `graph LR`** (horizontal — matches the Flow canvas) — use `graph` not `flowchart` (the `flowchart` keyword is not supported by all renderers). `TD` = top-down, `LR` = left-right.
 2. **Node IDs must be alphanumeric + underscores only** — no hyphens, dots, or spaces in IDs. Use `fetchData` not `fetch-data` or `fetch.data`
 3. **Node IDs must not start with or equal a reserved word** — mermaid reserves these as keywords: `end`, `subgraph`, `graph`, `flowchart`, `direction`, `click`, `style`, `classDef`, `class`, `linkStyle`, `callback`, `default`. IDs that start with these (e.g., `endWarm`, `defaultPath`, `styleNode`) break the parser. Use alternatives like `warmEnd`, `pathDefault`, `nodeStyle` — or use a prefix like `done_warm`, `finish_warm`.
 4. **Node labels must be plain text** — no quotes inside shape delimiters. Use `A[Fetch Data]` not `A["Fetch Data"]`.
@@ -415,7 +415,7 @@ LLM-generated mermaid frequently contains syntax errors. After generating the di
 
 After generating the mermaid block:
 
-1. First line is `graph TD` or `graph LR` — not `flowchart`
+1. First line is `graph LR` — not `graph LR` or `flowchart`
 2. Check each node ID contains only `[a-zA-Z0-9_]`
 3. Check no node ID starts with or equals a reserved word (`end`, `subgraph`, `graph`, `flowchart`, `direction`, `click`, `style`, `classDef`, `class`, `linkStyle`, `callback`, `default`)
 4. Check no labels contain `>`, `<`, `:`, `;`, `?`, `&`, `(`, `)`, or quotes — replace with plain words

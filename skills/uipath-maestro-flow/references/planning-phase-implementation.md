@@ -103,7 +103,7 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 Copy the mermaid diagram from `.arch.plan.md`, then update node labels if any node types changed due to mock replacement or connector resolution. Use the same diagram from architectural planning — it remains the visual reference for the flow structure.
 
 ```mermaid
-graph TD
+graph LR
     trigger(Manual Trigger)
     action1[Resolved Action 1]
     decision{Resolved Decision}

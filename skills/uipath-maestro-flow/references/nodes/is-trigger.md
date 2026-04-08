@@ -162,7 +162,7 @@ The response contains three trigger-specific sections:
 }
 ```
 
-**`outputResponseDefinition`** — the event payload schema (all fields the trigger outputs when it fires).
+**`outputResponseDefinition`** — the event payload schema (all fields the trigger outputs when it fires). **Save this** — you need it in Step 4b to know the exact field paths for downstream `$vars` expressions (e.g., `$vars.{nodeId}.output.text`, `$vars.{nodeId}.output.channel`). Do not guess output field names.
 
 **`eventMode`** — `"webhooks"` or `"polling"`.
 
@@ -192,9 +192,15 @@ Check every field in `eventParameters.fields` where `required: true`. All requir
 3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`
 4. Only proceed after all required event parameters are resolved
 
+### Step 4b — Map trigger output fields for downstream nodes
+
+Before wiring downstream nodes, check `outputResponseDefinition` from Step 2 to know the exact field names available in `$vars.{triggerId}.output`. Do NOT guess field names — different triggers output different schemas.
+
+Each trigger type has a different output schema — field names like `.text`, `.subject`, or `.body.content` vary by connector. Use the actual field names from `outputResponseDefinition` when writing expressions in downstream nodes.
+
 ### Step 5 — Replace the manual trigger with the connector trigger node
 
-The trigger node replaces the default `core.trigger.manual` start node. Use CLI commands:
+The trigger node replaces the default `core.trigger.manual` start node. **Use CLI commands — do NOT manually edit the JSON to remove the start node.** The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically.
 
 ```bash
 # 1. Delete the manual trigger (also removes its edges and orphaned definition)
@@ -211,6 +217,8 @@ uip flow edge add <PROJECT>.flow <newTriggerId> <nextNodeId> \
 ```
 
 ### Step 6 — Configure the trigger node
+
+**Read the `--detail` field table below before calling `node configure`.** The fields and types are strict — unknown keys or wrong types cause validation errors. Do not guess field names from other node types (e.g., activity nodes use `method`/`endpoint`/`bodyParameters`; triggers use `eventMode`/`eventParameters`/`filterExpression`).
 
 Use `node configure` with trigger-specific `--detail` fields:
 
@@ -334,3 +342,5 @@ uip flow debug . --output json
 3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
 4. **Filter expressions are optional** — omit `filterExpression` from `--detail` if the user wants all events to trigger the flow
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
+6. **Use `uip flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
+7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
