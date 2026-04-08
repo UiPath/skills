@@ -27,12 +27,12 @@ The 14 OOTB `.registration.json` files in `flow-workbench` contain everything an
 |---|---|---|---|
 | OOTB nodes (14 types) | `uip flow registry get` + `node add` | Schemas bundled as reference docs — zero CLI calls | Yes |
 | Edge wiring | `uip flow edge add` | Agent writes JSON directly using port definitions from schemas | Yes |
-| Variables | Manual JSON editing (no CLI exists) | Same approach — already direct JSON in maestro-flow | Yes |
+| Variables | `uip flow variable add/list/delete` + `variable-update add/list/delete` | Agent writes JSON directly using schema docs | Yes |
 | Validation | `uip flow validate` | Agent follows structural rules from schema docs; optional CLI as final check | Yes |
 | Dynamic nodes (connectors, resources) | `uip flow registry search/get` + `node configure` | Still needs registry for discovery + schema pull — but JSON construction is direct | Partial |
 | Project scaffolding | `uip flow init` | Agent creates the 2 project files directly | Yes |
 
-**Key takeaway from CLI source analysis:** Of the 16 `uip flow` CLI commands, **12 are fully replaceable** with direct JSON manipulation, 2 are partially replaceable, and only 2 truly require the CLI (`registry pull` for network calls, `debug` for cloud execution). The project scaffold is simpler than expected (2 files, not 6), and all ID generation, variable regeneration, and validation algorithms are deterministic and documentable. This confirms the skill is viable.
+**Key takeaway from CLI source analysis:** Of the 15 top-level `uip flow` CLI commands, **7 are fully replaceable** with direct JSON manipulation (init, edge, variable, variable-update, binding, plus node list/delete/configure), **3 are partially replaceable** (node add, validate, registry), and the rest are runtime/platform operations out of scope for authoring. The project scaffold is simpler than expected (2 files, not 6), and all ID generation, variable management, and validation algorithms are deterministic and documentable. This confirms the skill is viable.
 
 **The remaining hard constraint:** Dynamic nodes (resources like RPA processes, agents, API workflows) still require `registry pull` + `registry get` to fetch their input/output schemas. Connectors are out of scope. The skill will document the registry interaction for dynamic nodes but cannot eliminate the network dependency for schema discovery.
 
@@ -59,24 +59,27 @@ Source: `cli/packages/flow-tool/src/` — the implementation of all `uip flow` c
 
 ### Summary
 
-| Command | Replaceable? | Notes |
-|---|---|---|
-| `flow init` | **Yes** | Creates only 2 files: `project.uiproj` + `<name>.flow`. No other scaffold files. |
-| `flow node add` | **Partially** | JSON manipulation is replaceable. Needs manifest from registry cache for dynamic nodes; OOTB manifests are bundled in this skill. |
-| `flow node list` | **Yes** | Reads `workflow.nodes` |
-| `flow node delete` | **Yes** | JSON manipulation with cascade cleanup (edges, definitions, variables) |
-| `flow node configure` | **Yes** | Pure JSON manipulation of `inputs.detail` + bindings |
-| `flow edge add` | **Yes** | JSON insert with port validation against handleConfiguration |
-| `flow edge list/delete` | **Yes** | Read/filter `workflow.edges` |
-| `flow binding add/list/delete` | **Yes** | JSON manipulation |
-| `flow variable add/list/delete` | **Yes** | JSON manipulation |
-| `flow registry pull` | **No** | Network call to Orchestrator manifest API |
-| `flow registry list/search` | **Yes** | Local cache read (`~/.uipath/nodes/index.json`) |
-| `flow registry get` (OOTB/resource) | **Yes** | Local cache read |
-| `flow registry get` (connector) | **Partially** | Cache read + optional IS API call for field enrichment |
-| `flow validate` | **Partially** | Structural checks replaceable; full semantic rules in compiled `@uipath/flow-schema` |
-| `flow debug` | **No** | Uploads to Studio Web, runs remote debug session |
-| `flow pack` | **No** | Complex nupkg packaging |
+There are **15 top-level commands** registered in `tool.ts`. Each has subcommands (e.g., `node add/list/delete/configure`). The table below covers all top-level commands and their subcommands:
+
+| Top-level Command | Subcommands | Replaceable? | Notes |
+|---|---|---|---|
+| `flow init` | — | **Yes** | Creates only 2 files: `project.uiproj` + `<name>.flow` |
+| `flow node` | `add`, `list`, `delete`, `configure` | **Partially** | `list`/`delete`/`configure` are pure JSON. `add` needs manifest from registry cache for dynamic nodes; OOTB manifests are bundled. |
+| `flow edge` | `add`, `list`, `delete` | **Yes** | JSON insert/read/filter with port validation |
+| `flow variable` | `add`, `list`, `delete` | **Yes** | JSON manipulation of `variables.globals`. Validates ID, direction (`in`/`out`/`inout`), type (`string`/`number`/`boolean`/`object`/`array`/`file`), default value parsing. |
+| `flow variable-update` | `add`, `list`, `delete` | **Yes** | JSON manipulation of `variables.variableUpdates`. Links a node completion to a variable assignment expression (`=js:` auto-prefixed). |
+| `flow binding` | `add`, `list`, `delete` | **Yes** | JSON manipulation of `workflow.bindings` |
+| `flow validate` | — | **Partially** | Structural checks replaceable; full semantic rules in compiled `@uipath/flow-schema` |
+| `flow registry` | `pull`, `list`, `search`, `get` | **Partially** | `pull` requires network. `list`/`search` are local cache reads. `get` is local for OOTB/resource, needs IS API for connector enrichment. |
+| `flow debug` | — | **No** | Uploads to Studio Web, runs remote debug session |
+| `flow pack` | — | **No** | Complex nupkg packaging |
+| `flow process` | (subcommands) | **No** | Orchestrator process operations |
+| `flow job` | (subcommands) | **No** | Orchestrator job operations |
+| `flow instances` | (subcommands) | **No** | Runtime instance operations |
+| `flow processes` | (subcommands) | **No** | Runtime process operations |
+| `flow incidents` | (subcommands) | **No** | Runtime incident operations |
+
+**Replaceability summary:** Of the 15 top-level commands, **7 are fully replaceable** (init, edge, variable, variable-update, binding + node list/delete/configure), **2 are partially replaceable** (node add, validate, registry), **1 is not replaceable but not needed for authoring** (debug), and **5 are runtime/platform operations** out of scope (pack, process, job, instances, processes, incidents).
 
 ### Key Implementation Details
 
@@ -146,6 +149,29 @@ Format: `b` + 8 random alphanumeric characters (e.g., `bXk9mNpQr`)
 - `workflow.definitions` is deduped by `nodeType:version` key
 - When adding: skip if a definition with the same `nodeType` + `version` already exists
 - When deleting a node: remove the definition only if no other node uses the same `type:typeVersion`
+
+#### Variable Commands (from `flow variable`)
+
+`flow variable add` creates a `WorkflowVariable` entry in `variables.globals`:
+- Validates ID against `validateIdentifier()` (same rules as node IDs)
+- Valid types: `string`, `number`, `boolean`, `object`, `array`, `file`
+- Valid directions: `in`, `out`, `inout`
+- Parses `--default-value` based on type (string passthrough, number via `parseFloat`, boolean strict `true`/`false`, object/array via `JSON.parse`)
+- Optional `--schema` for object/array types (JSON Schema validation)
+- Optional `--sub-type` for complex types
+
+`flow variable delete` removes a variable from `variables.globals` by ID.
+`flow variable list` returns all variables in `variables.globals`.
+
+#### Variable Update Commands (from `flow variable-update`)
+
+`flow variable-update add` creates a `VariableUpdate` entry in `variables.variableUpdates[nodeId]`:
+- Required: `--node-id`, `--variable-id`, `--expression`
+- Auto-prefixes expression with `=js:` if missing
+- Links a node completion event to a variable assignment
+
+`flow variable-update delete` removes by `nodeId` + `variableId` pair.
+`flow variable-update list` returns all updates, optionally filtered by `--node-id`.
 
 #### Binding Deduplication
 
