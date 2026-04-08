@@ -26,9 +26,25 @@ For every job under investigation, gather these in order. Write each to `raw/` i
 1. **Job details** — `uip or jobs get <key>` — state, input/output arguments, timing, machine info, error details
 2. **Job logs** — `uip or jobs logs <key>` — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to quickly find errors. Use `--limit` to control how many entries (default 50)
 3. **Job history** — `uip or jobs history <key>` — job state transition history (timestamps for each state change: Pending → Running → Faulted). Useful for identifying delays and lifecycle issues.
-4. **Job traces (agentic only)** — `uip or jobs traces <key>` — LlmOps execution traces for Agent-type processes only (LLM interactions, tool calls, agent decisions). Not available for standard RPA jobs.
+4. **Job traces** — `uip or jobs traces <key>` — job execution traces (activity states, variable snapshots, execution path). Available for all job types.
 
 This is the baseline. Domain-specific data gathering builds on it — see the investigation guide for each matched domain (UI Automation, Integration Service, Maestro) for additional steps after the baseline.
+
+## Finding Related Jobs
+
+When investigating service tasks, child jobs, or multi-job processes, use `jobs list` to find related jobs:
+
+```
+uip or jobs list --folder-key <folder-key> --process-name <name> --created-after <start> --created-before <end> --output json
+```
+
+Key flags (all optional, but `--folder-key` or `--folder-path` is required):
+- `--folder-key <key>` — folder GUID (required, or use `--folder-path`)
+- `--state <state>` — filter by state: Pending, Running, Successful, Faulted, Stopped, Stopping, Suspended, Resumed, Terminating
+- `--process-name <name>` — filter by process name (contains match)
+- `--created-after <datetime>` / `--created-before <datetime>` — narrow to a time window (ISO 8601)
+
+Use this to find child jobs spawned by Maestro service tasks, or to identify other faulted jobs for the same process around the same time.
 
 ## Testing Prerequisites
 
