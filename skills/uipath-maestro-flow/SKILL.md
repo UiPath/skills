@@ -27,8 +27,8 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 ## Critical Rules
 
 1. **Phase 1 registry rules: `search`/`list` YES, `get` NO.** Use `registry search` and `registry list` during Phase 1 to discover what connectors and resources exist — this informs node selection. Do NOT run `registry get` in Phase 1 — detailed metadata, connection binding, and reference resolution belong to Phase 2. The planning guide documents all OOTB node types with ports and inputs — sufficient for topology design without registry calls. **Phase 2 REQUIRES `registry get` validation of all node types**, even OOTB nodes, to confirm the current product state. **Exception:** When building the flow (Step 5), you also need `registry get` for any node type to populate the `definitions` array — definitions must be copied from registry output, never hand-written.
-2. **ALWAYS follow the relevant node guide in `references/nodes/` for every connector node.** The guide covers connection binding, enriched metadata, and field resolution — required during Phase 2 (implementation resolution). Without this, node configuration will be wrong — errors that `flow validate` does not catch.
-3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. Phase 1 discovery checks connection availability to surface gaps early; Phase 2 pings and binds the connection via the relevant node guide in `references/nodes/`.
+2. **ALWAYS follow the relevant plugin in `references/plugins/` for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required during Phase 2. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
+3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. Phase 1 discovery checks connection availability to surface gaps early; Phase 2 pings and binds the connection via [connector/impl.md](references/plugins/connector/impl.md).
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 5. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
 6. **`targetPort` is required on every edge** — `validate` rejects edges without it.
@@ -39,7 +39,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 11. **Manage variables by editing `.flow` JSON directly** — there are no CLI commands for variable management. Add/remove/update variables in the `variables` section of the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 12. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 13. **Use `=js:` prefix for all expressions** — the runtime uses a Jint-based JavaScript engine (ES2020 subset). See [references/variables-and-expressions.md](references/variables-and-expressions.md) for supported features and constraints.
-14. **For resources not yet published, use mock placeholders** — add a `core.logic.mock` node, tell the user which skill to use for creation, then replace the mock after publishing. See [references/orchestration-guide.md](references/orchestration-guide.md).
+14. **For resources not yet published, use mock placeholders** — add a `core.logic.mock` node, tell the user which skill to use for creation, then replace the mock after publishing. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md)).
 15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 
 ## Common Edits (existing flows)
@@ -103,7 +103,7 @@ Add a `variableUpdates` entry to update an `inout` variable when a specific node
 3. The subflow must have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
 4. Define subflow inputs (`direction: "in"`) and outputs (`direction: "out"`) in `subflows.{nodeId}.variables.globals`
 5. Map outputs on the subflow's End node
-6. See [references/node-reference.md — Subflow](references/node-reference.md) for the full JSON structure
+6. See [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) for the full JSON structure
 
 ### Add a scheduled trigger
 
@@ -112,11 +112,11 @@ Replace `core.trigger.manual` with `core.trigger.scheduled`:
 1. Change the start node's `type` to `core.trigger.scheduled`
 2. Add timer inputs: `timerType: "timeCycle"`, `timerPreset: "R/PT1H"` (or custom)
 3. Add the `eventDefinition` to `model`: `"eventDefinition": "bpmn:TimerEventDefinition"`
-4. See [references/node-reference.md — Scheduled Trigger](references/node-reference.md) for presets
+4. See [references/plugins/scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) for presets
 
 ### Add a resource node (RPA process, agent, etc.)
 
-See [references/orchestration-guide.md](references/orchestration-guide.md) for the full workflow. Summary:
+See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md)) for the full workflow. Summary:
 
 1. `uip flow registry pull --force` to refresh
 2. `uip flow registry search "<name>" --output json` to find the resource
@@ -208,7 +208,7 @@ Planning is split into two phases:
 
 #### 4a. Discovery & Architectural Design (Phase 1)
 
-**Read [references/planning-phase-architectural.md](references/planning-phase-architectural.md)** for capability discovery, the node type catalog, selection heuristics, wiring rules, topology patterns, mermaid validation rules, and the full output format.
+**Read [references/planning-arch.md](references/planning-arch.md)** for capability discovery, the node type catalog, selection heuristics, wiring rules, topology patterns, mermaid validation rules, and the full output format.
 
 Follow the process in that guide to produce a `<SolutionName>.arch.plan.md` in the **solution directory** (the folder containing the `.uipx` file) containing:
 1. Summary
@@ -225,11 +225,11 @@ Present a **short summary in chat** (goal + key nodes + open questions). Tell th
 
 #### 4b. Implementation Resolution (Phase 2)
 
-**Read [references/planning-phase-implementation.md](references/planning-phase-implementation.md)** for the implementation resolution process.
+**Read [references/planning-impl.md](references/planning-impl.md)** for the implementation resolution process.
 
 Phase 2 takes the approved architectural plan and resolves all implementation details:
-- Validate all node types via `uip flow registry get` to confirm ports, inputs, and outputs
-- Resolve connector and resource nodes using the relevant node guide in `references/nodes/`
+- Validate all node types via `uip flow registry get` — read each plugin's `impl.md` for registry validation
+- Resolve connector and resource nodes using the relevant plugin's `impl.md` ([connector](references/plugins/connector/impl.md), [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md), etc.)
 - Validate required fields against user-provided values
 - Replace `<PLACEHOLDER>` values with resolved IDs
 - Replace `core.logic.mock` nodes with real resource nodes (if published)
@@ -285,10 +285,10 @@ After adding a connector node with `node add`, configure it using the resolved v
 
 ```bash
 uip flow node configure <ProjectName>.flow <nodeId> \
-  --detail '<JSON from node guide>'
+  --detail '<JSON from plugin impl.md>'
 ```
 
-The `--detail` JSON structure varies by node type — see the relevant node guide in `references/nodes/` for the exact schema and examples. The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs**, not display names.
+The `--detail` JSON structure varies by node type — see [connector/impl.md](references/plugins/connector/impl.md) for the exact schema and examples. The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs**, not display names.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
@@ -350,7 +350,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 
 - **Never guess node schemas** — use the planning guide for OOTB nodes, `registry get` for connector/unknown nodes. Guessed port names or input fields cause silent wiring failures.
 - **Never `registry get` during Phase 1 planning** — use `registry search`/`list` for discovery, but save `registry get` for Phase 2. The planning guide documents all OOTB node types with ports and inputs. Phase 2 **requires** `registry get` validation of all node types to confirm the current product state before building.
-- **Never skip capability discovery for connector nodes** — run `registry search` during Phase 1 to confirm the connector exists and what operations it supports. Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
+- **Never skip capability discovery for connector nodes** — run `registry search` during Phase 1 to confirm the connector exists and what operations it supports. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.
 - **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
@@ -365,26 +365,26 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 ## Task Navigation
 
 | I need to... | Read these |
-|---|---|
+| --- | --- |
 | **Edit an existing flow** | Common Edits section |
-| **Generate a flow plan** | [references/planning-phase-architectural.md](references/planning-phase-architectural.md) + [references/planning-phase-implementation.md](references/planning-phase-implementation.md) + Step 4 |
-| **Choose the right node type** | [references/planning-phase-architectural.md — Node Selection Heuristics](references/planning-phase-architectural.md#node-selection-heuristics) |
+| **Generate a flow plan** | [references/planning-arch.md](references/planning-arch.md) + [references/planning-impl.md](references/planning-impl.md) + Step 4 |
+| **Choose the right node type** | [references/planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
-| **Add a Script node** | [references/flow-file-format.md - Script node](references/flow-file-format.md) |
-| **Wire nodes with edges** | [references/flow-file-format.md - Edges](references/flow-file-format.md) |
+| **Add a Script node** | [references/plugins/script/impl.md](references/plugins/script/impl.md) |
+| **Wire nodes with edges** | [references/flow-file-format.md — Edges](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip flow registry search <keyword>` |
-| **Work with connector/resource nodes** | Relevant node guide in `references/nodes/` + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
+| **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
 | **Publish to Studio Web** | Step 8 (solution bundle + upload) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
-| **Orchestrate RPA, agents, apps** | [references/orchestration-guide.md](references/orchestration-guide.md) |
-| **Create a resource that doesn't exist yet** | [references/orchestration-guide.md — Create New Workflow](references/orchestration-guide.md) |
-| **Add data transform nodes** | [references/node-reference.md — Data Transform](references/node-reference.md) |
-| **Create a subflow** | [references/node-reference.md — Subflow](references/node-reference.md) + Common Edits |
-| **Add a delay or scheduled trigger** | [references/node-reference.md](references/node-reference.md) |
-| **Use queue nodes** | [references/orchestration-guide.md — Queue Integration](references/orchestration-guide.md) |
+| **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
+| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see the relevant resource plugin's `impl.md` for the mock replacement workflow |
+| **Add data transform nodes** | [references/plugins/transform/impl.md](references/plugins/transform/impl.md) |
+| **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + Common Edits |
+| **Add a delay or scheduled trigger** | [references/plugins/delay/](references/plugins/delay/) or [references/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
+| **Use queue nodes** | [references/plugins/queue/impl.md](references/plugins/queue/impl.md) |
 
 ## Key Concepts
 
@@ -421,14 +421,32 @@ When you finish building or editing a flow, report to the user:
 
 ## References
 
-- **[Planning Phase 1: Discovery & Architectural Design](references/planning-phase-architectural.md)** — Capability discovery (`registry search`/`list`), node type catalog, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
-- **[Planning Phase 2: Implementation Resolution](references/planning-phase-implementation.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), plus the full node catalog, wiring rules, and flow patterns needed for building. **Read this after the architectural plan is approved.**
+- **[Planning Phase 1: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery (`registry search`/`list`), plugin index for node selection, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
+- **[Planning Phase 2: Implementation Resolution](references/planning-impl.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), wiring rules, and flow patterns. **Read this after the architectural plan is approved.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
-- **[Orchestration Guide](references/orchestration-guide.md)** — How to orchestrate RPA processes, agents, apps, other flows, and API workflows. Includes resource node types, "create new" workflow, queue integration, and human task patterns
-- **[Node Reference](references/node-reference.md)** — Complete catalog of OOTB nodes not in the planning guide: data transforms, delay, subflow, scheduled trigger, queue nodes
-- **[IS Activity Nodes](references/nodes/is-activity.md)** — Complete guide for IS connector activity nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json` schema, IS CLI commands, and debugging. See [contribution template](references/nodes/_contribution-template.md) for adding new node category guides
+- **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, CLI commands, debug):
+  - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
+  - [script](references/plugins/script/) — Custom JavaScript logic via Jint ES2020
+  - [http](references/plugins/http/) — REST API calls, response branching, connection auth
+  - [decision](references/plugins/decision/) — Binary if/else branching
+  - [switch](references/plugins/switch/) — Multi-way branching (3+ paths)
+  - [loop](references/plugins/loop/) — Collection iteration (sequential/parallel)
+  - [merge](references/plugins/merge/) — Parallel branch synchronization
+  - [end](references/plugins/end/) — Graceful flow completion with output mapping
+  - [terminate](references/plugins/terminate/) — Abort entire flow on fatal error
+  - [transform](references/plugins/transform/) — Declarative filter, map, group-by
+  - [delay](references/plugins/delay/) — Duration or date-based pause
+  - [subflow](references/plugins/subflow/) — Reusable node groups with isolated scope
+  - [scheduled-trigger](references/plugins/scheduled-trigger/) — Recurring schedule triggers
+  - [rpa](references/plugins/rpa/) — Published RPA processes (`uipath.core.rpa.{key}`)
+  - [agentic-process](references/plugins/agentic-process/) — Published orchestration processes (`uipath.core.agentic-process.{key}`)
+  - [flow](references/plugins/flow/) — Published flows as subprocesses (`uipath.core.flow.{key}`)
+  - [api-workflow](references/plugins/api-workflow/) — Published API functions (`uipath.core.api-workflow.{key}`)
+  - [hitl](references/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
+  - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
+  - [queue](references/plugins/queue/) — Orchestrator queue item creation
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 8).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

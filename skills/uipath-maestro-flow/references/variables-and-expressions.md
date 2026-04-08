@@ -21,7 +21,7 @@ Every flow has a `variables` object at the top level of the `.flow` file. It con
 ```
 
 | Section | Purpose |
-|---|---|
+| --- | --- |
 | `globals` | Workflow-level variables: inputs, outputs, and state |
 | `nodes` | Node output variables (auto-generated when using CLI `node add`) |
 | `variableUpdates` | Per-node expressions that update state variables |
@@ -35,7 +35,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 ### Directions
 
 | Direction | Role | Readable | Writable | Use case |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `in` | External input | Yes | No | Values passed when the flow is triggered or called |
 | `out` | Workflow output | Yes | Mapped on End node | Values returned when the flow completes |
 | `inout` | Internal state | Yes | Yes (via `variableUpdates`) | Counters, accumulators, flags shared across nodes |
@@ -134,7 +134,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 ### Type Reference
 
 | Type | Default Value | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `string` | `""` | Default type if omitted |
 | `number` | `0` | Integer or float |
 | `boolean` | `false` | |
@@ -317,7 +317,7 @@ Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 ### Comparison
 
 | Feature | `=js:` | `{ }` template |
-|---|---|---|
+| --- | --- | --- |
 | Return type | Any (boolean, number, object, array) | Always string |
 | Use case | Conditions, inputs, mappings | Text/prompt fields |
 | Full JS | Yes | Expression-only (no statements) |
@@ -330,7 +330,7 @@ Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 These variables are available in all expression contexts:
 
 | Global | Description | Access pattern |
-|---|---|---|
+| --- | --- | --- |
 | `$vars` | All workflow and node variables | `$vars.{variableId}` or `$vars.{nodeId}.{outputId}` |
 | `$metadata` | Workflow metadata (instanceId, executionId) | `$metadata.instanceId` |
 | `$self` | Current node's output (HTTP branch conditions only) | `$self.output.statusCode` |

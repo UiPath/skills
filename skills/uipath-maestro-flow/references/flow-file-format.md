@@ -94,7 +94,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 | `core.control.end` | Graceful end | `bpmn:EndEvent` | — |
 | `core.logic.terminate` | Abort workflow | `bpmn:EndEvent` | — |
 
-For full details on each node (ports, inputs, outputs, when to use), see [planning-phase-architectural.md](planning-phase-architectural.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-phase-implementation.md](planning-phase-implementation.md).
+For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](planning-impl.md).
 
 Discover all available types:
 ```bash
