@@ -1,8 +1,10 @@
 # Proposal: `uipath-lattice-flow` Skill
 
-> **Status:** Draft v4 — CLI source analysis and replaceability assessment added
-> **Date:** 2026-04-07
-> **Codename:** lattice (7 chars, matching "maestro")
+| Field | Value |
+|---|---|
+| **Status** | Draft v4 — CLI source analysis and replaceability assessment added |
+| **Date** | 2026-04-07 |
+| **Codename** | lattice (7 chars, matching "maestro") |
 
 ## Summary
 
@@ -849,6 +851,100 @@ These prompts would activate `uipath-lattice-flow` and produce the same `.flow` 
 
 ### Phase 3: Cleanup
 23. Remove `uipath-maestro-flow` from the repo
+
+## Verification Strategy
+
+How to verify the skill produces correct `.flow` files and is effective for coding agents.
+
+### Method 1: Reference Flow Reproduction (Primary)
+
+Give the agent a natural-language prompt for each of the 8 reference flows. The agent uses the new skill to build the `.flow` file from scratch. Compare the output against the reference `.flow` file.
+
+**Test prompts by reference flow:**
+
+| # | Reference Flow | Test Prompt | Phase |
+|---|---|---|---|
+| 1 | **dice-roller** | "Create a Flow project that simulates rolling a 6-sided die using JavaScript and returns the result." | Phase 1 (OOTB only) |
+| 2 | **calculator-multiply** | "Create a Flow project that takes two number inputs `a` and `b`, multiplies them, and returns the result." | Phase 1 (OOTB only) |
+| 3 | **send-date-email** | "Create a Flow that gets the current date/time via a script node, then sends it in an email via Outlook." | Phase 2 (connector) |
+| 4 | **sales-pipeline-cleanup** | "Create a Flow that fetches all task records from Salesforce and deletes each one in a loop." | Phase 2 (connector) |
+| 5 | **devconnect-email** | "Create a Flow that reads the newest Outlook email, uses an AI agent to classify it (needs response / take action / other), sends a Slack DM if it needs attention, and tags the email in Outlook." | Phase 2 (agent + connector) |
+| 6 | **release-notes-generator** | "Create a Flow that searches Jira for recently closed issues, uses an AI agent to filter which ones need release notes, generates release notes with a second agent, publishes to a Confluence page, and sends a Slack notification." | Phase 2 (agent + connector) |
+| 7 | **sales-pipeline-hygiene** | "Create a Flow with a weekly scheduled trigger that scans open Salesforce opportunities, uses an AI agent to score risk per opportunity, escalates high-risk deals to a Slack channel with a follow-up task, DMs medium-risk deal owners, and writes risk levels back to Salesforce." | Phase 2 (agent + connector) |
+| 8 | **hr-onboarding** | "Create an end-to-end HR onboarding Flow: send a job offer email, wait for reply, use an agent to decide acceptance, run document validation and background check (mock if not available), create a pre-hire record, in parallel create a Coupa purchase requisition + Jira IT ticket + Slack notification, get training recommendations from an agent, route through human-in-the-loop review, and schedule a calendar event." | Phase 2 (full) |
+
+**Phase 1 can verify prompts 1-2 immediately.** Prompts 3-8 require Phase 2 (dynamic nodes). Each prompt should be run independently in a fresh session.
+
+### Method 2: Structural Diff
+
+Automated comparison of generated `.flow` vs reference `.flow`, ignoring non-deterministic fields:
+
+**Fields to ignore in comparison:**
+- `id` (workflow UUID) — generated fresh each time
+- `nodes[*].id` — ID generation produces equivalent but not identical IDs
+- `edges[*].id` — derived from node IDs
+- `nodes[*].ui.position` — layout is non-deterministic
+- `nodes[*].ui.size` — may vary
+- `metadata.createdAt` / `metadata.updatedAt` — timestamps
+- `model.entryPointId` — UUID generated at init
+- `model.projectId` — Orchestrator project GUID (dynamic nodes)
+- `model.context[*].value` — binding IDs are random (`bXk9mNpQr`)
+- `bindings[*].id` — random binding IDs
+
+**Fields that MUST match:**
+- `nodes[*].type` and `nodes[*].typeVersion` — exact node types
+- `edges[*].sourceNodeId`, `sourcePort`, `targetNodeId`, `targetPort` — topology
+- `nodes[*].inputs` — input values and expressions
+- `nodes[*].outputs` — output mappings
+- `definitions[*].nodeType` — definition coverage
+- `variables.globals` — variable declarations (id, direction, type)
+- `variables.variableUpdates` — update expressions
+- Node count and edge count
+
+A comparison script could normalize both files (strip ignored fields, sort arrays by type/id) and diff the result.
+
+### Method 3: Validation Pass Rate
+
+For each generated `.flow` file, run `uip flow validate` and track:
+
+| Metric | Target |
+|---|---|
+| Passes `uip flow validate` on first attempt | 100% for OOTB flows |
+| Passes with ≤1 manual fix | 100% for all flows |
+| Correct node count | 100% |
+| Correct edge count (topology matches) | 100% |
+| All definitions present | 100% |
+| All `variables.nodes` entries generated | 100% |
+
+### Method 4: Edit Verification
+
+Start from a reference flow and ask the agent to make targeted edits. Verify the edit is structurally correct.
+
+**Example edit prompts:**
+- "Add a decision node after the script node in dice-roller that checks if the roll is greater than 3"
+- "Add an `out` variable called `result` to calculator-multiply and map it on the End node"
+- "Remove the Slack notification node from devconnect-email and rewire the edges"
+- "Add a delay node of 30 seconds between the HTTP request and the decision in hr-onboarding"
+- "Convert the manual trigger in sales-pipeline-hygiene to a scheduled trigger running every 2 hours"
+
+Each edit should pass `uip flow validate` and produce the expected structural change when diffed against the original.
+
+### Method 5: Round-Trip Test
+
+1. Agent reads a reference `.flow` file and produces a natural-language description
+2. A second agent session receives only the description (not the file) and builds the flow from scratch
+3. Compare the output against the original reference
+
+This tests whether the skill's documentation is sufficient for an agent to reconstruct a flow from a specification alone, without seeing the JSON.
+
+### Verification Timeline
+
+| Phase | Methods | Reference Flows Testable |
+|---|---|---|
+| Phase 1 complete | Methods 1-5 | dice-roller, calculator-multiply (OOTB only) |
+| Phase 2a (RPA) | Methods 1-5 | + hr-onboarding (RPA nodes) |
+| Phase 2b (Agent) | Methods 1-5 | + devconnect-email, release-notes-generator, sales-pipeline-hygiene |
+| Phase 2c-d (API/Agentic) | Methods 1-5 | All 8 reference flows (connector nodes may need stubs) |
 
 ## Resolved Questions
 
