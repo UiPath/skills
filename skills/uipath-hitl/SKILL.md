@@ -1,6 +1,6 @@
 ---
 name: uipath-hitl
-description: "Manage UiPath Action Center tasks (HITL) via CLI. Use when: list/assign/complete tasks, manage task assignments, or user mentions 'Action Center'/'HITL'/'human-in-the-loop'/'uip hitl'. Skip for Orchestrator queues, Document Understanding model training, or Action Center app development."
+description: "Manage UiPath Action Center tasks (HITL) via CLI. Use when: list/assign/complete tasks, manage assignments, or user mentions 'Action Center'/'HITL'/'uip hitl'. Skip for Orchestrator queues, Document Understanding, or codedapp."
 user-invokable: true
 ---
 
