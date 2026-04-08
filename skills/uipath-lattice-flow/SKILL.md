@@ -1,12 +1,12 @@
 ---
 name: uipath-lattice-flow
-description: "[PREVIEW] Direct .flow JSON authoring — create, edit, validate UiPath Flow projects (.flow files). OOTB node schemas bundled. For XAML→uipath-rpa."
+description: "Direct .flow JSON authoring — create, edit, validate UiPath Flow projects (.flow files). OOTB node schemas bundled, dynamic resource nodes via registry. For XAML→uipath-rpa."
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
 # Direct Flow Authoring
 
-Build and edit UiPath Flow projects by writing `.flow` JSON directly. OOTB node schemas are bundled — no CLI or registry calls needed for standard flows.
+Build and edit UiPath Flow projects by writing `.flow` JSON directly. OOTB node schemas are bundled — no CLI or registry calls needed for standard flows. Dynamic resource nodes (RPA workflows, agents, API workflows, agentic processes) are supported via registry interaction.
 
 ## When to Use This Skill
 
@@ -69,6 +69,20 @@ Build and edit UiPath Flow projects by writing `.flow` JSON directly. OOTB node 
 3. If `direction` is `"out"` or `"inout"`, add output mappings on every reachable End node.
 4. See [variables-guide.md](references/variables-guide.md) for the full type system and expression syntax.
 
+### Add a Resource Node (RPA Workflow, Agent, API Workflow, Agentic Process)
+
+> Requires `uip` CLI and `uip login`. Read [resource-node-guide.md](references/dynamic-nodes/resource-node-guide.md) for the full procedure.
+
+1. Run `uip flow registry pull --force` to refresh the local cache.
+2. Run `uip flow registry search "<NAME>" --output json` to find the resource.
+3. Run `uip flow registry get "<NODE_TYPE>" --output json` to get the full definition.
+4. Copy the definition verbatim into `workflow.definitions`.
+5. Create the node instance using the type-specific guide ([rpa-workflow](references/dynamic-nodes/rpa-workflow-guide.md), [agent](references/dynamic-nodes/agent-guide.md), [api-workflow](references/dynamic-nodes/api-workflow-guide.md), [agentic-process](references/dynamic-nodes/agentic-process-guide.md)).
+6. Generate 2 binding entries and add to `workflow.bindings`. Update `model.context` to reference them.
+7. Add edges, regenerate `variables.nodes`, and run the validation checklist.
+
+If the resource is not published yet, use a `core.logic.mock` placeholder and note what it replaces in `display.description`.
+
 ## Quick Start: New Flow
 
 1. **Scaffold the project** — read [project-scaffolding-guide.md](references/project-scaffolding-guide.md) and create the 2-file project structure.
@@ -112,7 +126,11 @@ Build and edit UiPath Flow projects by writing `.flow` JSON directly. OOTB node 
 | Wire nodes together | [references/edge-wiring-guide.md](references/edge-wiring-guide.md) |
 | Add variables and expressions | [references/variables-guide.md](references/variables-guide.md) |
 | Create a subflow | [references/subflow-guide.md](references/subflow-guide.md) |
-| Use RPA workflow, agent, or API workflow nodes | [references/dynamic-nodes/](references/dynamic-nodes/) |
+| Add a resource node (shared structure, registry commands) | [references/dynamic-nodes/resource-node-guide.md](references/dynamic-nodes/resource-node-guide.md) |
+| Add an RPA workflow node | [references/dynamic-nodes/rpa-workflow-guide.md](references/dynamic-nodes/rpa-workflow-guide.md) |
+| Add an agent node | [references/dynamic-nodes/agent-guide.md](references/dynamic-nodes/agent-guide.md) |
+| Add an API workflow node | [references/dynamic-nodes/api-workflow-guide.md](references/dynamic-nodes/api-workflow-guide.md) |
+| Add an agentic process node | [references/dynamic-nodes/agentic-process-guide.md](references/dynamic-nodes/agentic-process-guide.md) |
 | Understand `bindings_v2.json` | [references/bindings-guide.md](references/bindings-guide.md) |
 | Validate my flow | [references/validation-checklist.md](references/validation-checklist.md) |
 | Look up a specific node type | [references/nodes/](references/nodes/) — one file per OOTB node |
@@ -140,6 +158,19 @@ Build and edit UiPath Flow projects by writing `.flow` JSON directly. OOTB node 
 | Human | Human-in-the-Loop | `uipath.human-in-the-loop` | [hitl.md](references/nodes/hitl.md) |
 | Mock | Blank (pass-through) | `core.mock.blank` | [mock-blank.md](references/nodes/mock-blank.md) |
 | Mock | Mock (with error) | `core.mock.node` | [mock-node.md](references/nodes/mock-node.md) |
+
+## Dynamic Resource Node Types
+
+These nodes reference external Orchestrator resources. They require `uip` CLI + `uip login` + registry data.
+
+| Category | Node | Type Pattern | Guide |
+|---|---|---|---|
+| RPA | RPA Workflow | `uipath.core.rpa-workflow.<KEY>` | [rpa-workflow-guide.md](references/dynamic-nodes/rpa-workflow-guide.md) |
+| Agent | Autonomous Agent | `uipath.core.agent.<KEY>` | [agent-guide.md](references/dynamic-nodes/agent-guide.md) |
+| API | API Workflow | `uipath.core.api-workflow.<KEY>` | [api-workflow-guide.md](references/dynamic-nodes/api-workflow-guide.md) |
+| Orchestration | Agentic Process | `uipath.core.agentic-process.<KEY>` | [agentic-process-guide.md](references/dynamic-nodes/agentic-process-guide.md) |
+
+All share the same ports (`input`, `output`, `error`), `model` shape, and bindings pattern. See [resource-node-guide.md](references/dynamic-nodes/resource-node-guide.md) for the shared structure.
 
 ## Completion Output
 
