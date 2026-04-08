@@ -143,7 +143,7 @@ namespace {{PROJECT_NAME}}
 
 ## Coded Workflow (.cs) — With Default Parameters
 
-Parameters with default values become **optional** when the workflow is invoked via `workflows.MyWorkflow()` — callers can omit them to use the defaults, or pass explicit values to override. In the companion `.cs.json`, default-valued parameters should still be listed as `ArgumentType: 0` (Input) but with `"IsRequired": false`.
+Parameters with default values become **optional** when the workflow is invoked via `workflows.MyWorkflow()` — callers can omit them to use the defaults, or pass explicit values to override.
 
 ```csharp
 using System;

@@ -98,12 +98,11 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 8. **[Coded] ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files).
 9. **[Coded] ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method.
-10. **[Coded] Generate companion `.cs.json` metadata file** for each workflow/test case (NOT for Coded Source Files).
-11. **[Coded] Update `project.json` entry points** when adding/removing workflow files. Update `fileInfoCollection` for test case files.
+10. **[Coded] Update `project.json` entry points** when adding/removing workflow files. Update `fileInfoCollection` for test case files.
 12. **[Coded] One workflow/test case class per file**, class name must match file name.
 13. **[Coded] Namespace = sanitized project name** from `project.json`. Sanitize: remove spaces, replace hyphens with `_`, ensure valid C# identifier.
 14. **[Coded] Entry method is always named `Execute`**.
-15. **[Coded] Use Coded Source Files** for reusable code — plain `.cs` files without `CodedWorkflow` inheritance, no `.cs.json`, no entry point.
+15. **[Coded] Use Coded Source Files** for reusable code — plain `.cs` files without `CodedWorkflow` inheritance, no entry point.
 
 ### XAML-Specific Rules
 
@@ -142,11 +141,11 @@ Coded workflows use standard C# development: create file → write code → vali
 
 ### Three Types of .cs Files
 
-| Type | Base Class | Attribute | `.cs.json` | Entry Point | Purpose |
-|------|-----------|-----------|------------|-------------|---------|
-| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Yes | Yes | Executable automation logic |
-| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Yes | Yes | Automated test with assertions |
-| **Coded Source File** | None (plain C#) | None | No | No | Reusable models, helpers, utilities, hooks |
+| Type | Base Class | Attribute | Entry Point | Purpose |
+|------|-----------|-----------|-------------|---------|
+| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Yes | Executable automation logic |
+| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Yes | Automated test with assertions |
+| **Coded Source File** | None (plain C#) | None | No | Reusable models, helpers, utilities, hooks |
 
 ### Service-to-Package Mapping
 
@@ -179,7 +178,7 @@ Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflo
 - [assets/codedworkflow-template.md](assets/codedworkflow-template.md) — Workflow boilerplate
 - [assets/testcase-template.md](assets/testcase-template.md) — Test case boilerplate
 - [assets/helper-utility-template.md](assets/helper-utility-template.md) — Helper class boilerplate
-- [assets/json-template.md](assets/json-template.md) — project.json, .cs.json templates
+- [assets/json-template.md](assets/json-template.md) — project.json templates
 - [assets/before-after-hooks-template.md](assets/before-after-hooks-template.md) — Before/After hooks
 - [assets/project-structure-examples.md](assets/project-structure-examples.md) — Design guidelines
 

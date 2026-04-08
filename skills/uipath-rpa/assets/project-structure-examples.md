@@ -17,13 +17,9 @@ When creating a project, **proactively design the right file structure** based o
 InvoiceProcessor/
 ├── project.json
 ├── Main.cs                    # Orchestrator: calls each step via workflows.StepName()
-├── Main.cs.json
 ├── ReadInvoices.cs            # Step 1: reads invoices from Excel
-├── ReadInvoices.cs.json
 ├── ValidateInvoices.cs        # Step 2: validates data
-├── ValidateInvoices.cs.json
 ├── PostToERP.cs               # Step 3: posts to external system
-├── PostToERP.cs.json
 ├── InvoiceData.cs             # Source file: data model
 └── ValidationHelpers.cs       # Source file: validation utilities
 ```
@@ -55,11 +51,8 @@ InvoiceTests/
 ├── project.json
 ├── CodedWorkflowBase.cs             # Source file: base class with Before/After hooks (IBeforeAfterRun)
 ├── TestLoginFlow.cs            # Test case: login scenario (inherits from CodedWorkflowBase)
-├── TestLoginFlow.cs.json
 ├── TestInvoiceCreation.cs      # Test case: create invoice scenario (inherits from CodedWorkflowBase)
-├── TestInvoiceCreation.cs.json
 ├── TestInvoiceValidation.cs    # Test case: validation rules (inherits from CodedWorkflowBase)
-├── TestInvoiceValidation.cs.json
 ├── TestData.cs                 # Source file: shared test constants/fixtures
 └── PageHelpers.cs              # Source file: UI interaction helpers
 ```
@@ -73,11 +66,9 @@ OrderProcessing/
 ├── ScrapeOrderPortal.xaml       # XAML: UI automation with visual selector builder
 ├── SendConfirmationEmail.xaml   # XAML: Mail activities (straightforward)
 ├── ProcessOrder.cs              # Coded workflow: 12 validation rules + LINQ transforms
-├── ProcessOrder.cs.json
 ├── OrderModels.cs               # Coded source file: Order, LineItem, ValidationResult DTOs
 ├── TransformHelpers.cs          # Coded source file: date parsing, currency conversion
 └── TestProcessOrder.cs          # Coded test case: unit tests for ProcessOrder logic
-    TestProcessOrder.cs.json
 ```
 
 ### Why Hybrid Here

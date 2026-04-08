@@ -19,7 +19,7 @@ uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<
 - `--template-id TestAutomationProjectTemplate` — test project with testing dependencies
 - `--template-id LibraryProcessTemplate` — reusable library
 
-This scaffolds a valid project with `project.json`, `project.uiproj`, `Main.cs`, `Main.cs.json`, and all required metadata directories. The result includes the `projectDirectory` path.
+This scaffolds a valid project with `project.json`, `project.uiproj`, `Main.cs`, and all required metadata directories. The result includes the `projectDirectory` path.
 
 **2. Read the scaffolded files — do NOT overwrite blindly:**
 
@@ -40,7 +40,6 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 
 **5. Add workflow/test case/source files:**
 - Generate `.cs` files (workflows, test cases, source files)
-- Generate `.cs.json` metadata for each workflow/test case file (NOT for source files)
 - Update `project.json` entry points for each workflow/test case file
 - If test project and shared setup is needed, create a base class (e.g. `CodedWorkflowBase.cs`) that implements `IBeforeAfterRun`
 
@@ -58,10 +57,16 @@ These contain valid defaults (correct schema version, runtime options, dependenc
    - Inherit from `CodedWorkflow`
    - Add `[Workflow]` attribute on `Execute` method
    - Add appropriate `using` statements based on which activities are needed
-3. Create the companion `.cs.json` metadata file with `DisplayName` and `Arguments`:
-   - For each input parameter: `ArgumentType: 0` (Input)
-   - For each output/return value: `ArgumentType: 1` (Output)
-   - For in/out parameters: `ArgumentType: 2` (InOut)
+3. Argument direction is determined by the `Execute` method signature:
+
+   | Signature | Example | Argument directions |
+   |-----------|---------|---------------------|
+   | Single return | `public string Execute(int a, int b)` | `a` = In, `b` = In, return = Out (named `"Output"`) |
+   | Tuple return | `public (string a, string b) Execute()` | `a` = Out, `b` = Out |
+   | Mixed with InOut | `public (string a, string b) Execute(string b, int c)` | `a` = Out, `b` = InOut (same name in input and tuple), `c` = In |
+   | No return | `public void Execute(string input)` | `input` = In |
+
+   > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
 4. Update `project.json`:
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
@@ -78,8 +83,7 @@ Coded test cases automate and validate application behavior using a structured *
 2. Create the `.cs` file following the same rules as workflows, but with:
    - `[TestCase]` attribute instead of `[Workflow]` on the `Execute` method
    - Structured code in three phases: **Arrange**, **Act**, **Assert**
-3. Create the companion `.cs.json` metadata file (same format as workflows)
-4. Update `project.json`:
+3. Update `project.json`:
    - Add entry to `entryPoints` array
    - Add entry to `designOptions.fileInfoCollection` with `testCaseType: "TestCase"`, `publishAsTestCase: true`
 5. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
@@ -186,7 +190,6 @@ Coded Source Files are plain `.cs` files that contain reusable classes, models, 
 **Key differences from workflow files:**
 - **NO** `CodedWorkflow` base class — they are plain C# classes
 - **NO** `[Workflow]` or `[TestCase]` attribute
-- **NO** companion `.cs.json` metadata file
 - **NO** entry in `project.json` `entryPoints`
 - Can contain multiple classes per file if logically related (e.g. a models file)
 
@@ -197,8 +200,7 @@ Coded Source Files are plain `.cs` files that contain reusable classes, models, 
    - Class name = file name (without .cs)
    - Add only the `using` statements the class needs (typically just `System` namespaces)
    - Do NOT inherit from `CodedWorkflow`
-3. No `.cs.json` file needed
-4. No `project.json` changes needed
+3. No `project.json` changes needed
 
 **When to create Coded Source Files:**
 - **Data models / DTOs** — classes that represent structured data (e.g. `InvoiceData`, `CustomerRecord`)
@@ -275,7 +277,6 @@ public void Execute()
    - Attribute (`[Workflow]` or `[TestCase]`)
    - Method name (`Execute`)
 3. If parameters changed (added/removed/renamed/retyped):
-   - Update the companion `.cs.json` `Arguments` array
    - Update `project.json` `entryPoints` input/output definitions for this file
 4. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
 
@@ -283,8 +284,7 @@ public void Execute()
 
 **Steps:**
 1. Delete the `.cs` file
-2. Delete the companion `.cs.json` file
-3. Update `project.json`:
+2. Update `project.json`:
    - Remove from `entryPoints` array
    - If it was the `main` file, update `main` field to another entry point
    - If Tests project, remove from `fileInfoCollection`
