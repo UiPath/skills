@@ -1,0 +1,1113 @@
+{
+  "id": "template-multi-agent",
+  "version": "1.0.0",
+  "name": "Multi-Agent Template (Transform + Loop + Filter)",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 64,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": "00000000-0000-0000-0000-000000000002",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "fetchData1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 256,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Fetch data",
+        "description": "Placeholder for data source (e.g., Jira search connector)",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Mock output data",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:Task"
+      }
+    },
+    {
+      "id": "transform1",
+      "type": "core.action.transform",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 480,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Transform",
+        "icon": "a-large-small",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {
+        "operations": [
+          {
+            "id": "map-1",
+            "type": "map",
+            "config": {
+              "mappings": [
+                { "id": "m1", "field": "name", "transformation": "copy" },
+                { "id": "m2", "field": "description", "transformation": "copy" }
+              ],
+              "keepOriginalFields": false
+            }
+          }
+        ],
+        "collection": "$vars.fetchData1.output"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string", "description": "Error code as a string" },
+              "message": { "type": "string", "description": "High-level error message" },
+              "detail": { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status": { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "id": "loop1",
+      "type": "core.logic.loop",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 704,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Loop",
+        "subLabel": "Iterate items",
+        "icon": "repeat",
+        "description": "Execute a sequence of actions repeatedly for each item in a collection"
+      },
+      "inputs": {
+        "collection": "$vars.transform1.output",
+        "parallel": false
+      },
+      "outputs": {
+        "currentItem": {
+          "type": "any",
+          "description": "The current item being iterated in the loop",
+          "scope": "internal",
+          "source": "=loopContext.currentItem",
+          "var": "currentItem"
+        },
+        "currentIndex": {
+          "type": "number",
+          "description": "The current iteration index (0-based)",
+          "scope": "internal",
+          "source": "=loopContext.currentIndex",
+          "var": "currentIndex"
+        },
+        "collection": {
+          "type": "array",
+          "description": "The collection being iterated over",
+          "scope": "internal",
+          "source": "=loopContext.collection",
+          "var": "collection"
+        },
+        "output": {
+          "type": "array",
+          "description": "Aggregated results from all loop iterations",
+          "scope": "external",
+          "source": "=loopContext.output",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string", "description": "Error code as a string" },
+              "message": { "type": "string", "description": "High-level error message" },
+              "detail": { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status": { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          },
+          "source": "=Error",
+          "var": "error"
+        }
+      },
+      "model": {
+        "type": "bpmn:SubProcess"
+      }
+    },
+    {
+      "id": "processItem1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 928,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Process item",
+        "description": "Placeholder for item processor (e.g., AI agent node)",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Mock output data",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:Task"
+      },
+      "parentId": "loop1"
+    },
+    {
+      "id": "filter1",
+      "type": "core.action.transform.filter",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 704,
+          "y": 16
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Filter",
+        "icon": "list-filter",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {
+        "operations": [
+          {
+            "id": "filter-1",
+            "type": "filter",
+            "config": {
+              "conditions": [
+                {
+                  "id": "c1",
+                  "field": "name",
+                  "operator": "is_not_empty"
+                }
+              ],
+              "logic": "and"
+            }
+          }
+        ],
+        "collection": "$vars.loop1.output"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string", "description": "Error code as a string" },
+              "message": { "type": "string", "description": "High-level error message" },
+              "detail": { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status": { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 928,
+          "y": 16
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Complete",
+        "subLabel": "",
+        "shape": "circle",
+        "icon": "circle-check"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-to-fetchData1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "fetchData1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-fetchData1-to-transform1",
+      "sourceNodeId": "fetchData1",
+      "sourcePort": "output",
+      "targetNodeId": "transform1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-transform1-to-loop1",
+      "sourceNodeId": "transform1",
+      "sourcePort": "output",
+      "targetNodeId": "loop1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-loop1-output-to-processItem1",
+      "sourceNodeId": "loop1",
+      "sourcePort": "output",
+      "targetNodeId": "processItem1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-processItem1-to-loop1-loopBack",
+      "sourceNodeId": "processItem1",
+      "sourcePort": "output",
+      "targetNodeId": "loop1",
+      "targetPort": "loopBack"
+    },
+    {
+      "id": "edge-loop1-success-to-filter1",
+      "sourceNodeId": "loop1",
+      "sourcePort": "success",
+      "targetNodeId": "filter1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-filter1-to-end1",
+      "sourceNodeId": "filter1",
+      "sourcePort": "output",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "minConnections": 1,
+                "severity": "warning",
+                "validationMessage": "Trigger must connect to at least one workflow node (not configuration nodes)"
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.mock",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Placeholder node for prototyping",
+      "tags": [
+        "mock",
+        "placeholder"
+      ],
+      "sortOrder": 99,
+      "display": {
+        "label": "Mock",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:Task"
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Mock output data",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.transform",
+      "supportsErrorHandling": true,
+      "version": "1.0.0",
+      "category": "data-operations",
+      "description": "Reshape and convert data with operations",
+      "tags": [
+        "data",
+        "transformation"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Transform",
+        "icon": "a-large-small",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "operations": {
+            "type": "array"
+          }
+        }
+      },
+      "inputDefaults": {
+        "operations": []
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string", "description": "Error code as a string" },
+              "message": { "type": "string", "description": "High-level error message" },
+              "detail": { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status": { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "transform-data-form",
+        "title": "Transform",
+        "sections": [
+          {
+            "defaultExpanded": true,
+            "id": "transform-section",
+            "title": "Operation(s)",
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "data-transformer-editor",
+                "componentProps": {},
+                "label": "Transform Operations"
+              }
+            ],
+            "collapsible": true
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.loop",
+      "supportsErrorHandling": true,
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Iterate over a collection of items",
+      "tags": [
+        "control-flow",
+        "loop",
+        "iteration"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Loop",
+        "icon": "repeat",
+        "description": "Execute a sequence of actions repeatedly for each item in a collection"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "customPositionAndOffsets": {
+            "top": 32
+          },
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            },
+            {
+              "id": "loopBack",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "customPositionAndOffsets": {
+            "top": -32
+          },
+          "handles": [
+            {
+              "id": "success",
+              "label": "success",
+              "type": "source",
+              "handleType": "output",
+              "visible": true
+            },
+            {
+              "id": "output",
+              "label": "loop",
+              "type": "source",
+              "handleType": "output",
+              "showButton": false
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SubProcess"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A collection is required for iteration"
+          },
+          "parallel": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "collection"
+        ]
+      },
+      "inputDefaults": {
+        "collection": "",
+        "parallel": false
+      },
+      "outputDefinition": {
+        "currentItem": {
+          "type": "any",
+          "description": "The current item being iterated in the loop",
+          "source": "=loopContext.currentItem",
+          "var": "currentItem",
+          "scope": "internal"
+        },
+        "currentIndex": {
+          "type": "number",
+          "description": "The current iteration index (0-based)",
+          "source": "=loopContext.currentIndex",
+          "var": "currentIndex",
+          "scope": "internal"
+        },
+        "collection": {
+          "type": "array",
+          "description": "The collection being iterated over",
+          "source": "=loopContext.collection",
+          "var": "collection",
+          "scope": "internal"
+        },
+        "output": {
+          "type": "array",
+          "description": "Aggregated results from all loop iterations",
+          "source": "=loopContext.output",
+          "var": "output",
+          "scope": "external"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string", "description": "Error code as a string" },
+              "message": { "type": "string", "description": "High-level error message" },
+              "detail": { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status": { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "loop-properties",
+        "title": "Loop configuration",
+        "sections": [
+          {
+            "id": "iteration",
+            "title": "Iteration",
+            "fields": [
+              {
+                "name": "inputs.collection",
+                "type": "custom",
+                "component": "code-editor",
+                "label": "Collection",
+                "description": "Array or collection to iterate over (e.g., $vars.scriptTask1.output)",
+                "componentProps": {
+                  "singleLine": true,
+                  "mode": "expression",
+                  "toggleable": false,
+                  "placeholder": "e.g., $vars.scriptTask1.output",
+                  "showVariableButton": true,
+                  "language": "javascript"
+                }
+              },
+              {
+                "name": "inputs.parallel",
+                "type": "switch",
+                "label": "Parallel",
+                "description": "Execute all iterations at the same time."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.transform.filter",
+      "supportsErrorHandling": true,
+      "version": "1.0.0",
+      "category": "data-operations",
+      "description": "Filter data by conditions",
+      "tags": [
+        "data",
+        "transformation",
+        "filter"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Filter",
+        "icon": "list-filter",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "operations": {
+            "type": "array"
+          }
+        }
+      },
+      "inputDefaults": {
+        "operations": []
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string", "description": "Error code as a string" },
+              "message": { "type": "string", "description": "High-level error message" },
+              "detail": { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status": { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "data-transform-filter-form",
+        "title": "Filter",
+        "sections": [
+          {
+            "defaultExpanded": true,
+            "id": "filter-section",
+            "title": "Filter configuration",
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "filter-operation-editor",
+                "componentProps": {},
+                "label": "Filter configuration"
+              }
+            ],
+            "collapsible": true
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "fetchData1.output",
+        "type": "object",
+        "description": "Mock output data",
+        "binding": {
+          "nodeId": "fetchData1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "transform1.output",
+        "type": "object",
+        "description": "The transformed data result",
+        "binding": {
+          "nodeId": "transform1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "transform1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": ["code", "message", "detail", "category", "status"],
+          "properties": {
+            "code": { "type": "string", "description": "Error code as a string" },
+            "message": { "type": "string", "description": "High-level error message" },
+            "detail": { "type": "string", "description": "Detailed error description" },
+            "category": { "type": "string", "description": "Error category" },
+            "status": { "type": "integer", "description": "HTTP status code" }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "transform1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "loop1.currentItem",
+        "type": "any",
+        "description": "The current item being iterated in the loop",
+        "binding": {
+          "nodeId": "loop1",
+          "outputId": "currentItem"
+        }
+      },
+      {
+        "id": "loop1.currentIndex",
+        "type": "number",
+        "description": "The current iteration index (0-based)",
+        "binding": {
+          "nodeId": "loop1",
+          "outputId": "currentIndex"
+        }
+      },
+      {
+        "id": "loop1.collection",
+        "type": "array",
+        "description": "The collection being iterated over",
+        "binding": {
+          "nodeId": "loop1",
+          "outputId": "collection"
+        }
+      },
+      {
+        "id": "loop1.output",
+        "type": "array",
+        "description": "Aggregated results from all loop iterations",
+        "binding": {
+          "nodeId": "loop1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "loop1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": ["code", "message", "detail", "category", "status"],
+          "properties": {
+            "code": { "type": "string", "description": "Error code as a string" },
+            "message": { "type": "string", "description": "High-level error message" },
+            "detail": { "type": "string", "description": "Detailed error description" },
+            "category": { "type": "string", "description": "Error category" },
+            "status": { "type": "integer", "description": "HTTP status code" }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "loop1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "processItem1.output",
+        "type": "object",
+        "description": "Mock output data",
+        "binding": {
+          "nodeId": "processItem1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "filter1.output",
+        "type": "object",
+        "description": "The transformed data result",
+        "binding": {
+          "nodeId": "filter1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "filter1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": ["code", "message", "detail", "category", "status"],
+          "properties": {
+            "code": { "type": "string", "description": "Error code as a string" },
+            "message": { "type": "string", "description": "High-level error message" },
+            "detail": { "type": "string", "description": "Detailed error description" },
+            "category": { "type": "string", "description": "Error category" },
+            "status": { "type": "integer", "description": "HTTP status code" }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "filter1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "createdAt": "2026-04-08T00:00:00.000Z",
+    "updatedAt": "2026-04-08T00:00:00.000Z"
+  }
+}
