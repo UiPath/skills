@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "Retired→uipath-lattice-flow. CLI-based Flow authoring (legacy). Use uipath-lattice-flow for direct .flow JSON authoring with bundled schemas."
+description: "[PREVIEW] UiPath Flow projects (.flow files) — orchestrate RPA, agents, apps. Create, edit, validate, run flows via uip CLI: nodes, variables, subflows, triggers. For XAML or C# workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
