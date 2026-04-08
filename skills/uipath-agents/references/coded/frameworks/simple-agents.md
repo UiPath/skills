@@ -4,7 +4,7 @@ Guide to creating new UiPath agents with AI-powered business logic implementatio
 
 ## Initial Setup
 
-Follow the [Project Setup Guide](setup.md) to create your project directory, scaffold with `uip codedagent new`, install dependencies, and authenticate. All subsequent commands use the `uip codedagent` CLI wrapper.
+Follow the [Project Setup Guide](../lifecycle/setup.md) to create your project directory, scaffold with `uip codedagent new`, install dependencies, and authenticate. All subsequent commands use the `uip codedagent` CLI wrapper.
 
 ## Workflow
 
@@ -118,13 +118,13 @@ For detailed information, see the [UiPath LLM Gateway documentation](https://uip
 
 Describe your agent's functionality, then implement the main function (or graph nodes) with:
 - Proper error handling
-- UiPath SDK method calls (see [SDK Services](sdk-services.md))
+- UiPath SDK method calls (see [SDK Services](../capabilities/sdk-services.md))
 - Input validation
 - Output formatting
 
 ### Step 4: Generate Entry Points
 
-Run `uip codedagent init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
+Run `uip codedagent init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](../lifecycle/setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
 
 ### Step 5: Create Smoke Evaluation Set
 

@@ -27,7 +27,7 @@ uip codedagent pull --overwrite
 
 ## Prerequisites
 
-- Authentication configured — if not authenticated, use the [authentication reference](authentication.md) first
+- Authentication configured — if not authenticated, use the [authentication reference](../../authentication.md) first
 - `UIPATH_PROJECT_ID` set in `.env` or environment — also required by the [evaluate reference](evaluate.md) when reporting evaluation results to Studio Web (`--report` flag)
 
 ## Troubleshooting

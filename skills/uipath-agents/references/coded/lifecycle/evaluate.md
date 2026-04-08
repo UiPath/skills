@@ -12,7 +12,7 @@ Before proceeding, determine whether the user wants to run evaluations **locally
 
 - **Local-only** — No authentication or `UIPATH_PROJECT_ID` needed. Use `--no-report` flag when running evals. Skip auth checks entirely.
 - **Studio Web** — Required when the user wants to report evaluation results to Studio Web or use `--report`. In this case:
-  - Authentication must be configured — if not authenticated, use the [authentication reference](authentication.md) first
+  - Authentication must be configured — if not authenticated, use the [authentication reference](../../authentication.md) first
   - `UIPATH_PROJECT_ID` must be set in `.env` — this is obtained by pushing the agent to Studio Web via `uip codedagent push` (see [sync reference](file-sync.md))
 
 ## Quick Reference

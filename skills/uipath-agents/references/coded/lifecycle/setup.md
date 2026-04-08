@@ -30,7 +30,7 @@ uip codedagent init
 
 ## Template
 
-A `pyproject.toml` template is available in [assets/templates/pyproject.toml](../../assets/templates/pyproject.toml). Replace `{AGENT_NAME}` and `{AGENT_DESCRIPTION}` after copying.
+A `pyproject.toml` template is available in [assets/templates/pyproject.toml](../../../assets/templates/pyproject.toml). Replace `{AGENT_NAME}` and `{AGENT_DESCRIPTION}` after copying.
 
 ## Troubleshooting
 
@@ -64,7 +64,7 @@ Set up a new UiPath coded agent project from scratch.
 
 | Agent Type | Config File | Entrypoint | Key Dependency | Integration Guide                     |
 |---|---|---|---|---------------------------------------|
-| **Simple Function** | `uipath.json` | `main.py` (function) | `uipath` | [Guide](simple-agents.md)             |
+| **Simple Function** | `uipath.json` | `main.py` (function) | `uipath` | [Guide](../frameworks/simple-agents.md)             |
 | **LangGraph** | `langgraph.json` | `main.py` (compiled StateGraph) | `uipath-langchain` | See build skill |
 | **LlamaIndex** | `llama_index.json` | `main.py` (Workflow instance) | `uipath-llamaindex` | See build skill |
 | **OpenAI Agents** | `openai_agents.json` | `main.py` (Agent instance) | `uipath-openai-agents` | See build skill |
