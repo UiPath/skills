@@ -1,0 +1,88 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+# Cancel outdated runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    name: Claude Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Only run on non-fork PRs (secrets required), or on @claude mentions
+    if: |
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && github.event.pull_request.head.repo.full_name == github.repository)
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: true
+          claude_args: "--model claude-opus-4-6"
+          prompt: |
+            You are reviewing a PR for a Claude Code plugin repository that contains
+            markdown skill definitions, YAML frontmatter, shell hooks, and coder_eval
+            test tasks. There is NO source code, build system, or runtime — only
+            documentation that teaches AI agents how to build UiPath automations.
+
+            ## Review steps
+
+            1. Read `.github/code_review.md` for the full review criteria and output format.
+            2. Read `CLAUDE.md` for project conventions.
+            3. Read `.claude/rules/skill-review.md` for the skill scoring framework.
+            4. Run `git diff origin/${{ github.base_ref }}...HEAD` to see the full diff.
+            5. Run `gh pr view ${{ github.event.pull_request.number || github.event.issue.number }} --comments` to read existing PR conversation — do not repeat resolved issues.
+            6. For each changed file, read the FULL file (not just the diff) for surrounding context.
+
+            ## Skill-specific checks
+
+            7. If the PR adds a new skill folder under `skills/`:
+               a. Check that `tests/tasks/<skill-name>/` exists with at least one `.yaml` task file.
+                  If missing, flag as **Medium** (most skills are not yet test-compliant).
+               b. If tests exist, verify task files have: `task_id` matching `skill-<domain>-<capability>`,
+                  `tags` including `smoke`, `success_criteria` with at least one check,
+                  and `llm_reviewer.enabled: true`.
+
+            8. Check that `CODEOWNERS` includes an entry for any new skill path.
+
+            9. Verify all relative links in changed markdown files resolve to files that
+                actually exist in the repo (use `ls` or `cat` to confirm).
+
+            10. Check for cross-skill references — skills under `skills/` must be fully
+                self-contained with no imports or links to other skill folders.
+
+            11. Verify no secrets, tokens, API keys, or personal filesystem paths appear
+                in any changed file.
+
+            ## Output
+
+            Follow the output format specified in `.github/code_review.md`.
+            Always include the "What's Missing" section, even if empty.

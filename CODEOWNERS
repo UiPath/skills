@@ -2,6 +2,9 @@
 
 - @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden
 
+# CI workflows and review config
+/.github/ @uipreliga
+
 # Hooks
 /hooks/ @DragosUnguru
 
