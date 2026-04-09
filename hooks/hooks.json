@@ -9,6 +9,13 @@
             "timeout": 180,
             "once": true,
             "statusMessage": "Checking uip, servo and rpa-tool installation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/update-check.sh\"",
+            "timeout": 15,
+            "once": true,
+            "statusMessage": "Checking for skills updates..."
           }
         ]
       }
