@@ -31,7 +31,7 @@ This repo uses [coder_eval](https://github.com/UiPath/coder_eval) to verify that
 2. Verify each task file follows conventions (see `tests/README.md`):
    - `task_id` matches the pattern `skill-<domain>-<capability>`
    - `tags` includes `smoke` (required for CI) and the skill domain
-   - `agent.plugins` references `$SKILLS_REPO_PATH` so the plugin loads in the sandbox
+   - The plugin loads in the sandbox — either via `agent.plugins` in the task YAML or inherited from the experiment config in `tests/experiments/default.yaml`
    - `initial_prompt` is minimal — describes the goal, not the steps (the skill should teach the agent)
    - `success_criteria` validates key CLI commands (`command_executed`), output files (`file_exists`, `file_contains`, `json_check`), or both
    - `max_iterations: 2` and `llm_reviewer.enabled: true` are set
