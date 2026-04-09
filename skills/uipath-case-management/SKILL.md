@@ -132,13 +132,10 @@ Valid task types: `process`, `agent`, `api-workflow`, `rpa`, `external-agent`, `
 
 Use `--lane <index>` and index should increase by 1 for each task starting with 0. For parallel execution task, their lane index should be identical
 
-### Step 7 — Ask About Debug
 ### Step 7 — Add entry and exit conditions
 
-Once case is created, tell the user the case file is ready and ask:
 Only add conditions that the user has explicitly specified or that are required by the design plan.
 
-> "Case file created. Do you want to debug it? This will upload it to Studio Web and run a debug session."
 **Stage entry conditions** — when a stage should be triggered:
 ```bash
 uip case stage-entry-conditions add <file> <stage-id> --display-name "<name>" \
@@ -230,7 +227,6 @@ Once the case file passes validation, tell the user and ask:
 Use AskUserQuestion with options: "Yes", "No"
 
 
-### Step 8 — Debug (cloud) — only when explicitly requested
 ### Step 11 — Debug (cloud) — only when explicitly requested
 
 If the user says yes, run the debug command with the **project directory path**:
