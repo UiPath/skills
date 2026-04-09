@@ -201,33 +201,44 @@ uip is resources execute list "<connector-key>" "<resource>" \
 
 ## Testing Trigger Flows
 
-`uip flow debug` works with trigger-based flows, but unlike manual triggers the flow does **not** execute immediately. The debug session registers a live webhook/poll with the external service and waits for a real event.
+`uip flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
 
-### Testing workflow
+### How debug works for triggers
 
-1. **Warn the user** — explain that debug will start a live listener and they must produce the event themselves (e.g., send a Slack message, create a Jira issue)
-2. Run `uip flow debug .` — uploads to Studio Web, starts the debug session, and begins polling (~10 min timeout)
-3. **User triggers the event** in the external service (e.g., sends a message in the configured Slack channel)
-4. The flow fires, executes all nodes, and debug reports the result
-5. If no event arrives before the timeout, the session ends with no execution
+1. Debug calls the connector's `/events/debug` endpoint with `maxResults=5` and a `startDate` (default: 1 hour ago)
+2. The connector returns up to 5 matching events from that window, sorted most-recent-first
+3. The runtime uses `FilterMatches[0]` (the most recent match) as the trigger input
+4. The flow executes immediately with that event data
+5. If **no matching events** exist in the lookback window, debug fails with error code `3005` (TriggerNoMatches)
 
 ```bash
 uip flow debug . --output json
-# → Session starts, listening for trigger event...
-# → User must now produce the event in the external service
-# → Flow executes when event arrives
+# → Fetches most recent matching event from the past ~1 hour
+# → Flow executes immediately with that event data
 ```
+
+### Polling vs webhook triggers in debug
+
+| Trigger mode | Debug support | Behavior |
+|---|---|---|
+| `polling` | Supported | Pulls recent events via debug API, executes immediately |
+| `webhooks` | **Not supported** | Webhook triggers cannot be tested in Studio debug mode — debug requires Orchestrator |
+
+> **If the trigger uses `webhooks` event mode**, tell the user that debug is not available for webhook triggers. They must deploy to Orchestrator and test with a real webhook event.
 
 ### Key differences from manual-trigger debug
 
-| Aspect | Manual trigger | Connector trigger |
+| Aspect | Manual trigger | Connector trigger (polling) |
 |---|---|---|
-| Execution start | Immediate | Waits for external event |
-| User action needed | None | Must produce the event manually |
-| Timeout risk | Low (runs immediately) | High (~10 min window) |
-| What gets registered | Nothing | Live webhook or polling subscription |
+| Execution start | Immediate with user-provided inputs | Immediate with most recent matching event |
+| User action needed | Provide input values | Ensure a matching event exists in the past ~1 hour |
+| Failure mode | Missing required inputs | No matching events in lookback window (error 3005) |
 
-> **Do NOT run `flow debug` for trigger flows without telling the user first.** They need to know they must produce the event within the timeout window.
+### Pre-debug checklist
+
+1. **Verify the connection is healthy** — `uip is connections ping "<id>"`
+2. **Confirm a matching event exists** — the user should have produced the event (e.g., sent an email, created a Jira issue) within the past hour
+3. **Check event mode** — if `webhooks`, debug is not supported; inform the user
 
 ---
 
