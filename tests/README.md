@@ -1,12 +1,13 @@
-# Skill E2E Tests
+# Skill Evaluation Tests
 
-End-to-end tests that verify AI agents can correctly use skills from this repository. Tests are defined as [coder_eval](https://github.com/UiPath/coder_eval) task YAML files.
+Tests that verify AI agents can correctly use skills from this repository. Tests are defined as [coder_eval](https://github.com/UiPath/coder_eval) task YAML files.
 
 ## Prerequisites
 
-1. **coder-eval** — install from GitHub:
+1. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
    ```bash
-   uv pip install "coder-eval @ git+https://github.com/UiPath/coder_eval.git"
+   cd tests
+   make install
    ```
 
 2. **uip CLI** — the UiPath CLI must be available:
@@ -14,26 +15,64 @@ End-to-end tests that verify AI agents can correctly use skills from this reposi
    npm install -g @uipath/cli
    ```
 
-3. **ANTHROPIC_API_KEY** — set in your environment for the agent to run.
+3. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for full `.env` setup instructions.
 
 ## Running Tests
 
 ```bash
 cd tests
 
+# Run all activation tests
+make activation
+
 # Run all smoke tests
+make smoke
+
+# Run all integration tests
+make integration
+
+# Run all e2e tests
 make e2e
 
-# Run maestro-flow skill tests only
-make e2e-flow
+# Run all tests for a specific skill
+make test-uipath-maestro-flow
 
-# Run a single task
+# Run a single task file
 SKILLS_REPO_PATH=$(cd .. && pwd) \
-  coder-eval run tasks/uipath-maestro-flow/init_validate.yaml \
+  .venv/bin/coder-eval run tasks/uipath-maestro-flow/init_validate.yaml \
   -e experiments/default.yaml
 ```
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
+
+## Evaluation Framework
+
+Tests are organized into four types, distinguished by **tags** (not directories). All tests for a skill live together in `tests/tasks/<skill-name>/`.
+
+| Tag | Purpose | Cadence |
+|-----|---------|---------|
+| `activation` | Does the right skill trigger for the right query? | Every PR |
+| `smoke` | Skill + CLI produces valid output (1-3 simple scenarios) | Every PR |
+| `integration` | Correct output across diverse scenarios, error paths, anti-patterns | Daily |
+| `e2e` | Full lifecycle: Explore -> Plan -> Build -> Validate -> Deploy -> Run | Daily/weekly (check [Dashboard](https://dataexplorer.azure.com/dashboards/20cc55fe-33ae-4973-a951-855e76528219))|
+
+### Why tags over directories
+
+All tests for a skill live in one folder (`tests/tasks/<skill-name>/`). Test types are separated by tags and naming conventions — not by directory. This means:
+- Skill authors see all their tests in one place
+- CODEOWNERS maps cleanly per skill
+- A test can carry multiple tags (`[smoke, integration]`)
+- CI filters by `--tags smoke`, not by directory glob
+- Adding a new test type is a tag, not a restructure
+
+### Naming conventions
+
+| Test type | File naming | Examples |
+|-----------|-------------|---------|
+| Activation | `activation_*.yaml` | `activation_triggers.yaml` |
+| Smoke | Descriptive happy-path names | `init_validate.yaml`, `registry_discovery.yaml` |
+| Integration | `error_*.yaml`, `anti_pattern_*.yaml`, `edge_*.yaml` | `error_build_failure.yaml`, `anti_pattern_no_xaml_edit.yaml` |
+| E2E | `e2e_*.yaml` or `lifecycle_*.yaml` | `e2e_full_lifecycle.yaml` |
 
 ## Directory Structure
 
@@ -42,18 +81,64 @@ tests/
 ├── README.md
 ├── Makefile
 ├── experiments/
-│   └── default.yaml              # Shared agent config (plugin, model, tools)
+│   ├── default.yaml              # Activation + Smoke config
+│   ├── integration.yaml          # Integration config (longer timeouts)
+│   └── e2e.yaml                  # E2E config (staging tenant, full lifecycle)
 └── tasks/
     └── <skill-name>/             # One folder per skill
-        └── <capability>.yaml     # One task per capability tested
+        ├── activation_*.yaml     # Activation tests
+        ├── <capability>.yaml     # Smoke tests
+        ├── error_*.yaml          # Integration tests
+        └── e2e_*.yaml            # E2E tests
+```
+
+## Experiment Configs
+
+Experiment files define shared agent defaults per test type. Tasks inherit these defaults and should only override what differs.
+
+| Experiment | Used by | max_iterations | max_turns | task_timeout | turn_timeout |
+|------------|---------|----------------|-----------|--------------|--------------|
+| `default.yaml` | Activation, Smoke | 1 | 20 | 600s | 300s |
+| `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
+| `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
+
+Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
+
+```yaml
+# Good — no agent block needed when everything matches the experiment defaults
+task_id: skill-flow-init-validate
+tags: [uipath-maestro-flow, smoke, init, validate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  ...
+
+# Good — only override what differs (max_turns: 14 instead of the default 20)
+task_id: skill-flow-registry-discovery
+tags: [uipath-maestro-flow, smoke, registry]
+
+agent:
+  type: claude-code
+  max_turns: 14
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  ...
 ```
 
 ## Adding Tests for a New Skill
 
 1. Create `tests/tasks/<skill-name>/` matching the skill folder name under `skills/`.
-2. Write one YAML file per capability you want to test.
-3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly.
-4. Tag every task with `smoke` and the skill domain (e.g., `flow`, `platform`, `rpa`).
+2. Add at minimum **1 activation test**, **1 smoke test**, and **1 e2e test** (required for every new skill PR).
+3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
+4. Tag every task appropriately: `activation`, `smoke`, `integration`, or `e2e`.
+5. Always include the skill directory name as a tag (e.g., `uipath-maestro-flow`, `uipath-rpa`).
 
 ### Task ID Convention
 
@@ -61,42 +146,252 @@ tests/
 skill-<domain>-<capability>
 ```
 
-Examples: `skill-flow-init-validate`, `skill-platform-queue-operations`
+Examples: `skill-flow-init-validate`, `skill-flow-registry-discovery`, `skill-rpa-activation-triggers`
 
-### Task YAML Template
+### Smoke Test Example
+
+This is `tasks/uipath-maestro-flow/init_validate.yaml` — a smoke test that verifies the agent can create and validate a Flow project:
 
 ```yaml
-task_id: skill-<domain>-<capability>
+task_id: skill-flow-init-validate
 description: >
-  Skill-guided evaluation: agent uses the <skill-name> skill to <what it does>.
-tags: [skill, <domain>, <capability>, smoke]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 20
+  Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
+  a new UiPath Flow project inside a solution and validate it. Tests whether
+  the skill teaches the correct solution-first workflow and CLI usage.
+tags: [uipath-maestro-flow, smoke, init, validate]
 
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
-  <Minimal prompt — describe the goal, not the steps.>
+  Create a new UiPath Flow project called "WeatherAlert" and make sure it
+  validates successfully.
+
+  Save a summary of what you did to report.json with at minimum:
+    {
+      "project_name": "WeatherAlert",
+      "commands_used": ["<list of uip commands you ran>"],
+      "validation_passed": true
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Do not run `uip flow debug` — just validate locally.
 
 success_criteria:
   - type: command_executed
-    description: "Agent used the expected CLI command"
+    description: "Agent created a solution with uip solution new"
     tool_name: "Bash"
-    command_pattern: '<regex matching the key command>'
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project with uip flow init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the .flow file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
-  # Add file_exists, file_contains, run_command criteria as needed
+  - type: command_executed
+    description: "Agent linked flow project to solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
 
-max_iterations: 2
+  - type: file_exists
+    description: "Flow file was created inside the solution"
+    path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+    weight: 1.5
+    pass_threshold: 1.0
 
-llm_reviewer:
-  enabled: true
+  - type: json_check
+    description: "report.json has correct structure and values"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "WeatherAlert"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 3
+    weight: 2.0
+    pass_threshold: 0.75
 ```
+
+Key patterns to note:
+- **No `agent:` block** — inherits everything from `experiments/default.yaml`
+- **No `max_iterations` or `llm_reviewer`** — inherited from the experiment config
+- **Minimal prompt** — describes the goal ("create and validate"), not the steps
+- **Multiple criteria types** — `command_executed`, `file_exists`, `json_check` cover different aspects
+- **Weighted scoring** — core commands (`weight: 1.5`) matter more than supporting checks (`weight: 1.0`)
+- **JSON report** — asks the agent to produce structured output for validation
+
+For another example using `file_contains` and `run_command` criteria, see `tasks/uipath-maestro-flow/registry_discovery.yaml`. That test also demonstrates overriding a single field (`agent: max_turns: 14`) from the experiment defaults.
+
+## Success Criteria Reference
+
+Each task defines one or more success criteria. The agent's score is the weighted sum of passing criteria.
+
+### `command_executed`
+
+Verify the agent ran a specific CLI command (matched by regex). From `init_validate.yaml`:
+
+```yaml
+- type: command_executed
+  description: "Agent created a solution with uip solution new"
+  tool_name: "Bash"
+  command_pattern: 'uip\s+solution\s+new'
+  min_count: 1          # minimum times the command must appear
+  weight: 1.5           # scoring weight
+  pass_threshold: 1.0   # fraction of min_count required to pass
+```
+
+### `file_exists`
+
+Verify a file was created in the sandbox. From `init_validate.yaml`:
+
+```yaml
+- type: file_exists
+  description: "Flow file was created inside the solution"
+  path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+  weight: 1.5
+  pass_threshold: 1.0
+```
+
+### `file_contains`
+
+Verify a file contains expected strings. From `registry_discovery.yaml`:
+
+```yaml
+- type: file_contains
+  description: "Report contains expected fields"
+  path: "registry_report.json"
+  includes:
+    - "node_types_found"
+    - "commands_used"
+    - "http_node_type"
+    - "script_node_type"
+  weight: 1.5
+  pass_threshold: 1.0
+```
+
+### `json_check`
+
+Validate JSON file structure and values using JSONPath assertions. From `init_validate.yaml`:
+
+```yaml
+- type: json_check
+  description: "report.json has correct structure and values"
+  path: "report.json"
+  assertions:
+    - expression: "project_name"
+      operator: equals
+      expected: "WeatherAlert"
+    - expression: "validation_passed"
+      operator: equals
+      expected: true
+    - expression: "length(commands_used)"
+      operator: gte
+      expected: 3
+  weight: 2.0
+  pass_threshold: 0.75   # at least 75% of assertions must pass
+```
+
+Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
+
+### `run_command`
+
+Execute an arbitrary shell command and check the exit code. From `registry_discovery.yaml`:
+
+```yaml
+- type: run_command
+  description: "registry_report.json is valid JSON"
+  command: "python -c \"import json; json.load(open('registry_report.json'))\""
+  timeout: 10
+  expected_exit_code: 0
+  weight: 1.0
+  pass_threshold: 1.0
+```
+
+## Weight and Threshold Guidance
+
+**`weight`** controls how much a criterion contributes to the overall score. Use higher weights for the core behavior being tested:
+
+| Weight | When to use | Example from existing tests |
+|--------|-------------|---------------------------|
+| `1.0` | Supporting checks | `--output json` flag used, file is valid JSON |
+| `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
+| `2.0` | Critical validation | `report.json` has correct structure and values |
+
+**`pass_threshold`** is the fraction of the criterion that must pass. For `json_check` with multiple assertions, `0.75` means 75% of assertions must pass. For most criteria, use `1.0` (all-or-nothing).
+
+## Interpreting Results
+
+After a run, results are written to `tests/runs/<experiment-id>/`:
+
+```
+runs/
+└── <experiment-id>/
+    ├── experiment.md           # Overall summary
+    └── default/
+        ├── variant.md          # Variant-level summary
+        └── <task-id>/
+            └── task.json       # Detailed per-task results
+```
+
+- **`experiment.md`** — high-level pass/fail summary across all tasks
+- **`task.json`** — per-criterion scores, agent transcript, and LLM reviewer output
+
+## Debugging Failures
+
+1. **Read the task result:**
+   ```bash
+   cat runs/*/default/skill-flow-init-validate/task.json | python -m json.tool
+   ```
+
+2. **Check which criteria failed:** Look at the `success_criteria` array in `task.json` — each entry has a `passed` boolean and `score`.
+
+3. **Read the agent transcript:** The `transcript` field in `task.json` shows every agent turn, tool call, and tool result.
+
+4. **Re-run a single task with verbose output:**
+   ```bash
+   SKILLS_REPO_PATH=$(cd .. && pwd) \
+     .venv/bin/coder-eval run tasks/uipath-maestro-flow/init_validate.yaml \
+     -e experiments/default.yaml -v
+   ```
+
+5. **Common failure causes:**
+   - Agent used wrong CLI command or flags -> check the skill's SKILL.md for correctness
+   - Agent didn't activate the skill -> check skill description frontmatter and activation test
+   - Agent ran out of turns -> increase `max_turns` or simplify the prompt
+   - Sandbox issue -> check that `uip` CLI is available in the test environment
+
+## Further Reading
+
+- [coder_eval repository](https://github.com/UiPath/coder_eval) — framework docs, task definition guide, CLI reference
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — skill contribution rules and quality checklist

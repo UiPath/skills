@@ -3,17 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [skill, flow, init, validate, smoke]
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  model: claude-sonnet-4-6
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  plugins:
-    - type: "local"
-      path: "$SKILLS_REPO_PATH"
-  max_turns: 20
+tags: [uipath-maestro-flow, smoke, init, validate]
 
 sandbox:
   driver: tempdir
@@ -96,8 +86,3 @@ success_criteria:
         expected: 3
     weight: 2.0
     pass_threshold: 0.75
-
-max_iterations: 2
-
-llm_reviewer:
-  enabled: true

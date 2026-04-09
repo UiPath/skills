@@ -1,7 +1,7 @@
-name: E2E Skill Tests
+name: Smoke Skill Tests
 
 concurrency:
-  group: e2e-skills-${{ github.head_ref || github.ref }}
+  group: smoke-skills-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 on:
@@ -16,7 +16,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    name: Run skill e2e tests
+    name: Run skill smoke tests
     steps:
       - uses: actions/checkout@v4
 
@@ -59,7 +59,7 @@ jobs:
           bun run build
           cd packages/cli && npm link
 
-      - name: Run e2e smoke tests
+      - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
           API_BACKEND: bedrock
@@ -67,7 +67,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
         working-directory: tests
-        id: e2e
+        id: smoke
         run: |
           coder-eval run tasks/**/*.yaml \
             -e experiments/default.yaml --tags smoke -j 1 -v
@@ -86,5 +86,5 @@ jobs:
           done
 
       - name: Fail if tests failed
-        if: steps.e2e.outcome == 'failure'
+        if: steps.smoke.outcome == 'failure'
         run: exit 1

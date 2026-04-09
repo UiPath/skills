@@ -3,16 +3,10 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore
   available Flow node types via the registry. Tests whether the skill teaches
   the correct registry workflow (pull, list/search, get).
-tags: [skill, flow, registry, smoke]
+tags: [uipath-maestro-flow, smoke, registry]
 
 agent:
   type: claude-code
-  permission_mode: acceptEdits
-  model: claude-sonnet-4-6
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  plugins:
-    - type: "local"
-      path: "$SKILLS_REPO_PATH"
   max_turns: 14
 
 sandbox:
@@ -95,8 +89,3 @@ success_criteria:
       - "core.action.script"
     weight: 1.0
     pass_threshold: 1.0
-
-max_iterations: 2
-
-llm_reviewer:
-  enabled: true

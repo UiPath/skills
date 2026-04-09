@@ -1,16 +1,16 @@
-experiment_id: skill-tests-default
-description: "Default experiment for activation and smoke tests — loads the full UiPath skills plugin"
+experiment_id: skill-tests-integration
+description: "Integration tests — longer timeouts for complex multi-step scenarios"
 
 defaults:
-  max_iterations: 1
-  task_timeout: 600
+  max_iterations: 2
+  task_timeout: 900
   turn_timeout: 300
 
   agent:
     type: claude-code
     permission_mode: acceptEdits
     model: claude-sonnet-4-6
-    max_turns: 20
+    max_turns: 30
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
       - type: "local"
