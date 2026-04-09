@@ -1,15 +1,15 @@
 ---
-name: uipath-hitl
-description: "Manage UiPath Action Center tasks (HITL) via CLI. Use when: list/assign/complete tasks, manage assignments, or user mentions 'Action Center'/'HITL'/'uip hitl'. Skip for Orchestrator queues, Document Understanding, or codedapp."
+name: uipath-tasks
+description: "Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, manage assignments, or user mentions 'Action Center'/'tasks'/'uip tasks'. Skip for Orchestrator queues, Document Understanding, or codedapp."
 user-invokable: true
 ---
 
-# UiPath HITL (Action Center Tasks) — Agent Skill
+# UiPath Tasks (Action Center) — Agent Skill
 
 Action Center is UiPath's human-in-the-loop platform. Tasks represent work items
 that require human input — form approvals, document validation, data labeling, and more.
 
-All operations go through `uip hitl tasks <verb> --output json`.
+All operations go through `uip tasks <verb> --output json`.
 
 ---
 
@@ -42,8 +42,8 @@ uip login tenant list --output json
 uip login tenant set MyTenant
 ```
 
-> **Critical:** The `--tenant` flag on `hitl` commands does NOT switch the active session tenant.
-> The environment is determined by `UIPATH_URL` in the auth file — always confirm with `login status` before running `hitl` commands.
+> **Critical:** The `--tenant` flag on `tasks` commands does NOT switch the active session tenant.
+> The environment is determined by `UIPATH_URL` in the auth file — always confirm with `login status` before running `tasks` commands.
 
 ---
 
@@ -98,16 +98,16 @@ uip login status --output json
 uip login tenant set <tenant-name>
 
 # List all tasks across folders
-uip hitl tasks list --output json
+uip tasks list --output json
 
 # Get details of a specific task
-uip hitl tasks get <task-id> --output json
+uip tasks get <task-id> --output json
 
 # Assign a task to a user
-uip hitl tasks assign <task-id> --user alice@company.com --output json
+uip tasks assign <task-id> --user alice@company.com --output json
 
 # Complete a task
-uip hitl tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --output json
+uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --output json
 ```
 
 ---
@@ -166,16 +166,16 @@ uip login status --output json
 uip login tenant set <tenant-name>   # only if needed
 
 # 1. Discover
-uip hitl tasks list --output json
-uip hitl tasks get <task-id> --output json
+uip tasks list --output json
+uip tasks get <task-id> --output json
 
 # 2. Plan — determine the task type, folder ID, and action needed
 
 # 3. Act — assign a task
-uip hitl tasks assign <task-id> --user alice@company.com --output json
+uip tasks assign <task-id> --user alice@company.com --output json
 
 # 4. Verify
-uip hitl tasks get <task-id> --output json
+uip tasks get <task-id> --output json
 ```
 
 ---

@@ -5,7 +5,7 @@
 Before assigning a task, discover which users have task permissions in the folder:
 
 ```bash
-uip hitl tasks users <folder-id> --output json
+uip tasks users <folder-id> --output json
 ```
 
 Response includes user details:
@@ -35,10 +35,10 @@ Two ways to specify the assignee:
 
 ```bash
 # By email (recommended — human-readable)
-uip hitl tasks assign <task-id> --user alice.smith@company.com --output json
+uip tasks assign <task-id> --user alice.smith@company.com --output json
 
 # By user ID (useful when scripting)
-uip hitl tasks assign <task-id> --user-id 12345 --output json
+uip tasks assign <task-id> --user-id 12345 --output json
 ```
 
 - `--user` and `--user-id` are mutually exclusive — provide one or the other
@@ -49,7 +49,7 @@ uip hitl tasks assign <task-id> --user-id 12345 --output json
 Move a task from one user to another:
 
 ```bash
-uip hitl tasks reassign <task-id> --user bob@company.com --output json
+uip tasks reassign <task-id> --user bob@company.com --output json
 ```
 
 Reassignment works the same as assignment — accepts `--user` or `--user-id`.
@@ -59,25 +59,25 @@ Reassignment works the same as assignment — accepts `--user` or `--user-id`.
 Remove the current assignee, returning the task to `Unassigned` status:
 
 ```bash
-uip hitl tasks unassign <task-id> --output json
+uip tasks unassign <task-id> --output json
 ```
 
 ## Full Workflow: Find User → Assign → Verify
 
 ```bash
 # 1. Find the folder ID from the task
-uip hitl tasks get <task-id> --output json
+uip tasks get <task-id> --output json
 # → note "folderId" from response
 
 # 2. List users with permissions in that folder
-uip hitl tasks users <folder-id> --output json
+uip tasks users <folder-id> --output json
 # → find the target user's email or ID
 
 # 3. Assign the task
-uip hitl tasks assign <task-id> --user alice@company.com --output json
+uip tasks assign <task-id> --user alice@company.com --output json
 
 # 4. Verify assignment
-uip hitl tasks get <task-id> --output json
+uip tasks get <task-id> --output json
 # → "status" should be "Pending"
 # → "assignedToUser" should show the assigned user
 ```
