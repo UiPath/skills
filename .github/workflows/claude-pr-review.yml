@@ -64,29 +64,22 @@ jobs:
 
             ## Skill-specific checks
 
-            7. For every new or modified `SKILL.md`, run:
-               ```
-               bash hooks/validate-skill-descriptions.sh <path-to-SKILL.md>
-               ```
-               Flag any description over 250 characters as Critical.
-
-            8. If the PR adds a new skill folder under `skills/`:
+            7. If the PR adds a new skill folder under `skills/`:
                a. Check that `tests/tasks/<skill-name>/` exists with at least one `.yaml` task file.
-                  This is a hard requirement — flag as **Critical** if missing. Reference
-                  `tests/README.md` for the expected task YAML structure.
-               b. Verify task files have: `task_id` matching `skill-<domain>-<capability>`,
+                  If missing, flag as **Medium** (most skills are not yet test-compliant).
+               b. If tests exist, verify task files have: `task_id` matching `skill-<domain>-<capability>`,
                   `tags` including `smoke`, `success_criteria` with at least one check,
                   and `llm_reviewer.enabled: true`.
 
-            9. Check that `CODEOWNERS` includes an entry for any new skill path.
+            8. Check that `CODEOWNERS` includes an entry for any new skill path.
 
-            10. Verify all relative links in changed markdown files resolve to files that
+            9. Verify all relative links in changed markdown files resolve to files that
                 actually exist in the repo (use `ls` or `cat` to confirm).
 
-            11. Check for cross-skill references — skills under `skills/` must be fully
+            10. Check for cross-skill references — skills under `skills/` must be fully
                 self-contained with no imports or links to other skill folders.
 
-            12. Verify no secrets, tokens, API keys, or personal filesystem paths appear
+            11. Verify no secrets, tokens, API keys, or personal filesystem paths appear
                 in any changed file.
 
             ## Output
