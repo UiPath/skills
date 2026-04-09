@@ -3,7 +3,7 @@
 ## Basic Completion
 
 ```bash
-uip hitl tasks complete <task-id> \
+uip tasks complete <task-id> \
   --type <task-type> \
   --folder-id <folder-id> \
   --output json
@@ -29,7 +29,7 @@ Different task types route to different API endpoints and have different require
 Form tasks require both `--action` (the button/outcome name) and `--data` (form field values):
 
 ```bash
-uip hitl tasks complete <task-id> \
+uip tasks complete <task-id> \
   --type FormTask \
   --folder-id <folder-id> \
   --action "Approve" \
@@ -42,7 +42,7 @@ Common actions for form tasks: `"Approve"`, `"Reject"`, `"Submit"`, `"Escalate"`
 ## Completing an App Task
 
 ```bash
-uip hitl tasks complete <task-id> \
+uip tasks complete <task-id> \
   --type AppTask \
   --folder-id <folder-id> \
   --action "Complete" \
@@ -56,13 +56,13 @@ External tasks do not require action or data:
 
 ```bash
 # Minimal completion
-uip hitl tasks complete <task-id> \
+uip tasks complete <task-id> \
   --type ExternalTask \
   --folder-id <folder-id> \
   --output json
 
 # With optional action and data
-uip hitl tasks complete <task-id> \
+uip tasks complete <task-id> \
   --type ExternalTask \
   --folder-id <folder-id> \
   --action "Done" \
@@ -76,7 +76,7 @@ Before completing a task, always verify:
 
 1. **Task exists and is not already completed:**
    ```bash
-   uip hitl tasks get <task-id> --output json
+   uip tasks get <task-id> --output json
    # Check: status should be "Unassigned" or "Pending", not "Completed"
    ```
 
