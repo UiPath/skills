@@ -1,9 +1,6 @@
 ---
-name: uipath-case
-description: "This skill should be used when the user wants to 'create a new Case management definition', 'scaffold a case with uip case cases add', 'add a stage to my case', 'add a task to a stage', 'connect stages with edges', 'manage case instances', 'discover case resources', 'list case processes or incidents', or when the user is editing a case JSON file, wiring stages and edges, managing tasks, or asks about the case management JSON format or uip case CLI commands."
-paths:
-    - "**/*.case.json"
-    - "**/case-definition.json"
+name: uipath-case-management
+description: "[PREVIEW] UiPath Case Management projects (.case.json files) — manage case definitions, stages, tasks, edges. Create, edit, validate, run cases via uip CLI: stages, tasks, triggers etc."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
