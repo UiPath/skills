@@ -150,7 +150,7 @@ uip flow node configure <PROJECT>.flow <triggerId> --detail '{
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
 | `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
-| `filterExpression` | No | Filter using `((fields.<fieldName><`value`>))` syntax — omit to trigger on all events |
+| `filterExpression` | No | JMESPath filter using `((fields.<fieldName><`value`>))` syntax — omit to trigger on all events |
 
 The command populates `inputs.detail` (including the internal `configuration` blob) and creates workflow-level connection bindings.
 
@@ -252,7 +252,7 @@ uip flow debug . --output json
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
-| Filter expression syntax error | Wrong filter format | Use `((fields.<fieldName><`value`>))` syntax |
+| Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `((fields.<fieldName><`value`>))` |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
 | `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
 
