@@ -4,7 +4,7 @@ Use this pattern when you need shared setup and teardown logic that runs before 
 
 ## CodedWorkflowBase.cs — Base Class Template
 
-This is a **Coded Source File** (NOT a workflow — no `.cs.json`, no entry point).
+This is a **Coded Source File** (NOT a workflow — no entry point).
 
 ```csharp
 using UiPath.CodedWorkflows;
@@ -125,7 +125,7 @@ namespace {{PROJECT_NAME}}
 
 ## Key Points
 
-- **CodedWorkflowBase.cs is a Coded Source File** — no `.cs.json`, no entry point, not listed in `project.json`
+- **CodedWorkflowBase.cs is a Coded Source File** — no entry point, not listed in `project.json`
 - **Before() runs automatically** before EVERY workflow/test case that inherits from `CodedWorkflowBase`
 - **After() runs automatically** after EVERY workflow/test case (even if it throws an exception)
 - **Context objects provide metadata** — `RelativeFilePath`, `WorkflowFilePath`, etc.

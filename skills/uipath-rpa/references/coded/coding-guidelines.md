@@ -91,6 +91,7 @@ using System.Text.RegularExpressions;  // regex
 
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
+- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments

@@ -19,4 +19,4 @@ namespace {{PROJECT_NAME}}
 }
 ```
 
-IMPORTANT!: Helper classes do NOT inherit from `CodedWorkflow`, do NOT have `[Workflow]` or `[TestCase]` attributes, and do NOT have a companion `.cs.json` file. They are NOT entry points and do not appear in the fileInfoCollection attribute from `project.json`.
+IMPORTANT!: Helper classes do NOT inherit from `CodedWorkflow`, do NOT have `[Workflow]` or `[TestCase]` attributes. They are NOT entry points and do not appear in the fileInfoCollection attribute from `project.json`.
