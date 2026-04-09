@@ -1,5 +1,6 @@
 # Default owners for the entire repo
-* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar
+
+- @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden
 
 # Hooks
 /hooks/ @DragosUnguru
@@ -8,7 +9,7 @@
 /references/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
@@ -27,11 +28,9 @@
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath @rohan-uipath
 
-# Flow skill — node category guides (away team owned)
-# Add your team here when contributing a new node category file
-/skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
-/skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden
-/skills/uipath-maestro-flow/references/nodes/is-trigger.md @baishalighosh @chandusailella @bai-uipath @rockymadden
+# Flow skill — plugin guides (away team owned)
+# Add your team here when contributing a new plugin category
+/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil

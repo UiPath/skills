@@ -159,6 +159,35 @@ Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `A
 - **ForEachRow**: DelegateInArgument name must be a valid C#/VB identifier — CacheMetadata validates this.
 - **DeleteRowsX inside ExcelForEachRowX**: Attempting to delete the current row during iteration throws a runtime error ("Cannot delete current row").
 
+## IResource / ILocalResource — String Path Conversion
+
+Many activities (O365, GSuite, Mail, file operations, Document Understanding) require `IResource` or `ILocalResource` properties, not string paths. Passing a string where `IResource` is expected causes a validation error. `LocalResource(string)` constructor is internal — you cannot call it directly.
+
+**Approach 1 — Path Exists activity (recommended, works in VB and C# projects):**
+
+Use the "Path Exists" activity with a file path as input. The output property **"Reference if path exists"** returns an `ILocalResource` (which also satisfies `IResource`). This both verifies the file exists and gives you the resource reference.
+
+**Approach 2 — `LocalResource.FromPath()` expression (works in VB and C# projects):**
+
+Use as an expression directly in activity properties — no existence check, creates the reference regardless:
+```
+LocalResource.FromPath(filePath)
+```
+
+In XAML (C# expression project):
+```xml
+<InArgument x:TypeArguments="upr:ILocalResource">
+  <CSharpValue x:TypeArguments="upr:ILocalResource">LocalResource.FromPath(filePath)</CSharpValue>
+</InArgument>
+```
+
+Requires namespace `UiPath.Platform.ResourceHandling` in the XAML header:
+```xml
+<x:String>UiPath.Platform.ResourceHandling</x:String>
+```
+
+This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `SendMail` attachments, `MoveFile`, `CopyFile`, `CompressZipFiles`, `ExtractDocumentData`, and any other activity with `IResource`/`ILocalResource` properties.
+
 ## InvokeWorkflow Gotchas
 
 - **Auto-appends .xaml**: If the `WorkflowFileName` has no file extension, `.xaml` is appended automatically. Passing `"workflow.txt"` becomes `"workflow.txt.xaml"`.

@@ -1,60 +1,8 @@
-# IS Activity Nodes
+# Connector Activity Nodes — Implementation
 
-Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip flow registry pull`.
+How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, `bindings_v2.json` schema, and debugging.
 
-## When to Use
-
-Use an IS activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically.
-
-### Decision Order
-
-Prefer higher tiers when connecting to external services:
-
-| Tier | Approach | When to Use |
-|---|---|---|
-| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
-| 2 | **HTTP Request within a connector** | A connector exists but lacks the specific endpoint — connector still handles auth |
-| 3 | **Standalone HTTP Request** (`core.action.http`) | No connector exists, or quick prototyping — you handle auth manually |
-| 4 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
-
-### Prerequisites
-
-- `uip login` required — connector nodes only appear in the registry after authentication
-- A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
-- `uip flow registry pull` must be run to cache connector node types locally
-
-### When NOT to Use
-
-- **No connector exists for the service** — use `core.action.http` instead
-- **Simple GET request with no auth** — `core.action.http` is simpler and faster to configure
-- **The operation needs desktop/browser interaction** — use an RPA resource node
-- **The task requires reasoning or judgment** — use an agent node
-
-## Implementation
-
-### Node Type Pattern
-
-`uipath.connector.<connector-key>.<activity>`
-
-Examples:
-- `uipath.connector.uipath-salesforce-slack.send-message`
-- `uipath.connector.uipath-atlassian-jira.create-issue`
-
-### Discovery
-
-```bash
-uip flow registry search <service> --output json
-```
-
-Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
-
-```bash
-uip is connectors list --output json
-```
-
-Keys are often prefixed — e.g., `uipath-salesforce-slack` not `slack`.
-
-### How Connector Nodes Differ from OOTB
+## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) bound in `bindings_v2.json`. Without it, the node cannot authenticate.
 2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
@@ -66,28 +14,11 @@ Keys are often prefixed — e.g., `uipath-salesforce-slack` not `slack`.
    - `bodyParameters` — field-value pairs for the request body
    - `queryParameters` — field-value pairs for query string parameters
 
-### Ports
-
-| Input Port | Output Port(s) |
-|---|---|
-| `input` | `success` |
-
-### Output Variables
-
-- `$vars.{nodeId}.output` — the connector response (structure depends on the operation — check `outputResponseDefinition` from `registry get` to know exact field paths)
-- `$vars.{nodeId}.error` — error details if the call fails
-
-> **Do NOT guess output field names.** Always check `outputResponseDefinition` from the enriched `registry get` response (Step 2) before writing `$vars` expressions that reference connector output fields in downstream nodes.
-
-### HTTP Fallback
-
-When a connector exists but lacks the specific endpoint, use the connector's HTTP Request activity. The connector still manages authentication; you supply the path and payload. Note as `connector: <service> (HTTP fallback)` during planning.
-
 ---
 
 ## Configuration Workflow
 
-Follow these steps for every connector node. This is the detailed version of SKILL.md Step 4.
+Follow these steps for every connector node.
 
 ### Step 1 — Fetch and bind a connection
 
@@ -131,7 +62,7 @@ Run `is resources describe` to fetch and cache the full operation metadata, then
 # 1. Describe to trigger fetch + cache (extract the objectName from the connector node type)
 uip is resources describe "<connector-key>" "<objectName>" \
   --connection-id "<id>" --operation Create --output json
-# → response includes metadataFile path
+# -> response includes metadataFile path
 
 # 2. Read the full cached metadata
 cat <metadataFile path from response>
@@ -151,7 +82,7 @@ Check `requestFields` from the metadata for fields with a `reference` object —
 # Example: resolve Slack channel "#test-slack" to its ID
 uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
   --connection-id "<id>" --output json
-# → { "id": "C1234567890", "name": "test-slack" }
+# -> { "id": "C1234567890", "name": "test-slack" }
 ```
 
 Use the resolved IDs (not display names) in the flow's node `inputs`. Present options to the user when multiple matches exist.
@@ -160,12 +91,12 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 ### Step 5 — Validate required fields
 
-**Check every required field** — both `requestFields` and `parameters` where `required: true` — against what the user provided. This is a hard gate — do NOT proceed to planning or building until all required fields have values. For query/path parameters with a `defaultValue`, use the default if the user didn't specify one.
+**Check every required field** — both `requestFields` and `parameters` where `required: true` — against what the user provided. This is a hard gate — do NOT proceed to building until all required fields have values. For query/path parameters with a `defaultValue`, use the default if the user didn't specify one.
 
 1. Collect all required fields from the metadata (`requestFields` + `parameters`)
 2. For each required field, check if the user's prompt contains a value
 3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected
-4. Only after all required fields are accounted for, proceed to planning
+4. Only after all required fields are accounted for, proceed to building
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
 
@@ -355,7 +286,7 @@ For manual-trigger flows with connector activities, you only need `Connection` r
 ### Common Errors
 
 | Error | Cause | Fix |
-|---|---|---|
+| --- | --- | --- |
 | No connection found | Connection not bound in `bindings_v2.json` | Run Step 1 above to bind a connection |
 | Connection ping failed | Connection expired or misconfigured | Re-authenticate the connection in the IS portal |
 | Missing `inputs.detail` | Node added but not configured | Run `uip flow node configure` with the detail JSON (Step 6) |

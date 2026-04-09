@@ -6,7 +6,7 @@ All workflow and test case files inherit from `CodedWorkflow`, which provides bu
 
 | Method | Description |
 |--------|-------------|
-| `Log(string message, LogLevel level = LogLevel.Info, IDictionary<string, object> additionalLogFields = null)` | Output log messages with optional level and custom fields |
+| `Log(string message, LogLevel level = LogLevel.Info, IDictionary<string, object> additionalLogFields = null)` | Output log messages with optional level and custom fields. Valid `LogLevel` values: `Trace`, `Verbose`, `Info`, `Warn`, `Error`, `Fatal`. Note: `LogLevel.Warning` does not exist — use `LogLevel.Warn` |
 | `Delay(TimeSpan time)` / `Delay(int delayMs)` | Pause execution synchronously |
 | `DelayAsync(TimeSpan time)` / `DelayAsync(int delayMs)` | Pause execution asynchronously |
 | `BuildClient(string scope = "Orchestrator", bool force = true)` | Build an authenticated `HttpClient` for Orchestrator or custom scopes |
@@ -49,6 +49,14 @@ var result = RunWorkflow(workflowPath, new Dictionary<string, object>
     { "amount", 1500.00m }
 });
 ```
+
+> **Return value:** `RunWorkflow` returns `IDictionary<string, object>`. Argument direction is determined by the `Execute` method signature:
+>
+> - **Single return value** (`public string Execute(int a, int b)`) — the result is stored under the key `"Output"`. Access it as `result["Output"]`.
+> - **Multiple outputs via tuple** (`public (string a, string b) Execute()`) — each tuple member becomes a separate key: `result["a"]`, `result["b"]`. These are Out arguments.
+> - **InOut arguments** — when a parameter name appears in both the input parameters and the return tuple, it is an InOut argument. Example: `public (string a, string b) Execute(string b, int c)` — `a` is Out, `b` is InOut (same name in input and output), `c` is In.
+>
+> For same-project workflows, prefer the type-safe `workflows.MyWorkflow()` property — it returns the declared return type directly and avoids this dictionary lookup.
 
 ## Service Properties (injected based on installed packages)
 
@@ -170,7 +178,7 @@ The `services` property provides access to:
 To add shared setup/teardown logic that runs before and after ALL test cases, create a base class that implements `IBeforeAfterRun`:
 
 ```csharp
-// CodedWorkflowBase.cs — Coded Source File (NOT a workflow, NO .cs.json)
+// CodedWorkflowBase.cs — Coded Source File (NOT a workflow, no entry point)
 using UiPath.CodedWorkflows;
 
 namespace MyProject

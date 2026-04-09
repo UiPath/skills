@@ -89,8 +89,32 @@ using System.Text.RegularExpressions;  // regex
   5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
 - Use `uip rpa inspect-package --use-studio` for API discovery when documentation is unclear
 
+### IResource / ILocalResource — Converting File Paths
+
+Many activities (O365, GSuite, Mail, file operations) require `IResource` or `ILocalResource` instead of a string path. NEVER pass a raw string where `IResource` is expected — it will fail at runtime. NEVER try to construct `LocalResource(string)` directly — the constructor is internal.
+
+| Method | Signature | Use when |
+|--------|-----------|----------|
+| `GetResourceForLocalPath` | `system.GetResourceForLocalPath(string path, PathType pathType)` → `IResource` | You have a path and need an `IResource` (no existence check needed) |
+| `PathExists` (with out param) | `system.PathExists(string path, PathType pathType, out ILocalResource resource)` → `bool` | You need to verify the file exists AND get an `ILocalResource` |
+
+```csharp
+// Direct conversion — preferred when you know the file exists
+IResource file = system.GetResourceForLocalPath(@"C:\Reports\report.pdf", PathType.File);
+IResource folder = system.GetResourceForLocalPath(@"C:\Archive", PathType.Folder);
+
+// With existence check
+if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResource localFile))
+{
+    // use localFile
+}
+```
+
+`PathType` values: `PathType.File`, `PathType.Folder`
+
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
+- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
