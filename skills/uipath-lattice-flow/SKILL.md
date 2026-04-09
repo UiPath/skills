@@ -1,7 +1,7 @@
 ---
 name: uipath-lattice-flow
 description: "Direct .flow JSON authoring — create, edit, validate UiPath Flow projects (.flow files). OOTB node schemas bundled, dynamic resource nodes via registry. For XAML→uipath-rpa."
-allowed-tools: Read, Write, Edit, Glob, Grep
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 # Direct Flow Authoring
