@@ -62,7 +62,7 @@ jobs:
       - name: Run e2e smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
-          BEDROCK_ENABLED: "true"
+          API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
