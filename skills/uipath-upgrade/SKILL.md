@@ -1,6 +1,6 @@
 ---
 name: uipath-upgrade
-description: "Upgrade UiPath skills plugin to latest version. Handles UPGRADE_AVAILABLE hook output and manual /uipath-upgrade requests. For Platform/Studio/Orchestrator upgrades→uipath-platform."
+description: "Upgrade the UiPath skills plugin (this plugin) itself to the latest version from UiPath/skills on GitHub. Handles update/upgrade skills requests and session start upgrade notices. For Platform/Studio/Orchestrator→uipath-platform."
 user-invocable: true
 ---
 
@@ -8,9 +8,10 @@ user-invocable: true
 
 ## When to Use This Skill
 
-- The SessionStart hook printed `UPGRADE_AVAILABLE <local> <remote>`
-- The user asks to upgrade or update UiPath skills
+- The SessionStart hook injected a `UiPath skills plugin upgrade available` notice into the session context
+- The user asks to upgrade, update, or refresh the UiPath skills plugin
 - The user runs `/uipath-upgrade` directly
+- The SessionStart hook injected a `UiPath skills plugin just upgraded` notice (show what's new)
 
 ## Critical Rules
 
@@ -22,14 +23,14 @@ user-invocable: true
 
 ## Inline Upgrade Flow
 
-Follow these steps when the SessionStart hook output contains `UPGRADE_AVAILABLE <local> <remote>`.
+Follow these steps when the SessionStart hook context mentions that a UiPath skills plugin upgrade is available.
 
 ### Step 1: Check auto_upgrade setting
 
 Run:
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/hooks/uipath-skills-config.sh" get auto_upgrade
+bash "$CLAUDE_PLUGIN_ROOT/scripts/uipath-skills-config.sh" get auto_upgrade
 ```
 
 If the output is `true`, skip to Step 3 (perform the upgrade silently).
@@ -40,7 +41,7 @@ Otherwise, proceed to Step 2.
 
 Use AskUserQuestion with these 4 options:
 
-> A new version of UiPath skills is available (current: {local}, latest: {remote}).
+> A new version of the UiPath skills plugin is available (current: {local}, latest: {remote}).
 
 - A) **Yes, upgrade now**
 - B) **Always keep me up to date** — auto-upgrade on every session start
@@ -52,7 +53,7 @@ Use AskUserQuestion with these 4 options:
 **If B:** Run the following, then proceed to Step 3:
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/hooks/uipath-skills-config.sh" set auto_upgrade true
+bash "$CLAUDE_PLUGIN_ROOT/scripts/uipath-skills-config.sh" set auto_upgrade true
 ```
 
 **If C:** Write the snooze file and continue with the user's original task. Read the current snooze level from `~/.uipath-skills/update-snoozed` (if it exists). If the snoozed version matches the remote version, increment the level (max 3). Otherwise, start at level 1.
@@ -84,7 +85,7 @@ Then stop the upgrade flow and continue with whatever the user originally asked.
 **If D:** Run the following, then continue with the user's original task:
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/hooks/uipath-skills-config.sh" set update_check false
+bash "$CLAUDE_PLUGIN_ROOT/scripts/uipath-skills-config.sh" set update_check false
 ```
 
 ### Step 3: Detect git remote
@@ -155,7 +156,7 @@ Tell the user the upgrade is complete and continue with their original task.
 
 ## Standalone Usage
 
-When the user runs `/uipath-upgrade` directly (not triggered by hook output):
+When the user runs `/uipath-upgrade` directly (not triggered by session-start notice):
 
 1. Force a fresh version check by running:
 
@@ -164,14 +165,14 @@ rm -f "$HOME/.uipath-skills/last-update-check"
 bash "$CLAUDE_PLUGIN_ROOT/hooks/update-check.sh"
 ```
 
-2. If the output contains `UPGRADE_AVAILABLE`, follow Steps 2-7 above.
-3. If no output (already up to date), tell the user: "UiPath skills are already up to date (v{version})."
+2. If the output JSON `additionalContext` mentions `upgrade available`, follow Steps 2-7 above.
+3. If no upgrade is reported (already up to date), tell the user: "UiPath skills plugin is already up to date (v{version})."
 
-## Handling JUST_UPGRADED
+## Handling Just-Upgraded Notices
 
-When the SessionStart hook output contains `JUST_UPGRADED <old> <new>`:
+When the SessionStart hook context mentions `UiPath skills plugin just upgraded from <old> to <new>`:
 
-Tell the user: "Running UiPath skills v{new} (just updated from v{old})!"
+Tell the user: "Running UiPath skills plugin v{new} (just updated from v{old})!"
 
 Then read `CHANGELOG.md` and briefly summarize what changed. Continue with the user's task.
 
@@ -180,4 +181,4 @@ Then read `CHANGELOG.md` and briefly summarize what changed. Continue with the u
 - Do NOT run `git reset --hard` or `git clean` — the user may have local changes
 - Do NOT modify `plugin.json` directly — the upgrade pulls the new version from upstream
 - Do NOT skip the AskUserQuestion step unless `auto_upgrade` is `true`
-- Do NOT prompt about upgrading if the hook output shows `JUST_UPGRADED` — just report and continue
+- Do NOT prompt about upgrading if the context shows a just-upgraded notice — just report and continue

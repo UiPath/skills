@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed so the CHANGELOG step can read full git history
 
       - name: Bump version in plugin.json and marketplace.json
         id: bump
@@ -40,6 +42,58 @@ jobs:
           echo "old_version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Prepend new section to CHANGELOG.md
+        run: |
+          CHANGELOG="CHANGELOG.md"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # Collect PR-merge subjects since the last version bump commit, if any.
+          # Falls back to the last 20 commit subjects if no previous bump is found.
+          LAST_BUMP=$(git log --grep="chore: bump version to" --format=%H -n 1 || true)
+          if [ -n "$LAST_BUMP" ]; then
+            RANGE="${LAST_BUMP}..HEAD"
+          else
+            RANGE="HEAD~20..HEAD"
+          fi
+
+          ENTRIES=$(git log --no-merges --format='- %s' "$RANGE" 2>/dev/null \
+            | grep -v '^- chore: bump version' \
+            | head -50 || true)
+
+          if [ -z "$ENTRIES" ]; then
+            ENTRIES="- (no notable changes — update this section before merging)"
+          fi
+
+          # Build the new section in a temp file (multi-line, so avoid awk -v newline quirks)
+          SECTION_FILE=$(mktemp)
+          {
+            printf '## [%s] - %s\n' "$NEW_VERSION" "$TODAY"
+            printf '%s\n\n' "$ENTRIES"
+          } > "$SECTION_FILE"
+
+          if [ ! -f "$CHANGELOG" ]; then
+            {
+              printf '# Changelog\n\n'
+              cat "$SECTION_FILE"
+            } > "$CHANGELOG"
+          else
+            # Split existing CHANGELOG into "header (line 1)" + "rest", then
+            # reassemble: header + blank line + new section + rest.
+            HEADER=$(head -n 1 "$CHANGELOG")
+            REST_FILE=$(mktemp)
+            tail -n +2 "$CHANGELOG" > "$REST_FILE"
+            {
+              printf '%s\n\n' "$HEADER"
+              cat "$SECTION_FILE"
+              # Drop any leading blank line from the existing body so we don't double up
+              sed '/./,$!d' "$REST_FILE"
+            } > "$CHANGELOG.tmp"
+            mv "$CHANGELOG.tmp" "$CHANGELOG"
+            rm -f "$REST_FILE"
+          fi
+          rm -f "$SECTION_FILE"
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
@@ -53,6 +107,7 @@ jobs:
             Updated files:
             - `.claude-plugin/plugin.json`
             - `.claude-plugin/marketplace.json`
+            - `CHANGELOG.md` (new section auto-generated from commit history — review and polish before merging)
           branch: "auto/version-bump-${{ steps.bump.outputs.new_version }}"
           base: main
           assignees: ${{ github.event.inputs.assignees || 'gabrielavaduva,RaduAna-Maria'}}

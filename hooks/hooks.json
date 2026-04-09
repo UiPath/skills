@@ -13,7 +13,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/update-check.sh\"",
-            "timeout": 15,
+            "timeout": 30,
             "once": true,
             "statusMessage": "Checking for skills updates..."
           }

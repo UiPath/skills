@@ -1,12 +1,15 @@
 #!/bin/bash
 # Checks for new versions of the UiPath skills plugin.
 # Runs once per session via the SessionStart plugin hook.
-# Outputs structured lines that Claude reads to trigger upgrade prompts.
 #
-# Output:
-#   UPGRADE_AVAILABLE <local> <remote> — ...   (new version exists)
-#   JUST_UPGRADED <old> <new>                   (post-upgrade, one-time)
-#   (nothing)                                   (up to date or snoozed)
+# Emits Claude Code hook JSON on stdout with `additionalContext` so Claude
+# sees the upgrade notice in the session context BEFORE the first user prompt.
+# See: https://code.claude.com/docs/en/hooks — SessionStart hookSpecificOutput.
+#
+# States:
+#   - upgrade available and not snoozed  → emits JSON with upgrade notice
+#   - just upgraded (marker present)     → emits JSON with "what's new" notice
+#   - up to date / snoozed / offline     → emits nothing
 
 set -e
 
@@ -16,14 +19,22 @@ SNOOZE_FILE="$STATE_DIR/update-snoozed"
 MARKER_FILE="$STATE_DIR/just-upgraded-from"
 REMOTE_URL="https://raw.githubusercontent.com/UiPath/skills/main/.claude-plugin/plugin.json"
 
-# Config helper
+# Resolve plugin root so we can locate sibling scripts and plugin.json
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
+if [ -z "$PLUGIN_ROOT" ]; then
+  # Fallback: script is in hooks/, plugin root is one level up
+  PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+
+CONFIG_SCRIPT="$PLUGIN_ROOT/scripts/uipath-skills-config.sh"
+
+# Read a config key via the shared config script (single source of truth)
 config_get() {
-  local cfg="$STATE_DIR/config.yaml"
-  [ -f "$cfg" ] || return 0
-  grep "^${1}:" "$cfg" 2>/dev/null | head -1 | sed "s/^${1}:[[:space:]]*//"
+  [ -f "$CONFIG_SCRIPT" ] || return 0
+  bash "$CONFIG_SCRIPT" get "$1" 2>/dev/null
 }
 
-# Extract version from plugin.json content (stdin or file)
+# Extract version from a plugin.json file
 extract_version() {
   grep '"version"' "$1" 2>/dev/null | head -1 | sed 's/.*"\([0-9][^"]*\)".*/\1/'
 }
@@ -32,13 +43,17 @@ now() {
   date +%s
 }
 
-# ── Step 0: Resolve plugin root ────────────────────────────────────
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
-if [ -z "$PLUGIN_ROOT" ]; then
-  # Fallback: script is in hooks/, plugin root is one level up
-  PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-fi
+# Emit a Claude Code SessionStart hook JSON payload with additionalContext.
+# This is visible to Claude before the first user prompt.
+emit_context() {
+  local message="$1"
+  # Escape backslashes and double quotes for JSON embedding
+  local escaped
+  escaped=$(printf '%s' "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
+  printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "$escaped"
+}
 
+# ── Step 0: Locate plugin.json and read local version ─────────────
 PLUGIN_JSON="$PLUGIN_ROOT/.claude-plugin/plugin.json"
 [ -f "$PLUGIN_JSON" ] || exit 0
 
@@ -52,14 +67,16 @@ update_check=$(config_get "update_check")
 # ── Step 2: Check for just-upgraded marker ─────────────────────────
 if [ -f "$MARKER_FILE" ]; then
   OLD_VERSION=$(cat "$MARKER_FILE" 2>/dev/null)
-  echo "JUST_UPGRADED $OLD_VERSION $LOCAL_VERSION"
   rm -f "$MARKER_FILE"
+  emit_context "UiPath skills plugin just upgraded from v${OLD_VERSION} to v${LOCAL_VERSION}. Invoke the uipath-upgrade skill to summarize what changed (read CHANGELOG.md between the two versions) and then continue with the user's task."
   exit 0
 fi
 
 mkdir -p "$STATE_DIR"
 
 # ── Step 3: Check cache ───────────────────────────────────────────
+CACHED_STATUS=""
+CACHED_REMOTE=""
 if [ -f "$CACHE_FILE" ]; then
   CACHED=$(cat "$CACHE_FILE" 2>/dev/null)
   CACHED_STATUS=$(echo "$CACHED" | awk '{print $1}')
@@ -76,8 +93,7 @@ if [ -f "$CACHE_FILE" ]; then
       # Up to date, cache fresh (60 min TTL)
       exit 0
     elif [ "$CACHED_STATUS" = "UPGRADE_AVAILABLE" ] && [ "$AGE" -lt 43200 ]; then
-      # Upgrade available, cache fresh (720 min TTL) — but check snooze
-      # (fall through to snooze check, then print)
+      # Upgrade available, cache fresh (720 min TTL) — fall through to snooze check
       :
     else
       # Cache expired, fall through to fetch
@@ -86,8 +102,6 @@ if [ -f "$CACHE_FILE" ]; then
   else
     CACHED_STATUS=""
   fi
-else
-  CACHED_STATUS=""
 fi
 
 # ── Step 4: Check snooze ─────────────────────────────────────────
@@ -127,7 +141,7 @@ if [ "$CACHED_STATUS" = "UPGRADE_AVAILABLE" ]; then
   if check_snooze "$CACHED_REMOTE"; then
     exit 0
   fi
-  echo "UPGRADE_AVAILABLE $LOCAL_VERSION $CACHED_REMOTE — A new version of UiPath skills is available. Read skills/uipath-upgrade/SKILL.md and follow the \"Inline upgrade flow\"."
+  emit_context "UiPath skills plugin upgrade available: v${LOCAL_VERSION} → v${CACHED_REMOTE}. Invoke the uipath-upgrade skill to prompt the user for consent and perform the upgrade. Do not proceed until you have followed that skill's flow."
   exit 0
 fi
 
@@ -135,7 +149,7 @@ fi
 TMPFILE=$(mktemp "${TMPDIR:-/tmp}/uipath-update-check.XXXXXX")
 trap 'rm -f "$TMPFILE"' EXIT
 
-if ! curl -sf --max-time 5 -o "$TMPFILE" "$REMOTE_URL" 2>/dev/null; then
+if ! curl -sf --max-time 10 -o "$TMPFILE" "$REMOTE_URL" 2>/dev/null; then
   # Network failure — exit silently, retry next session
   exit 0
 fi
@@ -159,4 +173,4 @@ if check_snooze "$REMOTE_VERSION"; then
   exit 0
 fi
 
-echo "UPGRADE_AVAILABLE $LOCAL_VERSION $REMOTE_VERSION — A new version of UiPath skills is available. Read skills/uipath-upgrade/SKILL.md and follow the \"Inline upgrade flow\"."
+emit_context "UiPath skills plugin upgrade available: v${LOCAL_VERSION} → v${REMOTE_VERSION}. Invoke the uipath-upgrade skill to prompt the user for consent and perform the upgrade. Do not proceed until you have followed that skill's flow."
