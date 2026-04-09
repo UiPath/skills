@@ -1,0 +1,58 @@
+name: Daily Version Bump
+
+on:
+  schedule:
+    - cron: '0 7 * * *' # every day at 07:00 UTC
+  workflow_dispatch:
+    inputs:
+      assignees:
+        description: 'Comma-separated GitHub usernames to assign to the PR'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump version in plugin.json and marketplace.json
+        id: bump
+        run: |
+          PLUGIN=".claude-plugin/plugin.json"
+          MARKETPLACE=".claude-plugin/marketplace.json"
+
+          # Read current version from plugin.json
+          VERSION=$(jq -r '.version' "$PLUGIN")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+          # Update plugin.json
+          jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN" > tmp.json && mv tmp.json "$PLUGIN"
+
+          # Update marketplace.json (version is inside plugins[0])
+          jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' "$MARKETPLACE" > tmp.json && mv tmp.json "$MARKETPLACE"
+
+          echo "old_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          title: "chore: bump version from ${{ steps.bump.outputs.old_version }} to ${{ steps.bump.outputs.new_version }}"
+          body: |
+            Automated daily version bump.
+
+            `${{ steps.bump.outputs.old_version }}` → `${{ steps.bump.outputs.new_version }}`
+
+            Updated files:
+            - `.claude-plugin/plugin.json`
+            - `.claude-plugin/marketplace.json`
+          branch: "auto/version-bump-${{ steps.bump.outputs.new_version }}"
+          base: main
+          assignees: ${{ github.event.inputs.assignees || 'gabrielavaduva,RaduAna-Maria'}}
