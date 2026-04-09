@@ -73,7 +73,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | --- | --- | --- |
 | `core.trigger.manual` | _(inline — no plugin)_ | Flow is started on demand by a user or API call |
 | `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Flow runs on a recurring schedule |
-| IS connector trigger | [connector](plugins/connector/is-trigger.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
+| IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
 
 **Rules:**
 - Every flow must have exactly one trigger node
@@ -273,7 +273,7 @@ A mermaid flowchart showing all nodes, edges, and branching logic.
 
 **Requirements:**
 
-- Use `graph LR` (left-right) for all flows — Flow uses a horizontal canvas. Do NOT use `graph LR` (top-down) — it produces vertical diagrams that conflict with the horizontal node layout. Do NOT use `flowchart` — it is not supported by all mermaid renderers.
+- Use `graph LR` (left-right) for all flows — Flow uses a horizontal canvas. Do NOT use `graph TD` (top-down) — it produces vertical diagrams that conflict with the horizontal node layout. Do NOT use `flowchart` — it is not supported by all mermaid renderers.
 - Use `subgraph` blocks to group related sections — required for flows with 10+ nodes
 - Label every edge with the port name (e.g., `-->|success|`, `-->|true|`, `-->|false|`)
 - **Labels must be plain text only** — no special characters inside shape delimiters. The following break mermaid parsing:

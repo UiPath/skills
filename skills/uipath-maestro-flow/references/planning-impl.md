@@ -56,6 +56,7 @@ uip flow registry get <nodeType> --output json
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
+| `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 
 For each node type, record:
 
