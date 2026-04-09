@@ -28,10 +28,10 @@
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath @rohan-uipath
 
-# Flow skill — node category guides (away team owned)
-# Add your team here when contributing a new node category file
-
+# Flow skill — plugin guides (away team owned)
+# Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil

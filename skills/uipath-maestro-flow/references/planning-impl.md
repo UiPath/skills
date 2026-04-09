@@ -56,6 +56,7 @@ uip flow registry get <nodeType> --output json
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
+| `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 
 For each node type, record:
 
@@ -127,7 +128,7 @@ Generate a `<SolutionName>.impl.plan.md` file in the **solution directory** (sam
 Copy the mermaid diagram from `.arch.plan.md`, then update node labels if any node types changed due to mock replacement or connector resolution. Use the same diagram from architectural planning — it remains the visual reference for the flow structure.
 
 ```mermaid
-graph TD
+graph LR
     trigger(Manual Trigger)
     action1[Resolved Action 1]
     decision{Resolved Decision}

@@ -102,6 +102,8 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 ### Step 6 — Configure the node
 
+**Run `is resources describe` (Step 3) before this step.** The full metadata tells you which fields are required, what types they expect, and which need reference resolution. Do not guess field names or skip the metadata check — required fields missing from `--detail` cause runtime errors that `flow validate` does not catch.
+
 After adding the node with `uip flow node add`, configure it with the resolved connection and field values:
 
 ```bash
