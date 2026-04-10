@@ -66,8 +66,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "Flow file was created inside the solution"
-    path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+    description: "Flow file was created"
+    path: "WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
 
