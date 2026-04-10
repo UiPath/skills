@@ -1,7 +1,5 @@
 # UiPath Tracing Guide
 
-> **Agent type: Both coded and low-code agents.** Coded agents use the `@traced()` decorator (see [Coded Agents](#coded-agents) below). Low-code agents get full automatic tracing with no configuration required (see [Low-Code Agents](#low-code-agents) below).
-
 Understand and implement tracing in your agents for monitoring, debugging, and auditing.
 
 ## What is Tracing?
@@ -15,8 +13,6 @@ Tracing is a monitoring feature that automatically captures function execution d
 Trace data appears in:
 - **UiPath Orchestrator**: Jobs page → Trace tab
 - **UiPath Maestro**: For larger process orchestrations
-
-## Coded Agents
 
 ## How Tracing Works
 
@@ -217,21 +213,10 @@ def verify_credentials(username: str, password: str) -> bool:
 - Combine with logging for comprehensive observability
 
 ❌ **Don't:**
+- Forget `wait_for_tracers()` in plain Python agents
 - Log raw passwords or API keys
 - Use `hide_*` for all sensitive data if you need partial visibility
 - Assume tracing adds no performance overhead (it's minimal but measurable)
-
-## Low-Code Agents
-
-Tracing is **automatic** for low-code agents. No `@traced()` decorator or any configuration is needed — the runtime automatically traces all LLM calls, tool calls, and agent reasoning steps.
-
-Trace data appears in the same places as coded agents:
-- **UiPath Orchestrator**: Jobs page → Trace tab
-- **UiPath Maestro**: For larger process orchestrations
-
-There is no per-agent tracing configuration in `agent.json`. If you need to inspect a low-code agent's execution in detail, use the Execution Trail view in Studio Web or the job trace in Orchestrator.
-
----
 
 ## Troubleshooting
 
@@ -239,7 +224,8 @@ There is no per-agent tracing configuration in `agent.json`. If you need to insp
 
 1. Verify agent ran to completion
 2. Check that `@traced()` decorator is applied
-3. Confirm Orchestrator has the job data
+3. Ensure `wait_for_tracers()` is called (plain Python only)
+4. Confirm Orchestrator has the job data
 
 ### Performance Concerns
 

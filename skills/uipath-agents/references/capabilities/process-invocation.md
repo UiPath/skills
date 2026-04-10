@@ -1,12 +1,8 @@
 # Process and Job Invocation Guide
 
-> **Agent type: Both coded and low-code agents.** Coded agents use `interrupt(InvokeProcess(...))` / `interrupt(WaitJob(...))` — see the [Coded Agents](#coded-agents) sections below. Low-code agents declare a `tool` resource (`type: "Process"`) in `agent.json` — see the [Low-Code Agents](#low-code-agents) section.
-
 How to invoke external processes and monitor job execution in LangGraph agents using UiPath automation capabilities.
 
-> **First time here?** Read [Interrupt and Resume Patterns](human-in-the-loop.md) for a conceptual overview of how agent pausing and resumption works.
-
-## Coded Agents
+> **First time here?** Read [Interrupt and Resume Patterns](interrupt-resume.md) for a conceptual overview of how agent pausing and resumption works.
 
 ## Overview
 
@@ -21,7 +17,7 @@ How to invoke external processes and monitor job execution in LangGraph agents u
 
 ```python
 from langgraph.graph import START, END, StateGraph, MessagesState
-from langgraph.types import Command, interrupt
+from langgraph.types import Command
 from uipath.platform.common import InvokeProcess
 
 class GraphState(MessagesState):
@@ -122,50 +118,6 @@ async def delegate_to_process(state: GraphState) -> Command:
 - **Error Handling**: Handle process failures gracefully with try/except
 - **Timeout Management**: Consider process execution time in agent flow
 - **Result Validation**: Verify process results before continuing
-
-## Low-Code Agents
-
-For low-code agents, process invocation is configured declaratively by adding a `tool` resource (`type: "Process"` or `type: "Api"`) to the `"resources"` array in `agent.json`. No Python code or `interrupt()` is required — the agent calls the process automatically when it decides the tool is needed.
-
-```json
-{
-  "$resourceType": "tool",
-  "type": "Process",
-  "name": "Generate Invoice",
-  "description": "Runs the invoice generation RPA process. Use this after all invoice line items have been confirmed by the user. Returns the PDF URL and invoice number.",
-  "isEnabled": true,
-  "location": "solution",
-  "guardrail": { "policies": [] },
-  "settings": {},
-  "argumentProperties": {},
-  "properties": {
-    "folderPath": "Finance/Invoicing",
-    "processName": "GenerateInvoicePDF"
-  },
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "orderId": { "type": "string", "description": "Order ID for which to generate the invoice." },
-      "recipientEmail": { "type": "string", "description": "Email address to send the invoice to." }
-    },
-    "required": ["orderId", "recipientEmail"]
-  },
-  "outputSchema": {
-    "type": "object",
-    "properties": {
-      "invoiceUrl": { "type": "string" },
-      "invoiceNumber": { "type": "string" }
-    }
-  }
-}
-```
-
-**`type: "Process"`** — triggers a job-based RPA process (robot-executed, may be long-running).  
-**`type: "Api"`** — calls an API-triggered workflow that returns a result synchronously.
-
-For the full tool resource schema and all subtypes, see [lowcode/resources-reference.md](../lowcode/resources-reference.md).
-
----
 
 ## Troubleshooting
 

@@ -10,20 +10,13 @@ Creating evaluations involves defining test cases that validate your agent's beh
 
 ### Phase 1: Setup Check
 
-> **Low-code agents:** Only `agent.json` and the `evaluations/` directory are needed. `uipath.json` and `entry-points.json` are not required for creating evaluations.
+Before creating evaluations, ensure your project has:
 
-Before creating evaluations, ensure your project has the right files:
-
-**Coded agents:**
 - `uipath.json` - Project configuration
-- `entry-points.json` - Agent definitions with input/output schemas
+- `entry-points.json` - Agent definitions
 - `evaluations/` directory for test cases
 
-If missing, create and initialise the agent first (`uip codedagents new` + `uip codedagents init`).
-
-**Low-code agents:**
-- `agent.json` - Agent definition (input/output schemas come from here)
-- `evaluations/` directory for test cases
+If missing, create an agent first using `uip codedagent new` and `uip codedagent init`.
 
 ### Phase 2: Define Evaluation Details
 
@@ -145,8 +138,6 @@ Tests for invalid inputs and error handling:
 ## Mocking External Calls
 
 ### Function Mocking
-
-> **Note:** Mockito mocking strategy is only available for coded (Python) agents.
 
 Mock specific function calls with return values or exceptions:
 

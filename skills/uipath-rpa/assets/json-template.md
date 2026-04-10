@@ -255,52 +255,6 @@ Common `type` values: `System.String`, `System.Int32`, `System.Boolean`, `System
 }
 ```
 
-## .cs.json Metadata — Workflow with No Arguments
-
-```json
-{
-  "DisplayName": "{{DISPLAY_NAME}}",
-  "Tooltip": null,
-  "HelpLink": null,
-  "Color": null,
-  "OriginalIconFileName": null,
-  "Arguments": []
-}
-```
-
-## .cs.json Metadata — Workflow with Arguments
-
-```json
-{
-  "DisplayName": "{{DISPLAY_NAME}}",
-  "Tooltip": null,
-  "HelpLink": null,
-  "Color": null,
-  "OriginalIconFileName": null,
-  "Arguments": [
-    {
-      "Name": "{{PARAM_NAME}}",
-      "DisplayName": "{{PARAM_DISPLAY_NAME}}",
-      "Category": null,
-      "Tooltip": null,
-      "Placeholder": null,
-      "Widget": null,
-      "IsRequired": true,
-      "IsPrincipal": true,
-      "ArgumentType": 0,
-      "DataSourceItems": null
-    }
-  ]
-}
-```
-
-### ArgumentType Values
-- `0` — Input
-- `1` — Output
-- `2` — InOut
-
----
-
 ## Data-Driven Test Variations File
 
 **Path:** `.variations/{{variationName}}_Sheet1.json`

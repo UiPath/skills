@@ -1,0 +1,21 @@
+experiment_id: skill-tests-e2e
+description: "End-to-end tests — full lifecycle with staging tenant connectivity"
+
+defaults:
+  max_iterations: 2
+  task_timeout: 1200
+  turn_timeout: 300
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    max_turns: 40
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+variants:
+  - variant_id: default

@@ -103,8 +103,8 @@ uip or folders create "Invoicing" --parent 12345 -d "Invoice processing" --outpu
 
 ## CLI Operations — Assets
 
-> **Note:** Asset management is handled by the Resources tool, not the Orchestrator tool.
-> Use `uip resources assets` commands instead. See [resources/resources-guide.md](resources/resources-guide.md) for full details.
+> **Note:** Asset management is handled by the Resource tool, not the Orchestrator tool.
+> Use `uip resource assets` commands instead. See [resources/resources-guide.md](resources/resources-guide.md) for full details.
 
 ---
 
@@ -123,9 +123,9 @@ uip or folders create "Finance" --output json
 uip or folders create "Invoicing" --parent 12345 --output json
 uip or folders create "Reporting" --parent 12345 --output json
 
-uip resources assets create 12345 "ApiBaseUrl" "https://api.example.com" --output json
-uip resources assets create 12345 "ApiKey" "sk-production-key" --type Secret --output json
-uip resources assets create 12345 "MaxRetries" "3" --type Integer --output json
+uip resource assets create 12345 "ApiBaseUrl" "https://api.example.com" --output json
+uip resource assets create 12345 "ApiKey" "sk-production-key" --type Secret --output json
+uip resource assets create 12345 "MaxRetries" "3" --type Integer --output json
 
 uip solution pack ./MySolution ./output --version "1.0.0" --output json
 uip solution publish ./output/MySolution.1.0.0.zip --output json

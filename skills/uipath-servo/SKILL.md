@@ -438,3 +438,5 @@ servo get e99 text                       # Read status bar
 - Use longer timeouts for SAP operations
 - Check status bar messages to confirm operations
 - SAP tables only expose visible rows in snapshots -- use `extract-table` for full data
+
+> **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

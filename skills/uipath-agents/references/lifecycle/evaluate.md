@@ -1,12 +1,10 @@
 # Evaluate UiPath Agents
 
-> **Agent type: Both coded and low-code agents.** The same `uip codedagents eval` command and evaluation file format works for both. For coded agents the entrypoint is the name from `entry-points.json` (e.g. `main`). For low-code agents it is always `agent.json`. The `@mockable()` decorator for mocking external calls is only available to coded agents.
-
 Design and run tests for your agents using the UiPath evaluation framework.
 
 ## Prerequisites
 
-- `entry-points.json` exists (run `uip codedagents init`)
+- `entry-points.json` exists (run `uip codedagent init`)
 
 ### Local-only vs Studio Web
 
@@ -15,25 +13,19 @@ Before proceeding, determine whether the user wants to run evaluations **locally
 - **Local-only** — No authentication or `UIPATH_PROJECT_ID` needed. Use `--no-report` flag when running evals. Skip auth checks entirely.
 - **Studio Web** — Required when the user wants to report evaluation results to Studio Web or use `--report`. In this case:
   - Authentication must be configured — if not authenticated, use the [authentication reference](authentication.md) first
-  - `UIPATH_PROJECT_ID` must be set in `.env` — this is obtained by pushing the agent to Studio Web via `uip codedagents push` (see [sync reference](file-sync.md))
+  - `UIPATH_PROJECT_ID` must be set in `.env` — this is obtained by pushing the agent to Studio Web via `uip codedagent push` (see [sync reference](file-sync.md))
 
 ## Quick Reference
 
 ```bash
 # Run evaluations locally (no cloud connection needed)
-uip codedagents eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --workers 4
+uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --workers 4
 
 # With output file
-uip codedagents eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --output-file results.json
-
-# Cache LLM evaluator responses for reproducible reruns and lower API cost
-uip codedagents eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --mocker-cache
+uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report --output-file results.json
 
 # Report results to Studio Web (requires auth + UIPATH_PROJECT_ID)
-uip codedagents eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --report --workers 4
-
-# Low-code agent
-uip codedagents eval agent.json evaluations/eval-sets/smoke-test.json
+uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --report --workers 4
 ```
 
 ## Documentation
@@ -73,24 +65,10 @@ Example `evaluations/evaluators/llm-judge-trajectory.json`:
 
 ## Mocking External Calls
 
-> **Note:** Both mocking approaches below are only available for coded (Python) agents. Low-code agents cannot mock external tool calls — all resources declared in `agent.json` will be called for real during eval.
-
-### Mocking Approaches
-
-| Approach | How | Requires |
-|---|---|---|
-| `@mockable()` Python decorator | Marks a function as mock-able at the Python level | Decorator in agent code |
-| `mockingStrategy: mockito` in eval set | Replaces specific function calls in the eval set JSON | `@mockable()` in agent code + `mockingStrategy` in eval set |
-| `mockingStrategy: llm` in eval set | Simulates LLM responses without real API calls | Only `mockingStrategy` in eval set; no code change needed |
-
-`@mockable()` and `mockingStrategy: mockito` work together — the decorator makes the function interceptable, and the eval set JSON specifies the replacement values. `mockingStrategy: llm` is independent and simulates the LLM layer only.
-
-### Using `@mockable()`
-
 Apply `@mockable()` to functions that call external services:
 
 ```python
-from uipath.eval.mocks import mockable
+from uipath.testing import mockable
 
 @mockable(example_calls=[
     {"args": {"query": "weather in NYC"}, "return_value": {"temp": 72, "condition": "sunny"}},
@@ -107,7 +85,7 @@ During evaluations, matching args return the mock value. During normal execution
 |-------|-------|----------|
 | `typing.Any must be a subclass of BaseEvaluatorConfig` | Invalid `evaluatorTypeId` in evaluator JSON | Check `evaluators.md` for valid evaluator type IDs |
 | `target_output_key: Input should be a valid string` | ContainsEvaluator missing required config | Set `"target_output_key"` to the output field name in the evaluator JSON |
-| `UIPATH_PROJECT_ID not found` | Agent not pushed to Studio Web (only needed for `--report`) | Push the agent first with `uip codedagents push` and set `UIPATH_PROJECT_ID=<id>` in `.env`. For local-only evals, use `--no-report` to skip this requirement |
+| `UIPATH_PROJECT_ID not found` | Agent not pushed to Studio Web (only needed for `--report`) | Push the agent first with `uip codedagent push` and set `UIPATH_PROJECT_ID=<id>` in `.env`. For local-only evals, use `--no-report` to skip this requirement |
 | All scores are 0 | Mock data missing or wrong args | Check `@mockable()` `example_calls` match the args used in eval set inputs |
 
 ## Additional Instructions

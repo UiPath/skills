@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa
-description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, and hybrid projects. Create, edit, build, run, debug. For Orchestrator/deploy→uipath-platform. For agents→uipath-coded-agents."
+description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, and hybrid projects. Create, edit, build, run, debug. For Orchestrator/deploy→uipath-platform. For agents→uipath-agents."
 ---
 
 # UiPath RPA Assistant
@@ -98,12 +98,11 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 8. **[Coded] ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files).
 9. **[Coded] ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method.
-10. **[Coded] Generate companion `.cs.json` metadata file** for each workflow/test case (NOT for Coded Source Files).
-11. **[Coded] Update `project.json` entry points** when adding/removing workflow files. Update `fileInfoCollection` for test case files.
+10. **[Coded] Update `project.json` entry points** when adding/removing workflow files. Update `fileInfoCollection` for test case files.
 12. **[Coded] One workflow/test case class per file**, class name must match file name.
 13. **[Coded] Namespace = sanitized project name** from `project.json`. Sanitize: remove spaces, replace hyphens with `_`, ensure valid C# identifier.
 14. **[Coded] Entry method is always named `Execute`**.
-15. **[Coded] Use Coded Source Files** for reusable code — plain `.cs` files without `CodedWorkflow` inheritance, no `.cs.json`, no entry point.
+15. **[Coded] Use Coded Source Files** for reusable code — plain `.cs` files without `CodedWorkflow` inheritance, no entry point.
 
 ### XAML-Specific Rules
 
@@ -111,7 +110,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 17. **[XAML] MUST understand project structure** — read `project.json`, check expression language, scan existing patterns. NEVER generate XAML blind.
 18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
-20. **[XAML] NEVER touch ViewState** in XAML files — it's designer layout metadata.
+20. **[XAML] ViewState handling depends on the operation.** When editing existing files, do NOT modify ViewState on nodes you are not changing. When generating new Flowchart/StateMachine/ProcessDiagram workflows, generate ViewState for each node (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). For Sequences, ViewState is optional.
 21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
 
@@ -125,6 +124,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) → [coded/coding-guidelines.md](references/coded/coding-guidelines.md) |
 | **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
+| **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
@@ -142,11 +142,11 @@ Coded workflows use standard C# development: create file → write code → vali
 
 ### Three Types of .cs Files
 
-| Type | Base Class | Attribute | `.cs.json` | Entry Point | Purpose |
-|------|-----------|-----------|------------|-------------|---------|
-| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Yes | Yes | Executable automation logic |
-| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Yes | Yes | Automated test with assertions |
-| **Coded Source File** | None (plain C#) | None | No | No | Reusable models, helpers, utilities, hooks |
+| Type | Base Class | Attribute | Entry Point | Purpose |
+|------|-----------|-----------|-------------|---------|
+| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Yes | Executable automation logic |
+| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Yes | Automated test with assertions |
+| **Coded Source File** | None (plain C#) | None | No | Reusable models, helpers, utilities, hooks |
 
 ### Service-to-Package Mapping
 
@@ -179,7 +179,7 @@ Full reference: [coded/codedworkflow-reference.md](references/coded/codedworkflo
 - [assets/codedworkflow-template.md](assets/codedworkflow-template.md) — Workflow boilerplate
 - [assets/testcase-template.md](assets/testcase-template.md) — Test case boilerplate
 - [assets/helper-utility-template.md](assets/helper-utility-template.md) — Helper class boilerplate
-- [assets/json-template.md](assets/json-template.md) — project.json, .cs.json templates
+- [assets/json-template.md](assets/json-template.md) — project.json templates
 - [assets/before-after-hooks-template.md](assets/before-after-hooks-template.md) — Before/After hooks
 - [assets/project-structure-examples.md](assets/project-structure-examples.md) — Design guidelines
 
@@ -194,6 +194,7 @@ XAML workflows follow a **discovery-first, phase-based approach**: Discovery →
 | **Sequence** | Linear step-by-step logic; most common for simple automations |
 | **Flowchart** | Branching/looping logic with multiple decision points |
 | **State Machine** | Long-running processes with distinct states and transitions |
+| **Long Running Workflow** | BPMN-style horizontal flow; event-driven processes with long waits |
 
 ### Expression Language
 
@@ -228,6 +229,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 - [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) — XAML anatomy, safety rules, editing operations (read before any XAML work)
 - [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) — Activity gotchas, scope requirements, property conflicts
+- [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 
 ## Resolving Packages & Activity Docs
@@ -269,3 +271,4 @@ When you finish a task, report to the user:
 2. **Validation status** — whether all files passed validation (or remaining errors)
 3. **How to run** — the `uip rpa run-file --use-studio` command (if applicable)
 4. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
+5. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."

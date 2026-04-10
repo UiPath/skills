@@ -159,6 +159,35 @@ Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `A
 - **ForEachRow**: DelegateInArgument name must be a valid C#/VB identifier — CacheMetadata validates this.
 - **DeleteRowsX inside ExcelForEachRowX**: Attempting to delete the current row during iteration throws a runtime error ("Cannot delete current row").
 
+## IResource / ILocalResource — String Path Conversion
+
+Many activities (O365, GSuite, Mail, file operations, Document Understanding) require `IResource` or `ILocalResource` properties, not string paths. Passing a string where `IResource` is expected causes a validation error. `LocalResource(string)` constructor is internal — you cannot call it directly.
+
+**Approach 1 — Path Exists activity (recommended, works in VB and C# projects):**
+
+Use the "Path Exists" activity with a file path as input. The output property **"Reference if path exists"** returns an `ILocalResource` (which also satisfies `IResource`). This both verifies the file exists and gives you the resource reference.
+
+**Approach 2 — `LocalResource.FromPath()` expression (works in VB and C# projects):**
+
+Use as an expression directly in activity properties — no existence check, creates the reference regardless:
+```
+LocalResource.FromPath(filePath)
+```
+
+In XAML (C# expression project):
+```xml
+<InArgument x:TypeArguments="upr:ILocalResource">
+  <CSharpValue x:TypeArguments="upr:ILocalResource">LocalResource.FromPath(filePath)</CSharpValue>
+</InArgument>
+```
+
+Requires namespace `UiPath.Platform.ResourceHandling` in the XAML header:
+```xml
+<x:String>UiPath.Platform.ResourceHandling</x:String>
+```
+
+This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `SendMail` attachments, `MoveFile`, `CopyFile`, `CompressZipFiles`, `ExtractDocumentData`, and any other activity with `IResource`/`ILocalResource` properties.
+
 ## InvokeWorkflow Gotchas
 
 - **Auto-appends .xaml**: If the `WorkflowFileName` has no file extension, `.xaml` is appended automatically. Passing `"workflow.txt"` becomes `"workflow.txt.xaml"`.
@@ -420,9 +449,61 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 
 ## x:Reference / __ReferenceID Naming
 
-Flowcharts and State Machines use `x:Name="__ReferenceID0"` and `{x:Reference __ReferenceID0}` to link nodes.
+Flowcharts, State Machines, and Long Running Workflows (ProcessDiagram) use `x:Name="__ReferenceID0"` and `<x:Reference>__ReferenceID0</x:Reference>` to link nodes.
 
-**Gotchas:**
+### Where `<x:Reference>` Goes
+
+`<x:Reference>` is used ONLY inside property elements to create cross-references between nodes:
+
+| Property Element | Container | Purpose |
+|-----------------|-----------|---------|
+| `Flowchart.StartNode` | Flowchart | Points to the first node |
+| `FlowStep.Next` | Flowchart | Links to the next node |
+| `FlowDecision.True` / `.False` | Flowchart | Branch targets |
+| `Transition.To` | State Machine | Transition destination state |
+| `StateMachine.InitialState` | State Machine | Starting state (attribute form: `{x:Reference ...}`) |
+| `ProcessDiagram.StartNode` | ProcessDiagram | Points to start event |
+| `EventNode.Next` / `TaskNode.Next` | ProcessDiagram | Links to next node |
+| `DecisionNode.True` / `.False` | ProcessDiagram | Branch targets |
+
+### Node Registration Rule
+
+All nodes in a Flowchart/ProcessDiagram must be registered as children of the container element. Two scenarios:
+
+1. **Direct children** of the container (e.g., `<FlowStep>` directly under `<Flowchart>`) — already registered. Do NOT also add a trailing `<x:Reference>`.
+2. **Inline definitions** inside property elements (e.g., `<FlowStep>` inside `<FlowDecision.True>`) — MUST add a trailing `<x:Reference>` entry as a direct child of the container.
+
+**Correct — inline node registered with trailing `<x:Reference>`:**
+```xml
+<Flowchart>
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowDecision x:Name="__ReferenceID0">        <!-- direct child — no trailing ref -->
+    <FlowDecision.True>
+      <FlowStep x:Name="__ReferenceID1">         <!-- inline definition -->
+        ...
+      </FlowStep>
+    </FlowDecision.True>
+  </FlowDecision>
+  <x:Reference>__ReferenceID1</x:Reference>      <!-- register inline node -->
+</Flowchart>
+```
+
+**Wrong — re-listing a direct child:**
+```xml
+<Flowchart>
+  <FlowStep x:Name="__ReferenceID0">             <!-- direct child -->
+    ...
+  </FlowStep>
+  <x:Reference>__ReferenceID0</x:Reference>      <!-- WRONG — already a direct child -->
+</Flowchart>
+```
+
+The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `EndNode`, `BoundaryNode`).
+
+### Other Gotchas
+
 - `__ReferenceID` values must be unique within the entire XAML file — duplicate IDs cause deserialization errors
 - When copy-pasting FlowStep/FlowDecision nodes, duplicate `__ReferenceID` values will be created — Studio auto-renumbers, but manual XAML editing doesn't
 - When copying from flowchart to sequence, elements may be ordered backwards due to node ordering in XAML

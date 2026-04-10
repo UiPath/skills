@@ -1,45 +1,41 @@
 # Run UiPath Agents
 
-> **Agent type: Both coded and low-code agents.** `uip codedagents run` and `uip codedagents invoke` work for both. For coded agents the entrypoint is the name from `entry-points.json` (e.g. `main`). For low-code agents it is always `agent.json`.
-
 Execute agents locally for testing or invoke published agents in UiPath Cloud.
 
 ## Quick Reference
 
 ```bash
 # Run locally — ENTRYPOINT is the name from entry-points.json, NOT the project name
-uip codedagents run <ENTRYPOINT> '{"query": "test"}'
+uip codedagent run <ENTRYPOINT> '{"query": "test"}'
 
 # Run with file input
-uip codedagents run <ENTRYPOINT> --file input.json
+uip codedagent run <ENTRYPOINT> --file input.json
 
 # Invoke published agent in cloud
-uip codedagents invoke <ENTRYPOINT> '{"query": "test"}'
-
-# Low-code agent
-uip codedagents run agent.json '{"task": "test"}'
+uip codedagent invoke <ENTRYPOINT> '{"query": "test"}'
 ```
 
 **IMPORTANT:** The entrypoint name comes from `entry-points.json` (e.g., `main`, `agent`). It is NOT the project or package name. Check `entry-points.json` for the correct name.
 
 ## Documentation
 
-- **[Authentication](authentication.md)** — Set up credentials before invoking cloud commands
-- **[Deployment](deployment.md)** — Publish agents before using `invoke`
-- **[Evaluation](evaluate.md)** — Run evaluations after confirming local run works
+- **[Running Agents Guide](running-agents.md)** — Complete execution reference
+  - Run vs Invoke comparison
+  - Agent discovery from `entry-points.json`
+  - Input collection and schema validation
+  - Result display and error handling
+  - Cloud execution with monitoring URLs
 
 ## Prerequisites
 
-- `entry-points.json` must exist (run `uip codedagents init` if missing)
+- `entry-points.json` must exist (run `uip codedagent init` if missing)
 - For `invoke`: agent must be published and auth configured
-
-> **Low-code agents:** No `entry-points.json` needed. The entrypoint is always `agent.json`.
 
 ## Troubleshooting
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `Authorization required. Please run uipath auth` | Not authenticated before running | Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` first |
+| `Authorization required. Please run uipath auth` | Not authenticated before running | Run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` first |
 | `UIPATH_ORGANIZATION_ID...is required` | Missing org ID env variable (OpenAI Agents) | Ensure `.env` has `UIPATH_ORGANIZATION_ID` set after auth |
 | `Invalid input` | JSON doesn't match Input schema | Check `entry-points.json` for expected fields and types |
 | `Error during initialization: File not found: main` | `main.py` missing or not in project root | Create `main.py` in the project root directory |
@@ -61,7 +57,7 @@ Execute your UiPath agent locally or in the cloud.
 | **Purpose** | Test agents locally during development | Execute deployed agents in UiPath Cloud |
 | **Location** | Your machine | UiPath Cloud workspace |
 | **When to Use** | Before deployment, debugging, testing | After publishing to the cloud |
-| **Command** | `uip codedagents run` | `uip codedagents invoke` |
+| **Command** | `uip codedagent run` | `uip codedagent invoke` |
 | **Requirements** | Local project setup | Published agent in workspace |
 
 ---
@@ -76,7 +72,7 @@ Before running an agent, your project should have:
 - `uipath.json` - Project configuration
 - `entry-points.json` - Agent entry points with schemas
 
-If missing, create an agent first using `uip codedagents new` and `uip codedagents init`.
+If missing, create an agent first using `uip codedagent new` and `uip codedagent init`.
 
 ### Agent Discovery
 
@@ -85,7 +81,7 @@ The tool reads `entry-points.json` to find all available agents and their schema
 - **Input schema** with field types and descriptions
 - **Output schema** with expected return fields
 
-If multiple entry points exist, **always specify the entrypoint explicitly** in the `uip codedagents run` command. The interactive selector cannot be used from Claude's Bash tool and will cause the command to hang indefinitely.
+If multiple agents exist, you'll be prompted to select one.
 
 ### Input Collection
 
@@ -115,7 +111,7 @@ Enter description (string) - Optional agent description [press Enter to skip]:
 
 Your agent runs locally with:
 ```bash
-uip codedagents run <entrypoint> '<json-input>'
+uip codedagent run <entrypoint> '<json-input>'
 ```
 
 The agent runs with your provided inputs and returns structured output.
@@ -177,15 +173,15 @@ Execute a published agent in your UiPath Cloud workspace.
 ### Prerequisites
 
 Before invoking an agent, ensure:
-- Agent is published to your workspace (`uip codedagents deploy --my-workspace`)
-- You're authenticated with UiPath Cloud (`uip login --format json` then `uip login tenant set "<TENANT>" --format json`)
+- Agent is published to your workspace (`uip codedagent deploy --my-workspace`)
+- You're authenticated with UiPath Cloud (`uip login --output json` then `uip login tenant set "<TENANT>" --output json`)
 - Project has `pyproject.toml` with the correct project name and version
 
 ### Execution
 
 Run a published agent in the cloud with:
 ```bash
-uip codedagents invoke <entrypoint> '<json-input>'
+uip codedagent invoke <entrypoint> '<json-input>'
 ```
 
 **Arguments:**
@@ -196,9 +192,7 @@ uip codedagents invoke <entrypoint> '<json-input>'
 
 ### What It Does
 
-1. Reads the project name to look up the published release:
-   - **Coded agents**: reads name and version from `pyproject.toml`
-   - **Low-code agents**: reads name from `agent.json` metadata
+1. Reads project name and version from `pyproject.toml`
 2. Looks up the published release in your UiPath workspace
 3. Starts a cloud job with the provided input
 4. Returns a monitoring URL to track execution

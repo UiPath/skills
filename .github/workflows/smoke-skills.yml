@@ -1,0 +1,90 @@
+name: Smoke Skill Tests
+
+concurrency:
+  group: smoke-skills-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'skills/*/references/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: Run skill smoke tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/uipcli
+          token: ${{ secrets.GH_PAT }}
+          path: .uipcli
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Build and install uip CLI from source
+        working-directory: .uipcli
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+        run: |
+          bun install
+          bun run build
+          cd packages/cli && npm link
+
+      - name: Run smoke tests
+        env:
+          SKILLS_REPO_PATH: ${{ github.workspace }}
+          API_BACKEND: bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+        working-directory: tests
+        id: smoke
+        run: |
+          coder-eval run tasks/**/*.yaml \
+            -e experiments/default.yaml --tags smoke -j 1 -v
+        continue-on-error: true
+
+      - name: Print experiment report
+        if: always()
+        working-directory: tests
+        run: |
+          for f in runs/*/experiment.md runs/*/default/variant.md runs/*/default/*/task.json; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+              echo ""
+            fi
+          done
+
+      - name: Fail if tests failed
+        if: steps.smoke.outcome == 'failure'
+        run: exit 1

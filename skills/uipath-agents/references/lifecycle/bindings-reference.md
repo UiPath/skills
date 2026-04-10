@@ -1,13 +1,11 @@
 # Sync Agent Code with bindings.json
 
-> **Note:** This bindings workflow applies to coded (Python) agents. Low-code agents declare resources directly in `agent.json` — see [lowcode/resources-reference.md](../lowcode/resources-reference.md).
-
 Synchronize UiPath platform resource references in agent Python code with the `bindings.json` manifest. This ensures all overridable resources (assets, queues, connections, processes, buckets, context grounding indexes, Action Center apps, and MCP servers) are correctly declared for runtime replacement in Orchestrator.
 
 ## When to Use
 
 - After adding, removing, or modifying UiPath SDK resource calls in agent code
-- Before packaging/deploying an agent with the [deployment reference](deployment.md) (`uip codedagents pack` / `uip codedagents publish`)
+- Before packaging/deploying an agent with the [deployment reference](deployment.md) (`uip codedagent pack` / `uip codedagent publish`)
 - When resource override configuration in Orchestrator is missing entries or shows stale resources
 - To audit existing bindings.json for correctness
 
