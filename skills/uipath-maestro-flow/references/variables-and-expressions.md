@@ -398,9 +398,9 @@ Each case has an expression evaluated in order. First truthy result wins; otherw
 {
   "inputs": {
     "cases": [
-      { "label": "Low", "expression": "=js:$vars.score <= 30" },
-      { "label": "Medium", "expression": "=js:$vars.score <= 70" },
-      { "label": "High", "expression": "=js:$vars.score > 70" }
+      { "label": "Low", "expression": "$vars.score <= 30" },
+      { "label": "Medium", "expression": "$vars.score <= 70" },
+      { "label": "High", "expression": "$vars.score > 70" }
     ]
   }
 }
@@ -411,7 +411,7 @@ Each case has an expression evaluated in order. First truthy result wins; otherw
 Uses `$self` to reference the current HTTP node's response.
 
 ```
-=js:$self.output.statusCode >= 200 && $self.output.statusCode < 300
+$self.output.statusCode >= 200 && $self.output.statusCode < 300
 ```
 
 ### Variable Update Expressions

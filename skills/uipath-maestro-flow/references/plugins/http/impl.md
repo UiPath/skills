@@ -72,12 +72,12 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
       {
         "id": "ok",
         "name": "Success",
-        "conditionExpression": "=js:$vars.callApi.output.statusCode === 200"
+        "conditionExpression": "$vars.callApi.output.statusCode === 200"
       },
       {
         "id": "notFound",
         "name": "Not Found",
-        "conditionExpression": "=js:$vars.callApi.output.statusCode === 404"
+        "conditionExpression": "$vars.callApi.output.statusCode === 404"
       }
     ]
   },

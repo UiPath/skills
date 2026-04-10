@@ -25,17 +25,17 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
       {
         "id": "high",
         "label": "High Priority",
-        "expression": "=js:$vars.classify.output.priority === 'high'"
+        "expression": "$vars.classify.output.priority === 'high'"
       },
       {
         "id": "medium",
         "label": "Medium Priority",
-        "expression": "=js:$vars.classify.output.priority === 'medium'"
+        "expression": "$vars.classify.output.priority === 'medium'"
       },
       {
         "id": "low",
         "label": "Low Priority",
-        "expression": "=js:$vars.classify.output.priority === 'low'"
+        "expression": "$vars.classify.output.priority === 'low'"
       }
     ]
   },
@@ -47,7 +47,7 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
 
 ```bash
 uip flow node add <ProjectName>.flow core.logic.switch --output json \
-  --input '{"cases": [{"id": "high", "label": "High", "expression": "=js:$vars.classify.output.priority === '\''high'\''"}, {"id": "low", "label": "Low", "expression": "=js:$vars.classify.output.priority === '\''low'\''"}]}' \
+  --input '{"cases": [{"id": "high", "label": "High", "expression": "$vars.classify.output.priority === '\''high'\''"}, {"id": "low", "label": "Low", "expression": "$vars.classify.output.priority === '\''low'\''"}]}' \
   --label "Route by Priority" \
   --position 400,300
 ```

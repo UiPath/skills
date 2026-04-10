@@ -21,7 +21,7 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
   "typeVersion": "1.0.0",
   "display": { "label": "Check Status" },
   "inputs": {
-    "expression": "=js:$vars.fetchData.output.statusCode === 200"
+    "expression": "$vars.fetchData.output.statusCode === 200"
   },
   "model": { "type": "bpmn:ExclusiveGateway" }
 }
@@ -31,7 +31,7 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
 
 ```bash
 uip flow node add <ProjectName>.flow core.logic.decision --output json \
-  --input '{"expression": "=js:$vars.fetchData.output.statusCode === 200"}' \
+  --input '{"expression": "$vars.fetchData.output.statusCode === 200"}' \
   --label "Check Status" \
   --position 400,300
 ```
