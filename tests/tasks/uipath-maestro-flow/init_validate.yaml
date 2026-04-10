@@ -1,9 +1,9 @@
 task_id: skill-flow-init-validate
 description: >
-  Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
-  a new UiPath Flow project inside a solution and validate it. Tests whether
-  the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-maestro-flow, smoke, init, validate]
+  Skill-guided evaluation: agent uses a flow skill (uipath-flow or
+  uipath-maestro-flow) to create a new UiPath Flow project and validate it.
+  Tests whether the skill teaches correct CLI usage for project creation.
+tags: [uipath-flow, smoke, init, validate]
 
 sandbox:
   driver: tempdir
@@ -25,20 +25,13 @@ initial_prompt: |
   - Do not run `uip flow debug` — just validate locally.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created a solution with uip solution new"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
+  # --- Core: must init and validate ---
   - type: command_executed
     description: "Agent initialized a Flow project with uip flow init"
     tool_name: "Bash"
     command_pattern: 'uip\s+flow\s+init'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -46,7 +39,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+flow\s+validate'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -57,18 +50,28 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # --- Optional: solution wrapper (bonus, not required) ---
   - type: command_executed
-    description: "Agent linked flow project to solution"
+    description: "Agent created a solution with uip solution new (optional)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked flow project to solution (optional)"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+project\s+add'
     min_count: 1
-    weight: 1.0
+    weight: 0.5
     pass_threshold: 1.0
 
+  # --- Output checks ---
   - type: file_exists
     description: "Flow file was created"
     path: "WeatherAlert/WeatherAlert.flow"
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: json_check
@@ -83,6 +86,6 @@ success_criteria:
         expected: true
       - expression: "length(commands_used)"
         operator: gte
-        expected: 3
+        expected: 2
     weight: 2.0
     pass_threshold: 0.75
