@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "[PREVIEW] Add Human-in-the-Loop node to a Flow, Maestro, or Coded Agent. Triggers on approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs schema, runs CLI, wires edges."
+description: "[PREVIEW] Add Human-in-the-Loop node to a Flow, Maestro, or Coded Agent. Triggers on approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs schema, writes JSON directly."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -23,11 +23,12 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before running the CLI.** Show the designed schema (Step 4) and wait for explicit confirmation — do not call `hitl add` speculatively.
+1. **Confirm schema with the user before writing anything.** Show the designed schema (Step 4) and wait for explicit confirmation.
 2. **Always wire at least the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow. Wire `cancelled` and `timeout` to end nodes or handlers unless the user explicitly defers them.
-3. **Validate after every change.** Run `uip flow validate <file> --output json` after adding the node and again after wiring all edges.
-4. **Always use `--output json`** on all `uip` commands when parsing output programmatically.
+3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
+4. **Validate after every change.** Run `uip flow validate <file> --output json` after writing the node and edges.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
+6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
 
 ---
 
@@ -59,10 +60,10 @@ find . -name "agent.json" -maxdepth 4 | head -3
 find . -name "*.bpmn" -maxdepth 4 | head -3
 ```
 
-| Found | Surface | CLI available |
+| Found | Surface | How HITL is added |
 |---|---|---|
-| `.flow` file | **Flow** | Yes — `uip flow hitl add` |
-| `agent.json` | **Coded Agent** | Partial — escalation CLI in-flight |
+| `.flow` file | **Flow** | Write node JSON directly — see reference docs |
+| `agent.json` | **Coded Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
 
 **If the user mentioned a specific file path**, use that directly.
@@ -80,11 +81,12 @@ The flow file path will be `<ProjectName>/flow_files/<ProjectName>.flow`.
 
 ## Step 2 — Read the Business Context
 
-If a `.flow` file already exists, read it to understand the current nodes and edges. Use the Read tool on the `.flow` file path, then identify:
-1. **Where** in the process the human decision point belongs (after which existing node)
+Read the existing `.flow` file to understand current nodes and edges. Use the Read tool on the `.flow` file path, then identify:
+1. **Where** the human decision point belongs (after which existing node)
 2. **What the human needs to see** — data produced by upstream nodes
 3. **What the human must provide back** — data needed by downstream nodes
 4. **What actions they can take** — the named outcome buttons
+5. **Form type**: QuickForm (inline schema) or AppTask (deployed coded app)?
 
 ---
 
@@ -124,6 +126,7 @@ Before designing the schema, ask these focused questions if the business descrip
 | What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
 | Priority | "Is this normal priority, or high/critical?" |
+| Form type | "Should this use a quick inline form, or a deployed Action Center app?" |
 
 **Common business descriptions → schema translations:**
 
@@ -169,96 +172,31 @@ The CLI accepts this format for `--schema`:
 
 ---
 
-## Step 5 — Run the CLI
+## Step 5 — Write the Node Directly
 
-### Surface: Flow
+### Surface: Flow — QuickForm (inline schema)
 
-**Full sequence:**
+Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`.
 
-```bash
-# 1. Add the HITL node
-uip flow hitl add <path-to-flow-file> \
-  --schema '<schema-json>' \
-  --label "<Label>" \
-  --priority normal \
-  --timeout PT24H
+Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quickform.md)** — complete node JSON, definition entry, edge format, `variables.nodes` regeneration algorithm, and four worked schema conversion examples.
 
-# Note the NodeId returned in Data.NodeId
-
-# 2. Wire the output handles
-uip flow edge add <file> --source <NodeId>:completed --target <next-node-id>:input
-uip flow edge add <file> --source <NodeId>:cancelled --target <cancel-node-id>:input
-uip flow edge add <file> --source <NodeId>:timeout   --target <timeout-node-id>:input
-
-# 3. Validate
-uip flow validate <file> --format json
-```
-
-**CLI options:**
-
-| Option | Values | Default |
-|---|---|---|
-| `--schema` | JSON string (Step 4 format) | `{ outcomes: [{ name: "Submit" }] }` |
-| `--label` | canvas label | `"Human in the Loop"` |
-| `--priority` | `low` `normal` `high` `critical` | `normal` |
-| `--timeout` | ISO 8601 duration (PT24H, PT48H, P7D) | `PT24H` |
-| `--position` | `x,y` canvas coordinates | `0,0` |
-
-**If no downstream nodes exist yet** for cancelled/timeout, wire them to the nearest end node or omit and note them as TODOs for the user.
-
-**Runtime variables available after the HITL node:**
-- `$vars.<NodeId>.result` — object containing all `outputs` and `inOuts` the human filled in
-- `$vars.<NodeId>.result.<fieldName>` — access individual fields
-- `$vars.<NodeId>.status` — `"completed"`, `"cancelled"`, or `"timeout"`
-
-**How to use HITL output in a downstream script node:**
-
-```javascript
-// In a script node that runs after the HITL node completes
-const reviewResult = $vars.rcaReview1.result;
-const proposedUpdate = reviewResult.proposedUpdate;  // inOut field the human edited
-const reviewNotes = reviewResult.notes;              // output field the human filled in
-
-if ($vars.rcaReview1.status === "completed") {
-    // Use the human-reviewed value for the write-back
-    await updateServiceNow(ticketId, proposedUpdate);
-}
-```
-
-**If no downstream nodes exist yet** for `cancelled`/`timeout`, create placeholder end nodes first:
+After writing, validate:
 
 ```bash
-# Create end nodes for the non-happy paths (note the NodeId from the output)
-uip flow node add <file> uipath.end --label "Cancelled"
-uip flow node add <file> uipath.end --label "Timeout"
-
-# Then wire all three handles (use NodeIds returned from node add)
-uip flow edge add <file> --source <NodeId>:completed --target <next-node-id>:input
-uip flow edge add <file> --source <NodeId>:cancelled --target <cancelledNodeId>:input
-uip flow edge add <file> --source <NodeId>:timeout   --target <timeoutNodeId>:input
+uip flow validate <file> --output json
 ```
 
-**Complete example — invoice approval:**
+### Surface: Flow — AppTask (deployed coded app)
+
+First resolve the app by name via a direct API call (no CLI), then write the node JSON with `inputs.type = "custom"`.
+
+Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask.md)** — credential reading, app lookup curl command, complete node JSON, `inputs.app` field mapping.
+
+After writing, validate:
 
 ```bash
-uip flow init InvoiceApproval
-
-uip flow hitl add InvoiceApproval/flow_files/InvoiceApproval.flow \
-  --schema '{"inputs":[{"name":"invoiceId","type":"string"},{"name":"amount","type":"number"}],"outcomes":[{"name":"Approve","type":"string"},{"name":"Reject","type":"string"}]}' \
-  --label "Invoice Review" \
-  --priority normal
-
-# Returns: { "NodeId": "invoiceReview1", ... }
-
-uip flow edge add InvoiceApproval/flow_files/InvoiceApproval.flow \
-  --source invoiceReview1:completed --target end:input
-
-uip flow validate InvoiceApproval/flow_files/InvoiceApproval.flow --format json
+uip flow validate <file> --output json
 ```
-
-See [references/hitl-patterns.md](references/hitl-patterns.md) for the full business pattern recognition guide and signal tables.
-
----
 
 ### Surface: Coded Agent
 
@@ -288,11 +226,9 @@ response = interrupt(CreateTask(
 # response contains the human's outputs and chosen outcome
 ```
 
----
-
 ### Surface: Maestro
 
-The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 4. Note: in Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
+The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 4. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 
@@ -311,5 +247,6 @@ After completing the wiring:
 
 ## References
 
-- **[HITL Business Pattern Recognition](references/hitl-patterns.md)** — Signal tables for detecting when a process needs a human checkpoint (approval gates, escalations, write-back validation, data enrichment, compliance). Includes proactive recommendation language and when NOT to recommend HITL.
-- **[HITL Node Reference](../uipath-maestro-flow/references/flow-hitl.md)** — CLI options, schema format, edge wiring, runtime variables, and complete approval flow example.
+- **[QuickForm Node JSON](references/hitl-node-quickform.md)** — Full node JSON, definition entry, edge format, `variables.nodes` regeneration, four schema conversion examples.
+- **[AppTask Node JSON](references/hitl-node-apptask.md)** — App lookup via direct API, node JSON with `inputs.type = "custom"`, app field mapping.
+- **[HITL Business Pattern Recognition](references/hitl-patterns.md)** — Signal tables for detecting when a process needs a human checkpoint. Includes proactive recommendation language and when NOT to recommend HITL.
