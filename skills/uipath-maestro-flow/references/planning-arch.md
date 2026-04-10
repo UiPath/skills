@@ -194,7 +194,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
-| `uipath.human-in-the-loop` | `input` | `completed` |
+| `uipath.human-in-the-loop` | `input` | `completed`, `cancelled`, `timeout` |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
 > **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.

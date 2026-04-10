@@ -22,6 +22,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
   "id": "hitlReview1",
   "type": "uipath.human-in-the-loop",
   "typeVersion": "1.0.0",
+  "ui": { "position": { "x": 600, "y": 144 } },
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "quick",
