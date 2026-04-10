@@ -4,7 +4,7 @@
 > Branch: `tmatup/uipath_flow_skill`
 > Skill: `skills/uipath-flow/` (merged from `uipath-maestro-flow` + `uipath-lattice-flow`)
 > Framework: `coder_eval` at `/home/tmatup/root/coder_eval/`
-> Eval branch: `tmatup/uipath_lattice_flow_validation_tasks`
+> Eval commit: [`b8479c5`](https://github.com/UiPath/coder_eval/commit/b8479c53c692b4b9235b64d5232dfabb2ab1b0bb) — feat: add uipath-flow validation tasks (18 tasks, 4 tiers) (#135)
 
 ---
 
