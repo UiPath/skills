@@ -29,7 +29,7 @@ Understand what each skill can and cannot do before planning:
 | `uipath-rpa` | Create, edit, build, run, debug C# coded workflows and XAML workflows | No (relies on Studio) | **No** — must defer to `uipath-platform` for pack/publish/deploy |
 | `uipath-agents` | Build, run, evaluate, deploy Python agents (LangGraph/LlamaIndex/OpenAI Agents) and low-code agents (agent.json) | Yes (`uip login`) | **Yes** — full end-to-end (push, publish, deploy) |
 | `uipath-coded-apps` | Build, sync, package, publish, deploy web apps (.uipath dir) | Yes (`uip login`) | **Yes** — full end-to-end (pack, publish, deploy) |
-| `uipath-lattice-flow` | Create, edit, validate .flow files that orchestrate RPA, agents, apps — direct JSON authoring with bundled OOTB schemas, dynamic nodes via registry | Yes (`uip login` for dynamic nodes) | **Partial** — publishes to Studio Web by default; needs `uipath-platform` for Orchestrator deploy |
+| `uipath-flow` | Create, edit, validate .flow files that orchestrate RPA, agents, apps — CLI or direct JSON authoring, OOTB + dynamic resource + connector nodes | Yes (`uip login` for dynamic nodes) | **Partial** — publishes to Studio Web by default; needs `uipath-platform` for Orchestrator deploy |
 | `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (central auth hub) | **Yes** — the deploy destination for RPA and solutions |
 | `uipath-servo` | Interact with live desktop/browser UI — click, type, screenshot, inspect, verify. **Also the UI discovery tool**: `servo snapshot` captures UI trees, `servo selector` generates UiPath selectors for use in RPA workflows | No auth needed | **No** — local testing and discovery only, no deployment |
 
@@ -55,10 +55,10 @@ User wants to create a flow that orchestrates RPA processes, agents, or apps tha
 
 ```
 Plan:
-1. Load uipath-lattice-flow → design the flow, insert core.logic.mock placeholders for missing resources
+1. Load uipath-flow → design the flow, insert core.logic.mock placeholders for missing resources
 2. Load uipath-rpa → create the missing RPA process(es), validate and build
 3. Load uipath-platform → publish the RPA process(es) to Orchestrator
-4. Load uipath-lattice-flow → replace mock nodes with published resources, validate, publish to Studio Web
+4. Load uipath-flow → replace mock nodes with published resources, validate, publish to Studio Web
 ```
 
 If the missing resource is an agent instead of RPA, replace steps 2-3 with `uipath-agents` (which handles its own deploy).
@@ -69,11 +69,11 @@ User wants to publish a flow to Orchestrator (not Studio Web).
 
 ```
 Plan:
-1. Load uipath-lattice-flow → validate the flow, run uip flow pack
+1. Load uipath-flow → validate the flow, run uip flow pack
 2. Load uipath-platform → publish and deploy the packed solution to Orchestrator
 ```
 
-By default, `uipath-lattice-flow` publishes to Studio Web. Orchestrator deploy requires `uipath-platform`.
+By default, `uipath-flow` publishes to Studio Web. Orchestrator deploy requires `uipath-platform`.
 
 ### UI discovery + build automation
 
@@ -139,7 +139,7 @@ echo "=== CWD ===" && ls -1 project.json *.cs *.xaml *.py pyproject.toml flow_fi
 | Filesystem signal | Plan skill |
 |---|---|
 | `.cs` files AND/OR `.xaml` files AND `project.json` exists | `uipath-rpa` (handles both coded and XAML projects) |
-| `flow_files/*.flow` exists | `uipath-lattice-flow` |
+| `flow_files/*.flow` exists | `uipath-flow` |
 | `.uipath/` directory or `app.config.json` exists | `uipath-coded-apps` |
 | `.venv/` AND `pyproject.toml` with uipath dependency | `uipath-agents` |
 | `project.json` exists but no `.cs` or `.xaml` files | `uipath-rpa` (the skill detects project type internally) |
