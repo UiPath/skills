@@ -185,6 +185,7 @@ uip case stage-exit-conditions add case.json <stage-id> --display-name "Approved
 uip case stage-exit-conditions add case.json <stage-id> --display-name "Go to Review" --exit-to-stage-id <stage-id>
 uip case stage-exit-conditions add case.json <stage-id> --marks-stage-complete true
 uip case stage-exit-conditions add case.json <stage-id> --rule-type selected-tasks-completed --selected-tasks-ids "<task-id1>,<task-id2>"
+uip case stage-exit-conditions add case.json <stage-id> --rule-type required-tasks-completed
 
 # Edit an exit condition
 uip case stage-exit-conditions edit <file> <stage-id> <condition-id> --display-name "New Name"

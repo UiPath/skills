@@ -1,0 +1,56 @@
+{
+    "skill_name": "case-task-planner",
+    "evals": [
+        {
+            "id": 1,
+            "prompt": "I have an sdd.md and spec.json for a loan approval case. Generate the implementation tasks from these spec files so I can build it with the case CLI.",
+            "expected_output": "Skill triggers and produces a tasks.md with ordered CLI commands covering case creation, stages, edges, tasks, and conditions",
+            "expectations": [
+                "The case-task-planner skill was triggered",
+                "References uip case registry pull for upfront caching",
+                "Produces a tasks.md file with numbered task sections (T01, T02, etc.)",
+                "Includes registry search commands to resolve taskTypeIds",
+                "Generates a registry-resolved.json for audit"
+            ]
+        },
+        {
+            "id": 2,
+            "prompt": "Break down my case spec into implementation tasks. The spec files are at ./specs/sdd.md and ./specs/spec.json",
+            "expected_output": "Skill triggers, reads both spec files, resolves registry lookups, and generates tasks.md",
+            "expectations": [
+                "The case-task-planner skill was triggered",
+                "Reads both sdd.md and spec.json from the provided paths",
+                "Uses the component_type mapping to determine registry search types",
+                "Produces a tasks/ folder with tasks.md"
+            ]
+        },
+        {
+            "id": 3,
+            "prompt": "Convert this case specification into a step-by-step plan that the uipath-case skill can execute",
+            "expected_output": "Skill triggers and produces an actionable tasks.md bridging spec to CLI commands",
+            "expectations": [
+                "The case-task-planner skill was triggered",
+                "Output tasks reference uip case CLI commands (cases add, stages add, tasks add, edges add)",
+                "Cross-references use human-readable format like Stage.Task.field"
+            ]
+        },
+        {
+            "id": 4,
+            "prompt": "Create a new case management definition for an insurance claims process from scratch",
+            "expected_output": "Should NOT trigger case-task-planner -- this is a direct case creation request without spec files, better handled by uipath-case",
+            "expectations": [
+                "The case-task-planner skill was NOT triggered",
+                "The uipath-case skill may be triggered instead"
+            ]
+        },
+        {
+            "id": 5,
+            "prompt": "Add a stage called 'Document Review' to my case.stage.json file",
+            "expected_output": "Should NOT trigger case-task-planner -- this is a direct stage edit, not a spec interpretation request",
+            "expectations": [
+                "The case-task-planner skill was NOT triggered",
+                "The uipath-case skill may be triggered instead"
+            ]
+        }
+    ]
+}
