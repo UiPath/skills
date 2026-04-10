@@ -126,17 +126,67 @@ Edge type is inferred automatically: Trigger → `TriggerEdge`, Stage → `Edge`
 
 Source/target handle directions default to `right`/`left` for stage edges and trigger edges.
 
+### Step 5b — Add extra triggers (multi-trigger cases only)
+
+Skip this step for single-trigger cases. Add additional triggers when the case needs to start from multiple entry points.
+
+A default `trigger_1` (manual trigger) is created automatically. Add timer triggers for time-based automation:
+
+```bash
+# Timer trigger — fires on a schedule
+uip case triggers add-timer <file> --every 1h --output json
+uip case triggers add-timer <file> --every 2d --at 2026-04-26T10:00:00.000Z --output json
+uip case triggers add-timer <file> --time-cycle "R/PT1H" --output json   # raw ISO 8601
+```
+
+Capture the returned trigger ID, then connect it to its target stage with an edge (same as Step 5).
+
+**Positioning:** Triggers stack vertically to the left of the stages. Each additional trigger is placed ~150px below the previous one. The default `trigger_1` is at y=200; a second trigger sits at y=350, a third at y=500, etc.
+
+Full trigger options: see [references/case-commands.md — uip case triggers](references/case-commands.md).
+
 ### Step 6 — Add tasks to stages
 
 ```bash
 uip case tasks add <file> <stage-id> --type process --display-name "Run Background Check" --name "BackgroundCheck" --folder-path "Shared" --task-type-id <taskTypeId> --output json
-uip case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-type-id <taskTypeId> --output json
 uip case tasks add <file> <stage-id> --type agent --display-name "AI Analysis" --task-type-id <taskTypeId> --output json
+uip case tasks add <file> <stage-id> --type action --display-name "Human Review" \
+  --task-title "Please review this application" \
+  --priority Medium \
+  --recipient reviewer@example.com \
+  --task-type-id <taskTypeId> --output json
 ```
 
 Valid task types: `process`, `agent`, `api-workflow`, `rpa`, `external-agent`, `case-management`.
 
-Use `--lane <index>` and index should increase by 1 for each task starting with 0. For parallel execution task, their lane index should be identical
+Use `--lane <index>` and index should increase by 1 for each task starting with 0. For parallel execution task, their lane index should be identical.
+
+### Step 6b — Bind task inputs and wire outputs
+
+After adding tasks, set input values and connect task outputs to downstream inputs.
+
+**Bind a literal value to a task input:**
+```bash
+uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
+```
+
+Value can be a plain string, a number, or an expression:
+- `=metadata.<field>` — reference case metadata (e.g. `=metadata.caseId`)
+- `=js:<expression>` — JavaScript expression (e.g. `=js:Math.random()`)
+- `=vars.<varId>` — reference a variable by ID
+
+**Wire a task output to a downstream task's input:**
+```bash
+uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
+  --source-stage <source-stage-id> \
+  --source-task <source-task-id> \
+  --source-output <output-name> \
+  --output json
+```
+
+This resolves the source output's variable ID and sets `input.value = "=vars.<varId>"` on the target task.
+
+Run bindings in order — they execute sequentially and depend on previously added tasks and outputs.
 
 ### Step 7 — Add entry and exit conditions
 
@@ -255,6 +305,8 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 | **Add a task to a stage** | Step 6 above + [references/case-commands.md](references/case-commands.md) |
 | **Manage runtime instances** | [references/case-commands.md - instances](references/case-commands.md) |
 | **Find available processes/agents** | Run `uip case registry pull` then `uip case registry list` |
+| **Add extra triggers (timer)** | Step 5b above + [references/case-commands.md — triggers](references/case-commands.md) |
+| **Bind task inputs / wire outputs** | Step 6b above + [references/case-commands.md — var bind](references/case-commands.md) |
 
 ## Key Concepts
 

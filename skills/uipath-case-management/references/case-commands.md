@@ -412,6 +412,7 @@ Options for `add`:
 | `--is-required` | Whether the task is required |
 | `--task-title <title>` | Title for the action task (`action` type only) |
 | `--priority <level>` | Priority for the action task: `Low`, `Medium`, `High`, `Critical` (`action` type only, default: `Medium`) |
+| `--recipient <email>` | Assign to a specific user by email (`action` type only); sets `assignmentCriteria: "user"` |
 
 Options for `add-connector`:
 | Flag | Description |
