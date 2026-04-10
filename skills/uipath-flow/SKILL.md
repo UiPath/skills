@@ -1,6 +1,6 @@
 ---
 name: uipath-flow
-description: "Create, edit, validate UiPath Flow projects (.flow). Two modes: CLI (uip flow) or direct JSON authoring. OOTB + dynamic resource + connector nodes. For XAML->uipath-rpa."
+description: "[PREVIEW] Create, edit, validate UiPath Flow projects (.flow). Two modes: CLI (uip flow) or direct JSON authoring. OOTB + dynamic resource + connector nodes. For XAML->uipath-rpa."
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
