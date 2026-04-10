@@ -320,7 +320,7 @@ graph LR
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | trigger | Manual Trigger | trigger | `core.trigger.manual` | — | Trigger event | — |
 | 2 | fetchOrders | Fetch Orders | action | `core.action.http` | `method: GET`, `url: <ORDERS_API_URL>` | `output.body` (order list), `output.statusCode` | Phase 2: confirm URL and auth |
-| 3 | checkStatus | Check Status | control | `core.logic.decision` | `expression: =js:$vars.fetchOrders.output.statusCode === 200` | Routes to `true` or `false` | — |
+| 3 | checkStatus | Check Status | control | `core.logic.decision` | `expression: $vars.fetchOrders.output.statusCode === 200` | Routes to `true` or `false` | — |
 
 **Column definitions:**
 
