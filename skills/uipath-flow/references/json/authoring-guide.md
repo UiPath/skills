@@ -239,7 +239,7 @@ Locate the node, update the relevant `inputs` field. All expressions must start 
 {
   "id": "decision1",
   "inputs": {
-    "expression": "=js:$vars.httpRequest1.output.statusCode === 200"
+    "expression": "$vars.httpRequest1.output.statusCode === 200"
   }
 }
 ```

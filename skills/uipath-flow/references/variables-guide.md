@@ -290,13 +290,15 @@ Variable updates assign new values to `inout` (state) variables when a specific 
 
 Flow uses a **Jint-based JavaScript engine** (ES2020 subset) for expressions. There are two expression formats.
 
-### `=js:` Expressions
+### `=js:` Expressions (Value Context)
 
-Used for conditions, input values, variable updates, and output mappings. The `=js:` prefix tells the engine to evaluate the rest as JavaScript. Return type can be any value (boolean, number, object, array, string).
+Used for input values, variable updates, and output mappings. The `=js:` prefix tells the engine to evaluate the rest as JavaScript. Return type can be any value (boolean, number, object, array, string).
 
 ```
 =js:$vars.order.amount > 1000 && $vars.order.status === "approved"
 ```
+
+> **Condition expressions do NOT use `=js:`.** Decision `expression`, switch case `expression`, and HTTP branch `conditionExpression` are always evaluated as JS automatically. Write them as plain JS: `$vars.score > 60`, not `=js:$vars.score > 60`.
 
 ### Template Expressions (`{ }`)
 
@@ -311,7 +313,7 @@ Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 | Feature | `=js:` expression | `{ }` template |
 |---|---|---|
 | Return type | Any (boolean, number, object, array) | Always string |
-| Use case | Conditions, inputs, mappings, variable updates | Text/prompt fields |
+| Use case | Inputs, mappings, variable updates | Text/prompt fields |
 | Full JS | Yes | Expression-only (no statements) |
 | Prefix | `=js:` required | No prefix, braces inline |
 
@@ -522,18 +524,18 @@ Each key in the End node's `outputs` object must match the `id` of a global vari
 {
   "inputs": {
     "cases": [
-      { "label": "Low", "expression": "=js:$vars.score <= 30" },
-      { "label": "Medium", "expression": "=js:$vars.score <= 70" },
-      { "label": "High", "expression": "=js:$vars.score > 70" }
+      { "label": "Low", "expression": "$vars.score <= 30" },
+      { "label": "Medium", "expression": "$vars.score <= 70" },
+      { "label": "High", "expression": "$vars.score > 70" }
     ]
   }
 }
 ```
 
-**HTTP branch condition using `$self`:**
+**HTTP branch condition using `$self` (no `=js:` — condition context):**
 
 ```
-=js:$self.output.statusCode >= 200 && $self.output.statusCode < 300
+$self.output.statusCode >= 200 && $self.output.statusCode < 300
 ```
 
 **Loop collection with inline filter:**

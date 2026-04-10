@@ -34,7 +34,7 @@ Determine the implementation mode before starting work. If the user does not spe
 3. **For multi-node flows, complete both planning phases with user approval gates before building.** Read [planning-guide.md](references/planning-guide.md). Only skip planning for small targeted edits to an existing flow.
 4. **Phase 1: `registry search`/`list` only. Phase 2: `registry get` required for all node types.** The planning guide documents OOTB node ports and inputs — sufficient for topology design without registry calls.
 5. **Script nodes must `return {}` — never a bare scalar.** Use `return { key: value }`.
-6. **Use `=js:` prefix for all expressions.** The runtime uses a Jint-based JavaScript engine (ES2020 subset). See [variables-guide.md](references/variables-guide.md).
+6. **`=js:` prefix rules.** Use `=js:` on value expressions (end node output `source`, variable updates, HTTP input fields). Do NOT use `=js:` on condition expressions (decision `expression`, switch case `expression`, HTTP branch `conditionExpression`) — those are always evaluated as JS automatically. See [variables-guide.md](references/variables-guide.md).
 7. **Every `out` variable must be mapped on every reachable End node.** Missing output mappings cause silent runtime failures.
 8. **Only edit `<ProjectName>.flow` and optionally `bindings_v2.json`.** Other project files are CLI-managed and may be overwritten.
 9. **Node and edge IDs must be unique.** Follow the ID generation algorithms in [json/authoring-guide.md](references/json/authoring-guide.md).

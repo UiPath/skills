@@ -473,7 +473,7 @@
               "source": "_Implicit_PostSubprocessGateway_{nodeId}",
               "type": "bpmn:SequenceFlow",
               "data": {
-                "conditionExpression": "=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
+                "conditionExpression": "vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
                 "label": "Error"
               }
             },
@@ -1060,7 +1060,7 @@
               "source": "_Implicit_PostSubprocessGateway_{nodeId}",
               "type": "bpmn:SequenceFlow",
               "data": {
-                "conditionExpression": "=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
+                "conditionExpression": "vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
                 "label": "Error"
               }
             },

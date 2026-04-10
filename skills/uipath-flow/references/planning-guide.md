@@ -359,7 +359,7 @@ graph TD
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | trigger | Manual Trigger | trigger | `core.trigger.manual` | -- | Trigger event | -- |
 | 2 | fetchOrders | Fetch Orders | action | `core.action.http` | `method: GET`, `url: <ORDERS_API_URL>` | `output.body` (order list), `output.statusCode` | Phase 2: confirm URL and auth |
-| 3 | checkStatus | Check Status | control | `core.logic.decision` | `expression: =js:$vars.fetchOrders.output.statusCode === 200` | Routes to `true` or `false` | -- |
+| 3 | checkStatus | Check Status | control | `core.logic.decision` | `expression: $vars.fetchOrders.output.statusCode === 200` | Routes to `true` or `false` | -- |
 
 **Column definitions:**
 
@@ -635,7 +635,7 @@ iterator.currentItem                     // Loop item (inside loop body)
 
 **Expression prefixes:**
 
-- `=js:` -- Full JavaScript expression evaluated by Jint: `=js:$vars.count > 10`
+- `=js:` -- Value expression evaluated by Jint: `=js:$vars.count + 1`. Use on output `source`, variable updates, HTTP inputs. Do NOT use on condition expressions (decision, switch, HTTP branch) -- those evaluate as JS automatically: `$vars.count > 10`
 - `{ }` -- Template interpolation for string fields: `Order {$vars.orderId} is {$vars.status}`
 
 **Variable directions** (`variables.globals`):

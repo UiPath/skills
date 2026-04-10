@@ -160,7 +160,7 @@ For short, simple JSON without special characters, inline quoting works:
 
 ```bash
 uip flow node add <FILE_PATH> core.logic.decision --output json \
-  --input '{"expression": "=js:$vars.status === 200"}'
+  --input '{"expression": "$vars.status === 200"}'
 ```
 
 ---

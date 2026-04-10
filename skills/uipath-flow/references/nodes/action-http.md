@@ -344,7 +344,7 @@ The `error` object contains: `code` (string), `message` (string), `detail` (stri
           "source": "_Implicit_PostSubprocessGateway_{nodeId}",
           "type": "bpmn:SequenceFlow",
           "data": {
-            "conditionExpression": "=js:vars.{nodeId}.error != null || (vars.{nodeId}.output != null && vars.{nodeId}.output.statusCode >= 400)",
+            "conditionExpression": "vars.{nodeId}.error != null || (vars.{nodeId}.output != null && vars.{nodeId}.output.statusCode >= 400)",
             "label": "Error"
           }
         },
@@ -758,7 +758,7 @@ The `error` object contains: `code` (string), `message` (string), `detail` (stri
       {
         "id": "success-2xx",
         "name": "Success",
-        "conditionExpression": "=js:vars.http_1.output.statusCode >= 200 && vars.http_1.output.statusCode < 300"
+        "conditionExpression": "vars.http_1.output.statusCode >= 200 && vars.http_1.output.statusCode < 300"
       }
     ],
     "authenticationType": "manual",
