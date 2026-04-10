@@ -31,6 +31,12 @@
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath @rohan-uipath
 
+# Case Management skill
+/skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
+
+# Flow skill — node category guides (away team owned)
+# Add your team here when contributing a new node category file
+
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
