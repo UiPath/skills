@@ -64,6 +64,8 @@ Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.Re
 
 ## Integration Service Connections
 
+> **Two IS connection patterns exist in coded workflows.** This section covers first-party package connections (Office365, GSuite) where Studio auto-generates `ConnectionsManager.cs` / `ConnectionsFactory.cs`. For raw IS connectors (Jira, Salesforce, custom) that use `CodedConnectorConfiguration` + agent-generated `ISConnections.cs`, see [integration-service-guide.md](integration-service-guide.md).
+
 When packages that use Integration Service connections are installed (e.g. `UiPath.MicrosoftOffice365.Activities`, `UiPath.GSuite.Activities`), Studio auto-generates two files in `.codedworkflows/`:
 
 - **`ConnectionsManager.cs`** — Exposes a typed property for each connection category (e.g. `O365Mail`, `Excel`, `OneDrive`, `Gmail`, etc.)

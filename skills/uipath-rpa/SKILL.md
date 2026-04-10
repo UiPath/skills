@@ -166,7 +166,7 @@ Each service on `CodedWorkflow` requires its NuGet package in `project.json`. Wi
 
 For infrastructure/cloud packages (azure, gcp, aws, azureAD, citrix, hyperv, etc.), see [coded/codedworkflow-reference.md](references/coded/codedworkflow-reference.md).
 
-For `IntegrationConnectorService` (IS connectors from code): `UiPath.IntegrationService.Activities` — see [coded/integration-service-guide.md](references/coded/integration-service-guide.md).
+For IS connectors from coded workflows via `ConnectorConnection.ExecuteAsync`: `UiPath.IntegrationService.Activities` — see [coded/integration-service-guide.md](references/coded/integration-service-guide.md).
 
 ### CodedWorkflow Base Class
 
