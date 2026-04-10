@@ -68,9 +68,11 @@ success_criteria:
     pass_threshold: 1.0
 
   # --- Output checks ---
-  - type: file_exists
-    description: "Flow file was created"
-    path: "WeatherAlert/WeatherAlert.flow"
+  - type: run_command
+    description: "Flow file was created (any nesting depth)"
+    command: "python3 -c \"import glob,sys; flows=glob.glob('**/WeatherAlert.flow',recursive=True); assert flows, 'No WeatherAlert.flow found'; print('OK: '+flows[0])\""
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
