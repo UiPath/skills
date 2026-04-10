@@ -25,7 +25,11 @@
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
-# Flow skill
+# Flow skill (merged)
+/skills/uipath-flow/ @bai-uipath @rockymadden
+/skills/uipath-flow/references/connectors/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+
+# Flow skill (legacy — pending deprecation)
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden
 
 # HITL skill

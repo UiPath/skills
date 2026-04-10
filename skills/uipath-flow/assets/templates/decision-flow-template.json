@@ -1,0 +1,769 @@
+{
+  "id": "template-decision-flow",
+  "version": "1.0.0",
+  "name": "Decision Flow Template",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 64,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": "00000000-0000-0000-0000-000000000001",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "mockDataSource1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Fetch data",
+        "description": "Placeholder for data source connector (e.g., Outlook, Salesforce)",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:Task"
+      }
+    },
+    {
+      "id": "mockClassifier1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Classify input",
+        "description": "Placeholder for classification logic (e.g., AI agent, script)",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:Task"
+      }
+    },
+    {
+      "id": "switch1",
+      "type": "core.logic.switch",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 640,
+          "y": 112
+        },
+        "size": {
+          "width": 96,
+          "height": 128
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Switch",
+        "subLabel": "",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)",
+        "icon": "between-horizontal-start"
+      },
+      "inputs": {
+        "cases": [
+          {
+            "id": "default-1",
+            "label": "Case 1",
+            "expression": "$vars.mockClassifier1.output.category == 'A'"
+          },
+          {
+            "id": "default-2",
+            "label": "Case 2",
+            "expression": "$vars.mockClassifier1.output.category == 'B'"
+          }
+        ],
+        "hasDefault": true
+      },
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      }
+    },
+    {
+      "id": "mockBranchA1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 864,
+          "y": 48
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Handle Case 1",
+        "description": "Placeholder for Case 1 action (e.g., send Slack message)",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:Task"
+      }
+    },
+    {
+      "id": "mockBranchB1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 864,
+          "y": 176
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Handle Case 2",
+        "description": "Placeholder for Case 2 action (e.g., update record)",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:Task"
+      }
+    },
+    {
+      "id": "script1",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "ui": {
+        "position": {
+          "x": 864,
+          "y": 304
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "display": {
+        "label": "Default handler",
+        "subLabel": "",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)",
+        "icon": "code"
+      },
+      "inputs": {
+        "script": "return { message: \"No matching case \u2014 fell through to default\" };"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-to-mockDataSource1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "mockDataSource1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-mockDataSource1-to-mockClassifier1",
+      "sourceNodeId": "mockDataSource1",
+      "sourcePort": "output",
+      "targetNodeId": "mockClassifier1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-mockClassifier1-to-switch1",
+      "sourceNodeId": "mockClassifier1",
+      "sourcePort": "output",
+      "targetNodeId": "switch1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-switch1-case1-to-mockBranchA1",
+      "sourceNodeId": "switch1",
+      "sourcePort": "case-default-1",
+      "targetNodeId": "mockBranchA1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-switch1-case2-to-mockBranchB1",
+      "sourceNodeId": "switch1",
+      "sourcePort": "case-default-2",
+      "targetNodeId": "mockBranchB1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-switch1-default-to-script1",
+      "sourceNodeId": "switch1",
+      "sourcePort": "default",
+      "targetNodeId": "script1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "minConnections": 1,
+                "severity": "warning",
+                "validationMessage": "Trigger must connect to at least one workflow node (not configuration nodes)"
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.mock",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Placeholder node for prototyping",
+      "tags": [
+        "blank",
+        "todo"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Mock",
+        "icon": "square-dashed",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:Task"
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Mock output value",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.switch",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Route to one of many branches by condition",
+      "tags": [
+        "control-flow",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Switch",
+        "icon": "between-horizontal-start",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "case-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.label || 'Case ' + (index + 1)}",
+              "repeat": "inputs.cases"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": "Default",
+              "visible": "inputs.hasDefault"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "cases": {
+            "type": "array",
+            "minItems": 1,
+            "errorMessage": "At least one case is required",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "expression": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "A condition expression is required"
+                }
+              },
+              "required": [
+                "expression"
+              ]
+            }
+          },
+          "hasDefault": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cases"
+        ]
+      },
+      "inputDefaults": {
+        "cases": [
+          {
+            "id": "default-1",
+            "label": "Case 1",
+            "expression": ""
+          },
+          {
+            "id": "default-2",
+            "label": "Case 2",
+            "expression": ""
+          }
+        ],
+        "hasDefault": true
+      },
+      "form": {
+        "id": "switch-properties",
+        "title": "Switch configuration",
+        "sections": [
+          {
+            "id": "cases",
+            "title": "Cases",
+            "description": "Each case is evaluated in order. The first condition that returns true is taken.",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.cases",
+                "type": "custom",
+                "label": "Switch cases",
+                "component": "case-list-editor",
+                "componentProps": {
+                  "minCases": 1,
+                  "maxCases": 10,
+                  "labelPlaceholder": "e.g., Low",
+                  "expressionPlaceholder": "e.g., $vars.value <= 30"
+                }
+              },
+              {
+                "name": "inputs.hasDefault",
+                "type": "switch",
+                "label": "Include default case",
+                "description": "Add a fallback path when no conditions match",
+                "defaultValue": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "mockDataSource1.output",
+        "type": "object",
+        "description": "Mock output value",
+        "binding": {
+          "nodeId": "mockDataSource1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "mockClassifier1.output",
+        "type": "object",
+        "description": "Mock output value",
+        "binding": {
+          "nodeId": "mockClassifier1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "mockBranchA1.output",
+        "type": "object",
+        "description": "Mock output value",
+        "binding": {
+          "nodeId": "mockBranchA1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "mockBranchB1.output",
+        "type": "object",
+        "description": "Mock output value",
+        "binding": {
+          "nodeId": "mockBranchB1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "script1.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "script1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "script1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "script1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "createdAt": "2026-04-08T00:00:00.000Z",
+    "updatedAt": "2026-04-08T00:00:00.000Z"
+  }
+}
