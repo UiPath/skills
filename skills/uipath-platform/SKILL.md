@@ -1,6 +1,6 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, Test Manager, uip CLI. Not for writing workflow code."
+description: "UiPath platform ops — auth, Orchestrator (folders, assets, queues, buckets, robots, packages, processes), solution lifecycle (pack, publish, deploy), Integration Service, uip CLI. For Test Manager→uipath-test. Not for writing workflow code."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
@@ -16,7 +16,6 @@ Comprehensive guide for setting up and managing UiPath development environments,
 - User wants to **manage resources** (assets, queues, queue items, storage buckets, bucket files)
 - User wants to **work with solutions** (create, pack, publish, deploy, activate)
 - User asks about **UiPath platform concepts** (tenants, folders, robots, queues, packages)
-- User wants to **use Test Manager** (projects, test sets, test cases, executions, results, reports, attachments)
 - User wants to **install or manage CLI tools** (search, install, update)
 - User wants to set up a **CI/CD pipeline** for UiPath automation projects
 - User asks **how to deploy** an automation to Orchestrator
@@ -92,7 +91,6 @@ Choose the appropriate operation from the Task Navigation table below.
 | **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
 | **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
 | **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
-| **Use Test Manager** (projects, test sets, test cases, executions, reports) | [references/test-manager/test-manager-guide.md](references/test-manager/test-manager-guide.md) |
 | **Install / manage CLI tools** | [references/uip-commands.md - Tools](references/uip-commands.md) |
 | **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
 | **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
@@ -261,7 +259,6 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 - **[Orchestrator Guide](references/orchestrator-guide.md)** — Concepts, folders, assets, and planned features
 - **[Resources Guide](references/resources/resources-guide.md)** — Assets, queues, queue items, storage buckets, bucket files
 - **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
-- **[Test Manager Guide](references/test-manager/test-manager-guide.md)** — Test projects, test sets, test cases, executions, reports, attachments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 

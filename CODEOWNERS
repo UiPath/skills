@@ -44,3 +44,6 @@
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+
+# Test skill (reports, manual test automation, manual test execution)
+/skills/uipath-test/ @vaishalisharma-uipath @amoluipath
