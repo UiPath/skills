@@ -78,7 +78,7 @@ uip solution project add \
 This scaffolds a complete project. See [references/case-schema.md](references/case-schema.md) for the full project structure.
 
 ```bash
-uip case cases add --name <CaseName> --file <directory>/<solutionName>/<projectName>/case.stage.json
+uip case cases add --name <CaseName> --file <directory>/<solutionName>/<projectName>/caseplan.json
 ```
 
 This scaffolds a minimal case JSON file with a root node and a default Trigger node.
