@@ -209,7 +209,7 @@ Options for `add`:
 | `-t, --type <type>` | Exit type: `exit-only`, `wait-for-user`, or `return-to-origin` |
 | `--exit-to-stage-id <id>` | ID of the stage to transition to on exit |
 | `--marks-stage-complete <bool>` | Whether this condition marks the stage complete (`true` or `false`) |
-| `--rule-type <type>` | Initial rule type: `selected-tasks-completed`, `wait-for-connector` |
+| `--rule-type <type>` | Initial rule type. When `--marks-stage-complete true`: `required-tasks-completed`, `wait-for-connector`. When exit (default): `selected-tasks-completed`, `wait-for-connector` |
 | `--condition-expression <expr>` | Condition expression for the initial rule |
 | `--selected-tasks-ids <ids>` | Comma-separated task IDs for `selected-tasks-completed` initial rule |
 
@@ -220,7 +220,7 @@ Options for `edit` (at least one required):
 | `-t, --type <type>` | New exit type |
 | `--exit-to-stage-id <id>` | New target stage ID |
 | `--marks-stage-complete <bool>` | Set marks-stage-complete (`true` or `false`) |
-| `--rule-type <type>` | Append a new rule with this type (same valid types as `add`) |
+| `--rule-type <type>` | Append a new rule. When `--marks-stage-complete true`: `required-tasks-completed`, `wait-for-connector`. When exit: `selected-tasks-completed`, `wait-for-connector` |
 | `--condition-expression <expr>` | Condition expression for the new rule |
 | `--selected-tasks-ids <ids>` | Comma-separated task IDs for `selected-tasks-completed` rules |
 
@@ -519,7 +519,7 @@ Options for `add`:
 | `<file>` | **(required)** Path to the case management JSON file |
 | `-d, --display-name <name>` | Display name for the condition |
 | `--marks-case-complete <bool>` | Whether this condition marks the case complete (`true` or `false`) |
-| `--rule-type <type>` | Initial rule type: `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
+| `--rule-type <type>` | Initial rule type. When `--marks-case-complete true`: `required-stages-completed`, `wait-for-connector`. When exit (default): `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
 | `--condition-expression <expr>` | Condition expression for the initial rule |
 | `--selected-stage-id <id>` | Stage ID for `selected-stage-*` initial rules |
 
@@ -528,7 +528,7 @@ Options for `edit` (at least one required):
 |------|-------------|
 | `-d, --display-name <name>` | New display name for the condition |
 | `--marks-case-complete <bool>` | Set marks-case-complete (`true` or `false`) |
-| `--rule-type <type>` | Append a new rule with this type (same valid types as `add`) |
+| `--rule-type <type>` | Append a new rule. When `--marks-case-complete true`: `required-stages-completed`, `wait-for-connector`. When exit: `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
 | `--condition-expression <expr>` | Condition expression for the new rule |
 | `--selected-stage-id <id>` | Stage ID for `selected-stage-*` rules |
 
@@ -567,7 +567,7 @@ Options for `add`:
 | `-d, --display-name <name>` | Display name for the condition |
 | `--rule-type <type>` | Initial rule type: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc` |
 | `--condition-expression <expr>` | Condition expression for the initial rule |
-| `--selected-tasks-ids <ids>` | Comma-separated task IDs for `selected-tasks-completed` initial rule |
+| `--selected-tasks-ids <ids>` | Comma-separated task IDs. **Required** when `--rule-type` is `selected-tasks-completed` |
 
 Options for `edit` (at least one required):
 | Flag | Description |
@@ -575,7 +575,7 @@ Options for `edit` (at least one required):
 | `-d, --display-name <name>` | New display name for the condition |
 | `--rule-type <type>` | Append a new rule with this type (same valid types as `add`) |
 | `--condition-expression <expr>` | Condition expression for the new rule |
-| `--selected-tasks-ids <ids>` | Comma-separated task IDs for `selected-tasks-completed` rules |
+| `--selected-tasks-ids <ids>` | Comma-separated task IDs. **Required** when `--rule-type` is `selected-tasks-completed` |
 
 Output on `add`: `{ File, StageId, TaskId, ConditionId, DisplayName, Rules }` — save `ConditionId` for future edits.
 
