@@ -618,23 +618,24 @@ template_sources:
   - path: "../../../../skills/skills/uipath-flow"
 ```
 
-Files to update:
-- `lattice_dice_roller/dice_roller.yaml`
-- `lattice_calculator/calculator.yaml`
-- `lattice_decision_flow/decision_flow.yaml`
-- `lattice_loop_flow/loop_flow.yaml`
-- `lattice_scheduled_flow/scheduled_flow.yaml`
-- `lattice_add_decision/add_decision.yaml`
-- `lattice_remove_node/remove_node.yaml`
-- `lattice_rpa_node/rpa_node.yaml`
+Directories renamed (removed `lattice_` prefix):
+- `lattice_dice_roller/` → `dice_roller_json/` (suffixed to avoid collision with existing CLI `dice_roller/`)
+- `lattice_calculator/` → `calculator/`
+- `lattice_decision_flow/` → `decision_flow/`
+- `lattice_loop_flow/` → `loop_flow/`
+- `lattice_scheduled_flow/` → `scheduled_flow/`
+- `lattice_add_decision/` → `add_decision/`
+- `lattice_remove_node/` → `remove_node/`
+- `lattice_rpa_node/` → `rpa_node/`
+- `lattice_shared/` → `shared/`
 
-Also update any `initial_prompt` text that says "uipath-lattice-flow" to "uipath-flow".
+YAML content updated: `task_id` prefix `lattice-flow-` → `flow-json-`, tags `lattice-flow` → `flow-json`, paths `lattice_shared/` → `shared/`, skill references → `uipath-flow`.
 
 ### Other Fixes
 
 | File | Issue | Fix |
 |------|-------|-----|
-| `lattice_rpa_node/rpa_node.yaml` | Uses `uipcli` instead of `uip` in command patterns and prompt | Change to `uip` for consistency |
+| `rpa_node/rpa_node.yaml` | Uses `uipcli` instead of `uip` in command patterns and prompt | Change to `uip` for consistency |
 | `reference_flows/output-filter-planning/output_filter_planning.yaml` (line ~164) | LLM reviewer prompt references "maestro-flow template" | Update to "uipath-flow" |
 
 ### Validation Matrix
@@ -643,21 +644,21 @@ The merged skill must pass all existing tasks without regression. The matrix map
 
 | Phase | What It Validates | Tasks That Cover It |
 |-------|------------------|---------------------|
-| Phase A (shared abstraction) | Schema, variables, edges, validation | All lattice_* tasks (structural checks) |
-| Phase B (node knowledge) | Definition blocks, ports, inputs | `lattice_dice_roller`, `lattice_calculator` (check_flow_structure.py scores) |
-| Phase B (dynamic nodes) | Registry workflow, resource nodes | `lattice_rpa_node`, complexity 25/50/100 |
+| Phase A (shared abstraction) | Schema, variables, edges, validation | All JSON authoring tasks (structural checks) |
+| Phase B (node knowledge) | Definition blocks, ports, inputs | `dice_roller_json`, `calculator` (check_flow_structure.py scores) |
+| Phase B (dynamic nodes) | Registry workflow, resource nodes | `rpa_node`, complexity 25/50/100 |
 | Phase C (CLI implementation) | CLI commands, registry, debug | All 12 CLI exploration tasks, `dice_roller` (E2E debug) |
-| Phase C (JSON implementation) | Direct JSON editing, ID generation | All 8 lattice_* tasks |
-| Phase D (templates) | Template copy as starting point | `lattice_decision_flow`, `lattice_loop_flow`, `lattice_scheduled_flow` |
+| Phase C (JSON implementation) | Direct JSON editing, ID generation | All 8 JSON authoring tasks |
+| Phase D (templates) | Template copy as starting point | `decision_flow`, `loop_flow`, `scheduled_flow` |
 | Phase E (planning) | Two-phase methodology, plan docs | `output_filter_planning` |
 | Full E2E | End-to-end flow creation + validation | `complexity_*`, `reference_flows/*` |
 
-### Shared Test Infrastructure (No Changes Needed)
+### Shared Test Infrastructure
 
-- `lattice_shared/check_flow_structure.py` — structural comparison scorer (Jaccard similarity on node types, edge counts, definitions, variables)
-- `lattice_shared/references/*.flow` — ground-truth reference flows
-- `lattice_add_decision/check_edit.py` — edit operation scorer
-- `lattice_remove_node/check_edit.py` — remove operation scorer
+- `shared/check_flow_structure.py` — structural comparison scorer (Jaccard similarity on node types, edge counts, definitions, variables)
+- `shared/references/*.flow` — ground-truth reference flows
+- `add_decision/check_edit.py` — edit operation scorer
+- `remove_node/check_edit.py` — remove operation scorer
 - `dice_roller/check_dice_runs.py` — runtime execution validator
 
 These scripts validate against `.flow` JSON structure, not skill names — they work unchanged with the merged skill.
