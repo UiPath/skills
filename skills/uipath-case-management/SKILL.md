@@ -1,8 +1,7 @@
 ---
 name: uipath-case-management
-description: "[PREVIEW] UiPath Case Management projects (.case.json files) — manage case definitions, stages, tasks, edges. Create, edit, validate, run cases via uip CLI: stages, tasks, triggers etc."
-metadata:
-   allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+description: "[PREVIEW] UiPath Case Management projects (caseplan.json files) — manage case definitions, stages, tasks, edges, entry/exit conditions. Create, edit, validate, run cases via uip CLI: stages, tasks, triggers etc."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Case Management Authoring Assistant
@@ -18,6 +17,16 @@ Comprehensive guide for creating, editing, and managing UiPath Case Management d
 - User wants to **view process summaries or incidents**
 - User asks about the **case management JSON schema** — nodes, edges, tasks, rules, SLA
 - User asks **how to wire stages**, configure task types, or set entry/exit conditions
+
+## Critical Rules
+
+1. **Every stage needs at least one edge** connecting it to the case or it will be orphaned
+2. **Trigger node is created automatically** on `cases add` — don't add another unless it's a separate entry point (e.g. for a multi-trigger case)
+3. **Tasks are 2D arrays**: `tasks[lane][index]` — use `--lane` to put tasks in parallel lanes
+4. **Edge type is inferred** from the source node — don't set it manually via `edges add`
+5. **Stage IDs are returned on creation** — capture them from the `StageId` field in the success output
+6. **Edit `content/*.json` only** — `content/*.bpmn` is auto-generated and will be overwritten
+7. **Every command must be executed in sequence. No parallel execution.**
 
 ## Quick Start
 
@@ -97,8 +106,8 @@ Before editing, create a plan based on the given input file and get user approva
 ### Step 4 — Add stages
 
 ```bash
-uip case stages add <file> --label "Review Application"
-uip case stages add <file> --label "Exception Handler" --type exception
+uip case stages add <file> --label "Review Application" --output json
+uip case stages add <file> --label "Exception Handler" --type exception --output json
 ```
 
 Stage types: `stage` (default), `exception`, `trigger`.
@@ -109,8 +118,8 @@ Stages are auto-positioned. Each stage gets a unique ID in the output — save i
 The default trigger Id is `trigger_1`. Connect it to the first stage, then connect stages in sequence. Add edge labels for conditions if needed.
 
 ```bash
-uip case edges add <file> --source <trigger-id> --target <first-stage-id>
-uip case edges add <file> --source <stage-id> --target <next-stage-id> --label "Approved"
+uip case edges add <file> --source <trigger-id> --target <first-stage-id> --output json
+uip case edges add <file> --source <stage-id> --target <next-stage-id> --label "Approved" --output json
 ```
 
 Edge type is inferred automatically: Trigger → `TriggerEdge`, Stage → `Edge` (carries transition rules).
@@ -120,9 +129,9 @@ Source/target handle directions default to `right`/`left` for stage edges and tr
 ### Step 6 — Add tasks to stages
 
 ```bash
-uip case tasks add <file> <stage-id> --type process --display-name "Run Background Check" --name "BackgroundCheck" --folder-path "Shared" --task-type-id <taskTypeId>
-uip case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-type-id <taskTypeId> 
-uip case tasks add <file> <stage-id> --type agent --display-name "AI Analysis" --task-type-id <taskTypeId> 
+uip case tasks add <file> <stage-id> --type process --display-name "Run Background Check" --name "BackgroundCheck" --folder-path "Shared" --task-type-id <taskTypeId> --output json
+uip case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-type-id <taskTypeId> --output json
+uip case tasks add <file> <stage-id> --type agent --display-name "AI Analysis" --task-type-id <taskTypeId> --output json
 ```
 
 Valid task types: `process`, `agent`, `api-workflow`, `rpa`, `external-agent`, `case-management`.
@@ -257,16 +266,6 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 | `uip case instance`, `processes`, `incidents` | Query/manage live Orchestrator data | Yes |
 
 Always edit the local JSON file first, then push/deploy via the platform skill when ready.
-
-### Case JSON file — critical rules
-
-1. **Every stage needs at least one edge** connecting it to the case or it will be orphaned
-2. **Trigger node is created automatically** on `cases add` — don't add another unless it's a separate entry point (e.g. for a multi-trigger case)
-3. **Tasks are 2D arrays**: `tasks[lane][index]` — use `--lane` to put tasks in parallel lanes
-4. **Edge type is inferred** from the source node — don't set it manually via `edges add`
-5. **Stage IDs are returned on creation** — capture them from the `StageId` field in the success output
-6. **Edit `content/*.json` only** — `content/*.bpmn` is auto-generated and will be overwritten
-7. **Every command must be executed in sequence. No parallel execution.**
 
 ### CLI output format
 
