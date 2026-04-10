@@ -1,22 +1,34 @@
-.PHONY: help install e2e e2e-flow
+.PHONY: help install activation smoke integration e2e
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
+VENV := .venv
+CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
+TASKS := $(shell find tasks -name '*.yaml' -type f)
 
-help:  ## Show this help message
-	@echo "Available commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+help:  ## Show available commands
+	@grep -E '^[a-zA-Z0-9_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install coder-eval from GitHub
-	uv pip install "coder-eval @ git+https://github.com/UiPath/coder_eval.git"
+install:  ## Install coder-eval into local .venv (requires Python 3.13+)
+	uv venv --python 3.13 $(VENV)
+	uv pip install --python $(VENV)/bin/python "coder-eval @ git+https://github.com/UiPath/coder_eval.git"
+	@echo ""
+	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
 
-e2e:  ## Run all skill e2e tests (smoke)
-	SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) \
-	  coder-eval run tasks/**/*.yaml \
-	  -e experiments/default.yaml --tags smoke -j 1 -v
+activation:  ## Run all activation tests
+	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags activation -j 1 -v
 
-e2e-flow:  ## Run maestro-flow skill tests only
-	SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) \
-	  coder-eval run tasks/uipath-maestro-flow/*.yaml \
-	  -e experiments/default.yaml -j 1 -v
+smoke:  ## Run all smoke tests
+	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags smoke -j 1 -v
+
+integration:  ## Run all integration tests
+	$(CODER_EVAL) run $(TASKS) -e experiments/integration.yaml --tags integration -j 1 -v
+
+e2e:  ## Run all end-to-end tests
+	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml --tags e2e -j 1 -v
+
+# Run all tests for a specific skill: make test-uipath-maestro-flow
+test-%:  ## Run all tests for a specific skill
+	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml -j 1 -v
 
 .DEFAULT_GOAL := help

@@ -55,6 +55,8 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 **Required fields**: `id`, `type`, `typeVersion`, `ui.position`
 
+**Layout**: Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` (spacing ~200px) and a consistent `y` baseline (e.g., `y: 144`). For decision branches, offset the `y` value for each branch path. Never use vertical (top-to-bottom) layout.
+
 ## Edge — both ports required
 
 ```json
