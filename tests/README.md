@@ -15,15 +15,15 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    npm install -g @uipath/cli
    ```
 
-3. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for full `.env` setup instructions.
+3. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
 
 ## Running Tests
 
 ```bash
 cd tests
 
-# Run all activation tests
-make activation
+# Run all tests (smoke + integration + e2e)
+make all
 
 # Run all smoke tests
 make smoke
@@ -47,32 +47,13 @@ The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (re
 
 ## Evaluation Framework
 
-Tests are organized into four types, distinguished by **tags** (not directories). All tests for a skill live together in `tests/tasks/<skill-name>/`.
+Tests are organized into three types, distinguished by **tags** (not directories). All tests for a skill live together in `tests/tasks/<skill-name>/`.
 
 | Tag | Purpose | Cadence |
 |-----|---------|---------|
-| `activation` | Does the right skill trigger for the right query? | Every PR |
-| `smoke` | Skill + CLI produces valid output (1-3 simple scenarios) | Every PR |
+| `smoke` | Skill triggers correctly, CLI produces valid output (1-5 simple scenarios) | Every PR |
 | `integration` | Correct output across diverse scenarios, error paths, anti-patterns | Daily |
 | `e2e` | Full lifecycle: Explore -> Plan -> Build -> Validate -> Deploy -> Run | Daily/weekly (check [Dashboard](https://dataexplorer.azure.com/dashboards/20cc55fe-33ae-4973-a951-855e76528219))|
-
-### Why tags over directories
-
-All tests for a skill live in one folder (`tests/tasks/<skill-name>/`). Test types are separated by tags and naming conventions — not by directory. This means:
-- Skill authors see all their tests in one place
-- CODEOWNERS maps cleanly per skill
-- A test can carry multiple tags (`[smoke, integration]`)
-- CI filters by `--tags smoke`, not by directory glob
-- Adding a new test type is a tag, not a restructure
-
-### Naming conventions
-
-| Test type | File naming | Examples |
-|-----------|-------------|---------|
-| Activation | `activation_*.yaml` | `activation_triggers.yaml` |
-| Smoke | Descriptive happy-path names | `init_validate.yaml`, `registry_discovery.yaml` |
-| Integration | `error_*.yaml`, `anti_pattern_*.yaml`, `edge_*.yaml` | `error_build_failure.yaml`, `anti_pattern_no_xaml_edit.yaml` |
-| E2E | `e2e_*.yaml` or `lifecycle_*.yaml` | `e2e_full_lifecycle.yaml` |
 
 ## Directory Structure
 
@@ -81,12 +62,11 @@ tests/
 ├── README.md
 ├── Makefile
 ├── experiments/
-│   ├── default.yaml              # Activation + Smoke config
+│   ├── default.yaml              # Smoke config
 │   ├── integration.yaml          # Integration config (longer timeouts)
 │   └── e2e.yaml                  # E2E config (staging tenant, full lifecycle)
 └── tasks/
     └── <skill-name>/             # One folder per skill
-        ├── activation_*.yaml     # Activation tests
         ├── <capability>.yaml     # Smoke tests
         ├── error_*.yaml          # Integration tests
         └── e2e_*.yaml            # E2E tests
@@ -98,7 +78,7 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 
 | Experiment | Used by | max_iterations | max_turns | task_timeout | turn_timeout |
 |------------|---------|----------------|-----------|--------------|--------------|
-| `default.yaml` | Activation, Smoke | 1 | 20 | 600s | 300s |
+| `default.yaml` | Smoke | 1 | 20 | 600s | 300s |
 | `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
 | `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
 
@@ -135,9 +115,9 @@ initial_prompt: |
 ## Adding Tests for a New Skill
 
 1. Create `tests/tasks/<skill-name>/` matching the skill folder name under `skills/`.
-2. Add at minimum **1 activation test**, **1 smoke test**, and **1 e2e test** (required for every new skill PR).
+2. Add at minimum **1 smoke test** and **1 e2e test** (required for every new skill PR).
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
-4. Tag every task appropriately: `activation`, `smoke`, `integration`, or `e2e`.
+4. Tag every task appropriately: `smoke`, `integration`, or `e2e`.
 5. Always include the skill directory name as a tag (e.g., `uipath-maestro-flow`, `uipath-rpa`).
 
 ### Task ID Convention
@@ -146,7 +126,7 @@ initial_prompt: |
 skill-<domain>-<capability>
 ```
 
-Examples: `skill-flow-init-validate`, `skill-flow-registry-discovery`, `skill-rpa-activation-triggers`
+Examples: `skill-flow-init-validate`, `skill-flow-registry-discovery`
 
 ### Smoke Test Example
 
@@ -249,7 +229,6 @@ Key patterns to note:
 - **Minimal prompt** — describes the goal ("create and validate"), not the steps
 - **Multiple criteria types** — `command_executed`, `file_exists`, `json_check` cover different aspects
 - **Weighted scoring** — core commands (`weight: 1.5`) matter more than supporting checks (`weight: 1.0`)
-- **JSON report** — asks the agent to produce structured output for validation
 
 For another example using `file_contains` and `run_command` criteria, see `tasks/uipath-maestro-flow/registry_discovery.yaml`. That test also demonstrates overriding a single field (`agent: max_turns: 14`) from the experiment defaults.
 
@@ -387,7 +366,7 @@ runs/
 
 5. **Common failure causes:**
    - Agent used wrong CLI command or flags -> check the skill's SKILL.md for correctness
-   - Agent didn't activate the skill -> check skill description frontmatter and activation test
+   - Agent didn't activate the skill -> check skill description frontmatter and smoke test
    - Agent ran out of turns -> increase `max_turns` or simplify the prompt
    - Sandbox issue -> check that `uip` CLI is available in the test environment
 

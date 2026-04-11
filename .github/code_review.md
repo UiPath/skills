@@ -17,14 +17,16 @@ This repo uses [coder_eval](https://github.com/UiPath/coder_eval) to verify that
 **When a PR adds a new skill folder under `skills/`:**
 
 1. Check whether `tests/tasks/<skill-name>/` exists with at least one `.yaml` task file
-2. If tests exist, verify each task file follows conventions (see `tests/README.md`):
+2. If tests exist, verify:
+   - At least one task tagged `smoke` and at least one tagged `e2e` (both required per CONTRIBUTING.md)
+   - Each task's `tags` uses only valid test types: `smoke`, `integration`, or `e2e` — no other test-type tags (e.g., `activation` is not a valid tag)
+   - Each task's `tags` includes the skill directory name (e.g., `uipath-maestro-flow`) as the first tag
    - `task_id` matches the pattern `skill-<domain>-<capability>`
-   - `tags` includes `smoke` (required for CI) and the skill domain
    - The plugin loads in the sandbox — either via `agent.plugins` in the task YAML or inherited from the experiment config in `tests/experiments/default.yaml`
    - `initial_prompt` is minimal — describes the goal, not the steps (the skill should teach the agent)
    - `success_criteria` validates key CLI commands (`command_executed`), output files (`file_exists`, `file_contains`, `json_check`), or both
-   - `max_iterations: 2` and `llm_reviewer.enabled: true` are set
-3. If tests are missing, flag as **Medium** — most skills are not yet test-compliant
+3. If tests are missing entirely, flag as **Medium** — most skills are not yet test-compliant
+4. If tests exist but are missing a `smoke` or `e2e` task, flag as **Medium**
 
 **When a PR substantially changes an existing skill** (new CLI workflows, changed commands):
 - Check whether existing tasks in `tests/tasks/<skill-name>/` still cover the updated behavior

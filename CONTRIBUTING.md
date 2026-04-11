@@ -191,12 +191,11 @@ This configures git to use `.githooks/` and enables the skill description valida
 
 Skills are tested using [coder_eval](https://github.com/UiPath/coder_eval) — a framework that runs an AI agent against a task and scores the result. Tests live in `tests/tasks/<skill-name>/` and verify that the skill guides the agent to use the correct CLI commands, follow critical rules, and produce valid output.
 
-There are four test types, distinguished by tags:
+There are three test types, distinguished by tags:
 
 | Tag | Purpose | Cadence |
 |-----|---------|---------|
-| `activation` | Does the right skill trigger for the right query? | Every PR |
-| `smoke` | Skill + CLI produces valid output (1-3 simple scenarios) | Every PR |
+| `smoke` | Skill triggers correctly, CLI produces valid output (1-5 simple scenarios) | Every PR |
 | `integration` | Correct output across diverse scenarios, error paths, anti-patterns | Daily |
 | `e2e` | Full lifecycle: Explore -> Plan -> Build -> Validate -> Deploy -> Run | Daily/weekly (check [Dashboard](https://dataexplorer.azure.com/dashboards/20cc55fe-33ae-4973-a951-855e76528219)) |
 
@@ -205,7 +204,7 @@ There are four test types, distinguished by tags:
 ```bash
 cd tests
 make install       # one-time: install coder-eval from GitHub
-make activation    # run all activation tests
+make all           # run all tests (smoke + integration + e2e)
 make smoke         # run all smoke tests
 make integration   # run all integration tests
 make e2e           # run all end-to-end tests
@@ -215,9 +214,9 @@ make test-uipath-maestro-flow  # run all tests for a specific skill
 ### Adding Tests for a Skill
 
 1. Create `tests/tasks/<skill-name>/` matching your skill folder name
-2. Add at minimum **1 activation test**, **1 smoke test**, and **1 e2e test** (required for every new skill PR)
+2. Add at minimum **1 smoke test** and **1 e2e test** (required for every new skill PR)
 3. Use minimal prompts — the goal is to test the skill's guidance quality, not hand-hold the agent
-4. Tag every task appropriately: `activation`, `smoke`, `integration`, or `e2e`
+4. Tag every task appropriately: `smoke`, `integration`, or `e2e`
 5. Follow the task ID pattern: `skill-<domain>-<capability>`
 
 See `tests/README.md` for the full task YAML template, success criteria reference, and examples from existing tests.
@@ -243,10 +242,9 @@ Before submitting your PR, verify:
 - [ ] No duplicate content already covered in another skill's references
 
 ### Tests
-- [ ] At least 1 activation test in `tests/tasks/<skill-name>/`
 - [ ] At least 1 smoke test in `tests/tasks/<skill-name>/`
 - [ ] At least 1 e2e test in `tests/tasks/<skill-name>/`
-- [ ] All tests tagged appropriately (`activation`, `smoke`, `integration`, or `e2e`)
+- [ ] All tests tagged appropriately (`smoke`, `integration`, or `e2e`)
 
 ### General
 - [ ] CODEOWNERS updated with your GitHub handle
