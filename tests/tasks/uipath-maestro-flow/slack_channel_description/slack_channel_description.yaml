@@ -1,13 +1,16 @@
-task_id: uipath-flow-slack-channel-description
+task_id: skill-flow-slack-channel-description
 description: >
   Create a UiPath Flow that uses the Slack IS connector to retrieve the
   channel description of #office-bellevue and outputs it. This is an
   end-to-end test that exercises connector discovery, connection binding,
   reference resolution, node configuration, and cloud debug execution.
-tags: [uipath-maestro-flow, e2e, connector, slack]
+tags: [uipath-maestro-flow, e2e, generate, connector]
+max_iterations: 1
 
 agent:
   type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
 sandbox:
@@ -18,47 +21,15 @@ initial_prompt: |
   Create a UiPath Flow named "SlackChannelDescription" that retrieves
   the channel description of #office-bellevue and outputs it.
 
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
 success_criteria:
-  # ── CLI usage ────────────────────────────────────────────────────────────
-  - type: command_executed
-    description: "Agent initialized a Flow project"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+init\s+.*SlackChannelDescription'
-    min_count: 1
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent explored the node registry for Slack connectors"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+registry\s+(search|list|get)'
-    min_count: 1
-    require_success: false
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed or pinged IS connections"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connections\s+(list|ping)'
-    min_count: 1
-    require_success: false
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent resolved the channel reference"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+execute'
-    min_count: 1
-    require_success: false
-    weight: 0.5
-    pass_threshold: 1.0
-
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip flow validate passes on the flow file"
-    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/SlackChannelDescription.flow',recursive=True) or glob.glob('**/*.flow',recursive=True); sys.exit(1) if not flows else sys.exit(subprocess.run(['uip','flow','validate',flows[0]]).returncode)\""
+    command: "uip flow validate SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

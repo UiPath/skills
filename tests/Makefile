@@ -1,4 +1,4 @@
-.PHONY: help install activation smoke integration e2e
+.PHONY: help install all smoke integration e2e
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
@@ -15,8 +15,7 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+)
 	@echo ""
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
 
-activation:  ## Run all activation tests
-	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags activation -j 1 -v
+all: smoke integration e2e  ## Run all tests (smoke + integration + e2e)
 
 smoke:  ## Run all smoke tests
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags smoke -j 1 -v

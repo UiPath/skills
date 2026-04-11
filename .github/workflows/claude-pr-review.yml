@@ -67,9 +67,13 @@ jobs:
             7. If the PR adds a new skill folder under `skills/`:
                a. Check that `tests/tasks/<skill-name>/` exists with at least one `.yaml` task file.
                   If missing, flag as **Medium** (most skills are not yet test-compliant).
-               b. If tests exist, verify task files have: `task_id` matching `skill-<domain>-<capability>`,
-                  `tags` including `smoke`, `success_criteria` with at least one check,
-                  and `llm_reviewer.enabled: true`.
+               b. If tests exist, verify:
+                  - At least one task tagged `smoke` and at least one tagged `e2e` (both required).
+                  - Each task's `tags` uses only valid test types: `smoke`, `integration`, or `e2e`.
+                  - Each task's `tags` includes the skill directory name (e.g., `uipath-maestro-flow`) as the first tag.
+                  - `task_id` matches `skill-<domain>-<capability>`.
+                  - `success_criteria` has at least one check.
+                  If smoke or e2e coverage is missing, flag as **Medium**.
 
             8. Check that `CODEOWNERS` includes an entry for any new skill path.
 

@@ -1,5 +1,5 @@
 experiment_id: skill-tests-default
-description: "Default experiment for activation and smoke tests — loads the full UiPath skills plugin"
+description: "Default experiment for smoke tests — loads the full UiPath skills plugin"
 
 defaults:
   max_iterations: 1
