@@ -38,6 +38,14 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 
 See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
+### Multi-Page Application State Management
+
+When automating multi-page web applications (e.g., a site with different pages at different URLs), configure separate Object Repository screens for each page. **Use Servo to navigate the browser to the correct page before configuring targets.**
+
+The workflow is: **Servo → bring app to target page → configure targets → Servo → next page → configure targets → ...**
+
+URL wildcards in window selectors (e.g., `url='https://example.com/*'`) match ALL tabs from that domain. Close unwanted tabs before capture to avoid targeting the wrong page. See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) and [uia-multi-step-flows.md](uia-multi-step-flows.md) for full details.
+
 ### Multi-Step UI Flows (Advancing Application State)
 
 See [uia-multi-step-flows.md](uia-multi-step-flows.md).

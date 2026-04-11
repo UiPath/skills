@@ -2,6 +2,47 @@
 
 **Always use the `uia-configure-target` skill** to create or find targets in the Object Repository. This skill handles the full flow: snapshot capture, element discovery, selector generation, selector improvement, and OR registration.
 
+## Prerequisite: Ensure Application State with Servo
+
+Before running `uia-configure-target`, the target application must be visible and showing the correct screen/page. **Use Servo to bring the app into the desired state before any capture.**
+
+This is critical for **multi-page web apps** where the URL wildcard (e.g., `url='https://example.com/*'`) matches multiple browser tabs, causing `snapshot capture` to non-deterministically grab the wrong page.
+
+```bash
+# 1. List windows/tabs to find the application
+servo targets
+
+# 2. If the app is not open, launch it, then re-run servo targets
+
+# 3. Take a screenshot to verify current state
+servo screenshot <b-ref or w-ref>
+
+# 4. If on the wrong page/screen, navigate using Servo:
+servo snapshot <b-ref>
+servo type <url-bar-ref> "https://example.com/target-page" --clear-before
+servo type <url-bar-ref> "[k(enter)]"
+# Or click navigation elements to reach the target screen:
+servo click <nav-element-ref>
+
+# 5. Close unwanted tabs that share the same URL pattern
+# (prevents wildcard conflicts during snapshot capture)
+
+# 6. Re-screenshot to confirm correct state before proceeding
+servo screenshot <b-ref or w-ref>
+```
+
+**Multi-page web app loop:** When automating multiple pages on the same site, the workflow is:
+
+```
+For each page:
+  1. Servo → navigate browser to the page URL, verify correct page is showing
+  2. uia-configure-target → configure screen + elements for this page
+  3. Record the screen and element reference IDs
+  4. Repeat for the next page
+```
+
+**Wildcard URL trap:** `get-default-selector` generates URL wildcards like `url='https://example.com/*'`. If multiple tabs match this pattern, `snapshot capture` picks whichever matches first (non-deterministic). Always ensure only ONE matching tab is active before capture.
+
 ## Execution Model
 
 **Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.

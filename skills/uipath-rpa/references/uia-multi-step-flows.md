@@ -1,5 +1,25 @@
 # Multi-Step UI Flows
 
+## Navigating to the Starting Page
+
+Before capturing any targets, use Servo to bring the application to the correct starting state. This is especially important for **multi-page web apps** where URL wildcards in window selectors (e.g., `url='https://example.com/*'`) match multiple browser tabs non-deterministically.
+
+```bash
+# Find the browser tab
+servo targets
+# Navigate to the target page
+servo snapshot <b-ref>
+servo type <url-bar-ref> "https://example.com/target-page" --clear-before
+servo type <url-bar-ref> "[k(enter)]"
+# Verify correct page is showing
+servo screenshot <b-ref>
+# Close any other tabs matching the same URL pattern to prevent wildcard conflicts
+```
+
+See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full prerequisite details.
+
+## Advancing Between Screens
+
 Some UI elements only become visible after interacting with earlier elements (e.g., a compose form appears after clicking "New mail", a confirmation dialog appears after submitting). Since `uia-configure-target` works from the current screen state, you need to **advance the application to each state** before capturing its elements.
 
 > **CRITICAL: Complete-then-advance.** Finish ALL `uia-configure-target` calls for elements visible in the current screen state — including OR registration (the full skill through TARGET-8) — before using servo to advance to the next state. Servo interactions change the app state irreversibly. If you advance before registering, elements from the previous state may no longer be visible, causing OR registration to fail.
