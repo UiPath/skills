@@ -204,6 +204,7 @@ There are three test types, distinguished by tags:
 ```bash
 cd tests
 make install       # one-time: install coder-eval from GitHub
+make all           # run all tests (smoke + integration + e2e)
 make smoke         # run all smoke tests
 make integration   # run all integration tests
 make e2e           # run all end-to-end tests

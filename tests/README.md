@@ -22,6 +22,9 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 ```bash
 cd tests
 
+# Run all tests (smoke + integration + e2e)
+make all
+
 # Run all smoke tests
 make smoke
 
