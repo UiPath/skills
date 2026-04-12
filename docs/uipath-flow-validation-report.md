@@ -112,6 +112,92 @@ All 5 E2E dynamic/connector tasks produce valid flows. Same debug criterion patt
 
 ---
 
+## Run Metrics
+
+All tasks ran on `claude-sonnet-4-6` via `coder_eval` with `anthropic_direct` routing.
+
+### Phase 1: JSON Authoring (7 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| flow-json-add-decision | 1m51s | 1.000 | $0.30 | 7,368 | 5 | 11 |
+| flow-json-remove-node | 0m48s | 1.000 | $0.17 | 2,683 | 4 | 10 |
+| flow-json-dice-roller | 2m23s | 0.909 | $0.46 | 7,870 | 14 | 23 |
+| flow-json-calculator | 2m42s | 1.000 | $0.49 | 9,335 | 13 | 25 |
+| flow-json-loop | 2m14s | 1.000 | $0.49 | 9,834 | 16 | 25 |
+| flow-json-scheduled | 1m58s | 1.000 | $0.55 | 9,839 | 16 | 26 |
+| flow-json-decision | 2m56s | 1.000 | $0.60 | 11,975 | 20 | 34 |
+| **Subtotal** | **14m52s** | | **$3.06** | **58,904** | **88** | **154** |
+
+### Phase 2: Mode Selection (3 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| flow-mode-selection-cli | 1m46s | 1.000 | $0.41 | 3,787 | 26 | 33 |
+| flow-mode-selection-json | 1m57s | 1.000 | $0.44 | 7,091 | 15 | 26 |
+| flow-json-bellevue-weather | 3m17s | 1.000 | $1.26 | 8,899 | 37 | 53 |
+| **Subtotal** | **7m00s** | | **$2.11** | **19,777** | **78** | **112** |
+
+### Phase 3: CLI with Skill (2 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| flow-cli-add-node | 1m22s | 1.000 | $0.34 | 2,955 | 18 | 30 |
+| flow-cli-dice-roller | 1m29s | 1.000 | $0.41 | 3,315 | 25 | 30 |
+| **Subtotal** | **2m51s** | | **$0.76** | **6,270** | **43** | **60** |
+
+### Phase 4: Planning (2 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| flow-planning-arch | 1m07s | 1.000 | $0.26 | 3,220 | 7 | 12 |
+| flow-planning-impl | 2m06s | 1.000 | $0.43 | 6,540 | 20 | 29 |
+| **Subtotal** | **3m13s** | | **$0.69** | **9,760** | **27** | **41** |
+
+### Phase 5: Connectors + rpa_node (3 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| flow-connector-discovery | 1m09s | 1.000 | $0.31 | 2,762 | 12 | 19 |
+| flow-connector-configure | 4m09s | 1.000 | $0.80 | 10,170 | 38 | 55 |
+| flow-json-rpa-node | 4m09s | 1.000 | $1.17 | 11,226 | 54 | 79 |
+| **Subtotal** | **9m27s** | | **$2.29** | **24,158** | **104** | **153** |
+
+### Phase 6: E2E OOTB (3 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| uipath-flow-dice-roller | 2m09s | 0.375 | $0.54 | 7,632 | 16 | 27 |
+| uipath-flow-calculator | 3m38s | 0.375 | $0.71 | 6,369 | 21 | 30 |
+| uipath-flow-bellevue-weather | 6m40s | 0.375 | $1.32 | 24,003 | 52 | 66 |
+| **Subtotal** | **12m27s** | | **$2.57** | **38,004** | **89** | **123** |
+
+### Phase 7: E2E Dynamic + Connector (5 tasks)
+
+| Task ID | Duration | Score | Cost | Output Tok | Tool Calls | Turns |
+|---------|----------|-------|------|------------|------------|-------|
+| uipath-flow-coded-agent | 4m57s | 0.375 | $0.63 | 11,755 | 26 | 34 |
+| uipath-flow-rpa-project-euler | 4m56s | 0.375 | $0.89 | 16,814 | 30 | 46 |
+| uipath-flow-api-workflow | 10m36s | 0.375 | $2.30 | 21,505 | 76 | 100 |
+| uipath-flow-lowcode-agent | 10m52s | 0.375 | $2.22 | 28,665 | 85 | 114 |
+| uipath-flow-slack-channel-description | 8m30s | 0.250 | $1.27 | 19,071 | 21 | 30 |
+| **Subtotal** | **39m51s** | | **$7.30** | **97,810** | **238** | **324** |
+
+### Aggregate Totals
+
+| Metric | Value |
+|--------|-------|
+| **Total tasks** | 25 |
+| **Total duration** | 89m48s |
+| **Total cost** | $18.77 |
+| **Total output tokens** | 254,683 |
+| **Total tool calls** | 667 |
+| **Avg cost per task** | $0.75 |
+| **Avg duration per task** | 3m35s |
+| **Model** | claude-sonnet-4-6 |
+
+---
+
 ## Validation Matrix
 
 | What | Tasks | Strategy | Auth | Result |
