@@ -12,7 +12,7 @@
 
 **No regressions from PR review changes.** All 19 previously-passing tasks still pass (16 new tasks + 3 connector/rpa_node tasks). 8 new E2E tasks (Phase 6 + Phase 7) all produce valid flows — their `flow debug` criterion continues to fail as a known task design issue, not a skill regression.
 
-**New task coverage:** rpa_node (Phase 5) and 8 E2E tasks (Phases 6–7) are newly validated in this round.
+**Phase 8 SxS comparison: 24/24 PASS.** CLI and JSON authoring modes produce identical-quality flows (0.992 mean score, 100% ties). JSON mode is 27% cheaper ($0.50 vs $0.68 avg) and uses 40% fewer turns (statistically significant, p=0.006).
 
 | Phase | Tasks | Result | Regression? |
 |-------|-------|--------|-------------|
@@ -23,7 +23,8 @@
 | Phase 5: Connectors + rpa_node | 3 | **3/3 PASS** | No (rpa_node is new) |
 | Phase 6: E2E OOTB | 3 | **3/3 PARTIAL PASS** | No (same expected pattern) |
 | Phase 7: E2E Dynamic + Connector | 5 | **5/5 PARTIAL PASS** | New |
-| **Total** | **25** | **25/25** | **0 regressions** |
+| Phase 8: CLI vs JSON SxS | 12×2=24 | **24/24 PASS** | New |
+| **Total** | **25 + 24 SxS** | **49/49** | **0 regressions** |
 
 ---
 
@@ -183,17 +184,57 @@ All tasks ran on `claude-sonnet-4-6` via `coder_eval` with `anthropic_direct` ro
 | uipath-flow-slack-channel-description | 8m30s | 0.250 | $1.27 | 19,071 | 21 | 30 |
 | **Subtotal** | **39m51s** | | **$7.30** | **97,810** | **238** | **324** |
 
-### Aggregate Totals
+### Phase 8: CLI vs JSON SxS Comparison (12 tasks × 2 variants = 24 runs)
+
+Experiment `flow-mode-sxs` with prompt mutations + tool restriction enforcement. **24/24 PASS.**
+
+#### Per-Task Cross-Variant Comparison
+
+| Task | JSON Score | CLI Score | JSON Duration | CLI Duration | JSON Cost | CLI Cost | JSON Tools | CLI Tools | JSON Turns | CLI Turns |
+|------|-----------|-----------|---------------|-------------|-----------|----------|------------|-----------|------------|-----------|
+| add-decision | 1.000 | 1.000 | 1m26s | 1m12s | $0.26 | $0.34 | 5 | 14 | 11 | 25 |
+| api-workflow | 1.000 | 1.000 | 1m49s | 2m21s | $0.45 | $0.66 | 19 | 30 | 36 | 54 |
+| bellevue-weather | 1.000 | 1.000 | 4m42s | 3m19s | $0.89 | $1.28 | 19 | 41 | 34 | 74 |
+| calculator | 1.000 | 1.000 | 2m17s | 2m06s | $0.50 | $0.60 | 13 | 23 | 24 | 42 |
+| coded-agent | 1.000 | 1.000 | 2m41s | 2m56s | $0.50 | $0.58 | 17 | 24 | 29 | 39 |
+| decision | 1.000 | 1.000 | 2m33s | 3m39s | $0.51 | $0.91 | 14 | 35 | 25 | 58 |
+| dice-roller | 0.909 | 0.909 | 1m56s | 2m06s | $0.40 | $0.69 | 11 | 23 | 18 | 48 |
+| loop | 1.000 | 1.000 | 1m52s | 2m12s | $0.40 | $0.61 | 13 | 25 | 23 | 43 |
+| remove-node | 1.000 | 1.000 | 0m45s | 1m10s | $0.18 | $0.28 | 5 | 9 | 11 | 24 |
+| rpa-node | 1.000 | 1.000 | 2m58s | 2m11s | $0.93 | $0.51 | 22 | 26 | 38 | 49 |
+| rpa-project-euler | 1.000 | 1.000 | 1m51s | 2m54s | $0.42 | $0.73 | 17 | 29 | 29 | 57 |
+| scheduled | 1.000 | 1.000 | 2m01s | 4m08s | $0.51 | $1.01 | 16 | 32 | 27 | 58 |
+
+#### Aggregate SxS Metrics
+
+| Metric | JSON Mode | CLI Mode | Delta | p-value |
+|--------|-----------|----------|-------|---------|
+| Mean Score | 0.992 | 0.992 | 0.000 | 1.000 |
+| Mean Duration | 135s | 152s | -17s | 0.605 |
+| Mean Cost | $0.50 | $0.68 | -$0.19 | — |
+| Total Cost | $5.96 | $8.20 | -$2.24 | — |
+| Total Output Tokens | 116,815 | 91,784 | +25,031 | 0.398 |
+| Total Tool Calls | 171 | 311 | -140 | — |
+| Mean Turns | 25.4 | 42.6 | -17.2 | 0.006 |
+| Win Rate | 0% | 0% | — | — |
+| Ties | 100% | — | — | — |
+
+**Key findings:**
+- **Score parity:** Both modes produce identical outcomes (0.992 mean, 100% ties)
+- **JSON mode is 27% cheaper** ($0.50 vs $0.68 avg per task, $2.24 total savings across 12 tasks)
+- **JSON mode uses 45% fewer tool calls** (171 vs 311) and **40% fewer turns** (25.4 vs 42.6, p=0.006 — statistically significant)
+- **Duration is comparable** (135s vs 152s, p=0.605 — not statistically significant)
+- **JSON mode generates more output tokens** (116K vs 92K) because it writes full flow JSON directly rather than issuing short CLI commands
+
+### Aggregate Totals (Phases 1–8)
 
 | Metric | Value |
 |--------|-------|
-| **Total tasks** | 25 |
-| **Total duration** | 89m48s |
-| **Total cost** | $18.77 |
-| **Total output tokens** | 254,683 |
-| **Total tool calls** | 667 |
-| **Avg cost per task** | $0.75 |
-| **Avg duration per task** | 3m35s |
+| **Total tasks (Phases 1–7)** | 25 |
+| **Total SxS runs (Phase 8)** | 24 |
+| **Total cost (Phases 1–7)** | $18.77 |
+| **Total cost (Phase 8 SxS)** | $14.16 |
+| **Grand total cost** | $32.93 |
 | **Model** | claude-sonnet-4-6 |
 
 ---
@@ -218,6 +259,8 @@ All tasks ran on `claude-sonnet-4-6` via `coder_eval` with `anthropic_direct` ro
 | E2E: OOTB flows | e2e/bellevue_weather, calculator, dice_roller | Skill tool + experiment | Yes | PARTIAL PASS |
 | E2E: dynamic resources | e2e/api_workflow, coded_agent, lowcode_agent, rpa_project_euler | Skill tool + experiment | Yes | PARTIAL PASS |
 | E2E: IS connector | e2e/slack_channel_description | Skill tool + experiment | Yes | PARTIAL PASS |
+| SxS: OOTB (8 tasks) | sxs/* (json-mode vs cli-mode) | flow-mode-sxs experiment | No | PASS (16/16) |
+| SxS: Dynamic (4 tasks) | sxs/* (json-mode vs cli-mode) | flow-mode-sxs experiment | Yes | PASS (8/8) |
 
 ---
 
