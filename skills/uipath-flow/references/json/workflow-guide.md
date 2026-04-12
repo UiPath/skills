@@ -23,7 +23,7 @@ Pick the closest template from `assets/templates/`, copy it as `<PROJECT_NAME>.f
 | HTTP request | `http-flow-template.json` |
 | Scheduled trigger | `scheduled-trigger-template.json` |
 | Script + connector | `connector-flow-template.json` |
-| Multi-agent with transforms | `multi-agent-template.json` |
+| Data pipeline (transform + loop + filter) | `data-pipeline-template.json` |
 
 ### After copying the template
 

@@ -51,9 +51,12 @@ Used for entries in the `workflow.bindings` array when connecting resource nodes
       {
         "id": "<NODE_ID>.<OUTPUT_KEY>",
         "type": "<OUTPUT_TYPE>",
+        "description": "<FROM_OUTPUT_IF_PRESENT>",
+        "schema": "<FROM_OUTPUT_IF_PRESENT>",
         "binding": { "nodeId": "<NODE_ID>", "outputId": "<OUTPUT_KEY>" }
       }
       ```
+      Include `description` when the output source has one. Include `schema` when the output source has one (common on error outputs).
 2. Replace `workflow.variables.nodes` entirely with the regenerated array.
 
 ### Concrete Example
@@ -81,20 +84,23 @@ The regenerated `variables.nodes` array:
   {
     "id": "myScript.error",
     "type": "object",
-    "description": "Error output",
+    "description": "Error information if the script fails",
+    "schema": { "$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "..." : "..." },
     "binding": { "nodeId": "myScript", "outputId": "error" }
   }
 ]
 ```
+
+> The `schema` field on `myScript.error` comes from the output definition's `schema` property. See `minimal-flow-template.json` for the full schema object.
 
 ### Where to find output keys
 
 | Source | How to find outputs |
 |--------|-------------------|
 | Node instance `outputs` field | `node.outputs` object -- each key is an output |
-| Definition `outputDefinition` | `definition.outputDefinition.fields` -- each field name is an output key |
+| Definition `outputDefinition` | `definition.outputDefinition` -- each key is an output name |
 
-If a node instance has explicit `outputs`, use those. Otherwise, fall back to the definition's `outputDefinition.fields`.
+If a node instance has explicit `outputs`, use those. Otherwise, fall back to the definition's `outputDefinition`.
 
 ---
 
@@ -119,6 +125,8 @@ If the flow has two `core.action.script` nodes (v1.0.0), there is only ONE defin
 ## 4. Where to Find Definition Blocks
 
 Definition blocks must be copied verbatim. Never hand-write them.
+
+> **Source of truth:** Node reference files (`../nodes/*.md`) and fresh `registry get` output are the authoritative definition sources. Template JSON files contain point-in-time snapshots of definitions for structural reference — when adding a node, always copy from the node reference file (OOTB) or fresh `registry get` output (dynamic), not from a template.
 
 ### OOTB nodes
 

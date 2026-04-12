@@ -1,7 +1,7 @@
 {
-  "id": "template-multi-agent",
+  "id": "template-data-pipeline",
   "version": "1.0.0",
-  "name": "Multi-Agent Template (Transform + Loop + Filter)",
+  "name": "Data Pipeline Template (Transform + Loop + Filter)",
   "nodes": [
     {
       "id": "start",

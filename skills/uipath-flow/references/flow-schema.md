@@ -189,48 +189,6 @@ Authoring metadata attached to the workflow.
 
 ## Minimal Working Example
 
-A two-node flow with one edge.
+For a complete, valid two-node flow (manual trigger → script), see [`assets/templates/minimal-flow-template.json`](../assets/templates/minimal-flow-template.json).
 
-```json
-{
-  "id": "flow_1712345678",
-  "version": "1.0.0",
-  "name": "Two-Node Example",
-  "runtime": "maestro",
-  "nodes": [
-    {
-      "id": "node_start",
-      "type": "core.control.start",
-      "typeVersion": "1.0.0",
-      "ui": { "position": { "x": 100, "y": 200 } }
-    },
-    {
-      "id": "node_script",
-      "type": "core.action.script",
-      "typeVersion": "1.0.0",
-      "inputs": {
-        "code": "=js:console.log('hello')"
-      },
-      "ui": { "position": { "x": 400, "y": 200 } }
-    }
-  ],
-  "edges": [
-    {
-      "id": "edge_1",
-      "sourceNodeId": "node_start",
-      "sourcePort": "default",
-      "targetNodeId": "node_script",
-      "targetPort": "default"
-    }
-  ],
-  "definitions": [],
-  "variables": {
-    "globals": [],
-    "nodes": []
-  },
-  "metadata": {
-    "createdAt": "2025-01-15T10:00:00Z",
-    "updatedAt": "2025-01-15T10:00:00Z"
-  }
-}
-```
+That template demonstrates every required structural element: proper node types (`core.trigger.manual`, `core.action.script`), correct port names (`output`/`input`), full `definitions` entries, and a regenerated `variables.nodes` array.

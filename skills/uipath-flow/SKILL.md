@@ -10,18 +10,21 @@ Build and edit UiPath Flow projects (`.flow` files) using either the `uip` CLI o
 
 ## Mode Selection
 
-Determine the implementation mode before starting work. If the user does not specify, ask.
+Determine the implementation mode before starting work.
 
 | Signal | Mode |
 |--------|------|
 | User says "use CLI" or references `uip` commands | **CLI** |
 | User says "edit JSON directly" or "author the flow" | **JSON Authoring** |
 | User provides a `.flow` file to edit | **JSON Authoring** |
-| No explicit preference | Ask the user |
+| No explicit preference | Recommend a mode (see below) |
 | Flow needs dynamic resource or connector nodes | Either — both need CLI for registry/IS discovery |
 | Publishing or debugging | Always CLI (both modes converge) |
 
-**Default recommendation when asked:** JSON Authoring for OOTB-only flows (no external dependencies), CLI when the user is already working with `uip` commands.
+**When the user has no preference,** recommend a mode with a brief explanation rather than asking them to choose blind:
+- Recommend **JSON Authoring** for OOTB-only flows (no external dependencies) — it gives full control over the flow structure without requiring `uip` CLI setup.
+- Recommend **CLI** when the user is already working with `uip` commands or the flow needs dynamic resource/connector discovery.
+- State your recommendation and the reason. Let the user override if they prefer the other mode.
 
 **Mode guides:**
 - CLI: [cli/workflow-guide.md](references/cli/workflow-guide.md) + [cli/commands-reference.md](references/cli/commands-reference.md)

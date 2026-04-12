@@ -139,7 +139,7 @@ cp assets/templates/<TEMPLATE>.json <SolutionName>/<ProjectName>/<ProjectName>.f
 | `loop-flow-template.json` | Flows that iterate over collections. |
 | `connector-flow-template.json` | Flows that use Integration Service connectors. |
 | `scheduled-trigger-template.json` | Flows triggered on a recurring schedule (not manual). |
-| `multi-agent-template.json` | Flows orchestrating multiple AI agents. |
+| `data-pipeline-template.json` | Flows with Transform + Loop + Filter data pipelines. |
 | `project-scaffold-template.json` | Bare scaffold with minimal boilerplate for building from scratch. |
 
 ---
