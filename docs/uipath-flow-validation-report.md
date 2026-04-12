@@ -1,10 +1,13 @@
 # Validation Report: `uipath-flow` Skill (v2 — Round 2)
 
-> Date: 2026-04-11
-> Branch: `tmatup/uipath_flow_skill`
-> Skill commit: [`af1b5fd`](https://github.com/UiPath/skills/commit/af1b5fd75e90a3ffb888e61bc32b056c7620f677) — fix: address PR review feedback from gozhang2 and bai-uipath
-> Eval commit: [`b8479c5`](https://github.com/UiPath/coder_eval/commit/b8479c53c692b4b9235b64d5232dfabb2ab1b0bb) — feat: add uipath-flow validation tasks (18 tasks, 4 tiers) (#135)
-> Framework: `coder_eval` at `/home/tmatup/root/coder_eval/`
+| Field | Value |
+|-------|-------|
+| Date | 2026-04-11 |
+| Branch | `tmatup/uipath_flow_skill` |
+| Skill commit | [`af1b5fd`](https://github.com/UiPath/skills/commit/af1b5fd75e90a3ffb888e61bc32b056c7620f677) — fix: address PR review feedback from gozhang2 and bai-uipath |
+| Eval commit | [`b8479c5`](https://github.com/UiPath/coder_eval/commit/b8479c53c692b4b9235b64d5232dfabb2ab1b0bb) — feat: add uipath-flow validation tasks (18 tasks, 4 tiers) (#135) |
+| SxS commit | [`2f76811`](https://github.com/UiPath/coder_eval/commit/2f76811) — feat: add CLI vs JSON SxS experiment for uipath-flow skill |
+| Framework | `coder_eval` |
 
 ---
 
