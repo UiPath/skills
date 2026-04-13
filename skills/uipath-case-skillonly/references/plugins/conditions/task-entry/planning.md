@@ -21,7 +21,7 @@ Most tasks use `current-stage-entered` — the task runs automatically when the 
 Use to conditionally skip a task based on case variable values at stage entry time:
 
 ```
-$vars.claimAmount > 10000        // only run for high-value claims
-$vars.region === 'EU'            // only for EU region
-$vars.escalated === true         // only if escalated
+vars.claimAmount > 10000        // only run for high-value claims
+vars.region === 'EU'            // only for EU region
+vars.escalated === true         // only if escalated
 ```

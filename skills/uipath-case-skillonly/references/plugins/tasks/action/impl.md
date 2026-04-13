@@ -91,7 +91,20 @@ Action tasks use `"resource": "app"` (not `"process"`):
 }
 ```
 
-## Recipient Type Reference
+## Action Task `data` Fields
+
+| Field | Required | Notes |
+|---|---|---|
+| `name` / `folderPath` | ✓ | App bindings (`resource: "app"`) — Step 1 above |
+| `taskTitle` | ✓ | Display title shown in Action Center; can be a JS expression like `=string.Format("{0}", vars.x)` |
+| `priority` | optional | One of `"Low"` `"Medium"` `"High"` `"Critical"` (default `"Medium"`) |
+| `recipient` | optional | If absent, the task can be claimed by any user in the assigned scope. See Recipient Type Reference below. |
+| `assignmentCriteria` | optional | One of `"user"` `"group"` `"all"`. **Auto-computed from `recipient.Type` if omitted** (Type 0 → `user`, Type 1 → `group`). Leave it out if you let the runtime decide. |
+| `enableActionableNotifications` | optional | Boolean. When `true`, notifications sent for this task (Slack, Teams, Outlook) include inline action buttons (Approve/Reject) so the recipient can act without opening the Action Center. Defaults to `false`/absent. |
+| `inputs` | optional | Bound inputs to the SimpleApproval (or custom) app form |
+| `outputs` | ✓ | At minimum, capture the user's decision (`Action`) |
+
+### Recipient Type Reference
 
 | `Type` | `Value` format | Meaning |
 |---|---|---|
@@ -100,10 +113,23 @@ Action tasks use `"resource": "app"` (not `"process"`):
 | `2` | Email string | Assign by email address |
 | `3` | `"=vars.<varId>"` | Resolved from variable at runtime |
 
-## Priority Values
+### Optional-Field Examples
 
-`"Low"` `"Medium"` `"High"` `"Critical"`
+```json
+// Minimal: title + priority, anyone in tenant can claim
+"data": {
+  "name": "=bindings.<n>", "folderPath": "=bindings.<f>",
+  "taskTitle": "Review claim",
+  "priority": "Medium",
+  "inputs": [], "outputs": [...]
+}
 
-## assignmentCriteria Values
-
-`"user"` `"group"` `"all"`
+// With actionable notifications + dynamic title from prior task output
+"data": {
+  "name": "=bindings.<n>", "folderPath": "=bindings.<f>",
+  "taskTitle": "=string.Format(\"Review {0}\", vars.response.policyId)",
+  "priority": "High",
+  "enableActionableNotifications": true,
+  "inputs": [...], "outputs": [...]
+}
+```

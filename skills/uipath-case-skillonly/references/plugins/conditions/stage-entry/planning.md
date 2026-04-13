@@ -24,9 +24,9 @@ Most stages need only a single rule in a single set: `[[rule]]`.
 Any rule can include an optional `conditionExpression` — a JavaScript expression evaluated when the rule fires. The condition must be true for the entry condition to activate.
 
 ```
-$vars.priority === 'high'
-$vars.amount > 10000
-$vars.region === 'EU' && $vars.claimType === 'property'
+vars.priority === 'high'
+vars.amount > 10000
+vars.region === 'EU' && vars.claimType === 'property'
 ```
 
 Do **not** prefix with `=js:` — these expressions are always evaluated as JavaScript.

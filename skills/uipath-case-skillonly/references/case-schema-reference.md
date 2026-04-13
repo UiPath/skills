@@ -144,9 +144,61 @@ Directions: `right`, `left`, `top`, `bottom`. Standard layout uses `right` → `
 
 ---
 
+## Task Output Fields
+
+```json
+{
+  "name": "AnomalyCheck",
+  "displayName": "AnomalyCheck",
+  "value": "anomalyCheck",
+  "type": "string",
+  "source": "=AnomalyCheck",
+  "var": "anomalyCheck",
+  "id": "anomalyCheck",
+  "target": "=anomalyCheck",
+  "elementId": "Stage_intake-tAnomalyXX"
+}
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `name` | ✓ | Output field name from the task/process |
+| `displayName` | ✓ | Display label (usually same as `name`) |
+| `value` | ✓ | Variable ID to store the value |
+| `type` | ✓ | Data type: `string`, `number`, `boolean`, `jsonSchema`, `file`, `json`, `any` |
+| `source` | ✓ | Expression reading from task response: `=<fieldName>` |
+| `var` | ✓ | Global variable ID (must be unique across case) |
+| `id` | ✓ | Same as `var` |
+| `target` | optional | Expression for write target: `=<varId>` |
+| `elementId` | ✓ | `<stageId>-<taskId>` |
+| `_jsonSchema` | optional | JSON schema body (for `type: "jsonSchema"`) |
+| `body` | optional | Alias for `_jsonSchema` — FE emits both |
+| `custom` | optional | `true` if this is a user-defined constant output (not from task response) |
+| `canonicalId` | optional | FE-generated disambiguation ID — omit when writing |
+| `description` | optional | Human-readable description |
+
+### FE-Generated Fields (Omit When Writing)
+
+These fields are added by the FE but not required for validation or execution:
+
+| Field | Purpose |
+|-------|---------|
+| `canonicalId` | Disambiguates outputs when the same `name` appears multiple times across tasks |
+| `body` | Duplicate of `_jsonSchema` — FE emits both for compat |
+
+---
+
 ## Plugin Navigation
 
 Load plugins on demand as you build each feature. Do not load all plugins upfront.
+
+### Setup (load these first)
+| What you are building | Plugin |
+|---|---|
+| New case project + root JSON skeleton | [plugins/setup/case-skeleton](plugins/setup/case-skeleton/impl.md) |
+| Any stage node | [plugins/setup/stage](plugins/setup/stage/impl.md) |
+| Any task (common fields, lane convention) | [plugins/setup/task](plugins/setup/task/impl.md) |
+| Any edge | [plugins/setup/edge](plugins/setup/edge/impl.md) |
 
 ### Tasks
 | Task type | Plugin |
@@ -181,6 +233,7 @@ Load plugins on demand as you build each feature. Do not load all plugins upfron
 | When a stage completes | [plugins/conditions/stage-exit](plugins/conditions/stage-exit/planning.md) |
 | When a task within a stage triggers | [plugins/conditions/task-entry](plugins/conditions/task-entry/planning.md) |
 | When the case ends | [plugins/conditions/case-exit](plugins/conditions/case-exit/impl.md) |
+| Wait for connector event | [plugins/conditions/wait-for-connector](plugins/conditions/wait-for-connector/planning.md) |
 
 ### SLA
 | What you are building | Plugin |

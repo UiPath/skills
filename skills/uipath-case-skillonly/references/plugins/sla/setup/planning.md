@@ -16,7 +16,7 @@ Both use the same structure. Stage SLA overrides case SLA for that stage's durat
 | Situation | Expression | Use |
 |---|---|---|
 | One deadline applies to all cases | `"=js:true"` | Single unconditional rule |
-| Different deadlines based on case data | `"=js:$vars.priority === 'high'"` | Multiple conditional rules |
+| Different deadlines based on case data | `"=js:vars.priority === 'high'"` | Multiple conditional rules |
 
 Multiple rules are evaluated; **all matching rules apply simultaneously**.
 

@@ -33,3 +33,72 @@ Always use `"return-to-origin"` exit condition on ExceptionStage unless the exce
 ## Graph Layout
 
 Place ExceptionStage **below** the main flow and connect with `bottom` → `top` handles to distinguish it visually from the sequential flow.
+
+## Multi-Source Entry Pattern
+
+ExceptionStages often receive entries from **multiple** main-flow stages. For example, a "Pending with customer" stage may activate from Intake, Review, Settlement, or Closure — any stage where the case needs customer input.
+
+In the spec, look for:
+- "Can be triggered from any stage where..."
+- "Activated when decision is X from multiple stages"
+- "Global exception handler for..."
+
+In tasks.md, create **one entry condition per source stage**:
+
+```
+## T50: Add stage entry condition for "Pending with customer" — from Intake
+- rule-type: selected-stage-exited
+- selected-stage-id: "Intake"
+- condition: decision == "Claim needs info from customer"
+- isInterrupting: true
+- order: after T49
+
+## T51: Add stage entry condition for "Pending with customer" — from Review
+- rule-type: selected-stage-exited
+- selected-stage-id: "Review"
+- condition: decision == "Claim needs info from customer"
+- isInterrupting: true
+- order: after T50
+
+## T52: Add stage entry condition for "Pending with customer" — from Settlement
+- rule-type: selected-stage-exited
+- selected-stage-id: "Settlement"
+- condition: decision == "Claim needs info from customer"
+- isInterrupting: true
+- order: after T51
+```
+
+Key points:
+- Each entry needs `isInterrupting: true` to preempt the source stage
+- Use `selected-stage-exited` (not `selected-stage-completed`) when the source stage is still active
+- The `condition` field is human-readable; implementation phase translates to `=js:vars.decision == "..."`
+
+## Re-entry Counter Variables
+
+When an ExceptionStage returns to a main-flow stage that can be re-entered, the spec may describe different behavior on re-entry (e.g., "skip initial tasks on second run"). This requires a counter variable.
+
+In the spec, look for:
+- "On re-entry, only run the follow-up task"
+- "Skip initial processing if returning from exception"
+- "First run vs subsequent runs"
+
+In tasks.md, declare the counter:
+
+```
+## T70: Declare re-entry counter for "Intake"
+- variable-name: finishedRunCountIntake
+- type: number
+- internal: true
+- order: after T69
+```
+
+Then reference it in task entry conditions:
+
+```
+## T75: Add task entry condition for "Incident reports" in "Intake" — re-entry only
+- rule-type: current-stage-entered
+- condition: finishedRunCountIntake > 0
+- order: after T74
+```
+
+See [impl.md](impl.md) for the full JSON patterns.

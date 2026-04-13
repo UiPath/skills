@@ -37,7 +37,7 @@ With filter expression (only activate if condition is true when stage completes)
   "rule": "selected-stage-completed",
   "id": "Rule_<6chars>",
   "selectedStageId": "Stage_f95rff",
-  "conditionExpression": "$vars.approvalStatus === 'approved'"
+  "conditionExpression": "=js:vars.approvalStatus === 'approved'"
 }
 ```
 
@@ -77,7 +77,7 @@ With filter expression:
 {
   "rule": "current-stage-entered",
   "id": "Rule_<6chars>",
-  "conditionExpression": "$vars.priority === 'high'"
+  "conditionExpression": "=js:vars.priority === 'high'"
 }
 ```
 
@@ -108,7 +108,7 @@ Add to any entry condition to allow mid-execution stage interruption:
     "rule": "selected-stage-completed",
     "id": "Rule_<6chars>",
     "selectedStageId": "Stage_f95rff",
-    "conditionExpression": "$vars.escalated === true"
+    "conditionExpression": "=js:vars.escalated === true"
   }]]
 }
 ```
@@ -129,3 +129,27 @@ Stage activates when either condition fires (Stage 1 completes OR Stage 2 comple
   }
 ]
 ```
+
+## Rule Type Reference (full FE-aligned set)
+
+Authoritative source: FE Zod schemas in `types/case-mgmt-zod/rules/` and `CaseManagementNodeEntryRuleCondition` type. Each rule is an object with `rule` + supporting fields:
+
+| `rule` value | Companion fields | When to use here (stage entry) |
+|---|---|---|
+| `case-entered` | `conditionExpression?` | First stage; activates when the case starts |
+| `current-stage-entered` | `conditionExpression?` | Stage activates each time it's entered (re-entry-aware) |
+| `selected-stage-completed` | `selectedStageId`, `conditionExpression?` | Wait for another stage to complete |
+| `selected-stage-exited` | `selectedStageId`, `conditionExpression?` | Wait for another stage to exit (regardless of completion) |
+| `selected-tasks-completed` | `selectedTasksIds[]`, `conditionExpression?` | Wait for specific tasks across the case |
+| `wait-for-connector` | `uipath: { serviceType?, context?[], inputs?[], outputs?[], bindings?[] }`, `conditionExpression?` | Wait for an external connector event (Outlook email, webhook, etc.) — usually written by `uip case tasks add-connector` rather than by hand |
+| `adhoc` | `conditionExpression?` | Stage can be triggered manually at any point |
+
+> **`isInterrupting: true`** on the entry condition (NOT on the rule) lets the new entry preempt running work in the source stage — common for ExceptionStage entries from multiple sources.
+
+### Deprecated rules (legacy schema)
+
+| Rule | Replacement |
+|---|---|
+| `condition` | Use `current-stage-entered` (or other rule) with `conditionExpression` |
+| `stage-complete` | Use `selected-tasks-completed` or `selected-stage-completed` |
+| `timer` (in conditions) | Use a Timer trigger or `wait-for-timer` task |

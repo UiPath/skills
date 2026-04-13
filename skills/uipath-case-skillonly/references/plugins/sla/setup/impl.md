@@ -56,7 +56,7 @@ SLA rules go in `root.data.slaRules` (case-level) or `stage.data.slaRules` (stag
 ```json
 "slaRules": [
   {
-    "expression": "=js:$vars.priority === 'high'",
+    "expression": "=js:vars.priority === 'high'",
     "count": 1,
     "unit": "d",
     "escalationRule": [
@@ -72,7 +72,7 @@ SLA rules go in `root.data.slaRules` (case-level) or `stage.data.slaRules` (stag
     ]
   },
   {
-    "expression": "=js:$vars.priority !== 'high'",
+    "expression": "=js:vars.priority !== 'high'",
     "count": 5,
     "unit": "d",
     "escalationRule": [
@@ -116,11 +116,11 @@ Minimal SLA without escalation — just defines the deadline:
 
 ## conditionExpression in SLA Rules
 
-The `expression` field uses `=js:` prefix and is always evaluated as JavaScript. Access global variables with `$vars.<id>`:
+The `expression` field uses `=js:` prefix and is always evaluated as JavaScript. Access global variables with `vars.<id>`:
 
 ```
 =js:true                              // always applies
-=js:$vars.priority === 'high'         // only for high-priority cases
-=js:$vars.claimAmount > 50000         // only for large claims
-=js:$vars.region === 'EU'             // only for EU region
+=js:vars.priority === 'high'         // only for high-priority cases
+=js:vars.claimAmount > 50000         // only for large claims
+=js:vars.region === 'EU'             // only for EU region
 ```
