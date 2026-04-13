@@ -1,0 +1,25 @@
+name: Test Helpers
+
+on:
+  pull_request:
+    paths:
+      - 'tests/tasks/uipath-maestro-flow/_shared/**'
+      - '.github/workflows/test-helpers.yml'
+  workflow_dispatch:
+
+jobs:
+  pytest-flow-check:
+    runs-on: ubuntu-latest
+    name: flow_check.py unit tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-maestro-flow/_shared/ -v
