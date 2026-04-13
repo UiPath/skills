@@ -2,6 +2,8 @@
 
 How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, `bindings_v2.json` schema, and debugging.
 
+For generic node/edge add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+
 ## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) bound in `bindings_v2.json`. Without it, the node cannot authenticate.

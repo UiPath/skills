@@ -43,34 +43,20 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.logic.loop --output json \
-  --input '{"collection": "=js:$vars.fetchData.output.body.items"}' \
-  --label "Process Items" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
-## Wiring Pattern
+## Wiring
 
-```bash
-# Into the loop
-uip flow edge add <ProjectName>.flow upstreamNode processItems --output json \
-  --source-port success --target-port input
+Loop nodes have a specific wiring pattern:
 
-# Loop body: loop -> first body node
-uip flow edge add <ProjectName>.flow processItems bodyAction --output json \
-  --source-port output --target-port input
+- `input` — entry from upstream
+- `output` — into the loop body (first body node)
+- `loopBack` — return from last body node back to loop
+- `success` — exit after loop completes (to next downstream node)
 
-# Loop body: last body node -> loopBack
-uip flow edge add <ProjectName>.flow bodyAction processItems --output json \
-  --source-port success --target-port loopBack
-
-# After loop completes
-uip flow edge add <ProjectName>.flow processItems nextNode --output json \
-  --source-port success --target-port input
-```
+See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
 
 ## Accessing Loop Variables Inside Body
 

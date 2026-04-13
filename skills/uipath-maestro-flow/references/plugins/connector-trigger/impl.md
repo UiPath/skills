@@ -110,21 +110,7 @@ Each trigger type has a different output schema — field names like `.text`, `.
 
 ### Step 5 — Replace the manual trigger with the connector trigger node
 
-The trigger node replaces the default `core.trigger.manual` start node. **Use CLI commands — do NOT manually edit the JSON to remove the start node.** The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically.
-
-```bash
-# 1. Delete the manual trigger (also removes its edges and orphaned definition)
-uip flow node delete <PROJECT>.flow start --output json
-
-# 2. Add the connector trigger node
-uip flow node add <PROJECT>.flow <triggerNodeType> \
-  --label "Email Received" --position 200,144 --output json
-# → Note the generated node ID from the response (e.g., "emailReceived1")
-
-# 3. Re-wire the edge from the new trigger to the next node
-uip flow edge add <PROJECT>.flow <newTriggerId> <nextNodeId> \
-  --source-port output --target-port input --output json
-```
+Follow the [CLI: Replace manual trigger with connector trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.
 
 ### Step 6 — Configure the trigger node
 

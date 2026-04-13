@@ -36,14 +36,9 @@ Confirm: input port `input`, output port `success`.
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.action.queue.create --output json \
-  --input '{"queue": "InvoiceProcessingQueue", "priority": "High"}' \
-  --label "Enqueue Invoice" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Wait Variant
 

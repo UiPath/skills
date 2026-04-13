@@ -18,6 +18,10 @@ uip flow registry get core.action.transform.group-by --output json
 
 Confirm: input port `input`, output ports `output` and `error`, required inputs `collection` and `operations`.
 
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
+
 ---
 
 ## Generic Transform (`core.action.transform`)

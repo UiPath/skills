@@ -25,17 +25,13 @@ Confirm: input port `input`, no output ports.
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.logic.terminate --output json \
-  --label "Abort" \
-  --position 700,500
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Common Pattern — Error Handler
 
-```
+```text
 HTTP Request -> Decision (error?) -> true -> Log Error (Script) -> Terminate
                                   -> false -> Process -> End
 ```

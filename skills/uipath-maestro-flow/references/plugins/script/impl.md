@@ -27,16 +27,9 @@ Confirm: input port `input`, output port `success`, required input `script` (str
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.action.script --output json \
-  --input '{"script": "return { result: $vars.input1.toUpperCase() };"}' \
-  --label "Process Data" \
-  --position 300,200
-```
-
-> **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write the JSON to a temp file and pass it: `uip flow node add <file> core.action.script --input "$(cat /tmp/input.json)" --output json`
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Script Rules
 

@@ -55,11 +55,7 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
 
 ## Replacing Manual Trigger with Scheduled
 
-1. Change the start node's `type` to `core.trigger.scheduled`
-2. Add timer inputs: `timerType: "timeCycle"`, `timerPreset: "R/PT1H"` (or custom)
-3. Add the `eventDefinition` to `model`: `"eventDefinition": "bpmn:TimerEventDefinition"`
-4. Update the definition in the `definitions` array (get from `registry get`)
-5. Validate: `uip flow validate`
+For the step-by-step procedure, see [JSON: Replace manual trigger with scheduled trigger](../../flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs` and `model` fields.
 
 ## Debug
 

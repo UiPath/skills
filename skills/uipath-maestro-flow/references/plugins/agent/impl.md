@@ -26,13 +26,9 @@ Confirm:
 - `model.serviceType` — `Orchestrator.StartAgentJob`
 - `inputDefinition` — typically empty (agents accept free-form input via the flow's wiring)
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.agent.{key}" --output json \
-  --label "Classify Intent" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -78,16 +74,7 @@ return { classification: response };
 
 ## If the Agent Does Not Exist Yet
 
-1. Add a `core.logic.mock` placeholder in the flow
-2. Tell the user to create and publish the agent using `uipath-agents`
-3. After publishing, refresh the registry and replace the mock:
-
-```bash
-uip flow registry pull --force
-uip flow registry search "<agent-name>" --output json
-```
-
-See [rpa/impl.md](../rpa/impl.md) for the full mock replacement workflow.
+Add a `core.logic.mock` placeholder and tell the user to create and publish the agent using `uipath-agents`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
 
 ## Debug
 
