@@ -106,7 +106,7 @@ Before editing, create a plan based on the given input file and get user approva
 ### Step 4 — Add stages
 
 ```bash
-uip case stages add <file> --label "Review Application" --output json
+uip case stages add <file> --label "Review Application" --output json --is-required
 uip case stages add <file> --label "Exception Handler" --type exception --output json
 ```
 
@@ -208,9 +208,15 @@ uip case stage-exit-conditions add <file> <stage-id> --display-name "<name>" \
 **Case exit conditions** — when the whole case should close:
 ```bash
 uip case case-exit-conditions add <file> --display-name "<name>" \
+  --rule-type required-stages-completed --marks-case-complete true
+```
+or (very rare)
+```bash
+uip case case-exit-conditions add <file> --display-name "<name>" \
   --rule-type selected-stage-completed --selected-stage-id <id> \
   --marks-case-complete true
 ```
+
 
 **Task entry conditions** — when a specific task should start:
 ```bash
@@ -222,7 +228,7 @@ uip case task-entry-conditions add <file> <stage-id> <task-id> \
 Rule types:
 - Stage entry: `case-entered`, `selected-stage-exited`, `selected-stage-completed`, `wait-for-connector`, `adhoc`
 - Stage exit: `selected-tasks-completed`, `wait-for-connector`
-- Case exit: `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`
+- Case exit: `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `required-stages-completed`
 - Task entry: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc`
 
 Each command outputs `{ ConditionId, ... }` on success — save the ID if you need to edit the condition later.
