@@ -1,0 +1,24 @@
+[
+  {"idx":1,"stageId":"stage_1","type":"rpa","entityKey":"17a61b30-d97e-4671-897c-58ec30231327","name":"Book appraisal","folderPath":"Shared/[CM] Property insurance claims","displayName":"Book appraisal"},
+  {"idx":2,"stageId":"stage_1","type":"agent","entityKey":"b537b1eb-644b-4c7d-bf77-657619eb8bfe","name":"Agent","folderPath":"Shared/AgentDate","displayName":"Run AgentDate"},
+  {"idx":3,"stageId":"stage_1","type":"api-workflow","entityKey":"da5ded49-514d-4baa-980b-f5faac4f72e3","name":"API Workflow","folderPath":"Shared/Expense Report - TT","displayName":"Call Expense API"},
+  {"idx":4,"stageId":"stage_1","type":"wait-for-timer","displayName":"Wait 5 minutes","timer":"timeDuration","timeDuration":"PT5M"},
+  {"idx":5,"stageId":"stage_1","type":"rpa","entityKey":"ddb0dc35-b03c-46e8-b3cc-b40c60f600d3","name":"Book appraisal","folderPath":"Shared/[Joshi] Property insurance claims1","displayName":"Book appraisal (Joshi)"},
+  {"idx":6,"stageId":"stage_1","type":"agent","entityKey":"9d6513f7-e72e-4a48-afae-6bbe104dad9d","name":"Agent","folderPath":"Shared/Expense Report - TT","displayName":"Run Expense Agent"},
+  {"idx":7,"stageId":"stage_1","type":"wait-for-timer","displayName":"Wait 1 hour","timer":"timeDuration","timeDuration":"PT1H"},
+
+  {"idx":8,"stageId":"stage_2","type":"rpa","entityKey":"17a61b30-d97e-4671-897c-58ec30231327","name":"Book appraisal","folderPath":"Shared/[CM] Property insurance claims","displayName":"Book appraisal (again)"},
+  {"idx":9,"stageId":"stage_2","type":"api-workflow","entityKey":"d55a195d-c7b7-4f5f-8804-10ae6023a65a","name":"API Workflow","folderPath":"Shared/Solution 219","displayName":"Call Solution 219 API"},
+  {"idx":10,"stageId":"stage_2","type":"connector-activity","activityTypeId":"0d93ddc9-a512-4b60-8483-4a3a8fbee20e","connectionId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","connectorKey":"uipath-atlassian-jira","folderKey":"f7861297-448e-4ce1-9415-3d50c8a3aff6","operation":"list","objectName":"curated_get_issue","method":"GET","path":"/rest/api/3/issue/{issueIdOrKey}","displayName":"Get Jira Issue"},
+  {"idx":11,"stageId":"stage_2","type":"wait-for-timer","displayName":"Wait 30 seconds","timer":"timeDuration","timeDuration":"PT30S"},
+  {"idx":12,"stageId":"stage_2","type":"agent","entityKey":"b537b1eb-644b-4c7d-bf77-657619eb8bfe","name":"Agent","folderPath":"Shared/AgentDate","displayName":"Run AgentDate (2)"},
+  {"idx":13,"stageId":"stage_2","type":"rpa","entityKey":"ddb0dc35-b03c-46e8-b3cc-b40c60f600d3","name":"Book appraisal","folderPath":"Shared/[Joshi] Property insurance claims1","displayName":"Book appraisal Joshi (2)"},
+  {"idx":14,"stageId":"stage_2","type":"api-workflow","entityKey":"da5ded49-514d-4baa-980b-f5faac4f72e3","name":"API Workflow","folderPath":"Shared/Expense Report - TT","displayName":"Call Expense API (2)"},
+
+  {"idx":15,"stageId":"stage_3","type":"rpa","entityKey":"17a61b30-d97e-4671-897c-58ec30231327","name":"Book appraisal","folderPath":"Shared/[CM] Property insurance claims","displayName":"Book appraisal (final)"},
+  {"idx":16,"stageId":"stage_3","type":"connector-activity","activityTypeId":"0d93ddc9-a512-4b60-8483-4a3a8fbee20e","connectionId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","connectorKey":"uipath-atlassian-jira","folderKey":"f7861297-448e-4ce1-9415-3d50c8a3aff6","operation":"list","objectName":"curated_get_issue","method":"GET","path":"/rest/api/3/issue/{issueIdOrKey}","displayName":"Get Jira Issue (2)"},
+  {"idx":17,"stageId":"stage_3","type":"wait-for-timer","displayName":"Wait 2 hours","timer":"timeDuration","timeDuration":"PT2H"},
+  {"idx":18,"stageId":"stage_3","type":"agent","entityKey":"9d6513f7-e72e-4a48-afae-6bbe104dad9d","name":"Agent","folderPath":"Shared/Expense Report - TT","displayName":"Run Expense Agent (2)"},
+  {"idx":19,"stageId":"stage_3","type":"rpa","entityKey":"ddb0dc35-b03c-46e8-b3cc-b40c60f600d3","name":"Book appraisal","folderPath":"Shared/[Joshi] Property insurance claims1","displayName":"Book appraisal Joshi (3)"},
+  {"idx":20,"stageId":"stage_3","type":"api-workflow","entityKey":"d55a195d-c7b7-4f5f-8804-10ae6023a65a","name":"API Workflow","folderPath":"Shared/Solution 219","displayName":"Call Solution 219 API (2)"}
+]

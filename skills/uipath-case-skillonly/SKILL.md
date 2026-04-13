@@ -124,12 +124,18 @@ Always start with the schema reference for structural skeleton and ID convention
 
 **Tasks**
 
-| Plugin | Covers |
+| Plugin | Task type |
 |---|---|
-| [plugins/tasks/standard-io](references/plugins/tasks/standard-io/planning.md) | process, agent, rpa, api-workflow, case-management |
-| [plugins/tasks/action](references/plugins/tasks/action/planning.md) | Human-in-the-loop action tasks |
-| [plugins/tasks/timer](references/plugins/tasks/timer/planning.md) | wait-for-timer — timeDuration, timeDate, timeCycle |
-| [plugins/tasks/connector-activity](references/plugins/tasks/connector-activity/planning.md) | wait-for-connector, execute-connector-activity, external-agent (CLI enrichment required) |
+| [plugins/tasks/process](references/plugins/tasks/process/planning.md) | `process` — agentic / orchestration process |
+| [plugins/tasks/agent](references/plugins/tasks/agent/planning.md) | `agent` — UiPath AI agent |
+| [plugins/tasks/rpa](references/plugins/tasks/rpa/planning.md) | `rpa` — desktop / browser automation |
+| [plugins/tasks/api-workflow](references/plugins/tasks/api-workflow/planning.md) | `api-workflow` — published API workflow |
+| [plugins/tasks/case-management](references/plugins/tasks/case-management/planning.md) | `case-management` — nested case process |
+| [plugins/tasks/action](references/plugins/tasks/action/planning.md) | `action` — human-in-the-loop |
+| [plugins/tasks/timer](references/plugins/tasks/timer/planning.md) | `wait-for-timer` — timeDuration, timeDate, timeCycle |
+| [plugins/tasks/execute-connector-activity](references/plugins/tasks/execute-connector-activity/planning.md) | `execute-connector-activity` — execute action on external system (CLI enrichment) |
+| [plugins/tasks/wait-for-connector](references/plugins/tasks/wait-for-connector/planning.md) | `wait-for-connector` — wait for external connector event (CLI enrichment) |
+| [plugins/tasks/external-agent](references/plugins/tasks/external-agent/planning.md) | `external-agent` — AI agent on external platform (CLI enrichment) |
 
 **Triggers**
 

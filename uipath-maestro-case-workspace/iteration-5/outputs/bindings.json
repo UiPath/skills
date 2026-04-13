@@ -1,0 +1,178 @@
+[
+  {
+    "id": "boCLrZ3aW",
+    "name": "uipath-atlassian-jira connection",
+    "type": "string",
+    "resource": "Connection",
+    "propertyAttribute": "ConnectionId",
+    "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  {
+    "id": "bZkSBvrjn",
+    "name": "FolderKey",
+    "type": "string",
+    "resource": "Connection",
+    "propertyAttribute": "folderKey",
+    "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "default": "f7861297-448e-4ce1-9415-3d50c8a3aff6"
+  },
+  {
+    "id": "bxkxwnQrS",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/[CM] Property insurance claims.Book appraisal",
+    "default": "Book appraisal",
+    "resourceSubType": "ProcessOrchestration"
+  },
+  {
+    "id": "b7RPeMOkI",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/[CM] Property insurance claims.Book appraisal",
+    "default": "Shared/[CM] Property insurance claims",
+    "resourceSubType": "ProcessOrchestration"
+  },
+  {
+    "id": "bGWlG6g3O",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/[Joshi] Property insurance claims1.Book appraisal",
+    "default": "Book appraisal",
+    "resourceSubType": "ProcessOrchestration"
+  },
+  {
+    "id": "bt1OGMmjx",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/[Joshi] Property insurance claims1.Book appraisal",
+    "default": "Shared/[Joshi] Property insurance claims1",
+    "resourceSubType": "ProcessOrchestration"
+  },
+  {
+    "id": "bPPgdzUvZ",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/Expense Report - TT.Agent",
+    "default": "Agent",
+    "resourceSubType": "Agent"
+  },
+  {
+    "id": "b3gpmmICi",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/Expense Report - TT.Agent",
+    "default": "Shared/Expense Report - TT",
+    "resourceSubType": "Agent"
+  },
+  {
+    "id": "b4pxskC1I",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/AgentDate.Agent",
+    "default": "Agent",
+    "resourceSubType": "Agent"
+  },
+  {
+    "id": "bTtNZPHaQ",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/AgentDate.Agent",
+    "default": "Shared/AgentDate",
+    "resourceSubType": "Agent"
+  },
+  {
+    "id": "bxBe8Q6vN",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/Solution 219.API Workflow",
+    "default": "API Workflow",
+    "resourceSubType": "Api"
+  },
+  {
+    "id": "buQ2hU5tG",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/Solution 219.API Workflow",
+    "default": "Shared/Solution 219",
+    "resourceSubType": "Api"
+  },
+  {
+    "id": "bRZzUk1D6",
+    "name": "name",
+    "type": "string",
+    "resource": "app",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/Solution Folder Test.SimpleApprovalApp",
+    "default": "SimpleApprovalApp"
+  },
+  {
+    "id": "biNIb6zLK",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "app",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/Solution Folder Test.SimpleApprovalApp",
+    "default": "Shared/Solution Folder Test"
+  },
+  {
+    "id": "bqQfkplJe",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/Expense Report - TT.API Workflow",
+    "default": "API Workflow",
+    "resourceSubType": "Api"
+  },
+  {
+    "id": "bkaACSMEs",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/Expense Report - TT.API Workflow",
+    "default": "Shared/Expense Report - TT",
+    "resourceSubType": "Api"
+  },
+  {
+    "id": "b4fetzTUE",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "name",
+    "resourceKey": "Shared/SubCases.Sub Case",
+    "default": "Sub Case",
+    "resourceSubType": "CaseManagement"
+  },
+  {
+    "id": "bHAXA0Kei",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "propertyAttribute": "folderPath",
+    "resourceKey": "Shared/SubCases.Sub Case",
+    "default": "Shared/SubCases",
+    "resourceSubType": "CaseManagement"
+  }
+]

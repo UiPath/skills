@@ -149,12 +149,18 @@ Directions: `right`, `left`, `top`, `bottom`. Standard layout uses `right` → `
 Load plugins on demand as you build each feature. Do not load all plugins upfront.
 
 ### Tasks
-| What you are building | Plugin |
+| Task type | Plugin |
 |---|---|
-| Automation task (process / agent / rpa / api-workflow / case-management) | [plugins/tasks/standard-io](plugins/tasks/standard-io/planning.md) |
-| Human-in-the-loop action task | [plugins/tasks/action](plugins/tasks/action/planning.md) |
-| Timer / delay task | [plugins/tasks/timer](plugins/tasks/timer/planning.md) |
-| Connector task (wait-for-connector / execute-connector-activity / external-agent) | [plugins/tasks/connector-activity](plugins/tasks/connector-activity/planning.md) |
+| `process` | [plugins/tasks/process](plugins/tasks/process/planning.md) |
+| `agent` | [plugins/tasks/agent](plugins/tasks/agent/planning.md) |
+| `rpa` | [plugins/tasks/rpa](plugins/tasks/rpa/planning.md) |
+| `api-workflow` | [plugins/tasks/api-workflow](plugins/tasks/api-workflow/planning.md) |
+| `case-management` | [plugins/tasks/case-management](plugins/tasks/case-management/planning.md) |
+| `action` | [plugins/tasks/action](plugins/tasks/action/planning.md) |
+| `wait-for-timer` | [plugins/tasks/timer](plugins/tasks/timer/planning.md) |
+| `execute-connector-activity` | [plugins/tasks/execute-connector-activity](plugins/tasks/execute-connector-activity/planning.md) |
+| `wait-for-connector` | [plugins/tasks/wait-for-connector](plugins/tasks/wait-for-connector/planning.md) |
+| `external-agent` | [plugins/tasks/external-agent](plugins/tasks/external-agent/planning.md) |
 
 ### Triggers
 | What you are building | Plugin |
