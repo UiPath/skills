@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flow_check import (  # noqa: E402
-    assert_node_types,
+    assert_flow_has_node_type,
     assert_output_int_in_range,
     assert_output_value,
     assert_outputs_contain,
@@ -30,12 +30,16 @@ def _payload(*, globals_=(), elements=()):
     }
 
 
-def _exec(element_type=None, extension_type=None, status="Completed"):
-    return {
-        "elementType": element_type,
-        "extensionType": extension_type,
-        "status": status,
-    }
+def _write_flow(tmp_path, node_types):
+    """Create a minimal project.uiproj + .flow file tree and return its root."""
+    import json
+
+    proj = tmp_path / "MyFlow"
+    proj.mkdir()
+    (proj / "project.uiproj").write_text("{}")
+    flow = {"nodes": [{"id": f"n{i}", "type": t} for i, t in enumerate(node_types)]}
+    (proj / "MyFlow.flow").write_text(json.dumps(flow))
+    return tmp_path
 
 
 # ── collect_outputs ─────────────────────────────────────────────────────────
@@ -68,37 +72,32 @@ def test_collect_outputs_empty():
     assert collect_outputs(_payload()) == []
 
 
-# ── assert_node_types ───────────────────────────────────────────────────────
+# ── assert_flow_has_node_type ───────────────────────────────────────────────
 
 
-def test_assert_node_types_matches_element_type():
-    payload = {"elementExecutions": [_exec(element_type="ScriptTask")]}
-    assert_node_types(payload, ["script"])  # substring, case-insensitive
+def test_assert_flow_has_node_type_matches_substring(tmp_path, monkeypatch):
+    root = _write_flow(tmp_path, ["core.action.http", "core.action.script"])
+    monkeypatch.chdir(root)
+    assert_flow_has_node_type(["core.action.http"])  # exact
+    assert_flow_has_node_type(["http"])  # substring, case-insensitive
 
 
-def test_assert_node_types_matches_extension_type():
-    payload = {
-        "elementExecutions": [
-            _exec(element_type="ServiceTask", extension_type="api-workflow")
-        ]
-    }
-    assert_node_types(payload, ["api-workflow"])
+def test_assert_flow_has_node_type_matches_resource_node(tmp_path, monkeypatch):
+    root = _write_flow(tmp_path, ["uipath.core.api-workflow.abc-123"])
+    monkeypatch.chdir(root)
+    assert_flow_has_node_type(["uipath.core.api-workflow"])
 
 
-def test_assert_node_types_requires_completed_status():
-    payload = {"elementExecutions": [_exec(element_type="ScriptTask", status="Failed")]}
-    with pytest.raises(SystemExit, match="node-type hint 'script'"):
-        assert_node_types(payload, ["script"])
+def test_assert_flow_has_node_type_fails_when_absent(tmp_path, monkeypatch):
+    root = _write_flow(tmp_path, ["core.action.script"])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit, match="type hint 'core.action.http'"):
+        assert_flow_has_node_type(["core.action.http"])
 
 
-def test_assert_node_types_fails_when_hint_absent():
-    payload = {"elementExecutions": [_exec(element_type="HttpRequest")]}
-    with pytest.raises(SystemExit, match="node-type hint 'agent'"):
-        assert_node_types(payload, ["agent"])
-
-
-def test_assert_node_types_empty_hints_is_noop():
-    assert_node_types({}, [])  # no raise
+def test_assert_flow_has_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
+    assert_flow_has_node_type([])
 
 
 # ── assert_output_value ─────────────────────────────────────────────────────

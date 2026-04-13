@@ -54,28 +54,38 @@ def run_debug(
     return payload
 
 
-def assert_node_types(payload: dict, hints: Sequence[str]) -> None:
-    """Require that for each hint, at least one ``elementExecution`` with
-    status ``Completed`` has ``elementType`` or ``extensionType`` containing
-    the hint (case-insensitive)."""
+def assert_flow_has_node_type(
+    hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require that every ``.flow`` file under the project has at least one
+    node whose ``type`` contains each hint (case-insensitive, substring).
+
+    Uses the UiPath-native node-type names from the flow source file
+    (``core.action.http``, ``uipath.core.api-workflow.{key}``, etc.), which
+    are stable and match the skill's own docs — unlike the BPMN-generic
+    names ``flow debug`` emits on ``elementExecutions[].elementType``.
+
+    Pairs with a runtime output assertion: the file check confirms the
+    correct node *kind* was built; the output check confirms execution
+    produced the expected result.
+    """
     if not hints:
         return
-    execs = payload.get("elementExecutions") or []
-    seen = sorted({f"{e.get('elementType')}:{e.get('extensionType')}" for e in execs})
+    project_dir = _find_project(project_glob)
+    types_seen: set[str] = set()
+    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+        with open(path) as f:
+            flow = json.load(f)
+        for node in flow.get("nodes") or []:
+            t = node.get("type")
+            if t:
+                types_seen.add(t)
     for hint in hints:
         needle = hint.lower()
-        match = any(
-            e.get("status") == "Completed"
-            and (
-                needle in (e.get("elementType") or "").lower()
-                or needle in (e.get("extensionType") or "").lower()
-            )
-            for e in execs
-        )
-        if not match:
+        if not any(needle in t.lower() for t in types_seen):
             _fail(
-                f"No Completed element matches node-type hint {hint!r}. "
-                f"Element types seen: {seen}"
+                f"No node matches type hint {hint!r}. "
+                f"Node types seen: {sorted(types_seen)}"
             )
 
 

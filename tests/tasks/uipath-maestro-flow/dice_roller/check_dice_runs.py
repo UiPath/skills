@@ -6,18 +6,17 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.flow_check import (  # noqa: E402
-    assert_node_types,
+    assert_flow_has_node_type,
     assert_output_int_in_range,
     run_debug,
 )
 
 
 def main():
+    assert_flow_has_node_type(["core.action.script"])
     payload = run_debug(timeout=240)
-    # A Script node is required to produce the random value.
-    assert_node_types(payload, ["script"])
     roll = assert_output_int_in_range(payload, 1, 6)
-    print(f"OK: Script node ran; dice value = {roll}")
+    print(f"OK: Script node present; dice value = {roll}")
 
 
 if __name__ == "__main__":
