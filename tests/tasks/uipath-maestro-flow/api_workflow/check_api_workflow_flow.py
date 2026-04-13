@@ -16,7 +16,7 @@ def main():
     payload = run_debug(timeout=240)
     # Low-code API-workflow invocation node has extensionType "api-workflow".
     assert_node_types(payload, ["api-workflow"])
-    age = assert_output_int_in_range(payload, 1, 150)
+    age = assert_output_int_in_range(payload, 40, 60)
     print(f"OK: API workflow executed; age = {age}")
 
 
