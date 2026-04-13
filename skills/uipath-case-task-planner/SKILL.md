@@ -1,19 +1,37 @@
 ---
-name: case-task-planner
-description: "Transform a case design document (sdd.md) into an actionable tasks.md that the uipath-case skill can execute to build a case definition. Use when the user wants to 'generate implementation tasks from a case spec', 'break down a case spec into tasks', 'plan case tasks from sdd', 'create a tasks.md from spec', 'interpret case spec', 'convert spec to implementation plan', or when another skill needs to convert a case design document (sdd.md) into a step-by-step implementation plan for the uip case CLI."
-metadata:
-   allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+name: uipath-case-task-planner
+description: "[PREVIEW] Case spec interpreter (sdd.md + spec.json → tasks.md). Resolves registry taskTypeIds and generates ordered CLI commands for uip case. For direct case editing→uipath-case-management."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # Case Task Planner
 
 Convert a case design document (sdd.md) into a tasks.md file that an implementation agent can follow to build the case definition using the `uip case` CLI.
 
-The idea is straightforward: the user (or another skill) has already designed a case -- they have a semantic design document (sdd.md) that describes the case in plain language, including its stages, tasks, edges, rules, SLA, and component types. This skill's job is to bridge the gap between "design" and "implementation" by producing a concrete, ordered list of CLI commands with all the registry lookups already resolved.
+## When to Use This Skill
 
-## Why this matters
+- User asks to "generate implementation tasks from a case spec"
+- User asks to "break down a case spec into tasks" or "plan case tasks from sdd"
+- User asks to "create a tasks.md from spec" or "interpret case spec"
+- User asks to "convert spec to implementation plan"
+- Another skill needs to convert a case design document (sdd.md) into a step-by-step implementation plan for the `uip case` CLI
 
-Without this skill, an implementation agent would need to read the sdd.md, figure out which registry resources match each task, understand the CLI's type system and flag conventions, and sequence everything correctly. That is error-prone and slow. By doing the interpretation upfront and producing a tasks.md, the implementation agent gets a clean checklist it can execute mechanically.
+> **Not this skill:** For directly editing case JSON files or running `uip case` commands, use `uipath-case-management` instead.
+
+## Critical Rules
+
+1. **Always regenerate tasks.md from scratch** — never do incremental updates to an existing tasks.md. This avoids stale state from previous runs.
+2. **Run `uip case registry pull` before any interpretation** — pulling the registry cache upfront avoids network failures partway through.
+3. **No `uip` CLI commands in tasks.md** — tasks.md is a declarative specification. Each task entry contains parameters, IDs, and metadata only. The implementation agent (uipath-case-management skill) translates specs into CLI calls.
+4. **Follow every step as written — do not skip or shortcut** — the procedures exist because previous shortcuts caused failures. Do not skip registry lookups based on assumptions.
+5. **Best effort on registry failures** — if a lookup fails, mark it as `[REGISTRY LOOKUP FAILED: <keywords>]` and continue. Do not abort the entire run.
+6. **One task per T-number** — do not group multiple sdd.md tasks under a single T-number.
+7. **Max 2 registry refresh retries** — if `registry pull --force` still yields no match after 2 retries, mark the lookup as failed and move on.
+8. **Ask the user when login fails** — if `uip login status` shows not logged in, prompt the user to run `uip login` and stop until they confirm.
+
+## Overview
+
+The user (or another skill) has already designed a case — they have a semantic design document (sdd.md) that describes the case in plain language, including its stages, tasks, edges, rules, SLA, and component types. This skill bridges the gap between "design" and "implementation" by producing a concrete, ordered list of CLI commands with all the registry lookups already resolved.
 
 ## Step 0 -- Resolve the uip binary
 
@@ -84,11 +102,11 @@ Collect all registry results for the debug output in Step 5.
 
 Create a `tasks/` folder in the same directory as the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (T01, T02, ...) that maps to one or more CLI commands.
 
-Read the [CLI command reference](../uipath-case/references/case-commands.md) and the [case JSON schema reference](../uipath-case/references/case-schema.md) to understand the available flags and data structures as you generate each task.
+Read the [CLI command reference](references/case-commands.md) and the [case JSON schema reference](references/case-schema.md) to understand the available flags and data structures as you generate each task.
 
 ### Task structure
 
-The task ordering follows the `uipath-case` skill's implementation steps: stages → edges → tasks → conditions → SLA. The task title IS the action description — do not add a redundant `what` or `type` field. Absorb type into the title (e.g., "Add api-workflow task" not "Add task" + "type: api-workflow").
+The task ordering follows the `uipath-case-management` skill's implementation steps: stages → edges → tasks → conditions → SLA. The task title IS the action description — do not add a redundant `what` or `type` field. Absorb type into the title (e.g., "Add api-workflow task" not "Add task" + "type: api-workflow").
 
 #### 1. Create case file (T01)
 
@@ -314,16 +332,19 @@ Write a JSON file in the `tasks/` folder containing all registry lookup results 
 - All matched results
 - Which result was selected and why
 
-## Design principles
+## Anti-patterns — What NOT to Do
 
-These guide the overall approach and help avoid common pitfalls:
+- **Do NOT put `uip case ...` CLI commands in tasks.md.** Including shell commands causes the implementation agent to double-execute or mis-parse. Tasks.md is declarative only.
+- **Do NOT incrementally update an existing tasks.md.** Always regenerate from scratch to avoid stale state.
+- **Do NOT skip registry lookups** based on assumptions like "this type is not discoverable." Always search the cache files first.
+- **Do NOT group multiple sdd.md tasks under one T-number.** Each task in the sdd.md gets its own numbered entry.
+- **Do NOT fabricate expression syntax** for conditional SLA rules. Describe the condition in natural language — the implementation agent determines the correct expression format.
+- **Do NOT add interactive checkpoints** during generation. Run silently and let the user review the output after completion.
+- **Do NOT include parameters the CLI does not support.** Only include what `uip case` can act on (see [CLI command reference](references/case-commands.md)).
+- **Do NOT use lane assignments.** The lane concept is no longer used for managing parallelism.
 
-- **Follow every step as written — do not skip or shortcut.** The procedures in this skill and its references exist because previous shortcuts caused failures. Do not skip registry lookups based on assumptions (e.g., "this type is not discoverable"), do not collapse multiple steps into one, and do not deviate from the documented procedure even if it seems unnecessary. If a step feels redundant, it is there for a reason.
-- **No uip CLI commands in tasks.md.** tasks.md is a declarative specification document. Each task entry contains parameters, IDs, and metadata — never shell commands. The implementation agent (uipath-case skill) is responsible for translating each task entry into the correct `uip case` CLI call. Including commands in tasks.md defeats the purpose of the specification layer and causes the implementation agent to double-execute or mis-parse instructions.
-- **Always regenerate from scratch.** Never do incremental updates to an existing tasks.md -- always produce a fresh file. This avoids stale state from previous runs.
-- **Run silently.** No interactive checkpoints during generation. The user reviews the output after it is complete.
-- **Registry pull upfront.** Pulling the registry cache before starting avoids network failures partway through interpretation.
-- **Best effort on failures.** If a registry lookup fails, mark it clearly in tasks.md (e.g., `[REGISTRY LOOKUP FAILED: <keywords>]`) and continue with the remaining tasks. Do not abort the entire run.
-- **Single file output.** Everything goes into one tasks.md file. Its length scales naturally with the case complexity.
-- **Only include what the CLI can act on.** The tasks.md should contain only parameters the `uip case` CLI supports. For `action` tasks, include `recipient` and `priority` as they map directly to CLI flags.
-- **Human-readable cross-references.** Use `"Stage Name"."Task Name".field_name` format for input/output mappings so that someone reading the file can understand the data flow without looking up IDs.
+## Reference Navigation
+
+- [Registry Discovery Reference](references/registry-discovery.md) — how to resolve task types from the local cache
+- [CLI Command Reference](references/case-commands.md) — all `uip case` commands with flags and examples
+- [Case JSON Schema Reference](references/case-schema.md) — the case definition JSON structure
