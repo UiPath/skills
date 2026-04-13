@@ -117,7 +117,7 @@ uip flow job traces <job-key> --output json
 
 ## uip flow node
 
-Add and list nodes in a `.flow` file. Automatically manages the `definitions` array.
+Add, list, and delete nodes in a `.flow` file. Automatically manages the `definitions` array.
 
 ```bash
 uip flow node add <ProjectName>.flow <nodeType> --output json \
@@ -132,18 +132,48 @@ uip flow node list <ProjectName>.flow --output json
 
 > **Shell quoting tip:** If `--input` JSON contains special characters, write it to a temp file: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
 
+### uip flow node delete
+
+Delete a node from a `.flow` file. Automatically removes connected edges, orphaned bindings, orphaned definitions, and node variables owned by the deleted node.
+
+```bash
+uip flow node delete <path/to/file.flow> <nodeId>
+uip flow node delete <path/to/file.flow> <nodeId> --output json
+```
+
+Use `uip flow node list` to find the node ID.
+
 ### uip flow node configure
 
 Configure a connector node with connection details and parameter values. Run after `node add` for connector nodes. See the relevant node guide in `nodes/` for the full `--detail` JSON schema.
 
 ## uip flow edge
 
-Add edges between nodes in a `.flow` file.
+Add, list, and delete edges in a `.flow` file.
 
 ```bash
 uip flow edge add <ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
   --source-port success \
   --target-port input
+```
+
+### uip flow edge delete
+
+Delete an edge from a `.flow` file.
+
+```bash
+uip flow edge delete <path/to/file.flow> <edgeId>
+uip flow edge delete <path/to/file.flow> <edgeId> --output json
+```
+
+Use `uip flow edge list` to find the edge ID.
+
+### uip flow edge list
+
+List all edges in a `.flow` file.
+
+```bash
+uip flow edge list <path/to/file.flow> --output json
 ```
 
 Run `uip flow node --help` or `uip flow edge --help` for all options.

@@ -49,33 +49,96 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 
 ### Change a script body
 
-Edit the `inputs.script` string on the target node in `<ProjectName>.flow`. Script nodes must return an object (`return { key: value }`), not a scalar.
+1. Note the node's connected edges: `uip flow edge list <ProjectName>.flow --output json`
+2. Delete the node: `uip flow node delete <ProjectName>.flow <nodeId>` (this also removes its edges)
+3. Re-add with the updated script:
+   ```bash
+   uip flow node add <ProjectName>.flow core.action.script --output json \
+     --input "$(cat /tmp/new_script.json)" \
+     --label "<same label>" --position <same x>,<same y>
+   ```
+   Script nodes must return an object (`return { key: value }`), not a scalar. Write complex scripts to a temp file first.
+4. Re-wire edges from step 1 using `uip flow edge add`
 
 ### Add a node between two existing nodes
 
-1. Get the new node's schema: `uip flow registry get <nodeType> --output json`
-2. Add its `Data.Node` to the `definitions` array (skip if that type already has a definition)
-3. Add the node instance to `nodes` with a unique `id` and correct `ui.position`
-4. Find the edge connecting the two existing nodes — update it to point to the new node instead:
-   - Change `targetNodeId` to the new node's `id` and `targetPort` to the new node's incoming port (usually `input`)
-5. Add a new edge (with a unique `id`) from the new node to the original target:
-   - `sourceNodeId`: new node's `id`, `sourcePort`: `success` (or the appropriate port)
-   - `targetNodeId`: original target's `id`, `targetPort`: `input`
-6. Check ports: see [references/flow-file-format.md — Standard ports](references/flow-file-format.md) for source/target ports by node type
+1. Delete the edge connecting the two existing nodes:
+   ```bash
+   uip flow edge list <ProjectName>.flow --output json   # find the edge ID
+   uip flow edge delete <ProjectName>.flow <edgeId>
+   ```
+2. Add the new node:
+   ```bash
+   uip flow node add <ProjectName>.flow <nodeType> --output json \
+     --input '...' --label "My Node" --position <x>,<y>
+   ```
+3. Wire the upstream node to the new node, and the new node to the downstream node:
+   ```bash
+   uip flow edge add <ProjectName>.flow <upstreamNodeId> <newNodeId> --output json \
+     --source-port <port> --target-port input
+   uip flow edge add <ProjectName>.flow <newNodeId> <downstreamNodeId> --output json \
+     --source-port success --target-port input
+   ```
+4. Check ports: see [references/flow-file-format.md — Standard ports](references/flow-file-format.md) for source/target ports by node type
 
 ### Add a branch (decision node)
 
-1. Get the definition: `uip flow registry get core.logic.decision --output json` and add `Data.Node` to `definitions`
-2. Add a `core.logic.decision` node with an `expression` input
-3. Redirect the incoming edge to the decision node — update `targetNodeId` and set `targetPort: "input"`
-4. Add two outgoing edges from the decision — one from `sourcePort: "true"`, one from `sourcePort: "false"` — each wiring to the appropriate downstream node with `targetPort: "input"`
+1. Delete the edge where you want to insert the branch:
+   ```bash
+   uip flow edge list <ProjectName>.flow --output json   # find the edge ID
+   uip flow edge delete <ProjectName>.flow <edgeId>
+   ```
+2. Add the decision node:
+   ```bash
+   uip flow node add <ProjectName>.flow core.logic.decision --output json \
+     --input '{"expression": "=js:..."}' --label "Check Condition" --position <x>,<y>
+   ```
+3. Wire the upstream node to the decision, and the decision to both branches:
+   ```bash
+   uip flow edge add <ProjectName>.flow <upstreamNodeId> <decisionNodeId> --output json \
+     --source-port <port> --target-port input
+   uip flow edge add <ProjectName>.flow <decisionNodeId> <trueBranchNodeId> --output json \
+     --source-port true --target-port input
+   uip flow edge add <ProjectName>.flow <decisionNodeId> <falseBranchNodeId> --output json \
+     --source-port false --target-port input
+   ```
+
+### Remove an edge
+
+```bash
+uip flow edge list <ProjectName>.flow --output json   # find the edge ID
+uip flow edge delete <ProjectName>.flow <edgeId>
+```
 
 ### Remove a node
 
-1. Delete the node from the `nodes` array
-2. Delete all edges where `sourceNodeId` or `targetNodeId` matches the removed node's `id`
-3. Reconnect: add a new edge from the upstream node to the downstream node
-4. Remove its definition from `definitions` only if no other node uses the same type
+```bash
+uip flow node list <ProjectName>.flow --output json   # find the node ID
+uip flow node delete <ProjectName>.flow <nodeId>
+```
+
+The CLI automatically removes connected edges, orphaned bindings, orphaned definitions, and node variables owned by the deleted node. After deleting, reconnect the upstream and downstream nodes:
+
+```bash
+uip flow edge add <ProjectName>.flow <upstreamNodeId> <downstreamNodeId> --output json \
+  --source-port <port> --target-port input
+```
+
+### Update node inputs (expression, label, etc.)
+
+The CLI does not have a `node update` command. To change a node's inputs, delete the node and re-add it with the updated values:
+
+1. Note the node's connected edges: `uip flow edge list <ProjectName>.flow --output json`
+2. Delete the node: `uip flow node delete <ProjectName>.flow <nodeId>`
+3. Re-add with updated inputs:
+   ```bash
+   uip flow node add <ProjectName>.flow <nodeType> --output json \
+     --input '{"expression": "=js:$vars.amount <= 1000000", "trueLabel": "Under 10 Lakh", "falseLabel": "Over 10 Lakh"}' \
+     --label "Amount Under 10 Lakh?" --position <same x>,<same y>
+   ```
+4. Re-wire all edges from step 1 using `uip flow edge add`
+
+Common cases: decision expressions/labels, script bodies, HTTP URLs, connector parameters.
 
 ### Add a workflow variable
 
@@ -249,7 +312,7 @@ Phase 2 takes the approved architectural plan and resolves all implementation de
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Prefer CLI commands for adding nodes and edges.** They handle definitions and port wiring automatically, eliminating the most common build errors. Fall back to direct JSON editing only for operations the CLI doesn't support yet (update, remove, rewire).
+**Prefer CLI commands for all node and edge operations.** They handle definitions, port wiring, and cleanup automatically, eliminating the most common build errors. To update a node's inputs, delete the node and re-add it with the new values (see Common Edits). Fall back to direct JSON editing only for `variables`, `variableUpdates`, and `subflows`.
 
 #### Adding nodes
 
@@ -293,9 +356,18 @@ The `--detail` JSON structure varies by node type — see [connector/impl.md](re
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
+#### Deleting nodes and edges
+
+```bash
+uip flow node delete <ProjectName>.flow <nodeId>       # removes node + connected edges + orphaned defs
+uip flow edge delete <ProjectName>.flow <edgeId>        # removes a single edge
+```
+
+Use `node list` / `edge list` to discover IDs before deleting.
+
 #### When to fall back to JSON editing
 
-The CLI does not yet support: removing nodes, removing edges, updating existing node inputs (e.g., changing a script body), or rewiring existing edges. For these operations, edit the `.flow` JSON directly — see [references/flow-file-format.md](references/flow-file-format.md) and the Common Edits section above.
+Fall back to direct JSON editing only for operations not covered by the CLI — such as editing `variables`, `variableUpdates`, or `subflows`. For node input changes, use the delete + re-add pattern (see Common Edits above). See [references/flow-file-format.md](references/flow-file-format.md) for the JSON schema.
 
 ### Step 6 — Validate loop
 
