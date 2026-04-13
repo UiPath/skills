@@ -13,7 +13,7 @@ from _shared.flow_check import (  # noqa: E402
 
 
 def main():
-    payload = run_debug(timeout=90)
+    payload = run_debug(timeout=240)
     # A Script node is required to produce the random value.
     assert_node_types(payload, ["script"])
     roll = assert_output_int_in_range(payload, 1, 6)

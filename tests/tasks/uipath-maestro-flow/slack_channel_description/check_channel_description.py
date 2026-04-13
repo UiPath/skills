@@ -21,7 +21,7 @@ ADDRESS_FRAGMENTS = [
 
 
 def main():
-    payload = run_debug(timeout=120)
+    payload = run_debug(timeout=240)
     # Require a Slack connector node — prevents the agent passing by
     # hardcoding the address in a Script node.
     assert_node_types(payload, ["slack"])

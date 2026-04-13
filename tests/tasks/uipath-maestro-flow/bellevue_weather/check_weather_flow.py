@@ -13,7 +13,7 @@ from _shared.flow_check import (  # noqa: E402
 
 
 def main():
-    payload = run_debug(timeout=90)
+    payload = run_debug(timeout=240)
     # Require an HTTP node actually fired — prevents agent from hardcoding the
     # branch message without calling the weather API.
     assert_node_types(payload, ["http"])

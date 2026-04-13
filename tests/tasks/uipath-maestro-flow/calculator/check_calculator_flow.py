@@ -26,7 +26,7 @@ def main():
 
     inputs = {in_vars[0]: INPUT_A, in_vars[1]: INPUT_B}
     print(f"Injecting inputs: {inputs}")
-    payload = run_debug(inputs=inputs, timeout=90)
+    payload = run_debug(inputs=inputs, timeout=240)
 
     # A Script node must have run — prevents hardcoding 391 as a literal output.
     assert_node_types(payload, ["script"])

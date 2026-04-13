@@ -61,9 +61,7 @@ def assert_node_types(payload: dict, hints: Sequence[str]) -> None:
     if not hints:
         return
     execs = payload.get("elementExecutions") or []
-    seen = sorted(
-        {f"{e.get('elementType')}:{e.get('extensionType')}" for e in execs}
-    )
+    seen = sorted({f"{e.get('elementType')}:{e.get('extensionType')}" for e in execs})
     for hint in hints:
         needle = hint.lower()
         match = any(
@@ -83,16 +81,29 @@ def assert_node_types(payload: dict, hints: Sequence[str]) -> None:
 
 def collect_outputs(payload: dict) -> list[Any]:
     """Return the declared output values — global variables and per-element
-    outputs only. Excludes metadata (IDs, timestamps, status strings)."""
+    outputs only. Excludes metadata (IDs, timestamps, status strings).
+    Nested dicts/lists are flattened to leaf values so callers can match
+    scalars regardless of how the agent wrapped them (e.g. ``{"product": 391}``
+    yields ``391``, not the enclosing dict)."""
     out: list[Any] = []
     variables = payload.get("variables") or {}
     for v in variables.get("globalVariables") or []:
         if "value" in v:
-            out.append(v.get("value"))
+            out.extend(_leaves(v.get("value")))
     for e in variables.get("elements") or []:
-        for val in (e.get("outputs") or {}).values():
-            out.append(val)
+        out.extend(_leaves(e.get("outputs") or {}))
     return out
+
+
+def _leaves(v: Any):
+    if isinstance(v, dict):
+        for nested in v.values():
+            yield from _leaves(nested)
+    elif isinstance(v, (list, tuple)):
+        for item in v:
+            yield from _leaves(item)
+    else:
+        yield v
 
 
 def assert_outputs_contain(
@@ -125,8 +136,7 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
     hits = [int(m) for m in re.findall(r"-?\d+", haystack) if lo <= int(m) <= hi]
     if not hits:
         _fail(
-            f"No integer in [{lo}, {hi}] found in outputs\n"
-            f"Outputs: {haystack[:1000]}"
+            f"No integer in [{lo}, {hi}] found in outputs\nOutputs: {haystack[:1000]}"
         )
     return hits[0]
 
@@ -144,10 +154,7 @@ def assert_output_value(payload: dict, expected: Any) -> None:
         if isinstance(expected, (int, float)) and isinstance(v, str):
             if re.search(rf"(?<!\d){expected}(?!\d)", v):
                 return
-    _fail(
-        f"No output equals expected {expected!r}\n"
-        f"Outputs: {_stringify(outs)[:1000]}"
-    )
+    _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
 
 
 def read_flow_input_vars(project_dir: str) -> list[str]:
