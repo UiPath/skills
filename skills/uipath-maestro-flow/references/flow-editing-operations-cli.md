@@ -53,7 +53,7 @@ uip flow node delete <ProjectName>.flow <NODE_ID> --output json
 - Removes the node from `nodes`
 - Removes all connected edges
 - Removes orphaned definitions (definitions no longer referenced by any node)
-- Removes orphaned bindings
+- Removes orphaned bindings (connector bindings are shared at the connector level — a binding is only orphaned when no remaining node uses that connector)
 - Removes node variables from `variables.nodes`
 
 ### List nodes

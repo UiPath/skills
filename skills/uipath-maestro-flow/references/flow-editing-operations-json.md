@@ -15,7 +15,7 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 | Definitions | Auto-copied from registry cache | Copy `Data.Node` from `uip flow registry get` into `definitions` array |
 | Node variables | Auto-added to `variables.nodes` | Add output variable entries manually (or accept that `variables.nodes` may need regeneration) |
 | Edge cleanup on delete | Auto-removes connected edges | Find and remove all edges referencing the deleted node |
-| Orphan cleanup | Auto-removes unused definitions/bindings | Remove definitions no longer referenced by any node |
+| Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
 | `targetPort` | Auto-set | Set `targetPort` on every edge (validate rejects without it) |
 | `bindings_v2.json` | Auto-managed by `node configure` | Edit `bindings_v2.json` manually for connector nodes |
 
@@ -69,7 +69,7 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 3. If no other node uses the same `type`, remove the definition from `definitions`
 4. Remove the node's entry from `variables.nodes`
 5. Remove any `variableUpdates` entries keyed by the node's `id`
-6. If the node is a connector node, remove its binding from `bindings_v2.json`
+6. If the node is a connector node, remove its binding from `bindings_v2.json` **only if no other node in the flow uses the same connector**. Bindings are shared at the connector level (keyed by `metadata.Connector`), not per node.
 
 ### Add an edge
 
