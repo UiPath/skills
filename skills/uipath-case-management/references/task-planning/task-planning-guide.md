@@ -56,7 +56,7 @@ This table maps sdd.md component types to the primary cache file to search and t
 
 For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), use the `--type` value directly without searching.
 
-For all other types, follow the procedure in [registry-discovery.md](registry-discovery.md):
+For all other types, follow the procedure in [registry-discovery.md](../registry-discovery.md):
 
 1. **Search the primary cache file** by matching the task name and folder path from the sdd.md.
 2. **If no match in the primary file**, search all other cache files — the sdd.md component type label may not match the actual registry type (e.g., an "RPA" task may be registered as `process`).
@@ -71,7 +71,7 @@ Collect all registry results for the debug output in Step 4.
 
 Create a `planning/` folder under the project root directory. Generate `tasks.md` inside it using the structure below. Each section is a numbered task (T01, T02, ...) that maps to one or more CLI commands.
 
-Read the [CLI command reference](case-commands.md) and the [case JSON schema reference](case-schema.md) to understand the available flags and data structures as you generate each task.
+Read the [CLI command reference](../case-commands.md) and the [case JSON schema reference](../case-schema.md) to understand the available flags and data structures as you generate each task.
 
 Also write a `registry-resolved.json` file in the `planning/` folder containing all registry lookup results keyed by task ID. This serves as a debugging and audit trail. Include:
 - The search query used
@@ -329,4 +329,4 @@ Use `AskUserQuestion` with options: "Approve and proceed", "Request changes"
 
 If the user requests changes, update tasks.md and re-present for approval. Do NOT proceed to execution until the user explicitly approves.
 
-**After the user approves:** run `/compact` to free context, then re-read `tasks.md` before proceeding to the [execution phase](task-execution-guide.md). The tasks.md file is the complete handoff artifact between the planning and execution phases.
+**After the user approves:** run `/compact` to free context, then re-read `tasks.md` before proceeding to the [execution phase](../task-execution/task-execution-guide.md). The tasks.md file is the complete handoff artifact between the planning and execution phases.
