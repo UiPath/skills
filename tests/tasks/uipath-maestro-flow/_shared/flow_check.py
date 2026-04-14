@@ -94,9 +94,17 @@ def collect_outputs(payload: dict) -> list[Any]:
     outputs only. Excludes metadata (IDs, timestamps, status strings).
     Nested dicts/lists are flattened to leaf values so callers can match
     scalars regardless of how the agent wrapped them (e.g. ``{"product": 391}``
-    yields ``391``, not the enclosing dict)."""
+    yields ``391``, not the enclosing dict).
+
+    ``variables.globals`` is where End-node output expressions land at
+    runtime (as a name→value dict). ``variables.globalVariables`` is the
+    SDK-typed array shape; in practice the runtime populates the dict form.
+    Both are walked to be safe.
+    """
     out: list[Any] = []
     variables = payload.get("variables") or {}
+    for val in (variables.get("globals") or {}).values():
+        out.extend(_leaves(val))
     for v in variables.get("globalVariables") or []:
         if "value" in v:
             out.extend(_leaves(v.get("value")))

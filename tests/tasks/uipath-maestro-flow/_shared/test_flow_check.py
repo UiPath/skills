@@ -68,6 +68,22 @@ def test_collect_outputs_walks_element_outputs():
     assert collect_outputs(payload) == [47]
 
 
+def test_collect_outputs_walks_globals_dict():
+    # Actual debug response shape: `variables.globals` is a dict, not the
+    # `globalVariables` array the SDK types describe. End-node output
+    # expressions land here.
+    payload = {
+        "variables": {
+            "globals": {
+                "summary": {"temperature": 52.5, "message": "bring a jacket"},
+            }
+        }
+    }
+    outs = collect_outputs(payload)
+    assert "bring a jacket" in outs
+    assert 52.5 in outs
+
+
 def test_collect_outputs_empty():
     assert collect_outputs(_payload()) == []
 
