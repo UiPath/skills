@@ -51,7 +51,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   schema?: object         // JSON Schema (draft-07) for complex types
   defaultValue?: unknown  // Initial value (must match type)
   description?: string    // Human-readable description
-  triggerNodeId?: string  // Trigger node this input is associated with (root flows only)
+  triggerNodeId?: string  // Trigger node this input is associated with (works in both root flows and subflows)
 }
 ```
 
