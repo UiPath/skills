@@ -27,7 +27,7 @@ Use this table to determine which strategy to follow for each operation.
 | **Add variable update** | Not supported | Yes | Edit `variables.variableUpdates` |
 | **Map outputs on End node** | Not supported | Yes | Edit node `outputs` object |
 | **Create a subflow** | Not supported | Yes | Edit `subflows` object |
-| **Replace trigger type** | Delete + re-add | In-place edit | JSON is simpler for trigger swaps |
+| **Replace trigger type** | Delete + re-add | In-place edit | Both work; CLI handles definition/edge cleanup automatically |
 | **Replace mock with resource** | Delete + re-add | Delete + re-add | Both require registry lookup |
 | **Insert node between two** | 3 CLI commands | 3 JSON edits | Equivalent complexity |
 | **Insert a decision branch** | 4 CLI commands | 4 JSON edits | Equivalent complexity |

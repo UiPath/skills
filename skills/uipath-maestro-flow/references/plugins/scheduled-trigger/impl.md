@@ -55,7 +55,7 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
 
 ## Replacing Manual Trigger with Scheduled
 
-For the step-by-step procedure, see [JSON: Replace manual trigger with scheduled trigger](../../flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs` and `model` fields.
+For the step-by-step procedure, see [CLI: Replace manual trigger with scheduled trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) or [JSON: Replace manual trigger with scheduled trigger](../../flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs` and `model` fields.
 
 ## Debug
 

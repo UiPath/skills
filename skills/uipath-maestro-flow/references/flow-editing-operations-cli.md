@@ -257,6 +257,30 @@ After the resource (RPA process, agent, etc.) has been published:
 
 See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full `--detail` schema.
 
+### Replace manual trigger with scheduled trigger
+
+1. Record the edge from the start node to the next node:
+   ```bash
+   uip flow edge list <ProjectName>.flow --output json
+   ```
+2. Delete the manual trigger (also removes its edge and orphaned definition):
+   ```bash
+   uip flow node delete <ProjectName>.flow start --output json
+   ```
+3. Add the scheduled trigger node:
+   ```bash
+   uip flow node add <ProjectName>.flow core.trigger.scheduled --output json \
+     --input '{"timerType": "timeCycle", "timerPreset": "R/PT1H"}' \
+     --label "<LABEL>" --position 200,144
+   ```
+4. Re-wire edge from the new trigger to the next node:
+   ```bash
+   uip flow edge add <ProjectName>.flow <NEW_TRIGGER_ID> <NEXT_NODE_ID> \
+     --source-port output --target-port input --output json
+   ```
+
+See [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) for timer presets and custom frequency options.
+
 ---
 
 ## Operations NOT Supported by CLI
@@ -267,4 +291,3 @@ These operations require direct `.flow` JSON editing. Use the [JSON strategy gui
 2. **Variable updates** — add/modify `variables.variableUpdates` entries
 3. **Output mapping on End nodes** — add `outputs` object with `source` expressions
 4. **Subflows** — create `subflows.{nodeId}` with nested nodes, edges, variables
-5. **Scheduled trigger replacement** — modify start node's `type`, `inputs`, and `model` in-place
