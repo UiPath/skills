@@ -16,6 +16,9 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 - User asks to create a tasks.md from spec or interpret case spec
 - User asks to convert a spec to an implementation plan
 - User provides an sdd.md and wants a case built from it
+- User is editing an existing case JSON file — adding stages, tasks, edges, or properties
+- User wants to manage runtime case instances (list, pause, resume, cancel)
+- User asks about the case management JSON schema — nodes, edges, tasks, rules, SLA
 
 ## Critical Rules
 
@@ -144,7 +147,7 @@ Each stage is its own task. Basic properties only — SLA and escalation come la
   - `false` — Use for exception stages, optional review stages, or rework loops that the case can complete without entering. Look for: stages labeled as "exception", "optional", "fallback", "on-error", or stages that are only reached via conditional/interrupting entry conditions.
 
 Example:
-```
+```markdown
 ## T05: Create stage "PO Receipt & Triage"
 - isRequired: true
 - order: after T04
@@ -183,7 +186,7 @@ Each task from the sdd.md becomes its own numbered task. Do NOT group multiple t
 > Ignore lane concept in creating the task. It is no longer feasible for managing the parallelism.
 
 Example (non-HITL):
-```
+```markdown
 ## T25: Add api-workflow task "Monitor Order Inbox" to "PO Receipt & Triage"
 - taskTypeId: abc-123-def
 - inputs: inbox_config (config), po_patterns (config)
@@ -195,7 +198,7 @@ Example (non-HITL):
 ```
 
 Example (HITL/action):
-```
+```markdown
 ## T30: Add action task "Review Purchase Order" to "PO Receipt & Triage"
 - taskTypeId: xyz-456-abc
 - recipient: approver@corp.com
@@ -250,7 +253,7 @@ Use `required-stages-completed` as the primary rule-type. This mirrors how stage
 - **verify** — what to check after execution
 
 Example:
-```
+```markdown
 ## T100: Add case exit condition — case resolved
 - rule-type: required-stages-completed
 - marks-case-complete: true
@@ -268,7 +271,7 @@ Example:
 
 **Stage exit condition examples:**
 
-```
+```markdown
 ## T80: Add stage exit condition for "PO Receipt & Triage" — all tasks done
 - rule-type: required-tasks-completed
 - type: exit-only
@@ -309,7 +312,7 @@ SLA and escalation come last. They are broken into individual tasks, ordered as 
 3. **Add escalation rules** — one task per escalation rule. Each rule specifies a trigger type (`at-risk` with percentage threshold, or `sla-breached`) and one or more recipients. Each recipient has a scope (`User` or `UserGroup`), a target, and a display value. Title format: `Add escalation rule for "<target>" — <trigger summary>`
 
 Example:
-```
+```markdown
 ## T150: Set default SLA for "PO Receipt & Triage" to 15 minutes
 - count: 15
 - unit: m
