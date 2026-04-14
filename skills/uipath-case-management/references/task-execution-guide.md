@@ -20,7 +20,7 @@ uip solution project add \
   <solutionName>.uipx
 ```
 
-This scaffolds a complete project. See [case-schema.md](../case-schema.md) for the full project structure.
+This scaffolds a complete project. See [case-schema.md](case-schema.md) for the full project structure.
 
 ```bash
 uip case cases add --name <CaseName> --file <project-root>/<solutionName>/<projectName>/caseplan.json
