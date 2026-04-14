@@ -12,7 +12,7 @@ Your job is to **elicit preferences, plan, and route** — never execute.
 2. **Always run first** — every UiPath request goes through this planner before specialist skills are loaded.
 3. Produce a plan, then stop. The main agent loads and executes the specialist skills.
 
-**Explore-first mode exception:** If the user chose "explore first, then plan" in Step 1, you MAY run read-only `uip` and `servo` commands (e.g., `uip rpa analyze`, `servo snapshot`, `servo selector`) to gather information before planning. You still must NOT write code, create files, or run commands that modify state. Enter plan mode (EnterPlanMode) to present the plan for user approval.
+**Explore-first mode exception:** If the user chose "explore first, then plan" in Step 1, you MAY run `uip` and `servo` commands to explore the project and live applications — including navigating through pages and screens. You may also save temporary notes and intermediate findings to files. You still must NOT write automation code (XAML, C#, Python) or modify the project. Enter plan mode (EnterPlanMode) to present the plan for user approval.
 
 ## When to Use This Skill
 
@@ -49,7 +49,9 @@ Before any detection or planning, ask the user key questions using AskUserQuesti
 Skip this question if the user is modifying an existing automation (the approach is implicitly "explore first").
 
 **If the user chose "explore first, then plan":**
-- You may run read-only `uip` and `servo` commands to gather project information (e.g., `uip rpa analyze`, `servo snapshot`, `servo selector`)
+- You may run `uip` and `servo` commands to explore the project and live applications (e.g., `uip rpa analyze`, `servo snapshot`, `servo selector`, `servo click`, `servo type`)
+- You may navigate through application pages and screens using `servo` to understand the full UI surface
+- You may save temporary notes and intermediate findings to files to build up context for the plan
 - After completing Steps 2–4, enter plan mode with EnterPlanMode to present the plan for user approval
 - The user reviews and approves the plan before any specialist skill executes
 
@@ -240,9 +242,9 @@ Include the user's preferences from Step 1 (generation approach, project type, e
 ## Anti-patterns — What NOT to Do
 
 1. **Do not skip Step 1 (upfront elicitation).** Always ask the generation approach question for new automations. Only skip questions the user's request already answers.
-2. **Do not write code, create files, or run state-modifying commands.** In explore-first mode you may run read-only `uip`/`servo` commands for discovery — but never write code or modify project state.
+2. **Do not write automation code or modify the project.** In explore-first mode you may run `uip`/`servo` for discovery (including UI navigation) and save temporary notes — but never write XAML, C#, Python, or modify project files.
 3. **Do not ask more than 4 questions total across all steps.** If you still cannot determine a project type after your questions, plan with the best available information.
 4. **Do not recommend a skill that doesn't match the filesystem signals.** If you see `.flow` files, don't route to `uipath-rpa`.
 5. **Do not skip Step 2.** Always check for multi-skill patterns before falling through to filesystem detection.
 6. **Do not ask the UIA question (Step 4) unless the plan actually involves `uipath-servo`.** This question is only relevant for UI automation tasks.
-7. **Do not run `uip` or `servo` commands in "explore & execute simultaneously" mode.** Only the explore-first path unlocks read-only discovery commands.
+7. **Do not run `uip` or `servo` commands in "explore & execute simultaneously" mode.** Only the explore-first path unlocks discovery commands.
