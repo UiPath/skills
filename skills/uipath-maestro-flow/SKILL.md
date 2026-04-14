@@ -325,7 +325,7 @@ When you finish building or editing a flow, report to the user:
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
-- **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, CLI commands, debug):
+- **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
   - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
   - [script](references/plugins/script/) — Custom JavaScript logic via Jint ES2020
   - [http](references/plugins/http/) — REST API calls, response branching, connection auth
