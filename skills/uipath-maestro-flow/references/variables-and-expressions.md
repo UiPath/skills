@@ -51,7 +51,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   schema?: object         // JSON Schema (draft-07) for complex types
   defaultValue?: unknown  // Initial value (must match type)
   description?: string    // Human-readable description
-  triggerNodeId?: string  // Trigger node this input is associated with (root flows only)
+  triggerNodeId?: string  // Trigger node this input is associated with (works in both root flows and subflows)
 }
 ```
 
@@ -585,6 +585,14 @@ A flow with input, state, and output variables:
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
       "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
       "model": { "type": "bpmn:StartEvent" }
     },
     {
@@ -593,6 +601,20 @@ A flow with input, state, and output variables:
       "typeVersion": "1.0.0",
       "inputs": {
         "script": "const items = $vars.inputItems.filter(i => i.active);\nreturn { count: items.length, items: items };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
       },
       "model": { "type": "bpmn:ScriptTask" }
     },

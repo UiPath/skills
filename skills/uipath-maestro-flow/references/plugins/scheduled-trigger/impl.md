@@ -26,6 +26,14 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
     "timerType": "timeCycle",
     "timerPreset": "R/PT1H"
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the trigger.",
+      "source": "=result.response",
+      "var": "output"
+    }
+  },
   "model": {
     "type": "bpmn:StartEvent",
     "eventDefinition": "bpmn:TimerEventDefinition"
@@ -45,6 +53,14 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
     "timerType": "timeCycle",
     "timerPreset": "custom",
     "timerValue": "R/PT45M"
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the trigger.",
+      "source": "=result.response",
+      "var": "output"
+    }
   },
   "model": {
     "type": "bpmn:StartEvent",

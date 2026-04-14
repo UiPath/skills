@@ -40,6 +40,20 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Classify Intent" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the agent",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the agent fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": {
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgentJob",
