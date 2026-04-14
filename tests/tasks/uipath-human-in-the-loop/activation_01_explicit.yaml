@@ -3,7 +3,7 @@ description: >
   Activation test: agent should trigger the uipath-human-in-the-loop skill
   when explicitly asked to add a HITL node. Verifies the skill fires for
   direct HITL language.
-tags: [uipath-human-in-the-loop, activation]
+tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
   driver: tempdir

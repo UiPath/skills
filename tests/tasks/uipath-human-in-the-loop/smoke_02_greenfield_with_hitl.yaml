@@ -46,19 +46,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent ran uip flow hitl add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "HITL node is present in the flow file"
+    path: "InvoiceApproval/flow_files/InvoiceApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent wired the completed edge"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+edge\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "Completed handle is wired in the flow file"
+    path: "InvoiceApproval/flow_files/InvoiceApproval.flow"
+    includes:
+      - '"completed"'
     weight: 1.5
     pass_threshold: 1.0
 

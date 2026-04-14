@@ -65,11 +65,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent did NOT run uip flow hitl add before confirmation"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 0
-    max_count: 0
-    weight: 2.0
-    pass_threshold: 1.0

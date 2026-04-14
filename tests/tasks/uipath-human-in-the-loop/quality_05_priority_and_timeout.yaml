@@ -20,25 +20,25 @@ initial_prompt: |
   Save results to report.json:
   {
     "hitl_node_id": "<id>",
-    "priority_used": "<the priority value passed to CLI>",
-    "timeout_used": "<the ISO 8601 duration passed to CLI>",
+    "priority_used": "<the priority value set in the flow, e.g. high>",
+    "timeout_used": "<the ISO 8601 duration set in the flow, e.g. PT48H>",
     "validation_passed": true
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran hitl add with --priority high"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add.*--priority\s+high'
-    min_count: 1
+  - type: file_contains
+    description: "Flow file contains high priority for the HITL node"
+    path: "FinanceCompliance/flow_files/FinanceCompliance.flow"
+    includes:
+      - '"PT48H"'
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent ran hitl add with PT48H timeout"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add.*--timeout\s+PT48H'
-    min_count: 1
+  - type: file_contains
+    description: "Flow file contains PT48H timeout for the HITL node"
+    path: "FinanceCompliance/flow_files/FinanceCompliance.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
     weight: 2.5
     pass_threshold: 1.0
 

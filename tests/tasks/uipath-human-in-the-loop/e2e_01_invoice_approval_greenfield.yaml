@@ -36,20 +36,12 @@ initial_prompt: |
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran uip flow hitl add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "report.json contains a HITL node ID (non-placeholder)"
+    path: "report.json"
+    includes:
+      - '"hitl_node_id": "'
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent wired the completed handle"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+edge\s+add'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed

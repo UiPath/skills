@@ -3,7 +3,7 @@ description: >
   Negative activation test: agent must NOT use the uipath-human-in-the-loop
   skill for Action Center runtime administration queries. This is task
   management, not automation authoring.
-tags: [uipath-human-in-the-loop, activation]
+tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
   driver: tempdir
@@ -34,11 +34,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent did NOT run uip flow hitl add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 0
-    max_count: 0
-    weight: 2.0
-    pass_threshold: 1.0

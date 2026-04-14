@@ -2,7 +2,7 @@ task_id: skill-hitl-activation-compliance
 description: >
   Activation test: agent should detect a compliance checkpoint pattern from
   regulatory language. Verifies the skill fires on audit/sign-off signals.
-tags: [uipath-human-in-the-loop, activation]
+tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
   driver: tempdir

@@ -3,7 +3,7 @@ description: >
   Activation test: agent should detect an approval gate pattern and recommend
   HITL even though the user said "approve" rather than "HITL". Verifies
   proactive business-language-based triggering.
-tags: [uipath-human-in-the-loop, activation]
+tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
   driver: tempdir

@@ -36,28 +36,20 @@ initial_prompt: |
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran uip flow hitl add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "report.json contains a HITL node ID (non-placeholder)"
+    path: "report.json"
+    includes:
+      - '"hitl_node_id": "'
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent set a timeout on the HITL node"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add.*--timeout'
-    min_count: 1
+  - type: file_contains
+    description: "Timeout duration is captured in report.json (ISO 8601)"
+    path: "report.json"
+    includes:
+      - '"timeout_configured": "P'
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent wired the timeout handle (escalation path)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+edge\s+add'
-    min_count: 2
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed

@@ -3,7 +3,7 @@ description: >
   Activation test: agent should detect an exception escalation pattern from
   AI confidence threshold language. Verifies the skill fires on escalation
   signals without explicit HITL mention.
-tags: [uipath-human-in-the-loop, activation]
+tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
   driver: tempdir

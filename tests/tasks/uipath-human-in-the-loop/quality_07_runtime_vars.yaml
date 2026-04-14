@@ -27,11 +27,11 @@ initial_prompt: |
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran uip flow hitl add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "HITL node with specified ID is present in the flow file"
+    path: "ReviewAndRoute/flow_files/ReviewAndRoute.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
     weight: 1.5
     pass_threshold: 1.0
 

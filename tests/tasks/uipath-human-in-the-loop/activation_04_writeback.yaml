@@ -3,7 +3,7 @@ description: >
   Activation test: agent should proactively detect a write-back validation
   pattern when the user describes an AI agent writing to a system of record
   WITHOUT explicitly asking for HITL. Verifies proactive recommendation.
-tags: [uipath-human-in-the-loop, activation]
+tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
   driver: tempdir

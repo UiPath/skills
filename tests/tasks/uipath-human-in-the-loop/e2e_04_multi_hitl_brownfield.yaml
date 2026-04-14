@@ -55,19 +55,19 @@ initial_prompt: |
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran uip flow hitl add at least twice"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 2
+  - type: file_contains
+    description: "HITL node(s) present in the flow file"
+    path: "HROnboarding/HROnboarding/HROnboarding.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent wired at least 2 completed edges (one per HITL node)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+edge\s+add'
-    min_count: 2
+  - type: file_contains
+    description: "Completed handles wired in the flow file"
+    path: "HROnboarding/HROnboarding/HROnboarding.flow"
+    includes:
+      - '"completed"'
     weight: 2.0
     pass_threshold: 1.0
 

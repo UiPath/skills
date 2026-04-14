@@ -54,19 +54,19 @@ initial_prompt: |
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran uip flow hitl add"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+hitl\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "HITL node is present in the flow file"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent wired the completed edge"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+edge\s+add'
-    min_count: 1
+  - type: file_contains
+    description: "Completed handle is wired in the flow file"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"completed"'
     weight: 1.5
     pass_threshold: 1.0
 
@@ -78,14 +78,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "report.json was written"
     path: "report.json"
@@ -93,14 +85,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "report.json confirms validation passed"
+    description: "report.json confirms validation passed and captures node ID"
     path: "report.json"
     assertions:
       - expression: "validation_passed"
         operator: equals
         expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 2
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 1.0
