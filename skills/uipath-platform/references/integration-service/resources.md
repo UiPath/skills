@@ -121,6 +121,13 @@ Common JMESPath patterns:
 
 `uip is resources execute list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
 
+### Pagination rules
+
+1. **Always check `Data.Pagination`** — every `list` response may contain pagination state. Never assume a single page contains all results.
+2. **Complete the pagination loop** — when searching for a specific item, keep paginating until `Data.Pagination.HasMore` is `"false"` or the item is found. Do NOT abandon pagination mid-loop to try alternative APIs (e.g., search endpoints, admin endpoints, HTTP fallback).
+3. **Stop early on match** — if you find the target item in the current page, stop. No need to fetch remaining pages.
+4. **Report not-found only after exhausting all pages** — only conclude an item does not exist after `HasMore` is `"false"` and every page has been checked.
+
 ### Connector pagination
 
 Most IS connectors use the `elements-*` pagination protocol. The CLI returns pagination state nested inside `Data.Pagination`:
@@ -157,7 +164,11 @@ Example response:
 }
 ```
 
-**Stop early:** If you find the target item in the current page, no need to fetch remaining pages.
+### Anti-patterns
+
+- **Do NOT check `Data.nextPage`** — pagination lives at `Data.Pagination.HasMore` and `Data.Pagination.NextPageToken`, not at `Data.nextPage`.
+- **Do NOT abandon pagination to try other APIs** — if you are paginating through `conversations` to find a channel, do not stop mid-loop to call `admin_conversations_search`, `search_all`, or `search_messages`. Complete the loop first.
+- **Do NOT conclude "not found" after one page** — a single page may return only a fraction of the total results. Always check `Data.Pagination.HasMore` before concluding.
 
 ### Query-param pagination (offset/limit)
 
