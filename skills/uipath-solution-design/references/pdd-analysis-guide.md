@@ -1,0 +1,165 @@
+# PDD Analysis Guide
+
+How to extract structured information from Process Design Documents in any format.
+
+## Supported Input Formats
+
+| Format | How to Read | Notes |
+|---|---|---|
+| PDF | Use the Read tool with `pages` parameter. Read in chunks of up to 20 pages. | Screenshots are visible as images. Use them to understand UI flow but do not extract selectors from them. |
+| Word (.docx) | Read the file directly. | Tables may render differently — verify structure. |
+| Markdown | Read the file directly. | Easiest format — structure is already parseable. |
+| Pasted text | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
+
+## Reading Strategy
+
+PDD templates vary — section numbers and names differ across organizations. Use the Table of Contents to identify where each topic lives, then read in this priority order:
+
+1. **Start with the Table of Contents** (usually in the first few pages of a PDF). This reveals the PDD structure and tells you which sections exist.
+2. **Read the Process Overview first.** This gives you the high-level picture: what the process does, how often, how many items, how many apps.
+3. **Read the Detailed Process Steps next.** This is the core — every step the robot needs to perform.
+4. **Read Exception and Error sections.** These define the failure modes.
+5. **Read Application Details and Credentials last.** These are supporting information.
+
+## Extraction Rules by PDD Topic
+
+PDD section numbers below are typical but not guaranteed. Match by topic name, not number.
+
+### Introduction
+
+Extract:
+- **Process name** — the official name used in the PDD title and overview
+- **Objective** — what the automation achieves (faster processing, error reduction, etc.)
+- **Department/function** — who owns the process
+- **Key contacts** — SME, reviewer, approver (if listed)
+
+Watch for:
+- The PDD may describe the project initiative context (e.g., "part of a larger digital transformation"). Capture this as context but do not let it expand the SDD scope.
+
+### Process Overview
+
+Extract into a structured table:
+- Process full name
+- Function and department
+- Short description (operation, activity, outcome)
+- Required roles
+- Schedule (frequency, business hours)
+- Volume (items per day, peak periods)
+- Average handling time (manual vs. automated target)
+- FTE count
+- Exception rate estimate
+- Input data description
+- Output data description
+
+Watch for:
+- **In scope vs. out of scope** — these define the SDD boundary. Anything out of scope must not appear in the workflow inventory.
+- Vague volume descriptions like "7-15 items" — capture the range, use the upper bound for capacity planning.
+
+### Detailed Process Map
+
+Extract:
+- **Step numbering scheme** — usually 1.1, 1.2, ..., 1.5.A, 1.5.B, etc.
+- **High-level flow** — the sequence of major steps
+- **Loop boundaries** — where the per-item processing starts and ends
+- **Decision points** — any branching logic in the flow
+
+Watch for:
+- The process map may be a flowchart image. Read the image to understand the flow, then verify against the detailed process steps section.
+- Some PDDs use swimlane diagrams showing which application each step uses. This is valuable for the application scope mapping.
+
+### Detailed Process Steps
+
+This is the most important section. For each step, extract:
+
+| Field | Description |
+|---|---|
+| Step number | The PDD's numbering (1.1, 1.5.A, etc.) |
+| Action description | What the robot does in this step |
+| Application | Which application is used |
+| Expected result | What should be true after the step completes |
+| Remarks | Error handling notes, edge cases, business rules |
+
+Watch for:
+- **Embedded business rules** — rules are often buried in the "Remarks" column or in step descriptions rather than in a dedicated section. Extract and number them (BR-01, BR-02, etc.).
+- **Data field references** — step descriptions mention specific field names, variable names, or data values. Collect these for the data model definitions.
+- **Value mappings** — when a step says "map X to Y" or shows a conversion table, capture the full mapping.
+- **Implicit ordering constraints** — some steps must happen before others but the PDD doesn't explicitly say so. Note these for the workflow decomposition.
+
+### Business Exceptions
+
+Extract into a table:
+
+| Field | Description |
+|---|---|
+| Exception ID | B1, B2, etc. (assign IDs if the PDD doesn't) |
+| Exception name | Short descriptive name |
+| Trigger step | Which process step encounters this exception |
+| Trigger condition | How to detect the exception (parameters, UI state, data condition) |
+| Action | What the robot must do (skip, retry, escalate, notify) |
+
+Watch for:
+- PDDs often have a "catch-all" row: "for any other exception, send email to X". Preserve this as the default handler.
+- Some exceptions are actually business rules in disguise (e.g., "amount over threshold" is both an exception and a rule). Cross-reference with extracted business rules.
+
+### System Errors
+
+Extract into a table with the same structure as business exceptions, plus:
+
+| Field | Description |
+|---|---|
+| Severity | If specified (Sev-1, Sev-2, etc.) |
+| Retry policy | Number of retries, backoff strategy |
+
+Watch for:
+- If the PDD has only generic errors ("application unresponsive — retry 2 times"), expand with `[DEFAULT]` entries for common system errors: selector not found, browser crash, network timeout, credential expiry.
+
+### Application Details
+
+Extract into a table:
+
+| Field | Description |
+|---|---|
+| Application name | Official name and version |
+| Language | System language |
+| Login method | How authentication works |
+| Interface type | Web, desktop, terminal, API |
+| Access method | Browser type, URL, application path |
+| Comments | Special behaviors, routing, SPA details |
+
+Watch for:
+- URLs may be environment-specific (localhost for dev, internal DNS for prod). Note both if available.
+- SPA details (hash routing, pushState) affect how the robot navigates. Capture these.
+
+### Development Details
+
+Extract:
+- **Prerequisites** — UiPath Studio version, packages, screen resolution, test environment setup
+- **Credentials** — asset names, types, values (training only), notes
+- **Password policies** — rotation, complexity, storage requirements
+
+Watch for:
+- Training credentials that should not be hardcoded in the automation. Note them as Orchestrator assets.
+
+### Appendix
+
+Extract:
+- **Canonical test data** — the specific test case used for development and verification
+- **Selector references** — if provided (rare in traditional PDDs, common in agent-ready PDDs)
+- **Value mapping tables** — additional mappings not covered in the detailed process steps
+
+## Gap Detection Checklist
+
+After extraction, verify these items exist. Flag missing ones:
+
+| Item | If Missing |
+|---|---|
+| Process schedule/frequency | `[DEFAULT]` — assume on-demand trigger |
+| Volume/throughput | `[SME REVIEW]` — needed for capacity planning |
+| Retry counts on errors | `[DEFAULT]` — 3 retries with exponential backoff |
+| Element/activity timeouts | `[DEFAULT]` — 30s page loads, 10s element waits |
+| Max items per run | `[DEFAULT]` — 50 items safety cap |
+| Notification recipients for errors | `[SME REVIEW]` — needed for error escalation |
+| Amount/value thresholds | `[SME REVIEW]` — business decision |
+| Data retention requirements | `[SME REVIEW]` — compliance decision |
+| Credential rotation policy | `[DEFAULT]` — assume Orchestrator asset management |
+| Test data / canonical case | `[SME REVIEW]` — needed for testing strategy |
