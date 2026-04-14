@@ -264,6 +264,8 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
 
+> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`).
+
 ---
 
 ## Output Mapping on End Nodes

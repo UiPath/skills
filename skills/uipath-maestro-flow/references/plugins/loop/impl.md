@@ -152,6 +152,8 @@ To accumulate state across loop iterations (counters, running totals), use an `i
 
 The variableUpdate fires after each iteration, so the `inout` variable carries the accumulated value into the next iteration.
 
+> **Critical:** The variableUpdate expression **cannot** access loop iteration variables like `$vars.<loopId>.currentItem`. These are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`). If you need to compute using `currentItem`, do the computation in the script and reference the script's output in the variableUpdate.
+
 ## Complete Example — Loop with State Accumulation
 
 A flow that iterates over a collection, accumulates a result in an `inout` variable via a Script body node, and outputs the final value.
@@ -181,7 +183,7 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
       "typeVersion": "1.0.0",
       "display": { "label": "Process item" },
       "inputs": {
-        "script": "return $vars.accumulator + $vars.loop1.currentItem"
+        "script": "return $vars.accumulator + $vars.loop1.currentItem;"
       },
       "model": { "type": "bpmn:ScriptTask" },
       "parentId": "loop1"
@@ -241,5 +243,6 @@ Key points in this pattern:
 | Collection is empty or null | Expression evaluates to null/undefined | Check `collection` expression and upstream output |
 | `$vars.loop1.currentItem` is undefined | Missing node variable binding or missing `parentId` | Add `loop1.currentItem` to `variables.nodes` and set `parentId` on body nodes |
 | State variable not updating across iterations | Body node missing `parentId` | Add `"parentId": "<loopId>"` to every node inside the loop body |
+| State variable becomes `NaN` | variableUpdate expression uses `$vars.<loopId>.currentItem` | Loop variables are not available in variableUpdate expressions. Do the computation in the script and reference `$vars.<bodyNodeId>.output` in the variableUpdate |
 | Infinite loop | Edges wired incorrectly | Ensure only `loopBack` creates the cycle, not arbitrary edges |
 | No output after loop | Missing `success` edge | Wire the `success` port to the next downstream node |
