@@ -171,6 +171,24 @@ uip is resources execute <verb> "<connector-key>" "<object>" \
 
 See [resources.md — Execute Operations](resources.md#execute-operations) for the verb table and options.
 
+### Pagination (list operations)
+
+`execute list` may not return all results. **Always check `Data.Pagination`** in the response:
+
+```bash
+# First page
+uip is resources execute list "<connector-key>" "<object>" \
+  --connection-id "<id>" --output json
+# → Check Data.Pagination.HasMore and Data.Pagination.NextPageToken
+
+# Next page — use nextPage (NOT nextPageToken) as the query param name
+uip is resources execute list "<connector-key>" "<object>" \
+  --connection-id "<id>" --query "nextPage=<value-from-NextPageToken>" --output json
+# → Continue until HasMore is "false" or target item is found
+```
+
+**Stop early** if you find the target item. See [resources.md — Pagination](resources.md#pagination) for full details.
+
 ---
 
 ## Error Recovery
