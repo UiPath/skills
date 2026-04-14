@@ -1,9 +1,14 @@
-task_id: skill-hitl-smoke-add-existing-flow
+task_id: skill-hitl-e2e-expense-approval-brownfield
 description: >
-  Smoke test (brown field): agent adds a HITL node between two existing nodes
+  E2E test (brown field): agent adds a HITL node between two existing nodes
   in a minimal flow, wires the completed handle, and validates the result.
   Tests C2 (brown field insert), C5 (completed handle), F1 and F2 (validate).
-tags: [uipath-human-in-the-loop, smoke, brown-field]
+tags: [uipath-human-in-the-loop, e2e, brown-field]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir
@@ -73,7 +78,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

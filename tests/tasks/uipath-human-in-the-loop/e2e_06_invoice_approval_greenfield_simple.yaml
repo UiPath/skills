@@ -1,9 +1,14 @@
-task_id: skill-hitl-smoke-greenfield
+task_id: skill-hitl-e2e-invoice-approval-greenfield-simple
 description: >
-  Smoke test (green field): agent creates a new Flow project with a HITL
+  E2E test (green field): agent creates a new Flow project with a HITL
   checkpoint from scratch. Tests C1 (green field), B1-B3 (schema design),
   C5 (completed handle), F1 (validate after add).
-tags: [uipath-human-in-the-loop, smoke, green-field]
+tags: [uipath-human-in-the-loop, e2e, green-field]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir
@@ -65,7 +70,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -3,7 +3,7 @@ description: >
   Quality test: agent must configure a high-priority HITL node with a
   48-hour timeout for a financial compliance check. Tests C3 (priority)
   and C4 (timeout ISO 8601).
-tags: [uipath-human-in-the-loop, quality, options]
+tags: [uipath-human-in-the-loop, integration, options]
 
 sandbox:
   driver: tempdir
@@ -27,7 +27,7 @@ initial_prompt: |
 
 success_criteria:
   - type: file_contains
-    description: "Flow file contains high priority for the HITL node"
+    description: "Flow file contains PT48H timeout for the HITL node"
     path: "FinanceCompliance/flow_files/FinanceCompliance.flow"
     includes:
       - '"PT48H"'
@@ -35,7 +35,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow file contains PT48H timeout for the HITL node"
+    description: "HITL node is present in the flow file"
     path: "FinanceCompliance/flow_files/FinanceCompliance.flow"
     includes:
       - '"uipath.human-in-the-loop"'
@@ -45,7 +45,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

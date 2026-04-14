@@ -1,9 +1,10 @@
 # TODO: Full implementation pre-DevCon (Apr 30)
 # See: [HITL] Eval Coverage Proposal page for scenario definition
-task_id: skill-hitl-quality-08-coded-agent
+task_id: skill-hitl-quality-coded-agent
 description: >
-  Quality test stub — see Confluence proposal for full scenario definition.
-tags: [uipath-human-in-the-loop, quality, stub]
+  Integration test stub — see Confluence proposal for full scenario definition.
+tags: [uipath-human-in-the-loop, integration, stub]
+skip: true
 
 sandbox:
   driver: tempdir

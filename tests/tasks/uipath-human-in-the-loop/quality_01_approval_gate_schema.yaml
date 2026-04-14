@@ -3,7 +3,7 @@ description: >
   Quality test: agent must design a correct HITL schema for an invoice
   approval workflow — covering inputs, outputs, and outcomes — and confirm
   with the user before running any CLI. Tests B1, B2, B3, B4.
-tags: [uipath-human-in-the-loop, quality, schema, approval-gate]
+tags: [uipath-human-in-the-loop, integration, schema, approval-gate]
 
 sandbox:
   driver: tempdir

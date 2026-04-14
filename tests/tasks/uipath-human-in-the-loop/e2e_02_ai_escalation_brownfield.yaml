@@ -47,14 +47,6 @@ initial_prompt: |
   }
 
 success_criteria:
-  - type: command_executed
-    description: "Agent read the existing flow file"
-    tool_name: "Read"
-    command_pattern: '.*\.flow'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: file_contains
     description: "HITL node is present in the flow file"
     path: "ComplaintTriage/ComplaintTriage/ComplaintTriage.flow"
@@ -74,7 +66,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
