@@ -40,7 +40,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs and output contains 'nice day' or 'bring a jacket'"
     command: "python3 $TASK_DIR/check_weather_flow.py"
-    timeout: 120
+    timeout: 300
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

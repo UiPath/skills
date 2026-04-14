@@ -16,11 +16,11 @@
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
-/skills/uipath-platform/ @gabrielavaduva
+/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
+/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
@@ -29,13 +29,10 @@
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden
 
 # HITL skill
-/skills/uipath-human-in-the-loop/ @dushyant-uipath @rohan-uipath
+/skills/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
 /skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
-
-# Case Task Planner skill
-/skills/uipath-case-task-planner/ @charlesliu9 @song-zhao-25 @jundayin
 
 # Flow skill — node category guides (away team owned)
 # Add your team here when contributing a new node category file

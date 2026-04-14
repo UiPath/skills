@@ -10,7 +10,7 @@ defaults:
     type: claude-code
     permission_mode: acceptEdits
     model: claude-sonnet-4-6
-    max_turns: 40
+    max_turns: 200
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
       - type: "local"

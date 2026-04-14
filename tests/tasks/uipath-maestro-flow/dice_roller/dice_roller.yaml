@@ -37,7 +37,7 @@ success_criteria:
 
   # ── Execution checks ────────────────────────────────────────────────────
   - type: run_command
-    description: "Flow runs 5 times and produces valid dice rolls (1-6)"
+    description: "Flow debug runs and a Script node produces a value in [1, 6]"
     command: "python3 $TASK_DIR/check_dice_runs.py"
     timeout: 300
     expected_exit_code: 0
