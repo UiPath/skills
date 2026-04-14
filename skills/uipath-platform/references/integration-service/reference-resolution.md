@@ -6,7 +6,7 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 ## Contents
 - Reference Fields (CRITICAL)
-- Simple Reference Fields (no dependencies)
+- Search References (filterPattern)
 - Field Dependency Chains
 - Inferring References Without Describe
 - Validate Required Fields Before Executing
@@ -40,6 +40,8 @@ Some fields in the describe `requestFields` have a `reference` section — their
 | **`reference.lookupNames`** | Fields to match the user's input against (e.g., match "general" against `name`) |
 | **`reference.lookupValue`** | The field to extract as the resolved value (e.g., `id`) |
 | **`reference.path`** | The API path — use `reference.objectName` for the list call |
+| **`reference.filterPattern`** | Search endpoint pattern — substitute the user's input into `{filter}` and pass as `--query`. See [Search References](#search-references-filterpattern). |
+| **`reference.childPath`** | Scoped child path — used for drill-down references (e.g., folder subfolders) |
 
 ### Resolution workflow
 
@@ -61,7 +63,7 @@ uip is resources execute create "<connector-key>" "<resource>" \
   --connection-id "<id>" --body '{"channel": "<resolved-id>"}' --output json
 ```
 
-### Example: Resolving a Slack channel
+### Example: Resolving a Slack channel (list reference)
 
 User says: "Send a message to #general"
 
@@ -76,6 +78,64 @@ User says: "Send a message to #general"
 4. **Use** the `lookupValue` (`id`) → `"C02CAP3LAAG"` in the `--body`
 
 **Present options to the user** when multiple matches exist. Always use the resolved `lookupValue` (not display names) in `--body` or `--query`.
+
+---
+
+## Search References (filterPattern)
+
+Some reference fields point to **search endpoints** that require user input as a query parameter. These have a `filterPattern` property with a `{filter}` placeholder.
+
+### Search reference structure
+
+```json
+{
+  "name": "productId",
+  "displayName": "Product ID",
+  "description": "ID of the product to which the ticket is mapped",
+  "required": false,
+  "reference": {
+    "objectName": "search_products",
+    "lookupNames": ["productCode", "id"],
+    "lookupValue": "id",
+    "path": "/search_products",
+    "filterPattern": "productCode={filter}"
+  }
+}
+```
+
+### How to detect
+
+If `reference.filterPattern` exists, the reference is a **search endpoint** — a plain `list` call without the filter will return no results or an error.
+
+### Resolution workflow (search)
+
+1. **Get the user's search input** — the value they want to look up (e.g., product name, code)
+2. **Substitute into filterPattern** — replace `{filter}` with the user's input
+3. **Pass as `--query`** when listing the referenced object:
+
+```bash
+# filterPattern: "productCode={filter}"
+# User input: "Widget Pro"
+uip is resources execute list "<connector-key>" "search_products" \
+  --connection-id "<id>" --query "productCode=Widget Pro" --output json
+```
+
+4. **Match results** against `lookupNames` and extract `lookupValue` as usual
+
+### Example: Resolving a Zoho Desk product
+
+User says: "Create a ticket for product Widget Pro"
+
+1. **Describe** returns `productId` with `reference.filterPattern: "productCode={filter}"`
+2. **Search** with user input:
+   ```bash
+   uip is resources execute list "uipath-zoho-desk" "search_products" \
+     --connection-id "<id>" --query "productCode=Widget Pro" --output json
+   ```
+   → `{ "productCode": "WP-100", "id": "1892000000056007" }`
+3. **Use** the `lookupValue` (`id`) → `"1892000000056007"` in `--body`
+
+> **If the user doesn't provide a search term**, ask them. Search references cannot be resolved without user input — do NOT call the search endpoint with an empty filter.
 
 ---
 
