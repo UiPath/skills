@@ -64,7 +64,7 @@ tests/
 ├── experiments/
 │   ├── default.yaml              # Smoke config
 │   ├── integration.yaml          # Integration config (longer timeouts)
-│   └── e2e.yaml                  # E2E config (staging tenant, full lifecycle)
+│   ├── e2e.yaml                  # E2E config (staging tenant, full lifecycle)
 └── tasks/
     └── <skill-name>/             # One folder per skill
         ├── <capability>.yaml     # Smoke tests
@@ -369,6 +369,25 @@ runs/
    - Agent didn't activate the skill -> check skill description frontmatter and smoke test
    - Agent ran out of turns -> increase `max_turns` or simplify the prompt
    - Sandbox issue -> check that `uip` CLI is available in the test environment
+
+## Test Coverage Analysis
+
+Use the `/test-coverage` slash command to generate a coverage report that maps what a skill teaches against what its tests verify:
+
+```bash
+# Analyze a single skill
+/test-coverage uipath-maestro-flow
+
+# Analyze all skills
+/test-coverage all
+```
+
+Reports are written to `tests/reports/<skill-name>.md` and include:
+- Component, workflow step, critical rule, and anti-pattern coverage (Direct/Indirect/None)
+- Weighted overall score
+- Priority-ranked coverage gaps with concrete test recommendations
+
+The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
 ## Further Reading
 

@@ -221,6 +221,17 @@ make test-uipath-maestro-flow  # run all tests for a specific skill
 
 See `tests/README.md` for the full task YAML template, success criteria reference, and examples from existing tests.
 
+### Analyzing Test Coverage
+
+Use the `/test-coverage` slash command to see what a skill's tests cover and where gaps exist:
+
+```bash
+/test-coverage uipath-maestro-flow   # single skill
+/test-coverage all                    # all skills
+```
+
+This produces a markdown report in `tests/reports/` with component coverage, rule coverage, priority-ranked gaps, and concrete recommendations for new tests to write. Run this before and after adding tests to measure your progress.
+
 ## Quality Checklist
 
 Before submitting your PR, verify:
