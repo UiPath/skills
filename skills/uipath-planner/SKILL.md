@@ -49,28 +49,29 @@ Skip this question if the user is modifying an existing automation (the approach
 
 ### Question 2: Project type (if ambiguous)
 
-Ask only if the user's request does not clearly indicate a project type (e.g., they said "automate invoices" but not whether they want C#, XAML, agent, etc.).
+Ask only if the user's request does not clearly indicate a project type (e.g., they said "automate invoices" but not whether they want an automation, agent, flow, etc.).
 
 > What type of project would you like to build?
 >
-> 1. **Automation workflow — C# coded** — best for complex logic, testability, version control *(recommended for new projects)*
-> 2. **Automation workflow — XAML low-code** — best for visual design in Studio Desktop
-> 3. **Python agent** — AI-powered with LangGraph/LlamaIndex/OpenAI Agents
-> 4. **Flow** — visual node-based orchestration connecting multiple automations
-> 5. **Coded web app** — React/Angular/Vue deployed to UiPath
+> 1. **Automation workflow** — XAML low-code, with C# coded fallback for complex parts *(recommended)*
+> 2. **Python agent** — AI-powered with LangGraph/LlamaIndex/OpenAI Agents
+> 3. **Flow** — visual node-based orchestration connecting multiple automations
+> 4. **Coded web app** — React/Angular/Vue deployed to UiPath
 >
-> Recommended: Option 1 (C# coded workflow)
+> Recommended: Option 1 (automation workflow)
 
 Skip if the user already specified a project type or if filesystem signals (Step 3) unambiguously resolve it.
 
-### Question 3: Expression language (XAML only)
+**Do not ask the user to choose between XAML and C#.** Automation workflows default to XAML. Use C# coded workflows only as a fallback for parts that are too complex to build in XAML (e.g., advanced custom logic, complex data structures). The plan should note this strategy so the specialist skill applies it.
 
-Ask only if the user chose or is working with XAML workflows. C# coded workflows always use C# expressions — skip this question for them.
+### Question 3: Expression language
 
-> Which expression language for your XAML workflow?
+Ask only for new automation workflow projects. Skip if an existing project already has an expression language configured.
+
+> Which expression language for your workflow?
 >
 > 1. **VB.NET** — traditional UiPath expression language *(recommended for compatibility)*
-> 2. **C#** — modern syntax, consistent with coded workflows
+> 2. **C#** — modern syntax
 >
 > Recommended: Option 1 (VB.NET)
 
