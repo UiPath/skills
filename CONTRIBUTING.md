@@ -16,6 +16,8 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ```
 .
+├── .claude/                   # Claude Code project-level configuration
+│   └── commands/              # Slash commands (e.g., /test-coverage)
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
@@ -29,6 +31,11 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │       ├── SKILL.md           # Skill definition (required)
 │       ├── references/        # Supporting reference documents (optional)
 │       └── assets/            # Templates, examples, static files (optional)
+├── tests/                     # Skill evaluation tests (coder_eval)
+│   ├── experiments/           # Experiment configs (smoke, integration, e2e)
+│   ├── tasks/                 # Test tasks organized by skill
+│   │   └── <skill-name>/     # One folder per skill
+│   └── reports/               # Generated coverage reports (/test-coverage)
 ├── CODEOWNERS                 # GitHub ownership by skill/path
 ├── README.md                  # Project overview and quick start
 ├── CONTRIBUTING.md            # This file
@@ -220,6 +227,17 @@ make test-uipath-maestro-flow  # run all tests for a specific skill
 5. Follow the task ID pattern: `skill-<domain>-<capability>`
 
 See `tests/README.md` for the full task YAML template, success criteria reference, and examples from existing tests.
+
+### Analyzing Test Coverage
+
+Use the `/test-coverage` slash command to see what a skill's tests cover and where gaps exist:
+
+```bash
+/test-coverage uipath-maestro-flow   # single skill
+/test-coverage all                    # all skills
+```
+
+This produces a markdown report in `tests/reports/` with component coverage, rule coverage, priority-ranked gaps, and concrete recommendations for new tests to write. Run this before and after adding tests to measure your progress.
 
 ## Quality Checklist
 

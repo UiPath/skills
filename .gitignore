@@ -67,6 +67,7 @@ site
 **/.claude/hooks/*.local.*
 
 # coder_eval test run artifacts
+tests/reports/
 tests/runs/
 tmp/
 c/
