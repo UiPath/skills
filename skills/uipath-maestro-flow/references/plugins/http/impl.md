@@ -101,14 +101,11 @@ When a connector exists but lacks the specific endpoint, use the connector's HTT
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.action.http --output json \
-  --input '{"method": "GET", "url": "https://api.example.com/data"}' \
-  --label "Fetch Data" \
-  --position 300,200
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+
+When using response branching, each branch creates a dynamic output port (`branch-{id}`). Unmatched responses go to `default`. See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
 
 ## Debug
 

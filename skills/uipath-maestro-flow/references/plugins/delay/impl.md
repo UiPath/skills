@@ -73,14 +73,9 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.logic.delay --output json \
-  --input '{"timerType": "timeDuration", "timerPreset": "PT15M"}' \
-  --label "Wait 15 Minutes" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Debug
 

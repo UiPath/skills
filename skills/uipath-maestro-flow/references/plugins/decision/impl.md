@@ -27,14 +27,9 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.logic.decision --output json \
-  --input '{"expression": "$vars.fetchData.output.statusCode === 200"}' \
-  --label "Check Status" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Expression Examples
 
@@ -55,17 +50,9 @@ $vars.classify.output.category === "urgent"
 $vars.lookupUser.output.user !== null
 ```
 
-## Wiring Example
+## Wiring
 
-```bash
-# True branch
-uip flow edge add <ProjectName>.flow checkStatus processOrder --output json \
-  --source-port true --target-port input
-
-# False branch
-uip flow edge add <ProjectName>.flow checkStatus logSkip --output json \
-  --source-port false --target-port input
-```
+Output ports: `true` and `false`. Both branches must be wired. See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
 
 ## Debug
 

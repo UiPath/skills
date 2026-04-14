@@ -25,14 +25,9 @@ Confirm:
 - `outputDefinition.output` — process return value
 - `outputDefinition.error` — error schema
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.rpa-workflow.{key}" --output json \
-  --input '{"documentPath": "/invoices/batch1"}' \
-  --label "Process Invoices" \
-  --position 400,200
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -67,25 +62,7 @@ uip flow node add <ProjectName>.flow "uipath.core.rpa-workflow.{key}" --output j
 
 ## Mock Placeholder (If Not Yet Published)
 
-```bash
-uip flow node add <Project>.flow core.logic.mock --output json \
-  --label "Process Invoices [TODO: RPA]" \
-  --position 400,200
-```
-
-Tell the user to create the RPA process with `uipath-rpa`, then replace the mock after publishing:
-
-```bash
-uip flow registry pull --force
-uip flow registry search "<process-name>" --output json
-uip flow registry get "uipath.core.rpa-workflow.{key}" --output json
-```
-
-1. Remove the mock node from `nodes`
-2. Add the real resource node (with correct `type`, `inputs`, `model`)
-3. Update all edges that referenced the mock node's ID
-4. Add node variables to `variables.nodes`
-5. Validate: `uip flow validate`
+If the RPA process is not yet published, add a `core.logic.mock` placeholder and tell the user to create it with `uipath-rpa`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
 
 ## Debug
 

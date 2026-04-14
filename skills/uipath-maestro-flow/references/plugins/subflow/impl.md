@@ -122,14 +122,9 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 5. Subflows can be nested (subflow inside subflow), up to 3 levels
 6. Each subflow has its own `nodes`, `edges`, and `variables` sections
 
-## Creating a Subflow Step-by-Step
+## Creating a Subflow
 
-1. Add a `core.subflow` node to the parent flow's `nodes` array with `inputs` matching the subflow's `in` variables
-2. Add a `subflows.{nodeId}` entry with its own `nodes`, `edges`, and `variables`
-3. The subflow must have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
-4. Define subflow inputs (`direction: "in"`) and outputs (`direction: "out"`) in `subflows.{nodeId}.variables.globals`
-5. Map outputs on the subflow's End node
-6. Validate: `uip flow validate`
+For the step-by-step procedure, see [JSON: Create a subflow](../../flow-editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
 
 ## Debug
 

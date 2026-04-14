@@ -24,13 +24,9 @@ Confirm:
 - `inputDefinition` — typically empty
 - `outputDefinition.error` — error schema
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.agentic-process.{key}" --output json \
-  --label "Run Orchestration" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 

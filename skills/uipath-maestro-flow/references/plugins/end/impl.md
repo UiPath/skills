@@ -52,15 +52,11 @@ When the workflow declares `out` variables, every End node must map all of them:
 
 Each key in `outputs` must match a variable `id` from `variables.globals` where `direction: "out"`.
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.control.end --output json \
-  --label "Done" \
-  --position 700,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
-> Output mapping must be added by editing the `.flow` JSON directly — the CLI does not support `--output` for End nodes.
+Output mapping must be added by editing the `.flow` JSON directly — see [JSON: Add output mapping](../../flow-editing-operations-json.md#add-output-mapping-on-an-end-node).
 
 ## Debug
 
