@@ -99,13 +99,14 @@ uip is resources describe "<connector-key>" "<object>" \
   --connection-id "<id>" --operation <Create|List|Retrieve|Update|Delete|Replace> --output json
 ```
 
-The describe command fetches JSON Schema from the IS API (`Accept: application/schema+json`) and returns a compact summary with operations (method, parameters, path) and fields (name, type, required, enums, $ref). Results are cached locally — subsequent calls for the same object are instant.
+Without `--operation`, returns a list of `availableOperations` with a hint to use `--operation`. With `--operation`, returns per-operation detail: `requestFields` (what to send), `responseFields` (what comes back), and `parameters` (path/query params). Results are cached locally — subsequent calls for the same object are instant.
 
-> **Use `--operation`** to filter to the operation you need (e.g., `--operation Create`). This keeps output focused and saves tokens.
+> **Always use `--operation`** to get field-level detail (e.g., `--operation Create`). Without it you only see which operations exist.
 
 | Describe outcome | Action |
 |---|---|
-| Returns `operations` + `fields` | Use field metadata. Proceed to Step 5. |
+| Returns `requestFields` + `responseFields` + `parameters` | Use field metadata. Check `required` flags and `reference` sections. Proceed to Step 5. |
+| Returns `availableOperations` (no `--operation`) | Pick the operation you need, re-run with `--operation`. |
 | Returns error or empty | **Metadata gap** — skip describe, proceed to Step 5 with inferred fields. See [resources.md — Describe Failures](resources.md#describe-failures). |
 
 **Always pass `--connection-id`** for connection-specific metadata including custom fields.
@@ -253,9 +254,10 @@ uip is resources list "uipath-salesforce-sfdc" \
 # 4c. Describe the target resource
 uip is resources describe "uipath-salesforce-sfdc" "Contact" \
   --connection-id "abc-123" --operation Create --output json
-# → operations: [Create], fields: {LastName: required, FirstName: optional, ...}
+# → requestFields: [{name: "LastName", required: true}, {name: "FirstName", required: false}, ...]
+# → responseFields: [{name: "Id"}, {name: "LastName"}, ...]
 
-# 5. No reference fields → skip resolution
+# 5. No reference fields (no fields with "reference" section) → skip resolution
 # 5a. All required fields (LastName) have values → proceed
 
 # 6. Execute

@@ -33,14 +33,35 @@ For reference field resolution (simple refs, dependency chains, required field v
 
 ## Describe Response
 
-The describe command fetches JSON Schema from the IS API (`Accept: application/schema+json`) and returns a compact summary:
+The describe command returns metadata from the raw API. The output depends on whether `--operation` is provided.
 
-| Section | Description |
+### Without `--operation` — operation summary
+
+Returns which operations the resource supports:
+
+| Field | Description |
 |---|---|
-| **operations** | Available operations — each with method, path, description, parameters (name, type, required, description) |
-| **fields** | All fields — each with name, type, required flag, enum values (if any), $ref (if any) |
+| **`availableOperations`** | List of operations — each with `method` (GET/POST/PATCH/PUT/DELETE), `name` (Create/List/etc.), `description`, `curated` (display name) |
+| **`hint`** | Instructs to use `--operation` for field details |
 
-Use `--operation <Create|List|Retrieve|Update|Delete|Replace>` to filter to a single operation and reduce output.
+### With `--operation` — per-operation field detail
+
+Returns the full field breakdown for the specified operation:
+
+| Field | Description |
+|---|---|
+| **`operation`** | Operation info — `method`, `name`, `description`, `path`, `curated` display name |
+| **`parameters`** | Path and query parameters (NOT body fields) — each with `name`, `type` (path/query), `dataType`, `required`, `defaultValue`, `reference` |
+| **`requestFields`** | Fields to send in `--body` — each with `name`, `type`, `displayName`, `required`, `description`, `reference`, `enum` |
+| **`responseFields`** | Fields returned in the response — each with `name`, `type`, `displayName` |
+
+> **Always use `--operation`** to get actionable field detail. Without it you only see which operations exist.
+
+### Key field properties
+
+- **`required: true`** — field must be provided in `--body` or `--query`. Do NOT skip.
+- **`reference`** — field value must be looked up from another resource. See [reference-resolution.md](reference-resolution.md).
+- **`enum`** — field only accepts the listed values (e.g., `["low", "normal", "high"]`).
 
 Results are cached locally. Use `--refresh` to bypass cache after re-auth or schema changes.
 
