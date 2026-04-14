@@ -1,0 +1,79 @@
+task_id: skill-hitl-quality-all-handles
+description: >
+  Quality test: agent must wire all 3 HITL handles (completed, cancelled,
+  timeout) to distinct downstream nodes and validate. Tests C5, C6, C7,
+  C8, F2.
+tags: [uipath-human-in-the-loop, quality, edge-wiring]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a flow called "PurchaseOrderApproval" with the following structure:
+  - A manual trigger
+  - A HITL node for purchase order approval (label: "PO Approval")
+  - A script node for approved orders (id: "processApproved", label: "Process PO")
+  - A script node for cancellations (id: "handleCancelled", label: "Handle Cancellation")
+  - A script node for timeouts (id: "escalateTimeout", label: "Escalate Timeout")
+
+  Wire ALL three HITL handles:
+  - completed -> processApproved
+  - cancelled -> handleCancelled
+  - timeout -> escalateTimeout
+
+  Validate after adding and wiring. Save results to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "handles_wired": ["completed", "cancelled", "timeout"],
+    "commands_used": ["<list>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip flow hitl add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+hitl\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran at least 3 edge add commands (one per handle)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+edge\s+add'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated after wiring"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json shows all 3 handles wired and validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "length(handles_wired)"
+        operator: gte
+        expected: 3
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "All 3 handle names present in report"
+    path: "report.json"
+    includes:
+      - "completed"
+      - "cancelled"
+      - "timeout"
+    weight: 2.0
+    pass_threshold: 1.0

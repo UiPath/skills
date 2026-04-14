@@ -1,0 +1,106 @@
+task_id: skill-hitl-smoke-add-existing-flow
+description: >
+  Smoke test (brown field): agent adds a HITL node between two existing nodes
+  in a minimal flow, wires the completed handle, and validates the result.
+  Tests C2 (brown field insert), C5 (completed handle), F1 and F2 (validate).
+tags: [uipath-human-in-the-loop, smoke, brown-field]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath Flow project. First, create this starting flow by writing
+  it to ExpenseApproval/ExpenseApproval/ExpenseApproval.flow:
+
+  {
+    "nodes": [
+      {
+        "id": "trigger1",
+        "type": "core.trigger.manual",
+        "label": "Start",
+        "position": { "x": 100, "y": 200 }
+      },
+      {
+        "id": "postExpense",
+        "type": "core.action.script",
+        "label": "Post to Finance System",
+        "position": { "x": 400, "y": 200 },
+        "inputs": { "script": "console.log('posting expense');" }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "trigger1",
+        "target": "postExpense",
+        "sourcePort": "output",
+        "targetPort": "input"
+      }
+    ],
+    "variables": [],
+    "definitions": []
+  }
+
+  Now add a Human-in-the-Loop node between the trigger and the posting step.
+  A manager should review and approve the expense before it is posted.
+  Wire the completed handle to the posting step and validate the flow.
+
+  Save a summary to report.json with:
+  {
+    "hitl_node_id": "<the ID of the HITL node you added>",
+    "commands_used": ["<list of uip commands run>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip flow hitl add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+hitl\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent wired the completed edge"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+edge\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 2
+    weight: 2.0
+    pass_threshold: 0.75

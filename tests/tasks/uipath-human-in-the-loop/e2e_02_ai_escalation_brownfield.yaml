@@ -1,0 +1,90 @@
+task_id: skill-hitl-e2e-ai-escalation-brownfield
+description: >
+  E2E golden scenario (brown field): agent reads an existing classification
+  flow and inserts a HITL escalation node on the low-confidence path. Real
+  business use case. Full Discover -> Plan -> Build -> Verify loop.
+tags: [uipath-human-in-the-loop, e2e, brown-field, escalation, ai-agent]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have an existing complaint classification flow. First, create it by
+  writing to ComplaintTriage/ComplaintTriage/ComplaintTriage.flow:
+
+  {
+    "nodes": [
+      {"id": "trigger1", "type": "core.trigger.manual", "label": "New Complaint", "position": {"x": 100, "y": 200}},
+      {"id": "aiClassify", "type": "core.action.script", "label": "AI Classifier", "position": {"x": 300, "y": 200}, "inputs": {"script": "// AI classifies complaint; sets confidence"}},
+      {"id": "routeHigh", "type": "core.action.script", "label": "Route High Priority", "position": {"x": 500, "y": 100}, "inputs": {"script": "console.log('routing high priority');"}},
+      {"id": "routeLow", "type": "core.action.script", "label": "Route Standard", "position": {"x": 500, "y": 300}, "inputs": {"script": "console.log('routing standard');"}}
+    ],
+    "edges": [
+      {"id": "e1", "source": "trigger1", "target": "aiClassify", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e2", "source": "aiClassify", "target": "routeHigh", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e3", "source": "aiClassify", "target": "routeLow", "sourcePort": "output", "targetPort": "input"}
+    ],
+    "variables": [],
+    "definitions": []
+  }
+
+  When the AI classifier confidence is below 80%, a human reviewer must
+  make the final routing decision before the complaint is acted on.
+  Insert a HITL node in the appropriate place, wire it, and validate.
+
+  Save results to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "inserted_position": "<description of where in the flow>",
+    "handles_wired": ["<list>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read the existing flow file"
+    tool_name: "Read"
+    command_pattern: '.*\.flow'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip flow hitl add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+hitl\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent wired edges from the HITL node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+edge\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 2.5
+    pass_threshold: 1.0
