@@ -10,7 +10,7 @@ How to add an inline `uipath.agent.autonomous` node to a flow. The agent definit
 - No need for separate versioning, evaluation, or reuse across flows
 - Fastest to set up — no separate agent project required
 
-For reusable agents (separate versioning, evals, shared across flows), use a solution or external agent node instead. See the `uipath-lowcode-agents` skill for details.
+For reusable agents (separate versioning, evals, shared across flows), use a solution or external agent node instead. See the `uipath-agents` skill for details.
 
 ---
 
@@ -21,7 +21,7 @@ For reusable agents (separate versioning, evals, shared across flows), use a sol
 Run from the solution directory (or pass an absolute path):
 
 ```bash
-uip low-code-agent init "<FlowProjectDir>" --inline-in-flow --output json
+uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 ```
 
 This creates `<FlowProjectDir>/<projectId-uuid>/` with:
@@ -54,7 +54,7 @@ Edit `<FlowProjectDir>/<projectId>/agent.json`:
 ]
 ```
 
-Use the `uipath-lowcode-agents` skill for detailed agent configuration guidance (contentTokens format, resource files, model settings).
+Use the `uipath-agents` skill for detailed agent configuration guidance (contentTokens format, resource files, model settings).
 
 ### Step 3 — Get the node definition from registry (optional)
 
@@ -117,14 +117,14 @@ uip flow edge add <FlowName>.flow <agentNodeId> <nextNodeId> \
 
 ### Step 6 — Add tool resources (optional)
 
-Create resource files inside `<FlowProjectDir>/<projectId>/resources/<ToolName>/resource.json`. Same format as standalone agent resources. Use the `uipath-lowcode-agents` skill for resource file formats.
+Create resource files inside `<FlowProjectDir>/<projectId>/resources/<ToolName>/resource.json`. Same format as standalone agent resources. Use the `uipath-agents` skill for resource file formats.
 
 ### Step 7 — Validate
 
 Validate the inline agent definition:
 
 ```bash
-uip low-code-agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
+uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 ```
 
 Then validate the flow file:

@@ -352,22 +352,15 @@ uip solution project add ./MySolution/Agent ./MySolution/MySolution.uipx --outpu
 uip solution project add ./MySolution/Agent2 ./MySolution/MySolution.uipx --output json
 ```
 
-### Edit and rebuild
-
-```bash
-# After editing agent.json (tools, contexts, prompts, schema), validate
-uip agent validate ./MySolution/Agent --output json
-uip agent validate ./MySolution/Agent2 --output json
-```
-
 ### Upload to Studio Web
 
-```bash
-# Bundle + import in one step (auto-detects new vs existing solution)
-uip solution upload ./MySolution --output json
+Always bundle first, then upload the `.uis` file. Do not pass a directory path directly to `uip solution upload`.
 
-# Or: bundle to .uis first, then upload
+```bash
+# Step 1: Bundle to .uis
 uip solution bundle ./MySolution -d ./output --output json
+
+# Step 2: Upload the .uis file
 uip solution upload ./output/MySolution.uis --output json
 ```
 
@@ -417,12 +410,15 @@ uip solution deploy list --output json
 
 When Agent A needs to call Agent B in the same solution:
 
-### In Agent A's `agent.json`:
+### In Agent A's `resources/Agent B/resource.json`:
+
+Create a tool resource file at `AgentA/resources/Agent B/resource.json`:
 
 ```jsonc
 {
   "$resourceType": "tool",
-  "id": "<new-uuid>",
+  "id": "<uuid>",
+  "referenceKey": "",                // ← leave empty; validate resolves it and writes it back to disk
   "name": "Agent B",
   "type": "agent",
   "location": "solution",           // ← key: marks as solution-internal
@@ -442,25 +438,31 @@ When Agent A needs to call Agent B in the same solution:
     }
   },
   "isEnabled": true,
+  "settings": {},
   "properties": {
     "processName": "Agent B",
     "folderPath": "solution_folder"  // ← always solution_folder for solution resources
-  }
+  },
+  "guardrail": {
+    "policies": []
+  },
+  "argumentProperties": {}
 }
 ```
 
-### In `.agent-builder/bindings.json`:
+**Do NOT add resources inline in Agent A's root `agent.json`.** The `validate` command reads `resources/{name}/resource.json` files, resolves `referenceKey` from the solution process definitions, and generates `.agent-builder/agent.json` with resources inlined.
+
+### Generated `.agent-builder/bindings.json` (by validate):
 
 ```jsonc
 {
   "resource": "process",
   "key": "Agent B",
   "value": {
-    "name": { "defaultValue": "Agent B", "isExpression": false, "displayName": "Process name" },
-    "folderPath": { "defaultValue": "solution_folder", "isExpression": false, "displayName": "Folder path" }
+    "name": { "defaultValue": "Agent B", "isExpression": false, "displayName": "Process name" }
   },
   "metadata": {
-    "subType": "Agent",               // ← must be "Agent" (capital A) for agent resources
+    "subType": "agent",
     "bindingsVersion": "2.2",
     "solutionsSupport": "true"
   }

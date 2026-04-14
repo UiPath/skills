@@ -12,9 +12,9 @@ After `uip agent init <name>`:
 ├── entry-points.json       # Entry point definition (must mirror agent.json schemas)
 ├── project.uiproj          # Project metadata
 ├── flow-layout.json        # UI layout — do not edit
-├── .agent-builder/         # Studio Web artifacts — do not edit
-├── features/               # Context grounding (future)
-└── resources/              # Escalations, tools, etc. (future)
+├── evals/                  # Evaluation sets and evaluators
+├── features/               # Agent features
+└── resources/              # Agent resources
 ```
 
 ## agent.json
@@ -23,7 +23,7 @@ Primary configuration file. Edit directly.
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
     "maxTokens": 16384,
@@ -34,13 +34,13 @@ Primary configuration file. Edit directly.
   },
   "inputSchema": {
     "type": "object",
-    "required": ["<FIELD_NAME>"],
     "properties": {
       "<FIELD_NAME>": {
         "type": "string",
         "description": "<FIELD_DESCRIPTION>"
       }
-    }
+    },
+    "required": ["<FIELD_NAME>"]
   },
   "outputSchema": {
     "type": "object",
@@ -54,11 +54,10 @@ Primary configuration file. Edit directly.
   "metadata": {
     "storageVersion": "50.0.0",
     "isConversational": false,
-    "targetRuntime": "pythonAgent",
-    "showProjectCreationExperience": false
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
   },
   "type": "lowCode",
-  "projectId": "<AUTO_GENERATED_UUID>",
   "messages": [
     {
       "role": "system",
@@ -74,7 +73,8 @@ Primary configuration file. Edit directly.
         { "type": "variable", "rawString": "input.fieldName" }
       ]
     }
-  ]
+  ],
+  "projectId": "<AUTO_GENERATED_UUID>"
 }
 ```
 
@@ -100,15 +100,22 @@ Primary configuration file. Edit directly.
 | `"object"` | Nested structures |
 | `"array"` | Lists |
 
+### Top-level fields (do not modify)
+
+| Field | Value |
+|-------|-------|
+| `version` | `"1.1.0"` — always scaffolded at this version |
+| `type` | `"lowCode"` |
+| `projectId` | Auto-generated UUID — do not edit |
+
 ### Metadata (do not modify)
 
 | Field | Value |
 |-------|-------|
-| `storageVersion` | Use value from init |
+| `storageVersion` | Managed by `uip agent validate` — do not edit |
 | `isConversational` | `false` (autonomous agents) |
+| `showProjectCreationExperience` | `false` |
 | `targetRuntime` | `"pythonAgent"` |
-| `type` | `"lowCode"` |
-| `projectId` | Auto-generated UUID — do not edit |
 
 ## Messages
 
@@ -221,19 +228,29 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 
 ## Resources (v1.1.0)
 
-`agent.json` version `"1.1.0"` adds a `resources[]` array for tools, contexts, and escalations. Use `"version": "1.1.0"` when the agent needs any resources. Use `"version": "1.0.0"` for schema-only agents with no tools.
+Resources are defined as individual files in the agent project's `resources/` directory — **not** inline in the root `agent.json`. Each resource gets its own subdirectory:
+
+```
+Agent/
+├── agent.json                              # No resources field here
+├── resources/
+│   └── {ResourceName}/
+│       └── resource.json                   # One file per resource
+```
+
+The `validate` command reads these files, resolves `referenceKey` for solution tools, and generates `.agent-builder/agent.json` which inlines all resources. The root `agent.json` should not contain a `resources` field.
 
 ### Tool resource (`$resourceType: "tool"`)
+
+**Path:** `resources/{ToolName}/resource.json`
 
 ```jsonc
 {
   "$resourceType": "tool",
-  "id": "<uuid>",              // Stable; generate once, never change
-  "referenceKey": "<uuid>",    // Used for binding lookup
   "name": "MyProcess",
-  "type": "process",           // See type table below
-  "location": "external",      // "external" | "solution"
   "description": "What this tool does (shown to LLM for tool selection)",
+  "location": "external",      // "external" | "solution"
+  "type": "process",           // See type table below
   "inputSchema": {
     "type": "object",
     "properties": { "param1": { "type": "string" } },
@@ -243,11 +260,18 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
     "type": "object",
     "properties": { "result": { "type": "string" } }
   },
-  "isEnabled": true,
+  "settings": {},
   "properties": {
     "processName": "MyProcess",
     "folderPath": "Shared"      // "solution_folder" for solution-internal; actual path for external
-  }
+  },
+  "guardrail": {
+    "policies": []
+  },
+  "id": "<uuid>",              // Stable; generate once, never change
+  "referenceKey": "",           // Leave empty; validate resolves it and writes it back to disk
+  "isEnabled": true,
+  "argumentProperties": {}
 }
 ```
 
@@ -259,7 +283,8 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 | `agent` | Calling another low-code agent |
 | `integration` | Calling an Integration Service connector activity |
 | `api` | Direct REST API call |
-| `mcp` | MCP (Model Context Protocol) server tool |
+
+Note: MCP (Model Context Protocol) server resources use `$resourceType: "mcp"` — a separate resource type, not a `type` value inside a tool resource. See [MCP resource](#mcp-resource-resourcetype-mcp) below.
 
 **`location` and `folderPath`:**
 
@@ -269,6 +294,8 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 | `"external"` | `"Shared"` (or actual path) | Resource lives in Orchestrator, outside this solution |
 
 ### Context resource (`$resourceType: "context"`)
+
+**Path:** `resources/{ContextName}/resource.json`
 
 ```jsonc
 {
@@ -288,6 +315,8 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 
 ### Escalation resource (`$resourceType: "escalation"`)
 
+**Path:** `resources/{EscalationName}/resource.json`
+
 ```jsonc
 {
   "$resourceType": "escalation",
@@ -306,7 +335,26 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 }
 ```
 
-### v1.1.0 agent.json template (with resources)
+### MCP resource (`$resourceType: "mcp"`)
+
+**Path:** `resources/{McpServerName}/resource.json`
+
+MCP resources are a distinct resource type — they use `$resourceType: "mcp"`, not `$resourceType: "tool"`.
+
+```jsonc
+{
+  "$resourceType": "mcp",
+  "id": "<uuid>",
+  "name": "MyMcpServer",
+  "description": "What this MCP server provides",
+  "isEnabled": true,
+  "tools": []  // MCP tool definitions — populated at runtime
+}
+```
+
+### v1.1.0 agent.json template
+
+The root `agent.json` does not contain a `resources` field. Resources are defined as separate files in the `resources/` directory.
 
 ```jsonc
 {
@@ -355,10 +403,45 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
     "properties": {
       "content": { "type": "string", "description": "Agent response" }
     }
+  }
+}
+```
+
+### Example: resource.json for a solution agent tool
+
+**Path:** `ParentAgent/resources/ToolAgent/resource.json`
+
+```jsonc
+{
+  "$resourceType": "tool",
+  "name": "ToolAgent",
+  "description": "Calls ToolAgent for specialized tasks",
+  "location": "solution",
+  "type": "agent",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userInput": { "type": "string", "description": "Input for the tool agent" }
+    }
   },
-  "resources": [
-    // tool, context, and escalation entries here
-  ]
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "content": { "type": "string", "description": "Output content" }
+    }
+  },
+  "settings": {},
+  "properties": {
+    "processName": "ToolAgent",
+    "folderPath": "solution_folder"
+  },
+  "guardrail": {
+    "policies": []
+  },
+  "id": "<uuid>",
+  "referenceKey": "",           // Leave empty; validate resolves it and writes it back to disk
+  "isEnabled": true,
+  "argumentProperties": {}
 }
 ```
 
@@ -367,5 +450,4 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 | File | Managed By |
 |------|------------|
 | `flow-layout.json` | Studio Web |
-| `.agent-builder/*` | Studio Web |
-| `.project/JitCustomTypes.json` | Build system |
+| `.agent-builder/*` | Generated by `uip agent validate` and Studio Web — do not edit by hand |
