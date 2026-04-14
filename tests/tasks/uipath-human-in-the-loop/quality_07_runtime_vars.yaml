@@ -1,0 +1,70 @@
+task_id: skill-hitl-quality-runtime-vars
+description: >
+  Quality test: after adding a HITL node, agent must wire a downstream
+  script node that correctly references $vars.<NodeId>.result and
+  $vars.<NodeId>.status. Tests G1 and G2.
+tags: [uipath-human-in-the-loop, quality, runtime-variables]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a flow called "ReviewAndRoute" with:
+  1. A manual trigger
+  2. A HITL node (label: "Review Decision", id: "reviewDecision")
+  3. A script node after HITL that reads the human's decision and logs it
+
+  The script node must use the HITL runtime variables to access the result.
+  Wire the completed handle to the script node. Validate the flow.
+
+  Save results to report.json:
+  {
+    "hitl_node_id": "reviewDecision",
+    "result_variable": "<the exact variable expression used in the script>",
+    "status_variable": "<the exact variable expression used in the script>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip flow hitl add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+hitl\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the correct result variable pattern"
+    path: "report.json"
+    includes:
+      - "$vars.reviewDecision.result"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the correct status variable pattern"
+    path: "report.json"
+    includes:
+      - "$vars.reviewDecision.status"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json shows validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 1.5
+    pass_threshold: 1.0

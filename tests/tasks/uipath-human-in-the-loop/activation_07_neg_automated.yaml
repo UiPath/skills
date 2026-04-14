@@ -1,0 +1,45 @@
+task_id: skill-hitl-activation-neg-automated
+description: >
+  Negative activation test: agent must NOT recommend HITL when the user
+  explicitly requests a fully automated flow with no human review. Verifies
+  the skill does not produce false positives.
+tags: [uipath-human-in-the-loop, activation]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Process all invoices under $500 automatically — extract the data, validate
+  the amounts, and post them directly to SAP with no manual review whatsoever.
+  This should be fully automated end-to-end.
+
+  Write a recommendation.json file with:
+  {
+    "hitl_needed": true or false,
+    "reason": "<why HITL is or is not needed>"
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent correctly determined HITL is NOT needed"
+    path: "recommendation.json"
+    includes:
+      - '"hitl_needed": false'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT run uip flow hitl add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+hitl\s+add'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

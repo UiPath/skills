@@ -1,0 +1,49 @@
+task_id: skill-hitl-activation-escalation
+description: >
+  Activation test: agent should detect an exception escalation pattern from
+  AI confidence threshold language. Verifies the skill fires on escalation
+  signals without explicit HITL mention.
+tags: [uipath-human-in-the-loop, activation]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  My UiPath Flow has an AI agent that classifies customer complaints. When
+  the agent confidence is below 70%, a human needs to step in and make the
+  final call before the complaint is routed.
+
+  Write a recommendation.json file with:
+  {
+    "hitl_needed": true,
+    "pattern": "<which business pattern applies>",
+    "insertion_point": "<where in the flow the HITL node should go>",
+    "proposed_schema": {
+      "inputs": ["<field names>"],
+      "outcomes": ["<button names>"]
+    }
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified HITL is needed"
+    path: "recommendation.json"
+    includes:
+      - '"hitl_needed": true'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified an escalation pattern"
+    path: "recommendation.json"
+    includes:
+      - "escalat"
+    weight: 1.5
+    pass_threshold: 1.0
