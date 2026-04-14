@@ -115,7 +115,15 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 ---
 
-## Step 3 — Extract the Schema Through Conversation
+## Step 3 - Let the user choose the type of task
+
+Always let the user select whether he wants to use a new inline schema or create a new coded action app or reference an existing action app. Do not do any registry search by yourself and determine which type to use.
+If the user says they want to use an existing deployed action app, ask: "What is the name of the deployed action app?"
+**If the user chooses an existing deployed action app, skip to Step 4b else go to Step 4a**
+
+---
+
+## Step 4a — Extract the Schema Through Conversation
 
 Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
 
@@ -124,9 +132,6 @@ Before designing the schema, ask these focused questions if the business descrip
 | What the reviewer sees | "What information does the reviewer need to make their decision?" |
 | What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
 | What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
-| Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
-| Priority | "Is this normal priority, or high/critical?" |
-| Form type | "Should this use a quick inline form, or a deployed Action Center app?" |
 
 **Common business descriptions → schema translations:**
 
@@ -140,7 +145,22 @@ Before designing the schema, ask these focused questions if the business descrip
 
 ---
 
-## Step 4 — Design the Schema
+## Step 4b — Resolve the Deployed Action App (AppTask only)
+
+When the user says they want to use an existing deployed Action app:
+
+1. **Ask for the app name** if not already provided: "What is the name of the deployed app?"
+2. **Search for the app** using the Studio backend resource API — see [references/hitl-node-apptask.md](references/hitl-node-apptask.md) Steps 1–2 for the credential sourcing and search call.
+3. **Handle search results:**
+   - **Exactly one match** → confirm the app name with the user and proceed.
+   - **Multiple matches** → list them by number (name + folder path) and ask the user to pick one: "I found multiple apps matching that name. Which one should I use? [1] … [2] …"
+   - **Zero matches** → report the error and ask the user to verify the app name or check that it is deployed.
+4. **Retrieve app configuration** (Step 3 of the reference) — extracts `inputSchema`, `inOutSchema`, `appSystemName`, `appVersionRef` needed to populate `inputs.app`.
+5. **Write the HITL node immediately** — the app owns its schema. Skip Step 5 entirely. Go directly to Step 6 Common configuration and write the node using the configuration retrieved above. Do not ask the user to design or confirm a schema.
+
+---
+
+## Step 5 — Design the Schema
 
 The CLI accepts this format for `--schema`:
 
@@ -172,9 +192,17 @@ The CLI accepts this format for `--schema`:
 
 ---
 
-## Step 5 — Write the Node Directly
 
-### Surface: Flow — QuickForm (inline schema)
+## Step 6 - Common configuration
+
+| Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
+| Priority | "Is this normal priority, or high/critical?" |
+
+---
+
+## Step 7 — Write the Node Directly
+
+### Surface: Flow — QuickForm (inline schema only)
 
 Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`.
 
@@ -186,11 +214,13 @@ After writing, validate:
 uip flow validate <file> --format json
 ```
 
-### Surface: Flow — AppTask (deployed coded app)
+### Surface: Flow — AppTask (deployed action app only)
 
-First resolve the app by name via a direct API call (no CLI), then write the node JSON with `inputs.type = "custom"`.
+Step 4b must be completed first — app resolved, configuration retrieved. Then:
 
-Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask.md)** — credential reading, app lookup curl command, complete node JSON, `inputs.app` field mapping.
+Resolve the solution context (`.uipx` file), write solution resource files, register the app reference, merge `debug_overwrites.json`, then write the node JSON with `inputs.type = "custom"` and `inputs.app` populated from the Step 3b configuration.
+
+Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask.md)** — credential sourcing from `~/.uipath/.auth`, solution context resolution, app search/selection (with multi-match list), retrieve-configuration, resource file writing, reference registration, debug overwrites, complete node JSON, `inputs.app` field mapping.
 
 After writing, validate:
 
@@ -228,16 +258,16 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 4. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
+The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 5. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 
-## Step 6 — Report to the User
+## Step 8 — Report to the User
 
 After completing the wiring:
 
 1. **What was inserted** — node ID, label, insertion point
-2. **Schema summary** — what the human will see (`inputs`), fill in (`outputs`/`inOuts`), and click (`outcomes`)
+2. **Schema summary** — what the human will see (`inputs`), fill in (`outputs`/`inOuts`), and click (`outcomes`). For deployed action app show the actionSchema from the retrieve-configuration api response here.
 3. **Edges wired** — which handles were connected and to which nodes; any handles left unwired
 4. **Runtime variables** — `<NodeId>.result` and `<NodeId>.status` and how to reference them
 5. **Validation result** — pass or errors to fix
