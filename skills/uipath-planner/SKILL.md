@@ -64,6 +64,16 @@ Skip if the user already specified a project type or if filesystem signals (Step
 
 **Do not ask the user to choose between XAML and C#.** Automation workflows default to XAML. Use C# coded workflows only as a fallback for parts that are too complex to build in XAML (e.g., advanced custom logic, complex data structures). The plan should note this strategy so the specialist skill applies it.
 
+### Question 3: PDD/SDD document (always ask for new automations)
+
+> Do you have a Process Definition Document (PDD) or Solution Design Document (SDD) for this automation? If so, provide the file path and I'll use it to guide the plan.
+>
+> Options: (1) Yes — provide the path, (2) No — proceed without one
+
+If the user provides a path, read the document and use it to inform the plan — it contains requirements, process steps, and design decisions that should drive skill selection and execution order.
+
+Skip this question if the user is modifying an existing automation or already referenced a document in their request.
+
 ### Default: Expression language
 
 Do not ask the user about expression language. Always use **VB.NET** for XAML workflows. Note this in the plan so the specialist skill applies it.
