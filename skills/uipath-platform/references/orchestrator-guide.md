@@ -86,25 +86,210 @@ A job is a single execution of a process. Jobs have states:
 
 | Command | Description |
 |---------|-------------|
-| `uip or folders list` | List all folders |
+| `uip or folders list` | List all folders (Standard and Solution only) |
+| `uip or folders list-current-user` | List **all** folders for current user — includes Personal Workspaces, Solution folders, and Standard folders not shown by `folders list` |
 | `uip or folders create <name>` | Create a folder (use `--parent <id>` for nesting) |
-| `uip or folders get <id>` | Get folder details |
-| `uip or folders edit <id>` | Edit folder properties |
-| `uip or folders move <id> <parent-id>` | Move folder |
-| `uip or folders delete <id>` | Delete a folder |
+| `uip or folders get <key>` | Get folder details by key (GUID) or path |
+| `uip or folders edit <key>` | Edit folder properties |
+| `uip or folders move <key>` | Move folder (use `--parent` or `--root`) |
+| `uip or folders delete <key>` | Delete a folder |
+| `uip or folders runtimes <key>` | List available runtimes in folder |
+
+> **Finding Personal Workspaces:** `folders list` only returns Standard and Solution folders. Use `folders list-current-user` to find Personal Workspaces — it returns an `IsPersonal` field.
 
 ```bash
 uip or folders list --output json
+uip or folders list-current-user --output json
 uip or folders create "Finance" --output json
 uip or folders create "Invoicing" --parent 12345 -d "Invoice processing" --output json
 ```
 
 ---
 
-## CLI Operations — Assets
+## CLI Operations — Machines
 
-> **Note:** Asset management is handled by the Resource tool, not the Orchestrator tool.
-> Use `uip resource assets` commands instead. See [resources/resources-guide.md](resources/resources-guide.md) for full details.
+> Use `uip or machines --help` for full option details.
+
+| Command | Description |
+|---------|-------------|
+| `uip or machines list` | List machines — tenant-wide by default, or **per-folder** with `--folder-path`/`--folder-key` |
+| `uip or machines get <key>` | Get machine details by key (GUID) |
+| `uip or machines create <name>` | Create a machine template |
+| `uip or machines edit <key>` | Edit machine properties |
+| `uip or machines delete <key>` | Delete a machine |
+| `uip or machines assign <key>` | Assign machine to folder (`--folder-path` or `--folder-key` required) |
+| `uip or machines unassign <key>` | Remove machine from folder |
+
+> Use `--all-fields` on list/get to return the full API response. Use `--limit`/`--offset` for pagination — check `Pagination.HasMore` in output.
+
+> **Folder-scoped listing:** `uip or machines list --folder-path "Production" --output json` returns only machines assigned to that folder.
+
+---
+
+## CLI Operations — Processes
+
+> Use `uip or processes --help` for full option details.
+
+| Command | Description |
+|---------|-------------|
+| `uip or processes list` | List processes in folder (`--folder-path` or `--folder-key` required) |
+| `uip or processes get <key>` | Get process details by key (GUID) |
+| `uip or processes create <name>` | Create process binding in folder |
+| `uip or processes edit <key>` | Update process properties |
+| `uip or processes update-version <key>` | Update process to newer package version |
+| `uip or processes rollback <key>` | Rollback process to previous version |
+| `uip or processes delete <key>` | Delete a process |
+
+> `processes create` requires `--folder-path`, `--package-key`, `--package-version`, `--runtime-type`, `--job-priority`. Optional: `--entry-point`, `--input-arguments`, `--tags`, `--auto-update`.
+
+> Use `--all-fields` on list/get to return the full API response. Use `--limit`/`--offset` for pagination — check `Pagination.HasMore` in output.
+
+---
+
+## CLI Operations — Jobs
+
+> Use `uip or jobs --help` for full option details.
+
+| Command | Description |
+|---------|-------------|
+| `uip or jobs list` | List jobs (filter by `--folder-path`, `--state`, `--process-name`, date ranges) |
+| `uip or jobs get <key>` | Get job details |
+| `uip or jobs start <process-key>` | Start job from process (`--folder-path` required, `--input-arguments` for params) |
+| `uip or jobs stop <key>` | Stop running job(s) |
+| `uip or jobs restart <key>` | Restart suspended job |
+| `uip or jobs resume <key>` | Resume suspended job with new input |
+| `uip or jobs logs <key>` | Get execution logs |
+| `uip or jobs traces <key>` | Get diagnostic traces |
+| `uip or jobs history <key>` | Get status change history |
+
+> `jobs start` supports `--input-arguments` (JSON), `--input-file` (path), `--runtime-type`, `--wait-for-completion`, `--timeout`, `--attachment`. `jobs stop` requires `--strategy` (Kill or Graceful).
+
+> Use `--all-fields` on list/get to return the full API response. Use `--limit`/`--offset` for pagination — check `Pagination.HasMore` in output.
+
+---
+
+## CLI Operations — Packages
+
+> Use `uip or packages --help` for full option details.
+
+| Command | Description |
+|---------|-------------|
+| `uip or packages list` | List automation packages in feed |
+| `uip or packages get <key>` | Get package details |
+| `uip or packages versions <package-id>` | List all versions of a package |
+| `uip or packages entry-points <key>` | List entry points in package |
+| `uip or packages upload <file>` | Upload .nupkg to feed |
+| `uip or packages download <key>` | Download .nupkg from feed (`--destination` required, key format: `PackageId:Version`) |
+
+> Use `--all-fields` on list/get to return the full API response. Use `--limit`/`--offset` for pagination — check `Pagination.HasMore` in output.
+
+---
+
+## CLI Operations — Users
+
+> Use `uip or users --help` for full option details.
+
+| Command | Description |
+|---------|-------------|
+| `uip or users list` | List users (filter by `--username`, `--email`, `--key`) |
+| `uip or users get <key>` | Get user details |
+| `uip or users create <username>` | Create user |
+| `uip or users edit <key>` | Edit user properties |
+| `uip or users delete <key>` | Delete user |
+| `uip or users assign-roles <key>` | Assign tenant/folder roles to user |
+| `uip or users set-session-flags <key>` | Configure session capabilities (attended/unattended/login) |
+| `uip or users set-unattended-execution <key>` | Configure unattended robot for user |
+| `uip or users list-in-folder` | List users assigned to a folder with their folder-level roles (`--folder-path` or `--folder-key` required) |
+| `uip or users list-available` | List users available to assign to folders |
+| `uip or users current` | Get current user details |
+| `uip or users assign <key>` | Assign user to folder with roles |
+| `uip or users unassign <key>` | Remove user from folder |
+
+> Use `--all-fields` on list/get to return the full API response. Use `--limit`/`--offset` for pagination — check `Pagination.HasMore` in output.
+
+> **Credential stores:** When setting `--unattended-password` on a user whose credential store is read-only, the CLI automatically treats the value as `credentialExternalName` (external secret reference) instead of a literal password. No separate flag is needed.
+
+---
+
+## CLI Operations — Other
+
+| Group | Key Commands |
+|-------|-------------|
+| **Settings** | `uip or settings list`, `update <key> <value>`, `get <key>`, `execution`, `timezones` |
+| **Roles** | `uip or roles list-roles`, `list-permissions`, `get-role <key>`, `create-role`, `edit-role <key>`, `delete-role <key>`, `list-role-users <key>`, `set-role-users <key>`, `assign` |
+| **Sessions** | `uip or sessions list-attended-sessions`, `list-machines-sessions`, `list-unattended-sessions`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` |
+| **Licenses** | `uip or licenses list --type <type>`, `toggle`, `info` |
+| **Calendars** | `uip or calendars list`, `create`, `add-excluded-dates`, `remove-excluded-dates` |
+| **Audit Logs** | `uip or audit-logs list` (filter by `--component`, `--action`, `--user`, date range) |
+| **Feeds** | `uip or feeds list` |
+| **Credential Stores** | `uip or credential-stores list`, `get <key>` |
+| **Attachments** | `uip or attachments list <job-key>`, `download <attachment-id>` |
+
+---
+
+## CLI Operations — Assets, Queues, Triggers (Resource Tool)
+
+> **Note:** Assets, queues, triggers, storage buckets, libraries, and webhooks are managed by the Resource tool.
+> Use `uip resource <command>` instead. See [resources/resources-guide.md](resources/resources-guide.md) for full details.
+
+---
+
+## CLI Output Behavior
+
+### Pagination
+
+All list commands return a `Pagination` block in their output:
+
+```json
+{
+  "Result": "Success",
+  "Code": "PackageList",
+  "Pagination": { "Returned": 50, "Limit": 50, "Offset": 0, "HasMore": true },
+  "Data": [...]
+}
+```
+
+**When `HasMore` is `true`, there are more results.** Increase `--offset` by `--limit` to fetch the next page. Continue until `HasMore` is `false` or `Returned < Limit`.
+
+### All Fields (`--all-fields`)
+
+Orchestrator tool list/get commands return a curated subset of fields by default. Use `--all-fields` to get the complete raw API response:
+
+```bash
+# Default — curated fields (Key, Title, Version, etc.)
+uip or packages list --output json
+
+# Full DTO — all fields from the API
+uip or packages list --all-fields --output json
+```
+
+Available on: `packages`, `processes`, `jobs`, `machines`, `users` (list and get).
+
+> **When to use:** If you need a field that's not in the default output (e.g., creation date, video recording setting, detailed privilege info), add `--all-fields`.
+
+---
+
+## Agent Best Practices
+
+### Before Creating Resources or Starting Jobs
+
+Before running destructive or side-effect commands, **ask the user** to confirm details:
+
+- **`jobs start`**: Check if the process has input arguments (use `packages entry-points <key>` to inspect). Ask the user for parameter values. Always specify `--folder-path` and `--input-arguments` explicitly.
+- **`storage-buckets create`**: Ask about storage type and configuration — don't just create with defaults.
+- **`triggers create`**: Confirm trigger type (time/queue/api), cron expression, timezone, and target process.
+- **Package uploads/deployments**: Confirm the target folder or tenant. Don't silently upload to tenant level when the user asked for a specific folder.
+
+### Handling Pagination
+
+When listing resources, always check the `Pagination.HasMore` field. If true, fetch additional pages. Don't assume the first page contains all results.
+
+### Handling 403 Errors
+
+A 403 doesn't always mean insufficient permissions. It can also mean a **Governance Policy** is blocking the action. When you get a 403:
+1. Report the exact error message to the user
+2. Don't assume it's a permission issue — it may be a policy restriction
+3. Suggest the user check Governance Policies in the Orchestrator UI
 
 ---
 
@@ -176,7 +361,7 @@ string invoiceId = item.SpecificContent["InvoiceId"].ToString();
 
 ## REST API Reference
 
-When CLI commands are insufficient or unavailable (e.g., asset management), use the Orchestrator REST API directly. Requires an access token (stored at `~/.uipath/.auth` after login).
+When CLI commands are insufficient, use the Orchestrator REST API directly. **Always check `uip or --help` and `uip resource --help` first** — most operations are covered by the CLI. Requires an access token (stored at `~/.uipath/.auth` after login).
 
 ### Authentication Header
 
