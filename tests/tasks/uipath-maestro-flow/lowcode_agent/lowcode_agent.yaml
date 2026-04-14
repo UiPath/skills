@@ -1,7 +1,7 @@
 task_id: skill-flow-lowcode-agent
 description: >
   Create a UiPath Flow that uses the CountLetters low-code agent to count the
-  number of r's in 'counterrevolutionary' and return the answer. Exercises agent resource
+  number of r's in 'arrow' and return the answer. Exercises agent resource
   node discovery and wiring.
 tags: [uipath-maestro-flow, e2e, generate, resource, agent]
 max_iterations: 1
@@ -18,7 +18,7 @@ sandbox:
 
 initial_prompt: |
   Create a UiPath Flow project named "CountLettersLowCode" that uses the
-  CountLetters low-code agent to count the number of r's in 'counterrevolutionary'
+  CountLetters low-code agent to count the number of r's in 'arrow'
   and return the answer.
 
   Do NOT run flow debug — just validate the flow.
