@@ -64,16 +64,9 @@ Skip if the user already specified a project type or if filesystem signals (Step
 
 **Do not ask the user to choose between XAML and C#.** Automation workflows default to XAML. Use C# coded workflows only as a fallback for parts that are too complex to build in XAML (e.g., advanced custom logic, complex data structures). The plan should note this strategy so the specialist skill applies it.
 
-### Question 3: Expression language
+### Default: Expression language
 
-Ask only for new automation workflow projects. Skip if an existing project already has an expression language configured.
-
-> Which expression language for your workflow?
->
-> 1. **VB.NET** — traditional UiPath expression language *(recommended for compatibility)*
-> 2. **C#** — modern syntax
->
-> Recommended: Option 1 (VB.NET)
+Do not ask the user about expression language. Always use **VB.NET** for XAML workflows. Note this in the plan so the specialist skill applies it.
 
 ## Step 2 — Detect multi-skill tasks
 
