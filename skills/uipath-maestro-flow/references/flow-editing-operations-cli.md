@@ -130,23 +130,9 @@ These combine primitives to accomplish common editing tasks. Each recipe assumes
 
 ### Update node inputs (expression, script body, label, etc.)
 
-The CLI does not have a `node update` command. Use the delete + re-add pattern:
+The CLI does not have a `node update` command. **Do not use delete + re-add** — `node add` generates a new node ID, which breaks all downstream `$vars.{nodeId}.output` expressions and requires re-wiring every edge.
 
-1. Record the node's connected edges:
-   ```bash
-   uip flow edge list <ProjectName>.flow --output json
-   ```
-2. Delete the node (this also removes its edges):
-   ```bash
-   uip flow node delete <ProjectName>.flow <NODE_ID>
-   ```
-3. Re-add with updated inputs at the same position:
-   ```bash
-   uip flow node add <ProjectName>.flow <NODE_TYPE> --output json \
-     --input '<UPDATED_INPUT_JSON>' \
-     --label "<LABEL>" --position <SAME_X>,<SAME_Y>
-   ```
-4. Re-wire all edges from step 1 using `uip flow edge add`
+Instead, edit the node's `inputs` (and optionally `display.label`) directly in the `.flow` JSON file. See [JSON: Update node inputs](flow-editing-operations-json.md#update-node-inputs).
 
 ### Insert a node between two existing nodes
 

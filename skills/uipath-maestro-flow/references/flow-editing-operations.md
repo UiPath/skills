@@ -21,7 +21,7 @@ Use this table to determine which strategy to follow for each operation.
 | **Delete a node** | Yes | Yes | CLI auto-cascades edge/definition/variable cleanup |
 | **Add an edge** | Yes | Yes | CLI auto-sets `targetPort` |
 | **Delete an edge** | Yes | Yes | Equivalent complexity |
-| **Update node inputs** | Delete + re-add | In-place edit | JSON is simpler for input-only changes |
+| **Update node inputs** | Not supported (delete + re-add changes node ID, breaking expressions) | In-place edit | Always use JSON — preserves node ID, edges, and `$vars` references |
 | **Configure connector node** | `node configure` | Manual `inputs.detail` + `bindings_v2.json` | CLI handles binding automatically |
 | **Add workflow variable** | Not supported | Yes | Edit `variables.globals` |
 | **Add variable update** | Not supported | Yes | Edit `variables.variableUpdates` |
