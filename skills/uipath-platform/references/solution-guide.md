@@ -42,7 +42,7 @@ Create a new empty solution file:
 uip solution new "MySolution" --output json
 ```
 
-This creates `MySolution.uipx` in the current directory.
+This creates a `MySolution/` directory containing `MySolution.uipx`.
 
 ### 2. Add Projects to the Solution
 
@@ -100,30 +100,81 @@ uip solution publish ./output/MySolution.1.0.0.zip --tenant "Production" --outpu
 ### Deploy a Solution
 
 ```bash
-uip solution deploy run -n "<deployment-name>" -c "<configuration-key>" [options] --output json
+uip solution deploy run -n "MyDeployment" \
+  --package-name "MySolution" --package-version "1.0.0" \
+  --folder-name "MySolutionFolder" --output json
 ```
 
 | Option | Description | Default |
 |---|---|---|
 | `-n, --name <name>` | Name for the deployment (required) | -- |
-| `-c, --configuration-key <key>` | Configuration key (required) | -- |
-| `-f, --folder-path <path>` | Fully qualified folder path (e.g. 'Shared') | -- |
-| `-k, --folder-key <guid>` | Installation folder key (GUID) | -- |
-| `--no-force-activate` | Disable force activation | Force activate |
+| `--package-name <name>` | Solution package name to deploy (required) | -- |
+| `--package-version <version>` | Solution package version (required) | -- |
+| `--folder-name <name>` | Orchestrator folder to create for deployment (required) | -- |
+| `--folder-path <path>` | Parent folder path (solution folder created under this) | -- |
+| `--folder-key <key>` | Parent folder key (GUID, alternative to --folder-path) | -- |
+| `--config-file <path>` | JSON config file (from `deploy config get`) | -- |
+| `--timeout <seconds>` | Deployment polling timeout | 360 |
+| `--poll-interval <ms>` | Polling interval | 5000 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
-| `--poll-interval <ms>` | Polling interval for status | 2000 |
 
-### Check Deployment Status
+### Deployment Lifecycle
+
+| Command | Description |
+|---------|-------------|
+| `uip solution deploy run -n <name>` | Deploy a solution package (`--package-name`, `--package-version`, `--folder-name` required) |
+| `uip solution deploy status <id>` | Check deployment status by pipeline deployment ID |
+| `uip solution deploy list` | List deployments (filter by `--folder-path`, `--take`) |
+| `uip solution deploy activate <name>` | Activate a deployment that was deployed without auto-activation |
+| `uip solution deploy uninstall <name>` | Uninstall a deployment (removes resources and folder) |
+
+### Deploy Config — Customize Before Deploying
+
+The config workflow lets you customize resource settings before deployment:
 
 ```bash
-uip solution deploy status "<deployment-key>" --output json
+# 1. Fetch default config for a published package
+uip solution deploy config get "MySolution" -d config.json --output json
+
+# 2. Customize: set a property on a resource
+uip solution deploy config set config.json MyQueue maxNumberOfRetries 5
+
+# 3. Customize: link a solution resource to an existing Orchestrator resource
+uip solution deploy config link config.json MyQueue --name ProductionQueue --folder-path "Shared/Production"
+
+# Or: remove a link so resource is created fresh
+uip solution deploy config unlink config.json MyQueue
+
+# 4. Customize: set conflict resolution for all resources
+uip solution deploy config set config.json --all conflictFixingAction UseExisting
+
+# 5. Deploy with the customized config
+uip solution deploy run -n "MyDeployment" --package-name "MySolution" --package-version "1.0.0" \
+  --folder-name "ProdFolder" --config-file config.json --output json
 ```
 
-### List Published Packages
+| Config Command | Description |
+|----------------|-------------|
+| `config get <package-name>` | Fetch default config (`-d <file>` to save, `--package-version` optional) |
+| `config set <file> <resource> <property> <value>` | Set a resource property (or `--all` for all resources) |
+| `config link <file> <resource> --name <name>` | Link to existing Orchestrator resource (`--folder-path` optional) |
+| `config unlink <file> <resource>` | Remove a resource link |
 
-```bash
-uip solution packages list --output json
-```
+### Solution Packages
+
+| Command | Description |
+|---------|-------------|
+| `uip solution packages list` | List published solution packages (`--take`, `--order-by`, `--order-direction`) |
+| `uip solution packages delete <name> <version>` | Delete a specific package version |
+
+### Other Commands
+
+| Command | Description |
+|---------|-------------|
+| `uip solution bundle <solutionPath>` | Bundle solution directory into a .uis file (`-d` for destination) |
+| `uip solution upload <solutionPath>` | Upload solution to UiPath Studio Web (directory, .uipx, or .uis) |
+| `uip solution resource refresh [solutionPath]` | Re-scan projects and sync resource declarations from bindings |
+| `uip solution project import --source <path>` | Copy external project into solution and register in .uipx |
 
 ---
 
