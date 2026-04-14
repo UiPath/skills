@@ -16,6 +16,8 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ```
 .
+├── .claude/                   # Claude Code project-level configuration
+│   └── commands/              # Slash commands (e.g., /test-coverage)
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
@@ -29,6 +31,11 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │       ├── SKILL.md           # Skill definition (required)
 │       ├── references/        # Supporting reference documents (optional)
 │       └── assets/            # Templates, examples, static files (optional)
+├── tests/                     # Skill evaluation tests (coder_eval)
+│   ├── experiments/           # Experiment configs (smoke, integration, e2e)
+│   ├── tasks/                 # Test tasks organized by skill
+│   │   └── <skill-name>/     # One folder per skill
+│   └── reports/               # Generated coverage reports (/test-coverage)
 ├── CODEOWNERS                 # GitHub ownership by skill/path
 ├── README.md                  # Project overview and quick start
 ├── CONTRIBUTING.md            # This file

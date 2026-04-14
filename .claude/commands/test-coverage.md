@@ -255,6 +255,8 @@ Gaps in edge cases or features that other tests partially cover indirectly.
 
 ## Recommendations
 
+> **Minimum bar:** Every skill must have at least 1 smoke test and 1 e2e test (per CONTRIBUTING.md). Flag any skill that falls below this threshold.
+
 Top 5–10 tests to write next, ordered by how much coverage they add:
 
 1. **`<suggested-task-id>`** (e2e) — Covers: `core.logic.loop`, `core.logic.merge`, `core.action.transform`, iteration pattern. *Why:* The entire control-flow family is untested; a single test with a loop-and-merge topology covers 4 components.
@@ -341,6 +343,16 @@ Produce this whenever more than one skill is analyzed (including `all` mode).
 | uipath-rpa | 39 | 21 | 8 | Windows + Studio | Highest rule count; Coded C# + XAML authoring |
 | uipath-agents | 46 | 10 | 9 | Cloud auth | 4 frameworks, 8 binding types, lazy LLM init |
 
+## All Coverage Gaps
+
+Combine every gap from every per-skill report into one table, sorted by priority (High first, then Medium, then Low). This gives a single view of everything that needs testing across the repo.
+
+| # | Skill | Priority | Gap | Risk | Suggested Test | Infra |
+|---|-------|----------|-----|------|---------------|-------|
+| 1 | uipath-maestro-flow | High | Control flow nodes untested | Silent data loss from misbuilt loops | `skill-flow-loop-sum` (e2e) | Cloud auth |
+| 2 | uipath-agents | High | No Simple Function agent test | Wrong pyproject.toml or missing @traced | `skill-agent-simple-echo` (e2e) | Cloud auth |
+| ... | ... | ... | ... | ... | ... | ... |
+
 ## Cross-Skill Patterns
 
 Observations that span multiple skills. Look for:
@@ -349,6 +361,15 @@ Observations that span multiple skills. Look for:
 - Negative test gaps (e.g., "no anti-pattern tests exist for any skill")
 - Editing gaps (e.g., "no test modifies an existing artifact")
 - Infrastructure barriers (e.g., "N skills require Windows, blocking CI coverage")
+
+## Minimum Bar Check
+
+> Every skill must have at least 1 smoke test and 1 e2e test (per CONTRIBUTING.md).
+
+| Skill | Has Smoke | Has E2E | Status |
+|-------|-----------|---------|--------|
+| uipath-maestro-flow | Yes (2) | Yes (8) | Meets minimum |
+| uipath-rpa | No | No | Below minimum |
 
 ## Top 10 Recommended Tests
 

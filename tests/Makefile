@@ -16,7 +16,7 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+)
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
 
 all:  ## Run all tests (smoke + integration + e2e) in a single run
-	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml -j 1 -v
+	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml -j 1 -v
 
 smoke:  ## Run all smoke tests
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags smoke -j 1 -v
