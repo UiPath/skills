@@ -37,7 +37,7 @@ Understand what each skill can and cannot do before planning:
 
 Before any detection or planning, ask the user key questions using AskUserQuestion. Only ask questions that the user's request does not already answer. Ask questions **one at a time**, each with a recommended answer — wait for the response before asking the next.
 
-### Question 1: Generation approach (always ask for new automations)
+### Question 1: Generation approach (only for non-trivial automations)
 
 > How would you like me to work?
 >
@@ -46,7 +46,12 @@ Before any detection or planning, ask the user key questions using AskUserQuesti
 >
 > Recommended: Option 1 (explore first, then plan)
 
-Skip this question if the user is modifying an existing automation (the approach is implicitly "explore first").
+**When to ask:** Only for non-trivial automations — multi-step processes, UI automation, multi-skill workflows, or tasks with unclear scope.
+
+**Skip this question** and default to "explore & execute simultaneously" when:
+- The request is simple and well-defined (e.g., "create a workflow that reads an Excel file and logs the rows")
+- The user is modifying an existing automation (the approach is implicitly "explore first")
+- The task is a single-skill, single-step operation with clear requirements
 
 **If the user chose "explore first, then plan":**
 - You may run `uip` and `servo` commands to explore the project and live applications (e.g., `uip rpa analyze`, `servo snapshot`, `servo selector`, `servo click`, `servo type`)
