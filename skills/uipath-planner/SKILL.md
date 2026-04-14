@@ -1,17 +1,18 @@
 ---
 name: uipath-planner
 description: "UiPath task planner — ALWAYS invoke first for ANY UiPath request. Elicits preferences (C#/XAML, expression language, approach), plans multi-skill execution, detects project type (.cs, .xaml, .flow, .py), routes to specialist skills."
-allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
+allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanMode
 ---
 
 # UiPath Task Planner
 
 Your job is to **elicit preferences, plan, and route** — never execute.
 
-1. **Do NOT** write code, XAML, JSON, or run `uip` commands.
-2. **Do NOT** use Bash for anything other than the filesystem probe in Step 3. Never run `uip`, `servo`, `npm`, or any command that modifies state.
-3. **Always run first** — every UiPath request goes through this planner before specialist skills are loaded.
-4. Produce a plan, then stop. The main agent loads and executes the specialist skills.
+1. **Do NOT** write code, XAML, JSON, or create files.
+2. **Always run first** — every UiPath request goes through this planner before specialist skills are loaded.
+3. Produce a plan, then stop. The main agent loads and executes the specialist skills.
+
+**Explore-first mode exception:** If the user chose "explore first, then plan" in Step 1, you MAY run read-only `uip` and `servo` commands (e.g., `uip rpa analyze`, `servo snapshot`, `servo selector`) to gather information before planning. You still must NOT write code, create files, or run commands that modify state. Enter plan mode (EnterPlanMode) to present the plan for user approval.
 
 ## When to Use This Skill
 
@@ -40,12 +41,21 @@ Before any detection or planning, ask the user key questions using AskUserQuesti
 
 > How would you like me to work?
 >
-> 1. **Explore first, then plan** — I'll analyze the project/requirements and present a plan for your approval before making any changes *(recommended)*
+> 1. **Explore first, then plan** — I'll analyze the project/requirements, run discovery commands (`uip`, `servo`), and present a plan for your approval before making any changes *(recommended)*
 > 2. **Explore, plan, and execute simultaneously** — I'll move faster by analyzing, planning, and building in one pass
 >
 > Recommended: Option 1 (explore first, then plan)
 
 Skip this question if the user is modifying an existing automation (the approach is implicitly "explore first").
+
+**If the user chose "explore first, then plan":**
+- You may run read-only `uip` and `servo` commands to gather project information (e.g., `uip rpa analyze`, `servo snapshot`, `servo selector`)
+- After completing Steps 2–4, enter plan mode with EnterPlanMode to present the plan for user approval
+- The user reviews and approves the plan before any specialist skill executes
+
+**If the user chose "explore, plan, and execute simultaneously":**
+- Do not run `uip` or `servo` commands — stick to filesystem probing only
+- Emit the plan as text (Step 5) and the main agent starts executing immediately
 
 ### Question 2: Project type (if ambiguous)
 
@@ -222,13 +232,17 @@ Plan:
 
 Include the user's original request as context so the specialist skill has full information.
 Include the user's preferences from Step 1 (generation approach, project type, expression language) so the specialist skill respects them.
-Do NOT execute the plan yourself. The main agent takes it from here.
+
+**Explore first, then plan:** Call EnterPlanMode to present the plan. The user reviews and approves before execution begins. Use ExitPlanMode once the user approves.
+
+**Explore, plan, and execute simultaneously:** Emit the plan as text. The main agent starts executing immediately. Do NOT enter plan mode.
 
 ## Anti-patterns — What NOT to Do
 
 1. **Do not skip Step 1 (upfront elicitation).** Always ask the generation approach question for new automations. Only skip questions the user's request already answers.
-2. **Do not execute any part of the plan.** No `uip` commands, no code generation, no file creation. Plan only.
+2. **Do not write code, create files, or run state-modifying commands.** In explore-first mode you may run read-only `uip`/`servo` commands for discovery — but never write code or modify project state.
 3. **Do not ask more than 4 questions total across all steps.** If you still cannot determine a project type after your questions, plan with the best available information.
 4. **Do not recommend a skill that doesn't match the filesystem signals.** If you see `.flow` files, don't route to `uipath-rpa`.
 5. **Do not skip Step 2.** Always check for multi-skill patterns before falling through to filesystem detection.
 6. **Do not ask the UIA question (Step 4) unless the plan actually involves `uipath-servo`.** This question is only relevant for UI automation tasks.
+7. **Do not run `uip` or `servo` commands in "explore & execute simultaneously" mode.** Only the explore-first path unlocks read-only discovery commands.
