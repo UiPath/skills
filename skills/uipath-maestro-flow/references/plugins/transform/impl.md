@@ -60,6 +60,20 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
       }
     ]
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the transform",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the transform fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:ScriptTask" }
 }
 ```
@@ -89,6 +103,20 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
         }
       }
     ]
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the transform",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the transform fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ScriptTask" }
 }
@@ -124,6 +152,20 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
         }
       }
     ]
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the transform",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the transform fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ScriptTask" }
 }
@@ -165,6 +207,20 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
         }
       }
     ]
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the transform",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the transform fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ScriptTask" }
 }

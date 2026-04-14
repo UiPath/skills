@@ -32,6 +32,20 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
     "timeout": "PT15M",
     "retryCount": 0
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:ServiceTask" }
 }
 ```
@@ -52,6 +66,20 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
     },
     "body": "=js:JSON.stringify({ name: $vars.recordName, type: $vars.recordType })",
     "contentType": "application/json"
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ServiceTask" }
 }
@@ -80,6 +108,20 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
         "conditionExpression": "$vars.callApi.output.statusCode === 404"
       }
     ]
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ServiceTask" }
 }

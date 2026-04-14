@@ -49,11 +49,70 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   "inputs": {
     "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the script",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the script fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:ScriptTask" }
 }
 ```
 
 **Required fields**: `id`, `type`, `typeVersion`, `ui.position`
+
+### Node outputs
+
+Nodes that produce data consumed by downstream nodes **must** include an `outputs` block on the node instance. This tells the runtime how to capture the node's results into `$vars.{nodeId}.{outputId}`. Without it, downstream `$vars` references may not resolve.
+
+Each output entry has:
+
+- `type` — data type (usually `"object"`)
+- `description` — human-readable description
+- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=result.Error"` for errors)
+- `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
+
+The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
+
+```json
+"outputs": {
+  "output": {
+    "type": "object",
+    "description": "The return value of the <node type>",
+    "source": "=result.response",
+    "var": "output"
+  },
+  "error": {
+    "type": "object",
+    "description": "Error information if the <node type> fails",
+    "source": "=result.Error",
+    "var": "error"
+  }
+}
+```
+
+Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port:
+
+```json
+"outputs": {
+  "output": {
+    "type": "object",
+    "description": "The return value of the trigger.",
+    "source": "=result.response",
+    "var": "output"
+  }
+}
+```
+
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](plugins/end/impl.md)).
 
 **Layout**: Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` (spacing ~200px) and a consistent `y` baseline (e.g., `y: 144`). For decision branches, offset the `y` value for each branch path. Never use vertical (top-to-bottom) layout.
 
@@ -145,6 +204,14 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "typeVersion": "1.0.0",
       "ui": { "position": { "x": 200, "y": 144 } },
       "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
       "model": { "type": "bpmn:StartEvent", "entryPointId": "<uuid>" }
     },
     {
@@ -155,6 +222,20 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "display": { "label": "Roll Dice" },
       "inputs": {
         "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
       },
       "model": { "type": "bpmn:ScriptTask" }
     },

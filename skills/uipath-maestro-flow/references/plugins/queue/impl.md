@@ -32,6 +32,20 @@ Confirm: input port `input`, output port `success`.
     "deferDate": "2026-04-01T10:00:00Z",
     "dueDate": "2026-04-07T17:00:00Z"
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the queue operation",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the queue operation fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:ServiceTask" }
 }
 ```
@@ -53,6 +67,20 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "inputs": {
     "queue": "InvoiceProcessingQueue",
     "itemData": "=js:JSON.stringify({ invoiceId: $vars.invoiceId })"
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the queue operation",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the queue operation fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ServiceTask" }
 }

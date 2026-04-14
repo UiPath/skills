@@ -23,6 +23,20 @@ Confirm: input port `input`, output port `success`, required input `script` (str
   "inputs": {
     "script": "const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) => sum + i.amount, 0);\nreturn { total, count: items.length };"
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the script",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the script fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:ScriptTask" }
 }
 ```

@@ -28,6 +28,20 @@ Confirm: input port `input`, output ports `output` and `error`.
     "inputData": "=js:$vars.fetchData.output.body",
     "threshold": 100
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the subflow",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the subflow fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:SubProcess" }
 }
 ```
@@ -47,6 +61,14 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "typeVersion": "1.0.0",
           "display": { "label": "Start" },
           "inputs": {},
+          "outputs": {
+            "output": {
+              "type": "object",
+              "description": "The return value of the trigger.",
+              "source": "=result.response",
+              "var": "output"
+            }
+          },
           "model": { "type": "bpmn:StartEvent" }
         },
         {
@@ -56,6 +78,20 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "display": { "label": "Validate" },
           "inputs": {
             "script": "const data = $vars.inputData;\nif (!data || !data.items) throw new Error('Invalid data');\nreturn { valid: true, count: data.items.length };"
+          },
+          "outputs": {
+            "output": {
+              "type": "object",
+              "description": "The return value of the script",
+              "source": "=result.response",
+              "var": "output"
+            },
+            "error": {
+              "type": "object",
+              "description": "Error information if the script fails",
+              "source": "=result.Error",
+              "var": "error"
+            }
           },
           "model": { "type": "bpmn:ScriptTask" }
         },

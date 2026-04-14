@@ -38,6 +38,20 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Validate Data" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the flow",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the flow fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": {
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgenticProcess",

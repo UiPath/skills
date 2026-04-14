@@ -40,9 +40,25 @@ When editing the `.flow` file directly, **you** are responsible for everything t
   },
   "display": { "label": "<LABEL>" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the <node type>",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the <node type> fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "<BPMN_TYPE>" }
 }
 ```
+
+> **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [flow-file-format.md — Node outputs](flow-file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
 
 3. Add the definition to `definitions` (if this type is not already present):
    - Paste the `Data.Node` object from the registry response
@@ -253,6 +269,20 @@ Edit the start node in-place (no delete/re-add needed):
      "display": { "label": "<LABEL>" },
      "inputs": {
        "<IN_VAR>": "=js:<EXPRESSION>"
+     },
+     "outputs": {
+       "output": {
+         "type": "object",
+         "description": "The return value of the subflow",
+         "source": "=result.response",
+         "var": "output"
+       },
+       "error": {
+         "type": "object",
+         "description": "Error information if the subflow fails",
+         "source": "=result.Error",
+         "var": "error"
+       }
      },
      "model": { "type": "bpmn:SubProcess" }
    }

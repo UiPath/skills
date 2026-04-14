@@ -23,6 +23,20 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
   "inputs": {
     "collection": "=js:$vars.fetchData.output.body.items"
   },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the loop",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the loop fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": { "type": "bpmn:SubProcess" }
 }
 ```
@@ -38,6 +52,20 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
   "inputs": {
     "collection": "=js:$vars.fetchData.output.body.items",
     "parallel": true
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the loop",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the loop fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:SubProcess" }
 }
