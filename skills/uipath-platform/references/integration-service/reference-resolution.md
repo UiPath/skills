@@ -15,36 +15,67 @@ How to resolve reference fields — fields whose values must be looked up from a
 
 ## Reference Fields (CRITICAL)
 
-Some fields in the describe response have a `reference` section — their value must be looked up from another resource. For each reference field: list the `referencedObject`, collect the `lookupValue` from results, and present options to the user.
+Some fields in the describe `requestFields` have a `reference` section — their value must be looked up from another resource before executing.
 
-A reference field in the describe output:
+### Reference structure
 
 ```json
 {
-  "field": "departmentId",
-  "referencedObject": "departments",
-  "lookupValue": "id",
-  "hint": "Resolve by executing: is resources execute list ... \"departments\" ..."
+  "name": "channel",
+  "type": "string",
+  "displayName": "Channel name/ID",
+  "required": true,
+  "reference": {
+    "objectName": "curated_channels?types=public_channel,private_channel",
+    "lookupNames": ["name", "id"],
+    "lookupValue": "id",
+    "path": "/curated_channels?fields=id,name"
+  }
 }
 ```
+
+| Property | Meaning |
+|---|---|
+| **`reference.objectName`** | The resource to list (use as `<object>` in `execute list`). May include query params. |
+| **`reference.lookupNames`** | Fields to match the user's input against (e.g., match "general" against `name`) |
+| **`reference.lookupValue`** | The field to extract as the resolved value (e.g., `id`) |
+| **`reference.path`** | The API path — use `reference.objectName` for the list call |
 
 ### Resolution workflow
 
 ```bash
-# 1. Describe → discover reference fields
+# 1. Describe → find fields with "reference" in requestFields
 uip is resources describe "<connector-key>" "<resource>" \
   --connection-id "<id>" --operation Create --output json
 
-# 2. Resolve each reference field by listing its referenced object
-uip is resources execute list "<connector-key>" "<referenced-object>" \
+# 2. For each reference field, list the referenced object
+#    Use reference.objectName as the object name (including any query params)
+uip is resources execute list "<connector-key>" "<reference.objectName>" \
   --connection-id "<id>" --output json
 
-# 3. Execute with resolved IDs
+# 3. Match the user's input against reference.lookupNames in the results
+#    Extract reference.lookupValue as the resolved ID
+
+# 4. Execute with resolved IDs (not display names)
 uip is resources execute create "<connector-key>" "<resource>" \
-  --connection-id "<id>" --body '{"fieldName": "<resolved-id>"}' --output json
+  --connection-id "<id>" --body '{"channel": "<resolved-id>"}' --output json
 ```
 
-**Present options to the user** when multiple matches exist. Use the resolved IDs (not display names) in `--body` or `--query`.
+### Example: Resolving a Slack channel
+
+User says: "Send a message to #general"
+
+1. **Describe** returns `channel` field with `reference.objectName: "curated_channels?types=public_channel,private_channel"`
+2. **List** the referenced object:
+   ```bash
+   uip is resources execute list "uipath-salesforce-slack" \
+     "curated_channels?types=public_channel,private_channel" \
+     --connection-id "<id>" --output json
+   ```
+3. **Match** "general" against `lookupNames` (`name` field) in results → find `{ "name": "general", "id": "C02CAP3LAAG" }`
+4. **Use** the `lookupValue` (`id`) → `"C02CAP3LAAG"` in the `--body`
+
+**Present options to the user** when multiple matches exist. Always use the resolved `lookupValue` (not display names) in `--body` or `--query`.
 
 ---
 
