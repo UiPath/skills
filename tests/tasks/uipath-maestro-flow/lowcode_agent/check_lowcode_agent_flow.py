@@ -13,7 +13,11 @@ from _shared.flow_check import (  # noqa: E402
 
 
 def main():
-    assert_flow_has_node_type(["uipath.core.flow"])
+    # Coded and low-code agents share the `uipath.core.agent.{guid}` node-type
+    # family on this tenant — distinguished only by registry DisplayName, not
+    # by node-type prefix. The prompt drives the coded-vs-lowcode choice;
+    # this check just verifies an agent node was used.
+    assert_flow_has_node_type(["uipath.core.agent"])
     payload = run_debug(timeout=240)
     # 3 r's in 'counterrevolutionary'.
     assert_output_value(payload, 3)
