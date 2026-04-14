@@ -14,7 +14,9 @@ from _shared.flow_check import (  # noqa: E402
 
 def main():
     assert_flow_has_node_type(["uipath.core.rpa-workflow"])
-    payload = run_debug(timeout=240)
+    # RPA workflows are slow: spin up robot, launch Chrome, scrape. 4 min
+    # is routinely not enough on this tenant.
+    payload = run_debug(timeout=540)
     assert_outputs_contain(payload, "prime square remainders")
     print("OK: RPA node present; output contains 'prime square remainders'")
 

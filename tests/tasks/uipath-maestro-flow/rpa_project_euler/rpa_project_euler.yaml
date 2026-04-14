@@ -39,7 +39,7 @@ success_criteria:
   - type: run_command
     description: "Flow has an RPA node and debug returns the problem title"
     command: "python3 $TASK_DIR/check_rpa_flow.py"
-    timeout: 300
+    timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
