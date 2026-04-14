@@ -2,7 +2,7 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> **For step-by-step workflows** (adding nodes, wiring edges, editing flows), see [flow-editing-operations.md](flow-editing-operations.md). This file is a **flag and syntax reference** only.
+> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see [flow-editing-operations-cli.md](flow-editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip flow init
 
