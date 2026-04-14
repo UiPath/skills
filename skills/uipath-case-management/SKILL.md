@@ -544,14 +544,15 @@ uip case debug "<directory>/<solutionName>/<projectName>" --log-level debug --ou
 Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 **Do NOT run `case debug` automatically.** Debug executes the case for real — it will send emails, post Slack messages, call APIs, write to databases, etc. Only run debug when the user explicitly asks.
+Debug is for **testing that the case runs correctly** — not for publishing or viewing. To publish, use Step 14 instead.
 
 ### Step 14 — Publish to Studio Web
 
 **This is the default publish target.** When the user wants to publish, view, or share the case, upload it to Studio Web using `solution bundle` + `solution upload`:
 
-Once the case debug completed successfully, tell the user and ask:
+Always ask user:
 
-> "Case debug completed successfully. Do you want to publish it to Studio Web? This will upload it and make it available for visualization and editing."
+> "Do you want to publish it to Studio Web? This will upload it and make it available for visualization and editing."
 
 Use `AskUserQuestion` with options: "Yes", "No"
 
