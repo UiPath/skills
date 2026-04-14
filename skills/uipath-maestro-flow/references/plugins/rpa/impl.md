@@ -36,7 +36,6 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "id": "processInvoices",
   "type": "uipath.core.rpa-workflow.invoice-process-abc123",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 200 } },
   "display": { "label": "Process Invoices" },
   "inputs": {
     "documentPath": "=js:$vars.fileLocation",

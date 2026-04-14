@@ -35,7 +35,6 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "id": "runOrchestration",
   "type": "uipath.core.agentic-process.5f9ad95a-b862-46c7-98c3-a9be2e5b922f",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Run Orchestration" },
   "inputs": {},
   "outputs": {

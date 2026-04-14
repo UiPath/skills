@@ -35,7 +35,6 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "id": "callApiFunction",
   "type": "uipath.core.api-workflow.346b8959-c126-48d3-9c46-942abcf944d7",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Call API Function" },
   "inputs": {},
   "outputs": {

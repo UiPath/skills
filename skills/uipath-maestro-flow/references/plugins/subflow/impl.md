@@ -19,10 +19,6 @@ Confirm: input port `input`, output ports `output` and `error`.
   "id": "subflow1",
   "type": "core.subflow",
   "typeVersion": "1.0.0",
-  "ui": {
-    "position": { "x": 432, "y": 144 },
-    "size": { "width": 96, "height": 96 }
-  },
   "display": { "label": "Add Numbers", "icon": "layers" },
   "inputs": {
     "a": 2,
