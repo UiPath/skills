@@ -70,7 +70,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   },
@@ -114,7 +114,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   },
@@ -122,7 +122,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 }
 ```
 
-**Filter conditions:** `equals`, `not_equals`, `greater`, `greater_equal`, `less`, `less_equal`, `contains`, `not_contains`, `starts_with`, `ends_with`
+**Filter conditions:** `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null`
 
 **Filter operations:** `and` (all conditions must match), `or` (any condition matches)
 
@@ -163,7 +163,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   },
@@ -171,7 +171,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 }
 ```
 
-**Transformations:** `copy` (no change), `uppercase`, `lowercase`, or a custom expression.
+**Transformations:** `copy` (no change), `uppercase`, `lowercase`, `trim` (remove leading/trailing whitespace).
 
 **`keepOriginalFields`:** When `false`, only mapped fields appear in output. When `true`, unmapped fields pass through.
 
@@ -218,7 +218,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   },
@@ -245,7 +245,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+| Filter passes all items through | Wrong condition name (e.g. `greater` instead of `greater_than`) | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
 | Collection is null/empty | `$vars` reference evaluates to null | Check collection expression and upstream output |
-| Unknown filter condition | Typo in condition name | Use one of: `equals`, `not_equals`, `greater`, `greater_equal`, `less`, `less_equal`, `contains`, `not_contains`, `starts_with`, `ends_with` |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |
