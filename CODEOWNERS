@@ -34,8 +34,6 @@
 # Case Management skill
 /skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
 
-# Case Task Planner skill
-/skills/uipath-case-task-planner/ @charlesliu9 @song-zhao-25 @jundayin
 
 # Flow skill — node category guides (away team owned)
 # Add your team here when contributing a new node category file
