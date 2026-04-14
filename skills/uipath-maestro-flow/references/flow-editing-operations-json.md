@@ -33,11 +33,6 @@ When editing the `.flow` file directly, **you** are responsible for everything t
   "id": "<UNIQUE_NODE_ID>",
   "type": "<NODE_TYPE>",
   "typeVersion": "1.0.0",
-  "ui": {
-    "position": { "x": <X>, "y": <Y> },
-    "size": { "width": 96, "height": 96 },
-    "collapsed": false
-  },
   "display": { "label": "<LABEL>" },
   "inputs": {},
   "outputs": {
@@ -60,6 +55,8 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 
 > **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [flow-file-format.md — Node outputs](flow-file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
 
+> **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
+
 3. Add the definition to `definitions` (if this type is not already present):
    - Paste the `Data.Node` object from the registry response
    - One definition per unique `type` — not one per node instance
@@ -73,6 +70,20 @@ When editing the `.flow` file directly, **you** are responsible for everything t
     { "id": "output", "type": "object" },
     { "id": "error", "type": "object" }
   ]
+}
+```
+
+5. Add a layout entry for the node in the top-level `layout.nodes` object:
+
+```json
+"layout": {
+  "nodes": {
+    "<UNIQUE_NODE_ID>": {
+      "position": { "x": <X>, "y": <Y> },
+      "size": { "width": 96, "height": 96 },
+      "collapsed": false
+    }
+  }
 }
 ```
 

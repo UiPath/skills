@@ -264,6 +264,8 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
 
+> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`).
+
 ---
 
 ## Output Mapping on End Nodes
@@ -334,7 +336,7 @@ These variables are available in all expression contexts:
 | `$vars` | All workflow and node variables | `$vars.{variableId}` or `$vars.{nodeId}.{outputId}` |
 | `$metadata` | Workflow metadata (instanceId, executionId) | `$metadata.instanceId` |
 | `$self` | Current node's output (HTTP branch conditions only) | `$self.output.statusCode` |
-| `iterator` | Loop iteration context (inside loops only) | `iterator.currentItem`, `iterator.currentIndex` |
+| `$vars.<loopId>.*` | Loop iteration context (inside loops only) | `$vars.loop1.currentItem`, `$vars.loop1.currentIndex` |
 
 ### `$vars` Access Patterns
 
@@ -367,18 +369,19 @@ Expressions behave differently depending on where they appear.
 
 ### Script Node Body
 
-The `inputs.script` field contains a function body that **must return an object**. Full JavaScript statements are allowed (variables, loops, conditionals). The returned object becomes `$vars.{nodeId}.output`.
+The `inputs.script` field contains a function body. Full JavaScript statements are allowed (variables, loops, conditionals). The returned value becomes `$vars.{nodeId}.output`.
+
+Scripts can return any value — objects, numbers, strings, arrays, or booleans:
 
 ```javascript
+// Returning an object (multiple fields)
 const items = $vars.fetchData.output.body.items;
 const filtered = items.filter(i => i.active);
-return {
-  count: filtered.length,
-  names: filtered.map(i => i.name)
-};
-```
+return { count: filtered.length, names: filtered.map(i => i.name) };
 
-> **Script nodes always return objects.** `return 42` or `return "hello"` will fail. Use `return { value: 42 }`.
+// Returning a bare value (useful for accumulators in loops)
+return $vars.total + $vars.loop1.currentItem;
+```
 
 ### Decision Node (`inputs.expression`)
 
@@ -432,7 +435,7 @@ The `inputs.collection` field on a Loop node resolves to an array to iterate ove
 =js:$vars.inputArray.filter(x => x.active)
 ```
 
-Inside the loop body, use `iterator.currentItem` and `iterator.currentIndex`.
+Inside the loop body, use `$vars.<loopId>.currentItem` and `$vars.<loopId>.currentIndex` (e.g., `$vars.loop1.currentItem`).
 
 ---
 
@@ -479,11 +482,15 @@ A node's output (`$vars.{nodeId}.output`) is available to **all downstream nodes
 
 Inside a loop body, you have access to:
 - All parent-scope `$vars` (read-only from loop's perspective)
-- `iterator.currentItem` — current array element
-- `iterator.currentIndex` — zero-based index
-- `iterator.collection` — the original array
+- `$vars.<loopId>.currentItem` — current array element
+- `$vars.<loopId>.currentIndex` — zero-based index
+- `$vars.<loopId>.collection` — the original array
 
-After loop completion, `$vars.{loopId}.output` contains aggregated results from all iterations.
+Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
+
+> **Important:** Loop body nodes must have `"parentId": "<loopId>"` set in their JSON. Without this, the runtime does not know the node is inside the loop and `$vars.<loopId>.currentItem` will be undefined.
+
+After loop completion, `$vars.<loopId>.output` contains aggregated results from all iterations.
 
 ### Subflow Scope
 

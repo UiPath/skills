@@ -62,7 +62,7 @@ uip flow node delete <ProjectName>.flow <NODE_ID> --output json
 uip flow node list <ProjectName>.flow --output json
 ```
 
-Returns all nodes with their `id`, `type`, `display.label`, and `ui.position`. Use this to discover node IDs before wiring edges or deleting nodes.
+Returns all nodes with their `id`, `type`, and `display.label`. Use this to discover node IDs before wiring edges or deleting nodes.
 
 ### Add an edge
 

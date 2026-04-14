@@ -37,7 +37,6 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "id": "classifyIntent",
   "type": "uipath.core.agent.ffa33d88-8a85-4570-933c-9a69aa2dfbb5",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Classify Intent" },
   "inputs": {},
   "outputs": {

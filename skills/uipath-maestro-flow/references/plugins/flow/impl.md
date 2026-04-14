@@ -35,7 +35,6 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
   "id": "validateData",
   "type": "uipath.core.flow.629edef0-8ce8-428e-a922-3f8bf19ea682",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Validate Data" },
   "inputs": {},
   "outputs": {
