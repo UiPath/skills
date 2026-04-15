@@ -6,10 +6,19 @@ How to extract structured information from Process Design Documents in any forma
 
 | Format | How to Read | Notes |
 |---|---|---|
-| PDF | Use the Read tool with `pages` parameter. Read in chunks of up to 20 pages. | Screenshots are visible as images. Use them to understand UI flow but do not extract selectors from them. |
+| PDF | Use the Read tool with `pages` parameter. Read in chunks of up to 20 pages. | Screenshots are visible as images — see "Handling Screenshots" below. |
 | Word (.docx) | Read the file directly. | Tables may render differently — verify structure. |
 | Markdown | Read the file directly. | Easiest format — structure is already parseable. |
 | Pasted text | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
+
+## Handling Screenshots
+
+When you encounter screenshots in the PDD:
+
+1. **Note** the application name and screen shown.
+2. **Extract** visible field names, button labels, and navigation elements — these become data field references and process step descriptions.
+3. **Do NOT extract** selectors, XPath, CSS, coordinates, colors, or visual layout details — these are determined at development time, not from static images.
+4. **Reference** the screenshot content in the relevant process step's "Remarks" field if useful.
 
 ## Reading Strategy
 
@@ -153,6 +162,8 @@ After extraction, verify these items exist. Flag missing ones:
 
 | Item | If Missing |
 |---|---|
+| Business exceptions section | `[DEFAULT]` — create placeholder rows for common exceptions based on application types (invalid credentials, malformed input data, missing required fields, data validation failure). Mark each as `[DEFAULT]`. |
+| System errors section | `[DEFAULT]` — create placeholder rows for common infrastructure errors (application unresponsive, element not found, timeout, unhandled exception). Mark each as `[DEFAULT]`. |
 | Process schedule/frequency | `[DEFAULT]` — assume on-demand trigger |
 | Volume/throughput | `[SME REVIEW]` — needed for capacity planning |
 | Retry counts on errors | `[DEFAULT]` — 3 retries with exponential backoff |

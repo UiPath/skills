@@ -7,10 +7,14 @@ Step-by-step instructions for transforming a PDD into an SDD. Follow the 3-phase
 ### Step 1: Read the PDD
 
 1. Determine the input format (PDF, docx, markdown, pasted text).
-2. For PDFs, read in chunks of up to 20 pages per request. Start with pages 1-20, then continue.
-3. For large documents, read the Table of Contents first (usually page 2-3) to understand the structure before reading detail sections.
-4. If the document cannot be read (corrupt PDF, password-protected, unsupported format), tell the user and ask them to provide it in a different format.
-5. If the document does not appear to be a PDD (no process steps, no application details, no exception handling), tell the user and stop — do not attempt to generate an SDD from a non-PDD document.
+2. **Size-based reading strategy** for PDFs:
+   - **Under 10 pages:** read the entire document in one pass. Skip ToC lookup.
+   - **10-50 pages:** read the ToC first, then read sections in priority order (overview → steps → exceptions → applications → credentials).
+   - **Over 50 pages:** read ToC, then read high-priority sections (overview, process steps, exceptions) first, extract as you go, then read remaining sections.
+3. For pasted text over 3000 words, ask the user to paste in sections.
+4. **Docx handling:** if the .docx file renders as raw XML or binary content, tell the user: "The Word document could not be parsed as readable text. Please export it as PDF or paste the content directly." Do not attempt to extract data from garbled output.
+5. **Error cases:** if the document cannot be read (corrupt PDF, password-protected, unsupported format), tell the user and ask them to provide it in a different format. If the document does not appear to be a PDD (no process steps, no application details, no exception handling), tell the user and stop.
+6. **Language handling:** if the PDD is not in English, ask the user: "The PDD appears to be in [LANGUAGE]. Should I generate the SDD in English or [LANGUAGE]?" Generate the SDD in the requested language, but keep section headings and structural identifiers (BR-01, B1, E1) in English for tool compatibility.
 
 ### Step 2: Extract Structured Information
 
@@ -55,7 +59,7 @@ Present to the user:
 <NUMBERED_QUESTIONS_IF_ANY>
 ```
 
-Wait for user confirmation before proceeding to Phase 2. If the user cannot answer clarifying questions, proceed with `[SME REVIEW]` tags for those items. Do not ask more than 2 rounds of clarifying questions.
+Wait for user confirmation before proceeding to Phase 2. Ask at most 5 clarifying questions total, in a single round. If the user cannot answer some questions, tag those items as `[SME REVIEW]` and proceed — do not re-ask.
 
 ## Phase 2 — Architecture Review
 
@@ -114,25 +118,41 @@ For each application in the inventory:
 
 Present the implementation mode, project structure, workflow inventory, data models, and application scope map to the user. Wait for approval or adjustments before proceeding.
 
+**Approval criteria:** any response without specific change requests. Responses like "looks good", "ok", "proceed", "yes", or a topic change all count as approval. If the user requests specific changes, incorporate them and re-present the architecture (max 3 revisions — after that, proceed with the latest version and tag disagreements as `[SME REVIEW]`).
+
 ## Phase 3 — Full SDD Generation
 
 ### Step 1: Generate Remaining Sections
 
-Using the [SDD Template](../assets/templates/sdd-template.md), generate all sections not yet covered:
+Using the [SDD Template](../assets/templates/sdd-template.md), generate every section not covered in Phase 2. Every template section must be assigned to a phase — nothing is orphaned.
 
-1. Business rules — extract and number from PDD prose and exception tables
-2. Value mappings — any data transformations between systems
-3. Exception handling table — from the PDD's exception handling section, enriched with `[DEFAULT]` actions where missing
-4. Error handling table — from the PDD's error handling section, enriched with `[DEFAULT]` retry/escalation logic
-5. Credentials and assets table — from the PDD's credentials and asset management section
-6. Testing strategy — canonical test case, happy path assertions, exception test cases
-7. Implementation plan — task breakdown with SDD section references
+**Generated in Phase 1 (from extracted PDD data):**
+- Header & Document History (process name, current date, version 1.0)
+- §1 Process Overview
+- §2 Process Map — build from Phase 1 extracted steps using mermaid syntax. Do not invent steps.
+- §3 Detailed Process Steps — reformat Phase 1 step extractions into the template structure
+
+**Generated in Phase 2 (architecture core):**
+- §5 Data Definitions
+- §9 Application Inventory
+- §11 Project Structure (the most important section)
+- §12 Implementation Mode
+
+**Generated in Phase 3 (this step):**
+- §4 Business Rules — extract and number from PDD prose and exception tables
+- §6 Value Mappings — any data transformations between systems
+- §7 Exception Handling — from the PDD's exception handling section, enriched with `[DEFAULT]` actions where missing
+- §8 Error Handling — from the PDD's error handling section, enriched with `[DEFAULT]` retry/escalation logic
+- §10 Credentials & Assets — from the PDD's credentials and asset management section
+- §13 Testing Strategy — canonical test case, happy path assertions, exception test cases
+- §14 Implementation Plan — task breakdown with SDD section references
 
 ### Step 2: Write the SDD File
 
-1. Assemble all sections into the template structure.
-2. Write to `<PROCESS_NAME_KEBAB_CASE>-sdd.md` in the current working directory.
-3. Confirm the file path to the user.
+1. Assemble all sections in template order (header through §14), regardless of the phase in which they were generated.
+2. **Target SDD length: 300-800 lines of markdown.** For processes with more than 20 steps, group related steps into sub-processes and summarize at the parent level in §3. For processes with more than 10 business rules, prioritize the 10 most impactful in §4 and list the rest in an "Additional Rules" subsection.
+3. Write to `<PROCESS_NAME_KEBAB_CASE>-sdd.md` in the current working directory.
+4. Confirm the file path to the user.
 
 ### Step 3: Create Live Tasks
 

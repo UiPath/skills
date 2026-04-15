@@ -63,12 +63,15 @@
 
 # 2. Process Map
 
-<!-- Generate an ASCII flowchart or mermaid diagram showing the high-level process flow.
-     Show the main steps, decision points, and loop boundaries.
-     Label which application each step uses. -->
+<!-- Build the process map STRICTLY from the steps extracted in Phase 1. Do not invent steps.
+     Use mermaid flowchart syntax. One node per extracted step. Include decision points and loop boundaries
+     only when the PDD explicitly describes them. If the PDD has no decision points, produce a linear flow. -->
 
-```text
-<PROCESS_FLOW_DIAGRAM>
+```mermaid
+flowchart TD
+    Start([Start]) --> S1[<STEP_NUMBER>: <SHORT_DESCRIPTION>]
+    S1 --> S2[<STEP_NUMBER>: <SHORT_DESCRIPTION>]
+    S2 --> End([End])
 ```
 
 | Step | Description | Application |
@@ -80,24 +83,26 @@
 
 # 3. Detailed Process Steps
 
-<!-- For each step from the PDD, describe the action in implementation terms.
+<!-- Use a single summary table for ALL steps. Add a "Step Details" subsection only for steps that
+     have complex branching, sub-steps, or multi-application interactions.
      Do NOT include selectors or UI element identifiers — those are determined during development.
      Reference business rules by ID (e.g., BR-01) where applicable. -->
 
-## Step <STEP_NUMBER> — <STEP_TITLE>
+## Step Summary
 
-| Field | Value |
-|---|---|
-| **Action** | <WHAT_THE_ROBOT_DOES> |
-| **Application** | <APP_NAME> |
-| **Input data** | <DATA_FIELDS_NEEDED> |
-| **Output data** | <DATA_FIELDS_PRODUCED> |
-| **Expected result** | <WHAT_SHOULD_BE_TRUE_AFTER> |
-| **Business rules** | <BR_IDS_IF_APPLICABLE> |
-| **Error handling** | <EXCEPTION_OR_ERROR_IDS> |
-| **Remarks** | <ADDITIONAL_NOTES> |
+| # | Action | Application | Input | Output | Rules | Errors |
+|---|---|---|---|---|---|---|
+| <STEP_NUMBER> | <WHAT_THE_ROBOT_DOES> | <APP_NAME> | <INPUT_FIELDS> | <OUTPUT_FIELDS> | <BR_IDS> | <EXCEPTION_OR_ERROR_IDS> |
+| ... | ... | ... | ... | ... | ... | ... |
 
-<!-- Repeat for each step. Group sub-steps under their parent step heading. -->
+## Step Details
+
+<!-- Add subsections ONLY for steps with complex logic, branching, or sub-steps.
+     Simple linear steps belong only in the summary table above. -->
+
+### Step <STEP_NUMBER> — <STEP_TITLE>
+
+<DETAILED_DESCRIPTION_OF_COMPLEX_LOGIC_SUB_STEPS_OR_BRANCHING>
 
 ---
 
@@ -115,54 +120,68 @@
 
 # 5. Data Definitions
 
-<!-- Define the data structures used throughout the process.
-     For Coded C# or Hybrid mode: use C# classes, structs, and enums.
-     For pure XAML mode: use dictionary key tables or DataTable column definitions. -->
+<!-- Use ONLY the format matching the Implementation Mode from §12. Delete the unused format below.
+     Type design constraints:
+     - Keep types flat — no inheritance
+     - Use `record` for immutable data, `class` for mutable
+     - Maximum 15 properties per type; split into sub-types if larger
+     - Use `string` for all fields unless the PDD explicitly specifies numeric, date, or boolean operations -->
 
-## Transaction Data
+## Option A — Coded C# / Hybrid Mode
 
-<!-- The data representing one item to process (e.g., one claim, one work item). -->
+<!-- Delete this subsection if Implementation Mode is pure XAML. -->
+
+### Transaction Data
 
 ```csharp
-// Coded / Hybrid mode — C# class definition
-public class <TransactionDataType>
+public record <TransactionDataType>
 {
-    // <FIELD_COMMENT>
-    public <TYPE> <FIELD_NAME> { get; set; }
+    public <TYPE> <FIELD_NAME> { get; init; }
     // ...
 }
 ```
 
-<!-- XAML mode alternative:
-| Dictionary Key | Type | Source | Description |
-|---|---|---|---|
-| <KEY_NAME> | <TYPE> | <SOURCE_APP_AND_FIELD> | <DESCRIPTION> |
--->
-
-## Output Data
-
-<!-- The data captured as a result of processing (e.g., confirmation numbers, status codes). -->
+### Output Data
 
 ```csharp
-public class <OutputDataType>
+public record <OutputDataType>
 {
-    public <TYPE> <FIELD_NAME> { get; set; }
+    public <TYPE> <FIELD_NAME> { get; init; }
     // ...
 }
 ```
 
-## Enums
-
-<!-- Status values, category types, error codes — any finite set of values. -->
+### Enums
 
 ```csharp
 public enum <EnumName>
 {
     <VALUE_1>,
     <VALUE_2>,
-    // ...
 }
 ```
+
+## Option B — XAML Mode
+
+<!-- Delete this subsection if Implementation Mode is Coded C# or Hybrid. -->
+
+### Transaction Data (Dictionary)
+
+| Key | Type | Source | Description |
+|---|---|---|---|
+| <KEY_NAME> | <TYPE> | <SOURCE_APP_AND_FIELD> | <DESCRIPTION> |
+
+### Output Data (Dictionary)
+
+| Key | Type | Description |
+|---|---|---|
+| <KEY_NAME> | <TYPE> | <DESCRIPTION> |
+
+### Status/Category Values
+
+| Variable | Allowed Values |
+|---|---|
+| <VARIABLE_NAME> | <COMMA_SEPARATED_VALUES> |
 
 ---
 
