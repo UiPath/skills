@@ -237,6 +237,8 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 For XAML workflows targeting 2 or more distinct screens requiring `uia-configure-target`, use the parallel authoring pipeline instead of writing the entire workflow in a single pass. The pipeline chains write agents per screen, overlapping target configuration with XAML generation. See [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md).
 
+- Use split tasks (`Configure-<N>` + `Write-<N>`) with `addBlockedBy` to enforce the chained write model — see the parallel authoring guide.
+
 Single-screen workflows skip the pipeline — one agent writes the complete file in a single pass.
 
 ## Resolving Packages & Activity Docs

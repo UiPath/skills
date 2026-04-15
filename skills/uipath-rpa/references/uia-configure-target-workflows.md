@@ -8,7 +8,7 @@
 
 Why this matters:
 - **OR references** must be visible in the main conversation so they can be embedded into workflow activities as the workflow is created.
-- **Context continuity** — the main conversation tracks which screens and elements are already registered, which avoids duplicate captures and keeps the workflow build coherent.
+- **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via `object-repository get-screens` / `get-elements`. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
 
 Read the SKILL.md, then execute each TARGET step yourself. Only spawn `Agent` where the skill explicitly says to (create-selector, improve-selector).
 
@@ -36,7 +36,7 @@ The skill will search the Object Repository for existing matches before creating
 
 ## Rules
 
-**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't tracked in the project.
+**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't registered in the Object Repository.
 
 **Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
 
