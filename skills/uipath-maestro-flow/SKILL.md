@@ -228,20 +228,7 @@ The argument is the **project directory path** (the folder containing `project.u
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
 
-#### Debug output — surface the Studio Web URL and instanceId first
-
-When reporting debug results back to the user, the **first two lines of the summary MUST be the Studio Web URL and the instanceId**, in that order, each on its own line and clearly labeled. Parse them from the `uip flow debug --output json` response (`Data.studioWebUrl` / `Data.instanceId`, or the equivalent fields in the streamed output — fall back to regex-scraping the stdout if the JSON shape differs). Only after those two lines should the rest of the run summary follow (status, duration, node traces, errors, etc.).
-
-Required format:
-
-```
-Studio Web URL: <url>
-Instance ID: <instanceId>
-
-<the rest of the summary — status, node traces, errors, etc.>
-```
-
-If either value is missing from the CLI output, say so explicitly on that line (e.g., `Studio Web URL: <not returned by CLI>`) rather than omitting the line — the user should never have to scroll for these.
+**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip flow debug](references/flow-commands.md#uip-flow-debug).
 
 ### Step 8 — Publish to Studio Web
 
