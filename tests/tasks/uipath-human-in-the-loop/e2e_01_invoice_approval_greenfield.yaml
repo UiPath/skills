@@ -21,8 +21,6 @@ initial_prompt: |
   approve each invoice before it is posted — we cannot write to SAP
   without human sign-off.
 
-  Use an inline QuickForm schema (not a deployed Action App).
-
   Save a summary to report.json:
   {
     "project_name": "<name you used>",

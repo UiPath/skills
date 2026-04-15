@@ -37,8 +37,6 @@ initial_prompt: |
     "definitions": []
   }
 
-  Use an inline QuickForm schema for both HITL nodes (not a deployed Action App).
-
   Add human validation at TWO points:
   1. Before document validation — an HR officer must review submitted documents
   2. Before IT provisioning — a manager must approve IT access

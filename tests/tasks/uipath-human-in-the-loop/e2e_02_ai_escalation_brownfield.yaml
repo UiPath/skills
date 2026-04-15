@@ -38,8 +38,6 @@ initial_prompt: |
   make the final routing decision before the complaint is acted on.
   Insert a HITL node in the appropriate place, wire it, and validate.
 
-  Use an inline QuickForm schema (not a deployed Action App).
-
   Save results to report.json:
   {
     "hitl_node_id": "<id>",
