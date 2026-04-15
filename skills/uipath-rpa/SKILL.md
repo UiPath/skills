@@ -94,6 +94,16 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
 7. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 
+### Execution Discipline (Both Modes)
+
+**Run to completion — do not declare work done while plan tasks remain.** If a plan file exists at `docs/plans/*.md` referenced by this request (or discoverable there for this feature), read its header before acting and during every checkpoint.
+
+- If the header has `Execution autonomy: autonomous`: continue until ALL plan task checkboxes are `[x]` OR a concrete item from the plan's `Stop conditions` section is hit.
+- If the header has `Execution autonomy: interactive`, or no plan file exists: use judgment and confirm with the user on material decisions.
+- Before declaring the task done, re-read the plan and enumerate any unchecked boxes. If unchecked tasks remain and no Stop condition was hit, keep going — do not summarize partial work as "Done".
+- "Feels expensive", "many tool calls used", "natural pause point", "partial result looks usable", and "too complex to continue in one session" are **NOT** Stop conditions. Only the concrete hard blockers in the plan's `Stop conditions` section count.
+- Plan decisions already made are authoritative. Do not `AskUserQuestion` about structure, file count, selector strategy, or capture approach when the plan specifies them — those questions belonged to the planner.
+
 ### Coded-Specific Rules
 
 8. **[Coded] ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files).
@@ -276,9 +286,18 @@ Additional UIA procedures and guides:
 
 ## Completion Output
 
+**Before reporting "done", verify the plan is complete.** If a plan file at `docs/plans/*.md` drove this work:
+1. Re-read the plan and scan its task checkboxes.
+2. If any `[ ]` boxes remain AND the plan's header says `Execution autonomy: autonomous` AND no `Stop conditions` item was hit — **do not report done**. Resume execution on the next unchecked task.
+3. If unchecked boxes remain because a Stop condition was hit, name the exact stop-condition item in the report.
+4. If the plan is fully checked off, or execution autonomy is `interactive`, proceed to the report format below.
+
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
 2. **Validation status** — whether all files passed validation (or remaining errors)
-3. **How to run** — the `uip rpa run-file --use-studio` command (if applicable)
-4. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
-5. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."
+3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
+4. **How to run** — the `uip rpa run-file --use-studio` command (if applicable)
+5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
+6. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."
+
+Do NOT use framing like "complete", "done", "finished", or "the automation is built" unless every plan task is checked off. "Partial", "stopped at <task N>", or "blocked by <stop condition>" is the honest framing otherwise.
