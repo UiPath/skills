@@ -135,6 +135,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Troubleshoot coded errors** | Coded | [coded/coding-guidelines.md § Common Issues](references/coded/coding-guidelines.md) |
 | **Troubleshoot XAML errors** | XAML | [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) → [validation-guide.md](references/validation-guide.md) |
 | **Understand project structure** | Both | [project-structure.md](references/project-structure.md) |
+| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) |
 
 ## Coded Workflows Quick Reference
 
@@ -232,6 +233,12 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 - [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 
+### Multi-Screen UI Automation Workflows
+
+For XAML workflows targeting 2 or more distinct screens requiring `uia-configure-target`, use the parallel authoring pipeline instead of writing the entire workflow in a single pass. The pipeline chains write agents per screen, overlapping target configuration with XAML generation. See [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md).
+
+Single-screen workflows skip the pipeline — one agent writes the complete file in a single pass.
+
 ## Resolving Packages & Activity Docs
 
 Follow this flow whenever you need to use an activity package:
@@ -263,6 +270,7 @@ Additional UIA procedures and guides:
 - [uia-multi-step-flows.md](references/uia-multi-step-flows.md) — Advancing application state between screens
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow and indication fallback
+- [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) — Parallel XAML authoring pipeline for multi-screen workflows
 
 ## Completion Output
 

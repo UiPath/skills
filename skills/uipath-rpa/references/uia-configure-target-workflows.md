@@ -91,6 +91,24 @@ When no App exists in `.objects/`, omit `--parent-id` and `--parent-name` — th
 
 </details>
 
+## Interacting with a Registered Target
+
+After TARGET-8 returns an OR reference ID, you can drive that target directly from the main conversation using `uia interact` — no servo snapshot, no second ref system. This is the preferred way to advance the application state to the next screen when building multi-step flows.
+
+```bash
+# Click using the OR reference ID returned by create-screen / create-elements
+uip rpa uia interact click --reference-id "<OR_REFERENCE_ID>"
+
+# Type into a target using the OR reference ID
+uip rpa uia interact type --reference-id "<OR_REFERENCE_ID>" --text "hello"
+```
+
+Alternate input forms:
+- `--definition-file-path "<WORK_FOLDER>/Target_N_Definition.json"` — use the definition file (useful before OR registration)
+- `--window-selector "<html ... />" --partial-selector "<webctrl ... />"` — raw selectors (ad-hoc, no OR entry)
+
+See [uia-multi-step-flows.md](uia-multi-step-flows.md) for when to use `uia interact` vs servo and the full capture loop.
+
 ## Embedding OR Entries in XAML Activities
 
 After registering targets in the Object Repository (via `uia-configure-target` or indication fallback), retrieve the XAML snippets and embed them directly when creating the workflow. This is more reliable than post-creation linking because it works regardless of intermediate validation errors.
@@ -147,3 +165,9 @@ Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== E
 | `<REF_1>,<REF_2>,...` | Comma-separated OR element references returned by `uia-configure-target` or `indicate-element` |
 
 When an element is used by multiple activities (e.g., the same field clicked and then typed into), use the same `<TargetAnchorable>` snippet in each activity's `.Target` property.
+
+### Multi-Screen Workflows: Passing OR Data to Write Agents
+
+For multi-screen XAML workflows using the parallel authoring pipeline, retrieve OR XAML snippets (`get-screen-xaml`, `get-elements-xaml`) immediately after registration and pass them to a write agent's prompt. The write agent embeds `TargetApp` and `TargetAnchorable` snippets using the same patterns shown above. This decouples target configuration from XAML generation, allowing the main conversation to configure the next screen's targets while the write agent works.
+
+See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for prompt templates and the chained dependency model.

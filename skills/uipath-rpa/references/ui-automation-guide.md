@@ -40,6 +40,8 @@ See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for t
 
 ### Multi-Step UI Flows (Advancing Application State)
 
+To interact with targets between capture steps, prefer `uip rpa uia interact click/type` when the target is already registered in the OR (reuses the configured selector, no separate ref system). Fall back to `servo` only for ad-hoc interactions on elements that are not in OR.
+
 See [uia-multi-step-flows.md](uia-multi-step-flows.md).
 
 ---
