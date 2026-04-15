@@ -1,6 +1,6 @@
 ---
 name: uipath-planner
-description: "UiPath task planner — ALWAYS invoke first for ANY UiPath request. Elicits preferences (C#/XAML, expression language, approach), plans multi-skill execution, detects project type (.cs, .xaml, .flow, .py), routes to specialist skills."
+description: "UiPath task planner — elicits preferences, plans multi-skill execution, detects project type (.cs, .xaml, .flow, .py). Triggers for non-trivial or ambiguous UiPath requests. Simple single-skill tasks→specialist directly."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanMode
 ---
 
@@ -8,17 +8,17 @@ allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanM
 
 Your job is to **elicit preferences, plan, and route** — never execute.
 
-1. **Do NOT** write code, XAML, JSON, or create files.
-2. **Always run first** — every UiPath request goes through this planner before specialist skills are loaded.
+1. **Do NOT** write automation code (XAML, C#, Python, JSON) or create project files.
+2. **Do NOT** use Bash for anything other than the filesystem probe in Step 3 — unless in explore-first mode (see Step 1).
 3. Produce a plan, then stop. The main agent loads and executes the specialist skills.
-
-**Explore-first mode exception:** If the user chose "explore first, then plan" in Step 1, you MAY run `uip` and `servo` commands to explore the project and live applications — including navigating through pages and screens. You may also save temporary notes and intermediate findings to files. You still must NOT write automation code (XAML, C#, Python) or modify the project. Enter plan mode (EnterPlanMode) to present the plan for user approval.
 
 ## When to Use This Skill
 
-- **Always.** This planner is the mandatory entry point for every UiPath request.
-- Even when the user names a specific skill or domain (e.g., "create a coded workflow"), run the planner first to elicit preferences and emit a plan.
-- The planner ensures the right questions are asked and the right skills are loaded in the right order.
+- The request is **non-trivial** — multi-step, multi-skill, UI automation, or unclear scope
+- The request is **ambiguous** — no single specialist skill clearly matches
+- The user asks "what can I build?" or needs help choosing a project type
+
+Skip this planner for simple, well-defined single-skill tasks (e.g., "create a workflow that sends an email") — the agent loads the specialist skill directly.
 
 ## Skill capability map
 
@@ -81,7 +81,7 @@ Skip if the user already specified a project type or if filesystem signals (Step
 
 **Do not ask the user to choose between XAML and C#.** Automation workflows default to XAML. Use C# coded workflows only as a fallback for parts that are too complex to build in XAML (e.g., advanced custom logic, complex data structures). The plan should note this strategy so the specialist skill applies it.
 
-### Question 3: PDD/SDD document (always ask for new automations)
+### Question 3: PDD/SDD document (ask for new automations)
 
 > Do you have a Process Definition Document (PDD) or Solution Design Document (SDD) for this automation? If so, provide the file path and I'll use it to guide the plan.
 >
@@ -246,9 +246,9 @@ Include the user's preferences from Step 1 (generation approach, project type, e
 
 ## Anti-patterns — What NOT to Do
 
-1. **Do not skip Step 1 (upfront elicitation).** Always ask the generation approach question for new automations. Only skip questions the user's request already answers.
+1. **Do not skip Step 1 (upfront elicitation).** Ask the generation approach question for non-trivial new automations. Only skip questions the user's request already answers.
 2. **Do not write automation code or modify the project.** In explore-first mode you may run `uip`/`servo` for discovery (including UI navigation) and save temporary notes — but never write XAML, C#, Python, or modify project files.
-3. **Do not ask more than 4 questions total across all steps.** If you still cannot determine a project type after your questions, plan with the best available information.
+3. **Do not ask more than 5 questions total across all steps.** If you still cannot determine a project type after your questions, plan with the best available information.
 4. **Do not recommend a skill that doesn't match the filesystem signals.** If you see `.flow` files, don't route to `uipath-rpa`.
 5. **Do not skip Step 2.** Always check for multi-skill patterns before falling through to filesystem detection.
 6. **Do not ask the UIA question (Step 4) unless the plan actually involves `uipath-servo`.** This question is only relevant for UI automation tasks.
