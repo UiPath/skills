@@ -238,9 +238,26 @@ Write the plan as a markdown file using this structure:
 # <Feature Name> Implementation Plan
 
 **Goal:** <one sentence summarizing what the automation does>
+**Source document:** <path to PDD/SDD if provided, or "None — planned from user request">
 **Project type:** <XAML / C# coded / agent / flow / app>
 **Expression language:** VB.NET
 **Approach:** <explore first / simultaneous>
+
+## Understanding
+
+<2-4 sentences explaining your interpretation of the request. What is the
+automation supposed to do end-to-end? What are the key inputs and outputs?
+Call out any assumptions you made or ambiguities you resolved during
+elicitation. If a PDD/SDD was provided, summarize the process steps and
+note which sections of the document informed each task below.>
+
+## Decisions & Trade-offs
+
+<Bullet list of key decisions made during planning and why:>
+- Why this project type was chosen
+- Why specific skills are loaded in this order
+- Any trade-offs (e.g., XAML default with C# fallback for specific parts)
+- Risks or open questions the user should be aware of
 
 ## Task 1: <skill-name> — <short description>
 
