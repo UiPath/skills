@@ -89,6 +89,8 @@ uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=
 
 Use the resolved IDs (not display names) in the flow's node `inputs`. Present options to the user when multiple matches exist.
 
+> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
+
 **Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including: identifying reference fields, dependency chains (resolve parent fields before children), pagination, describe failures, and fallback strategies.
 
 ### Step 5 — Validate required fields

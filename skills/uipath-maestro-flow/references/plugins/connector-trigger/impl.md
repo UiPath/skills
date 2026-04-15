@@ -93,6 +93,10 @@ uip is resources execute list "<connector-key>" "<reference.objectName>" \
 
 Use the resolved IDs in the trigger's event parameter configuration.
 
+> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
+
+**Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
+
 ### Step 4 — Validate required event parameters
 
 Check every field in `eventParameters.fields` where `required: true`. All required event parameters must have values before building the flow.
