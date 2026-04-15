@@ -26,9 +26,9 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 2. **Run `uip case registry pull` before any interpretation** — pulling the registry cache upfront avoids network failures partway through.
 3. **tasks.md entries are declarative specifications** — no `uip` CLI commands in tasks.md. Each task entry contains parameters, IDs, and metadata only. The execution phase translates specs into CLI calls.
 4. **Follow every step as written — do not skip or shortcut** — the procedures exist because previous shortcuts caused failures. Do not skip registry lookups based on assumptions.
-5. **Best effort on registry failures** — if a lookup fails, mark it as `[REGISTRY LOOKUP FAILED: <keywords>]` and continue. Do not abort the entire run.
+5. **Placeholder on registry miss** — if a lookup fails after retries (Rule #7) or a connector has `Connections: []`, emit the task as a placeholder (`placeholder: true`, `placeholderReason: <reason>`). Step 9 adds a bare task; never use `tasks add-connector` for placeholders.
 6. **One task per T-number** — do not group multiple sdd.md tasks under a single T-number.
-7. **Max 2 registry refresh retries** — if `registry pull --force` still yields no match after 2 retries, mark the lookup as failed and move on.
+7. **Max 2 registry refresh retries** — if `registry pull --force` still yields no match, stop retrying.
 8. **Ask the user when login fails** — if `uip login status` shows not logged in, prompt the user to run `uip login` and stop until they confirm.
 9. **Every stage needs at least one edge** connecting it to the case or it will be orphaned.
 10. **Trigger node is created automatically** on `cases add` — don't add another unless it's a separate entry point (e.g. for a multi-trigger case).
@@ -107,7 +107,7 @@ For all other types, follow the procedure in the [registry-discovery reference](
 5. **Extract the correct identifier field** per cache file type (`entityKey`, `id`, or `uiPathActivityTypeId`).
 6. For **connector tasks** (typecache-activities, typecache-triggers), also run `get-connector` and `get-connection` CLI commands to collect full details.
 
-Collect all registry results for the debug output in Step 4.
+Collect all registry results (including failures — see Rule #5) for the debug output in Step 4.
 
 ### Step 4 — Generate tasks.md and registry-resolved.json
 
@@ -119,6 +119,7 @@ Also write a `registry-resolved.json` file in the `tasks/` folder containing all
 - The search query used
 - All matched results
 - Which result was selected and why
+- For failed lookups: the marker `REGISTRY LOOKUP FAILED: <name> in <folder>` plus `emittedAs: placeholder` — see [registry-discovery.md](references/registry-discovery.md) for the JSON shape.
 
 #### Task structure
 
@@ -229,6 +230,17 @@ Example (HITL/action with mixed input types):
 - isRequired: true
 - order: after T26
 - verify: Confirm Result: Success, capture TaskId from output
+```
+
+**Placeholder tasks** — when a lookup fails (Rule #5), emit the task with `placeholder: true` + `placeholderReason: <reason>` and the display name. Omit `taskTypeId`, `inputs`, `outputs`, `recipient`, `priority`. For `action` placeholders, add `taskTitle` (default: display name) — the validator errors hard otherwise.
+
+Example:
+```markdown
+## T27: Add rpa task "Claim Process" to "Intake"
+- placeholder: true
+- placeholderReason: no match in process-index.json for "Claim Process" in /Shared after registry pull --force
+- order: after T26
+- verify: Expect validation warning "task with no configuration"
 ```
 
 ##### 6. Configure conditions (one per condition)
@@ -367,7 +379,9 @@ Add a brief section at the end of tasks.md listing things referenced in the sdd.
 
 ### Step 5 — HARD STOP: User reviews and approves tasks.md
 
-Present the generated tasks.md to the user and ask for explicit approval before proceeding to execution.
+**Surface placeholders first.** If tasks.md contains `placeholder: true` entries, list them (T-number, stage, display name, `placeholderReason`) before the approval prompt so the user can fix the sdd.md, register the missing resource and regenerate, or accept them.
+
+Then present the generated tasks.md to the user and ask for explicit approval before proceeding to execution.
 
 Use `AskUserQuestion` with options: "Approve and proceed", "Request changes"
 
@@ -464,7 +478,9 @@ Valid task types: `process`, `agent`, `api-workflow`, `rpa`, `external-agent`, `
 
 Use `--lane <index>` for parallel execution (lane 0, 1, 2, etc.).
 
-**Bind task inputs and wire outputs** after adding each task. For each task in tasks.md, translate its `inputs` specification into `uip case var bind` commands.
+**Placeholder branch.** If the task has `placeholder: true`, run `uip case tasks add --type <type> --display-name "<name>" --output json` with no `--task-type-id`. For `action`, also pass `--task-title "<name>"`. Skip `tasks describe` and all `var bind` for this task — there are no schema slots. Never use `tasks add-connector` for connector placeholders (it requires `--type-id`/`--connection-id`).
+
+**Bind task inputs and wire outputs** after adding each non-placeholder task. For each task in tasks.md, translate its `inputs` specification into `uip case var bind` commands.
 
 **Discover available inputs and outputs** — after adding a task with `--task-type-id`, the task is auto-enriched with input/output schemas. To inspect what inputs and outputs are available:
 
@@ -565,6 +581,8 @@ On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "V
 
 On failure: the output lists each `[error]` or `[warning]` with its path and message. Fix the reported issues and re-run `validate` until it passes.
 
+**Placeholder tasks produce expected warnings.** Each placeholder emits a `[warning] Stage "<name>" has a task with no configuration`. These are expected — validation still returns `Status: Valid`. Do NOT attempt to auto-fix placeholder warnings; they are intentional stubs the user will wire up in Studio Web.
+
 ### Step 13 — Ask about debug
 
 Once the case file passes validation, tell the user and ask:
@@ -607,6 +625,8 @@ The `bundle` command requires a solution directory containing a `.uipx` file. If
 **Do NOT run `uip case pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the case directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`solution bundle` + `solution upload`).
 
 For Orchestrator deployment when explicitly requested, see [references/case-commands.md](references/case-commands.md) for `uip case pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
+
+> **Placeholder caveat.** `uip case pack` may reject placeholder tasks via the BPMN converter. Replace placeholders with real registrations before packing, or wire them in Studio Web. `solution bundle` + `solution upload` is unaffected.
 
 ## Anti-patterns — What NOT to Do
 

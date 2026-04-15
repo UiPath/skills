@@ -82,13 +82,7 @@ for item in data:
 
 ### 3. Handle Empty Results
 
-If no match is found across all relevant cache files:
-
-1. Force-refresh the cache and retry:
-   ```bash
-   uip case registry pull --force
-   ```
-2. If still no match, mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]`
+If no match is found across all relevant cache files, force-refresh and retry (`uip case registry pull --force`, max 2 times per SKILL.md Rule #7). If still no match, emit the task as a placeholder — see SKILL.md Step 4 "Placeholder tasks".
 
 ### 4. Return All Matches
 
@@ -158,10 +152,25 @@ The `get-connection` response includes `Entry`, `Config`, and `Connections`:
 
 When processing connection results:
 - The sdd.md provides the necessary information to identify the correct connection. Match the connection name from the sdd.md against the `Connections` list.
-- If **`Connections` is empty**, no connection has been configured for this connector in Integration Service. Flag this to the user — they need to create a connection before the task can run.
+- If **`Connections` is empty**, no connection is configured for this connector in Integration Service. Emit the task as a placeholder (same fallback as a missing activity — SKILL.md Step 4).
 - The `Config.connectorKey` identifies the Integration Service connector (e.g., `gmail`, `uipath-drip-drip`).
 - The `Config.objectName` identifies the specific operation within the connector.
 
 ## Output Contract
 
 The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so the task.md can reference it. The implementation agent will use this identifier when calling `uip case tasks add --task-type-id`.
+
+## registry-resolved.json Audit Trail
+
+Log every lookup in `tasks/registry-resolved.json` keyed by task ID. For failures, retain the canonical marker `REGISTRY LOOKUP FAILED: <name> in <folder>` as `status` so it stays greppable. The human-readable reason belongs in tasks.md (`placeholderReason`); the marker belongs here.
+
+```json
+{
+  "T27": {
+    "status": "REGISTRY LOOKUP FAILED: Claim Process in /Shared",
+    "searched": ["process-index.json", "agent-index.json"],
+    "forceRefreshAttempts": 2,
+    "emittedAs": "placeholder"
+  }
+}
+```
