@@ -61,3 +61,32 @@ namespace {{PROJECT_NAME}}
     }
 }
 ```
+
+## Coded Test Case (.cs) — Data-Driven with Test Data Queue
+
+```csharp
+using System;
+using System.Collections.Generic;
+using UiPath.CodedWorkflows;
+// Add service-specific usings as needed — see references/coding-guidelines.md
+
+namespace {{PROJECT_NAME}}
+{
+    public class {{CLASS_NAME}} : CodedWorkflow
+    {
+        [TestCase]
+        public void Execute()
+        {
+            // Arrange — get test data from queue
+            var item = testing.GetTestDataQueueItem("{{QUEUE_NAME}}");
+            {{EXTRACT_FIELDS}}
+
+            // Act
+            {{ACT}}
+
+            // Assert
+            testing.VerifyExpression({{ASSERTION}});
+        }
+    }
+}
+```

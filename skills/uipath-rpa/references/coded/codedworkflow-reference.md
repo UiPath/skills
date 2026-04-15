@@ -175,52 +175,56 @@ The `services` property provides access to:
 - `WorkflowInvocationService` (via `RunWorkflow`) — fallback for dynamic workflow invocation
 - `OutputLoggerService` (via `Log`) — logging
 
-## Extending CodedWorkflow with Before/After Hooks
+## Before/After Hooks (IBeforeAfterRun)
 
-To add shared setup/teardown logic that runs before and after ALL test cases, create a base class that implements `IBeforeAfterRun`:
+Any class inheriting from `CodedWorkflow` can implement `IBeforeAfterRun` to add setup/teardown logic. Two approaches:
 
+**Per-file:** Implement directly on a workflow or test case — hooks run only for that file:
 ```csharp
-// CodedWorkflowBase.cs — Coded Source File (NOT a workflow, no entry point)
+public class TestLoginFlow : CodedWorkflow, IBeforeAfterRun
+{
+    public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
+    public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
+
+    [TestCase]
+    public void Execute() { /* Before() already ran, After() runs after */ }
+}
+```
+
+**Project-wide:** Use a `partial class CodedWorkflow` — hooks apply to every workflow and test case:
+```csharp
+// CodedWorkflowHooks.cs — Coded Source File (no entry point)
 using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public class CodedWorkflowBase : CodedWorkflow, IBeforeAfterRun
+    public partial class CodedWorkflow : IBeforeAfterRun
     {
-        public void Before(BeforeRunContext context)
-        {
-            Log("Execution started for " + context.RelativeFilePath);
-            // Setup: open app, log in, navigate to starting state
-        }
+        public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
+        public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
+    }
+}
+```
 
-        public void After(AfterRunContext context)
+## Extending CodedWorkflow with Partial Classes
+
+The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks:
+
+```csharp
+// CodedWorkflowExtensions.cs — Coded Source File (no entry point)
+using UiPath.CodedWorkflows;
+
+namespace MyProject
+{
+    public partial class CodedWorkflow
+    {
+        protected string GetEnvironmentUrl()
         {
-            Log("Execution finished for " + context.RelativeFilePath);
-            // Teardown: close app, clean up test data
+            var env = system.GetAsset("Environment").ToString();
+            return env == "prod" ? "https://app.example.com" : "https://staging.example.com";
         }
     }
 }
 ```
 
-Then change your workflows/test cases to inherit from `CodedWorkflowBase` instead of `CodedWorkflow`:
-
-```csharp
-// TestInvoiceCreation.cs — Test Case
-using UiPath.CodedWorkflows;
-
-namespace MyProject
-{
-    public class TestInvoiceCreation : CodedWorkflowBase  // Inherits from CodedWorkflowBase
-    {
-        [TestCase]
-        public void Execute()
-        {
-            // Before() runs automatically before this method
-            // ... test logic ...
-            // After() runs automatically after this method
-        }
-    }
-}
-```
-
-This approach ensures `Before()` and `After()` run for all workflows/test cases that inherit from `CodedWorkflowBase`.
+Full templates and examples: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)

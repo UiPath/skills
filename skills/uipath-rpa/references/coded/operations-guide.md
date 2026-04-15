@@ -41,7 +41,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 **5. Add workflow/test case/source files:**
 - Generate `.cs` files (workflows, test cases, source files)
 - Update `project.json` entry points for each workflow/test case file
-- If test project and shared setup is needed, create a base class (e.g. `CodedWorkflowBase.cs`) that implements `IBeforeAfterRun`
+- If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
 
@@ -88,6 +88,7 @@ Coded test cases automate and validate application behavior using a structured *
    - Add entry to `designOptions.fileInfoCollection` with `testCaseType: "TestCase"`, `publishAsTestCase: true`
 5. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
    - Optionally create `.variations/` data file for parameterized test data
+   - For advanced data sources (Excel, Data Service, Test Data Queues, auto-generated), see [../testing-guide.md § Data-Driven Testing](../testing-guide.md)
 6. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
 
 **Test case structure — Given/When/Then:**
@@ -158,7 +159,6 @@ namespace MyTestProject
 - `testing.VerifyAreEqual<T>(T expected, T actual, string outputMessage = null)` — assert equality
 - `testing.VerifyAreNotEqual<T>(T notExpected, T actual, string outputMessage = null)` — assert inequality
 - `testing.VerifyContains(string full, string part, string outputMessage = null)` — assert string containment
-- `testing.VerifyIsTrue(bool condition, string outputMessage = null)` — alias for VerifyExpression
 - `testing.VerifyRange(double value, double min, double max, string outputMessage = null)` — assert value in range
 - `testing.SetTestDataQueueItems(...)` — set up test data from data queues
 - `testing.GetTestDataQueueItem(...)` — get next test data item
@@ -181,7 +181,7 @@ public void Execute()
 ```
 
 **Shared Before/After hooks for all test cases:**
-Create a base class (e.g. `CodedWorkflowBase.cs`) that implements `IBeforeAfterRun`, then have all test cases inherit from it instead of `CodedWorkflow`. See `references/codedworkflow-reference.md#extending-with-hooks` for details.
+Create a Coded Source File (e.g. `CodedWorkflowHooks.cs`) with `public partial class CodedWorkflow : IBeforeAfterRun` — the compiler merges it with the auto-generated CodedWorkflow partial, so all workflows and test cases get the hooks automatically. See `assets/before-after-hooks-template.md` for the full template.
 
 ## Add a Coded Source File (Helper Class / Model / Utility)
 
