@@ -113,6 +113,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 20. **[XAML] NEVER touch ViewState** in XAML files — it's designer layout metadata.
 21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
+23. **[XAML] ALWAYS use UiPath activity equivalents** — NEVER use .NET built-in activities (`System.Activities.Statements.ForEach`, `System.Activities.Statements.If`, `System.Activities.Statements.Assign`) when UiPath equivalents exist in `UiPath.System.Activities` or `UiPath.Core.Activities`. The UiPath versions integrate with Studio logging, analytics, and debugging.
 
 ## Task Navigation
 

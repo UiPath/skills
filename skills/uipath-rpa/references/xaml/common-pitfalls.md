@@ -2,6 +2,20 @@
 
 Common pitfalls that cause validation errors or runtime failures.
 
+## .NET Built-in vs UiPath Activities
+
+NEVER use .NET built-in activities when UiPath equivalents exist. The agent may treat `ForEach`, `Assign`, `If` as "basic .NET plumbing" and use `System.Activities.Statements.*` directly. Always use the UiPath versions instead:
+
+| .NET Built-in (DO NOT USE) | UiPath Equivalent (USE THIS) | Package |
+|----------------------------|------------------------------|---------|
+| `System.Activities.Statements.ForEach<T>` | `UiPath.Core.Activities.ForEach` | `UiPath.System.Activities` |
+| `System.Activities.Statements.If` | `UiPath.Core.Activities.If` | `UiPath.System.Activities` |
+| `System.Activities.Statements.Assign` | `UiPath.Core.Activities.Assign` | `UiPath.System.Activities` |
+| `System.Activities.Statements.While` | `UiPath.Core.Activities.While` | `UiPath.System.Activities` |
+| `System.Activities.Statements.Switch<T>` | `UiPath.Core.Activities.Switch` | `UiPath.System.Activities` |
+
+**Why:** UiPath activities integrate with Studio's logging, analytics, debugging, and activity tracking. The .NET built-in versions bypass all of this and may cause unexpected behavior.
+
 ## Container/Scope Requirements
 
 These activities **must** be placed inside a specific parent scope:
