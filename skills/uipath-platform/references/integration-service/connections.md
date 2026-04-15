@@ -44,21 +44,6 @@ Connections are authenticated sessions for a specific connector. They store cred
 
 ---
 
-## Folder Scoping
-
-Without `--folder-key`, `connections list` scopes to **Personal Workspace only**. If the list is empty, check other folders before concluding the connection is missing:
-
-```bash
-uip or folders list --output json
-uip is connections list "<connector-key>" --folder-key "<key>" --output json
-```
-
-Shared is the common case. If no connection is found in Personal Workspace, Shared, or any folder the user referenced, it doesn't exist — follow "No connections exist" recovery.
-
-`ping` does not take `--folder-key`; it looks up by connection ID and works across folders.
-
----
-
 ## Scope-Related Errors
 
 A connection can be `Enabled` but lack optional OAuth scopes needed for specific activities. This typically surfaces as a **403 Forbidden** error during execute.
