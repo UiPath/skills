@@ -54,6 +54,24 @@
                 "The case-management skill may be triggered for direct editing",
                 "Does NOT go through the sdd.md planning workflow"
             ]
+        },
+        {
+            "id": 6,
+            "prompt": "Generate a tasks.md from this case spec so I can review it: ./fixtures/sdd-placeholder-test.md. Every task is intentionally a registry miss — I want to see how the skill handles placeholders end-to-end.",
+            "expected_output": "Skill triggers, runs registry lookups that all fail, emits every task as a placeholder in tasks.md, records REGISTRY LOOKUP FAILED markers in registry-resolved.json, and surfaces the placeholders at Step 5 before asking for approval.",
+            "files": ["fixtures/sdd-placeholder-test.md"],
+            "expectations": [
+                "The case-management skill was triggered",
+                "tasks.md contains one entry per fixture task with `placeholder: true` and a distinct `placeholderReason`",
+                "tasks.md does NOT contain any raw `[REGISTRY LOOKUP FAILED: ...]` string — that marker belongs only in registry-resolved.json",
+                "registry-resolved.json records `status: \"REGISTRY LOOKUP FAILED: ...\"` and `emittedAs: placeholder` for each failed lookup",
+                "The action-type placeholder (Triage Review Action App) includes `taskTitle` defaulting to the display name",
+                "The connector-activity placeholder (Send Quantum Pager Notification) is documented to use `uip case tasks add --type execute-connector-activity`, NOT `uip case tasks add-connector`",
+                "Step 5 surfaces the full placeholder list (T-number, stage, display name, placeholderReason) before prompting for approval",
+                "No `uip case var bind` calls are emitted for any placeholder task",
+                "No `uip case tasks describe` calls are emitted for any placeholder task",
+                "The skill does not abort despite every lookup failing"
+            ]
         }
     ]
 }

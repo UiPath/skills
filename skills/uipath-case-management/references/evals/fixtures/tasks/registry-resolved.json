@@ -1,0 +1,65 @@
+{
+  "T06": {
+    "status": "REGISTRY LOOKUP FAILED: Chrysanthemum Mailbox (connector trigger)",
+    "searched": ["typecache-triggers-index.json"],
+    "forceRefreshAttempts": 2,
+    "matches": [],
+    "selected": null,
+    "emittedAs": "placeholder"
+  },
+  "T07": {
+    "status": "REGISTRY LOOKUP FAILED: Chrysanthemum Claim Fetcher in /Shared/Claims/Fictional",
+    "searched": [
+      "api-index.json",
+      "process-index.json",
+      "processOrchestration-index.json",
+      "agent-index.json"
+    ],
+    "forceRefreshAttempts": 2,
+    "matches": [],
+    "selected": null,
+    "emittedAs": "placeholder"
+  },
+  "T08": {
+    "status": "REGISTRY LOOKUP FAILED: Obsidian Claim Registrar in /Shared/Claims/Fictional",
+    "searched": [
+      "process-index.json",
+      "processOrchestration-index.json",
+      "api-index.json",
+      "agent-index.json"
+    ],
+    "forceRefreshAttempts": 2,
+    "matches": [],
+    "selected": null,
+    "emittedAs": "placeholder"
+  },
+  "T09": {
+    "status": "REGISTRY LOOKUP FAILED: Claim Classifier Agent in /Shared/Claims/Fictional",
+    "searched": [
+      "agent-index.json",
+      "process-index.json",
+      "processOrchestration-index.json",
+      "api-index.json"
+    ],
+    "forceRefreshAttempts": 2,
+    "matches": [],
+    "selected": null,
+    "emittedAs": "placeholder"
+  },
+  "T10": {
+    "status": "REGISTRY LOOKUP FAILED: Triage Review Action App in /Shared/Claims/Fictional",
+    "searched": ["action-apps-index.json"],
+    "forceRefreshAttempts": 2,
+    "matches": [],
+    "selected": null,
+    "emittedAs": "placeholder"
+  },
+  "T11": {
+    "status": "REGISTRY LOOKUP FAILED: Quantum Pager (connector activity)",
+    "searched": ["typecache-activities-index.json"],
+    "forceRefreshAttempts": 2,
+    "matches": [],
+    "selected": null,
+    "emittedAs": "placeholder"
+  }
+}

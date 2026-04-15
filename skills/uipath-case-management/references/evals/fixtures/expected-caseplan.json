@@ -1,0 +1,204 @@
+{
+    "root": {
+        "id": "root",
+        "name": "Chrysanthemum Claims Triage (TEST)",
+        "type": "case-management:root",
+        "caseIdentifier": "TST",
+        "caseAppEnabled": false,
+        "caseIdentifierType": "constant",
+        "version": "v16",
+        "publishVersion": 2,
+        "data": {
+            "slaRules": [
+                {
+                    "expression": "=js:true",
+                    "count": 1,
+                    "unit": "h"
+                }
+            ]
+        },
+        "caseExitConditions": [
+            {
+                "id": "Condition_uKYPBe",
+                "displayName": "Case resolved",
+                "rules": [
+                    [
+                        {
+                            "rule": "required-stages-completed",
+                            "id": "Rule_9kdwD2"
+                        }
+                    ]
+                ],
+                "marksCaseComplete": true
+            }
+        ]
+    },
+    "nodes": [
+        {
+            "id": "Stage_mVoPDQ",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 600,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Triage",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": [
+                    [
+                        {
+                            "id": "t2ktCEIsB",
+                            "displayName": "Triage Review Action App",
+                            "type": "action",
+                            "data": {
+                                "taskTitle": "Triage Review Action App",
+                                "priority": "Medium"
+                            }
+                        },
+                        {
+                            "id": "toZWNCvuh",
+                            "displayName": "Send Quantum Pager Notification",
+                            "type": "execute-connector-activity",
+                            "data": {}
+                        }
+                    ]
+                ],
+                "isRequired": true,
+                "exitConditions": [
+                    {
+                        "id": "Condition_M2QgGX",
+                        "displayName": "All Triage tasks done",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "required-tasks-completed",
+                                    "id": "Rule_1KmDJx"
+                                }
+                            ]
+                        ],
+                        "marksStageComplete": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": "Stage_Yj9sba",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Intake",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": [
+                    [
+                        {
+                            "id": "t3AXVrQDI",
+                            "displayName": "Chrysanthemum Mailbox",
+                            "type": "wait-for-connector",
+                            "data": {}
+                        },
+                        {
+                            "id": "tqB2Fr8nb",
+                            "displayName": "Chrysanthemum Claim Fetcher",
+                            "type": "api-workflow",
+                            "data": {}
+                        },
+                        {
+                            "id": "tGCaUp18N",
+                            "displayName": "Obsidian Claim Registrar",
+                            "type": "rpa",
+                            "data": {}
+                        },
+                        {
+                            "id": "tYEpjTp12",
+                            "displayName": "Claim Classifier Agent",
+                            "type": "agent",
+                            "data": {}
+                        }
+                    ]
+                ],
+                "isRequired": true,
+                "exitConditions": [
+                    {
+                        "id": "Condition_YFKAYN",
+                        "displayName": "All Intake tasks done",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "required-tasks-completed",
+                                    "id": "Rule_06Akyt"
+                                }
+                            ]
+                        ],
+                        "marksStageComplete": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Trigger 1"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge_V7cqHI",
+            "source": "trigger_1",
+            "target": "Stage_Yj9sba",
+            "sourceHandle": "trigger_1____source____right",
+            "targetHandle": "Stage_Yj9sba____target____left",
+            "data": {},
+            "type": "case-management:TriggerEdge"
+        },
+        {
+            "id": "edge_E50rA4",
+            "source": "Stage_Yj9sba",
+            "target": "Stage_mVoPDQ",
+            "sourceHandle": "Stage_Yj9sba____source____right",
+            "targetHandle": "Stage_mVoPDQ____target____left",
+            "data": {
+                "label": "Intake completed"
+            },
+            "type": "case-management:Edge"
+        }
+    ]
+}
