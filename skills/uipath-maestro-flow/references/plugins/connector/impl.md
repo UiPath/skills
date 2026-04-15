@@ -38,9 +38,7 @@ uip is connections ping "<connection-id>" --output json
 
 **If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
 
-**If no connection exists**, tell the user before proceeding — they must create one in the IS portal or via `uip is connections create "<connector-key>"`.
-
-**Folder key note**: The `--folder-key` parameter specifies which Orchestrator folder to list/create connections in. If omitted, the CLI defaults to UiPath's Personal Workspace folder. If you have the folder path but not the folder key, refer to the Orchestrator CLI documentation to get the key first.
+**If `connections list` returns empty**, the CLI scoped to Personal Workspace by default — check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
 **Read [/uipath:uipath-platform — Integration Service — connections.md](/uipath:uipath-platform) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
 

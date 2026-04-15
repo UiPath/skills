@@ -20,7 +20,7 @@ uip is connections list "<connector-key>" --output json
 uip is connections ping "<connection-id>" --output json
 ```
 
-**If no connection exists**, tell the user before proceeding — they must create one in the IS portal or via `uip is connections create "<connector-key>"`.
+**If `connections list` returns empty**, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
 ### Step 2 — Get enriched trigger metadata
 
