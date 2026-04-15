@@ -20,7 +20,7 @@ uip is connections list "<connector-key>" --output json
 uip is connections ping "<connection-id>" --output json
 ```
 
-**If no connection exists**, tell the user before proceeding — they must create one in the IS portal or via `uip is connections create "<connector-key>"`.
+**If `connections list` returns empty**, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
 ### Step 2 — Get enriched trigger metadata
 
@@ -92,6 +92,10 @@ uip is resources execute list "<connector-key>" "<reference.objectName>" \
 ```
 
 Use the resolved IDs in the trigger's event parameter configuration.
+
+> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
+
+**Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
 
 ### Step 4 — Validate required event parameters
 
