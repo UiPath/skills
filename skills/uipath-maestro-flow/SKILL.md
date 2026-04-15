@@ -44,6 +44,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 16. **Always use horizontal layout** — Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` values and the same `y` baseline (e.g., `y: 144`). Never stack nodes vertically.
 17. **Node positioning goes in top-level `layout`, NOT on nodes** — Do not put a `ui` block on node instances. Store position/size in the `layout.nodes` object at the top level of the `.flow` file, keyed by node `id`. See [flow-file-format.md — Layout](references/flow-file-format.md#layout).
 18. **Every node that produces data MUST have `outputs` on the node instance** — Without an `outputs` block, downstream `$vars` references will not resolve at runtime. Action nodes need `output` + `error`; trigger nodes need `output` only; end/terminate nodes do not use this pattern. See [flow-file-format.md — Node outputs](references/flow-file-format.md#node-outputs). **Wrong:** relying on `outputDefinition` in `definitions` alone. **Right:** `outputs` on the node instance itself.
+19. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
 
 ## Common Edits (existing flows)
 
@@ -102,7 +103,7 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 ### Step 2 — Create a solution and Flow project
 
-Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, ask the user whether they want to use one of them or create a new solution. If no existing solutions are found, create a new one automatically.
+Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See Critical Rule #19.
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -229,21 +230,31 @@ The argument is the **project directory path** (the folder containing `project.u
 
 ### Step 8 — Publish to Studio Web
 
-**This is the default publish target.** When the user wants to publish, view, or share the flow, upload it to Studio Web using `solution bundle` + `solution upload`:
+**This is the default publish target.** When the user wants to publish, view, or share the flow, upload the solution directly to Studio Web:
 
 ```bash
-# Bundle the solution directory into a .uis file
-uip solution bundle <SolutionDir> --output .
-
-# Upload the .uis to Studio Web
-uip solution upload <SolutionName>.uis --output json
+# Upload the solution folder (containing the .uipx) to Studio Web
+uip solution upload <SolutionDir> --output json
 ```
 
-The `bundle` command requires a solution directory containing a `.uipx` file. If the project was created with `uip flow init`, it lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip flow init`, it already lives inside a solution directory. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
 
-**Do NOT run `uip flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`solution bundle` + `solution upload`).
+**Do NOT run `uip flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
 
 For Orchestrator deployment when explicitly requested, see [references/flow-commands.md](references/flow-commands.md) for `uip flow pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
+
+#### Post-build choice prompt
+
+When the build completes and it is time to offer next steps (see Completion Output → "Next step"), use `AskUserQuestion` to present a dropdown with these options (per Critical Rule #19):
+
+| Option | Action |
+|--------|--------|
+| **Publish to Studio Web** (default) | Run `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
+| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 7). Confirm consent first — debug executes the flow for real. |
+| **Deploy to Orchestrator** | Run `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
+| **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
+
+Do not run any of these actions without an explicit user selection.
 
 ## Anti-Patterns
 
@@ -277,7 +288,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 | **Wire nodes with edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) + [references/flow-file-format.md — Standard ports](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip flow registry search <keyword>` |
 | **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Publish to Studio Web** | Step 8 (solution bundle + upload) |
+| **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) + [JSON: Variable Operations](references/flow-editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
@@ -319,8 +330,13 @@ When you finish building or editing a flow, report to the user:
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
 4. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 5. **Missing connections** — any connector nodes that need connections the user must create
-6. **Next step** — ask if the user wants to debug the flow (do not run debug automatically)
-7. **Publish offer** — ask if the user wants to publish to Studio Web (do not publish automatically). If yes, run `solution bundle` + `solution upload` and share the Studio Web URL.
+6. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
+   - **Publish to Studio Web** — run `uip solution upload <SolutionDir>` and share the URL
+   - **Debug the solution** — run `uip flow debug <ProjectDir>` (requires explicit consent — side effects are real)
+   - **Deploy to Orchestrator** — hand off to the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip flow pack` + `uip solution publish`
+   - **Something else** (last option) — accept free-form input and act on it
+
+   Do not run any of these actions automatically. Wait for the user's selection.
 
 ## References
 
@@ -354,6 +370,6 @@ When you finish building or editing a flow, report to the user:
   - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
   - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
-- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 8).
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
