@@ -8,7 +8,7 @@ allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanM
 
 Your job is to **elicit preferences, plan, and route** — never execute.
 
-1. **Do NOT** write automation code (XAML, C#, Python, JSON) or create project files.
+1. **Do NOT** write automation code (XAML, C#, Python, JSON) or create project files. Plan documents are the only files you may create.
 2. **Do NOT** use Bash for anything other than the filesystem probe in Step 3 — unless in explore-first mode (see Step 1).
 3. Produce a plan, then stop. The main agent loads and executes the specialist skills.
 
@@ -61,7 +61,8 @@ Before any detection or planning, ask the user key questions using AskUserQuesti
 - The user reviews and approves the plan before any specialist skill executes
 
 **If the user chose "explore, plan, and execute simultaneously":**
-- Do not run `uip` or `servo` commands — stick to filesystem probing only
+- Create automations one at a time, processing each screen/step sequentially
+- For each automation: if UI automation is needed, use `uip` and `servo` commands to discover UI elements and capture selectors, then write the object repository and automation code, then validate before moving to the next screen/step
 - Emit the plan as text (Step 5) and the main agent starts executing immediately
 
 ### Question 2: Project type (if ambiguous)
@@ -227,18 +228,59 @@ Incorporate the answer into the plan. If guided, add a note to each Servo step t
 
 **Do not ask this question if the plan does not involve `uipath-servo`.** This elicitation is only relevant for UI automation tasks.
 
-## Step 5 — Emit the plan
+## Step 5 — Write and save the plan
 
-Once you have enough information, emit a numbered plan:
+### 5a. Plan format
 
+Write the plan as a markdown file using this structure:
+
+```markdown
+# <Feature Name> Implementation Plan
+
+**Goal:** <one sentence summarizing what the automation does>
+**Project type:** <XAML / C# coded / agent / flow / app>
+**Expression language:** VB.NET
+**Approach:** <explore first / simultaneous>
+
+## Task 1: <skill-name> — <short description>
+
+- [ ] <concrete sub-step — specific action with file paths, activity names, or commands>
+- [ ] <concrete sub-step — expected outcome or verification>
+- [ ] Validate: <what to check before moving on>
+
+## Task 2: <skill-name> — <short description>
+
+- [ ] ...
 ```
-Plan:
-1. Load <skill-name> → <what to do with it>
-2. Load <skill-name> → <what to do with it> (if multi-skill)
-```
 
-Include the user's original request as context so the specialist skill has full information.
-Include the user's preferences from Step 1 (generation approach, project type, expression language) so the specialist skill respects them.
+### 5b. Plan quality rules
+
+1. **No placeholders.** Every sub-step must include concrete details — activity names, package dependencies, file paths, CLI commands. Never write "TBD", "as needed", or "similar to Task 1".
+2. **Granular sub-steps.** Break each task into small, actionable steps. Each step should be one clear action (create file, add dependency, implement logic, validate). Aim for steps a specialist skill can execute without re-interpreting.
+3. **Checkbox syntax.** Use `- [ ]` for every sub-step so progress is trackable.
+4. **Include validation steps.** Each task must end with a validation step (build, run, test, or verify output).
+5. **Include user preferences.** The plan header must capture all preferences from Step 1 so specialist skills respect them.
+6. **Include the user's original request** as context in the Goal field.
+
+### 5c. Self-review before saving
+
+Before saving the plan, verify:
+
+1. **Coverage** — Does every requirement from the user's request appear in at least one task? If a PDD/SDD was provided, does the plan cover all process steps from the document?
+2. **Placeholder scan** — Search the plan for "TBD", "TODO", "as needed", "if appropriate", "similar to". Replace each with concrete details.
+3. **Skill consistency** — Does each task reference the correct specialist skill? Are skills loaded in the right order (e.g., RPA before platform deploy)?
+4. **Validation gaps** — Does every task end with a validation step?
+
+If the self-review finds issues, fix them before saving.
+
+### 5d. Save location
+
+Save the plan file as `YYYY-MM-DD-<feature-name>.md`:
+
+- **If a UiPath project directory exists** (detected via `project.json`, `flow_files/`, `.uipath/`, or `pyproject.toml`): save to `docs/plans/` within the project directory. Create the directory if it doesn't exist.
+- **If no project directory exists**: save to `~/Documents/UiPath/Plans/`. Create the directory if it doesn't exist.
+
+### 5e. Present the plan
 
 **Explore first, then plan:** Call EnterPlanMode to present the plan. The user reviews and approves before execution begins. Use ExitPlanMode once the user approves.
 
@@ -247,9 +289,10 @@ Include the user's preferences from Step 1 (generation approach, project type, e
 ## Anti-patterns — What NOT to Do
 
 1. **Do not skip Step 1 (upfront elicitation).** Ask the generation approach question for non-trivial new automations. Only skip questions the user's request already answers.
-2. **Do not write automation code or modify the project.** In explore-first mode you may run `uip`/`servo` for discovery (including UI navigation) and save temporary notes — but never write XAML, C#, Python, or modify project files.
+2. **Do not write automation code or modify the project.** You may create plan documents (Step 5) and temporary notes. In explore-first mode you may also run `uip`/`servo` for discovery (including UI navigation) — but never write XAML, C#, Python, or modify project files.
 3. **Do not ask more than 5 questions total across all steps.** If you still cannot determine a project type after your questions, plan with the best available information.
 4. **Do not recommend a skill that doesn't match the filesystem signals.** If you see `.flow` files, don't route to `uipath-rpa`.
 5. **Do not skip Step 2.** Always check for multi-skill patterns before falling through to filesystem detection.
 6. **Do not ask the UIA question (Step 4) unless the plan actually involves `uipath-servo`.** This question is only relevant for UI automation tasks.
-7. **Do not run `uip` or `servo` commands in "explore & execute simultaneously" mode.** Only the explore-first path unlocks discovery commands.
+7. **In "explore & execute simultaneously" mode, only run `uip` and `servo` commands for the automation currently being built.** Do not pre-discover the entire application — discover, build, and validate one screen/step at a time.
+8. **Do not save a plan with placeholders.** Run the self-review (Step 5c) before saving. Every sub-step must have concrete details — no "TBD", "TODO", "as needed", or "similar to Task N".
