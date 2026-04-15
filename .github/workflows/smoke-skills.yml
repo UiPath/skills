@@ -42,7 +42,7 @@ jobs:
 
           # Also include skills whose test tasks changed
           TEST_SKILLS=$(echo "$CHANGED" | grep '^tests/tasks/' | sed 's|tests/tasks/\([^/]*\)/.*|\1|' | sort -u)
-          SKILLS=$(printf '%s\n%s' "$SKILLS" "$TEST_SKILLS" | sort -u | grep -v '^$')
+          SKILLS=$(printf '%s\n%s' "$SKILLS" "$TEST_SKILLS" | sort -u | grep -v '^$' || true)
 
           if [ -z "$SKILLS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
