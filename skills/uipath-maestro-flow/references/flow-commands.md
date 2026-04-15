@@ -55,30 +55,19 @@ uip flow pack <ProjectDir> <OutputDir> --output json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `solution bundle` + `solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
-
-## uip solution bundle
-
-Bundle a local solution directory into a `.uis` file for upload to Studio Web.
-
-```bash
-uip solution bundle <solutionPath>
-uip solution bundle <solutionPath> --output <outputDir> --name <name>
-```
-
-The `<solutionPath>` must be a directory containing a `.uipx` file. Output: a `.uis` zip file.
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
 
 ## uip solution upload
 
-Upload a `.uis` solution file to Studio Web. **Requires `uip login`.**
+Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
-uip solution upload <solutionFile.uis> --output json
+uip solution upload <SolutionDir> --output json
 ```
 
-Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, use `solution bundle` + `solution upload` to push to Studio Web. Share the resulting URL with the user.
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
 
 ## uip flow debug
 
