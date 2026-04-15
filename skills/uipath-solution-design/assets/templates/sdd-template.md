@@ -67,7 +67,7 @@
      Show the main steps, decision points, and loop boundaries.
      Label which application each step uses. -->
 
-```
+```text
 <PROCESS_FLOW_DIAGRAM>
 ```
 
@@ -239,7 +239,7 @@ public enum <EnumName>
 
 ## Recommended Structure
 
-```
+```text
 <PROJECT_NAME>/
 ├── project.json
 ├── <MAIN_WORKFLOW>
@@ -265,7 +265,7 @@ public enum <EnumName>
 
 <!-- Show which workflows call which. Helps the coding agent understand execution order. -->
 
-```
+```text
 <MAIN_WORKFLOW>
 ├── calls <WORKFLOW_1>
 │   └── calls <WORKFLOW_1A> (conditional)
@@ -277,13 +277,13 @@ public enum <EnumName>
 
 # 12. Implementation Mode
 
-<!-- Lightweight recommendation. The uipath-rpa skill makes the final decision. -->
+<!-- Lightweight recommendation. Detailed decision criteria are applied during implementation. -->
 
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
 <2-3 sentence justification referencing specific process characteristics.>
 
-> **Note:** This is a preliminary recommendation. The `uipath-rpa` skill will apply detailed decision criteria during implementation and may adjust this choice.
+> **Note:** This is a preliminary recommendation. Detailed decision criteria will be applied during implementation and may adjust this choice.
 
 ---
 

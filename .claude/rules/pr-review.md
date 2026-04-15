@@ -9,7 +9,7 @@ When reviewing or creating pull requests for this repository, enforce these rule
 - [ ] Folder is under `skills/` and named `uipath-<kebab-case>`
 - [ ] `SKILL.md` exists with valid YAML frontmatter
 - [ ] `name` field matches the folder name exactly
-- [ ] `description` field includes TRIGGER and DO NOT TRIGGER conditions
+- [ ] `description` has under 250 characters and is concise
 - [ ] Critical Rules section exists with numbered rules
 - [ ] No cross-skill references (skill is fully self-contained)
 - [ ] Reference files use kebab-case naming

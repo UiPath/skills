@@ -1,6 +1,6 @@
 # Implementation Mode Guide
 
-Guidelines for recommending XAML, Coded C#, or Hybrid implementation mode in the SDD. The `uipath-rpa` skill owns the final, detailed decision — this guide produces a directional recommendation so the project structure and data model sections are coherent.
+Guidelines for recommending XAML, Coded C#, or Hybrid implementation mode in the SDD. The skill that builds the workflows owns the final, detailed decision — this guide produces a directional recommendation so the project structure and data model sections are coherent.
 
 ## Decision Summary
 
@@ -50,7 +50,7 @@ In the SDD's "Implementation Mode" section, write:
 
 1. **Recommendation** — one of: XAML, Coded C#, Hybrid
 2. **Justification** — 2-3 sentences explaining why, referencing specific process characteristics
-3. **Note** — "This is a preliminary recommendation. The `uipath-rpa` skill will apply detailed decision criteria during implementation and may adjust this choice."
+3. **Note** — "This is a preliminary recommendation. Detailed decision criteria will be applied during implementation and may adjust this choice."
 
 ### Example Recommendations
 
