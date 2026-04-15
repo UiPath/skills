@@ -283,7 +283,7 @@ Review whether the agent design accounts for known UiPath limitations:
 | No module-level side effects that fail during `uip codedagent init` | Critical | Run init |
 | Version management in place | Info | Check versioning |
 
-## 6. Agent Security Review
+## 7. Agent Security Review
 
 ### Tool Permissions
 
@@ -312,7 +312,7 @@ Review whether the agent design accounts for known UiPath limitations:
 | Output validation present (schema-based) | Info | Check output handling |
 | Rate limiting configured for user-facing agents | Info | Check rate limit config |
 
-## 7. AI Trust Layer Audit
+## 8. AI Trust Layer Audit
 
 Verify that the organization's AI Trust Layer is properly configured for the agent's use case.
 
@@ -336,7 +336,7 @@ Verify that the organization's AI Trust Layer is properly configured for the age
 | Input/output audit saving enabled for production agents | Warning | Verify prompt/completion storage is active |
 | PII protection configured (pseudonymization before reaching models) | Warning | Check PII masking settings |
 
-## 8. Context Engineering Quality
+## 9. Context Engineering Quality
 
 For agents using context grounding (RAG):
 
@@ -349,7 +349,7 @@ For agents using context grounding (RAG):
 | Threshold score tuned (default 0 — raising improves precision but risks missing content) | Info | Check threshold value |
 | Context descriptions are informative for multi-source retrieval | Info | Review context source descriptions |
 
-## 9. Agent Governance Policies (2025.10+)
+## 10. Agent Governance Policies (2025.10+)
 
 If the organization uses Automation Ops agent governance:
 

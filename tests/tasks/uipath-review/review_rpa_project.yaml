@@ -11,7 +11,7 @@ description: >
   but the skill's discovery, structural review, and reporting logic
   is platform-independent. Criteria focus on what the skill guides the
   agent to produce, not on CLI runtime success.
-tags: [uipath-review, smoke, review]
+tags: [uipath-review, smoke]
 
 sandbox:
   driver: tempdir
