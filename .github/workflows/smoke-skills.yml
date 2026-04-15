@@ -56,9 +56,9 @@ jobs:
           for skill in $SKILLS; do
             if [ -d "tests/tasks/$skill" ]; then
               if [ -n "$GLOBS" ]; then
-                GLOBS="$GLOBS tasks/tasks/$skill/**/*.yaml"
+                GLOBS="$GLOBS tasks/$skill/**/*.yaml"
               else
-                GLOBS="tasks/tasks/$skill/**/*.yaml"
+                GLOBS="tasks/$skill/**/*.yaml"
               fi
               echo "Will test: $skill"
             else
