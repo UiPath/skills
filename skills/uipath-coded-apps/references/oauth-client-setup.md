@@ -87,10 +87,10 @@ The script then lives at `~/.uipath-skills/playwright/uipath-oauth.mjs`. Run it 
 >
 > **Always locate apps by Client-ID prefix, never by name.** Multiple apps in the same org can share the same display name (e.g. three apps literally called `action-center-tasks`). The Client ID is the only unique, stable identifier. The script searches by the first 8 chars of the UUID because the Application ID column in the portal table is truncated and full-UUID matching against visible DOM text returns zero hits.
 
-Write the following to `/tmp/uipath-oauth.mjs` (or your chosen path):
+Write the following to `~/.uipath-skills/playwright/uipath-oauth.mjs` (Setup B) or `<project-root>/uipath-oauth.mjs` (Setup A):
 
 ```js
-// /tmp/uipath-oauth.mjs — UiPath External Application Playwright helper.
+// ~/.uipath-skills/playwright/uipath-oauth.mjs — UiPath External Application Playwright helper.
 //
 // Operations (set via --op):
 //   create         Create a new External App, print { clientId } on stdout

@@ -45,8 +45,9 @@ The reproduction script uses the system's real Chrome via Playwright CLI (same p
  || ls "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" 2>/dev/null) \
  && echo "chrome-found" || echo "chrome-missing"
 
-# Playwright
-npx playwright --version 2>/dev/null || npm install -D playwright
+# Playwright — if not found, follow oauth-client-setup.md Step 2 (Setup B)
+# to install into ~/.uipath-skills/playwright/
+npx playwright --version 2>/dev/null || echo "playwright-missing"
 ```
 
 If Chrome is missing, skip to Step 0d — ask the user to describe the failure (URL in the address bar, on-screen error text, or devtools console/network output) since the agent can't drive a browser itself.
@@ -62,7 +63,7 @@ cd ~/.uipath-skills/playwright && node ./reproduce.mjs
 > **Do not write to `/tmp/`** — ESM `import 'playwright'` fails because `/tmp/` has no parent `node_modules`. The script must live alongside (or under a directory tree containing) a `node_modules/playwright`.
 
 ```js
-// /tmp/reproduce.mjs
+// ~/.uipath-skills/playwright/reproduce.mjs
 import { chromium } from 'playwright';
 import { homedir } from 'os';
 import { join } from 'path';
@@ -188,7 +189,7 @@ Parse the JSON output — it contains everything needed to classify the failure:
 **Clean up (mandatory).** Once you've captured enough evidence to classify the failure (Step 0d below), delete the script and any failure screenshots immediately:
 
 ```bash
-rm /tmp/reproduce.mjs /tmp/reproduce-FAIL-*.png 2>/dev/null
+rm ~/.uipath-skills/playwright/reproduce.mjs ~/.uipath-skills/playwright/reproduce-FAIL-*.png 2>/dev/null
 ```
 
 Do not leave the `.mjs` file in the user's workspace.
@@ -242,7 +243,7 @@ Map each SDK service found in Step 1 to its required scopes using [oauth-scopes.
 
 If scopes are missing:
 1. Update `VITE_UIPATH_SCOPE` in `.env` to add the missing scopes.
-2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) (one script for all ops), save to `/tmp/uipath-oauth.mjs`, then run with `--op add-scopes` — substituting `--cloud-host`, `--org-name`, `--client-id` (from `.env` → `VITE_UIPATH_CLIENT_ID`), and `--scopes-by-resource` per the [mapping table](oauth-client-setup.md#scope--resource-mapping-reference). Do not rewrite the script or "mirror the pattern" — the selectors are battle-tested and rewriting drops the bug fixes. Do not ask the user to click through the portal manually. Only fall back to [manual instructions](oauth-client-setup.md#adding-scopes-to-an-existing-app) if Chrome isn't available.
+2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) (one script for all ops), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, then run with `--op add-scopes` — substituting `--cloud-host`, `--org-name`, `--client-id` (from `.env` → `VITE_UIPATH_CLIENT_ID`), and `--scopes-by-resource` per the [mapping table](oauth-client-setup.md#scope--resource-mapping-reference). Do not rewrite the script or "mirror the pattern" — the selectors are battle-tested and rewriting drops the bug fixes. Do not ask the user to click through the portal manually. Only fall back to [manual instructions](oauth-client-setup.md#adding-scopes-to-an-existing-app) if Chrome isn't available.
 
 ### 2b — Base URL
 
@@ -263,7 +264,7 @@ The SDK uses `window.location.origin + window.location.pathname` at runtime as t
 - CRA default: `http://localhost:3000` (and `http://localhost:3000/`)
 - Custom port: check `vite.config.ts` for `server.port`
 
-If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on. Then **copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script), save to `/tmp/uipath-oauth.mjs`, and run with `--op add-redirects` — passing `--cloud-host`, `--org-name`, `--client-id` (from `.env`), and `--redirects` with both the failing URL and its trailing-slash variant. Do not rewrite the script or invent a different approach — rewrites drop the bug fixes (truncated column handling, pencil-Edit button) and the script fails. Do not ask the user to click through the portal.
+If you see a `redirect_uri_mismatch` error, identify the actual URL the browser is on. Then **copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script), save to `~/.uipath-skills/playwright/uipath-oauth.mjs`, and run with `--op add-redirects` — passing `--cloud-host`, `--org-name`, `--client-id` (from `.env`), and `--redirects` with both the failing URL and its trailing-slash variant. Do not rewrite the script or invent a different approach — rewrites drop the bug fixes (truncated column handling, pencil-Edit button) and the script fails. Do not ask the user to click through the portal.
 
 ---
 
@@ -274,7 +275,7 @@ Stale OAuth tokens and PKCE state cause most auth-callback failures. Clear befor
 **Option A — run a clear-state Playwright script** before re-running Step 0c:
 
 ```js
-// /tmp/clear-state.mjs
+// ~/.uipath-skills/playwright/clear-state.mjs
 import { chromium } from 'playwright';
 import { homedir } from 'os';
 import { join } from 'path';
@@ -329,7 +330,7 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
 
 **Fix (autonomous) — execute these steps yourself without deferring to the user:**
 1. Identify the URL the browser was sent to when login was triggered (e.g. `http://localhost:5173` or `http://localhost:5173/`). Step 0c's `finalUrl` usually shows it.
-2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `/tmp/uipath-oauth.mjs`. Do **not** rewrite or paraphrase — the selectors handle the portal's truncated Client-ID column and per-row pencil-Edit button.
+2. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `~/.uipath-skills/playwright/uipath-oauth.mjs`. Do **not** rewrite or paraphrase — the selectors handle the portal's truncated Client-ID column and per-row pencil-Edit button.
 3. Run with `--op add-redirects` from the directory the script lives in (Setup B default below; for Setup A use the project root):
    ```bash
    cd ~/.uipath-skills/playwright && node ./uipath-oauth.mjs --op add-redirects \
@@ -353,7 +354,7 @@ Fall back to [manual instructions](oauth-client-setup.md#adding-redirect-uris-to
 **Fix (autonomous) — execute these steps yourself without deferring to the user:**
 1. Read [oauth-scopes.md](oauth-scopes.md) and determine every scope the SDK services in use require.
 2. Update `VITE_UIPATH_SCOPE` in `.env` to list all required scopes (space-separated).
-3. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `/tmp/uipath-oauth.mjs`. Do **not** rewrite the script.
+3. **Copy the consolidated script verbatim** from [Step 3 of `oauth-client-setup.md`](oauth-client-setup.md#step-3-write-the-consolidated-script) into `~/.uipath-skills/playwright/uipath-oauth.mjs`. Do **not** rewrite the script.
 4. Run with `--op add-scopes` from the directory the script lives in (Setup B default below; for Setup A use the project root):
    ```bash
    cd ~/.uipath-skills/playwright && node ./uipath-oauth.mjs --op add-scopes \
@@ -448,9 +449,14 @@ Check the browser console for the error. Common causes: missing `@uipath/uipath-
 
 ### `404` After Deploy / App Not Found
 
-**Cause:** The routing name in `vite.config.ts` doesn't match the deployment routing name.
+**Cause:** Vite `base` is set to a routing name or sub-path instead of `'./'`, or the client-side router basename is hardcoded instead of using `getAppBase()`.
 
-**Fix:** Ensure `base: '/<routing-name>/'` in `vite.config.ts` matches the routing name used when the app was deployed.
+**Fix:** Check both:
+
+1. `vite.config.ts` must have `base: './'` (not `'/<routing-name>/'` — the platform handles URL routing via its Cloudflare Worker).
+2. If the app uses a client-side router (React Router, Vue Router), the basename must use `getAppBase()` from `@uipath/uipath-typescript` — not a hardcoded path. `getAppBase()` reads the `uipath:app-base` meta tag injected by the platform at runtime and falls back to `'/'` locally.
+
+After fixing, rebuild (`npm run build`) and re-deploy (`uip codedapp deploy`). If 404 persists, check that `deploy` returned a valid `appUrl` in `.uipath/app.config.json`.
 
 ---
 

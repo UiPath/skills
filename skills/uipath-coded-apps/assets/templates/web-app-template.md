@@ -1,57 +1,14 @@
-#!/usr/bin/env bash
-# setup.sh — Scaffolds a new UiPath coded web app (React + Vite + TypeScript)
-# Usage: bash scripts/setup.sh <app-name> <org-name> <tenant-name> <client-id> "<scopes>" [environment]
-#
-# Arguments:
-#   app-name     Name of the app (used for directory and npm init)
-#   org-name     UiPath organization name
-#   tenant-name  UiPath tenant name
-#   client-id    OAuth client ID
-#   scopes       OAuth scopes (space-separated, e.g. "OR.Assets PIMS")
-#   environment  cloud (default), alpha, staging, or a custom base URL
-#
-# Example:
-#   bash scripts/setup.sh my-app myOrg myTenant abc-123 "OR.Assets PIMS" cloud
+# Web App File Templates
 
-set -euo pipefail
+Ready-to-use boilerplate for a new UiPath Coded Web App (Vite + React + TypeScript + Tailwind) using the `@uipath/uipath-typescript` SDK. Replace `{{PLACEHOLDER}}` values with the answers gathered in the workflow at [../../references/create-web-app.md](../../references/create-web-app.md).
 
-APP_NAME="${1:?Usage: setup.sh <app-name> <org-name> <tenant-name> <client-id> <scopes> [environment]}"
-ORG_NAME="${2:?ERROR: Organization name is required.}"
-TENANT_NAME="${3:?ERROR: Tenant name is required.}"
-CLIENT_ID="${4:?ERROR: Client ID is required.}"
-SCOPES="${5:?ERROR: Scopes are required. Provide as a space-separated string (e.g. \"OR.Assets PIMS\").}"
-ENV_INPUT="${6:-cloud}"
+---
 
-# Resolve environment to base URL
-case "$ENV_INPUT" in
-  cloud)              BASE_URL="https://api.uipath.com" ;;
-  alpha)              BASE_URL="https://alpha.api.uipath.com" ;;
-  staging)            BASE_URL="https://staging.api.uipath.com" ;;
-  http://*|https://*) BASE_URL="$ENV_INPUT" ;;
-  *)                  BASE_URL="https://${ENV_INPUT}.api.uipath.com" ;;
-esac
+## `vite.config.ts`
 
-echo ""
-echo "Configuration:"
-echo "  App name:     $APP_NAME"
-echo "  Org name:     $ORG_NAME"
-echo "  Tenant name:  $TENANT_NAME"
-echo "  Client ID:    $CLIENT_ID"
-echo "  Environment:  $BASE_URL"
-echo "  Scopes:       $SCOPES"
-echo ""
+`base: './'` is **always required** — the platform handles URL routing; the app must use relative asset paths. The `path-browserify` alias and `global: 'globalThis'` define are needed by the SDK in the browser.
 
-# --- Project scaffolding ---
-echo "==> Creating Vite project: $APP_NAME"
-npx --yes create-vite@latest "$APP_NAME" --template react-ts
-cd "$APP_NAME"
-
-echo "==> Installing dependencies"
-npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
-npm install path-browserify tailwindcss@3 postcss autoprefixer
-
-echo "==> Writing vite.config.ts"
-cat > vite.config.ts << 'VITEEOF'
+```typescript
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -70,40 +27,62 @@ export default defineConfig({
     include: ['@uipath/uipath-typescript'],
   },
 })
-VITEEOF
+```
 
-echo "==> Writing uipath.json"
-cat > uipath.json << EOF
+Do not add `server.proxy` — it interferes with the OAuth callback and asset resolution.
+
+---
+
+## `uipath.json`
+
+Project-root config consumed by the `uip codedapp` CLI for deployment and by the Vite plugin for local dev meta-tag injection. Keep in sync with `.env` if scopes or client ID change.
+
+```json
 {
-  "scope": "${SCOPES}",
-  "clientId": "${CLIENT_ID}"
+  "scope": "{{SCOPES}}",
+  "clientId": "{{CLIENT_ID}}"
 }
-EOF
+```
 
-echo "==> Writing .env"
-cat > .env << EOF
-VITE_UIPATH_CLIENT_ID=${CLIENT_ID}
-VITE_UIPATH_SCOPE=${SCOPES}
-VITE_UIPATH_ORG_NAME=${ORG_NAME}
-VITE_UIPATH_TENANT_NAME=${TENANT_NAME}
-VITE_UIPATH_BASE_URL=${BASE_URL}
-EOF
+---
 
-echo "==> Writing .env.example"
-cat > .env.example << 'ENVEOF'
+## `.env`
+
+OAuth env vars consumed by `src/App.tsx` via `import.meta.env`. **No redirect URI env var** — the SDK computes it at runtime as `window.location.origin + window.location.pathname`.
+
+```
+VITE_UIPATH_CLIENT_ID={{CLIENT_ID}}
+VITE_UIPATH_SCOPE={{SCOPES}}
+VITE_UIPATH_ORG_NAME={{ORG_NAME}}
+VITE_UIPATH_TENANT_NAME={{TENANT_NAME}}
+VITE_UIPATH_BASE_URL={{BASE_URL}}
+```
+
+`{{BASE_URL}}` values: `https://api.uipath.com` (cloud) · `https://staging.api.uipath.com` (staging) · `https://alpha.api.uipath.com` (alpha)
+
+---
+
+## `.env.example`
+
+Committed to the repo as a placeholder for new clones. No substitutions.
+
+```
 VITE_UIPATH_CLIENT_ID=
 VITE_UIPATH_SCOPE=
 VITE_UIPATH_ORG_NAME=
 VITE_UIPATH_TENANT_NAME=
 VITE_UIPATH_BASE_URL=https://api.uipath.com
-ENVEOF
+```
 
-echo "==> Updating .gitignore"
-echo ".env" >> .gitignore
+---
 
-echo "==> Writing src/hooks/useAuth.tsx"
-mkdir -p src/hooks
-cat > src/hooks/useAuth.tsx << 'AUTHEOF'
+## `src/hooks/useAuth.tsx`
+
+`AuthProvider` + `useAuth` hook. Handles PKCE callback detection on return from login, exposes `login()` / `logout()` for the UI, and tracks auth state. The OAuth config comes in via the `<AuthProvider>`'s `config` prop, which `App.tsx` supplies from `import.meta.env`. No substitutions in this file.
+
+Create the `src/hooks/` directory if it does not exist before writing.
+
+```tsx
 import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { UiPath, UiPathError } from '@uipath/uipath-typescript/core';
@@ -187,10 +166,28 @@ export const useAuth = () => {
   }
   return context;
 };
-AUTHEOF
+```
 
-echo "==> Writing src/App.tsx"
-cat > src/App.tsx << 'APPEOF'
+**Key SDK methods** (used inside `useAuth.tsx` — do not call these directly in app code):
+
+| Method | Purpose |
+|--------|---------|
+| `sdk.isInOAuthCallback()` | Returns true if URL has OAuth `code` param |
+| `sdk.completeOAuth()` | Exchanges the code for tokens |
+| `sdk.isInitialized()` | Returns true once SDK initialization has completed — use to gate `completeOAuth()` and service calls inside `useEffect` |
+| `sdk.isAuthenticated()` | Returns true if a valid token exists |
+| `sdk.initialize()` | Initiates PKCE OAuth flow (redirects to UiPath login) |
+| `sdk.getToken()` | Returns the current access token |
+| `sdk.updateToken(tokenInfo)` | Inject or refresh the access token externally — used for silent-refresh flows |
+| `sdk.logout()` | Clears auth state (requires re-`initialize()` to authenticate again) |
+
+---
+
+## `src/App.tsx`
+
+Wraps app content in `<AuthProvider>` and renders a sign-in screen until the user is authenticated. Overwrite the file Vite generated. No substitutions.
+
+```tsx
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import type { UiPathSDKConfig } from '@uipath/uipath-typescript/core';
 
@@ -252,35 +249,85 @@ function App() {
 }
 
 export default App;
-APPEOF
+```
 
-echo "==> Writing tailwind.config.js"
-cat > tailwind.config.js << 'TWEOF'
+---
+
+## `tailwind.config.js`
+
+```js
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: { extend: {} },
   plugins: [],
 }
-TWEOF
+```
 
-echo "==> Writing postcss.config.js"
-cat > postcss.config.js << 'PCEOF'
+---
+
+## `postcss.config.js`
+
+```js
 export default {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
   },
 }
-PCEOF
+```
 
-echo "==> Writing src/index.css with Tailwind directives"
-cat > src/index.css << 'CSSEOF'
+---
+
+## `src/index.css`
+
+Overwrite the file Vite generated.
+
+```css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-CSSEOF
+```
 
-echo ""
-echo "==> Setup complete! Project created at ./$APP_NAME"
-echo "    cd $APP_NAME && npm run dev"
+---
+
+## Optional: Router base path
+
+Only add this if the app uses a client-side router. Set the basename/base to `getAppBase()` — it reads the `uipath:app-base` meta tag injected by the platform at runtime and falls back to `'/'` locally, so it is safe to use unconditionally.
+
+**React Router (v5 / `BrowserRouter`):**
+```tsx
+import { getAppBase } from '@uipath/uipath-typescript';
+import { BrowserRouter } from 'react-router-dom';
+
+function App() {
+  return (
+    <BrowserRouter basename={getAppBase()}>
+      {/* your routes */}
+    </BrowserRouter>
+  );
+}
+```
+
+**React Router v6 (`createBrowserRouter`):**
+```tsx
+import { getAppBase } from '@uipath/uipath-typescript';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+
+const router = createBrowserRouter(routes, { basename: getAppBase() });
+
+function App() {
+  return <RouterProvider router={router} />;
+}
+```
+
+**Vue Router:**
+```typescript
+import { getAppBase } from '@uipath/uipath-typescript';
+import { createRouter, createWebHistory } from 'vue-router';
+
+const router = createRouter({
+  history: createWebHistory(getAppBase()),
+  routes,
+});
+```

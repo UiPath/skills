@@ -47,19 +47,9 @@ Ask:
 > - If yes, paste it
 > - If no, say **"create one"** and I'll set it up via browser automation"
 
-**If the user says "create one":** First check/install Playwright CLI:
+**If the user says "create one":** Follow [oauth-client-setup.md Step 2 (Setup B)](oauth-client-setup.md#step-2-ensure-playwright-is-available) to install Playwright into `~/.uipath-skills/playwright/`. Do **not** install into the user's app (`npm install -D playwright` adds ~300MB to devDependencies for a tool that runs once or twice).
 
-```bash
-npx playwright --version 2>/dev/null
-```
-
-If not available, install it:
-
-```bash
-npm install -D playwright && npx playwright install chromium --with-deps
-```
-
-Then read [oauth-client-setup.md](oauth-client-setup.md) and follow it to create the External Application with the scopes above and redirect URI `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`.
+Then read [oauth-client-setup.md](oauth-client-setup.md) and follow it to create the External Application with the scopes above and redirect URI `<host>/<orgName>/<tenantName>/actions_`.
 
 Store the resulting client ID as `<client-id>`.
 
@@ -101,7 +91,7 @@ Show the complete `action-schema.json` to the user and ask:
 
 ## Project Scaffolding
 
-After collecting all answers, scaffold the project. Use the file templates in [assets/templates/action-app.md](../assets/templates/action-app.md) as starting points for all generated files.
+After collecting all answers, scaffold the project. Use the file templates in [assets/templates/action-app-template.md](../assets/templates/action-app-template.md) as starting points for all generated files.
 
 ```bash
 npm create vite@latest <app-name> -- --template react-ts

@@ -57,11 +57,7 @@ Before running browser automation, check if Playwright is installed:
 npx playwright --version 2>/dev/null
 ```
 
-If the command fails or returns no output, install it:
-
-```bash
-npm install -D playwright && npx playwright install chromium --with-deps
-```
+If the command fails or returns no output, follow [oauth-client-setup.md Step 2 (Setup B)](oauth-client-setup.md#step-2-ensure-playwright-is-available) to install Playwright into `~/.uipath-skills/playwright/`. Do **not** install into the user's app.
 
 Once confirmed available, read [oauth-client-setup.md](oauth-client-setup.md) and follow it exactly to create the External Application with the scopes from Step 1 and redirect URI `http://localhost:5173`. That reference has all the browser automation details.
 
@@ -71,65 +67,85 @@ If the user typed their org name, use it. If they said "find from browser", navi
 
 ---
 
-## Step 4 — Run Setup Script
+## Step 4 — Scaffold the Project
 
-Once you have all values (app name, org, tenant, client ID, environment, scopes), run the setup script. The script path is `scripts/setup.sh` in this skill's directory — derive the absolute path from where this file was loaded.
+Once you have all values (app name, org, tenant, client ID, environment, scopes), execute the steps below in order. All steps after Step 4.2 run from inside the new project directory.
+
+> **Set `timeout: 300000`** (5 minutes) on every Bash call that runs `npm install` or `npm create vite` — these can take several minutes and the default 2-minute timeout is not enough.
+
+### 4.1 — Resolve the base URL
+
+Map the `<environment>` answer from Step 2 to a base URL using the table in [SKILL.md](../SKILL.md) (Production → `https://api.uipath.com`, Staging → `https://staging.api.uipath.com`, Alpha → `https://alpha.api.uipath.com`). If the user gave a custom URL, use that verbatim. Store as `<base-url>`.
+
+### 4.2 — Create the Vite project
 
 ```bash
-bash <skill-dir>/scripts/setup.sh <app-name> <org-name> <tenant-name> <client-id> "<scopes>" <environment>
+npx --yes create-vite@latest <app-name> --template react-ts
 ```
 
-**Set `timeout: 300000`** (5 minutes) on the Bash call — `npm install` can take several minutes and the default 2-minute timeout is not enough.
+Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 
-The script creates a complete project:
+### 4.3 — Install dependencies
 
-| File | What it does |
-|------|-------------|
-| `vite.config.ts` | Vite config with `base: './'`, `global: 'globalThis'`, path-browserify alias |
-| `uipath.json` | CLI deployment config with `scope` and `clientId` |
-| `.env` / `.env.example` | OAuth env vars (both `UIPATH_*` and `VITE_UIPATH_*`) |
-| `src/hooks/useAuth.tsx` | `AuthProvider` + `useAuth` hook handling PKCE callback and login |
-| `src/App.tsx` | App shell wrapping content in `<AuthProvider>` |
-| Tailwind CSS | `tailwind.config.js`, `postcss.config.js`, `src/index.css` |
+Run these as **two separate commands** in order. The `--@uipath:registry` flag binds only to the first command (the SDK install) — do not apply it to the second, and do not run a bare `npm install` with the flag.
 
----
+```bash
+# 1. UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
+npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 
-## Environment Variables
-
-The script creates `.env` with this structure:
-
-```
-VITE_UIPATH_CLIENT_ID=<client-id>
-VITE_UIPATH_SCOPE=<scopes>
-VITE_UIPATH_ORG_NAME=<org-name>
-VITE_UIPATH_TENANT_NAME=<tenant-name>
-VITE_UIPATH_BASE_URL=https://api.uipath.com
+# 2. Remaining runtime + Tailwind dependencies
+npm install path-browserify tailwindcss@3 postcss autoprefixer
 ```
 
-**Base URL by environment:** `https://api.uipath.com` (cloud), `https://staging.api.uipath.com` (staging), `https://alpha.api.uipath.com` (alpha).
+> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/uipath-typescript` to install from the public npm registry.
 
-**No redirect URI env var.** The SDK computes it at runtime as `window.location.origin + window.location.pathname`.
+### 4.4 — Remove Vite defaults that will be overwritten
 
----
+`npx create-vite` ships default versions of three files we replace in Step 4.5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message.
 
-## uipath.json
-
-The script creates `uipath.json` at the project root. This file is required by the `uip codedapp` CLI for deployment and by the Vite plugin for local dev meta tag injection:
-
-```json
-{
-  "scope": "<scopes>",
-  "clientId": "<client-id>"
-}
+```bash
+rm vite.config.ts src/App.tsx src/index.css
 ```
 
-Keep this in sync with `.env` if the client ID or scopes change.
+### 4.5 — Write project files from templates
+
+All file content lives in [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md). For each row below, copy the named section from that file verbatim into the path shown, applying the listed substitutions. Create `src/hooks/` first; the rest of the directories already exist from `create-vite`.
+
+| Path | Template section | Substitutions |
+|------|------------------|---------------|
+| `vite.config.ts` | `## vite.config.ts` | none |
+| `uipath.json` | `## uipath.json` | `{{SCOPES}}`, `{{CLIENT_ID}}` |
+| `.env` | `## .env` | `{{CLIENT_ID}}`, `{{SCOPES}}`, `{{ORG_NAME}}`, `{{TENANT_NAME}}`, `{{BASE_URL}}` |
+| `.env.example` | `## .env.example` | none |
+| `src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | none |
+| `src/App.tsx` | `## src/App.tsx` | none |
+| `tailwind.config.js` | `## tailwind.config.js` | none |
+| `postcss.config.js` | `## postcss.config.js` | none |
+| `src/index.css` | `## src/index.css` | none |
+
+### 4.6 — Append `.env` to `.gitignore`
+
+```bash
+echo ".env" >> .gitignore
+```
+
+### 4.7 — Verify the scaffold
+
+First, confirm all files exist: `vite.config.ts`, `uipath.json`, `.env`, `.env.example`, `tailwind.config.js`, `postcss.config.js`, `src/hooks/useAuth.tsx`, `src/App.tsx`, `src/index.css`. If any are missing, re-run the corresponding row from Step 4.5.
+
+Then run `npm run build` to verify the scaffold compiles and SDK imports resolve:
+
+```bash
+npm run build
+```
+
+If the build fails, parse the error, fix the offending file (most likely the template row you just wrote), and re-run. Cap at 5 fix attempts before asking the user for guidance.
 
 ---
 
 ## SDK Setup
 
-After the setup script runs, create `src/uipath.ts` to instantiate the `sdk` and any services the app needs. Get the `sdk` instance from the `useAuth` hook rather than creating a new one:
+To call SDK services from the app, create `src/uipath.ts` to instantiate services. Get the `sdk` instance from the `useAuth` hook rather than creating a new one:
 
 ```typescript
 import { useAuth } from './hooks/useAuth';
@@ -141,52 +157,7 @@ const { sdk } = useAuth();
 export const assets = new Assets(sdk);
 ```
 
-See the **SDK Module Imports** table in `SKILL.md` for all subpath imports.
-
----
-
-## Auth Pattern
-
-The setup script generates `src/hooks/useAuth.tsx` with `AuthProvider` and `useAuth`. `App.tsx` wraps everything in `<AuthProvider>` and renders a login screen when the user is not authenticated. The hook handles PKCE callback detection on return from login, exposes `login()` / `logout()` for the UI to call, and tracks the current auth state:
-
-```typescript
-// src/App.tsx (generated by setup script)
-const authConfig: UiPathSDKConfig = {
-  clientId: import.meta.env.VITE_UIPATH_CLIENT_ID,
-  orgName: import.meta.env.VITE_UIPATH_ORG_NAME,
-  tenantName: import.meta.env.VITE_UIPATH_TENANT_NAME,
-  baseUrl: import.meta.env.VITE_UIPATH_BASE_URL,
-  redirectUri: window.location.origin + window.location.pathname,
-  scope: import.meta.env.VITE_UIPATH_SCOPE,
-};
-
-function AppContent() {
-  const { isAuthenticated, isLoading, error, login, logout } = useAuth();
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!isAuthenticated) {
-    return <button onClick={login}>Sign in with UiPath</button>;
-  }
-  return (
-    <>
-      <button onClick={logout}>Sign out</button>
-      <div>Your app content here</div>  {/* ← replace with real content */}
-    </>
-  );
-}
-```
-**Key SDK methods** (used inside `useAuth.tsx` — do not call these directly in app code):
-
-| Method | Purpose |
-|--------|---------|
-| `sdk.isInOAuthCallback()` | Returns true if URL has OAuth `code` param |
-| `sdk.completeOAuth()` | Exchanges the code for tokens |
-| `sdk.isInitialized()` | Returns true once SDK initialization has completed — use to gate `completeOAuth()` and service calls inside `useEffect` |
-| `sdk.isAuthenticated()` | Returns true if a valid token exists |
-| `sdk.initialize()` | Initiates PKCE OAuth flow (redirects to UiPath login) |
-| `sdk.getToken()` | Returns the current access token |
-| `sdk.updateToken(tokenInfo)` | Inject or refresh the access token externally — used for silent-refresh flows |
-| `sdk.logout()` | Clears auth state (requires re-`initialize()` to authenticate again) |
+See the **SDK Module Imports** table in `SKILL.md` for all subpath imports. The `useAuth` hook implementation and the SDK methods it uses internally are documented in the `## src/hooks/useAuth.tsx` section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md).
 
 ---
 
@@ -218,30 +189,9 @@ When implementing specific SDK services, read the corresponding reference:
 
 ---
 
-## Vite Configuration
+## Router Base Path (optional)
 
-The setup script generates `vite.config.ts` with `base: './'` already set. **Do not change this** — the Cloudflare Worker handles URL routing; the app must use relative asset paths.
-
-Do not add `server.proxy` — it interferes with the OAuth callback and asset resolution.
-
-## Router Base Path (if using a client-side router)
-
-If the app uses React Router, Vue Router, or similar, use `getAppBase()` as the router basename. It reads the `uipath:app-base` meta tag injected by the platform at runtime and falls back to `'/'` locally — safe to use unconditionally.
-
-```typescript
-import { getAppBase } from '@uipath/uipath-typescript';
-import { BrowserRouter } from 'react-router-dom';
-
-function App() {
-  return (
-    <BrowserRouter basename={getAppBase()}>
-      {/* your routes */}
-    </BrowserRouter>
-  );
-}
-```
-
-For React Router v6 (`createBrowserRouter`) and Vue Router patterns, see [assets/templates/web-app.md](../assets/templates/web-app.md).
+If the app uses a client-side router (React Router, Vue Router), see the **Optional: Router base path** section of [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md) for `getAppBase()` patterns covering React Router v5/v6 and Vue Router.
 
 ---
 
