@@ -1,13 +1,21 @@
 ---
 name: uipath-coded-apps
-description: "UiPath Coded Web Apps & Coded Action Apps (uip codedapp, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs→uipath-coded-workflows, Python→uipath-coded-agents, XAML→uipath-rpa-workflows."
-metadata:
-   allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+description: "[PREVIEW] UiPath Coded Web Apps & Coded Action Apps (uip codedapp, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Coded Apps
 
 Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
+
+## When to Use This Skill
+
+- User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
+- User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
+- User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
+- User wants to **push/pull source** between local and Studio Web
+- User wants to use the `@uipath/uipath-typescript` SDK from a coded app
+- User wants to run the **full pipeline** (build → pack → publish → deploy)
 
 ## App Types
 
@@ -18,6 +26,18 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 
 **Always ask this before doing anything else:**
 > "Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"
+
+## Critical Rules
+
+- **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
+- **Never skip the build step.** Verify `dist/` exists before `pack` or `push`. Always run `npm run build` first.
+- **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
+- **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
+- **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
+- **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
+- **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
+- **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
+- **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
 
 ## Task Navigation
 
@@ -38,18 +58,6 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
 | **UI Patterns (polling, BPMN, HITL)** | [references/patterns.md](references/patterns.md) |
 
-## Critical Rules
-
-- **Always check login status first.** Run `uip login status --format json` before any cloud command. If not logged in, run `uip login`.
-- **Never skip the build step.** Verify `dist/` exists before `pack` or `push`. Always run `npm run build` first.
-- **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
-- **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
-- **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
-- **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
-- **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
-- **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
-- **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
-
 ## CLI Setup
 
 ```bash
@@ -67,7 +75,7 @@ $UIP --version
 Authenticate before any cloud command:
 
 ```bash
-uip login status --format json         # check if logged in
+uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 ```
@@ -116,7 +124,7 @@ uip codedapp publish -t Action    # must use -t Action
 
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-1. **Auth** — `uip login status --format json`. If not logged in, ask the user for their environment and run `uip login`.
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`.
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> -v <version>`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
@@ -166,7 +174,22 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 | `Not authenticated` | No valid session | Run `uip login` |
 | `dist/ not found` | App not built | Run `npm run build` |
 | `Version already exists` | Same version re-published | Bump version in `pack` |
-| `Folder key required` | Missing folder | Set `UIPATH_FOLDER_KEY` or pass `--folderKey` |
+| `Folder key required` | Missing folder for CLI deploy | Set `UIPATH_FOLDER_KEY` or pass `--folderKey`. See note below. |
 | `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
 | API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
+
+> **Folder identifier names differ across CLI and SDK.** The CLI uses `UIPATH_FOLDER_KEY` / `--folderKey` (string) and applies only to `uip codedapp deploy`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
+
+## Anti-patterns
+
+- **Don't pass access tokens as CLI flags** — JWTs are too long; use the `UIPATH_ACCESS_TOKEN` env var.
+- **Don't set `base:` in `vite.config.ts` to a routing name or sub-path** — must be `'./'`. The platform handles routing.
+- **Don't hardcode the React Router basename** — use `getAppBase()` from `@uipath/uipath-typescript`.
+- **Don't import service classes from the package root** — use the subpath (e.g., `@uipath/uipath-typescript/assets`).
+- **Don't use the deprecated dot-chain `sdk.entities.getAll()`** — use constructor DI: `new Entities(sdk)`.
+- **Don't delete `.uipath/` between `publish` and `deploy`** — `deploy` reads `app.config.json` written by `publish`.
+- **Don't use `https://cloud.uipath.com` as the base URL** — must be the `api.` subdomain (e.g., `https://api.uipath.com`).
+- **Don't pause between pipeline steps** to ask "should I continue?" — execute build → pack → publish → deploy in one go.
+- **Don't skip `npm run build`** before `pack` or `push` — `dist/` must exist first.
+- **Don't reuse a version that's already published** — bump it; Orchestrator rejects duplicates.

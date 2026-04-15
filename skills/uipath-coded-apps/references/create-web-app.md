@@ -99,20 +99,14 @@ The script creates a complete project:
 The script creates `.env` with this structure:
 
 ```
-UIPATH_BASE_URL=https://api.uipath.com
-UIPATH_CLIENT_ID=<client-id>
-UIPATH_ORG_NAME=<org-name>
-UIPATH_TENANT_NAME=<tenant-name>
-UIPATH_SCOPE=<scopes>
-
-VITE_UIPATH_BASE_URL=${UIPATH_BASE_URL}
 VITE_UIPATH_CLIENT_ID=<client-id>
+VITE_UIPATH_SCOPE=<scopes>
 VITE_UIPATH_ORG_NAME=<org-name>
 VITE_UIPATH_TENANT_NAME=<tenant-name>
-VITE_UIPATH_SCOPE=<scopes>
+VITE_UIPATH_BASE_URL=https://api.uipath.com
 ```
 
-**Why `${}` for BASE_URL only:** The CLI overwrites `UIPATH_BASE_URL` with the production value at deploy time. The `VITE_` version references it via `${}` so it picks up the new value automatically. Other vars are set directly.
+**Base URL by environment:** `https://api.uipath.com` (cloud), `https://staging.api.uipath.com` (staging), `https://alpha.api.uipath.com` (alpha).
 
 **No redirect URI env var.** The SDK computes it at runtime as `window.location.origin + window.location.pathname`.
 
@@ -187,9 +181,12 @@ function AppContent() {
 |--------|---------|
 | `sdk.isInOAuthCallback()` | Returns true if URL has OAuth `code` param |
 | `sdk.completeOAuth()` | Exchanges the code for tokens |
+| `sdk.isInitialized()` | Returns true once SDK initialization has completed — use to gate `completeOAuth()` and service calls inside `useEffect` |
 | `sdk.isAuthenticated()` | Returns true if a valid token exists |
 | `sdk.initialize()` | Initiates PKCE OAuth flow (redirects to UiPath login) |
 | `sdk.getToken()` | Returns the current access token |
+| `sdk.updateToken(tokenInfo)` | Inject or refresh the access token externally — used for silent-refresh flows |
+| `sdk.logout()` | Clears auth state (requires re-`initialize()` to authenticate again) |
 
 ---
 
@@ -201,8 +198,8 @@ After authentication, use the exported service instances:
 import { assets, entities } from './uipath';
 
 // In a React component or effect:
-const items = await assets.getAll({ folderKey: 'your-folder-key' });
-const records = await entities.getAllRecords('EntityName');
+const items = await assets.getAll({ folderId: 123 }); // replace 123 with your Orchestrator folder ID
+const records = await entities.getAllRecords('<entity-id>'); // entity ID is a UUID — look it up via entities.getAll() or the Data Fabric portal (not the friendly name)
 ```
 
 See [oauth-scopes.md](oauth-scopes.md) for the full list of methods and their required scopes.

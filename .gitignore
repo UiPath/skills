@@ -71,3 +71,6 @@ tests/reports/
 tests/runs/
 tmp/
 c/
+
+# macOS Finder metadata
+**/.DS_Store
