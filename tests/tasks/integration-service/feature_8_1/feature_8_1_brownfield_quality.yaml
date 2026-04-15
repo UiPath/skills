@@ -1,0 +1,27 @@
+task_id: skill-integration_service-feature_8_1-brownfield-quality
+description: >
+  Quality test: integration-service Feature 8.1 (brownfield).
+  Verify skill + CLI produces correct output across varied scenarios,
+  scoped to the skill with few dependencies.
+tags: [integration-service, quality, brownfield, feature-8-1]
+
+metadata:
+  product_area: "IS"
+  feature: "Feature 8.1"
+  project_type: brownfield
+  complexity: medium
+  platform: null
+  owner: null
+  test_tier: quality
+  status: blocked
+  skill_exists: false
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  TODO: Define quality test prompt for IS Feature 8.1 (brownfield).
+
+success_criteria: []

@@ -1,0 +1,27 @@
+task_id: skill-ixp-feature_3_2-brownfield-quality
+description: >
+  Quality test: ixp Feature 3.2 (brownfield).
+  Verify skill + CLI produces correct output across varied scenarios,
+  scoped to the skill with few dependencies.
+tags: [ixp, quality, brownfield, feature-3-2]
+
+metadata:
+  product_area: "IXP"
+  feature: "Feature 3.2"
+  project_type: brownfield
+  complexity: medium
+  platform: null
+  owner: null
+  test_tier: quality
+  status: blocked
+  skill_exists: false
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  TODO: Define quality test prompt for IXP Feature 3.2 (brownfield).
+
+success_criteria: []

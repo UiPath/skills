@@ -1,0 +1,26 @@
+task_id: skill-ixp-feature_3_2-brownfield-smoke
+description: >
+  Smoke test: ixp Feature 3.2 (brownfield).
+  Verify skill + CLI produces a valid project in a simple scenario.
+tags: [ixp, smoke, brownfield, feature-3-2]
+
+metadata:
+  product_area: "IXP"
+  feature: "Feature 3.2"
+  project_type: brownfield
+  complexity: small
+  platform: null
+  owner: null
+  test_tier: smoke
+  status: blocked
+  skill_exists: false
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  TODO: Define smoke test prompt for IXP Feature 3.2 (brownfield).
+
+success_criteria: []

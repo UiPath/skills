@@ -1,0 +1,45 @@
+task_id: skill-platform-feature_5_2-greenfield-e2e
+description: >
+  End-to-end test: uipath-platform Feature 5.2 (greenfield).
+  Full loop completion: Explore → Plan → Build → Validate → Deploy → Run.
+tags: [uipath-platform, e2e, greenfield, feature-5-2]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+metadata:
+  product_area: "API"
+  feature: "Feature 5.2"
+  project_type: greenfield
+  complexity: complex
+  platform: null
+  owner: null
+  test_tier: e2e
+  status: planned
+  skill_exists: true
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  TODO: Define e2e test prompt for API Feature 5.2 (greenfield).
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Build end-to-end in a single pass.
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent used the uip CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

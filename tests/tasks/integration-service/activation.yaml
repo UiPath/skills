@@ -1,0 +1,26 @@
+task_id: skill-integration_service-activation
+description: >
+  Activation test: verify that the integration-service skill triggers correctly
+  when the user asks a relevant query for IS.
+tags: [integration-service, activation]
+
+metadata:
+  product_area: "IS"
+  feature: activation
+  project_type: null
+  complexity: small
+  platform: null
+  owner: null
+  test_tier: activation
+  status: blocked
+  skill_exists: false
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  TODO: Define activation test prompt for IS.
+
+success_criteria: []

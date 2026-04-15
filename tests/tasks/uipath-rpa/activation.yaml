@@ -1,0 +1,33 @@
+task_id: skill-rpa-activation
+description: >
+  Activation test: verify that the uipath-rpa skill triggers correctly
+  when the user asks a relevant query for RPA.
+tags: [uipath-rpa, activation]
+
+metadata:
+  product_area: "RPA"
+  feature: activation
+  project_type: null
+  complexity: small
+  platform: null
+  owner: null
+  test_tier: activation
+  status: planned
+  skill_exists: true
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I need to work with RPA capabilities. Help me get started.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the correct skill"
+    tool_name: "Skill"
+    command_pattern: 'uipath-rpa'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

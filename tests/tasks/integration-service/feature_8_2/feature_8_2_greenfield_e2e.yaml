@@ -1,0 +1,32 @@
+task_id: skill-integration_service-feature_8_2-greenfield-e2e
+description: >
+  End-to-end test: integration-service Feature 8.2 (greenfield).
+  Full loop completion: Explore → Plan → Build → Validate → Deploy → Run.
+tags: [integration-service, e2e, greenfield, feature-8-2]
+max_iterations: 1
+
+metadata:
+  product_area: "IS"
+  feature: "Feature 8.2"
+  project_type: greenfield
+  complexity: complex
+  platform: null
+  owner: null
+  test_tier: e2e
+  status: blocked
+  skill_exists: false
+  github_ref: null
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  TODO: Define e2e test prompt for IS Feature 8.2 (greenfield).
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Build end-to-end in a single pass.
+  Before starting, load the integration-service skill and follow its workflow.
+
+success_criteria: []
