@@ -127,8 +127,8 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
-| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
-| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent is a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
+| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
+| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 
@@ -493,8 +493,8 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 ### "I need an AI agent"
 
-- Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
-- Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+- Low-code agent tightly coupled to this flow, bundled inside the flow project -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
+- Coded (Python) agent, or any agent that lives as a separate project (in this solution or published to Orchestrator) -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
 
 ### "The flow needs something outside flow capabilities"
 

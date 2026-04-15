@@ -2,6 +2,8 @@
 
 Inline agent nodes embed an autonomous agent inside the flow project. Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory via `model.source = <projectId>` and executes with `serviceType: "Orchestrator.StartInlineAgentJob"`.
 
+For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
+
 ## Prerequisite — Scaffold the Inline Agent
 
 The inline agent directory must exist before the flow node can reference it. Run from the solution directory (or pass an absolute path):

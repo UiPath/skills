@@ -52,6 +52,9 @@ Determine the agent mode before proceeding:
 | Wire multi-agent solution | Low-code | [lowcode/agent-solution-guide.md](references/lowcode/agent-solution-guide.md) | |
 | Inline agent node structure in a flow | Low-code | [lowcode/agent-flow-integration.md](references/lowcode/agent-flow-integration.md) | |
 | See low-code CLI commands | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) | |
+| Embed coded agent in a flow (solution-level) | Coded | [coded/embedding-in-flows.md](references/coded/embedding-in-flows.md) | |
+| Use coded agent in a flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) | |
+| Use coded agent as tool for another agent in flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) § Pattern 3 | |
 
 ## Resources
 

@@ -51,6 +51,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 18. **Every node that produces data MUST have `outputs` on the node instance** — Without an `outputs` block, downstream `$vars` references will not resolve at runtime. Action nodes need `output` + `error`; trigger nodes need `output` only; end/terminate nodes do not use this pattern. See [flow-file-format.md — Node outputs](references/flow-file-format.md#node-outputs). **Wrong:** relying on `outputDefinition` in `definitions` alone. **Right:** `outputs` on the node instance itself.
 19. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
 20. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See Step 2.
+21. **Ask solution scope before creating a new solution** — Before `uip solution new`, use `AskUserQuestion` with the question "Where should this solution live?" and options `SW solution` / `Local solution` / `Something else`. **Ask even in autonomous mode**, unless the user has already stated the scope explicitly. The held answer drives whether the build ends with `uip solution upload`. For existing solutions or edit sessions where Step 2 is skipped, the same question is asked at Completion Output instead.
 
 ## Common Edits (existing flows)
 
@@ -160,6 +161,16 @@ Check the current directory for existing `.uipx` files. If existing solutions ar
 - Otherwise, create a new solution (Step 2a)
 
 #### 2a. Create a new solution
+
+Use `AskUserQuestion` to capture solution scope:
+
+- **Question:** `Where should this solution live?`
+- **Options:**
+  - `SW solution` — Build and iterate in Studio Web.
+  - `Local solution` — Build and iterate locally in VSCode.
+  - `Something else` — Free-form input.
+
+Then create the solution:
 
 ```bash
 uip solution new "<SolutionName>" --output json
@@ -289,27 +300,43 @@ The argument to `resource refresh` is the **solution directory** (containing the
 
 When a debug or process run fails, read **[references/troubleshooting-guide.md](references/troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → .flow correlation → traces (last resort).
 
-### Step 8 — Publish to Studio Web
+### Step 8 — Publish to Studio Web (when scope is `SW solution`)
 
-**This is the default publish target.** After tidy (Step 6), when the user wants to publish, view, or share the flow, **refresh solution resources first**, then upload:
+This step runs only when the solution scope captured in Step 2a was `SW solution`. For `Local solution`, the build stops after Step 6 — the solution stays local and the user iterates with `flow validate` (and, for coded sibling agents, `uip codedagent run`).
+
+After tidy (Step 6), refresh solution resources, exclude any coded-agent `.venv/` directories from the bundle, then upload:
 
 ```bash
 # Sync resource declarations from project bindings
 uip solution resource refresh <SolutionDir> --output json
+```
 
+If the solution contains a coded agent project (sibling folder with `pyproject.toml`), move its `.venv/` outside the solution before upload — `uv sync` recreates it on demand. Restore each one after the upload completes:
+
+```bash
+# For each coded agent sibling <CodedAgentProject>:
+mv <SolutionDir>/<CodedAgentProject>/.venv /tmp/<CodedAgentProject>-venv
+```
+
+```bash
 # Upload the solution folder (containing the .uipx) to Studio Web
 uip solution upload <SolutionDir> --output json
 ```
 
+```bash
+# Restore each .venv after upload
+mv /tmp/<CodedAgentProject>-venv <SolutionDir>/<CodedAgentProject>/.venv
+```
+
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip maestro flow init`, it already lives inside a solution directory. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
 
-**Do NOT run `uip maestro flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
+**Do NOT run `uip maestro flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, default to the Studio Web path (`uip solution upload <SolutionDir>`).
 
 For Orchestrator deployment when explicitly requested, see [references/flow-commands.md](references/flow-commands.md) for `uip maestro flow pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
 
 #### Post-build choice prompt
 
-When the build completes, present the next-step dropdown described in the [Completion Output](#completion-output) section. See the detailed action table there for what each option runs.
+When the build completes, present the next-step dropdown described in the [Completion Output](#completion-output) section.
 
 ## Anti-Patterns
 
@@ -353,7 +380,9 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) + [JSON: Variable Operations](references/flow-editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
-| **Embed an AI agent tightly coupled to this flow** | [references/plugins/inline-agent/](references/plugins/inline-agent/) — scaffolded via `uip agent init --inline-in-flow`, node type `uipath.agent.autonomous` |
+| **Invoke an agent (coded or low-code)** | [references/plugins/agent/](references/plugins/agent/) — node type `uipath.core.agent.{key}`, covers both in-solution sibling projects and Orchestrator-published agents |
+| **Embed a low-code agent tightly coupled to this flow** | [references/plugins/inline-agent/](references/plugins/inline-agent/) — node type `uipath.agent.autonomous`, low-code (`agent.json`) only. For coded agents, use the [`agent`](references/plugins/agent/) plugin. |
+| **Use a coded agent as a tool for another agent** | [references/plugins/agent/impl.md](references/plugins/agent/impl.md) § Using an Agent as a Tool Resource — deploy coded agent first, then add as `uipath.agent.resource.tool.agent` resource |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [references/plugins/transform/impl.md](references/plugins/transform/impl.md) |
 | **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) |
@@ -392,14 +421,15 @@ When you finish building or editing a flow, report to the user:
 4. **Tidy status** — confirm `flow tidy` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
+7. **Next step** — use `AskUserQuestion` to confirm the next action. The default option is determined by the solution scope captured in Step 2a: `SW solution` → `Publish to Studio Web`; `Local solution` → `Leave it local`.
 
    | Option | Action |
    |--------|--------|
-   | **Publish to Studio Web** (default) | Run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
+   | **Publish to Studio Web** | Run Step 8 (resource refresh + `.venv/` exclusion + `uip solution upload`) and share the Studio Web URL. |
+   | **Leave it local** | No further action. The solution stays local; iterate with `flow validate` and (for coded sibling agents) `uip codedagent run`. |
    | **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir> --output json` (see Step 7). Confirm consent first — debug executes the flow for real. |
    | **Deploy to Orchestrator** | Run `uip solution resource refresh <SolutionDir> --output json` then `uip maestro flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
-   | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
+   | **Something else** | Last option. Accept free-form string input and act on it (e.g., "pack but don't publish", "upload to a different tenant"). |
 
    Do not run any of these actions without an explicit user selection.
 
@@ -433,8 +463,8 @@ When you finish building or editing a flow, report to the user:
   - [flow](references/plugins/flow/) — Published flows as subprocesses (`uipath.core.flow.{key}`)
   - [api-workflow](references/plugins/api-workflow/) — Published API functions (`uipath.core.api-workflow.{key}`)
   - [hitl](references/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
-  - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
-  - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
+  - [agent](references/plugins/agent/) — AI agents (`uipath.core.agent.{key}`), both in-solution sibling projects and Orchestrator-published. Covers coded (Python) and low-code. Also covers the agent-as-tool-resource pattern.
+  - [inline-agent](references/plugins/inline-agent/) — Low-code agent bundled inside the flow project as a UUID-named subdirectory (`uipath.agent.autonomous`). For coded agents, use the [`agent`](references/plugins/agent/) plugin.
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
 
