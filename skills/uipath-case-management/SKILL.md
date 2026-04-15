@@ -596,7 +596,7 @@ Use `AskUserQuestion` with options: "Yes", "No"
 If the user says yes:
 ```bash
 # Bundle the solution directory into a .uis file
-uip solution bundle "<SolutionDir>" --output .
+uip solution bundle "<SolutionDir>" --output json
 
 # Upload the .uis to Studio Web
 uip solution upload "<SolutionName>.uis" --output json
