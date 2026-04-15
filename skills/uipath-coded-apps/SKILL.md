@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "End-to-end guide for UiPath Coded Web Applications and Coded Action Apps. TRIGGER when: User wants to create, scaffold, build, debug, or deploy a UiPath coded web app or coded action app; User mentions coded apps, coded action apps, action app, codedapp, web application in a UiPath context; User wants to push/pull code to/from Studio Web; User wants to scaffold a React/Vue/other frontend that connects to UiPath services; User asks about the UiPath TypeScript SDK (@uipath/uipath-typescript), OAuth scopes, or External Application setup; User asks about uip codedapp CLI commands, .uipath directory, app.config.json, or action-schema.json. DO NOT TRIGGER when: User is working with coded agents (Python — use uipath-coded-agents instead); User is working with coded workflows (.cs files — use uipath-coded-workflows instead); User is working with XAML/RPA workflows (use uipath-rpa-workflows instead); User asks about Orchestrator management without coded app context (use uipath-platform instead)."
+description: "UiPath Coded Web Apps & Coded Action Apps (uip codedapp, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs→uipath-coded-workflows, Python→uipath-coded-agents, XAML→uipath-rpa-workflows."
 metadata:
    allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
@@ -30,7 +30,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
-| **SDK: Assets, Queues, Buckets, Processes, Tasks** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
+| **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
 | **SDK: Data Fabric (Entities, ChoiceSets)** | [references/sdk/data-fabric.md](references/sdk/data-fabric.md) |
 | **SDK: Maestro (Processes, Cases)** | [references/sdk/maestro.md](references/sdk/maestro.md) |
 | **SDK: Action Center (Tasks)** | [references/sdk/action-center.md](references/sdk/action-center.md) |
@@ -137,6 +137,8 @@ Always import service classes from their **subpath**, never from the root packag
 | `@uipath/uipath-typescript/queues` | `Queues` |
 | `@uipath/uipath-typescript/buckets` | `Buckets` |
 | `@uipath/uipath-typescript/processes` | `Processes` |
+| `@uipath/uipath-typescript/jobs` | `Jobs` |
+| `@uipath/uipath-typescript/attachments` | `Attachments` |
 | `@uipath/uipath-typescript/conversational-agent` | `ConversationalAgent`, `Exchanges`, `Messages` |
 
 Types, enums, and option interfaces are exported from the **same subpath** as their service class (e.g. `import type { AssetGetResponse } from '@uipath/uipath-typescript/assets'`).

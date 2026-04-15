@@ -24,6 +24,16 @@ Use this reference to:
 | Method | Required Scope |
 |--------|----------------|
 | `getAll()` | `OR.Jobs` or `OR.Jobs.Read` |
+| `getById()` | `OR.Jobs` or `OR.Jobs.Read` |
+| `getOutput()` | `OR.Jobs` or `OR.Jobs.Read` **plus** `OR.Folders` or `OR.Folders.Read` (required because `getOutput` internally calls the Attachments API to resolve file-type output arguments) |
+
+---
+
+## Attachments
+
+| Method | Required Scope |
+|--------|----------------|
+| `getById()` | `OR.Folders` or `OR.Folders.Read` |
 
 ---
 
@@ -93,7 +103,6 @@ Use this reference to:
 | `getAll()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `getById()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `getUsers()` | `OR.Tasks` or `OR.Tasks.Read` |
-| `getFormTaskById()` | `OR.Tasks` or `OR.Tasks.Read` |
 | `create()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `assign()` / `reassign()` / `unassign()` | `OR.Tasks` or `OR.Tasks.Write` |
 | `complete()` | `OR.Tasks` or `OR.Tasks.Write` |
@@ -118,6 +127,12 @@ Use this reference to:
 |--------|----------------|
 | `getAll()` | `PIMS` |
 | `getIncidents()` | `PIMS` |
+
+## Maestro Process Incidents (standalone)
+
+| Method | Required Scope |
+|--------|----------------|
+| `ProcessIncidents.getAll()` | `PIMS` |
 
 ---
 
@@ -184,5 +199,6 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | Data Fabric (read + write) | `DataFabric.Schema.Read DataFabric.Data.Read DataFabric.Data.Write` |
 | Orchestrator Tasks (read + complete) | `OR.Tasks` |
 | Orchestrator Processes (list + start) | `OR.Execution OR.Jobs` |
+| Orchestrator Jobs (list + read output) | `OR.Jobs.Read OR.Folders.Read` (add `OR.Folders.Read` so `Jobs.getOutput()` can resolve file-type output arguments via Attachments) |
 | Maestro full access | `PIMS OR.Execution.Read` |
 | Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` |

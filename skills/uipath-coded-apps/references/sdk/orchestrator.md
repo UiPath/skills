@@ -7,6 +7,8 @@ import { Assets } from '@uipath/uipath-typescript/assets';
 import { Queues } from '@uipath/uipath-typescript/queues';
 import { Buckets } from '@uipath/uipath-typescript/buckets';
 import { Processes } from '@uipath/uipath-typescript/processes';
+import { Jobs } from '@uipath/uipath-typescript/jobs';
+import { Attachments } from '@uipath/uipath-typescript/attachments';
 ```
 
 ## Note: Folder-Scoped Services
@@ -55,6 +57,19 @@ import type {
   ProcessStartRequest,
   ProcessStartResponse,
 } from '@uipath/uipath-typescript/processes';
+
+// Jobs
+import type {
+  JobGetResponse,
+  JobGetAllOptions,
+  JobGetByIdOptions,
+} from '@uipath/uipath-typescript/jobs';
+
+// Attachments
+import type {
+  AttachmentResponse,
+  AttachmentGetByIdOptions,
+} from '@uipath/uipath-typescript/attachments';
 ```
 
 ## Enums
@@ -148,6 +163,41 @@ Returns `Promise<ProcessGetResponse>`.
 Returns `Promise<ProcessStartResponse[]>`. The `request` must include either `processKey` or `processName`. Optional fields: `strategy`, `robotIds`, `jobsCount`, `inputArguments`, `jobPriority`.
 
 `ProcessStartResponse` fields: `key`, `startTime`, `endTime`, `state`, `source`, `processName`, `type`, `id`, `folderId`.
+
+## Jobs Service (Scopes: `OR.Jobs` or `OR.Jobs.Read`)
+
+### getAll(options?: JobGetAllOptions)
+
+Returns `NonPaginatedResponse<JobGetResponse>` or `PaginatedResponse<JobGetResponse>`. Options extend `RequestOptions & PaginationOptions & { folderId?: number }`. Supports `filter`, `orderby`, `expand`, `select`.
+
+### getById(id: string, folderId: number, options?: JobGetByIdOptions)
+
+Returns `Promise<JobGetResponse>`. The `folderId` is required. **Note:** `id` is a `string` here (not a `number` like Assets/Queues/Processes).
+
+### getOutput(jobKey: string, folderId: number)
+
+Returns `Promise<Record<string, unknown> | null>` — the job's parsed output arguments, or `null` if unavailable. Use after a job has finished; output is not populated while the job is still running.
+
+`JobGetResponse` fields: `key`, `id`, `state`, `createdTime`, `startTime`, `endTime`, `lastModifiedTime`, `resumeTime`, `processName`, `entryPointPath`, `processVersionId`, `hostMachineName`, `inputArguments`, `outputArguments`, `environmentVariables`, `type`, `packageType`, `runtimeType`, `serverlessJobType`, `jobPriority`, `specificPriorityValue`, `stopStrategy`, `remoteControlAccess`, `batchExecutionKey`, `parentJobKey`, `traceId`, `parentSpanId`, `errorCode`, `jobError`, `subState`, `machine`, `robot`, `process`. The `machine`, `robot`, and `process` fields are populated only when requested via `expand`.
+
+## Attachments Service (Scopes: `OR.Folders` or `OR.Folders.Read`)
+
+Standalone service for retrieving Orchestrator attachment metadata and a signed URL for downloading the blob. `Jobs.getOutput()` uses this internally to resolve file-type output arguments — most app code will not need to call it directly, but if you call `Jobs.getOutput()` you must add `OR.Folders` (or `OR.Folders.Read`) to the app's scopes in addition to `OR.Jobs`.
+
+### getById(id: string, options?: AttachmentGetByIdOptions)
+
+Returns `Promise<AttachmentResponse>`. Options support OData `expand` / `select`.
+
+`AttachmentResponse` fields: `id`, `name`, `jobKey?`, `attachmentCategory?`, `lastModifiedTime?`, `lastModifierUserId?`, `createdTime?`, `creatorUserId?`, `blobFileAccess: BucketGetUriResponse` (the signed URL + headers — `{ uri, httpMethod, requiresAuth, headers }`).
+
+```typescript
+import { Attachments } from '@uipath/uipath-typescript/attachments';
+
+const attachments = new Attachments(sdk);
+const attachment = await attachments.getById('<attachmentId>');
+// Download the blob using the signed URI
+const blob = await fetch(attachment.blobFileAccess.uri).then(r => r.blob());
+```
 
 ## Bridging folderKey ↔ folderId
 

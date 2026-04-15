@@ -20,17 +20,22 @@ import type {
   RawEntityGetResponse,
   EntityMethods,
   EntityRecord,
+  EntityFileType,
   EntityGetAllRecordsOptions,
   EntityGetRecordByIdOptions,
   EntityInsertRecordOptions,
   EntityInsertResponse,
   EntityInsertRecordsOptions,
   EntityBatchInsertResponse,
+  EntityUpdateRecordOptions,
+  EntityUpdateRecordResponse,
   EntityUpdateRecordsOptions,
   EntityUpdateResponse,
   EntityDeleteRecordsOptions,
   EntityDeleteResponse,
-  EntityDownloadAttachmentOptions,
+  EntityUploadAttachmentOptions,
+  EntityUploadAttachmentResponse,
+  EntityDeleteAttachmentResponse,
   EntityOperationResponse,
   FailureRecord,
   ChoiceSetGetAllResponse,
@@ -75,31 +80,44 @@ Returns `Promise<EntityInsertResponse>` (which is `EntityRecord` — the inserte
 
 Returns `Promise<EntityBatchInsertResponse>` with `{ successRecords, failureRecords }`. Does NOT trigger events. Options: `expansionLevel`, `failOnFirst`.
 
+### updateRecordById(entityId: string, recordId: string, data: Record<string, any>, options?: EntityUpdateRecordOptions)
+
+Returns `Promise<EntityUpdateRecordResponse>` — the updated single record. **Triggers Data Fabric trigger events** (unlike the bulk `updateRecordsById`). Use this when you need trigger events to fire for the updated record. Options: `expansionLevel`.
+
 ### updateRecordsById(id: string, data: EntityRecord[], options?: EntityUpdateRecordsOptions)
 
-Returns `Promise<EntityUpdateResponse>` with `{ successRecords, failureRecords }`. Each record in `data` MUST include an `Id` field. Options: `expansionLevel`, `failOnFirst`.
+Returns `Promise<EntityUpdateResponse>` with `{ successRecords, failureRecords }`. Each record in `data` MUST include an `Id` field. Options: `expansionLevel`, `failOnFirst`. **Does NOT trigger events** — use `updateRecordById` if you need trigger events.
 
 ### deleteRecordsById(id: string, recordIds: string[], options?: EntityDeleteRecordsOptions)
 
 Returns `Promise<EntityDeleteResponse>` with `{ successRecords, failureRecords }`. Options: `failOnFirst`.
 
-### downloadAttachment(options: EntityDownloadAttachmentOptions)
+### downloadAttachment(entityId: string, recordId: string, fieldName: string)
 
-Returns `Promise<Blob>`. Options: `{ entityName: string, recordId: string, fieldName: string }`.
+Returns `Promise<Blob>`. **Positional arguments, not an options object.** `entityId` is the UUID of the entity (not the entity name).
 
-**Note:** `uploadAttachment()` is not yet available in the SDK.
+### uploadAttachment(entityId: string, recordId: string, fieldName: string, file: EntityFileType, options?: EntityUploadAttachmentOptions)
+
+Returns `Promise<EntityUploadAttachmentResponse>`. `file` accepts `Blob | File | Uint8Array`. Options: `expansionLevel`.
+
+### deleteAttachment(entityId: string, recordId: string, fieldName: string)
+
+Returns `Promise<EntityDeleteAttachmentResponse>`. Positional arguments.
 
 ## Entity-Attached Methods (EntityMethods)
 
 Returned by `getAll()` and `getById()` on each `EntityGetResponse`:
 
-- `entity.insertRecord(data, options?)` -> `Promise<EntityInsertResponse>`
-- `entity.insertRecords(data[], options?)` -> `Promise<EntityBatchInsertResponse>`
-- `entity.updateRecords(data: EntityRecord[], options?)` -> `Promise<EntityUpdateResponse>`
+- `entity.insertRecord(data, options?)` -> `Promise<EntityInsertResponse>` (fires trigger events)
+- `entity.insertRecords(data[], options?)` -> `Promise<EntityBatchInsertResponse>` (no trigger events)
+- `entity.updateRecord(recordId, data, options?)` -> `Promise<EntityUpdateRecordResponse>` (fires trigger events)
+- `entity.updateRecords(data: EntityRecord[], options?)` -> `Promise<EntityUpdateResponse>` (no trigger events)
 - `entity.deleteRecords(recordIds: string[], options?)` -> `Promise<EntityDeleteResponse>`
 - `entity.getAllRecords(options?)` -> `NonPaginatedResponse<EntityRecord>` or `PaginatedResponse<EntityRecord>`
 - `entity.getRecord(recordId, options?)` -> `Promise<EntityRecord>`
+- `entity.uploadAttachment(recordId, fieldName, file, options?)` -> `Promise<EntityUploadAttachmentResponse>`
 - `entity.downloadAttachment(recordId, fieldName)` -> `Promise<Blob>`
+- `entity.deleteAttachment(recordId, fieldName)` -> `Promise<EntityDeleteAttachmentResponse>`
 
 ## ChoiceSets Service
 

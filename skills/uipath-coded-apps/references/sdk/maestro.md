@@ -116,9 +116,31 @@ Returned by `getAll()` on each `MaestroProcessGetAllResponse`:
 
 ## ProcessIncidents Service
 
+Standalone service exported from `@uipath/uipath-typescript/maestro-processes` (same subpath as `MaestroProcesses` and `ProcessInstances`). Use it when you need incidents across **all folders** without first resolving a specific `processKey` or `instanceId`.
+
 ### getAll()
 
-Returns `Promise<ProcessIncidentGetAllResponse[]>`. Each item has: `count`, `errorMessage`, `errorCode`, `firstOccuranceTime`, `processKey`.
+Returns `Promise<ProcessIncidentGetAllResponse[]>`. Each summary has aggregated fields like `processKey`, `errorMessage`, `count`, `firstOccuranceTime`.
+
+```typescript
+import { ProcessIncidents } from '@uipath/uipath-typescript/maestro-processes';
+
+const processIncidents = new ProcessIncidents(sdk);
+const incidents = await processIncidents.getAll();
+for (const incident of incidents) {
+  console.log(`${incident.processKey}: ${incident.errorMessage} (count: ${incident.count})`);
+}
+```
+
+### When to use which incident accessor
+
+| Scope | Use |
+|---|---|
+| All incidents across all folders (summary rollup) | `new ProcessIncidents(sdk).getAll()` — returns `ProcessIncidentGetAllResponse[]` |
+| All incidents for one process | `MaestroProcesses.getIncidents(processKey, folderKey)` or `process.getIncidents()` — returns `ProcessIncidentGetResponse[]` |
+| Incidents on a single instance | `ProcessInstances.getIncidents(instanceId, folderKey)` or `instance.getIncidents()` — returns `ProcessIncidentGetResponse[]` |
+
+Note that `ProcessIncidentGetAllResponse` (summary) and `ProcessIncidentGetResponse` (per-incident detail) are different shapes.
 
 ## ProcessInstanceGetResponse Fields
 

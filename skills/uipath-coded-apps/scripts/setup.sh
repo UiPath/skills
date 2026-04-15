@@ -116,7 +116,7 @@ echo ".env" >> .gitignore
 echo "==> Writing src/hooks/useAuth.tsx"
 mkdir -p src/hooks
 cat > src/hooks/useAuth.tsx << 'AUTHEOF'
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { UiPath, UiPathError } from '@uipath/uipath-typescript/core';
 import type { UiPathSDKConfig } from '@uipath/uipath-typescript/core';
@@ -137,20 +137,26 @@ export const AuthProvider: React.FC<{ children: ReactNode; config: UiPathSDKConf
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sdk] = useState<UiPath>(() => new UiPath(config));
+  const didInit = useRef(false);
 
   useEffect(() => {
+    // Guard against React Strict Mode's double-invocation in dev.
+    // OAuth authorization codes are single-use — calling completeOAuth()
+    // twice would fail the second time with "Authentication failed".
+    if (didInit.current) return;
+    didInit.current = true;
+
     const initializeAuth = async () => {
       setIsLoading(true);
       setError(null);
       try {
         if (sdk.isInOAuthCallback()) {
           await sdk.completeOAuth();
+          // Strip OAuth params from the URL so a refresh doesn't try to
+          // re-consume the (now-invalid) code.
+          window.history.replaceState({}, document.title, window.location.pathname);
         }
-        if (!sdk.isAuthenticated()) {
-          await sdk.initialize();
-          return;
-        }
-        setIsAuthenticated(true);
+        setIsAuthenticated(sdk.isAuthenticated());
       } catch (err) {
         console.error('Authentication failed:', err);
         setError(err instanceof UiPathError ? err.message : 'Authentication failed');
@@ -210,13 +216,43 @@ const authConfig: UiPathSDKConfig = {
 };
 
 function AppContent() {
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { isAuthenticated, isLoading, error, login, logout } = useAuth();
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!isAuthenticated) return <div>Redirecting to login...</div>;
+  if (isLoading) return <div className="p-8">Loading...</div>;
+  if (error) return <div className="p-8 text-red-600">Error: {error}</div>;
 
-  return <div>Your app content here</div>;
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-sm w-full bg-white rounded-lg shadow p-8 text-center">
+          <h1 className="text-2xl font-semibold mb-2">Welcome</h1>
+          <p className="text-gray-600 mb-6">
+            Sign in with your UiPath account to continue.
+          </p>
+          <button
+            onClick={login}
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Sign in with UiPath
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <header className="flex justify-end items-center p-4 border-b">
+        <button
+          onClick={logout}
+          className="text-sm text-gray-600 hover:text-gray-900"
+        >
+          Sign out
+        </button>
+      </header>
+      <main className="p-8">Your app content here</main>
+    </div>
+  );
 }
 
 function App() {
