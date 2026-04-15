@@ -116,11 +116,14 @@ Connector nodes call external services via Integration Service. They are **not**
 
 ### Agent Nodes
 
-Agent nodes invoke published UiPath AI agents. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks. Two kinds exist — pick based on reuse and lifecycle:
 
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
-| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Task requires reasoning, judgment, or natural language processing via a published agent |
+| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
+| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent is a **published tenant resource** (appears in the registry after `uip login` + `uip flow registry pull`); reusable across flows, independently versioned |
+
+See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 
 ### Resource Nodes (External Automations)
 
@@ -175,6 +178,8 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.logic.terminate` | `input` | — |
 | `core.subflow` | `input` | `output`, `error` |
 | `core.logic.mock` | `input` | `output` |
+| `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+| `uipath.core.agent.*` | `input` | `output` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
 
@@ -453,6 +458,11 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 ### "I need human involvement"
 
 - Human approval or data entry -> [hitl](plugins/hitl/planning.md) or `core.logic.mock` if the app doesn't exist
+
+### "I need an AI agent"
+
+- Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
+- Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
 
 ### "The flow needs something outside flow capabilities"
 

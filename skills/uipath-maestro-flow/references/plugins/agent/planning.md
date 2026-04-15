@@ -1,6 +1,8 @@
 # Agent Node — Planning
 
-Agent nodes invoke published UiPath AI agents from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+Agent nodes invoke **published** UiPath AI agents from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+
+> **Published vs Inline:** This plugin covers the published/tenant-resource case. For agents defined inside the flow project itself (scaffolded via `uip agent init --inline-in-flow`), see [inline-agent/planning.md](../inline-agent/planning.md). Pick the published path when the agent is reused across flows or needs independent versioning; pick inline when the agent is tightly coupled to one flow.
 
 ## Node Type Pattern
 
