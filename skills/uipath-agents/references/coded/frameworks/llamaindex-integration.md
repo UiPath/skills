@@ -86,28 +86,27 @@ Use UiPath's LLM wrapper instead of raw `OpenAI()` from llama-index. This routes
 
 ### UiPathOpenAI
 
-> **CRITICAL: Never instantiate LLM clients at module level.** `uip codedagent init` imports your file — module-level LLM clients will fail because auth may not have happened yet. Always create LLM instances inside workflow steps or functions.
+Instantiate LLM clients inside a `@step` (not at module level, not as a class attribute on the `Workflow`). See [../lifecycle/build.md](../lifecycle/build.md) § Additional Instructions for the full rule.
 
 ```python
 from uipath_llamaindex.llms import UiPathOpenAI
 
-# INSIDE a workflow step or function, not at module level:
+# Inside a @step:
 llm = UiPathOpenAI()
 ```
 
 - Routes through UiPath's passthrough endpoint (Azure OpenAI API format)
 - No API key needed — uses UiPath authentication
-- Default model: `gpt-4.1-2025-04-14`
 
-### Supported Models
+### Selecting a Model
 
 ```python
-from uipath_llamaindex.llms import UiPathOpenAI, OpenAIModels
+from uipath_llamaindex.llms import UiPathOpenAI, OpenAIModel
 
-llm = UiPathOpenAI(model=OpenAIModels.GPT_4O_2024_11_20)
+llm = UiPathOpenAI(model=OpenAIModel.GPT_4O_2024_11_20)
 ```
 
-Available models include: `GPT_4O_2024_05_13`, `GPT_4O_2024_08_06`, `GPT_4O_2024_11_20`, `GPT_4O_MINI_2024_07_18`, `GPT_4_1_2025_04_14` (default), `GPT_4_1_MINI_2025_04_14`, `GPT_4_1_NANO_2025_04_14`, `O3_MINI_2025_01_31`.
+The enum is `OpenAIModel` (singular). `GeminiModel` and `BedrockModel` are also available from `uipath_llamaindex.llms` for non-OpenAI vendors. Use `sdk.agenthub.get_available_llm_models()` to list the models available in your tenant.
 
 ---
 
@@ -149,23 +148,20 @@ class IntermediateEvent(Event):
     processed_query: str
 
 class MyAgent(Workflow):
-    llm = UiPathOpenAI()
-
     @step
     async def process_query(self, ev: QueryEvent) -> IntermediateEvent:
         return IntermediateEvent(processed_query=ev.query.strip().lower())
 
     @step
     async def generate_answer(self, ev: IntermediateEvent) -> AnswerEvent:
-        response = await self.llm.acomplete(
-            f"Answer this question: {ev.processed_query}"
-        )
+        llm = UiPathOpenAI()
+        response = await llm.acomplete(f"Answer this question: {ev.processed_query}")
         return AnswerEvent(answer=str(response))
 
 workflow = MyAgent(timeout=60, verbose=False)
 ```
 
-**Important:** The variable name MUST match what's in `llama_index.json` (e.g., `workflow` if the config says `main.py:workflow`) and be an instantiated `Workflow`.
+**Important:** The variable name MUST match what's in `llama_index.json` (e.g., `workflow` if the config says `main.py:workflow`) and be an instantiated `Workflow`. Instantiate LLM clients inside the step that uses them — class attributes on a `Workflow` evaluate at class-definition (import) time and will fail before auth is configured.
 
 ### Step Decorator
 

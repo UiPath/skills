@@ -1,33 +1,53 @@
 # Human-in-the-Loop & Interrupt/Resume
 
-Pause agent execution for human approval, external processes, or job monitoring using LangGraph's `interrupt()` function.
+Pause agent execution for human approval, external processes, or job monitoring.
 
-## How Interrupts Work
+## Pause Patterns
 
-```
-Agent Running → interrupt(model) → Pause → External Work → Resume with Result
-```
+**HITL pattern selection MUST be an interactive question unless the user named a specific pattern.** "Human in the loop", "approval", "confirmation", "review", "escalation" alone do NOT name a pattern.
+
+If the user has not named one, your ENTIRE response must be a question that lists ONLY the patterns available for the already-selected framework (use the column matching the framework in the table below). Do NOT wrap it in headers, status summaries, or "I'll go with X". Just ask and stop.
+
+| Pattern | When | LangGraph | LlamaIndex |
+|---|---|---|---|
+| API trigger | Resumed via an Orchestrator inbox URL; no Action Center involved | `interrupt({...})` | `InputRequiredEvent(...)` |
+| Action Center task | Structured form for a human reviewer | `interrupt(CreateTask(...))` | `CreateTaskEvent(...)` |
+| Escalation task | Task flagged as escalation | `interrupt(CreateEscalation(...))` | use `CreateTaskEvent` (no event-level distinction) |
+| Wait for existing task | A task was already created elsewhere; resume when it completes | `interrupt(WaitTask(...))` | `WaitTaskEvent(...)` |
+| Invoke a process | Trigger an RPA process; resume on completion | `interrupt(InvokeProcess(...))` | `InvokeProcessEvent(...)` |
+| Wait for existing job | A job is running elsewhere; resume on its completion | `interrupt(WaitJob(...))` | `WaitJobEvent(...)` |
+
+OpenAI Agents has no first-class HITL support. Coded Function (no framework) has no checkpoint/resume — call `sdk.actions.create()` then `sdk.actions.wait()` synchronously if a synchronous human step is needed.
+
+LangGraph models live in `uipath.platform.common`; LlamaIndex events live in `uipath_llamaindex.models.events`.
+
+## API Trigger
+
+No Action Center app, no platform resource — pass a plain payload. The runtime allocates an inbox UUID and exposes it via an Orchestrator API URL; resume by POSTing JSON to that URL or via `--resume`.
+
+### LangGraph
 
 ```python
 from langgraph.types import interrupt
-result = interrupt(SomeModel(...))  # Agent pauses here, resumes with result
+
+result = interrupt({"prompt": "Approve?", "category": state["category"]})
+# Resume locally: uip codedagent run <ENTRYPOINT> --resume '{"approved": true}'
 ```
 
-## Interrupt Models
+### LlamaIndex
 
-| Model | Import | Purpose |
-|-------|--------|---------|
-| `CreateTask` | `uipath.platform.common` | Create escalation in Action Center |
-| `WaitTask` | `uipath.platform.common` | Wait for existing task completion |
-| `InvokeProcess` | `uipath.platform.common` | Call RPA process and wait |
-| `WaitJob` | `uipath.platform.common` | Monitor existing job |
+```python
+from llama_index.core.workflow import InputRequiredEvent, HumanResponseEvent
 
-## CreateTask — Escalate to Human
+ctx.write_event_to_stream(InputRequiredEvent(prefix="Approve?"))
+response = await ctx.wait_for_event(HumanResponseEvent)
+```
+
+## CreateTask — Send Work to a Human
 
 ```python
 from langgraph.graph import START, END, StateGraph, MessagesState
 from langgraph.types import Command, interrupt
-from langchain_core.messages import ToolMessage
 from uipath.platform.common import CreateTask
 
 class GraphState(MessagesState):
@@ -50,12 +70,36 @@ async def escalate_to_human(state: GraphState) -> Command:
     })
 ```
 
-**CreateTask fields:** `app_name`, `app_folder_path`, `title`, `data` (dict), `assignee` (email, optional)
+**Fields:**
+- `title` — short task title
+- `data` — payload shown to the human (dict). Keys must match the Action Center app's input schema, otherwise Orchestrator renders empty fields in the "Human review required" view.
+- `app_name`, `app_folder_path` — target Action Center app and folder (use `app_folder_key` / `app_key` when the GUIDs are known)
+- `assignee` — email of the user to assign (optional)
+- `recipient`, `priority`, `labels`, `source_name`, `is_actionable_message_enabled`, `actionable_message_metadata` — optional metadata
 
 **Return value:**
 ```python
 {"status": "approved|rejected|pending", "assigned_to": "user@example.com", "completed_at": "...", ...}
 ```
+
+### Escalation Variant
+
+Swap `CreateTask` for `CreateEscalation` when the task is an escalation. Fields and return value are identical:
+
+```python
+from uipath.platform.common import CreateEscalation
+
+task_output = interrupt(CreateEscalation(
+    app_name="EscalationReview",
+    app_folder_path="Finance",
+    title="Threshold exceeded — needs director approval",
+    data={"amount": state["amount"], "reason": state["flag_reason"]},
+    assignee="director@example.com",
+    priority="High",
+))
+```
+
+**LlamaIndex equivalent:** `ctx.write_event_to_stream(CreateTaskEvent(app_name=..., app_folder_path=..., title=..., data={...}))` — same fields as `CreateTask`.
 
 ## WaitTask — Monitor Existing Task
 
@@ -66,6 +110,8 @@ async def monitor_task(state: GraphState) -> Command:
     task_output = interrupt(WaitTask(task_id=state["existing_task_id"]))
     return Command(update={"task_result": task_output})
 ```
+
+**LlamaIndex equivalent:** `ctx.write_event_to_stream(WaitTaskEvent(task_id=...))`
 
 ## InvokeProcess — Call RPA Automation
 
@@ -79,6 +125,8 @@ result = interrupt(InvokeProcess(
 ))
 ```
 
+**LlamaIndex equivalent:** `ctx.write_event_to_stream(InvokeProcessEvent(name=..., process_folder_path=..., input_arguments={...}))`
+
 ## WaitJob — Monitor Existing Job
 
 ```python
@@ -87,7 +135,9 @@ from uipath.platform.common import WaitJob
 output = interrupt(WaitJob(job_id=background_job_id))
 ```
 
-## Patterns
+**LlamaIndex equivalent:** `ctx.write_event_to_stream(WaitJobEvent(job_id=...))`
+
+## Composite Examples
 
 ### Conditional Interrupt
 

@@ -15,7 +15,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Human-in-the-loop | ✅ escalation | ✅ `interrupt()` |
 | Complex conditional HITL resume logic | ❌ | ✅ |
 | Studio Web Agent Builder canvas | ✅ | Optional |
-| `@mockable()` for evaluation isolation | ❌ | ✅ |
+| `@mockable` for evaluation isolation | ❌ | ✅ |
 | Full runtime control over LLM prompts | ❌ | ✅ |
 | Multi-model / multi-framework strategies | ❌ | ✅ |
 | Fastest path to first working agent | ✅ | ❌ |
@@ -29,7 +29,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Language | Python | Declarative JSON (`agent.json`) |
 | CLI | `uip codedagent` | `uip agent` + `uip solution` |
 | Project marker | `pyproject.toml` + `.py` files | `agent.json` + `project.uiproj` |
-| Frameworks | LangGraph, LlamaIndex, OpenAI Agents, Simple Function | None (prompt + tools config) |
+| Frameworks | LangGraph, LlamaIndex, OpenAI Agents, Coded Function | None (prompt + tools config) |
 | Deployment | `uip codedagent deploy` | `uip solution pack/publish/deploy` |
 | Local testing | `uip codedagent run` | Studio Web only |
 | Evaluations | `uip codedagent eval` (13 evaluator types) | Not available |

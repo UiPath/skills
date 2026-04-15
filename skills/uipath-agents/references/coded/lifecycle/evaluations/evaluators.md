@@ -70,6 +70,8 @@ Tree-based JSON comparison. Continuous scoring (0.0-1.0). Strings use Levenshtei
 
 **Use for:** Structured JSON output, API responses. **Avoid for:** Exact string matching.
 
+LLM-based evaluators (all `uipath-llm-judge-*`) require `model` in `evaluatorConfig` — set it to a model available in your tenant. An empty or missing `model` fails at request time against the LLM Gateway.
+
 ### LLMJudgeOutputEvaluator (`uipath-llm-judge-output-semantic-similarity`)
 
 LLM-powered semantic similarity. Continuous scoring (0.0-1.0). Accept 0.7+ as good match.

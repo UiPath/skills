@@ -36,7 +36,7 @@ sdk = UiPath(client_id="id", client_secret="secret", scope="scope", base_url="ur
 | Guardrails | `sdk.guardrails` | Evaluate guardrails on data |
 | Folders | `sdk.folders` | Folder key resolution |
 | Tasks | `sdk.tasks` | Action Center task management |
-| AgentHub | `sdk.agenthub` | LLM model listing and system agent invocation |
+| AgentHub | `sdk.agenthub` | LLM model discovery and system agent invocation |
 | MCP | `sdk.mcp` | List and retrieve MCP servers |
 | Resource Catalog | `sdk.resource_catalog` | Search and list tenant/folder resources |
 
@@ -188,7 +188,12 @@ task = sdk.tasks.retrieve(task_key="task-key-123")
 ## AgentHub
 
 ```python
-models = sdk.agenthub.list_models()
+models = sdk.agenthub.get_available_llm_models()
+# Each item exposes `.model_name` and `.vendor`
+
+# Pick a model by vendor (example: first OpenAI model available in the tenant)
+openai_model = next(m.model_name for m in models if m.vendor == "OpenAI")
+
 result = sdk.agenthub.invoke(agent_name="system-agent", input_data={"query": "Help me"})
 ```
 
@@ -196,7 +201,7 @@ result = sdk.agenthub.invoke(agent_name="system-agent", input_data={"query": "He
 
 ```python
 servers = sdk.mcp.list()
-server = sdk.mcp.retrieve(name="my-mcp-server")
+server = sdk.mcp.retrieve(slug="my-mcp-server", folder_path="MyFolder")
 ```
 
 ## Resource Catalog

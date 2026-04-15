@@ -19,7 +19,7 @@ The schemas should be written as pydantic types.
 
 ### Step 2: Choose Agent Type
 
-#### Simple Function Agent (no LLM framework)
+#### Coded Function Agent (no LLM framework)
 
 For agents with deterministic logic, SDK calls, or simple processing — use `main.py` with a traced function:
 
