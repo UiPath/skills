@@ -91,7 +91,7 @@ This table maps sdd.md component types to the primary cache file to search and t
 | AGENT | `agent-index.json` | agent |
 | CASE_MANAGEMENT | `caseManagement-index.json` | case-management |
 | CONNECTOR_ACTIVITY | `typecache-activities-index.json` | execute-connector-activity |
-| CONNECTOR_TRIGGER | `typecache-triggers-index.json` | wait-for-connector |
+| CONNECTOR_TRIGGER | `typecache-triggers-index.json` | *see Step 4 Section 2 — routes to either `triggers add-event` (case-level trigger) or `tasks add --type wait-for-connector` (stage-level task) depending on sdd.md placement* |
 | EXTERNAL_AGENT | *(not in cache)* | external-agent |
 | TIMER | *(not in cache)* | wait-for-timer |
 | PROCESS | `process-index.json` | process |
@@ -130,11 +130,27 @@ Title format: `Create case file "<name>"`
 
 Set up the case definition with name, description, key prefix.
 
-##### 2. Configure trigger (T02)
+##### 2. Configure case-level connector trigger (T02)
 
-Title format: `Configure wait-for-connector trigger "<name>"`
+**Apply this section only when the connector is the case entry point** — i.e., the sdd.md lists it under a "Case Triggers" (or equivalent) section *outside* any stage. If instead the connector appears *inside* a stage's task table (e.g., "wait for payment confirmation" mid-flow), it is a regular task — skip this section and render it in section 5 below.
 
-For connector triggers, resolve via registry using `typecache-triggers` and include connection details from `get-connection` if applicable.
+A connector in `typecache-triggers-index.json` has two valid forms in a case plan. The form is determined by **sdd.md placement**, not by the connector itself:
+
+| Form | sdd.md placement | Title format | Execution CLI | Node produced |
+|------|-----------------|--------------|---------------|---------------|
+| **A — Case-level trigger** | Under "Case Triggers" (outside any stage) | `Configure wait-for-connector trigger "<name>"` | `uip case triggers add-event --type-id <id> --connection-id <id>` | `case-management:Trigger` with `uipath.serviceType: "Intsvc.EventTrigger"` |
+| **B — Stage-level task** | Inside a stage's task table | `Add wait-for-connector task "<name>" to "<stage>"` | `uip case tasks add --type wait-for-connector --task-type-id <id>` | Task entry inside `stage.data.tasks` |
+
+For both forms, resolve via `typecache-triggers-index.json` and include connection details from `get-connection` if a match is found.
+
+**Placeholder fallback — Form A only.** `triggers add-event` enforces a required `--type-id`, so a case-level trigger whose registry lookup fails cannot be materialized via CLI. Handle this as follows:
+
+1. In tasks.md T02, mark the entry with `cliRenderable: false` and a clear `placeholderReason`.
+2. In the Execution Phase (Step 8), skip the `triggers add-event` call for this entry. Leave the default `trigger_1` node in place as the entry point.
+3. In `registry-resolved.json`, record `status: "REGISTRY LOOKUP FAILED: ..."` and add `cliGap: "triggers add-event requires --type-id"`.
+4. **Do NOT re-route the placeholder to Form B** (i.e., do not emit a `wait-for-connector` task inside the first stage). That silently changes case semantics from "case entry gate" to "stage task" — two different runtime behaviors.
+
+**Placeholder fallback — Form B.** `tasks add --type wait-for-connector` accepts no `--task-type-id`. When the lookup fails, render the task normally without `--task-type-id` and mark it `placeholder: true`. No special handling needed.
 
 ##### 3. Create stages (one per stage)
 
