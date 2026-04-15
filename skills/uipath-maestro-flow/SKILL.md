@@ -221,12 +221,27 @@ Common error categories:
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
+
+#### Debug output — surface the Studio Web URL and instanceId first
+
+When reporting debug results back to the user, the **first two lines of the summary MUST be the Studio Web URL and the instanceId**, in that order, each on its own line and clearly labeled. Parse them from the `uip flow debug --output json` response (`Data.studioWebUrl` / `Data.instanceId`, or the equivalent fields in the streamed output — fall back to regex-scraping the stdout if the JSON shape differs). Only after those two lines should the rest of the run summary follow (status, duration, node traces, errors, etc.).
+
+Required format:
+
+```
+Studio Web URL: <url>
+Instance ID: <instanceId>
+
+<the rest of the summary — status, node traces, errors, etc.>
+```
+
+If either value is missing from the CLI output, say so explicitly on that line (e.g., `Studio Web URL: <not returned by CLI>`) rather than omitting the line — the user should never have to scroll for these.
 
 ### Step 8 — Publish to Studio Web
 
