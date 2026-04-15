@@ -22,6 +22,8 @@ initial_prompt: |
   The HITL node should show the manager: invoice ID, vendor name, and amount.
   The manager should be able to Approve or Reject.
 
+  Use an inline QuickForm schema (not a deployed Action App).
+
   After adding the HITL node and wiring it, validate the flow.
 
   Save a summary to report.json with:

@@ -49,6 +49,7 @@ initial_prompt: |
 
   Now add a Human-in-the-Loop node between the trigger and the posting step.
   A manager should review and approve the expense before it is posted.
+  Use an inline QuickForm schema (not a deployed Action App).
   Wire the completed handle to the posting step and validate the flow.
 
   Save a summary to report.json with:

@@ -21,6 +21,8 @@ initial_prompt: |
   deletion runs — we need an audit trail for every decision. If the officer
   doesn't respond within 7 days, escalate automatically.
 
+  Use an inline QuickForm schema (not a deployed Action App).
+
   Save results to report.json:
   {
     "project_name": "<name used>",
