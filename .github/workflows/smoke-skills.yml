@@ -13,7 +13,67 @@ on:
   workflow_dispatch:
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    name: Detect changed skills
+    outputs:
+      task_globs: ${{ steps.detect.outputs.task_globs }}
+      skip: ${{ steps.detect.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed skills and map to test tasks
+        id: detect
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # If test infrastructure changed, run all smoke tests
+          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$'; then
+            echo "task_globs=tasks/**/*.yaml" >> "$GITHUB_OUTPUT"
+            echo "Running all smoke tests (test infrastructure changed)"
+            exit 0
+          fi
+
+          # Extract unique skill names from changed paths
+          SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u)
+
+          # Also include skills whose test tasks changed
+          TEST_SKILLS=$(echo "$CHANGED" | grep '^tests/tasks/' | sed 's|tests/tasks/\([^/]*\)/.*|\1|' | sort -u)
+          SKILLS=$(printf '%s\n%s' "$SKILLS" "$TEST_SKILLS" | sort -u | grep -v '^$')
+
+          if [ -z "$SKILLS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No skill changes detected — skipping smoke tests"
+            exit 0
+          fi
+
+          # Build task glob pattern for changed skills that have tests
+          GLOBS=""
+          for skill in $SKILLS; do
+            if [ -d "tests/tasks/$skill" ]; then
+              if [ -n "$GLOBS" ]; then
+                GLOBS="$GLOBS tasks/tasks/$skill/**/*.yaml"
+              else
+                GLOBS="tasks/tasks/$skill/**/*.yaml"
+              fi
+              echo "Will test: $skill"
+            else
+              echo "No tests for: $skill (skipping)"
+            fi
+          done
+
+          if [ -z "$GLOBS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Changed skills have no test tasks — skipping smoke tests"
+          else
+            echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
+          fi
+
   e2e:
+    needs: detect
+    if: needs.detect.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     name: Run skill smoke tests
@@ -69,7 +129,8 @@ jobs:
         working-directory: tests
         id: smoke
         run: |
-          coder-eval run tasks/**/*.yaml \
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke"
+          coder-eval run ${{ needs.detect.outputs.task_globs }} \
             -e experiments/default.yaml --tags smoke -j 1 -v
         continue-on-error: true
 
