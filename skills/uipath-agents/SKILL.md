@@ -7,13 +7,10 @@ user-invocable: true
 
 # UiPath Agents
 
-## CLI Setup
+## Hard Rules
 
-```bash
-which uip > /dev/null 2>&1 && echo "uip found" || echo "uip NOT found — run: npm install -g @uipath/cli"
-```
-
-If `uip` is not found, install with `npm install -g @uipath/cli`. If `npm` is missing, ask the user to install Node.js first.
+- Treat "build/create/scaffold/implement a UiPath agent" as the full One-Prompt Flow by default. Do not stop after file creation or local run unless the user explicitly says to stop there.
+- A normal completion point is after smoke eval and the mandatory Delivery fork question. A final build summary before that is premature unless run/eval is blocked or the user opted out.
 
 ## Project Type Detection
 
