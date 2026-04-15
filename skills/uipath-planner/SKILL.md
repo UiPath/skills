@@ -26,8 +26,8 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 
 | Skill | What it owns | Handles auth? | Handles deploy? |
 |---|---|---|---|
-| `uipath-rpa` | C# coded workflows + XAML workflows: create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end. | No (relies on Studio) | **No** — defer to `uipath-platform` |
-| `uipath-agents` | Python agents (LangGraph/LlamaIndex/OpenAI Agents) and low-code agents (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
+| `uipath-rpa` | RPA workflows (XAML and C# coded): create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end. | No (relies on Studio) | **No** — defer to `uipath-platform` |
+| `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Studio Web by default; `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
@@ -55,22 +55,30 @@ Ask the user key questions using AskUserQuestion. Only ask questions the request
 - Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
 - Do NOT call EnterPlanMode.
 
-### Question 2: Project type (if ambiguous)
+### Project type: infer first, ask only if vague
 
-Ask only if the request does not clearly indicate a project type.
+Resolve project type on your own. Stop at the first match:
 
-> What type of project would you like to build?
+1. **User explicitly named a mode** ("xaml workflow", "coded workflow", "C# workflow", ".cs file", "low-code") → honor it. Record `Project type: XAML` or `Project type: C# coded` in the plan header.
+2. **Keyword signals** (look for these in the user's request, but do not echo them as labels) →
+   - "agent", "AI agent", "agentic", "LLM", "LangGraph", "LlamaIndex", "OpenAI Agents" → **AI Agent**
+   - "flow", "orchestrate multiple automations", `.flow` → **Flow**
+   - "web app", "app", "React", "Angular", "Vue", `.uipath/` → **Application**
+3. **Filesystem signals** (Step 3) → route per the Step 3 table.
+4. **Default** → **RPA workflow (XAML)**. Covers ~95% of UiPath work — UI automation, form-fill, Excel / email / file ops.
+
+Only ask if the request is genuinely vague ("I want to build something with UiPath") AND no keyword or filesystem signals apply. Ask exactly this:
+
+> What kind of project should I scaffold?
 >
-> 1. **Automation workflow** — XAML low-code, with C# coded fallback for complex parts *(recommended)*
-> 2. **Python agent** — LangGraph/LlamaIndex/OpenAI Agents
+> 1. **RPA workflow** — UI automation, Excel / email / file work *(recommended — covers ~95% of UiPath work)*
+> 2. **AI Agent** — autonomous agent that reasons with an LLM and calls tools
 > 3. **Flow** — visual node-based orchestration connecting multiple automations
-> 4. **Coded web app** — React/Angular/Vue deployed to UiPath
+> 4. **Application** — custom UI deployed as a UiPath App
 
-Skip if the user already specified a project type or Step 3 filesystem signals resolve it.
+If the user picks **RPA workflow**, record `Project type: XAML` and move on. **Never follow up with "XAML or C#?"** — that authoring-mode decision belongs to `uipath-rpa`, not the planner. Coded mode is set only when the user independently says "coded workflow" or ".cs file" (which rule 1 above already honors); never as a follow-up.
 
-**Do not ask the user to choose between XAML and C#.** Automation workflows default to XAML; `uipath-rpa` selects C# coded fallback for parts that are too complex to build in XAML.
-
-### Question 3: PDD/SDD document (new automations)
+### Question 2: PDD/SDD document (new automations)
 
 > Do you have a Process Definition Document (PDD) or Solution Design Document (SDD)? If so, provide the file path and I'll use it to guide the plan.
 
@@ -164,18 +172,44 @@ echo "=== CWD ===" && ls -1 project.json *.cs *.xaml *.py pyproject.toml flow_fi
 
 **No signals?** Use Step 1 answers. If still undetermined, plan with best available info and note the assumption.
 
-## Step 4 — UIA elicitation (only when the plan includes a UI automation workflow)
+## Step 4 — UI element targeting (only when the plan includes UI automation)
 
-If the plan loads `uipath-rpa` for a workflow that interacts with a desktop or browser app's elements, ask:
+If the plan loads `uipath-rpa` for a workflow that clicks, types into, or reads elements in a desktop or browser app, ask the three questions defined below — **App type**, **Targeting approach**, and **App state** — in one batched `AskUserQuestion` call. Skip any question already resolved from the user's request (skip rules listed after the question definitions). Keep the wording **generic** — do not inject domain-specific names ("HR app", "Salesforce", "Workday") into the question text; the app identity lives in the plan header, not the questions.
 
-> How should UI elements be targeted?
+### Question 1 of 3: App type
+
+> What kind of application are we automating?
 >
-> 1. **Autonomous capture** — the agent discovers elements from the live app and registers them automatically *(recommended)*
-> 2. **Guided indication** — you physically click on each target element in the live app when the agent prompts you
+> 1. **Web / browser app** — the app runs in a browser (e.g., Workday, SAP SuccessFactors, a custom web app). I'll discover elements using browser selectors.
+> 2. **Desktop app** — a Windows desktop app (WinForms / WPF / Win32). I'll discover elements from the running application window.
+> 3. **Citrix / remote session** — app running in Citrix or RDP. I'll use image- and OCR-based targeting since native selectors aren't available through the remote session.
 
-Note the answer in the plan header. `uipath-rpa` applies it via the corresponding target-configuration flow (documented in its own references).
+### Question 2 of 3: Targeting approach
 
-**Skip this question** for non-UI plans (pure data processing, API calls, agent-only, flow-only).
+> How should I handle the UI elements in this automation?
+>
+> 1. **I build it, you review it** — I write the full workflow using the most reliable selectors I can find from the live app, then you review the result in Studio and refine if needed. *(recommended — the default path for ~90% of UI automations)*
+> 2. **You indicate each element** — you click through each target element in Studio's Selector editor. Adds ~3 minutes of setup but gives you Object Repository and canonical selector management from the start.
+
+Offer only these two options. Never add a third "build it manually" or "I'll do it in Studio" option — a developer choosing manual authoring wouldn't be using a coding agent.
+
+### Question 3 of 3: App state
+
+> Is the app open on your machine?
+>
+> 1. **Yes, it's open and ready** — I'll inspect the running app, find the target form fields, and extract real selectors automatically. You don't need to do anything.
+> 2. **No, I'll open it first** — I'll wait while you launch the app and navigate to the relevant screen. Tell me when you're ready and I'll start discovery.
+> 3. **Skip discovery for now** — I'll scaffold the full workflow with placeholder selectors. The logic and structure will be complete, but you'll need to connect real selectors in Studio before it can run.
+
+### Per-question skip rules
+
+- **Skip Q1 (App type)** if the user already named the app kind. Signals: "web app", "browser", "browser-based", "Chrome", "Edge", "Safari" → `web`. "desktop app", "WinForms", "WPF", "Win32", "legacy app" → `desktop`. "Citrix", "RDP", "remote session", "remote desktop" → `citrix`. Record directly in the plan header.
+- **Skip Q2 (Targeting approach)** only if the user explicitly asked for one ("you build it", "I'll indicate each element").
+- **Skip Q3 (App state)** if the user already stated the app is running, not yet open, or asked to skip discovery.
+
+If all three are resolved from context, do not call `AskUserQuestion` at all. **Skip all three** for non-UI plans (pure data processing, API calls, agent-only, flow-only).
+
+Record the answers in the plan header. **The handoff is informational** — `uipath-rpa` does not read the plan file; it runs its own target-configuration flow when invoked. The plan-header fields exist so the human reviewer and the main agent retain the decisions in context, and so re-entry (new conversation, resumed session) has the same answers to work from.
 
 ## Step 5 — Write and save the plan
 
@@ -186,10 +220,12 @@ Note the answer in the plan header. `uipath-rpa` applies it via the correspondin
 
 **Goal:** <one sentence summarizing what the automation does>
 **Source document:** <path to PDD/SDD, or "None — planned from user request">
-**Project type:** <XAML / C# coded / agent / flow / app>
-**Expression language:** VB.NET (XAML only; N/A for coded / agent / flow / app)
+**Project type:** <XAML (default for RPA workflows) / C# coded (only if user explicitly asked) / AI Agent / Flow / Application>
+**Expression language:** VB.NET (XAML only; N/A for coded / AI Agent / Flow / Application)
 **Approach:** <explore first / simultaneous>
-**UI targeting:** <autonomous / guided / N/A>
+**App type:** <web / desktop / citrix / N/A>
+**App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
+**UI targeting:** <agent-builds-you-review / user-indicates / N/A>
 
 ## Understanding
 
@@ -253,7 +289,12 @@ Save as `YYYY-MM-DD-<feature-name>.md`:
 3. **Do not ask more than 5 questions total.** If still undetermined, plan with best available info.
 4. **Do not recommend a skill that contradicts the filesystem signals.** `.flow` files → `uipath-maestro-flow`, not `uipath-rpa`.
 5. **Do not skip Step 2.** Check multi-skill patterns before filesystem detection.
-6. **Do not ask the UIA question (Step 4) unless the plan includes a UI automation workflow.** Gate on the presence of UI element targeting, NOT on whether `uipath-servo` is loaded — most UI plans are single-skill `uipath-rpa`.
+6. **Do not ask the UI-targeting question (Step 4) unless the plan includes a UI automation workflow.** Gate on the presence of UI element targeting, NOT on whether `uipath-servo` is loaded — most UI plans are single-skill `uipath-rpa`.
 7. **Do not route UI automation through `uipath-servo` for element discovery or selector work.** `uipath-rpa` is the sole workflow authoring skill. Servo is only for live-app interaction and post-build verification.
 8. **Do not describe specialist-internal flows in the plan** (target-configuration procedures, OR registration, scaffolding/write-agent pipelines, auth steps, pack/publish details). Route to the skill and let it follow its own documentation — inlining those flows creates drift.
 9. **Do not save a plan with placeholders** (TBD, TODO, as needed, similar to Task N).
+10. **Do not ask the user to choose between XAML and C#.** Project type is inferred from the request (see "Project type: infer first, ask only if vague" in Step 1). RPA workflows are XAML by default. Coded mode is only set when the user explicitly says "coded workflow", "C# workflow", or "create a .cs file" — record the choice directly, no question needed.
+11. **Do not surface C# as recommended for routine UI automation.** Form-fill, Type Into, Click, dropdown selection, Excel / email / file work — all bread-and-butter XAML. The default project type for RPA workflows is XAML, full stop. C# coded fallback is an internal `uipath-rpa` decision for individual subtasks, never a top-level recommendation from the planner.
+12. **Do not add a third option to the UI-targeting question.** Only two options exist: "I build it, you review it" (default) and "You indicate each element". Never invent a third "build it manually", "I'll do it in Studio", or "skip targeting" option — a developer choosing manual authoring wouldn't be using a coding agent, and adding it creates analysis paralysis for no gain.
+13. **Do not leak internal jargon or implementation details into user-facing questions.** Never mention "Servo", "snapshot", "hand-wire", "AutomationId", "selector candidate", "autonomous capture", "target configuration", "wire up later", or other internal terms. Never expose the runtime / framework / language stack in option labels or descriptions: no "Python agent", "Coded web app", "React / Angular / Vue", "LangGraph / LlamaIndex". Use the product category instead — "AI Agent", "Application", "RPA workflow". Speak in plain developer language: "the live app", "Studio", "elements", "selectors", "inspect", "discover". Implementation details are the specialist skill's concern, not the user's.
+14. **Do not inject the user's domain or app name into the question text.** Ask "What kind of application are we automating?" — not "What kind of HR application…". "Is the app open on your machine?" — not "Is the HR app open…". The domain is captured in the plan header; keeping questions generic makes them reusable and prevents the agent from sounding like it's reading back a template.
