@@ -1,60 +1,42 @@
 # Default owners for the entire repo
-
 - @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2
 
 # CI workflows and review config
-
 /.github/ @uipreliga
 
 # Hooks
-
 /hooks/ @DragosUnguru
 
 # Activity references
-
 /references/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-
 /skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
-
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
 
 # Agents skill (coded + low-code)
-
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 
 # Planner skill
-
 /skills/uipath-planner/ @RaduAna-Maria
 
 # Flow skill
-
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala
 
 # HITL skill
-
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-
 /skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
 
-# Flow skill — node category guides (away team owned)
-
-# Add your team here when contributing a new node category file
-
 # Flow skill — plugin guides (away team owned)
-
 # Add your team here when contributing a new plugin category
-
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 
 # Diagnostics
-
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
