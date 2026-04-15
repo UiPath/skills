@@ -1,0 +1,42 @@
+task_id: skill-flow-slack-weather-pipeline
+description: >
+  Multi-step pipeline: read Slack channel description, extract city with a script,
+  fetch weather for that city via HTTP, decide warm/cold. Exercises chaining
+  Slack connector → Script → HTTP → Decision → End with data flowing between nodes.
+tags: [uipath-maestro-flow, e2e, generate, connector, multi-step]
+max_iterations: 1
+task_timeout: 2400 # this is a harder test.
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description to find out which city the office is in, then fetch the current weather for that city from open-meteo. If it's above 60F output 'warm office today', otherwise 'cold office today'.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip flow validate SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow debug runs end-to-end: Slack + HTTP + decision all execute, output contains verdict"
+    command: "python3 $TASK_DIR/check_slack_weather_pipeline.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

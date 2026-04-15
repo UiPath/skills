@@ -1,0 +1,41 @@
+task_id: skill-flow-multi-city-weather
+description: >
+  Loop over 3 cities, fetch weather from open-meteo for each, classify warm/cold
+  with a script, collect results. Exercises Loop → HTTP → Script chaining with
+  data flowing between nodes across iterations.
+tags: [uipath-maestro-flow, e2e, generate, ootb, multi-step]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a flow called "MultiCityWeather". Loop over Seattle, Phoenix, and New York — for each city, fetch the current temperature from open-meteo (fahrenheit) and classify it as 'warm' (> 60F) or 'cold'. Output an array with all 3 results, each having the city name, temperature, and verdict.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip flow validate MultiCityWeather/MultiCityWeather/MultiCityWeather.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow debug runs: loop + HTTP + script all execute, output contains all 3 cities"
+    command: "python3 $TASK_DIR/check_multi_city_weather.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
