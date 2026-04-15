@@ -19,6 +19,7 @@ jobs:
     outputs:
       task_globs: ${{ steps.detect.outputs.task_globs }}
       skip: ${{ steps.detect.outputs.skip }}
+      untested_skills: ${{ steps.detect.outputs.untested_skills }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,6 +52,7 @@ jobs:
 
           # Build task glob pattern for changed skills that have tests
           GLOBS=""
+          UNTESTED=""
           for skill in $SKILLS; do
             if [ -d "tests/tasks/$skill" ]; then
               if [ -n "$GLOBS" ]; then
@@ -60,16 +62,62 @@ jobs:
               fi
               echo "Will test: $skill"
             else
+              if [ -n "$UNTESTED" ]; then
+                UNTESTED="$UNTESTED, $skill"
+              else
+                UNTESTED="$skill"
+              fi
               echo "No tests for: $skill (skipping)"
             fi
           done
 
+          if [ -n "$UNTESTED" ]; then
+            echo "untested_skills=$UNTESTED" >> "$GITHUB_OUTPUT"
+          fi
+
           if [ -z "$GLOBS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Changed skills have no smoke tests: $SKILLS"
+            echo "::warning::Changed skills have no smoke tests: $UNTESTED"
           else
             echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
           fi
+
+  warn-untested:
+    needs: detect
+    if: needs.detect.outputs.untested_skills != ''
+    runs-on: ubuntu-latest
+    name: Warn about untested skills
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const skills = '${{ needs.detect.outputs.untested_skills }}';
+            const body = `⚠️ **Smoke test coverage gap** — the following changed skills have no tests under \`tests/tasks/\`:\n\n${skills.split(', ').map(s => '- `' + s + '`').join('\n')}\n\nConsider adding smoke tests before merging.`;
+
+            // Avoid duplicate comments on repeated pushes
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('Smoke test coverage gap'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
 
   e2e:
     needs: detect
