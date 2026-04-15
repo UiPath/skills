@@ -55,7 +55,7 @@ Both phases operate under a shared **project root directory** (`<project-root>`)
 
 ### Planning Phase (Steps 0–5)
 
-Read the [task planning guide](references/task-planning/task-planning-guide.md) for full details.
+Read the [task planning guide](references/task-planning-guide.md) for full details.
 
 1. **Resolve the `uip` binary** — find `uip` on PATH or via npm global root.
 2. **Check login and pull registry** — `uip login status` + `uip case registry pull` to cache all resources locally.
@@ -66,7 +66,7 @@ Read the [task planning guide](references/task-planning/task-planning-guide.md) 
 
 ### Execution Phase (Steps 6–13)
 
-Read the [task execution guide](references/task-execution/task-execution-guide.md) for full details.
+Read the [task execution guide](references/task-execution-guide.md) for full details.
 
 1. **Create Case project structure** — scaffold solution, project, and case JSON file.
 2. **Add stages** — create stage and exception stage nodes.
@@ -99,8 +99,8 @@ Read the [task execution guide](references/task-execution/task-execution-guide.m
 
 | I need to... | Read these |
 |---|---|
-| **Plan tasks from an sdd.md** | [references/task-planning/task-planning-guide.md](references/task-planning/task-planning-guide.md) |
-| **Execute tasks.md via CLI** | [references/task-execution/task-execution-guide.md](references/task-execution/task-execution-guide.md) |
+| **Plan tasks from an sdd.md** | [references/task-planning-guide.md](references/task-planning-guide.md) |
+| **Execute tasks.md via CLI** | [references/task-execution-guide.md](references/task-execution-guide.md) |
 | **Understand the case JSON schema** | [references/case-schema.md](references/case-schema.md) |
 | **Know all CLI commands** | [references/case-commands.md](references/case-commands.md) |
 | **Resolve task types from registry** | [references/registry-discovery.md](references/registry-discovery.md) |
