@@ -239,6 +239,17 @@ Use the `/test-coverage` slash command to see what a skill's tests cover and whe
 
 This produces a markdown report in `tests/reports/` with component coverage, rule coverage, priority-ranked gaps, and concrete recommendations for new tests to write. Run this before and after adding tests to measure your progress.
 
+### Scaffolding Tests with `/generate-tasks`
+
+Use the `/generate-tasks` command to scaffold task YAML files from coverage gaps:
+
+```bash
+/generate-tasks uipath-platform              # generate tasks for highest-priority gaps
+/generate-tasks uipath-platform authentication  # target a specific area
+```
+
+Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. Verify that CLI commands, success criteria, and prompts match the skill's actual behavior, and adjust weights and thresholds based on what matters most for your skill.
+
 ## Quality Checklist
 
 Before submitting your PR, verify:

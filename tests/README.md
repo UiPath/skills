@@ -394,6 +394,20 @@ Reports are written to `tests/reports/<skill-name>.md` and include:
 
 The command is defined in [`.claude/commands/test-coverage.md`](../.claude/commands/test-coverage.md).
 
+### Generating Test Tasks
+
+Use the `/generate-tasks` slash command to scaffold new test tasks based on coverage gaps:
+
+```bash
+/generate-tasks uipath-platform                      # highest-priority gaps
+/generate-tasks uipath-platform authentication        # specific focus area
+/generate-tasks uipath-maestro-flow smoke             # specific test tier
+```
+
+This generates task YAML files (and optional check scripts) in `tests/tasks/<skill-name>/`. Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. In particular, verify that CLI commands, success criteria, and prompts match the skill's actual behavior.
+
+The command is defined in [`.claude/commands/generate-tasks.md`](../.claude/commands/generate-tasks.md).
+
 ## Further Reading
 
 - [coder_eval repository](https://github.com/UiPath/coder_eval) — framework docs, task definition guide, CLI reference
