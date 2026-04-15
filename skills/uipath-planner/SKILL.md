@@ -55,6 +55,17 @@ Ask the user key questions using AskUserQuestion. Only ask questions the request
 - Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
 - Do NOT call EnterPlanMode.
 
+### Question 2: Execution autonomy
+
+> Once execution starts, how should I handle ambiguity or scope concerns?
+>
+> 1. **Autonomous to completion** *(recommended)* — follow the plan end-to-end without stopping for confirmation. Only interrupt for the concrete hard blockers listed in the plan's `Stop conditions` section.
+> 2. **Interactive** — pause and confirm on structural decisions, scope concerns, or side-effect actions during execution.
+
+Record the answer in the plan header as `Execution autonomy`. Specialist skills read this field at runtime — in autonomous mode they do NOT re-ask decisions the plan already makes.
+
+**Skip this question** only in explore-first mode — the approval gate at plan time already scopes autonomy. Default to `autonomous` for simultaneous mode when the user does not specify.
+
 ### Project type: infer first, ask only if vague
 
 Resolve project type on your own. Stop at the first match:
@@ -78,7 +89,7 @@ Only ask if the request is genuinely vague ("I want to build something with UiPa
 
 If the user picks **RPA workflow**, record `Project type: XAML` and move on. **Never follow up with "XAML or C#?"** — that authoring-mode decision belongs to `uipath-rpa`, not the planner. Coded mode is set only when the user independently says "coded workflow" or ".cs file" (which rule 1 above already honors); never as a follow-up.
 
-### Question 2: PDD/SDD document (new automations)
+### Question 3: PDD/SDD document (new automations)
 
 > Do you have a Process Definition Document (PDD) or Solution Design Document (SDD)? If so, provide the file path and I'll use it to guide the plan.
 
@@ -223,6 +234,7 @@ Record the answers in the plan header. **The handoff is informational** — `uip
 **Project type:** <XAML (default for RPA workflows) / C# coded (only if user explicitly asked) / AI Agent / Flow / Application>
 **Expression language:** VB.NET (XAML only; N/A for coded / AI Agent / Flow / Application)
 **Approach:** <explore first / simultaneous>
+**Execution autonomy:** <autonomous / interactive>
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
@@ -239,6 +251,19 @@ was provided and note which sections informed each task.>
 - Why specific skills are loaded in this order
 - Trade-offs (e.g., XAML default with C# fallback for specific parts)
 - Risks or open questions
+
+## Stop conditions
+
+<Only populate when `Execution autonomy` is `autonomous`. List the concrete hard blockers that MUST interrupt execution — everything else is handled without asking the user. Examples:
+- Authentication fails and cannot be recovered without user credentials
+- The target application is unresponsive after a reasonable retry window
+- A UI element cannot be captured reliably after 3 selector-improvement attempts
+- The plan references a file, package, or resource that does not exist and cannot be created
+- A pre-existing record would block idempotent execution and cleanup is ambiguous
+
+In `interactive` mode this section is optional — the user is available to resolve ambiguity as it arises.
+
+"Scope feels large", "many tool calls used", "natural pause point", and "partial result looks usable" are NOT stop conditions. If it is not in this list, the executor continues.>
 
 ## Task 1: <skill-name> — <short description>
 
@@ -258,6 +283,7 @@ was provided and note which sections informed each task.>
 3. **Checkbox syntax.** `- [ ]` on every sub-step.
 4. **End every task with a validation step** (build, run, test, or verify output).
 5. **Capture all Step 1 preferences in the plan header.**
+5a. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode.
 6. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (e.g., target-configuration procedures, OR registration steps, XAML authoring pipelines, auth flows). Each specialist's own docs own those details.
 
 ### 5c. Self-review before saving
@@ -298,3 +324,4 @@ Save as `YYYY-MM-DD-<feature-name>.md`:
 12. **Do not add a third option to the UI-targeting question.** Only two options exist: "I build it, you review it" (default) and "You indicate each element". Never invent a third "build it manually", "I'll do it in Studio", or "skip targeting" option — a developer choosing manual authoring wouldn't be using a coding agent, and adding it creates analysis paralysis for no gain.
 13. **Do not leak internal jargon or implementation details into user-facing questions.** Never mention "Servo", "snapshot", "hand-wire", "AutomationId", "selector candidate", "autonomous capture", "target configuration", "wire up later", or other internal terms. Never expose the runtime / framework / language stack in option labels or descriptions: no "Python agent", "Coded web app", "React / Angular / Vue", "LangGraph / LlamaIndex". Use the product category instead — "AI Agent", "Application", "RPA workflow". Speak in plain developer language: "the live app", "Studio", "elements", "selectors", "inspect", "discover". Implementation details are the specialist skill's concern, not the user's.
 14. **Do not inject the user's domain or app name into the question text.** Ask "What kind of application are we automating?" — not "What kind of HR application…". "Is the app open on your machine?" — not "Is the HR app open…". The domain is captured in the plan header; keeping questions generic makes them reusable and prevents the agent from sounding like it's reading back a template.
+15. **Do not omit `Execution autonomy` from the plan header, and do not leave `Stop conditions` empty when autonomy is `autonomous`.** Downstream specialists rely on both to decide whether to interrupt. If the user did not answer the autonomy question, default to `autonomous` for simultaneous mode and note that choice in Decisions & Trade-offs. Populate Stop conditions with the hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources) — do not leave a generic placeholder.
