@@ -1,5 +1,7 @@
-# Solution Design Document
-## <PROCESS_NAME>
+# Solution Design Document — <PROCESS_NAME>
+
+<!-- Use this template when the primary product is RPA Process, RPA Library, or RPA Test Automation.
+     Select the specific Project Type in §11 based on the PDD's intent. -->
 
 ---
 
@@ -35,7 +37,7 @@
 | Field | Value |
 |---|---|
 | **Process name** | <PROCESS_NAME> |
-| **Objective** | <1-2 sentence description of what the automation achieves> |
+| **Objective** | <OBJECTIVE> |
 | **Department / Function** | <DEPARTMENT> — <FUNCTION> |
 | **Schedule** | <FREQUENCY_AND_HOURS> |
 | **Volume** | <ITEMS_PER_DAY> (peak: <PEAK_PERIOD>) |
@@ -45,18 +47,12 @@
 
 ## In Scope
 
-<!-- List the activities that are in scope for automation, as described in the PDD -->
-
 - <ACTIVITY_1>
-- <ACTIVITY_2>
 - ...
 
 ## Out of Scope
 
-<!-- List the activities explicitly out of scope, as stated in the PDD -->
-
 - <ACTIVITY_1>
-- <ACTIVITY_2>
 - ...
 
 ---
@@ -64,8 +60,7 @@
 # 2. Process Map
 
 <!-- Build the process map STRICTLY from the steps extracted in Phase 1. Do not invent steps.
-     Use mermaid flowchart syntax. One node per extracted step. Include decision points and loop boundaries
-     only when the PDD explicitly describes them. If the PDD has no decision points, produce a linear flow. -->
+     Use mermaid flowchart syntax. One node per extracted step. -->
 
 ```mermaid
 flowchart TD
@@ -77,44 +72,32 @@ flowchart TD
 | Step | Description | Application |
 |---|---|---|
 | <STEP_NUMBER> | <SHORT_DESCRIPTION> | <APP_NAME> |
-| ... | ... | ... |
 
 ---
 
 # 3. Detailed Process Steps
 
-<!-- Use a single summary table for ALL steps. Add a "Step Details" subsection only for steps that
-     have complex branching, sub-steps, or multi-application interactions.
-     Do NOT include selectors or UI element identifiers — those are determined during development.
-     Reference business rules by ID (e.g., BR-01) where applicable. -->
+<!-- Single summary table for ALL steps. Add Step Details subsections ONLY for complex steps. -->
 
 ## Step Summary
 
 | # | Action | Application | Input | Output | Rules | Errors |
 |---|---|---|---|---|---|---|
-| <STEP_NUMBER> | <WHAT_THE_ROBOT_DOES> | <APP_NAME> | <INPUT_FIELDS> | <OUTPUT_FIELDS> | <BR_IDS> | <EXCEPTION_OR_ERROR_IDS> |
-| ... | ... | ... | ... | ... | ... | ... |
+| <STEP_NUMBER> | <ACTION> | <APP_NAME> | <INPUT> | <OUTPUT> | <BR_IDS> | <EXCEPTION_OR_ERROR_IDS> |
 
 ## Step Details
 
-<!-- Add subsections ONLY for steps with complex logic, branching, or sub-steps.
-     Simple linear steps belong only in the summary table above. -->
-
 ### Step <STEP_NUMBER> — <STEP_TITLE>
 
-<DETAILED_DESCRIPTION_OF_COMPLEX_LOGIC_SUB_STEPS_OR_BRANCHING>
+<DETAILED_DESCRIPTION_FOR_COMPLEX_STEPS_ONLY>
 
 ---
 
 # 4. Business Rules
 
-<!-- Extract all business rules from PDD prose, step descriptions, and exception tables.
-     Number them BR-01, BR-02, etc. Each rule must be unambiguous and testable. -->
-
 | ID | Rule Name | Description | Trigger Condition | Affected Steps |
 |---|---|---|---|---|
-| BR-01 | <RULE_NAME> | <CLEAR_DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <STEP_NUMBERS> |
-| BR-02 | ... | ... | ... | ... |
+| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <STEP_NUMBERS> |
 
 ---
 
@@ -124,12 +107,10 @@ flowchart TD
      Type design constraints:
      - Keep types flat — no inheritance
      - Use `record` for immutable data, `class` for mutable
-     - Maximum 15 properties per type; split into sub-types if larger
-     - Use `string` for all fields unless the PDD explicitly specifies numeric, date, or boolean operations -->
+     - Maximum 15 properties per type
+     - Default to `string` unless PDD specifies numeric, date, or boolean operations -->
 
 ## Option A — Coded C# / Hybrid Mode
-
-<!-- Delete this subsection if Implementation Mode is pure XAML. -->
 
 ### Transaction Data
 
@@ -137,7 +118,6 @@ flowchart TD
 public record <TransactionDataType>
 {
     public <TYPE> <FIELD_NAME> { get; init; }
-    // ...
 }
 ```
 
@@ -147,7 +127,6 @@ public record <TransactionDataType>
 public record <OutputDataType>
 {
     public <TYPE> <FIELD_NAME> { get; init; }
-    // ...
 }
 ```
 
@@ -162,8 +141,6 @@ public enum <EnumName>
 ```
 
 ## Option B — XAML Mode
-
-<!-- Delete this subsection if Implementation Mode is Coded C# or Hybrid. -->
 
 ### Transaction Data (Dictionary)
 
@@ -187,28 +164,19 @@ public enum <EnumName>
 
 # 6. Value Mappings
 
-<!-- Document any data transformations between systems.
-     Show the exact mapping from source values to target values. -->
-
 ## <MAPPING_NAME> — <SOURCE_APP> to <TARGET_APP>
 
 | Source Value | Target Value |
 |---|---|
 | `<SOURCE_1>` | `<TARGET_1>` |
-| `<SOURCE_2>` | `<TARGET_2>` |
-| ... | ... |
 
 ---
 
 # 7. Exception Handling
 
-<!-- Business exceptions — anticipated situations with defined recovery actions.
-     Extracted from the PDD's exception handling section and enriched with [DEFAULT] actions where the PDD is vague. -->
-
 | ID | Exception Name | Trigger Step | Trigger Condition | Action |
 |---|---|---|---|---|
 | B1 | <EXCEPTION_NAME> | <STEP_NUMBER> | <HOW_TO_DETECT> | <WHAT_TO_DO> |
-| B2 | ... | ... | ... | ... |
 
 **Default handler:** For any unanticipated business exception, <DEFAULT_ACTION>.
 
@@ -216,13 +184,9 @@ public enum <EnumName>
 
 # 8. Error Handling
 
-<!-- System/technology errors — infrastructure and runtime failures.
-     Extracted from the PDD's error handling section and enriched with [DEFAULT] patterns. -->
-
 | ID | Error Name | Trigger Step | Trigger Condition | Retry Policy | Action |
 |---|---|---|---|---|---|
 | E1 | <ERROR_NAME> | <STEP_NUMBER> | <HOW_TO_DETECT> | <RETRY_COUNT_AND_BACKOFF> | <WHAT_TO_DO> |
-| E2 | ... | ... | ... | ... | ... |
 
 **Default handler:** For any unanticipated system error, <DEFAULT_ACTION>.
 
@@ -230,31 +194,32 @@ public enum <EnumName>
 
 # 9. Application Inventory
 
-<!-- All applications the automation interacts with.
-     Enriched beyond the PDD with role, interaction pattern, and session management. -->
+<!-- List all applications. For SaaS integrations (Salesforce, Jira, etc.), flag "Integration Service"
+     in the Access Method column — the implementation plan will create a task to configure the connector. -->
 
 | # | Application | Interface | Access Method | Role | Interaction Pattern | Session Management |
 |---|---|---|---|---|---|---|
-| 1 | <APP_NAME> | <WEB/DESKTOP/API> | <URL_OR_PATH> | <SOURCE/TARGET/UTILITY> | <READ/WRITE/READ-WRITE/TRANSIENT> | <PER_RUN/PER_ITEM> |
-| 2 | ... | ... | ... | ... | ... | ... |
+| 1 | <APP_NAME> | <WEB/DESKTOP/API> | <URL_OR_INTEGRATION_SERVICE> | <SOURCE/TARGET/UTILITY> | <READ/WRITE/READ-WRITE/TRANSIENT> | <PER_RUN/PER_ITEM> |
 
 ---
 
 # 10. Credentials & Assets
 
-<!-- Orchestrator assets and credentials required by the automation.
-     Extracted from the PDD's credentials and asset management section. -->
-
 | Asset Name | Type | Description | Notes |
 |---|---|---|---|
 | `<ASSET_NAME>` | <CREDENTIAL/TEXT/INT/BOOL> | <WHAT_IT_STORES> | <NOTES> |
-| ... | ... | ... | ... |
 
 ---
 
 # 11. Project Structure
 
-<!-- The most important section. Lists every file in the project with its purpose. -->
+## Project Type
+
+<!-- Select ONE based on the PDD's intent: -->
+
+- [ ] **Process** — standard end-to-end automation (default)
+- [ ] **Library** — reusable component consumed by other automations
+- [ ] **Test Automation** — test cases validating application behavior
 
 ## Recommended Structure
 
@@ -273,34 +238,25 @@ public enum <EnumName>
 
 ## Workflow Inventory
 
-<!-- One row per workflow file. This table is the bridge between "here's a process" and "here's what to build." -->
-
 | # | Workflow File | Responsibility | PDD Steps | Inputs | Outputs |
 |---|---|---|---|---|---|
-| 1 | `<FILENAME>` | <1-2_SENTENCE_DESCRIPTION> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
-| 2 | ... | ... | ... | ... | ... |
+| 1 | `<FILENAME>` | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
 
 ## Workflow Dependencies
-
-<!-- Show which workflows call which. Helps the coding agent understand execution order. -->
 
 ```text
 <MAIN_WORKFLOW>
 ├── calls <WORKFLOW_1>
-│   └── calls <WORKFLOW_1A> (conditional)
-├── calls <WORKFLOW_2>
-└── calls <WORKFLOW_3>
+└── calls <WORKFLOW_2>
 ```
 
 ---
 
 # 12. Implementation Mode
 
-<!-- Lightweight recommendation. Detailed decision criteria are applied during implementation. -->
-
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
-<2-3 sentence justification referencing specific process characteristics.>
+<2-3 sentence justification based on process characteristics.>
 
 > **Note:** This is a preliminary recommendation. Detailed decision criteria will be applied during implementation and may adjust this choice.
 
@@ -310,56 +266,39 @@ public enum <EnumName>
 
 ## Canonical Test Case
 
-<!-- The minimum data set for a successful end-to-end run.
-     Extracted from PDD appendix or constructed from step descriptions. -->
-
 | Field | Value |
 |---|---|
 | <FIELD_NAME> | `<TEST_VALUE>` |
-| ... | ... |
 
 ## Happy Path Assertions
 
-<!-- Numbered checks the agent must verify after a successful run. -->
-
 1. <ASSERTION_1>
-2. <ASSERTION_2>
-3. ...
 
 ## Exception Test Cases
-
-<!-- One test case per business exception. -->
 
 | Exception ID | Test Setup | Trigger | Expected Outcome |
 |---|---|---|---|
 | B1 | <HOW_TO_SET_UP> | <WHAT_TRIGGERS_IT> | <EXPECTED_BEHAVIOR> |
-| ... | ... | ... | ... |
 
 ## System Error Scenarios
-
-<!-- Which system errors are testable in a dev environment. -->
 
 | Error ID | Testable in Dev? | How to Simulate | Expected Outcome |
 |---|---|---|---|
 | E1 | <YES/NO> | <SIMULATION_METHOD> | <EXPECTED_BEHAVIOR> |
-| ... | ... | ... | ... |
 
 ---
 
 # 14. Implementation Plan
 
-<!-- Task breakdown for building the solution. Each task references exact SDD sections.
-     This section is also created as live TaskCreate calls for immediate execution. -->
-
 | # | Task | Dependencies | SDD Sections | Description |
 |---|---|---|---|---|
-| 1 | Create project scaffolding | — | §11 Project Structure, §12 Implementation Mode | <DESCRIPTION> |
-| 2 | Define data models | — | §5 Data Definitions, §6 Value Mappings | <DESCRIPTION> |
-| 3 | Configure assets and credentials | — | §10 Credentials & Assets | <DESCRIPTION> |
-| 4 | Implement `<WORKFLOW_1>` | 1, 2 | §11 Workflow Inventory #1, §3 Steps <X-Y> | <DESCRIPTION> |
-| ... | ... | ... | ... | ... |
-| N-1 | Implement exception and error handling | 4..N-2 | §7 Exception Handling, §8 Error Handling | <DESCRIPTION> |
-| N | Implement test suite | 4..N-2 | §13 Testing Strategy | <DESCRIPTION> |
+| 1 | Create project scaffolding | — | §11, §12 | Create UiPath project (type: <PROJECT_TYPE>, mode: <IMPLEMENTATION_MODE>) |
+| 2 | Define data models | — | §5, §6 | Create types/variables per chosen mode |
+| 3 | Configure assets and credentials | — | §10 | Set up Orchestrator assets |
+| 4 | Configure Integration Service connectors | — | §9 | Configure connectors for SaaS applications (if any) |
+| 5 | Implement `<WORKFLOW_1>` | 1, 2 | §11 Workflow #1, §3 Steps <X-Y> | Build workflow per PDD steps |
+| N-1 | Implement exception and error handling | 5..N-2 | §7, §8 | Wire up handlers |
+| N | Implement test suite | 5..N-2 | §13 | Build tests |
 
 ---
 
