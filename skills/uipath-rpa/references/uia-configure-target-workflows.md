@@ -55,7 +55,7 @@ uip rpa indicate-element --name "<ElementName>" --activity-class-name "<TypeInto
 
 # 3. Retrieve OR entries after indication
 uip rpa uia object-repository get-screen-xaml --reference-id "<screen-reference>"
-uip rpa uia object-repository get-element-xaml --reference-id "<element-reference>"
+uip rpa uia object-repository get-elements-xaml --reference-ids "<element-reference-1>,<element-reference-2>"
 ```
 
 Both commands return `{ "Data": { "reference": "..." } }` — use that reference ID for subsequent commands and OR lookups. After indication, Studio regenerates Object Repository files; re-read them to get descriptor paths for your workflow.
