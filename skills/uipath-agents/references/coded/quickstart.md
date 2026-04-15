@@ -28,6 +28,7 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **Auth MUST be an interactive question (when needed).** If the session check fails, your ENTIRE response must be a single direct question. Do NOT wrap it in bullet points, "Next Steps" headers, or status summaries. Just ask and stop:
 
   > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
+- **In a flow, coded agents are referenced via the [`agent`](../../../uipath-maestro-flow/references/plugins/agent/) plugin** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
 
 ## Lifecycle Stages
 
@@ -43,8 +44,16 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | **Evaluate** | [lifecycle/evaluate.md](lifecycle/evaluate.md) | `uip codedagent eval` |
 | **Deploy** | [lifecycle/deployment.md](lifecycle/deployment.md) | `uip codedagent deploy`, `uip codedagent invoke` |
 | **Sync** | [lifecycle/file-sync.md](lifecycle/file-sync.md) | `uip codedagent push`, `uip codedagent pull` |
+| **Flow Integration** | [flow-integration.md](flow-integration.md) | Inline, published node, or tool resource in Flow |
 
-## One-Prompt Flow
+## Build Scenarios
+
+Two top-level build paths. Pick one before starting — the lifecycle and publish mechanism differ.
+
+- **Scenario 1 — Standalone Coded Agent** — the agent is its own tenant resource, published via `uip codedagent deploy`. Use when the agent runs on its own, is called from multiple flows, or needs independent versioning.
+- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution project add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution project add` and discoverable via `uip maestro flow registry list --local`. Use when the agent is tightly coupled to one flow.
+
+## Quick Start: Scenario 1 — Standalone Coded Agent
 
 When the user asks to create and deploy an agent end-to-end, follow these steps in order. Skip stages that are already done.
 
@@ -151,6 +160,12 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    On reply, run `uip codedagent deploy <target-flag>`. If re-deploying, bump the patch version in `pyproject.toml` first.
 
 Read the relevant reference file at each step — do not guess.
+
+## Quick Start: Scenario 2 — In-Solution Coded Agent in a Flow
+
+Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent.
+
+See [embedding-in-flows.md](embedding-in-flows.md) for the agent-side steps: scaffold the sibling folder, register it with `uip solution project add` to mint the `resource.key`, and verify discoverability via `uip maestro flow registry list --local`. Flow node JSON shape is in [flow-integration.md — Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent).
 
 ## Framework Selection
 
