@@ -1,0 +1,183 @@
+task_id: skill-review-multi-project-solution
+description: >
+  E2E evaluation: agent uses the uipath-review skill to audit a
+  multi-project UiPath solution with deliberately planted issues and
+  produce a structured report that catches each of them.
+
+  The agent scaffolds a synthetic fixture (no real project data — zero
+  PII risk) containing two RPA projects with known antipatterns, runs
+  the full discover → validate → report workflow, and produces a review
+  report with severity classification. The test asserts that each
+  planted issue is identified in the report.
+
+  Platform note: This is an e2e task tagged for daily/weekly runs.
+  It does not run on PR CI (only smoke tags do). Some validation CLI
+  commands may not execute fully on Ubuntu for Windows-only frameworks,
+  but the review skill's structural analysis is platform-independent.
+tags: [uipath-review, e2e, multi-project]
+
+agent:
+  max_turns: 60
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  You will audit a small UiPath solution with two RPA projects. The goal
+  is to exercise the uipath-review skill's full discovery → validation →
+  reporting workflow.
+
+  Step 1 — Create the fixture at ./MySolution/ with this structure:
+
+  ./MySolution/
+  ├── ProjectA/
+  │   ├── project.json     (name "ProjectA", targetFramework "Windows",
+  │   │                     expressionLanguage "VisualBasic",
+  │   │                     dependency UiPath.System.Activities,
+  │   │                     outputType "Process", main "Main.xaml")
+  │   └── Main.xaml        (a Sequence that includes a hardcoded
+  │                         password literal inside a LogMessage, like
+  │                         Message="Using password 'Pa55w0rd!'")
+  └── ProjectB/
+      ├── project.json     (similar to ProjectA, name "ProjectB")
+      └── Main.xaml        (a Sequence with a TryCatch where the Catch
+                            block is empty — no LogMessage, no Rethrow)
+
+  Step 2 — Review ./MySolution/ using the uipath-review skill. Do NOT
+  modify any files inside MySolution/ during review (the skill is
+  read-only). The user has no PDD — proceed without one. Produce a
+  structured review report at ./review_report.md.
+
+  The report MUST:
+  - Have a "## Findings" section
+  - Contain at least one finding with severity "Critical"
+  - Contain at least one finding with severity "Warning"
+  - Mention the hardcoded password or "credential" issue in ProjectA
+    (Critical severity)
+  - Mention the empty Catch block or "swallow" issue in ProjectB
+    (Warning severity)
+  - Have a "## Summary" section at the end
+
+  Save a structured summary to report.json:
+    {
+      "projects_reviewed": 2,
+      "commands_used": ["<list of uip commands you ran>"],
+      "severities_found": ["<unique severities found>"],
+      "findings_count": <int>,
+      "hardcoded_credential_flagged": <bool>,
+      "empty_catch_flagged": <bool>
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Do not run `uip rpa debug` or any execution commands.
+  - Do not modify files in MySolution/ after creation — only read/analyze.
+  - Discover both projects before reviewing either one.
+
+success_criteria:
+  - type: file_exists
+    description: "Review report was produced"
+    path: "review_report.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ProjectA fixture created"
+    path: "MySolution/ProjectA/project.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ProjectB fixture created"
+    path: "MySolution/ProjectB/project.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report has Findings section with Critical and Warning severities"
+    path: "review_report.md"
+    includes:
+      - "Findings"
+      - "Critical"
+      - "Warning"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report identifies the planted hardcoded credential issue in ProjectA"
+    path: "review_report.md"
+    includes:
+      - "ProjectA"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report mentions credential/password hardcoding"
+    path: "review_report.md"
+    includes:
+      - "password"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report identifies the planted empty Catch block in ProjectB"
+    path: "review_report.md"
+    includes:
+      - "ProjectB"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report mentions exception handling / Catch issue"
+    path: "review_report.md"
+    includes:
+      - "Catch"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report has a Summary section"
+    path: "review_report.md"
+    includes:
+      - "Summary"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked uip rpa get-errors or validate on each project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(get-errors|validate)'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json shows both planted issues were identified"
+    path: "report.json"
+    assertions:
+      - expression: "projects_reviewed"
+        operator: equals
+        expected: 2
+      - expression: "hardcoded_credential_flagged"
+        operator: equals
+        expected: true
+      - expression: "empty_catch_flagged"
+        operator: equals
+        expected: true
+      - expression: "findings_count"
+        operator: gte
+        expected: 2
+      - expression: "length(severities_found)"
+        operator: gte
+        expected: 2
+    weight: 2.5
+    pass_threshold: 0.8
