@@ -124,7 +124,7 @@ uip flow node configure <PROJECT>.flow <triggerId> --detail '{
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
   "eventParameters": { "<paramName>": "<RESOLVED_VALUE>" },
-  "filterExpression": "((fields.<fieldName><`value`>))"
+  "filterExpression": "(contains(subject, 'urgent'))"
 }'
 ```
 
@@ -136,11 +136,78 @@ uip flow node configure <PROJECT>.flow <triggerId> --detail '{
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
 | `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
-| `filterExpression` | No | JMESPath filter using `((fields.<fieldName><`value`>))` syntax — omit to trigger on all events |
+| `filterExpression` | No | JMESPath filter expression — see [JMESPath Filter Expressions](#jmespath-filter-expressions) below. Omit to trigger on all events |
 
 The command populates `inputs.detail` (including the internal `configuration` blob) and creates workflow-level connection bindings.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
+
+---
+
+## JMESPath Filter Expressions
+
+Filter expressions use JMESPath syntax to narrow which events fire the trigger. They are passed as a string in the `filterExpression` field of `--detail` (Step 6). Field names come from `filterFields` returned by `registry get` (Step 2).
+
+### Syntax Rules
+
+1. Wrap the full expression in parentheses: `(expression)`
+2. Field names are bare identifiers — no `fields.` prefix: `subject`, `fromAddress`, `status`
+3. String values use single quotes: `'value'`
+4. Use `==` / `!=` for equality/inequality comparisons
+5. Use functions for substring/prefix matching: `contains(field, 'value')`, `starts_with(field, 'value')`
+6. Use `&&` for AND, `||` for OR — not `and` / `or` keywords
+
+### Supported Functions and Operators
+
+| Syntax | Description | Example |
+|---|---|---|
+| `field == 'value'` | Exact match | `fromAddress == 'boss@example.com'` |
+| `field != 'value'` | Not equal | `status != 'read'` |
+| `contains(field, 'value')` | Field contains substring | `contains(subject, 'urgent')` |
+| `starts_with(field, 'value')` | Field starts with prefix | `starts_with(subject, 'RE:')` |
+
+### Combining Conditions
+
+| Operator | Meaning | Example |
+|---|---|---|
+| `&&` | AND — both must match | `(status == 'new' && contains(subject, 'urgent'))` |
+| `\|\|` | OR — either can match | `(status == 'new' \|\| status == 'updated')` |
+| `()` | Grouping for precedence | `((contains(name, 'Inbox') \|\| id != '123') && type == 'mail')` |
+
+### Examples
+
+| Scenario | `filterExpression` value |
+|---|---|
+| Emails containing "urgent" in subject | `(contains(subject, 'urgent'))` |
+| Emails from a specific sender | `(fromAddress == 'boss@example.com')` |
+| Specific folder AND subject match | `(parentFolderId == 'AAMk...' && contains(subject, 'E2e test'))` |
+| Multiple senders (OR) | `(fromAddress == 'a@ex.com' \|\| fromAddress == 'b@ex.com')` |
+| Exclude read emails | `(status != 'read')` |
+| Subject prefix match | `(starts_with(subject, 'RE:'))` |
+| Complex: folder match OR name match | `(contains(FolderName, 'Inbox') \|\| FolderId != '12345')` |
+
+### How to Build a Filter Expression from `filterFields`
+
+1. Run `registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array
+2. Each field object has a `name` (e.g., `fromAddress`, `subject`) — use these as the field argument
+3. Choose the syntax based on the user's intent:
+   - Exact match → `fieldName == 'value'`
+   - Exclusion → `fieldName != 'value'`
+   - Substring match → `contains(fieldName, 'value')`
+   - Prefix match → `starts_with(fieldName, 'value')`
+4. Combine multiple conditions with `&&` (AND) or `||` (OR)
+5. Wrap the full expression in parentheses
+6. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filterExpression` entirely
+
+### What NOT to Generate
+
+| Invalid expression | Why it fails | Valid replacement |
+|---|---|---|
+| `((fields.subject == 'test'))` | Double parens, `fields.` prefix | `(subject == 'test')` |
+| `` fields.fromAddress == `value` `` | Backtick quoting, `fields.` prefix | `(fromAddress == 'value')` |
+| `{ "condition": "equals", "field": "status" }` | Transform filter syntax, not JMESPath | `(status == 'new')` |
+| `subject contains 'test'` | English word order, not JMESPath function syntax | `(contains(subject, 'test'))` |
+| `((fields.subject<\`test\`>))` | Legacy placeholder template — not valid JMESPath | `(contains(subject, 'test'))` |
 
 ---
 
@@ -238,7 +305,7 @@ uip flow debug . --output json
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
-| Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `((fields.<fieldName><`value`>))` |
+| Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `(field == 'value')` or `(contains(field, 'value'))` — see [JMESPath Filter Expressions](#jmespath-filter-expressions) |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
 | `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
 
@@ -251,3 +318,4 @@ uip flow debug . --output json
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
 6. **Use `uip flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
+8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid in filter expressions. Using a field name not in that list produces a silent no-match at runtime
