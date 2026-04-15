@@ -44,6 +44,8 @@ Determine the agent mode before proceeding:
 | Create/build/deploy low-code agent | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) | `lowcode/agent-json-format.md` |
 | Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Common Edits | `lowcode/agent-json-format.md` |
 | Add tools, contexts, or escalations | Low-code | [lowcode/agent-json-format.md](references/lowcode/agent-json-format.md) § Resources | |
+| Add Integration Service tool | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 5 | `lowcode/agent-json-format.md` § Integration Service tool |
+| Add index-backed context (Context Grounding) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 7 | `lowcode/agent-json-format.md` § Context resource |
 | Embed agent in a flow | Low-code | [lowcode/embedding-in-flows.md](references/lowcode/embedding-in-flows.md) | |
 | Wire multi-agent solution | Low-code | [lowcode/agent-solution-guide.md](references/lowcode/agent-solution-guide.md) | |
 | Inline agent node structure in a flow | Low-code | [lowcode/agent-flow-integration.md](references/lowcode/agent-flow-integration.md) | |

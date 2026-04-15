@@ -137,6 +137,117 @@ uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
 uip solution deploy uninstall "<DEPLOYMENT_NAME>" --output json
 ```
 
+## Orchestrator Process Discovery
+
+Use these commands to find external processes when adding them as agent tools.
+
+### List Orchestrator Folders
+
+```bash
+uip or folders list --output json
+```
+
+Returns all folders with their `Name`, `ID` (numeric), `Key` (GUID), `Path` (FullyQualifiedName), and `Type`.
+
+### List Processes in a Folder
+
+```bash
+uip or processes list --folder-path "<FOLDER_PATH>" --output json
+```
+
+Returns processes with `Key` (GUID), `Name`, `ProcessKey` (package name), `ProcessVersion`. Use without `--folder-path` to list processes in the default folder.
+
+### Get Process Details
+
+```bash
+uip or processes get "<PROCESS_KEY_GUID>" --output json
+```
+
+Returns process details including `ProcessType`, `EntryPointPath`, and `TargetFramework`. **Note:** `InputArguments` may be empty in the response. For reliable argument schemas, use the Releases API instead (see below).
+
+### Get Argument Schemas via Releases API (Preferred)
+
+Query the Orchestrator `/odata/Releases` endpoint to get argument schemas:
+
+```bash
+# SECURITY: Never read ~/.uipath/.auth directly — keep the token inside the shell.
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,Description,Arguments,Id" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>"'
+```
+
+Returns the release `Key` (used as `referenceKey`), `ProcessVersion`, and `Arguments.Input`/`Arguments.Output` (raw .NET argument schema strings). The folder `ID` (numeric) comes from `uip or folders list`.
+
+## Integration Service Discovery
+
+Use these commands to find connectors, connections, and activities when adding Integration Service tools.
+
+**IMPORTANT:** Always use `--for-low-code-agents` on `connectors list` and `activities list` when adding tools to a low-code agent. This ensures only connectors and activities supported by Studio Web are returned.
+
+### List Connectors
+
+```bash
+uip is connectors list --for-low-code-agents --output json
+```
+
+Returns connectors supported as low-code agent tools. Use `--filter <keyword>` to narrow by name or key.
+
+### Get Connector Details
+
+```bash
+uip is connectors get "<connector-key>" --output json
+```
+
+Returns connector details including `Name`, `Key`, and image URL (used for `iconUrl` in the tool resource).
+
+### List Connections for a Connector
+
+```bash
+uip is connections list "<connector-key>" --output json
+```
+
+Returns connections with `Id`, `Name`, `State`, `IsDefault`, `FolderKey`. Present options to the user — recommend the default enabled connection but let the user confirm.
+
+**Important:** This command populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json`. Always run this **before** `uip solution resource refresh` — the refresh command reads connection metadata from this cache to generate correct `debug_overwrites.json`.
+
+### Ping a Connection
+
+```bash
+uip is connections ping "<connection-id>" --output json
+```
+
+Verifies the connection is healthy (`Enabled`). If not, prompt user to re-authenticate.
+
+### List Activities for a Connector
+
+```bash
+uip is activities list "<connector-key>" --for-low-code-agents --output json
+```
+
+Returns activities supported as low-code agent tools: curated, non-trigger, non-blocklisted. Each activity has `DisplayName`, `Description`, `ObjectName`, `MethodName`.
+
+### Get Activity Metadata (Fields and Schemas)
+
+```bash
+uip is resources describe "<connector-key>" "<object-name>" --connection-id "<connection-id>" --operation Create --output json
+```
+
+Returns field metadata for the activity. The response includes a `metadataFile` path pointing to a cached JSON file with full field details (`requestFields`, `responseFields`, `parameters`). Read that file to get types, descriptions, enums, and references needed to build `inputSchema`, `outputSchema`, and `properties.parameters` for the tool resource.
+
+If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned.
+
+## Solution Resource Management
+
+### Refresh Solution Resources
+
+```bash
+uip solution resource refresh [solutionPath] --output json
+```
+
+Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. For connection resources (Integration Service tools), also generates `userProfile/{userId}/debug_overwrites.json` mapping solution connections to the user's local connections.
+
+**Run this after `uip agent validate`** whenever external tools (Orchestrator processes or Integration Service activities) have been added or changed. This replaces manual creation of solution-level resource files and debug_overwrites.
+
 ## Authentication
 
 ```bash
@@ -189,3 +300,6 @@ uip solution deploy run \
 | Deploy | `uip solution deploy run --name ... --output json` | Any directory |
 | Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory |
 | Login check | `uip login status --output json` | Any directory |
+| List Orchestrator folders | `uip or folders list --output json` | Any directory |
+| List processes in folder | `uip or processes list --folder-path "<PATH>" --output json` | Any directory |
+| Get process details | `uip or processes get "<KEY>" --output json` | Any directory |

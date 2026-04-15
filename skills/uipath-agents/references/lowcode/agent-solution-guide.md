@@ -16,7 +16,7 @@ MySolution/
 ├── resources/         ← solution-level Orchestrator resource definitions
 │   └── solution_folder/
 │       ├── package/   ← deployment packages (one per project)
-│       ├── process/   ← runnable processes (agent/ or process/)
+│       ├── process/   ← runnable processes (agent/, process/, api/, processOrchestration/)
 │       ├── connection/ ← IS connections needed by agents
 │       ├── index/     ← semantic search indexes
 │       └── bucket/    ← storage buckets for indexes
@@ -106,11 +106,164 @@ Example:
 - Agent project: `Agent 2`
 - packageName: `MySolution.agent.Agent.2`
 
-### RPA process definition (external process in solution)
+### External process tool — process declaration
 
-**Path:** `resources/solution_folder/process/process/{ProcessName}.json`
+**Path:** `resources/solution_folder/process/<type_dir>/{ToolName}.json`
 
-Includes an external RPA process as a solution resource (pinned version).
+Registers an already-deployed Orchestrator process (RPA, agent, API workflow, or agentic process) as a solution resource. This file is REQUIRED when an agent has an external tool with `"location": "external"` — without it, the process cannot be found at runtime.
+
+The directory and content vary by process type:
+
+| ProcessType | `resource.type` | `spec.type` | Directory | Schema approach |
+|---|---|---|---|---|
+| `Process` (RPA) | `process` | `Process` | `process/process/` | `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET arrays) |
+| `Agent` | `agent` | `Agent` | `process/agent/` | `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema) |
+| `Api` | `api` | `Api` | `process/api/` | `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema) |
+| `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/processOrchestration/` | `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema) |
+
+Get the values from the Releases API and `GetPackageEntryPointsV2`. See [agent-json-format.md](agent-json-format.md) § How to get the values.
+
+**Key differences:**
+- **RPA**: Uses `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET type arrays from `Arguments.Input`/`Arguments.Output`). V2 schema fields and entry point fields are `null`. Has extra spec fields: `jobPriority`, `jobRecording`, `duration`, `frequency`, `quality`, `remoteControlAccess`.
+- **Agent/API/Agentic**: Uses `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema from `GetPackageEntryPointsV2`). Populates `entryPointUniqueId`, `entryPointName`, `entryPoints`. Old-style schema fields are `null`. Agent type adds `agentMemory`, `targetRuntime`, `environmentVariables`, `referencedAssets`.
+
+#### Example: RPA Process
+
+**Path:** `resources/solution_folder/process/process/TestRPA.json`
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TestRPA",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "TestRPA.process.TestRPA",
+        "kind": "Package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      { "fullyQualifiedName": "solution_folder" }
+    ],
+    "spec": {
+      "type": "Process",
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "name": "TestRPA",
+      "package": {
+        "name": "TestRPA.process.TestRPA",
+        "key": "TestRPA.process.TestRPA:1.0.0"
+      },
+      "packageName": "TestRPA.process.TestRPA",
+      "packageVersion": "1.0.0",
+      "entryPointUniqueId": null,
+      "entryPointName": null,
+      "inputArguments": null,
+      "inputArgumentsSchema": "[\n  {\n    \"name\": \"name\",\n    \"type\": \"System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e\",\n    \"required\": false,\n    \"hasDefault\": true\n  }\n]",
+      "outputArgumentsSchema": "[\n  {\n    \"name\": \"greeting\",\n    \"type\": \"System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e\"\n  }\n]",
+      "inputArgumentsSchemaV2": null,
+      "outputArgumentsSchemaV2": null,
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": null,
+      "connections": null,
+      "tags": [],
+      "description": null
+    },
+    "locks": [],
+    "key": "cc69568b-e686-4737-bf62-7ed6ddb0849b"
+  }
+}
+```
+
+#### Example: Agent
+
+**Path:** `resources/solution_folder/process/agent/TestAgent.json`
+
+```jsonc
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TestAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "TestAgentSolution.agent.TestAgent",
+        "kind": "Package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      { "fullyQualifiedName": "solution_folder" }
+    ],
+    "spec": {
+      "type": "Agent",
+      "agentMemory": false,
+      "targetRuntime": "pythonAgent",
+      "environmentVariables": "",
+      "referencedAssets": null,
+      "name": "TestAgent",
+      "package": {
+        "name": "TestAgentSolution.agent.TestAgent",
+        "key": "TestAgentSolution.agent.TestAgent:1.0.0"
+      },
+      "packageName": "TestAgentSolution.agent.TestAgent",
+      "packageVersion": "1.0.0",
+      "entryPointUniqueId": "02ff7040-604a-481f-8336-235de71e2b4b",
+      "entryPointName": "content/agent.json",
+      "inputArguments": null,
+      "inputArgumentsSchema": null,
+      "outputArgumentsSchema": null,
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {}\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"content\": {\n      \"type\": \"string\",\n      \"description\": \"Output content\"\n    }\n  }\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": "[{\"UniqueId\":\"02ff7040-604a-481f-8336-235de71e2b4b\",\"Path\":\"content/agent.json\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {}\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"content\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"description\\\": \\\"Output content\\\"\\n    }\\n  }\\n}\",\"Type\":4,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":790954}]",
+      "connections": null,
+      "tags": [],
+      "description": null
+    },
+    "locks": [],
+    "key": "f6084607-a81c-45f1-90e4-ffe8fed22c53"
+  }
+}
+```
+
+### External process tool — package declaration
+
+**Path:** `resources/solution_folder/package/{PackageName}.json`
+
+Declares the package for the external process. Also REQUIRED alongside the process declaration above. The format is **identical for all 4 process types** — only the package name and version change. **Important:** If the package is in a solution-specific feed (its `FeedId` from the Releases API differs from the tenant feed), append `?feedId=<FEED_ID>` to the download URL. Without this, Studio Web reports "Resource '...' is missing in this environment."
 
 ```jsonc
 {
@@ -119,19 +272,28 @@ Includes an external RPA process as a solution resource (pinned version).
     "name": "TestRPA.process.TestRPA",
     "kind": "package",
     "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
     "files": [
       {
         "name": "TestRPA.process.TestRPA.1.0.0.nupkg",
         "kind": "Package",
         "version": "1.0.0",
         "url": "<orchestrator-download-url>",
-        "key": "TestRPA.process.TestRPA:1.0.0"
+        "key": "TestRPA.process.TestRPA_1_0_0"
       }
+    ],
+    "folders": [
+      { "fullyQualifiedName": "solution_folder" }
     ],
     "spec": {
       "fileName": "TestRPA.process.TestRPA.1.0.0.nupkg",
-      "fileReference": "TestRPA.process.TestRPA:1.0.0"
+      "fileReference": "TestRPA.process.TestRPA_1_0_0",
+      "name": "TestRPA.process.TestRPA",
+      "description": null
     },
+    "locks": [],
     "key": "TestRPA.process.TestRPA:1.0.0"
   }
 }
@@ -165,6 +327,16 @@ Provisions an Integration Service connection as part of the solution.
 ```
 
 `authenticationType: "AuthenticateAfterDeployment"` means the connection credentials are provided by the user after deployment (not bundled in the solution).
+
+### Connection definition (Integration Service)
+
+**Path:** `resources/solution_folder/connection/{connectorKey}/{connectionName}.json`
+
+Provisions an Integration Service connection as part of the solution. Required when an agent has an integration tool (`type: "integration"`). One per connector — all tools using the same connector share this connection resource.
+
+**Auto-generated:** Do not create these files manually. After creating the agent-level integration tool `resource.json`, run `uip agent validate` (generates `bindings_v2.json`) then `uip solution resource refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
+
+**Cross-reference:** The connection resource `key` matches the `solutionProperties.resourceKey` in integration tool resources that use this connector.
 
 ### Index definition (RAG semantic search)
 
@@ -282,23 +454,23 @@ When Studio Web or uipcli generates bindings for a solution-aware agent, resourc
 ```
 
 ```jsonc
-// External tool NOT in the solution (real folder path)
+// External tool registered as a solution resource (via resources/solution_folder/ files)
 {
   "resource": "process",
-  "key": "SomeExternalProcess",
+  "key": "TestRPA",
   "value": {
-    "name": { "defaultValue": "SomeExternalProcess", "isExpression": false },
-    "folderPath": { "defaultValue": "Shared", "isExpression": false }
+    "name": { "defaultValue": "TestRPA", "isExpression": false },
+    "folderPath": { "defaultValue": "solution_folder", "isExpression": false }
   },
   "metadata": {
     "subType": "process",
     "bindingsVersion": "2.2",
-    "solutionsSupport": "false"
+    "solutionsSupport": "true"
   }
 }
 ```
 
-The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment and the folder path should be resolved dynamically.
+The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment and the folder path should be resolved dynamically. External tools use `"solution_folder"` because they are registered as solution resources via the process and package declaration files under `resources/solution_folder/`.
 
 ### Debug overwrites (`userProfile/{userId}/debug_overwrites.json`)
 
