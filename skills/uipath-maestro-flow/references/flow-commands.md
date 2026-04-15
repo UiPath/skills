@@ -74,10 +74,10 @@ uip solution upload <SolutionDir> --output json
 Debug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.**
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 
 # Pass input arguments to the flow
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> \
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
@@ -86,6 +86,19 @@ The argument is the **project directory path** (the folder containing `project.u
 Use `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).
 
 Run `uip flow debug --help` to discover additional options.
+
+### Reporting the run back to the user
+
+The CLI response includes a **Studio Web URL** (where the user can inspect the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary** you report back to the user:
+
+```
+Studio Web URL: <url>
+Instance ID: <instanceId>
+
+<run status, node traces, errors, etc.>
+```
+
+If either value is not present in the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
 
 ## uip flow process
 

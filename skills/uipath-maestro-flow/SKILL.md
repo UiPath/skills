@@ -221,12 +221,14 @@ Common error categories:
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
+
+**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip flow debug](references/flow-commands.md#uip-flow-debug).
 
 ### Step 8 — Publish to Studio Web
 
