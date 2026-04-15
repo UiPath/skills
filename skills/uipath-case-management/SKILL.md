@@ -172,8 +172,10 @@ Title format: `Add <type> task "<name>" to "<stage>"`
 Each task from the sdd.md becomes its own numbered task. Do NOT group multiple tasks under a single T-number. Each task specifies:
 
 - **taskTypeId** — resolved from the registry in Step 3.
-- **inputs** — what data this task consumes, using human-readable cross-references in the format `"Stage Name"."Task Name".field_name`.
-- **outputs** — what data this task produces and where it is stored (e.g., `email_id -> CaseEntity.source_email_id`).
+- **inputs** — what data this task consumes. Each input uses one of two formats:
+  - **Literal or expression**: `input_name = "<value>"` — a static value or expression prefix (`=metadata.`, `=js:`, `=vars.`, `=datafabric.`, `=bindings.`).
+  - **Cross-task reference**: `input_name <- "Stage Name"."Task Name".output_name` — wires another task's output into this input. The execution phase translates this into a `uip case var bind --source-stage --source-task --source-output` command.
+- **outputs** — what data this task produces, listed as named output fields. Downstream tasks reference these via the cross-task input format above. To discover available output names, run `uip case tasks describe --type <type> --id <taskTypeId>` during planning.
 - **runOnlyOnce** — whether the task should execute only once per case instance (true/false). Sourced from the sdd.md. Maps to CLI flag `--should-run-only-once`. Defaults to true if not specified in sdd.md.
 - **isRequired** — whether the task is required for stage completion (true/false). Sourced from the sdd.md. Maps to CLI flag `--is-required`. Defaults to true if not specified in sdd.md.
 - **order** — which task(s) must complete before this one runs (expressed as a dependency, e.g., "after T05").
@@ -185,27 +187,47 @@ Each task from the sdd.md becomes its own numbered task. Do NOT group multiple t
 
 > Ignore lane concept in creating the task. It is no longer feasible for managing the parallelism.
 
-Example (non-HITL):
+Example (task with outputs and literal inputs):
 ```markdown
 ## T25: Add api-workflow task "Monitor Order Inbox" to "PO Receipt & Triage"
 - taskTypeId: abc-123-def
-- inputs: inbox_config (config), po_patterns (config)
-- outputs: email_id -> CaseEntity.source_email_id, sender_email -> CaseEntity.sender_email
+- inputs:
+  - inbox_config = "=vars.inbox_config"
+  - po_patterns = "=vars.po_patterns"
+- outputs: email_id, sender_email, po_document
 - runOnlyOnce: true
 - isRequired: true
 - order: after T24
 - verify: Confirm Result: Success, capture TaskId from output
 ```
 
-Example (HITL/action):
+Example (task consuming another task's outputs via cross-task reference):
+```markdown
+## T26: Add agent task "Classify Purchase Order" to "PO Receipt & Triage"
+- taskTypeId: def-456-ghi
+- inputs:
+  - po_document <- "PO Receipt & Triage"."Monitor Order Inbox".po_document
+  - sender_email <- "PO Receipt & Triage"."Monitor Order Inbox".sender_email
+- outputs: po_category, urgency_score, extracted_line_items
+- runOnlyOnce: true
+- isRequired: true
+- order: after T25
+- verify: Confirm Result: Success, capture TaskId from output
+```
+
+Example (HITL/action with mixed input types):
 ```markdown
 ## T30: Add action task "Review Purchase Order" to "PO Receipt & Triage"
 - taskTypeId: xyz-456-abc
 - recipient: approver@corp.com
 - priority: High
-- inputs: po_document -> "PO Receipt & Triage"."Monitor Order Inbox".po_document
+- inputs:
+  - po_document <- "PO Receipt & Triage"."Monitor Order Inbox".po_document
+  - po_category <- "PO Receipt & Triage"."Classify Purchase Order".po_category
+  - review_deadline = "=js:new Date(Date.now() + 86400000).toISOString()"
+- outputs: review_decision, reviewer_comments
 - isRequired: true
-- order: after T25
+- order: after T26
 - verify: Confirm Result: Success, capture TaskId from output
 ```
 
@@ -383,6 +405,8 @@ This scaffolds a complete project. See [references/case-schema.md](references/ca
 uip case cases add --name <CaseName> --file <directory>/<solutionName>/<projectName>/caseplan.json
 ```
 
+> **`caseplan.json` is the literal filename — do not substitute the case name or project name here.**
+
 This scaffolds a minimal case JSON file with a root node and a default Trigger node.
 
 Optional flags:
@@ -440,13 +464,30 @@ Valid task types: `process`, `agent`, `api-workflow`, `rpa`, `external-agent`, `
 
 Use `--lane <index>` for parallel execution (lane 0, 1, 2, etc.).
 
-**Bind task inputs and wire outputs** after adding tasks:
+**Bind task inputs and wire outputs** after adding each task. For each task in tasks.md, translate its `inputs` specification into `uip case var bind` commands.
+
+**Discover available inputs and outputs** — after adding a task with `--task-type-id`, the task is auto-enriched with input/output schemas. To inspect what inputs and outputs are available:
 
 ```bash
-# Bind a literal value
-uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
+uip case tasks describe --type <type> --id <taskTypeId> --output json
+```
 
-# Wire a task output to a downstream task's input
+Use the output to confirm that the input and output names in tasks.md match the actual schema.
+
+**Bind literal or expression values** — for each input specified as `input_name = "<value>"` in tasks.md:
+
+```bash
+uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
+```
+
+Valid expression prefixes: `=metadata.<field>`, `=js:<expression>`, `=vars.<varId>`, `=datafabric.<entity>`, `=bindings.<name>`, `=orchestrator.JobAttachments`.
+
+**Wire cross-task references** — for each input specified as `input_name <- "Stage Name"."Task Name".output_name` in tasks.md:
+
+1. Look up the source stage ID and source task ID from the IDs captured when those tasks were added in earlier steps.
+2. Run the bind command:
+
+```bash
 uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
   --source-stage <source-stage-id> \
   --source-task <source-task-id> \
@@ -454,9 +495,7 @@ uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
   --output json
 ```
 
-Value expressions: `=metadata.<field>`, `=js:<expression>`, `=vars.<varId>`.
-
-Run bindings in order — they depend on previously added tasks and outputs.
+**Binding order** — process bindings in task order as listed in tasks.md. Since tasks are ordered by dependency (`order: after T24`), binding each task's inputs immediately after adding it ensures all source tasks already exist. If a cross-task reference points to a task not yet added, defer that binding until the source task is created.
 
 ### Step 10 — Add entry and exit conditions
 
@@ -542,6 +581,32 @@ uip case debug "<directory>/<solutionName>/<projectName>" --log-level debug --ou
 Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 **Do NOT run `case debug` automatically.** Debug executes the case for real — it will send emails, post Slack messages, call APIs, write to databases, etc. Only run debug when the user explicitly asks.
+Debug is for **testing that the case runs correctly** — not for publishing or viewing. To publish, use Step 14 instead.
+
+### Step 14 — Publish to Studio Web
+
+**This is the default publish target.** When the user wants to publish, view, or share the case, upload it to Studio Web using `solution bundle` + `solution upload`:
+
+Always ask user:
+
+> "Do you want to publish it to Studio Web? This will upload it and make it available for visualization and editing."
+
+Use `AskUserQuestion` with options: "Yes", "No"
+
+If the user says yes:
+```bash
+# Bundle the solution directory into a .uis file
+uip solution bundle "<SolutionDir>" --output json
+
+# Upload the .uis to Studio Web
+uip solution upload "<SolutionName>.uis" --output json
+```
+
+The `bundle` command requires a solution directory containing a `.uipx` file. If the project was created with `uip case init`, it lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+
+**Do NOT run `uip case pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the case directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`solution bundle` + `solution upload`).
+
+For Orchestrator deployment when explicitly requested, see [references/case-commands.md](references/case-commands.md) for `uip case pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
 
 ## Anti-patterns — What NOT to Do
 
@@ -556,6 +621,7 @@ Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchest
 - Do NOT edit `.bpmn` files — they are auto-generated and will be overwritten.
 - Do NOT run debug automatically — it has real side effects (sends emails, calls APIs, writes to databases).
 - Do NOT execute commands in parallel — run all CLI commands sequentially.
+- Do NOT fabricate input or output names in cross-task references — run `uip case tasks describe` to discover actual input/output names from the task's schema.
 
 ## Reference Navigation
 

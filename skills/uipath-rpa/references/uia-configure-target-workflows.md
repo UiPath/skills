@@ -7,8 +7,8 @@
 **Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
 
 Why this matters:
-- **OR references** must be visible in the main conversation to build the final workflow XAML.
-- **Context continuity** — the main conversation tracks which screens and elements are already registered, which avoids duplicate captures and keeps the workflow build coherent.
+- **OR references** must be visible in the main conversation so they can be embedded into workflow activities as the workflow is created.
+- **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via `object-repository get-screens` / `get-elements`. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
 
 Read the SKILL.md, then execute each TARGET step yourself. Only spawn `Agent` where the skill explicitly says to (create-selector, improve-selector).
 
@@ -36,7 +36,7 @@ The skill will search the Object Repository for existing matches before creating
 
 ## Rules
 
-**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't tracked in the project.
+**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't registered in the Object Repository.
 
 **Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
 
@@ -53,12 +53,9 @@ uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescrip
 # 2. Indicate elements on that screen (use --parent-id from step 1 result's Data.reference)
 uip rpa indicate-element --name "<ElementName>" --activity-class-name "<TypeInto|Click|GetText|...>" --parent-id "<screen-reference>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 
-# 3. Retrieve OR entries after indication
-uip rpa uia object-repository get-screen-xaml --reference-id "<screen-reference>"
-uip rpa uia object-repository get-element-xaml --reference-id "<element-reference>"
 ```
 
-Both commands return `{ "Data": { "reference": "..." } }` — use that reference ID for subsequent commands and OR lookups. After indication, Studio regenerates Object Repository files; re-read them to get descriptor paths for your workflow.
+Both commands return `{ "Data": { "reference": "..." } }` — use that reference ID to retrieve XAML snippets and for OR lookups. After indication, Studio regenerates Object Repository files. For coded workflows, re-read `ObjectRepository.cs` to get descriptor paths. For XAML workflows, use the reference IDs to retrieve XAML snippets and embed them into activities as the workflow is created — see **Embedding OR Entries in XAML Activities** below.
 
 <details>
 <summary>Full parameter reference</summary>
@@ -93,3 +90,84 @@ When no App exists in `.objects/`, omit `--parent-id` and `--parent-name` — th
 | `.objects/` has subdirectories but no `.metadata` files | Corrupted/incomplete App from a failed creation | Clear orphan directories and run `indicate-application` without `--parent-id` |
 
 </details>
+
+## Interacting with a Registered Target
+
+After TARGET-8 returns an OR reference ID, you can drive that target directly from the main conversation using `uia interact` — no servo snapshot, no second ref system. This is the preferred way to advance the application state to the next screen when building multi-step flows.
+
+```bash
+# Click using the OR reference ID returned by create-screen / create-elements
+uip rpa uia interact click --reference-id "<OR_REFERENCE_ID>"
+
+# Type into a target using the OR reference ID
+uip rpa uia interact type --reference-id "<OR_REFERENCE_ID>" --text "hello"
+```
+
+Alternate input forms:
+- `--definition-file-path "<WORK_FOLDER>/Target_N_Definition.json"` — use the definition file (useful before OR registration)
+- `--window-selector "<html ... />" --partial-selector "<webctrl ... />"` — raw selectors (ad-hoc, no OR entry)
+
+See [uia-multi-step-flows.md](uia-multi-step-flows.md) for when to use `uia interact` vs servo and the full capture loop.
+
+## Embedding OR Entries in XAML Activities
+
+After registering targets in the Object Repository (via `uia-configure-target` or indication fallback), retrieve the XAML snippets and embed them directly when creating the workflow. This is more reliable than post-creation linking because it works regardless of intermediate validation errors.
+
+### 1. Get the screen XAML for the ApplicationCard
+
+```bash
+uip rpa uia object-repository get-screen-xaml \
+  --reference-id "<SCREEN_REFERENCE_ID>" \
+  --project-dir "<PROJECT_DIR>"
+```
+
+Returns a `<TargetApp>` element. Embed it inside the ApplicationCard:
+
+```xml
+<uix:NApplicationCard.TargetApp>
+  <!-- paste the returned <TargetApp ... /> here (remove the xmlns attribute — it's inherited from the uix prefix) -->
+</uix:NApplicationCard.TargetApp>
+```
+
+### 2. Get element XAML for UI activities
+
+```bash
+uip rpa uia object-repository get-elements-xaml \
+  --reference-ids "<REF_1>,<REF_2>,<REF_3>" \
+  --project-dir "<PROJECT_DIR>"
+```
+
+Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property:
+
+```xml
+<uix:NClick ...>
+  <uix:NClick.Target>
+    <!-- paste the returned <TargetAnchorable ... /> here (remove the xmlns attribute) -->
+  </uix:NClick.Target>
+</uix:NClick>
+
+<uix:NTypeInto ...>
+  <uix:NTypeInto.Target>
+    <!-- paste the returned <TargetAnchorable ... /> here -->
+  </uix:NTypeInto.Target>
+</uix:NTypeInto>
+
+<uix:NGetText ...>
+  <uix:NGetText.Target>
+    <!-- paste the returned <TargetAnchorable ... /> here -->
+  </uix:NGetText.Target>
+</uix:NGetText>
+```
+
+| Parameter | Source |
+|-----------|--------|
+| `<SCREEN_REFERENCE_ID>` | OR screen reference returned by `uia-configure-target` or `indicate-application` |
+| `<REF_1>,<REF_2>,...` | Comma-separated OR element references returned by `uia-configure-target` or `indicate-element` |
+
+When an element is used by multiple activities (e.g., the same field clicked and then typed into), use the same `<TargetAnchorable>` snippet in each activity's `.Target` property.
+
+### Multi-Screen Workflows: Passing OR Data to Write Agents
+
+For multi-screen XAML workflows using the parallel authoring pipeline, retrieve OR XAML snippets (`get-screen-xaml`, `get-elements-xaml`) immediately after registration and pass them to a write agent's prompt. The write agent embeds `TargetApp` and `TargetAnchorable` snippets using the same patterns shown above. This decouples target configuration from XAML generation, allowing the main conversation to configure the next screen's targets while the write agent works.
+
+See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for prompt templates and the chained dependency model.

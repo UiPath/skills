@@ -28,7 +28,7 @@ uip codedagent invoke <ENTRYPOINT> '{"query": "test"}'
 
 ## Prerequisites
 
-- Authentication configured — if not authenticated, use the [authentication reference](authentication.md) first
+- Authentication configured — if not authenticated, use the [authentication reference](../../authentication.md) first
 - `entry-points.json` exists (run `uip codedagent init`)
 - `pyproject.toml` has `name`, `version`, `description`, `authors`
 

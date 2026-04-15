@@ -40,6 +40,8 @@ See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for t
 
 ### Multi-Step UI Flows (Advancing Application State)
 
+To interact with targets between capture steps, prefer `uip rpa uia interact click/type` when the target is already registered in the OR (reuses the configured selector, no separate ref system). Fall back to `servo` only for ad-hoc interactions on elements that are not in OR.
+
 See [uia-multi-step-flows.md](uia-multi-step-flows.md).
 
 ---
@@ -152,12 +154,9 @@ Every UI automation workflow starts with an **Application Card** (`uix:NApplicat
 
 #### Target Configuration
 
-Follow [uia-configure-target-workflows.md](uia-configure-target-workflows.md) to generate the Application Card's `TargetApp` and each activity's `TargetAnchorable`. The skill returns ready-to-use XAML attributes — copy them exactly into your workflow:
+Follow [uia-configure-target-workflows.md](uia-configure-target-workflows.md) to register the Application Card's screen and each activity's elements in the Object Repository. Then retrieve the XAML snippets using `get-screen-xaml` and `get-elements-xaml`, and embed them directly in the workflow during creation — see the **Embedding OR Entries in XAML Activities** section in [uia-configure-target-workflows.md](uia-configure-target-workflows.md).
 
-- **Screen XAML** → goes into `<uix:NApplicationCard.TargetApp>` as a `<uix:TargetApp ... />` element
-- **Element XAML** → goes into `<uix:NGetText.Target>` (or Click, TypeInto, etc.) as a `<uix:TargetAnchorable ... />` element
-
-When an element is reused across multiple activities, use the same returned XAML snippet for each one.
+Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Always use the CLI commands to retrieve the correct snippets from the Object Repository.
 
 ### Common Activities
 

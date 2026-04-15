@@ -65,15 +65,11 @@ This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor I
 
 ### Claude Code
 
-This repository works as a **Claude Code plugin**. Install skills as a plugin marketplace for direct access to slash commands.
+This repository works as a **Claude Code plugin**. Install skills via `uip skills install` (the recommended method above) — this keeps skills updated automatically.
 
-```bash
-# Add the marketplace
-claude plugin marketplace add https://github.com/UiPath/skills
+> **Avoid manual plugin installation** (e.g., `claude plugin marketplace add` / `claude plugin install`). Manually installed plugins must be updated manually, and you may miss skill updates and fixes.
 
-# Install the plugin
-claude plugin install uipath@uipath-marketplace
-```
+If you've already installed manually, uninstall and re-install via `uip skills install` to switch to automatic updates.
 
 ### OpenAI Codex CLI
 

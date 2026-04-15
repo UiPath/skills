@@ -49,6 +49,7 @@ uip flow registry get <nodeType> --output json
 | `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
 | `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
 | `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
+| `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |
 | `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
 | `uipath.core.rpa.*`             | [rpa/impl.md](plugins/rpa/impl.md)                             |
 | `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md)     |

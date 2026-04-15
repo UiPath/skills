@@ -13,6 +13,7 @@
    ```bash
    uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
    ```
+   If the run fails, [`uia-selector-recovery.md`](uia-selector-recovery.md) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **stop the debug session:**
    ```bash
    uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json --use-studio
@@ -27,5 +28,3 @@
    ```
 
 Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a stale window in whatever state it was left in, or -- if the selector doesn't match -- to spawn a duplicate instance.
-
-If a selector error occurs during the debug run, see [uia-selector-recovery.md](uia-selector-recovery.md) for the recovery procedure.

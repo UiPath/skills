@@ -8,7 +8,7 @@ Common implementation patterns for building UiPath coded agents, from simple fun
 
 **IMPORTANT:** Before implementing any agent pattern, you must first set up your project directory and install dependencies. This is a prerequisite for all agent types.
 
-See the **[Project Setup Guide](setup.md)** for:
+See the **[Project Setup Guide](../lifecycle/setup.md)** for:
 - Creating a new project directory
 - Scaffolding with `uip codedagent new`
 - Installing dependencies with `uv sync`
@@ -109,7 +109,7 @@ async def main(input: Input) -> Output:
 - `UiPath()` reads credentials from environment variables by default
 - All services support `folder_path` and `folder_key` for folder targeting
 - Every service method has an async variant with `_async` suffix
-- See [SDK Services](sdk-services.md) for the full API reference
+- See [SDK Services](../capabilities/sdk-services.md) for the full API reference
 
 ---
 
