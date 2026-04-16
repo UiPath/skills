@@ -205,6 +205,7 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
 
 _solutions_to_cleanup: set[str] = set()
 _cleanup_registered = False
+_any_failure = False
 
 
 def _register_solution_cleanup(solution_id: str | None) -> None:
@@ -224,6 +225,31 @@ def _register_solution_cleanup(solution_id: str | None) -> None:
 
 
 def _cleanup_solutions() -> None:
+    """Delete queued Studio Web solutions according to ``FLOW_E2E_CLEANUP``.
+
+    - ``auto`` (default): delete on pass, keep on fail so the failure can be
+      inspected in Studio Web.
+    - ``always``: delete regardless — keeps the test tenant tidy in CI.
+    - ``never``: keep everything — useful when actively debugging.
+    """
+    policy = os.environ.get("FLOW_E2E_CLEANUP", "auto").lower()
+    if policy not in ("auto", "always", "never"):
+        print(
+            f"warning: FLOW_E2E_CLEANUP={policy!r} is invalid "
+            "(expected auto|always|never); treating as 'auto'",
+            file=sys.stderr,
+        )
+        policy = "auto"
+    keep = policy == "never" or (policy == "auto" and _any_failure)
+    if keep:
+        for sid in _solutions_to_cleanup:
+            print(
+                f"Preserving Studio Web solution {sid} "
+                f"(FLOW_E2E_CLEANUP={policy}); delete with: "
+                f"uip solution delete {sid}",
+                file=sys.stderr,
+            )
+        return
     for sid in _solutions_to_cleanup:
         subprocess.run(
             ["uip", "solution", "delete", sid, "--output", "json"],
@@ -258,4 +284,6 @@ def _stringify(values: Iterable[Any]) -> str:
 
 
 def _fail(msg: str):
+    global _any_failure
+    _any_failure = True
     sys.exit(f"FAIL: {msg}")
