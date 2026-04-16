@@ -27,11 +27,30 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | Skill | What it owns | Handles auth? | Handles deploy? |
 |---|---|---|---|
 | `uipath-rpa` | RPA workflows (XAML and C# coded): create, edit, build, run, debug. Owns **all** UI automation authoring end-to-end. | No (relies on Studio) | **No** — defer to `uipath-platform` |
+| `uipath-rpa-legacy` | Legacy RPA workflows (.NET Framework 4.6.1, XAML only). **Existing legacy projects only** — never for new projects unless user explicitly requests legacy. | No | **No** — defer to `uipath-platform` |
 | `uipath-agents` | AI agents — code-based (LangGraph / LlamaIndex / OpenAI Agents) and low-code (`agent.json`) | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Studio Web by default; `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
 | `uipath-servo` | Interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
+
+## RPA skill routing
+
+Two RPA skills exist. Pick the right one:
+
+| Signal | Route to |
+|---|---|
+| `project.json` has `"targetFramework": "Legacy"` or no `targetFramework` field | `uipath-rpa-legacy` |
+| `project.json` has any other `targetFramework` (e.g., `"Portable"`, `"Windows"`) | `uipath-rpa` |
+| No existing project + user explicitly asks for legacy | `uipath-rpa-legacy` |
+| No existing project + no legacy request | `uipath-rpa` (default for all new projects) |
+| macOS host | `uipath-rpa` — cross-platform target only (Windows target not available on macOS) |
+| Windows host | `uipath-rpa` — user can choose Windows or cross-platform target |
+
+**Rules:**
+1. Never suggest `uipath-rpa-legacy` for new projects unless the user explicitly requests legacy.
+2. On macOS, only cross-platform automation is supported — always route to `uipath-rpa`.
+3. On Windows, `uipath-rpa` supports both Windows and cross-platform targets.
 
 ## Step 1 — Upfront elicitation
 
@@ -101,7 +120,11 @@ Always use **VB.NET** for XAML workflows. Note this in the plan. Do not ask.
 
 ## Step 2 — Detect multi-skill tasks
 
-Emit a multi-skill plan when the request clearly spans more than one specialist. Known patterns:
+Emit a multi-skill plan when the request clearly spans more than one specialist.
+
+> **Legacy projects:** If the project is legacy (see "RPA skill routing" above), substitute `uipath-rpa-legacy` for `uipath-rpa` in the patterns below.
+
+Known patterns:
 
 ### RPA build + deploy to Orchestrator
 
@@ -168,16 +191,17 @@ User wants to build a UI automation AND observe it running on the live app.
 Probe the project context:
 
 ```bash
-echo "=== CWD ===" && ls -1 project.json *.cs *.xaml *.py pyproject.toml flow_files/*.flow .uipath/ app.config.json .venv/ 2>/dev/null; echo "=== PARENT ===" && ls -1 ../project.json ../*.cs ../*.xaml ../pyproject.toml 2>/dev/null; echo "=== DONE ==="
+echo "=== CWD ===" && ls -1 project.json *.cs *.xaml *.py pyproject.toml flow_files/*.flow .uipath/ app.config.json .venv/ 2>/dev/null; echo "=== PARENT ===" && ls -1 ../project.json ../*.cs ../*.xaml ../pyproject.toml 2>/dev/null; echo "=== FRAMEWORK ===" && cat project.json 2>/dev/null | grep -o '"targetFramework"[^,}]*' || echo "targetFramework: not found"; echo "=== DONE ==="
 ```
 
 | Filesystem signal | Plan skill |
 |---|---|
-| `.cs` AND/OR `.xaml` files AND `project.json` | `uipath-rpa` |
+| `.xaml` files + `project.json` with `targetFramework: "Legacy"` or absent | `uipath-rpa-legacy` |
+| `.xaml` AND/OR `.cs` files + `project.json` with any other `targetFramework` | `uipath-rpa` |
 | `flow_files/*.flow` | `uipath-maestro-flow` |
 | `.uipath/` or `app.config.json` | `uipath-coded-apps` |
 | `.venv/` AND `pyproject.toml` with uipath dependency | `uipath-agents` |
-| `project.json` only (no `.cs`/`.xaml`) | `uipath-rpa` (the skill detects project type internally) |
+| `project.json` only (no `.cs`/`.xaml`) | Check `targetFramework` — `"Legacy"` or absent → `uipath-rpa-legacy`; otherwise → `uipath-rpa` |
 
 **Multiple signals?** Go back to Step 2 and emit a multi-skill plan.
 
@@ -325,3 +349,4 @@ Save as `YYYY-MM-DD-<feature-name>.md`:
 13. **Do not leak internal jargon or implementation details into user-facing questions.** Never mention "Servo", "snapshot", "hand-wire", "AutomationId", "selector candidate", "autonomous capture", "target configuration", "wire up later", or other internal terms. Never expose the runtime / framework / language stack in option labels or descriptions: no "Python agent", "Coded web app", "React / Angular / Vue", "LangGraph / LlamaIndex". Use the product category instead — "AI Agent", "Application", "RPA workflow". Speak in plain developer language: "the live app", "Studio", "elements", "selectors", "inspect", "discover". Implementation details are the specialist skill's concern, not the user's.
 14. **Do not inject the user's domain or app name into the question text.** Ask "What kind of application are we automating?" — not "What kind of HR application…". "Is the app open on your machine?" — not "Is the HR app open…". The domain is captured in the plan header; keeping questions generic makes them reusable and prevents the agent from sounding like it's reading back a template.
 15. **Do not omit `Execution autonomy` from the plan header, and do not leave `Stop conditions` empty when autonomy is `autonomous`.** Downstream specialists rely on both to decide whether to interrupt. If the user did not answer the autonomy question, default to `autonomous` for simultaneous mode and note that choice in Decisions & Trade-offs. Populate Stop conditions with the hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources) — do not leave a generic placeholder.
+16. **Do not route new projects to `uipath-rpa-legacy`.** Legacy is for existing .NET Framework 4.6.1 projects only. New projects always go to `uipath-rpa` unless the user explicitly asks for legacy.
