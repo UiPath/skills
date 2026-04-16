@@ -616,6 +616,38 @@ Filter format: `field=value` or `field:operator=value`. Supported fields: `name`
 
 Cache lives at `~/.uipcli/case-resources/` and expires after 30 minutes.
 
+### uip case registry get-connector
+
+Look up a connector activity or trigger from the local TypeCache index.
+
+```bash
+uip case registry get-connector --type typecache-activities --activity-type-id <uuid>
+uip case registry get-connector --type typecache-triggers --activity-type-id <uuid>
+```
+
+| Flag | Description |
+|------|-------------|
+| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
+| `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
+
+Output: `{ Entry, Config }`.
+
+### uip case registry get-connection
+
+Look up a connector and fetch available connections from Integration Service. **Requires `uip login`.**
+
+```bash
+uip case registry get-connection --type typecache-activities --activity-type-id <uuid>
+uip case registry get-connection --type typecache-triggers --activity-type-id <uuid>
+```
+
+| Flag | Description |
+|------|-------------|
+| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
+| `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
+
+Output: `{ Entry, Config, Connections }` — use a `Connections[].id` value as `--connection-id` in `tasks add-connector` or `triggers add-event`.
+
 ---
 
 ## uip case process
