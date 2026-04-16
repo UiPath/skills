@@ -98,7 +98,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 8. **[Coded] ALWAYS inherit from `CodedWorkflow`** base class for workflow and test case classes (NOT for Coded Source Files).
 9. **[Coded] ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method.
-10. **[Coded] Update `project.json` entry points** when adding/removing workflow files. Update `fileInfoCollection` for test case files.
+10. **[Coded] Update `project.json` entry points** when adding/removing workflow files in **Process** projects. **Tests and Library projects do NOT use `entryPoints`** — skip this step for those project types. Always update `fileInfoCollection` for test case files.
 12. **[Coded] One workflow/test case class per file**, class name must match file name.
 13. **[Coded] Namespace = sanitized project name** from `project.json`. Sanitize: remove spaces, replace hyphens with `_`, ensure valid C# identifier.
 14. **[Coded] Entry method is always named `Execute`**.
@@ -149,8 +149,8 @@ Coded workflows use standard C# development: create file → write code → vali
 
 | Type | Base Class | Attribute | Entry Point | Purpose |
 |------|-----------|-----------|-------------|---------|
-| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Yes | Executable automation logic |
-| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Yes | Automated test with assertions |
+| **Coded Workflow** | `CodedWorkflow` | `[Workflow]` | Process only | Executable automation logic |
+| **Coded Test Case** | `CodedWorkflow` | `[TestCase]` | Process only | Automated test with assertions |
 | **Coded Source File** | None (plain C#) | None | No | Reusable models, helpers, utilities, hooks |
 
 ### Service-to-Package Mapping

@@ -86,7 +86,7 @@ If the workflow has arguments, pass them in the `InvokeWorkflowFile.Arguments` d
 
 ### project.json Registration
 
-Register XAML test cases in both `fileInfoCollection` and `entryPoints`:
+Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **Process** projects — **Tests and Library projects do NOT use `entryPoints`**:
 
 ```json
 {
@@ -110,6 +110,9 @@ Register XAML test cases in both `fileInfoCollection` and `entryPoints`:
     }
   ]
 }
+```
+
+> **Note:** The `entryPoints` block above applies to Process projects only. For Tests and Library projects, only `fileInfoCollection` is needed.
 ```
 
 ### What NOT to Do

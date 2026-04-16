@@ -95,13 +95,13 @@ MyProject/
 | `expressionLanguage` | `CSharp` or `VisualBasic` — determines expression syntax in XAML. Prefer `VisualBasic` for Windows target framework projects |
 | `designOptions.outputType` | `Process`, `Library`, or `Tests` |
 | `targetFramework` | `Windows` (.NET 6 Windows, default) or `Portable` (cross-platform .NET 6+) |
-| `entryPoints` | Per-workflow metadata: filePath, uniqueId, input/output definitions |
+| `entryPoints` | Per-workflow metadata: filePath, uniqueId, input/output definitions (**Process projects only** — Tests and Library projects use empty `[]`) |
 
 ## Rules
 
 1. **Use CLI for dependencies**: Always use `uip rpa install-or-update-packages --use-studio` to add/update dependencies. Do not manually edit `dependencies` in `project.json`.
 2. **Do not edit `.local/` or `.objects/`**: These are cache directories managed by the build system.
-3. **`main` entry point**: The default entrypoint that gets run if not specified otherwise.
+3. **`main` entry point**: The default entrypoint that gets run if not specified otherwise. `entryPoints` array is only populated for **Process** projects — Tests and Library projects leave it empty (`[]`).
 4. **`--project-dir` awareness**: All `uip rpa` commands default to the current working directory. If the CWD is not the project root, pass `--project-dir "{projectRoot}"` explicitly.
 5. **Creating new projects**: Use `uip rpa create-project` or `uip rpa new`. See [environment-setup.md](environment-setup.md).
 

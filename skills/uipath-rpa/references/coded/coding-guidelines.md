@@ -74,7 +74,7 @@ using System.Text.RegularExpressions;  // regex
 **When adding a file that uses a service:**
 1. Check `project.json` to confirm the required package is listed in `dependencies` — add it if missing
 2. Add only the `using` statements needed for the types actually referenced in the file
-3. Add the entry point or fileInfoCollection to `project.json` (for workflow or test case files only)
+3. Add the entry point to `project.json` (**Process projects only** — Tests and Library projects do not use `entryPoints`). Add `fileInfoCollection` for test case files (all project types)
 
 ## Best Practices
 
@@ -204,7 +204,7 @@ C) <user-driven approach>
 | **"Studio X.X.X does not have interop support"** | Auto-detected Studio is too old (< 26.2) | Always pass `--studio-dir "<STUDIO_DIR>"` pointing to the dev build |
 | **No Studio instances found** | Studio is not running | Run `uip rpa start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>"` |
 | **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, restart Studio |
-| **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed |
+| **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed (Process projects only — Tests and Library projects do not use `entryPoints`) |
 | **Service property not available** | Missing package dependency | Add required package to project.json dependencies |
 | **Timeout** | Studio took too long to start | Increase timeout: `--timeout 600` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |

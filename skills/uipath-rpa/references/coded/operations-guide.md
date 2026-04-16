@@ -40,7 +40,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 
 **5. Add workflow/test case/source files:**
 - Generate `.cs` files (workflows, test cases, source files)
-- Update `project.json` entry points for each workflow/test case file
+- Update `project.json` entry points for each workflow/test case file (**Process projects only** — Tests and Library projects do NOT use `entryPoints`)
 - If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
@@ -50,7 +50,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 ## Add a Workflow File to Existing Project
 
 **Steps:**
-1. Read existing `project.json` to get project name (for namespace) and current entry points
+1. Read existing `project.json` to get project name (for namespace), `outputType`, and current entry points
 2. Create the new `.cs` file:
    - Use the project name as namespace
    - Class name = file name (without .cs)
@@ -67,7 +67,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
    | No return | `public void Execute(string input)` | `input` = In |
 
    > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
-4. Update `project.json`:
+4. Update `project.json` (**Process projects only** — skip `entryPoints` for Tests and Library projects):
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
 5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
@@ -79,12 +79,12 @@ Coded test cases automate and validate application behavior using a structured *
 **Test cases can exist in any project type** — not just `"Tests"` projects. It's common to add test cases directly inside a `"Process"` project for testing purposes.
 
 **Steps:**
-1. Read existing `project.json` to get project name and current entry points
+1. Read existing `project.json` to get project name, `outputType`, and current entry points
 2. Create the `.cs` file following the same rules as workflows, but with:
    - `[TestCase]` attribute instead of `[Workflow]` on the `Execute` method
    - Structured code in three phases: **Arrange**, **Act**, **Assert**
 3. Update `project.json`:
-   - Add entry to `entryPoints` array
+   - Add entry to `entryPoints` array (**Process projects only** — skip `entryPoints` for Tests and Library projects)
    - Add entry to `designOptions.fileInfoCollection` with `testCaseType: "TestCase"`, `publishAsTestCase: true`
 5. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
    - Optionally create `.variations/` data file for parameterized test data
@@ -276,8 +276,8 @@ public void Execute()
    - Class structure and base class (`CodedWorkflow`)
    - Attribute (`[Workflow]` or `[TestCase]`)
    - Method name (`Execute`)
-3. If parameters changed (added/removed/renamed/retyped):
-   - Update `project.json` `entryPoints` input/output definitions for this file
+3. If parameters changed (added/removed/renamed/retyped) and this is a **Process** project:
+   - Update `project.json` `entryPoints` input/output definitions for this file (Tests and Library projects do not use `entryPoints`)
 4. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
 
 ## Remove a Workflow File
@@ -285,8 +285,8 @@ public void Execute()
 **Steps:**
 1. Delete the `.cs` file
 2. Update `project.json`:
-   - Remove from `entryPoints` array
-   - If it was the `main` file, update `main` field to another entry point
+   - **Process projects:** Remove from `entryPoints` array. If it was the `main` file, update `main` field to another entry point
+   - **Tests and Library projects:** No `entryPoints` to update
    - If Tests project, remove from `fileInfoCollection`
 
 ## API Discovery (Before Creating Workflows)
