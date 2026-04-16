@@ -1,10 +1,6 @@
 # Before/After Hooks Template
 
-Two patterns for adding setup/teardown logic to coded workflows and test cases.
-
-## Pattern 1: IBeforeAfterRun on Individual Workflows/Test Cases
-
-Any workflow or test case can implement `IBeforeAfterRun` directly. The hooks run only for that specific file.
+## IBeforeAfterRun on Individual Workflow/Test Case
 
 **File: `TestLoginFlow.cs`**
 
@@ -47,11 +43,7 @@ namespace {{PROJECT_NAME}}
 }
 ```
 
-Use this when only one or a few files need setup/teardown.
-
-## Pattern 2: Partial Class CodedWorkflow — Hooks for ALL Files
-
-Extend the auto-generated `CodedWorkflow` partial class with `IBeforeAfterRun`. The hooks apply to **every** workflow and test case in the project automatically.
+## Partial Class CodedWorkflow — Hooks for ALL Files
 
 **File: `CodedWorkflowHooks.cs`** (Coded Source File — NOT a workflow, no entry point)
 
@@ -87,11 +79,7 @@ namespace {{PROJECT_NAME}}
 }
 ```
 
-The auto-generated `CodedWorkflow` in `.local/.codedworkflows/CodedWorkflow.cs` is already a `partial class`. By adding another partial definition, the compiler merges them — every workflow and test case inherits the hooks with no code changes.
-
-## Pattern 3: Partial Class CodedWorkflow — Shared Logic (Without Hooks)
-
-The partial class pattern is useful beyond hooks. You can add shared methods, properties, or constants available to all workflows and test cases:
+## Partial Class CodedWorkflow — Shared Logic (Without Hooks)
 
 **File: `CodedWorkflowExtensions.cs`** (Coded Source File)
 
@@ -115,7 +103,8 @@ namespace {{PROJECT_NAME}}
 }
 ```
 
-Then in any workflow:
+## Usage in Any Workflow
+
 ```csharp
 [Workflow]
 public void Execute()
@@ -124,22 +113,3 @@ public void Execute()
     Log($"Using environment: {url}");
 }
 ```
-
-## Key Points
-
-- **`IBeforeAfterRun`** is an interface — any `CodedWorkflow`-derived class can implement it
-- **`partial class CodedWorkflow`** is a C# feature — extends the auto-generated class for all files in the project
-- **They combine:** use `partial class CodedWorkflow : IBeforeAfterRun` when you want hooks on every file
-- **Use `IBeforeAfterRun` on individual files** when only specific workflows/test cases need setup/teardown
-- **Use `partial class CodedWorkflow`** (without hooks) to add shared methods, properties, or constants
-- **Context objects** (`BeforeRunContext`, `AfterRunContext`) provide `RelativeFilePath`, `WorkflowFilePath`, etc.
-- **After() runs even on failure** — guaranteed cleanup
-
-## When to Use Which
-
-| Scenario | Pattern |
-|----------|---------|
-| One test case needs its own setup/teardown | Pattern 1: `IBeforeAfterRun` on the class |
-| All test cases share the same setup/teardown | Pattern 2: `partial class CodedWorkflow : IBeforeAfterRun` |
-| Shared helper methods for all workflows | Pattern 3: `partial class CodedWorkflow` (no hooks) |
-| All of the above | Combine patterns 2 + 3 in one or more partial files |

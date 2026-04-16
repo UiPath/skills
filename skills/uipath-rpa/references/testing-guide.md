@@ -1,8 +1,16 @@
 # Testing Guide
 
-Comprehensive reference for test automation features in UiPath RPA projects — mock testing, data-driven testing, XAML test activities, and execution templates.
+Reference for XAML test automation features in UiPath RPA projects — XAML test case structure, data-driven testing, XAML test activities, execution templates, and mock testing.
 
 > For coded test case creation (Given-When-Then, assertions, Before/After hooks), see [coded/operations-guide.md § Add a Test Case File](coded/operations-guide.md).
+
+## Table of Contents
+
+- [XAML Test Case Structure (Given-When-Then)](#xaml-test-case-structure-given-when-then)
+- [Data-Driven Testing](#data-driven-testing)
+- [XAML Test Activities](#xaml-test-activities)
+- [Execution Templates](#execution-templates)
+- [Mock Testing (XAML Only) — WIP](#mock-testing-xaml-only--wip)
 
 ---
 
@@ -117,43 +125,17 @@ Data-driven testing executes the same test case multiple times with different in
 
 ### Data Sources Overview
 
-| Source | Where Data Lives | Best For |
-|--------|-----------------|----------|
-| **Default parameters** | `Execute()` method signature | Simple parameterized tests with few variations |
-| **Variations files** | `.variations/` folder in project | File-based test data committed with the project |
-| **Excel/CSV files** | Local file system | Large data sets, familiar spreadsheet format |
-| **Data Service** | UiPath Automation Cloud | Centralized, secure, shared test data |
-| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution |
-| **Auto-generated** | Studio generates at design time | Quick coverage of code paths with synthetic values |
+| Source | Where Data Lives | Best For | Agent Support |
+|--------|-----------------|----------|---------------|
+| **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI: `add-test-data-variation` |
+| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution | CLI: `add-test-data-queue` |
+| **Data Service** | UiPath Automation Cloud | Centralized, secure, shared test data | CLI: `add-test-data-entity` |
+| **Excel/CSV files** | Local file system | Large data sets, familiar spreadsheet format | Studio GUI only |
+| **Auto-generated** | Studio generates at design time | Quick smoke tests with synthetic values | Studio GUI only |
 
-### Source 1: Default Parameters (Coded)
+> For coded data-driven tests using default parameters, see [coded/operations-guide.md § Add a Test Case File](coded/operations-guide.md).
 
-Add default values to `Execute()` parameters. Each parameter becomes a test input that can be overridden at runtime.
-
-```csharp
-[TestCase]
-public void Execute(
-    string invoiceId = "INV-001",
-    decimal amount = 1500.00m,
-    string expectedStatus = "POSTED")
-{
-    var result = workflows.ProcessInvoice(invoiceId: invoiceId, amount: amount);
-    testing.VerifyAreEqual(expectedStatus, result.status, $"Expected {expectedStatus} for {invoiceId}");
-}
-```
-
-Update `project.json` — add the parameters to `entryPoints[].input`:
-```json
-{
-  "input": [
-    { "name": "invoiceId", "type": "System.String, mscorlib", "required": false },
-    { "name": "amount", "type": "System.Decimal, mscorlib", "required": false },
-    { "name": "expectedStatus", "type": "System.String, mscorlib", "required": false }
-  ]
-}
-```
-
-### Source 2: Variations Files (Coded & XAML)
+### Source 1: Variations Files (Coded & XAML)
 
 Store test data in the `.variations/` folder at the project root. Each file maps to a test case and contains rows of input data.
 
@@ -228,78 +210,25 @@ Creates an argument of the entity type named after the entity (camelCase). Requi
 uip rpa add-test-data-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
 ```
 
-### Source 3: Excel/CSV Files (XAML)
+### Source 2: Excel/CSV Files — Studio GUI Only
 
-Configure via Studio's Test Data tab:
+> **Agent cannot perform this.** Configuring Excel/CSV data sources requires Studio's Test Data GUI (right-click → Add Test Data → Source: File). There is no CLI command for this. Use `add-test-data-variation` with a `.variations/` file instead.
 
-1. Right-click the test case → **Add Test Data**
-2. Select **Source: File** → browse to Excel/CSV file
-3. Select the sheet and rows to include
-4. Column headers automatically map to workflow arguments by name
-5. Each row becomes a separate test execution
+**Key rule for manual setup:** Column header names MUST match the test case argument names exactly. Mismatched names silently pass `null` values.
 
-**Key rule:** Column header names MUST match the test case argument names exactly. Mismatched names silently pass `null` values.
+### Source 3: Data Service Entities — Studio GUI Only
 
-### Source 4: Data Service Entities (XAML)
+> **Agent cannot perform this.** Configuring Data Service entity sources requires Studio's Test Data GUI (Test Data tab → Source: Data Service). Use the `add-test-data-entity` CLI command instead.
 
-Use UiPath Data Service (Automation Cloud) for centralized test data:
+### Source 4: Test Data Queues — XAML Consumption via Studio GUI
 
-1. In Studio, go to **Design ribbon → Manage Entities** → select entities
-2. Create a test case → **Test Data tab → Source: Data Service**
-3. Select the entity type containing test data
-4. Arguments are auto-generated with the entity namespace
-5. Access fields via `entityName.Data.ToString()`
+> **Agent cannot configure XAML test data queue consumption via GUI.** The Studio GUI path (right-click → Add Test Data → Source: Test Data Queue) is not available to the agent. Use the `add-test-data-queue` CLI command instead, which works for both coded and XAML test cases.
 
-### Source 5: Test Data Queues (Coded & XAML)
+**Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
 
-Test Data Queues store test data in Orchestrator and support parallel consumption across machines.
+### Source 5: Auto-Generated Data — Studio GUI Only
 
-**Orchestrator setup:**
-1. Navigate to **Testing → Test Data Queues → Add Test Data Queue**
-2. Upload a JSON schema defining field names and types
-3. Add items to the queue (manually or via bulk upload)
-
-**Consuming in coded test cases:**
-```csharp
-[TestCase]
-public void Execute()
-{
-    // Retrieve the next item from the test data queue
-    var item = testing.GetTestDataQueueItem("loan_applications");
-    string applicantName = item["ApplicantName"].ToString();
-    decimal loanAmount = Convert.ToDecimal(item["LoanAmount"]);
-
-    // Act
-    var result = workflows.ProcessLoanApplication(
-        applicantName: applicantName,
-        loanAmount: loanAmount
-    );
-
-    // Assert
-    string expectedDecision = item["ExpectedDecision"].ToString();
-    testing.VerifyAreEqual(expectedDecision, result.decision, 
-        $"Loan decision for {applicantName} should be {expectedDecision}");
-}
-```
-
-**Consuming in XAML test cases:**
-1. Right-click test case → **Add Test Data**
-2. Source: **Test Data Queue** → select the queue
-3. Apply filters for specific item ranges if needed
-4. An `IDictionary<String, Object>` argument is auto-created with the queue name
-
-> **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
-
-### Source 6: Auto-Generated Data (XAML)
-
-Studio can generate synthetic test data based on argument types:
-
-1. Test case → **Test Data tab → Source: Auto Generate**
-2. Studio creates a data table with columns for each argument
-3. Default values are generated based on argument types
-4. Modify values or add rows as needed
-
-This is useful for quick smoke tests to verify all code paths execute without errors.
+> **Agent cannot perform this.** Auto-generating synthetic test data requires Studio's Test Data GUI (Test Data tab → Source: Auto Generate). There is no CLI equivalent.
 
 ### Data-Driven Testing Best Practices
 
@@ -307,7 +236,7 @@ This is useful for quick smoke tests to verify all code paths execute without er
 2. **Include both positive and negative scenarios** — test expected failures too (invalid inputs, boundary values)
 3. **Name data variations descriptively** — use column names like `ExpectedResult`, `Scenario` for traceability
 4. **Keep data sets small and focused** — each data set should test one concern; avoid combinatorial explosion
-5. **For coded tests, prefer default parameters** for simple cases (< 5 variations) and Test Data Queues for complex/shared data
+5. **Prefer CLI commands** (`add-test-data-variation`, `add-test-data-queue`, `add-test-data-entity`) over Studio GUI steps — the agent can execute these directly
 
 ---
 
@@ -339,10 +268,12 @@ Compares two **string** expressions using a comparison operator. Both `FirstExpr
 
 ### VerifyControlAttribute
 
-Verifies a UI element's attribute (text, enabled state, visibility, etc.) against an expected value. The target UI element and activities to interact with it are placed **inside** the VerifyControlAttribute activity body.
+Verifies a UI element's attribute (text, enabled state, visibility, etc.) against an expected value.
+
+> **Requires UI automation targets.** This activity inspects live UI elements at runtime. The agent must configure targets using `uia-configure-target` (see [ui-automation-guide.md](ui-automation-guide.md)) before using this activity. The test case must run against a live application instance.
 
 **Properties:**
-- `Target` — the UI element to inspect
+- `Target` — the UI element to inspect (configured via `uia-configure-target`)
 - `AttributeName` — attribute to verify (e.g., `"text"`, `"enabled"`, `"visible"`)
 - `AttributeValue` — expected value
 - `Operator` — comparison operator (same options as VerifyExpressionWithOperator)
@@ -418,7 +349,7 @@ MyProject/
 
 - Do NOT put test logic (assertions) in an execution template — templates are for configuration only
 - Do NOT create templates with arguments that do not match any test case — they will be ignored
-- Do NOT rely on execution templates for data-driven testing — use data sources (Excel, Data Service, Queues) instead
+- Do NOT rely on execution templates for data-driven testing — use data sources (variations, Data Service, Queues) instead
 
 ---
 

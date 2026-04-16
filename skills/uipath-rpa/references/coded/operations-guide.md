@@ -88,7 +88,7 @@ Coded test cases automate and validate application behavior using a structured *
    - Add entry to `designOptions.fileInfoCollection` with `testCaseType: "TestCase"`, `publishAsTestCase: true`
 5. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
    - Optionally create `.variations/` data file for parameterized test data
-   - For advanced data sources (Excel, Data Service, Test Data Queues, auto-generated), see [../testing-guide.md § Data-Driven Testing](../testing-guide.md)
+   - For CLI-based data sources (variations files, Test Data Queues, Data Service), see [../testing-guide.md § Data-Driven Testing](../testing-guide.md)
 6. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
 
 **Test case structure — Given/When/Then:**

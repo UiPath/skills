@@ -122,7 +122,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [project-structure.md](references/project-structure.md) |
 | **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |
 | **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) → [coded/coding-guidelines.md](references/coded/coding-guidelines.md) |
-| **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) → [testing-guide.md](references/testing-guide.md) |
+| **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) |
 | **Set up data-driven testing** | Both | [testing-guide.md § Data-Driven Testing](references/testing-guide.md) |
 | **Create XAML test case (Given-When-Then)** | XAML | [testing-guide.md § XAML Test Case Structure](references/testing-guide.md) |
 | **Use mock testing** | XAML | [testing-guide.md § Mock Testing (WIP)](references/testing-guide.md) — requires CLI command not yet available |

@@ -227,4 +227,23 @@ namespace MyProject
 }
 ```
 
-Full templates and examples: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)
+### Key Points
+
+- **`IBeforeAfterRun`** is an interface — any `CodedWorkflow`-derived class can implement it
+- **`partial class CodedWorkflow`** is a C# feature — extends the auto-generated class for all files in the project
+- **They combine:** use `partial class CodedWorkflow : IBeforeAfterRun` when you want hooks on every file
+- **Use `IBeforeAfterRun` on individual files** when only specific workflows/test cases need setup/teardown
+- **Use `partial class CodedWorkflow`** (without hooks) to add shared methods, properties, or constants
+- **Context objects** (`BeforeRunContext`, `AfterRunContext`) provide `RelativeFilePath`, `WorkflowFilePath`, etc.
+- **After() runs even on failure** — guaranteed cleanup
+
+### When to Use Which
+
+| Scenario | Pattern |
+|----------|---------|
+| One test case needs its own setup/teardown | `IBeforeAfterRun` on the class |
+| All test cases share the same setup/teardown | `partial class CodedWorkflow : IBeforeAfterRun` |
+| Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
+| All of the above | Combine patterns in one or more partial files |
+
+Code templates: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)
