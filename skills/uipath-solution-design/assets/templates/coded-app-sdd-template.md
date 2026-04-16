@@ -2,7 +2,8 @@
 
 <!-- Use this template when the primary product is Coded Apps (web applications).
      If this template was chosen and the PDD lacked UI details, gap-filling Q&A in Phase 1
-     should have filled: framework, app type, pages/routes, state management. -->
+     should have filled: framework, app type, pages/routes, state management.
+     Phase 2 sections: §2, §3, §4, §5, §6, §10. Phase 3 sections: all others. -->
 
 ---
 
@@ -31,7 +32,7 @@
 
 ---
 
-# 1. App Overview
+## 1. App Overview
 
 | Field | Value |
 |---|---|
@@ -41,24 +42,24 @@
 | **Trigger** | <HOW_IS_THE_APP_OPENED — user navigation / action from automation / HITL form> |
 | **Expected concurrent users** | <NUMBER> |
 
-## In Scope
+### In Scope
 
 - <FEATURE_1>
 
-## Out of Scope
+### Out of Scope
 
 - <FEATURE_1>
 
 ---
 
-# 2. App Type & Tech Stack
+## 2. App Type & Tech Stack
 
-## App Type
+### App Type
 
 - [ ] **Web** — standalone web app users navigate to
 - [ ] **Action** — triggered by an automation, receives and returns data
 
-## Tech Stack
+### Tech Stack
 
 **Framework:** <React / Angular / Vue>
 **Build tool:** <Vite / Webpack / etc.>
@@ -69,7 +70,7 @@
 
 ---
 
-# 3. Pages & Routes
+## 3. Pages & Routes
 
 | Route | Page Name | Purpose | Who Sees It |
 |---|---|---|---|
@@ -78,7 +79,7 @@
 
 ---
 
-# 4. Components
+## 4. Components
 
 <!-- List major components. Keep it architectural, not implementation-level. -->
 
@@ -88,15 +89,15 @@
 
 ---
 
-# 5. State Management
+## 5. State Management
 
-## Global State
+### Global State
 
 | State Slice | Type | Purpose |
 |---|---|---|
 | <SLICE_NAME> | <USER / DATA / UI> | <WHAT_IT_HOLDS> |
 
-## Local Component State
+### Local Component State
 
 <!-- Describe where local state is appropriate vs. global. -->
 
@@ -104,7 +105,7 @@
 
 ---
 
-# 6. API Integration
+## 6. API Integration
 
 <!-- Which backends the app calls. -->
 
@@ -112,7 +113,7 @@
 |---|---|---|---|
 | <BACKEND_NAME> | <UIPATH_API_WORKFLOW / REST / GRAPHQL> | <PURPOSE> | <AUTH_MECHANISM> |
 
-## UiPath API Workflow Calls
+### UiPath API Workflow Calls
 
 <!-- If the app calls API Workflows, list them. -->
 
@@ -122,11 +123,11 @@
 
 ---
 
-# 7. User Flows
+## 7. User Flows
 
 <!-- Describe key user journeys through the app. One diagram per flow. -->
 
-## Flow: <FLOW_NAME>
+### Flow: <FLOW_NAME>
 
 ```mermaid
 flowchart LR
@@ -142,7 +143,7 @@ flowchart LR
 
 ---
 
-# 8. Error Handling
+## 8. Error Handling
 
 | Error Scenario | User-Facing Behavior | Logging |
 |---|---|---|
@@ -152,9 +153,9 @@ flowchart LR
 
 ---
 
-# 9. Integrated Components
+## 9. Integrated Components
 
-## Called By (if Action app)
+### Called By (if Action app)
 
 <!-- If this is an Action app triggered by automation, describe the caller. -->
 
@@ -162,7 +163,7 @@ flowchart LR
 |---|---|---|
 | <CALLER_NAME> | <RPA_PROCESS / FLOW / AGENT> | <WHEN_AND_WHY> |
 
-## HITL Form Role
+### HITL Form Role
 
 <!-- If the coded app serves as a HITL form renderer for another product. -->
 
@@ -171,7 +172,7 @@ flowchart LR
 
 ---
 
-# 10. Project Structure
+## 10. Project Structure
 
 ```text
 <APP_PROJECT_NAME>/
@@ -190,28 +191,28 @@ flowchart LR
 └── dist/                    (build output — required before pack)
 ```
 
-## Deployment Target
+### Deployment Target
 
 - [ ] Studio Web (default)
 - [ ] Orchestrator (for production)
 
 ---
 
-# 11. Testing Strategy
+## 11. Testing Strategy
 
-## Canonical Test Cases
+### Canonical Test Cases
 
 | Test ID | User Flow | Input | Expected Outcome |
 |---|---|---|---|
 | T-01 | <FLOW_NAME> | <INPUT> | <EXPECTED_UI_STATE> |
 
-## Unit Tests
+### Unit Tests
 
 - Component rendering
 - State management logic
 - API error handling
 
-## E2E Tests
+### E2E Tests
 
 <!-- Use a framework like Playwright or Cypress. -->
 
@@ -219,20 +220,65 @@ flowchart LR
 
 ---
 
-# 12. Implementation Plan
+## 12. Implementation Plan
 
-| # | Task | Dependencies | SDD Sections | Description |
-|---|---|---|---|---|
-| 1 | Scaffold project | — | §2, §10 | Create project with chosen framework |
-| 2 | Define routes and pages | 1 | §3 | Set up router and page shells |
-| 3 | Build components | 2 | §4 | Implement UI components |
-| 4 | Wire state management | 3 | §5 | Configure global state |
-| 5 | Integrate backends | — | §6 | Connect to APIs / API Workflows |
-| 6 | Implement user flows | 3, 4, 5 | §7 | End-to-end flows |
-| 7 | Add error handling | 6 | §8 | Error boundaries, retry logic |
-| 8 | Write tests | 6 | §11 | Unit + E2E |
-| 9 | Build and pack | 8 | §10 | `npm run build` → `uip codedapp pack` |
-| 10 | Publish and deploy | 9 | §10 | Push to Studio Web → Orchestrator deploy |
+> **Instructions for the implementing agent:**
+> Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
+> Use the exact framework, routes, components, and state structure documented in this SDD — do not infer, guess, or deviate.
+> Each task description below is a self-contained prompt. Execute it as written.
+
+### Task 1 — Scaffold project
+**Dependencies:** none
+**References:** §2 App Type & Tech Stack, §10 Project Structure
+
+> Create a <FRAMEWORK> <APP_TYPE> project named `<APP_PROJECT_NAME>`.
+> Set up the `.uipath/` directory and project structure per §10.
+
+### Task 2 — Define routes and pages
+**Dependencies:** Task 1
+**References:** §3 Pages & Routes
+
+> Create each page listed in §3: <LIST_EACH_ROUTE_AND_PAGE>.
+> Use the exact route paths and page names from §3.
+
+### Task 3 — Build components
+**Dependencies:** Task 2
+**References:** §4 Components
+
+> Implement each component listed in §4. Place them on the pages specified in §4's "Used On Pages" column.
+> Use the exact component names and types from §4.
+
+### Task 4 — Wire state management
+**Dependencies:** Task 3
+**References:** §5 State Management
+
+> Configure global state slices per §5: <LIST_EACH_SLICE>.
+> Use local state where §5 specifies it for specific components.
+
+### Task 5 — Integrate backends
+**Dependencies:** none
+**References:** §6 API Integration
+
+> Connect to each backend listed in §6. For UiPath API Workflow calls, use the exact input/output schemas from §6.
+
+### Task 6 — Implement user flows
+**Dependencies:** Tasks 3, 4, 5
+**References:** §7 User Flows
+
+> Implement each user flow from §7 end-to-end. Follow the mermaid diagrams and descriptions exactly.
+
+### Task 7 — Add error handling
+**Dependencies:** Task 6
+**References:** §8 Error Handling
+
+> Implement error handling per §8: each row specifies the scenario, user-facing behavior, and logging.
+
+### Task 8 — Write tests, build, and deploy
+**Dependencies:** Task 7
+**References:** §11 Testing Strategy, §10 Project Structure
+
+> Write unit and E2E tests per §11. Run them.
+> Build the app (`npm run build`), pack (`uip codedapp pack`), publish, and deploy per §10.
 
 ---
 

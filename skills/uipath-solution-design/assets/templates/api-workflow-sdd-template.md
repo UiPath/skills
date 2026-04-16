@@ -1,7 +1,8 @@
 # Solution Design Document — <API_WORKFLOW_NAME>
 
 <!-- Use this template when the primary product is UiPath API Workflows.
-     API Workflows are serverless, bot-less, synchronous request-response integrations authored in Studio Web. -->
+     API Workflows are serverless, bot-less, synchronous request-response integrations authored in Studio Web.
+     Phase 2 sections: §2, §3, §4, §5, §10. Phase 3 sections: all others. -->
 
 ---
 
@@ -30,7 +31,7 @@
 
 ---
 
-# 1. API Workflow Overview
+## 1. API Workflow Overview
 
 | Field | Value |
 |---|---|
@@ -41,17 +42,17 @@
 | **Expected latency** | <MILLISECONDS_OR_SECONDS> |
 | **Expected throughput** | <CALLS_PER_MINUTE> |
 
-## In Scope
+### In Scope
 
 - <CAPABILITY_1>
 
-## Out of Scope
+### Out of Scope
 
 - <CAPABILITY_1>
 
 ---
 
-# 2. Input Schema
+## 2. Input Schema
 
 <!-- JSON schema for the parameters the caller provides.
      Use a table for clarity; the implementation skill will generate the actual JSON schema. -->
@@ -60,7 +61,7 @@
 |---|---|---|---|---|
 | <FIELD_NAME> | <string / number / boolean / object / array> | <YES/NO> | <DESCRIPTION> | `<EXAMPLE_VALUE>` |
 
-## Sample Input
+### Sample Input
 
 ```json
 {
@@ -70,7 +71,7 @@
 
 ---
 
-# 3. Output Schema
+## 3. Output Schema
 
 <!-- JSON schema for the data returned to the caller. -->
 
@@ -78,7 +79,7 @@
 |---|---|---|---|---|
 | <FIELD_NAME> | <TYPE> | <YES/NO> | <DESCRIPTION> | `<EXAMPLE_VALUE>` |
 
-## Sample Output
+### Sample Output
 
 ```json
 {
@@ -88,7 +89,7 @@
 
 ---
 
-# 4. Execution Flow
+## 4. Execution Flow
 
 <!-- High-level steps the API workflow performs. DO NOT include JavaScript — the implementation skill
      handles that. Describe logical steps and data flow. -->
@@ -103,7 +104,7 @@ flowchart LR
     S3 --> Output([Output])
 ```
 
-## Step Details
+### Step Details
 
 | # | Step | Activity Type | Input | Output | Notes |
 |---|---|---|---|---|---|
@@ -111,15 +112,15 @@ flowchart LR
 
 ---
 
-# 5. Connectors & External Calls
+## 5. Connectors & External Calls
 
-## Integration Service Connectors
+### Integration Service Connectors
 
 | Connector | Operation | Called In Step | Input | Output |
 |---|---|---|---|---|
 | <CONNECTOR_NAME> (Workday/Zendesk/Salesforce/etc.) | <OPERATION> | <STEP_NUMBER> | <INPUT> | <OUTPUT> |
 
-## Direct HTTP Calls
+### Direct HTTP Calls
 
 <!-- Used when no connector exists for the target system. -->
 
@@ -129,9 +130,9 @@ flowchart LR
 
 ---
 
-# 6. Error Handling
+## 6. Error Handling
 
-## Known Error Scenarios
+### Known Error Scenarios
 
 | Error Type | Source | HTTP Status to Return | Response Body |
 |---|---|---|---|
@@ -139,7 +140,7 @@ flowchart LR
 | <EXTERNAL_FAILURE> | Connector/HTTP call fails | 502 | `{ "error": "<MESSAGE>" }` |
 | <NOT_FOUND> | Upstream resource missing | 404 | `{ "error": "<MESSAGE>" }` |
 
-## Retry Policy
+### Retry Policy
 
 | Operation | Retry Count | Backoff | Timeout |
 |---|---|---|---|
@@ -147,7 +148,7 @@ flowchart LR
 
 ---
 
-# 7. Performance & Scaling
+## 7. Performance & Scaling
 
 | Metric | Target |
 |---|---|
@@ -161,9 +162,9 @@ flowchart LR
 
 ---
 
-# 8. Security & Authentication
+## 8. Security & Authentication
 
-## Authentication to the API Workflow
+### Authentication to the API Workflow
 
 <!-- How callers authenticate when invoking this workflow. -->
 
@@ -172,13 +173,13 @@ flowchart LR
 - [ ] Flow node invocation (within flow context)
 - [ ] External HTTP (via Orchestrator-exposed endpoint)
 
-## Authentication to External Systems
+### Authentication to External Systems
 
 | External System | Auth Type | Credential Source |
 |---|---|---|
 | <SYSTEM_NAME> | <OAUTH / API_KEY / BASIC> | <UIPATH_ASSET / CONNECTOR_CONFIG> |
 
-## Rate Limits
+### Rate Limits
 
 | Scope | Limit |
 |---|---|
@@ -187,7 +188,7 @@ flowchart LR
 
 ---
 
-# 9. Consumers
+## 9. Consumers
 
 <!-- Who calls this API workflow? -->
 
@@ -197,7 +198,7 @@ flowchart LR
 
 ---
 
-# 10. Project Structure
+## 10. Project Structure
 
 ```text
 <API_WORKFLOW_PROJECT_NAME>/
@@ -207,28 +208,28 @@ flowchart LR
 └── deployment.json          # deployment configuration
 ```
 
-## Deployment Target
+### Deployment Target
 
 - **Studio Web** (required — API Workflows are authored only in Studio Web)
 - Published to **Orchestrator** for consumption by agents, flows, or external callers
 
 ---
 
-# 11. Testing Strategy
+## 11. Testing Strategy
 
-## Canonical Test Cases
+### Canonical Test Cases
 
 | Test ID | Input | Expected Output | Expected Latency |
 |---|---|---|---|
 | T-01 | `<INPUT_JSON>` | `<OUTPUT_JSON>` | < <MILLISECONDS> |
 
-## Error Path Tests
+### Error Path Tests
 
 | Test ID | Input | Expected HTTP Status | Expected Error Body |
 |---|---|---|---|
 | T-E1 | `<INVALID_INPUT>` | 400 | `<EXPECTED_ERROR>` |
 
-## Load Tests
+### Load Tests
 
 <!-- For high-throughput API workflows. -->
 
@@ -238,19 +239,60 @@ flowchart LR
 
 ---
 
-# 12. Implementation Plan
+## 12. Implementation Plan
 
-| # | Task | Dependencies | SDD Sections | Description |
-|---|---|---|---|---|
-| 1 | Create API Workflow project in Studio Web | — | §10 | Initialize project |
-| 2 | Define input/output schemas in Data Manager | 1 | §2, §3 | Configure schemas |
-| 3 | Configure Integration Service connectors | — | §5 Connectors | Set up required connectors |
-| 4 | Build execution flow | 2, 3 | §4 | Implement steps (HTTP, Connector, Script, control flow) |
-| 5 | Implement error handling | 4 | §6 | Wire up try/catch, retry, response codes |
-| 6 | Configure authentication | 4 | §8 | Set up auth for external systems |
-| 7 | Write test cases | 4 | §11 | Happy path, error paths |
-| 8 | Publish to Orchestrator | 7 | §10 | Deploy and expose endpoint |
-| 9 | Notify consumers | 8 | §9 | Update agents/flows to invoke the new API workflow |
+> **Instructions for the implementing agent:**
+> Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
+> Use the exact schemas, connectors, error codes, and auth config documented in this SDD — do not infer, guess, or deviate.
+> Each task description below is a self-contained prompt. Execute it as written.
+
+### Task 1 — Create API Workflow project
+**Dependencies:** none
+**References:** §10 Project Structure
+
+> Create an API Workflow project named `<API_WORKFLOW_PROJECT_NAME>` in Studio Web.
+> Verify the project structure matches §10 before proceeding.
+
+### Task 2 — Define input/output schemas
+**Dependencies:** Task 1
+**References:** §2 Input Schema, §3 Output Schema
+
+> Configure the input schema in Data Manager per §2: <LIST_EACH_FIELD_WITH_TYPE_AND_REQUIRED>.
+> Configure the output schema per §3: <LIST_EACH_FIELD_WITH_TYPE>.
+> Use the exact field names, types, and required flags from §2 and §3.
+
+### Task 3 — Configure connectors and authentication
+**Dependencies:** none
+**References:** §5 Connectors & External Calls, §8 Security & Authentication
+
+> Set up each Integration Service connector listed in §5.
+> Configure authentication for external systems per §8: each row specifies system, auth type, and credential source.
+> For direct HTTP calls in §5, note the endpoints — they will be used in Task 4.
+
+### Task 4 — Build execution flow
+**Dependencies:** Tasks 2, 3
+**References:** §4 Execution Flow
+
+> Build each step listed in §4 Step Details, in order.
+> For each step: use the exact activity type, inputs, and outputs from §4.
+> Wire connector calls to the connectors configured in Task 3.
+> Wire HTTP calls to the endpoints listed in §5.
+
+### Task 5 — Implement error handling
+**Dependencies:** Task 4
+**References:** §6 Error Handling
+
+> Wire up error handling per §6. Each row specifies: error type, source, HTTP status to return, and response body.
+> Configure retry policies per §6 Retry Policy table.
+
+### Task 6 — Test, publish, and notify consumers
+**Dependencies:** Task 5
+**References:** §11 Testing Strategy, §10 Deployment Target, §9 Consumers
+
+> Run canonical test cases from §11. Verify expected outputs and latencies.
+> Run error path tests from §11.
+> Publish to Orchestrator per §10.
+> Notify each consumer listed in §9 that the API Workflow is available.
 
 ---
 

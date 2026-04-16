@@ -1,7 +1,8 @@
 # Solution Design Document — <PROCESS_NAME>
 
 <!-- Use this template when the primary product is Case Management.
-     Case Management organizes work into stages with tasks, SLA rules, and escalation. -->
+     Case Management organizes work into stages with tasks, SLA rules, and escalation.
+     Phase 2 sections: §3, §4, §8, §9, §10. Phase 3 sections: all others. -->
 
 ---
 
@@ -30,7 +31,7 @@
 
 ---
 
-# 1. Case Overview
+## 1. Case Overview
 
 | Field | Value |
 |---|---|
@@ -41,17 +42,17 @@
 | **Typical case duration** | <DURATION_RANGE> |
 | **Maximum case duration** | <HARD_MAX_BEFORE_BREACH> |
 
-## In Scope
+### In Scope
 
 - <ACTIVITY_1>
 
-## Out of Scope
+### Out of Scope
 
 - <ACTIVITY_1>
 
 ---
 
-# 2. Case Lifecycle Diagram
+## 2. Case Lifecycle Diagram
 
 ```mermaid
 flowchart LR
@@ -65,7 +66,7 @@ flowchart LR
 
 ---
 
-# 3. Stages
+## 3. Stages
 
 <!-- Stages are BPMN-style phases in the case lifecycle. Each has entry/exit conditions and tasks. -->
 
@@ -75,13 +76,13 @@ flowchart LR
 
 ---
 
-# 4. Tasks Grid
+## 4. Tasks Grid
 
 <!-- Tasks are organized as a 2D grid: tasks[lane][index].
      Lanes represent parallel execution tracks within a stage.
      Index is the sequence within a lane. -->
 
-## Stage: <STAGE_NAME>
+### Stage: <STAGE_NAME>
 
 | Lane | Index | Task Name | Task Type | Purpose | Inputs | Outputs |
 |---|---|---|---|---|---|---|
@@ -93,27 +94,27 @@ flowchart LR
 
 ---
 
-# 5. Entry / Exit Conditions
+## 5. Entry / Exit Conditions
 
-## Stage entry conditions
+### Stage entry conditions
 
 | Stage | Condition | Notes |
 |---|---|---|
 | <STAGE_NAME> | <JSON_PATH_OR_EXPRESSION> | <NOTES> |
 
-## Stage exit conditions
+### Stage exit conditions
 
 | Stage | Condition | Next Stage (on true) |
 |---|---|---|
 | <STAGE_NAME> | <EXPRESSION> | <TARGET_STAGE> |
 
-## Case exit conditions
+### Case exit conditions
 
 | Condition | Final Status |
 |---|---|
 | <EXPRESSION> | <COMPLETED / REJECTED / CANCELLED> |
 
-## Task entry conditions
+### Task entry conditions
 
 | Task | Condition |
 |---|---|
@@ -121,7 +122,7 @@ flowchart LR
 
 ---
 
-# 6. SLA Rules
+## 6. SLA Rules
 
 | SLA ID | Applies To | Type | Duration / Condition | At-Risk Threshold |
 |---|---|---|---|---|
@@ -129,7 +130,7 @@ flowchart LR
 
 ---
 
-# 7. Escalations
+## 7. Escalations
 
 | Escalation ID | Trigger | Action | Notify |
 |---|---|---|---|
@@ -137,7 +138,7 @@ flowchart LR
 
 ---
 
-# 8. Task Type Registry
+## 8. Task Type Registry
 
 <!-- Each task maps to a taskTypeId from the registry. Registry resolution happens at implementation time;
      this section lists the *kinds* of tasks needed so the registry query can target them. -->
@@ -153,33 +154,33 @@ flowchart LR
 
 ---
 
-# 9. Integrated Components
+## 9. Integrated Components
 
-## RPA Processes Invoked
+### RPA Processes Invoked
 
 | Process Name | Called From Task | Purpose |
 |---|---|---|
 | `<PROCESS_NAME>` | <TASK_NAME> | <PURPOSE> |
 
-## Agents Invoked
+### Agents Invoked
 
 | Agent Name | Called From Task | Purpose |
 |---|---|---|
 | `<AGENT_NAME>` | <TASK_NAME> | <PURPOSE> |
 
-## API Workflows Invoked
+### API Workflows Invoked
 
 | API Workflow Name | Called From Task | Purpose |
 |---|---|---|
 | `<API_WORKFLOW_NAME>` | <TASK_NAME> | <PURPOSE> |
 
-## Integration Service Connectors
+### Integration Service Connectors
 
 | Connector | Called From Task | Operation |
 |---|---|---|
 | <CONNECTOR_NAME> | <TASK_NAME> | <OPERATION> |
 
-## HITL Tasks
+### HITL Tasks
 
 <!-- Inline in Case Management — use HITL task type with inline schema (do NOT route to HITL skill; Case Mgmt handles it directly). -->
 
@@ -189,7 +190,7 @@ flowchart LR
 
 ---
 
-# 10. Project Structure
+## 10. Project Structure
 
 ```text
 <CASE_PROJECT_NAME>/
@@ -203,19 +204,19 @@ flowchart LR
 
 ---
 
-# 11. Testing Strategy
+## 11. Testing Strategy
 
-## Canonical Test Case
+### Canonical Test Case
 
 | Field | Value |
 |---|---|
 | <FIELD_NAME> | `<TEST_VALUE>` |
 
-## Happy Path Assertions
+### Happy Path Assertions
 
 1. <ASSERTION_1>
 
-## SLA Breach Scenarios
+### SLA Breach Scenarios
 
 | Scenario | Setup | Expected Escalation |
 |---|---|---|
@@ -223,19 +224,54 @@ flowchart LR
 
 ---
 
-# 12. Implementation Plan
+## 12. Implementation Plan
 
-| # | Task | Dependencies | SDD Sections | Description |
-|---|---|---|---|---|
-| 1 | Generate tasks.md from this SDD | — | §3, §4 | Run planning phase |
-| 2 | Resolve registry taskTypeIds | 1 | §8 | Match task names to registry |
-| 3 | Create RPA processes called by tasks | — | §9 RPA | One task per invoked process |
-| 4 | Create Agents called by tasks | — | §9 Agents | One task per invoked agent |
-| 5 | Create API Workflows called by tasks | — | §9 API Workflows | One task per invoked API workflow |
-| 6 | Configure Integration Service connectors | — | §9 Connectors | Configure connectors |
-| 7 | Build caseplan.json | 2, 3, 4, 5, 6 | §3-§8 | Full case plan generation |
-| 8 | Configure SLA rules and escalations | 7 | §6, §7 | Wire up SLA + escalations |
-| 9 | Deploy and test | 8 | §11 | Deploy case plan, run canonical case |
+> **Instructions for the implementing agent:**
+> Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
+> Use the exact stage names, task names, conditions, and SLA values documented in this SDD — do not infer, guess, or deviate.
+> Each task description below is a self-contained prompt. Execute it as written.
+
+### Task 1 — Generate tasks.md from this SDD
+**Dependencies:** none
+**References:** §3 Stages, §4 Tasks Grid
+
+> Run the case management planning phase. Read §3 (Stages) and §4 (Tasks Grid) to generate a tasks.md file that maps every task to its stage and lane.
+
+### Task 2 — Resolve registry taskTypeIds
+**Dependencies:** Task 1
+**References:** §8 Task Type Registry
+
+> Match each task name from §8 to a taskTypeId in the registry. Query the registry for each task type kind listed (RPA, AGENT, API_WORKFLOW, CONNECTOR_ACTIVITY, CONNECTOR_TRIGGER, HITL).
+
+### Task 3 — Create integrated components
+**Dependencies:** none
+**References:** §9 Integrated Components
+
+> For each RPA process in §9: create the RPA project (this will trigger the RPA skill).
+> For each Agent in §9: create the agent project.
+> For each API Workflow in §9: create the API Workflow.
+> For each connector in §9: configure the Integration Service connector.
+> Skip any category that has no entries.
+
+### Task 4 — Build caseplan.json
+**Dependencies:** Tasks 2, 3
+**References:** §3 Stages, §4 Tasks Grid, §5 Entry/Exit Conditions, §8 Task Type Registry
+
+> Generate the full caseplan.json from the resolved registry entries and the SDD's stage/task/condition definitions.
+> Use the exact stage names, task grid layout (lanes × index), and entry/exit conditions from §3-§5.
+
+### Task 5 — Configure SLA rules and escalations
+**Dependencies:** Task 4
+**References:** §6 SLA Rules, §7 Escalations
+
+> Wire up SLA rules per §6: each SLA row specifies scope, type, duration, and at-risk threshold.
+> Wire up escalation rules per §7: each row specifies trigger, action, and notification target.
+
+### Task 6 — Deploy and test
+**Dependencies:** Task 5
+**References:** §11 Testing Strategy
+
+> Deploy the case plan. Run the canonical test case from §11. Verify happy path assertions and SLA breach scenarios.
 
 ---
 

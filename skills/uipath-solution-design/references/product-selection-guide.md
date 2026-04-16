@@ -12,41 +12,22 @@ This is the most important decision the SDD makes. Select the wrong product and 
 
 ## Level 1 — Product Selection
 
-### Decision tree
+### Decision table
 
-Walk through in order. First match wins as the **primary**. All matching signals below the primary become **integrated components**.
+Walk through in priority order. **First match wins** as the primary. All matching signals below the primary become integrated components.
 
-```text
-1. Does the PDD describe AI reasoning, LLM judgment, tool calling, RAG, or knowledge retrieval?
-   YES → Primary: Agents
-   NO  → continue
+| Priority | Signal in PDD | Primary Product |
+|----------|---------------|-----------------|
+| 1 | AI reasoning, LLM judgment, tool calling, RAG, knowledge retrieval | Agents |
+| 2 | Web dashboard, internal tool, Action Center form as the deliverable | Coded Apps |
+| 3 | System-to-system API integration (synchronous, no UI, no bots) | API Workflows |
+| 4 | Case lifecycle with stages, SLA tracking, approval gates, task routing | Case Management |
+| 5 | Orchestrating MULTIPLE automation types (RPA + agents + apps) | Maestro Flow |
+| 6 | Reusable component consumed by other automations (not standalone) | RPA Library |
+| 7 | Primary goal is TESTING an application's behavior | RPA Test Automation |
+| 8 | None of the above (UI automation, data processing, queue-based) | RPA Process (default) |
 
-2. Does the PDD describe a web dashboard, internal tool, or Action Center form as the deliverable?
-   YES → Primary: Coded Apps
-   NO  → continue
-
-3. Does the PDD describe system-to-system API integration (synchronous, no UI, no bots)?
-   YES → Primary: API Workflows
-   NO  → continue
-
-4. Does the PDD describe case lifecycle with stages, SLA tracking, approval gates, or task routing?
-   YES → Primary: Case Management
-   NO  → continue
-
-5. Does the PDD describe orchestrating MULTIPLE automation types (RPA + agents + apps)?
-   YES → Primary: Maestro Flow
-   NO  → continue
-
-6. Is the process meant to be REUSED as a component by other automations (not standalone)?
-   YES → Primary: RPA Library
-   NO  → continue
-
-7. Is the primary goal TESTING an application's behavior?
-   YES → Primary: RPA Test Automation
-   NO  → continue
-
-8. Default → Primary: RPA Process
-```
+> **Ambiguous dual-product PDDs:** If the PDD appears to match two products roughly equally, the priority ordering above is intentional. Present both products in the recommendation with explicit reasoning for each, mark the higher-priority match as the default, and let the user confirm via `AskUserQuestion`.
 
 ### Signals per product
 
@@ -237,22 +218,36 @@ Based on the Level 1 primary, select the template:
 
 | Primary Product | Template |
 |---|---|
-| RPA Process, Library, Test Automation | `rpa-sdd-template.md` |
-| Maestro Flow | `flow-sdd-template.md` |
-| Case Management | `case-sdd-template.md` |
-| Agents | `agent-sdd-template.md` |
-| Coded Apps | `coded-app-sdd-template.md` |
-| API Workflows | `api-workflow-sdd-template.md` |
+| RPA Process, Library, Test Automation | `../assets/templates/rpa-sdd-template.md` |
+| Maestro Flow | `../assets/templates/flow-sdd-template.md` |
+| Case Management | `../assets/templates/case-sdd-template.md` |
+| Agents | `../assets/templates/agent-sdd-template.md` |
+| Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
+| API Workflows | `../assets/templates/api-workflow-sdd-template.md` |
 
 ## Gap Handling for Agent / Coded App
 
 When the primary product is Agents or Coded Apps and the PDD is missing required information (listed in the signals above):
 
-1. Use `AskUserQuestion` with a single prompt: "The PDD describes [product]-specific capabilities, but requirements are missing for [list gaps]. Should I proceed with [product] and ask follow-up questions to fill the gaps, or use a different product?"
-2. Options: "Proceed with [product]" / "Use a different product"
-3. If user chooses to proceed → use `AskUserQuestion` again with a batch of 4-6 product-specific gap-filling questions
-4. If user chooses a different product → use `AskUserQuestion` to pick the fallback (RPA Process, Flow, Case Management, Stop)
-5. Re-run product selection with the fallback as primary
+1. Use `AskUserQuestion` with the numbered-choice format:
+
+> The PDD describes <PRODUCT>-specific capabilities, but requirements are missing for: <LIST_GAPS>.
+>
+> 1. **Proceed with <PRODUCT>** *(recommended)* — I will ask follow-up questions to fill the gaps
+> 2. **Use a different product** — I will ask which product to use instead
+
+2. If user chooses **option 1** → use `AskUserQuestion` again with a batch of 4-6 product-specific gap-filling questions (numbered, with defaults where possible)
+
+3. If user chooses **option 2** → use `AskUserQuestion` for the fallback:
+
+> Which product should I use instead?
+>
+> 1. **RPA Process** — standard UI/data automation
+> 2. **Maestro Flow** — orchestrate multiple automations
+> 3. **Case Management** — staged lifecycle with SLA
+> 4. **Stop** — do not generate an SDD
+
+4. Re-run product selection with the fallback as primary
 
 Do not auto-fallback. The user must choose explicitly.
 

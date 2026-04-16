@@ -14,20 +14,22 @@ Transform a Process Design Document (PDD) into an implementation-ready Solution 
 3. **Follow the phased interaction model.** Read the full PDD first, recommend a product, present a summary with clarifying questions, get architecture approval, then generate the complete SDD. See [SDD Generation Guide](references/sdd-generation-guide.md).
 4. **Fill gaps with `[DEFAULT]` or `[SME REVIEW]`.** Use `[DEFAULT]` for industry-standard patterns (retry counts, timeouts). Use `[SME REVIEW]` for gaps requiring business knowledge. Never silently invent business rules.
 5. **The Project Structure section is the most important section.** It must list every workflow file (or node / stage / tool / page / step) with its responsibility, inputs, outputs, and which PDD steps it covers.
-6. **Express data definitions as C# records when the primary is RPA in Coded or Hybrid mode.** Use records for immutable data, classes for mutable. No inheritance. Max 15 properties per type. Default to `string` unless the PDD specifies numeric, date, or boolean operations. For XAML mode, use dictionary keys or DataTable columns. For Agents/Coded Apps/Flow/Case/API Workflows, use the JSON schema or type definition appropriate to that product.
-7. **Always generate the Implementation Plan.** Write it as the final SDD section AND create live tasks via TaskCreate with dependencies. Do not ask the user — generate it automatically. If TaskCreate is unavailable or fails, the plan section in the SDD file is sufficient — do not block SDD completion.
-8. **Select the primary product BEFORE designing architecture.** The product determines the template and the project structure. Use the [Product Selection Guide](references/product-selection-guide.md) to recommend a primary product + integrated components based on PDD signals. The skill that builds the workflows/nodes/tasks owns the final detailed decisions.
-9. **Write the SDD to the current working directory** with filename `<PROCESS_NAME_KEBAB_CASE>-sdd.md`. If the user specifies a path, use that instead.
-10. **If the user's intent implies implementation, execute the plan after SDD approval.** When the user asks to "create", "build", "implement", "set up", or "make" a project from a PDD, proceed to work through the implementation tasks in dependency order — the agent will activate the appropriate skills for each task. When the user asks to "design", "architect", or "generate an SDD", stop after writing the SDD.
-11. **Use AskUserQuestion for Agent/Coded App gaps.** If the primary product is Agents or Coded Apps and the PDD lacks required details (framework, tools, pages, flows), use `AskUserQuestion` to ask if the user wants to proceed with gap-filling or use a different product. Never auto-fallback.
+6. **RPA data definitions follow the implementation mode.** For Coded C# or Hybrid mode: use C# `record` (immutable) or `class` (mutable). No inheritance. Max 15 properties per type. Default to `string` unless the PDD specifies numeric, date, or boolean operations. For XAML mode: use dictionary keys or DataTable columns.
+7. **Non-RPA products use their native type system.** For Agents, Coded Apps, Flow, Case Management, and API Workflows: use the JSON schema or type definition appropriate to that product's template.
+8. **Always generate the Implementation Plan.** Write it as the final SDD section AND create live tasks via TaskCreate with dependencies. Do not ask the user — generate it automatically. If TaskCreate is unavailable or fails, the plan section in the SDD file is sufficient — do not block SDD completion.
+9. **Select the primary product BEFORE designing architecture.** The product determines the template and the project structure. Use the [Product Selection Guide](references/product-selection-guide.md) to recommend a primary product + integrated components based on PDD signals. The skill that builds the workflows/nodes/tasks owns the final detailed decisions.
+10. **Write the SDD to the current working directory** with filename `<PROCESS_NAME_KEBAB_CASE>-sdd.md`. If the user specifies a path, use that instead.
+11. **If the user's intent implies implementation, execute the plan after SDD approval.** When the user asks to "create", "build", "implement", "set up", "make", "prepare", or "scaffold" a project from a PDD, proceed to work through the implementation tasks in dependency order — the agent will activate the appropriate skills for each task. When the user asks to "design", "architect", or "generate an SDD", stop after writing the SDD. If intent is ambiguous, use `AskUserQuestion` to clarify.
+12. **Use AskUserQuestion for Agent/Coded App gaps.** If the primary product is Agents or Coded Apps and the PDD lacks required details (framework, tools, pages, flows), use `AskUserQuestion` to ask if the user wants to proceed with gap-filling or use a different product. Never auto-fallback.
+13. **All user questions use numbered-choice format.** Every `AskUserQuestion` must use a blockquote with numbered options and a `*(recommended)*` tag on the default choice. This applies to: execution mode, language, product gap-filling, fallback selection, SME review resolution.
 
 ## Workflow
 
-The SDD generation follows 3 phases. Only interrupt the user when genuinely necessary. See [SDD Generation Guide](references/sdd-generation-guide.md) for detailed steps.
+The SDD generation follows 3 phases. Before starting, ask the user for their preferred execution mode (Autonomous or Interactive). See [SDD Generation Guide](references/sdd-generation-guide.md) for detailed steps. All user questions use numbered-choice format.
 
-1. **Phase 1 — PDD Analysis & Product Selection.** Read the full PDD, extract structured information, run product selection, present a summary with the recommended product (primary + integrated) and detected gaps. For Agent/Coded App products with missing info, use `AskUserQuestion` for gap-filling or fallback.
-2. **Phase 2 — Architecture Review.** Load the product-specific template. Generate the architectural core for that product (project structure, workflow/node/stage/tool inventory, data models). Present to the user for review. Incorporate feedback before proceeding.
-3. **Phase 3 — Full SDD Generation.** Generate all remaining sections, write the SDD to disk, and create the implementation plan. If the user's intent implies implementation (see Critical Rule 10), proceed to execute the tasks in dependency order.
+1. **Phase 1 — PDD Analysis & Product Selection.** Ask execution mode. Read the full PDD, extract structured information, run product selection. In Interactive mode, present a summary with the recommended product and gaps. In Autonomous mode, proceed without pausing. For Agent/Coded App products with missing info, use `AskUserQuestion` for gap-filling or fallback (both modes).
+2. **Phase 2 — Architecture Review.** Load the product-specific template. Generate the architectural core. In Interactive mode, present for review. In Autonomous mode, proceed without pausing.
+3. **Phase 3 — Full SDD Generation.** Generate all remaining sections. Resolve `[SME REVIEW]` items by asking the user before writing (both modes). Write the SDD to disk and create the implementation plan. If the user's intent implies implementation (see Critical Rule 11), proceed to execute the tasks in dependency order.
 
 ## Reference Navigation
 
@@ -56,14 +58,3 @@ The SDD generation follows 3 phases. Only interrupt the user when genuinely nece
 9. **Auto-falling-back from Agents/Coded Apps to another product without asking.** If the PDD is missing product-specific details, use `AskUserQuestion` — the user chooses whether to proceed with gap-filling or pick a different product.
 10. **Inlining HITL schema for Flow/Maestro/Agent products.** HITL for those products is owned by the `uipath-human-in-the-loop` skill. Flag touchpoints only. Case Management is the exception — it handles HITL tasks inline.
 
-## Future Work
-
-<!-- TODO: Add SDD diffing capability for multi-phase processes.
-     When a process has phases (e.g., Phase 1 classic RPA, Phase 2
-     semantic selectors), the skill should be able to generate a
-     diff-SDD that only describes what changes between phases,
-     referencing the base SDD for unchanged sections. -->
-
-<!-- TODO: When the dedicated API Workflow skill is built, the
-     api-workflow-sdd-template.md may need updates to match that
-     skill's expected inputs. -->

@@ -2,7 +2,8 @@
 
 <!-- Use this template when the primary product is UiPath Agents (Python/coded or low-code).
      If this template was chosen and the PDD lacked AI-specific details, gap-filling Q&A in Phase 1
-     should have filled: framework choice, tools, memory/RAG, evaluation criteria. -->
+     should have filled: framework choice, tools, memory/RAG, evaluation criteria.
+     Phase 2 sections: §2, §3, §4, §6, §9. Phase 3 sections: all others. -->
 
 ---
 
@@ -30,7 +31,7 @@
 
 ---
 
-# 1. Agent Overview
+## 1. Agent Overview
 
 | Field | Value |
 |---|---|
@@ -41,17 +42,17 @@
 | **Expected LLM model** | <MODEL_NAME — e.g., claude-sonnet-4-5, gpt-4o> |
 | **Expected volume** | <INVOCATIONS_PER_DAY> |
 
-## In Scope
+### In Scope
 
 - <CAPABILITY_1>
 
-## Out of Scope
+### Out of Scope
 
 - <CAPABILITY_1>
 
 ---
 
-# 2. Agent Framework
+## 2. Agent Framework
 
 <!-- Framework choices per uipath-agents skill. If this was filled via gap-filling Q&A, capture the user's choice. -->
 
@@ -68,7 +69,7 @@
 
 ---
 
-# 3. Tools
+## 3. Tools
 
 <!-- List every tool the agent can call. Tools can be: Python functions, RPA processes, API Workflows,
      Integration Service connectors, other agents. -->
@@ -77,7 +78,7 @@
 |---|---|---|---|---|
 | `<TOOL_NAME>` | <PYTHON_FN / RPA_PROCESS / API_WORKFLOW / CONNECTOR / AGENT> | <PURPOSE> | <JSON_SCHEMA_SUMMARY> | <JSON_SCHEMA_SUMMARY> |
 
-## Tool Invocation Policy
+### Tool Invocation Policy
 
 <!-- Describe when the agent should use each tool. -->
 
@@ -86,25 +87,25 @@
 
 ---
 
-# 4. Memory / RAG
+## 4. Memory / RAG
 
 <!-- Describe memory and retrieval-augmented generation needs. If none, mark as "Not required." -->
 
-## Short-term Memory
+### Short-term Memory
 
 - [ ] Required
 - [ ] Not required
 
 **Purpose:** <WITHIN_SESSION_CONTEXT / MULTI_TURN_HISTORY / NONE>
 
-## Long-term Memory
+### Long-term Memory
 
 - [ ] Required (via UiPath memory service or external store)
 - [ ] Not required
 
 **Purpose:** <CROSS_SESSION_PREFERENCES / USER_HISTORY / NONE>
 
-## RAG Sources
+### RAG Sources
 
 | Source Name | Type | Description | Indexing Strategy |
 |---|---|---|---|
@@ -112,23 +113,23 @@
 
 ---
 
-# 5. Evaluation Criteria
+## 5. Evaluation Criteria
 
 <!-- UiPath Agents include an evaluation framework with trajectory similarity and LLM-judge. -->
 
-## Success Metrics
+### Success Metrics
 
 | Metric | Target | Measurement |
 |---|---|---|
 | <METRIC_NAME> | <TARGET_VALUE> | <HOW_MEASURED> |
 
-## Trajectory Evaluation
+### Trajectory Evaluation
 
 | Test Case | Expected Tool Sequence | Acceptable Variations |
 |---|---|---|
 | <TEST_CASE_NAME> | <TOOL_1 → TOOL_2 → TOOL_3> | <ALLOWED_ALTERNATIVE_SEQUENCES> |
 
-## LLM-Judge Criteria
+### LLM-Judge Criteria
 
 | Criterion | Description | Pass Threshold |
 |---|---|---|
@@ -136,7 +137,7 @@
 
 ---
 
-# 6. Orchestrator Bindings
+## 6. Orchestrator Bindings
 
 <!-- Agents need bindings for Orchestrator resources: assets, queues, connections, processes. -->
 
@@ -146,9 +147,9 @@
 
 ---
 
-# 7. Error Handling & Escalation
+## 7. Error Handling & Escalation
 
-## Agent-level errors
+### Agent-level errors
 
 | Error Scenario | Handling |
 |---|---|
@@ -156,7 +157,7 @@
 | LLM refuses or returns invalid output | <RETRY / ESCALATE / RETURN_ERROR> |
 | Rate limit hit | <BACKOFF_STRATEGY> |
 
-## HITL Escalation
+### HITL Escalation
 
 <!-- For coded agents, HITL is an escalation mechanism. Flag touchpoints. -->
 
@@ -168,21 +169,21 @@
 
 ---
 
-# 8. Integrated Components
+## 8. Integrated Components
 
-## RPA Processes Called as Tools
+### RPA Processes Called as Tools
 
 | Process Name | Tool Name | Purpose |
 |---|---|---|
 | `<PROCESS_NAME>` | `<TOOL_NAME>` | <PURPOSE> |
 
-## API Workflows Called as Tools
+### API Workflows Called as Tools
 
 | API Workflow Name | Tool Name | Purpose |
 |---|---|---|
 | `<API_WORKFLOW_NAME>` | `<TOOL_NAME>` | <PURPOSE> |
 
-## Integration Service Connectors
+### Integration Service Connectors
 
 | Connector | Tool Name | Operation |
 |---|---|---|
@@ -190,14 +191,14 @@
 
 ---
 
-# 9. Project Structure
+## 9. Project Structure
 
-## Implementation Mode
+### Implementation Mode
 
 - [ ] **Coded Agent** (Python) — recommended for complex logic, custom frameworks
 - [ ] **Low-code Agent** (agent.json via Agent Builder) — recommended for simple agents
 
-## Coded Agent Structure
+### Coded Agent Structure
 
 ```text
 <AGENT_PROJECT_NAME>/
@@ -213,7 +214,7 @@
 └── .venv/
 ```
 
-## Low-code Agent Structure
+### Low-code Agent Structure
 
 ```text
 <AGENT_PROJECT_NAME>/
@@ -223,21 +224,21 @@
 
 ---
 
-# 10. Testing Strategy
+## 10. Testing Strategy
 
-## Canonical Test Case
+### Canonical Test Case
 
 | Input | Expected Output |
 |---|---|
 | <USER_QUERY> | <EXPECTED_RESPONSE_OR_ACTION> |
 
-## Evaluation Dataset
+### Evaluation Dataset
 
 | Test ID | Input | Expected Trajectory | LLM-Judge Criteria |
 |---|---|---|---|
 | T-01 | <INPUT> | <TOOL_SEQUENCE> | <CRITERIA> |
 
-## Regression Strategy
+### Regression Strategy
 
 - Run evaluation dataset on every code change
 - Track pass rate over time
@@ -245,21 +246,76 @@
 
 ---
 
-# 11. Implementation Plan
+## 11. Implementation Plan
 
-| # | Task | Dependencies | SDD Sections | Description |
-|---|---|---|---|---|
-| 1 | Create agent project scaffolding | — | §9 | Scaffold with `uip codedagent init` or `uip agent init` |
-| 2 | Configure Orchestrator bindings | — | §6 | Set up assets, queues, connections |
-| 3 | Create RPA processes used as tools | — | §8 RPA | One task per tool |
-| 4 | Create API Workflows used as tools | — | §8 API Workflows | One task per tool |
-| 5 | Configure Integration Service connectors | — | §8 Connectors | Configure connectors |
-| 6 | Implement tools | 3, 4, 5 | §3 | Python functions or bindings |
-| 7 | Implement agent logic | 1, 2, 6 | §2, §3 | Main agent framework code |
-| 8 | Configure memory / RAG | 7 | §4 | Wire up memory stores |
-| 9 | Configure HITL escalation | 7 | §7 | Route to `uipath-human-in-the-loop` skill |
-| 10 | Build evaluation dataset | 7 | §5, §10 | Trajectory and LLM-judge tests |
-| 11 | Run evaluations and deploy | 10 | §10 | `uip codedagent eval` then deploy |
+> **Instructions for the implementing agent:**
+> Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
+> Use the exact framework, tool definitions, bindings, and evaluation criteria documented in this SDD — do not infer, guess, or deviate.
+> Each task description below is a self-contained prompt. Execute it as written.
+
+### Task 1 — Create agent project scaffolding
+**Dependencies:** none
+**References:** §9 Project Structure, §2 Agent Framework
+
+> Create a <CODED/LOW_CODE> agent project named `<AGENT_PROJECT_NAME>`.
+> Framework: <FRAMEWORK_FROM_§2>.
+> Set up the folder structure per §9. Verify pyproject.toml has NO `[build-system]` section.
+
+### Task 2 — Configure Orchestrator bindings
+**Dependencies:** none
+**References:** §6 Orchestrator Bindings
+
+> Set up each binding listed in §6: <LIST_EACH_BINDING_WITH_TYPE>.
+> Use the exact binding names and resource types from §6.
+
+### Task 3 — Create integrated components
+**Dependencies:** none
+**References:** §8 Integrated Components
+
+> For each RPA process in §8: create the RPA project (this will trigger the RPA skill).
+> For each API Workflow in §8: create the API Workflow.
+> For each connector in §8: configure the Integration Service connector.
+> Skip any category that has no entries.
+
+### Task 4 — Implement tools
+**Dependencies:** Task 3
+**References:** §3 Tools, §3 Tool Invocation Policy
+
+> Implement each tool listed in §3. For each tool:
+> - Use the exact tool name, input schema, and output schema from §3.
+> - Follow the invocation policy: <TOOL_NAME> is used when <CONDITION>.
+> - Tools backed by RPA/API Workflows should bind to the components created in Task 3.
+
+### Task 5 — Implement agent logic
+**Dependencies:** Tasks 1, 2, 4
+**References:** §2 Agent Framework, §3 Tools
+
+> Implement the main agent logic using the <FRAMEWORK> framework.
+> Wire all tools from §3. Configure the LLM model: <MODEL_FROM_§1>.
+> Follow the agent's role and objective from §1.
+
+### Task 6 — Configure memory / RAG
+**Dependencies:** Task 5
+**References:** §4 Memory / RAG
+
+> Wire up memory and RAG per §4. If §4 says "Not required", skip this task.
+> For each RAG source in §4: configure indexing per the specified strategy.
+
+### Task 7 — Configure HITL escalation
+**Dependencies:** Task 5
+**References:** §7 HITL Escalation
+
+> For each escalation scenario in §7: wire up the escalation mechanism.
+> This task will route to the human-in-the-loop skill. Skip if no escalation scenarios are defined.
+
+### Task 8 — Build evaluation dataset and deploy
+**Dependencies:** Task 5
+**References:** §5 Evaluation Criteria, §10 Testing Strategy
+
+> Build the evaluation dataset per §5 and §10.
+> For each trajectory test case: define the expected tool sequence and acceptable variations.
+> For each LLM-judge criterion: define the pass threshold.
+> Run evaluations. Deploy only if pass rate meets the threshold from §10 Regression Strategy.
 
 ---
 

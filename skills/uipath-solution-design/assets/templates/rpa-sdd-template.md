@@ -1,7 +1,8 @@
 # Solution Design Document — <PROCESS_NAME>
 
 <!-- Use this template when the primary product is RPA Process, RPA Library, or RPA Test Automation.
-     Select the specific Project Type in §11 based on the PDD's intent. -->
+     Select the specific Project Type in §11 based on the PDD's intent.
+     Phase 2 sections: §5, §9, §11, §12. Phase 3 sections: all others. -->
 
 ---
 
@@ -32,7 +33,7 @@
 
 ---
 
-# 1. Process Overview
+## 1. Process Overview
 
 | Field | Value |
 |---|---|
@@ -45,19 +46,19 @@
 | **Avg. handling time (automated target)** | <AUTOMATED_TIME> |
 | **Exception rate** | <ESTIMATED_RATE> |
 
-## In Scope
+### In Scope
 
 - <ACTIVITY_1>
 - ...
 
-## Out of Scope
+### Out of Scope
 
 - <ACTIVITY_1>
 - ...
 
 ---
 
-# 2. Process Map
+## 2. Process Map
 
 <!-- Build the process map STRICTLY from the steps extracted in Phase 1. Do not invent steps.
      Use mermaid flowchart syntax. One node per extracted step. -->
@@ -75,25 +76,25 @@ flowchart TD
 
 ---
 
-# 3. Detailed Process Steps
+## 3. Detailed Process Steps
 
 <!-- Single summary table for ALL steps. Add Step Details subsections ONLY for complex steps. -->
 
-## Step Summary
+### Step Summary
 
 | # | Action | Application | Input | Output | Rules | Errors |
 |---|---|---|---|---|---|---|
 | <STEP_NUMBER> | <ACTION> | <APP_NAME> | <INPUT> | <OUTPUT> | <BR_IDS> | <EXCEPTION_OR_ERROR_IDS> |
 
-## Step Details
+### Step Details
 
-### Step <STEP_NUMBER> — <STEP_TITLE>
+#### Step <STEP_NUMBER> — <STEP_TITLE>
 
 <DETAILED_DESCRIPTION_FOR_COMPLEX_STEPS_ONLY>
 
 ---
 
-# 4. Business Rules
+## 4. Business Rules
 
 | ID | Rule Name | Description | Trigger Condition | Affected Steps |
 |---|---|---|---|---|
@@ -101,18 +102,19 @@ flowchart TD
 
 ---
 
-# 5. Data Definitions
+## 5. Data Definitions
 
-<!-- Use ONLY the format matching the Implementation Mode from §12. Delete the unused format below.
+<!-- Generate ONLY Option A (if §12 selects Coded C# or Hybrid) OR Option B (if §12 selects XAML).
+     Delete the other option entirely.
      Type design constraints:
      - Keep types flat — no inheritance
      - Use `record` for immutable data, `class` for mutable
      - Maximum 15 properties per type
      - Default to `string` unless PDD specifies numeric, date, or boolean operations -->
 
-## Option A — Coded C# / Hybrid Mode
+### Option A — Coded C# / Hybrid Mode
 
-### Transaction Data
+#### Transaction Data
 
 ```csharp
 public record <TransactionDataType>
@@ -121,7 +123,7 @@ public record <TransactionDataType>
 }
 ```
 
-### Output Data
+#### Output Data
 
 ```csharp
 public record <OutputDataType>
@@ -130,7 +132,7 @@ public record <OutputDataType>
 }
 ```
 
-### Enums
+#### Enums
 
 ```csharp
 public enum <EnumName>
@@ -140,21 +142,21 @@ public enum <EnumName>
 }
 ```
 
-## Option B — XAML Mode
+### Option B — XAML Mode
 
-### Transaction Data (Dictionary)
+#### Transaction Data (Dictionary)
 
 | Key | Type | Source | Description |
 |---|---|---|---|
 | <KEY_NAME> | <TYPE> | <SOURCE_APP_AND_FIELD> | <DESCRIPTION> |
 
-### Output Data (Dictionary)
+#### Output Data (Dictionary)
 
 | Key | Type | Description |
 |---|---|---|
 | <KEY_NAME> | <TYPE> | <DESCRIPTION> |
 
-### Status/Category Values
+#### Status/Category Values
 
 | Variable | Allowed Values |
 |---|---|
@@ -162,9 +164,9 @@ public enum <EnumName>
 
 ---
 
-# 6. Value Mappings
+## 6. Value Mappings
 
-## <MAPPING_NAME> — <SOURCE_APP> to <TARGET_APP>
+### <MAPPING_NAME> — <SOURCE_APP> to <TARGET_APP>
 
 | Source Value | Target Value |
 |---|---|
@@ -172,7 +174,7 @@ public enum <EnumName>
 
 ---
 
-# 7. Exception Handling
+## 7. Exception Handling
 
 | ID | Exception Name | Trigger Step | Trigger Condition | Action |
 |---|---|---|---|---|
@@ -182,7 +184,7 @@ public enum <EnumName>
 
 ---
 
-# 8. Error Handling
+## 8. Error Handling
 
 | ID | Error Name | Trigger Step | Trigger Condition | Retry Policy | Action |
 |---|---|---|---|---|---|
@@ -192,7 +194,7 @@ public enum <EnumName>
 
 ---
 
-# 9. Application Inventory
+## 9. Application Inventory
 
 <!-- List all applications. For SaaS integrations (Salesforce, Jira, etc.), flag "Integration Service"
      in the Access Method column — the implementation plan will create a task to configure the connector. -->
@@ -203,7 +205,7 @@ public enum <EnumName>
 
 ---
 
-# 10. Credentials & Assets
+## 10. Credentials & Assets
 
 | Asset Name | Type | Description | Notes |
 |---|---|---|---|
@@ -211,9 +213,9 @@ public enum <EnumName>
 
 ---
 
-# 11. Project Structure
+## 11. Project Structure
 
-## Project Type
+### Project Type
 
 <!-- Select ONE based on the PDD's intent: -->
 
@@ -221,7 +223,7 @@ public enum <EnumName>
 - [ ] **Library** — reusable component consumed by other automations
 - [ ] **Test Automation** — test cases validating application behavior
 
-## Recommended Structure
+### Recommended Structure
 
 ```text
 <PROJECT_NAME>/
@@ -236,13 +238,13 @@ public enum <EnumName>
     └── ...
 ```
 
-## Workflow Inventory
+### Workflow Inventory
 
 | # | Workflow File | Responsibility | PDD Steps | Inputs | Outputs |
 |---|---|---|---|---|---|
 | 1 | `<FILENAME>` | <RESPONSIBILITY> | <STEP_NUMBERS> | <INPUT_ARGS_WITH_TYPES> | <OUTPUT_ARGS_WITH_TYPES> |
 
-## Workflow Dependencies
+### Workflow Dependencies
 
 ```text
 <MAIN_WORKFLOW>
@@ -252,7 +254,7 @@ public enum <EnumName>
 
 ---
 
-# 12. Implementation Mode
+## 12. Implementation Mode
 
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
@@ -262,25 +264,25 @@ public enum <EnumName>
 
 ---
 
-# 13. Testing Strategy
+## 13. Testing Strategy
 
-## Canonical Test Case
+### Canonical Test Case
 
 | Field | Value |
 |---|---|
 | <FIELD_NAME> | `<TEST_VALUE>` |
 
-## Happy Path Assertions
+### Happy Path Assertions
 
 1. <ASSERTION_1>
 
-## Exception Test Cases
+### Exception Test Cases
 
 | Exception ID | Test Setup | Trigger | Expected Outcome |
 |---|---|---|---|
 | B1 | <HOW_TO_SET_UP> | <WHAT_TRIGGERS_IT> | <EXPECTED_BEHAVIOR> |
 
-## System Error Scenarios
+### System Error Scenarios
 
 | Error ID | Testable in Dev? | How to Simulate | Expected Outcome |
 |---|---|---|---|
@@ -288,17 +290,72 @@ public enum <EnumName>
 
 ---
 
-# 14. Implementation Plan
+## 14. Implementation Plan
 
-| # | Task | Dependencies | SDD Sections | Description |
-|---|---|---|---|---|
-| 1 | Create project scaffolding | — | §11, §12 | Create UiPath project (type: <PROJECT_TYPE>, mode: <IMPLEMENTATION_MODE>) |
-| 2 | Define data models | — | §5, §6 | Create types/variables per chosen mode |
-| 3 | Configure assets and credentials | — | §10 | Set up Orchestrator assets |
-| 4 | Configure Integration Service connectors | — | §9 | Configure connectors for SaaS applications (if any) |
-| 5 | Implement `<WORKFLOW_1>` | 1, 2 | §11 Workflow #1, §3 Steps <X-Y> | Build workflow per PDD steps |
-| N-1 | Implement exception and error handling | 5..N-2 | §7, §8 | Wire up handlers |
-| N | Implement test suite | 5..N-2 | §13 | Build tests |
+> **Instructions for the implementing agent:**
+> Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
+> Use the exact values, mappings, data types, and structure documented in this SDD — do not infer, guess, or deviate.
+> When done with each task, verify the output matches the SDD's expected structure before proceeding to the next task.
+> Each task description below is a self-contained prompt. Execute it as written.
+
+### Task 1 — Create project scaffolding
+**Dependencies:** none
+**References:** §11 Project Structure, §12 Implementation Mode
+
+> Create a UiPath <PROJECT_TYPE> project named `<PROJECT_NAME>` using <IMPLEMENTATION_MODE> mode.
+> Set up the folder structure exactly as defined in §11 Recommended Structure.
+> Configure project.json per the implementation mode. Verify all folders and project.json exist before proceeding.
+
+### Task 2 — Define data models
+**Dependencies:** none
+**References:** §5 Data Definitions → <TYPE_NAMES>
+
+> Create the data types defined in §5: <LIST_EACH_TYPE_AND_FILE>.
+> Use the exact field names, types, and structure from §5. Do not add fields not in the SDD.
+
+### Task 3 — Configure assets and credentials
+**Dependencies:** none
+**References:** §10 Credentials & Assets
+
+> Create each Orchestrator asset listed in §10: <LIST_EACH_ASSET>.
+> Use the exact asset names, types, and values from §10.
+
+### Task 4 — Configure Integration Service connectors
+**Dependencies:** none
+**References:** §9 Application Inventory (rows flagged as Integration Service)
+
+> Configure each Integration Service connector listed in §9. Skip this task if no connectors are flagged.
+
+### Task 5..N-2 — Implement workflows
+**Dependencies:** Tasks 1, 2
+**References:** §11 Workflow Inventory → specific row, §3 Detailed Process Steps → specific steps
+
+<!-- One task per workflow in the inventory. Each task is a self-contained prompt. -->
+
+> Implement `<WORKFLOW_FILE>` per §11 Workflow Inventory row #<N>.
+> This workflow covers PDD steps <STEP_NUMBERS>. Read §3 Step Summary rows for those steps.
+> Inputs: <INPUTS>. Outputs: <OUTPUTS>.
+> Responsibility: <RESPONSIBILITY_FROM_INVENTORY>.
+> Use generic action verbs from §3 — the appropriate activities will be determined by the implementing skill.
+> Use the exact data field names from §5 Data Definitions.
+> Handle errors per §7 and §8 for the steps covered by this workflow.
+
+### Task N-1 — Implement exception and error handling
+**Dependencies:** All workflow tasks
+**References:** §7 Exception Handling, §8 Error Handling
+
+> Wire up all business exceptions (§7) and system error handlers (§8) across the implemented workflows.
+> Each exception/error row in §7 and §8 specifies the trigger step, detection condition, and required action.
+> Implement exactly what the SDD specifies — do not add unspecified handlers.
+
+### Task N — Implement test suite
+**Dependencies:** All workflow tasks
+**References:** §13 Testing Strategy
+
+> Build the test suite per §13. Create tests for:
+> - The canonical test case (§13 Canonical Test Case) — verify happy path end-to-end
+> - Each exception test case (§13 Exception Test Cases) — verify each business exception triggers correctly
+> - Each testable system error scenario (§13 System Error Scenarios)
 
 ---
 

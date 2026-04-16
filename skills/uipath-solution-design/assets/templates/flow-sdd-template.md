@@ -1,7 +1,8 @@
 # Solution Design Document — <PROCESS_NAME>
 
 <!-- Use this template when the primary product is Maestro Flow.
-     A Flow orchestrates multiple automation types (RPA, agents, apps, API workflows, HITL). -->
+     A Flow orchestrates multiple automation types (RPA, agents, apps, API workflows, HITL).
+     Phase 2 sections: §3, §4, §5, §7, §9. Phase 3 sections: all others. -->
 
 ---
 
@@ -29,7 +30,7 @@
 
 ---
 
-# 1. Flow Overview
+## 1. Flow Overview
 
 | Field | Value |
 |---|---|
@@ -39,17 +40,17 @@
 | **Trigger type** | <MANUAL / SCHEDULED / EVENT / HTTP> |
 | **Expected execution volume** | <EXECUTIONS_PER_DAY> |
 
-## In Scope
+### In Scope
 
 - <ACTIVITY_1>
 
-## Out of Scope
+### Out of Scope
 
 - <ACTIVITY_1>
 
 ---
 
-# 2. Flow Diagram
+## 2. Flow Diagram
 
 <!-- Build from the Phase 1 extracted steps. One node per logical step.
      Show decision points as diamond shapes, parallel branches with fork/join. -->
@@ -66,7 +67,7 @@ flowchart LR
 
 ---
 
-# 3. Nodes Inventory
+## 3. Nodes Inventory
 
 <!-- List every node in execution order. Node types include:
      - Trigger (manual, scheduled, event)
@@ -87,7 +88,7 @@ flowchart LR
 
 ---
 
-# 4. Variables
+## 4. Variables
 
 <!-- Flow variables are declared at flow scope with in/inout/out direction. -->
 
@@ -97,7 +98,7 @@ flowchart LR
 
 ---
 
-# 5. Subflows
+## 5. Subflows
 
 <!-- Only include if the flow uses subflows. Subflows have isolated scope. -->
 
@@ -107,7 +108,7 @@ flowchart LR
 
 ---
 
-# 6. Triggers
+## 6. Triggers
 
 <!-- How the flow is invoked. -->
 
@@ -117,35 +118,35 @@ flowchart LR
 
 ---
 
-# 7. Integrated Components
+## 7. Integrated Components
 
 <!-- Flag the automation types the flow orchestrates. Each flagged item creates an implementation task. -->
 
-## RPA Processes Invoked
+### RPA Processes Invoked
 
 | Process Name | Called From Node | Purpose |
 |---|---|---|
 | `<PROCESS_NAME>` | `<NODE_KEY>` | <PURPOSE> |
 
-## Agents Invoked
+### Agents Invoked
 
 | Agent Name | Called From Node | Purpose |
 |---|---|---|
 | `<AGENT_NAME>` | `<NODE_KEY>` | <PURPOSE> |
 
-## API Workflows Invoked
+### API Workflows Invoked
 
 | API Workflow Name | Called From Node | Purpose |
 |---|---|---|
 | `<API_WORKFLOW_NAME>` | `<NODE_KEY>` | <PURPOSE> |
 
-## Integration Service Connectors
+### Integration Service Connectors
 
 | Connector | Called From Node | Operation |
 |---|---|---|
 | <CONNECTOR_NAME> (Salesforce/Jira/etc.) | `<NODE_KEY>` | <OPERATION> |
 
-## HITL Touchpoints
+### HITL Touchpoints
 
 <!-- Flag HITL nodes. Implementation routes to uipath-human-in-the-loop skill. -->
 
@@ -153,7 +154,7 @@ flowchart LR
 |---|---|---|---|
 | `<NODE_KEY>` | <QUICKFORM / APPTASK> | <PURPOSE> | <WHO_APPROVES_AND_WHAT_CRITERIA> |
 
-## Coded Apps Referenced
+### Coded Apps Referenced
 
 | App Name | Called From Node | Role |
 |---|---|---|
@@ -161,7 +162,7 @@ flowchart LR
 
 ---
 
-# 8. Error Handling
+## 8. Error Handling
 
 | Scope | Error Type | Trigger | Action |
 |---|---|---|---|
@@ -170,7 +171,7 @@ flowchart LR
 
 ---
 
-# 9. Project Structure
+## 9. Project Structure
 
 ```text
 <FLOW_PROJECT_NAME>/
@@ -183,26 +184,26 @@ flowchart LR
     └── <FLOW_NAME>.bpmn  (auto-generated)
 ```
 
-## Orchestrator Deployment Target
+### Orchestrator Deployment Target
 
 - [ ] Studio Web (default)
 - [ ] Orchestrator (requires `uipath-platform` skill)
 
 ---
 
-# 10. Testing Strategy
+## 10. Testing Strategy
 
-## Canonical Test Case
+### Canonical Test Case
 
 | Input Variable | Value |
 |---|---|
 | <VAR_NAME> | `<TEST_VALUE>` |
 
-## Happy Path Assertions
+### Happy Path Assertions
 
 1. <ASSERTION_1>
 
-## Error Path Scenarios
+### Error Path Scenarios
 
 | Scenario | Setup | Expected Flow Behavior |
 |---|---|---|
@@ -210,20 +211,64 @@ flowchart LR
 
 ---
 
-# 11. Implementation Plan
+## 11. Implementation Plan
 
-| # | Task | Dependencies | SDD Sections | Description |
-|---|---|---|---|---|
-| 1 | Create Flow project | — | §9 | Scaffold Flow project with `uip flow init` |
-| 2 | Define variables and triggers | 1 | §4, §6 | Configure flow-level variables and trigger |
-| 3 | Configure Integration Service connectors | — | §7 Connectors | Configure connectors |
-| 4 | Create RPA processes called by flow | — | §7 RPA Processes | One task per invoked process |
-| 5 | Create Agents called by flow | — | §7 Agents | One task per invoked agent |
-| 6 | Create API Workflows called by flow | — | §7 API Workflows | One task per invoked API workflow |
-| 7 | Build flow nodes | 2, 3, 4, 5, 6 | §3, §5 | Build each node in execution order |
-| 8 | Add HITL nodes | 7 | §7 HITL Touchpoints | Route to `uipath-human-in-the-loop` skill |
-| 9 | Implement error handling | 7 | §8 | Wire up error paths |
-| 10 | Publish and test | 9 | §10 | Publish to Studio Web or Orchestrator, run canonical test |
+> **Instructions for the implementing agent:**
+> Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
+> Use the exact values, mappings, node types, and structure documented in this SDD — do not infer, guess, or deviate.
+> Each task description below is a self-contained prompt. Execute it as written.
+
+### Task 1 — Create Flow project
+**Dependencies:** none
+**References:** §9 Project Structure
+
+> Create a Maestro Flow project named `<FLOW_PROJECT_NAME>` using `uip flow init`.
+> Verify the project structure matches §9 before proceeding.
+
+### Task 2 — Define variables and triggers
+**Dependencies:** Task 1
+**References:** §4 Variables, §6 Triggers
+
+> Configure flow-level variables per §4: <LIST_EACH_VARIABLE_WITH_DIRECTION_AND_TYPE>.
+> Set up the trigger per §6: <TRIGGER_TYPE_AND_CONFIG>.
+
+### Task 3 — Create integrated components
+**Dependencies:** none
+**References:** §7 Integrated Components
+
+> For each RPA process in §7: create the RPA project (this will trigger the RPA skill).
+> For each Agent in §7: create the agent project (this will trigger the agents skill).
+> For each API Workflow in §7: create the API Workflow (this will trigger the API workflow skill).
+> For each Integration Service connector in §7: configure the connector.
+> Skip any category that has no entries.
+
+### Task 4 — Build flow nodes
+**Dependencies:** Tasks 2, 3
+**References:** §3 Nodes Inventory, §5 Subflows
+
+> Build each node listed in §3 Nodes Inventory, in execution order.
+> For each node: use the exact node type, inputs, and outputs from §3.
+> For subflows listed in §5: create them with isolated scope and the specified inputs/outputs.
+
+### Task 5 — Add HITL nodes
+**Dependencies:** Task 4
+**References:** §7 HITL Touchpoints
+
+> For each HITL touchpoint in §7: add a HITL node to the flow per the specified type (QuickForm or AppTask).
+> This task will route to the human-in-the-loop skill. Skip if no HITL touchpoints are flagged.
+
+### Task 6 — Implement error handling
+**Dependencies:** Task 4
+**References:** §8 Error Handling
+
+> Wire up error handling per §8. Each row specifies scope, error type, trigger, and action.
+
+### Task 7 — Publish and test
+**Dependencies:** Task 6
+**References:** §10 Testing Strategy, §9 Deployment Target
+
+> Publish the flow to the deployment target specified in §9.
+> Run the canonical test case from §10. Verify all happy path assertions pass.
 
 ---
 
