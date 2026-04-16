@@ -140,6 +140,21 @@ Include ALL clauses (compliant, drifted, not-deployed) and ALL skipped policies.
 
 Do NOT commit or stage the report file.
 
+## Step 8b — Generate HTML report
+
+Generate a self-contained HTML report for auditor review using the template at `assets/templates/compliance-report-template.html`.
+
+1. Read the HTML template file.
+2. Populate it by replacing the `{{PLACEHOLDER}}` tokens with actual data from the compliance check.
+3. Generate the clause status table rows and drift detail blocks from the clause results.
+4. Write to `./compliance-report-{packId}-{timestamp}.html` alongside the JSON report.
+
+See [html-report-guide.md](html-report-guide.md) for the full placeholder reference and row generation instructions.
+
+The HTML report is a **fixed-format, self-contained file** with no external dependencies. It renders identically regardless of who runs the skill or what tools they have installed. The auditor opens it in any browser.
+
+Do NOT commit or stage the HTML report file.
+
 ## Step 9 — Remediation handoff
 
 If any clause has `status: "drifted"` or `status: "not-deployed"`:
