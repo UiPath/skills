@@ -1,0 +1,2275 @@
+{
+  "id": "workflow-1776379433371",
+  "version": "1.0.0",
+  "name": "Canary",
+  "runtime": "maestro",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": "be484e29-d74a-4e97-bbdc-63e175d5827f",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "countletters1",
+      "type": "uipath.core.agent.93933841-1b26-47b7-932f-a1a73334e6c3",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "CountLetters",
+        "icon": "autonomous-agent",
+        "iconBackground": "linear-gradient(225deg, rgba(225, 246, 253, 0.60) 0%, rgba(193, 160, 255, 0.20) 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(236, 211, 255, 0.40) 0%, rgba(211, 229, 255, 0.40) 100%)",
+        "subLabel": ""
+      },
+      "inputs": {
+        "inputString": "=js:\"car\""
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "The total number of occurrences of the letter 'r' (case-insensitive, counting both 'r' and 'R') found in the input string. Always a non-negative integer."
+              },
+              "inputString": {
+                "type": "string",
+                "description": "The original input string that was analyzed, echoed back for reference."
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartAgentJob",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Agent",
+          "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+          "orchestratorType": "agent",
+          "values": {
+            "name": "CountLetters",
+            "folderPath": "Shared/CountLetters CodedAgent"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "=bindings.b4LlQjdV5",
+            "default": "CountLetters"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "=bindings.brY0Dg9jP",
+            "default": "Shared/CountLetters CodedAgent"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "CountLetters"
+          }
+        ]
+      }
+    },
+    {
+      "id": "countlettersLowcodeAgent1",
+      "type": "uipath.core.agent.0b676e4e-7b39-493a-8a40-336ef6066d0a",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "CountLetters LowCode Agent",
+        "icon": "autonomous-agent",
+        "iconBackground": "linear-gradient(225deg, rgba(225, 246, 253, 0.60) 0%, rgba(193, 160, 255, 0.20) 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(236, 211, 255, 0.40) 0%, rgba(211, 229, 255, 0.40) 100%)",
+        "subLabel": ""
+      },
+      "inputs": {
+        "inputString": "=js:\"berry\""
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "The total number of occurrences of the letter 'r' (case-insensitive, counting both 'r' and 'R') found in the input string. Always a non-negative integer."
+              },
+              "inputString": {
+                "type": "string",
+                "description": "The original input string that was analyzed, echoed back for reference."
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartAgentJob",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Agent",
+          "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+          "orchestratorType": "agent",
+          "values": {
+            "name": "CountLetters LowCode Agent",
+            "folderPath": "Shared/CountLetters LowCode"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "=bindings.bLQnVVPzY",
+            "default": "CountLetters LowCode Agent"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "=bindings.b3ISI5IcY",
+            "default": "Shared/CountLetters LowCode"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "CountLetters LowCode Agent"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rpaWorkflow1",
+      "type": "uipath.core.rpa-workflow.f5a7f387-1f3b-4111-b758-e2514f770e3e",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "RPA Workflow",
+        "icon": "rpa",
+        "iconBackground": "linear-gradient(225deg, #DDFBF1 0%, #DAF3FF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(131, 255, 214, 0.30) 0%, rgba(109, 122, 128, 0.30) 100%)",
+        "subLabel": ""
+      },
+      "inputs": {
+        "problemId": 42
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartJob",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Process",
+          "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+          "orchestratorType": "process",
+          "values": {
+            "name": "RPA Workflow",
+            "folderPath": "Shared/ProjectEuler RPA"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "=bindings.bvMlKwPYF",
+            "default": "RPA Workflow"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "=bindings.bo8eQhykP",
+            "default": "Shared/ProjectEuler RPA"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "RPA Workflow"
+          }
+        ]
+      }
+    },
+    {
+      "id": "apiWorkflow1",
+      "type": "uipath.core.api-workflow.374783dd-a097-497c-8bf8-c4226940c798",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "API Workflow",
+        "icon": "api",
+        "iconBackground": "linear-gradient(225deg, #DDFBF1 0%, #DAF3FF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(131, 255, 214, 0.30) 0%, rgba(109, 122, 128, 0.30) 100%)",
+        "subLabel": ""
+      },
+      "inputs": {
+        "name": "=js:\"tomasz\""
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "estimatedAge": {
+                "type": "number",
+                "description": ""
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Api",
+          "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+          "orchestratorType": "api",
+          "values": {
+            "name": "API Workflow",
+            "folderPath": "Shared/NameToAge APIWF"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "=bindings.byw5Zc0Vi",
+            "default": "API Workflow"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "=bindings.blZLMpJTj",
+            "default": "Shared/NameToAge APIWF"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "API Workflow"
+          }
+        ]
+      }
+    },
+    {
+      "id": "getChannelInfo1",
+      "type": "uipath.connector.uipath-salesforce-slack.get-channel-info",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Get Channel Info",
+        "description": "(Slack) Retrieve information about a public or private Slack channel.",
+        "icon": "https://alpha.uipath.com/bc2ddac5-57bc-40e6-93fe-3b319b60ce36/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)",
+        "subLabel": ""
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-salesforce-slack",
+          "connectionId": "fb06f30e-cde8-4e4a-a534-29cb485971d4",
+          "connectionResourceId": "fb06f30e-cde8-4e4a-a534-29cb485971d4",
+          "connectionFolderKey": "692bbf4e-5754-4bdc-8ec6-d8e3a986dea2",
+          "method": "GET",
+          "endpoint": "/ConversationsInfo/{conversationsInfoId}",
+          "pathParameters": {
+            "conversationsInfoId": "CLYMR02GK"
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"2.13.9\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"ConversationsInfo_GET\",\"httpMethod\":\"GETBYID\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"method\"},\"objectName\":\"ConversationsInfo_GET\",\"operation\":\"retrieve\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"GET\",\"path\":\"/ConversationsInfo/{conversationsInfoId}\",\"unifiedTypesCompatible\":true},\"optionalConfiguration\":{\"_textBlocks\":[],\"objectActions\":[],\"connectorName\":\"Slack\",\"maxPageSize\":1000,\"jobArguments\":null,\"isAutopilotInvalidConfig\":false,\"additionalHeaders\":null,\"cachedLookupValues\":[[\"conversationsInfoId\",[{\"id\":\"CLYMR02GK\",\"displayColumns\":[\"office-bellevue\",\"CLYMR02GK\"],\"stringFormatDisplayColumns\":\"\"}]]],\"cachedBrowserItems\":[],\"cachedPropertyMappings\":[],\"primaryKeys\":[],\"objectDisplayName\":\"Conversations Info\",\"baseObject\":null,\"eventMode\":null,\"eventOperation\":null,\"language\":\"en-US\",\"hasBreakingChanges\":false,\"fieldsContainer\":{\"outputTypeDefinition\":\"{\\\"created\\\":number;\\\"creator\\\":string;\\\"id\\\":string;\\\"is_archived\\\":boolean;\\\"is_channel\\\":boolean;\\\"is_ext_shared\\\":boolean;\\\"is_general\\\":boolean;\\\"is_group\\\":boolean;\\\"is_im\\\":boolean;\\\"is_member\\\":boolean;\\\"is_mpim\\\":boolean;\\\"is_org_shared\\\":boolean;\\\"is_pending_ext_shared\\\":boolean;\\\"is_private\\\":boolean;\\\"is_shared\\\":boolean;\\\"last_read\\\":string;\\\"locale\\\":string;\\\"name\\\":string;\\\"name_normalized\\\":string;\\\"num_members\\\":number;\\\"purpose\\\":{\\\"creator\\\":string;\\\"last_set\\\":number;\\\"value\\\":string};\\\"shared_team_ids\\\":string[];\\\"topic\\\":{\\\"creator\\\":string;\\\"last_set\\\":number;\\\"value\\\":string};\\\"unlinked\\\":number}\",\"outputJsonSchema\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"created\":{\"title\":\"Created\",\"type\":\"integer\"},\"creator\":{\"title\":\"Creator\",\"type\":\"string\"},\"id\":{\"title\":\"Id\",\"type\":\"string\"},\"is_archived\":{\"title\":\"Is archived\",\"type\":\"boolean\"},\"is_channel\":{\"title\":\"Is channel\",\"type\":\"boolean\"},\"is_ext_shared\":{\"title\":\"Is ext shared\",\"type\":\"boolean\"},\"is_general\":{\"title\":\"Is general\",\"type\":\"boolean\"},\"is_group\":{\"title\":\"Is group\",\"type\":\"boolean\"},\"is_im\":{\"title\":\"Is im\",\"type\":\"boolean\"},\"is_member\":{\"title\":\"Is member\",\"type\":\"boolean\"},\"is_mpim\":{\"title\":\"Is mpim\",\"type\":\"boolean\"},\"is_org_shared\":{\"title\":\"Is org shared\",\"type\":\"boolean\"},\"is_pending_ext_shared\":{\"title\":\"Is pending ext shared\",\"type\":\"boolean\"},\"is_private\":{\"title\":\"Is private\",\"type\":\"boolean\"},\"is_shared\":{\"title\":\"Is shared\",\"type\":\"boolean\"},\"last_read\":{\"title\":\"Last read\",\"type\":\"string\"},\"locale\":{\"title\":\"Locale\",\"type\":\"string\"},\"name\":{\"title\":\"Name\",\"type\":\"string\"},\"name_normalized\":{\"title\":\"Name normalized\",\"type\":\"string\"},\"num_members\":{\"title\":\"Number members\",\"type\":\"integer\"},\"purpose\":{\"title\":\"Purpose\",\"$ref\":\"#/definitions/purpose\"},\"shared_team_ids[*]\":{\"title\":\"Shared team ids\",\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"topic\":{\"title\":\"Topic\",\"$ref\":\"#/definitions/topic\"},\"unlinked\":{\"title\":\"Unlinked\",\"type\":\"integer\"}},\"definitions\":{\"purpose\":{\"type\":\"object\",\"properties\":{\"creator\":{\"title\":\"Purpose creator\",\"type\":\"string\"},\"last_set\":{\"title\":\"Last set\",\"type\":\"integer\"},\"value\":{\"title\":\"Purpose value\",\"type\":\"string\"}}},\"topic\":{\"type\":\"object\",\"properties\":{\"creator\":{\"title\":\"Topic creator\",\"type\":\"string\"},\"last_set\":{\"title\":\"Topic last set\",\"type\":\"integer\"},\"value\":{\"title\":\"Value\",\"type\":\"string\"}}}}},\"inputFields\":[{\"typeScriptDefinition\":null,\"id\":\"conversationsInfoId\",\"name\":\"conversationsInfoId\",\"displayName\":\"Channel ID\",\"description\":\"Select the channel from the dropdown or pass channel ID. ID can be retrieved from Slack →  Right click the channel → View channel details → Copy channel ID (under “About”)\",\"type\":\"string\",\"sortOrder\":1,\"primaryKey\":false,\"lookup\":{\"objectName\":\"curated_channels\",\"lookupNames\":[\"name\",\"id\"],\"lookupValue\":\"id\",\"path\":\"/curated_channels?fields=id,name\"},\"design\":{\"loadByDefault\":true,\"isMultiSelect\":false,\"enableUserOverride\":false,\"description\":\"Select the channel from the dropdown or pass channel ID. ID can be retrieved from Slack →  Right click the channel → View channel details → Copy channel ID (under “About”)\",\"isHidden\":false,\"validation\":false},\"fieldActions\":[],\"searchable\":false,\"searchableOperators\":null,\"searchableNames\":null,\"required\":true,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"path\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":true,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"String\",\"assemblyQualifiedName\":\"String\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"id\":\"include_locale\",\"name\":\"include_locale\",\"displayName\":\"Include locale\",\"description\":\"Set this to `true` to receive the locale for this conversation. Defaults to `false`\",\"type\":\"boolean\",\"primaryKey\":false,\"fieldActions\":null,\"searchable\":false,\"searchableOperators\":null,\"searchableNames\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"query\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":true,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Boolean\",\"assemblyQualifiedName\":\"Boolean\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null},{\"typeScriptDefinition\":null,\"id\":\"include_num_members\",\"name\":\"include_num_members\",\"displayName\":\"Include num members\",\"description\":\"Set to `true` to include the member count for the specified conversation. Defaults to `false`\",\"type\":\"boolean\",\"primaryKey\":false,\"fieldActions\":null,\"searchable\":false,\"searchableOperators\":null,\"searchableNames\":null,\"required\":false,\"request\":true,\"response\":false,\"responseCurated\":false,\"fieldLocation\":\"query\",\"onCanvas\":null,\"isJitField\":false,\"isFieldActionParent\":false,\"isMainResponseField\":false,\"isMethodParameter\":true,\"isBackgroundField\":false,\"filterTree\":null,\"filterNeedsRefresh\":null,\"arrayInputPaths\":null,\"clrType\":{\"_elementType\":null,\"_isNullable\":false,\"isArray\":false,\"genericTypeArguments\":[],\"fullName\":null,\"name\":\"Boolean\",\"assemblyQualifiedName\":\"Boolean\",\"isValueType\":true},\"forceExpressionEditor\":false,\"requiredGroups\":null,\"disableExpressions\":false,\"backingField\":null,\"searchableDisplayName\":null,\"selectedResourceId\":null}],\"outputFields\":[],\"jitTypeNeedsRefresh\":false,\"jitInputField\":null,\"inputMode\":null,\"searchableFields\":[],\"hasUnifiedTypes\":true,\"jitTypeHash\":null}}}",
+          "uiPathActivityTypeId": "f9995f55-16e3-3c65-b860-af01aa2a1e47",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-salesforce-slack",
+            "connectorName": "Slack",
+            "operationType": "retrieve",
+            "objectName": "ConversationsInfo_GET",
+            "objectDisplayName": "Conversations Info",
+            "primaryKeyName": ""
+          }
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "debug": {
+          "runtime": "bpmnEngine"
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-salesforce-slack"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "ConversationsInfo_GET",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GETBYID"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-salesforce-slack connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-salesforce-slack",
+                "connectorName": "Get Channel Info"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      }
+    },
+    {
+      "id": "merge1",
+      "type": "core.logic.merge",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Merge",
+        "icon": "merge",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:ParallelGateway"
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "inputs": {},
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start-output-uipath.core.agent.93933841-1b26-47b7-932f-a1a73334e6c3-1776379446766-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "countletters1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_start-output-uipath.core.agent.0b676e4e-7b39-493a-8a40-336ef6066d0a-1776379458677-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "countlettersLowcodeAgent1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_start-output-uipath.core.rpa-workflow.f5a7f387-1f3b-4111-b758-e2514f770e3e-1776379474899-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "rpaWorkflow1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_start-output-uipath.core.api-workflow.374783dd-a097-497c-8bf8-c4226940c798-1776379536461-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "apiWorkflow1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_start-output-uipath.connector.uipath-salesforce-slack.get-channel-info-1776379545289-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "getChannelInfo1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_countletters1-output-core.logic.merge-1776379577592-input",
+      "sourceNodeId": "countletters1",
+      "sourcePort": "output",
+      "targetNodeId": "merge1",
+      "targetPort": "input"
+    },
+    {
+      "id": "xy-edge__countlettersLowcodeAgent1output-merge1input",
+      "sourceNodeId": "countlettersLowcodeAgent1",
+      "sourcePort": "output",
+      "targetNodeId": "merge1",
+      "targetPort": "input"
+    },
+    {
+      "id": "xy-edge__rpaWorkflow1output-merge1input",
+      "sourceNodeId": "rpaWorkflow1",
+      "sourcePort": "output",
+      "targetNodeId": "merge1",
+      "targetPort": "input"
+    },
+    {
+      "id": "xy-edge__apiWorkflow1output-merge1input",
+      "sourceNodeId": "apiWorkflow1",
+      "sourcePort": "output",
+      "targetNodeId": "merge1",
+      "targetPort": "input"
+    },
+    {
+      "id": "xy-edge__getChannelInfo1output-merge1input",
+      "sourceNodeId": "getChannelInfo1",
+      "sourcePort": "output",
+      "targetNodeId": "merge1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_merge1-output-core.control.end-1776379596568-input",
+      "sourceNodeId": "merge1",
+      "sourcePort": "output",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.core.agent.93933841-1b26-47b7-932f-a1a73334e6c3",
+      "version": "1.0.0",
+      "category": "agent",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(Shared/CountLetters CodedAgent) Converted from low code project CountLetters LowCode Agent",
+      "tags": [],
+      "sortOrder": 505,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "CountLetters",
+        "icon": "autonomous-agent",
+        "iconBackground": "linear-gradient(225deg, rgba(225, 246, 253, 0.60) 0%, rgba(193, 160, 255, 0.20) 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(236, 211, 255, 0.40) 0%, rgba(211, 229, 255, 0.40) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartAgentJob",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Agent",
+          "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+          "orchestratorType": "agent",
+          "values": {
+            "name": "CountLetters",
+            "folderPath": "Shared/CountLetters CodedAgent"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "CountLetters"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "Autonomous agent",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.inputString",
+                "type": "text",
+                "label": "inputString"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "inputString": {
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "inputString": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "The total number of occurrences of the letter 'r' (case-insensitive, counting both 'r' and 'R') found in the input string. Always a non-negative integer."
+              },
+              "inputString": {
+                "type": "string",
+                "description": "The original input string that was analyzed, echoed back for reference."
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.core.agent.0b676e4e-7b39-493a-8a40-336ef6066d0a",
+      "version": "1.0.0",
+      "category": "agent",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(Shared/CountLetters LowCode)",
+      "tags": [],
+      "sortOrder": 505,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "CountLetters LowCode Agent",
+        "icon": "autonomous-agent",
+        "iconBackground": "linear-gradient(225deg, rgba(225, 246, 253, 0.60) 0%, rgba(193, 160, 255, 0.20) 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(236, 211, 255, 0.40) 0%, rgba(211, 229, 255, 0.40) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartAgentJob",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Agent",
+          "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+          "orchestratorType": "agent",
+          "values": {
+            "name": "CountLetters LowCode Agent",
+            "folderPath": "Shared/CountLetters LowCode"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "CountLetters LowCode Agent"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "Autonomous agent",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.inputString",
+                "type": "text",
+                "label": "inputString"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "inputString": {
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "inputString": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "The total number of occurrences of the letter 'r' (case-insensitive, counting both 'r' and 'R') found in the input string. Always a non-negative integer."
+              },
+              "inputString": {
+                "type": "string",
+                "description": "The original input string that was analyzed, echoed back for reference."
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.core.rpa-workflow.f5a7f387-1f3b-4111-b758-e2514f770e3e",
+      "version": "1.0.0",
+      "category": "rpa-workflow",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(Shared/ProjectEuler RPA)",
+      "tags": [],
+      "sortOrder": 530,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "RPA Workflow",
+        "icon": "rpa",
+        "iconBackground": "linear-gradient(225deg, #DDFBF1 0%, #DAF3FF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(131, 255, 214, 0.30) 0%, rgba(109, 122, 128, 0.30) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartJob",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Process",
+          "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+          "orchestratorType": "process",
+          "values": {
+            "name": "RPA Workflow",
+            "folderPath": "Shared/ProjectEuler RPA"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "RPA Workflow"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "RPA workflow",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.problemId",
+                "type": "number",
+                "label": "problemId"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "problemId": {
+            "type": "number"
+          }
+        }
+      },
+      "inputDefaults": {
+        "problemId": 0
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.core.api-workflow.374783dd-a097-497c-8bf8-c4226940c798",
+      "version": "1.0.0",
+      "category": "api-workflow",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(Shared/NameToAge APIWF)",
+      "tags": [],
+      "sortOrder": 510,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "API Workflow",
+        "icon": "api",
+        "iconBackground": "linear-gradient(225deg, #DDFBF1 0%, #DAF3FF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, rgba(131, 255, 214, 0.30) 0%, rgba(109, 122, 128, 0.30) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Api",
+          "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+          "orchestratorType": "api",
+          "values": {
+            "name": "API Workflow",
+            "folderPath": "Shared/NameToAge APIWF"
+          }
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "API Workflow"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "API function",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.name",
+                "type": "text",
+                "label": "name"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "name": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "estimatedAge": {
+                "type": "number",
+                "description": ""
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-salesforce-slack.get-channel-info",
+      "version": "1.0.0",
+      "category": "connector.196638",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(Slack) Retrieve information about a public or private Slack channel.",
+      "display": {
+        "label": "Get Channel Info",
+        "description": "(Slack) Retrieve information about a public or private Slack channel.",
+        "icon": "https://alpha.uipath.com/bc2ddac5-57bc-40e6-93fe-3b319b60ce36/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "debug": {
+          "runtime": "bpmnEngine"
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-salesforce-slack"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "ConversationsInfo_GET",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GETBYID"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-salesforce-slack connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-salesforce-slack",
+                "connectorName": "Get Channel Info"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": 196638,
+                    "svgIconUrl": "icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+                    "displayName": "Get Channel Info",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.25.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Retrieve information about a public or private Slack channel.",
+                    "activityColor": "#4A154B",
+                    "configuration": "{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"ConversationsInfo_GET\",\"httpMethod\":\"GETBYID\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"method\"}",
+                    "uiPathActivityTypeId": "f9995f55-16e3-3c65-b860-af01aa2a1e47",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-salesforce-slack-Get-Channel-Info",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "tags": []
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.logic.merge",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Join parallel branches into one path",
+      "tags": [
+        "control-flow",
+        "merge"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Merge",
+        "icon": "merge",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:ParallelGateway"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "b4LlQjdV5",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+      "default": "CountLetters",
+      "propertyAttribute": "name",
+      "resourceSubType": "Agent"
+    },
+    {
+      "id": "brY0Dg9jP",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+      "default": "Shared/CountLetters CodedAgent",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Agent"
+    },
+    {
+      "id": "bLQnVVPzY",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+      "default": "CountLetters LowCode Agent",
+      "propertyAttribute": "name",
+      "resourceSubType": "Agent"
+    },
+    {
+      "id": "b3ISI5IcY",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+      "default": "Shared/CountLetters LowCode",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Agent"
+    },
+    {
+      "id": "bvMlKwPYF",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+      "default": "RPA Workflow",
+      "propertyAttribute": "name",
+      "resourceSubType": "Process"
+    },
+    {
+      "id": "bo8eQhykP",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+      "default": "Shared/ProjectEuler RPA",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Process"
+    },
+    {
+      "id": "byw5Zc0Vi",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+      "default": "API Workflow",
+      "propertyAttribute": "name",
+      "resourceSubType": "Api"
+    },
+    {
+      "id": "blZLMpJTj",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+      "default": "Shared/NameToAge APIWF",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Api"
+    },
+    {
+      "id": "bvdwpvzCd",
+      "name": "uipath-salesforce-slack connection",
+      "type": "string",
+      "resource": "Connection",
+      "resourceKey": "fb06f30e-cde8-4e4a-a534-29cb485971d4",
+      "propertyAttribute": "ConnectionId",
+      "default": "fb06f30e-cde8-4e4a-a534-29cb485971d4"
+    },
+    {
+      "id": "bOOfkRW0x",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "Connection",
+      "resourceKey": "fb06f30e-cde8-4e4a-a534-29cb485971d4",
+      "propertyAttribute": "FolderKey",
+      "default": "692bbf4e-5754-4bdc-8ec6-d8e3a986dea2"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "countletters1.output",
+        "type": "object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "description": "The total number of occurrences of the letter 'r' (case-insensitive, counting both 'r' and 'R') found in the input string. Always a non-negative integer."
+            },
+            "inputString": {
+              "type": "string",
+              "description": "The original input string that was analyzed, echoed back for reference."
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "countletters1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "countletters1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "countletters1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "countlettersLowcodeAgent1.output",
+        "type": "object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "description": "The total number of occurrences of the letter 'r' (case-insensitive, counting both 'r' and 'R') found in the input string. Always a non-negative integer."
+            },
+            "inputString": {
+              "type": "string",
+              "description": "The original input string that was analyzed, echoed back for reference."
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "countlettersLowcodeAgent1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "countlettersLowcodeAgent1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "countlettersLowcodeAgent1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "rpaWorkflow1.output",
+        "type": "object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "rpaWorkflow1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "rpaWorkflow1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "rpaWorkflow1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "apiWorkflow1.output",
+        "type": "object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "estimatedAge": {
+              "type": "number",
+              "description": ""
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "apiWorkflow1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "apiWorkflow1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "apiWorkflow1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "getChannelInfo1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "getChannelInfo1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "getChannelInfo1.error",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "getChannelInfo1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "solutionId": "f5520094-cf0a-4046-2636-08de9c058abf",
+  "projectId": "503305f5-fd1e-4a96-806a-ead4f5b48aab",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 160,
+          "y": 384
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "countletters1": {
+        "position": {
+          "x": 432,
+          "y": 64
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "countlettersLowcodeAgent1": {
+        "position": {
+          "x": 432,
+          "y": 224
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "rpaWorkflow1": {
+        "position": {
+          "x": 432,
+          "y": 384
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "apiWorkflow1": {
+        "position": {
+          "x": 432,
+          "y": 544
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "getChannelInfo1": {
+        "position": {
+          "x": 432,
+          "y": 704
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "merge1": {
+        "position": {
+          "x": 672,
+          "y": 384
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 848,
+          "y": 384
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}
