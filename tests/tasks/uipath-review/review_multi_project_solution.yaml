@@ -17,6 +17,7 @@ description: >
 tags: [uipath-review, e2e, multi-project]
 
 agent:
+  type: claude-code
   max_turns: 60
 
 sandbox:
