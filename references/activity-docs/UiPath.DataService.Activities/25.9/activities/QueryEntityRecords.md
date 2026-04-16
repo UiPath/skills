@@ -68,9 +68,42 @@ Filters use `FilterLogicalOperator`: `AND` (0) or `OR` (1) to combine conditions
     TimeoutInMs="30000" />
 ```
 
+## Filter XAML Structure
+
+`FilterArguments` and `FilterValues` are `[Browsable(false)]` properties — they do not appear in the Studio properties panel but can be generated in XAML. The filter structure uses:
+
+- **`FilterArgument`** wrapping a root **`GroupFilter`** (Operator `AND` or `OR`)
+- **`SimpleFilter`** elements inside the GroupFilter for each condition
+- A flat **`FilterValues`** list of `InArgument` entries indexed by `SimpleFilter.ValueIndex`
+
+Operator strings used in `SimpleFilter.Operator` (XAML internal names):
+
+| Enum Name | XAML Operator String | Requires Value |
+|-----------|---------------------|----------------|
+| Contains | `contains` | Yes |
+| NotContains | `not contains` | Yes |
+| Equals | `=` | Yes |
+| NotEqual | `!=` | Yes |
+| StartsWith | `startswith` | Yes |
+| EndsWith | `endswith` | Yes |
+| MoreThan | `>` (XML-escape: `&gt;`) | Yes |
+| LessThan | `<` (XML-escape: `&lt;`) | Yes |
+| NoMoreThan | `<=` (XML-escape: `&lt;=`) | Yes |
+| NoLessThan | `>=` (XML-escape: `&gt;=`) | Yes |
+| IsEmpty | `is empty` | No (`<x:Null />`) |
+| IsNotEmpty | `not empty` | No (`<x:Null />`) |
+| In | `in` | Yes (`s:String[]`) |
+| NotIn | `not in` | Yes (`s:String[]`) |
+| IsTrue | `Equals true` | Yes (`x:Boolean` → `True`) |
+| IsFalse | `Equals false` | Yes (`x:Boolean` → `False`) |
+| IsNull | `is null` | No (`<x:Null />`) |
+| IsNotNull | `is not null` | No (`<x:Null />`) |
+
+> `IsNull` / `IsNotNull` are available in the Studio filter builder UI and at runtime.
+
+For the complete filter generation guide — including XAML templates, field-type-to-operator mapping, nested group patterns, and worked examples — see the **data-service-filter-builder-guide** in the uipath-rpa skill references.
+
 ## Key Rules
 
-- `FilterArguments` and `FilterValues` are designer-managed properties (`[Browsable(false)]`) — they are configured through Studio's query builder UI, not typically hand-written in XAML
-- For programmatic filtering without the designer, use the query builder wizard in Studio to generate the filter XAML structure
 - `Top` defaults to 100, capped at 1000 — use `Skip` for pagination beyond 1000 records
 - `TotalRecords` returns the total count matching the filter, regardless of `Top`/`Skip` — useful for pagination logic
