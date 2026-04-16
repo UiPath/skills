@@ -2,42 +2,44 @@
 
 Strategy selection and shared concepts for modifying `.flow` files. Two implementation strategies are available — choose one per operation and follow the corresponding guide.
 
-## Strategy Guides
+## Default Strategy
+
+> **Default to Direct JSON for all `.flow` edits.** Use CLI only when the user explicitly requests CLI, or for connector, connector-trigger, or inline-agent nodes (see carve-out rows in the matrix below).
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
-| **CLI** | [flow-editing-operations-cli.md](flow-editing-operations-cli.md) | Node and edge CRUD. Automatic definition management, variable wiring, and cleanup. |
-| **Direct JSON** | [flow-editing-operations-json.md](flow-editing-operations-json.md) | Variable management, subflows, output mapping, in-place input updates. Full control. |
+| **Direct JSON** (default) | [flow-editing-operations-json.md](flow-editing-operations-json.md) | Default for all `.flow` edits — node/edge CRUD, variables, subflows, output mapping, in-place input updates. |
+| **CLI** (opt-in / carve-outs) | [flow-editing-operations-cli.md](flow-editing-operations-cli.md) | Connector, connector-trigger, and inline-agent nodes (carve-outs); or when the user explicitly requests CLI. |
 
 ---
 
 ## Strategy Selection Matrix
 
-Use this table to determine which strategy to follow for each operation.
+Use this table to determine which strategy to follow for each operation. **Direct JSON is the default**; use CLI only for the carve-out rows or when the user explicitly opts in.
 
-| Operation | CLI | Direct JSON | Notes |
-|-----------|-----|-------------|-------|
-| **Add a node** | Yes | Yes | CLI auto-manages definitions and variables |
-| **Delete a node** | Yes | Yes | CLI auto-cascades edge/definition/variable cleanup |
-| **Add an edge** | Yes | Yes | CLI auto-sets `targetPort` |
-| **Delete an edge** | Yes | Yes | Equivalent complexity |
-| **Update node inputs** | Not supported (delete + re-add changes node ID, breaking expressions) | In-place edit | Always use JSON — preserves node ID, edges, and `$vars` references |
-| **Configure connector node** | `node configure` | Manual `inputs.detail` + `bindings_v2.json` | CLI handles binding automatically |
-| **Add workflow variable** | Not supported | Yes | Edit `variables.globals` |
-| **Add variable update** | Not supported | Yes | Edit `variables.variableUpdates` |
-| **Map outputs on End node** | Not supported | Yes | Edit node `outputs` object |
-| **Create a subflow** | Not supported | Yes | Edit `subflows` object |
-| **Replace trigger type** | Delete + re-add | In-place edit | Both work; CLI handles definition/edge cleanup automatically |
-| **Replace mock with resource** | Delete + re-add | Delete + re-add | Both require registry lookup |
-| **Insert node between two** | 3 CLI commands | 3 JSON edits | Equivalent complexity |
-| **Insert a decision branch** | 4 CLI commands | 4 JSON edits | Equivalent complexity |
+| Operation | Default | Alternative | Notes |
+|-----------|---------|-------------|-------|
+| Add a node | **Direct JSON** | CLI (opt-in) | CLI still auto-manages definitions/variables when opted in. |
+| Delete a node | **Direct JSON** | CLI (opt-in) | |
+| Add an edge | **Direct JSON** | CLI (opt-in) | Remember `targetPort` (Rule #6). |
+| Delete an edge | **Direct JSON** | CLI (opt-in) | |
+| Update node inputs | **Direct JSON** | — | In-place edit; preserves node ID and `$vars`. |
+| Add/edit workflow variable | **Direct JSON** | — | JSON-only; CLI does not support. |
+| Add variable update | **Direct JSON** | — | JSON-only; CLI does not support. |
+| Map outputs on End node | **Direct JSON** | — | JSON-only. |
+| Create a subflow | **Direct JSON** | — | JSON-only. |
+| Replace trigger (non-connector) | **Direct JSON** | CLI (opt-in) | |
+| Replace mock with real resource (non-connector) | **Direct JSON** | CLI (opt-in) | |
+| Insert node between two existing nodes | **Direct JSON** | CLI (opt-in) | |
+| Insert a decision branch | **Direct JSON** | CLI (opt-in) | |
+| Remove a node and reconnect | **Direct JSON** | CLI (opt-in) | |
+| **Configure a connector node** | **CLI** (carve-out) | Direct JSON (fallback) | `uip flow node configure --detail` auto-populates `inputs.detail` + `bindings_v2.json`. |
+| **Configure a connector trigger** | **CLI** (carve-out) | Direct JSON (fallback) | Same as above. |
+| **Add an inline agent node** | **CLI** (carve-out) | — | Scaffolded via `uip agent init --inline-in-flow`. |
 
 ### Mixing strategies
 
-You can mix CLI and JSON strategies within the same flow build. Common pattern:
-
-1. Use **CLI** for adding/deleting nodes and edges (avoids manual definition management)
-2. Use **Direct JSON** for variables, variableUpdates, output mapping, and subflows
+The default strategy is Direct JSON. Mixing is still common: for connector, connector-trigger, or inline-agent nodes, use the CLI as documented in their respective plugin `impl.md`. For everything else, use Direct JSON unless the user explicitly asks for CLI.
 
 ---
 
@@ -85,14 +87,15 @@ See [variables-and-expressions.md](variables-and-expressions.md) for the full ex
 
 | I need to... | Go to |
 |---|---|
-| Add/delete nodes or edges | [CLI guide](flow-editing-operations-cli.md) or [JSON guide](flow-editing-operations-json.md) |
-| Change a node's inputs | [JSON guide — Update node inputs](flow-editing-operations-json.md#update-node-inputs) or [CLI guide — Update node inputs](flow-editing-operations-cli.md#update-node-inputs-expression-script-body-label-etc) |
-| Configure a connector node | [CLI guide — Configure a connector node](flow-editing-operations-cli.md#configure-a-connector-node) or [JSON guide — Connector Node Configuration](flow-editing-operations-json.md#connector-node-configuration-direct-json) |
+| Add/delete nodes or edges | [JSON guide](flow-editing-operations-json.md) (default) or [CLI guide](flow-editing-operations-cli.md) (opt-in) |
+| Change a node's inputs | [JSON guide — Update node inputs](flow-editing-operations-json.md#update-node-inputs) |
+| Configure a connector node | [CLI guide — Configure a connector node](flow-editing-operations-cli.md#configure-a-connector-node) (carve-out) or [JSON guide — Connector Node Configuration](flow-editing-operations-json.md#connector-node-configuration-direct-json) (fallback) |
 | Manage variables | [JSON guide — Variable Operations](flow-editing-operations-json.md#variable-operations) |
 | Map outputs on End nodes | [JSON guide — Add output mapping](flow-editing-operations-json.md#add-output-mapping-on-an-end-node) |
 | Create a subflow | [JSON guide — Create a subflow](flow-editing-operations-json.md#create-a-subflow) |
-| Replace a mock placeholder | [CLI guide — Replace a mock](flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) or [JSON guide — Replace a mock](flow-editing-operations-json.md#replace-a-mock-with-a-real-resource-node) |
-| Replace a trigger type | [CLI guide — Replace trigger](flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) or [JSON guide — Replace trigger](flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) |
+| Replace a mock placeholder (non-connector) | [JSON guide — Replace a mock](flow-editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI guide — Replace a mock](flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) |
+| Replace a trigger type (non-connector) | [JSON guide — Replace trigger](flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
+| Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
 | Understand the `.flow` JSON schema | [flow-file-format.md](flow-file-format.md) |
 | Look up CLI flags and syntax | [flow-commands.md](flow-commands.md) |
 | Work with variables and expressions | [variables-and-expressions.md](variables-and-expressions.md) |

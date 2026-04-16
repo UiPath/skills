@@ -2,7 +2,7 @@
 
 All flow file modifications via `uip flow node` and `uip flow edge` CLI commands. The CLI automatically manages definitions, variables, edge cleanup, and `bindings_v2.json` — eliminating the most common build errors.
 
-> **When to use this strategy:** Prefer CLI for all node and edge operations. Fall back to the [JSON strategy](flow-editing-operations-json.md) only for operations the CLI does not support (variables, variableUpdates, subflows, output mapping on End nodes). See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
+> **When to use this strategy:** Use this strategy for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. For all other edits, Direct JSON is the default (see [flow-editing-operations-json.md](flow-editing-operations-json.md)). See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
 
 ---
 

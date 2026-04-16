@@ -50,21 +50,21 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Each recipe links to the detailed step-by-step procedure in the [flow editing operations guide](references/flow-editing-operations.md). Run `uip flow validate` once after all edits are complete.
 
-**Read [references/flow-editing-operations.md](references/flow-editing-operations.md) first** to choose between CLI and direct JSON strategies for each operation.
+**Read [references/flow-editing-operations.md](references/flow-editing-operations.md) first** — Direct JSON is the default for all edits; CLI is used only for connector, connector-trigger, and inline-agent nodes, or when you explicitly request it.
 
 | Edit | Description | Guide |
 |------|-------------|-------|
 | **Change a script body or node inputs** | Edit the node's `inputs` in-place in the `.flow` JSON. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [JSON: Update node inputs](references/flow-editing-operations-json.md#update-node-inputs) |
-| **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [CLI: Insert a node](references/flow-editing-operations-cli.md#insert-a-node-between-two-existing-nodes) / [JSON: Insert a node](references/flow-editing-operations-json.md#insert-a-node-between-two-existing-nodes) |
-| **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [CLI: Insert a decision branch](references/flow-editing-operations-cli.md#insert-a-decision-branch) / [JSON: Insert a decision branch](references/flow-editing-operations-json.md#insert-a-decision-branch) |
-| **Remove a node** | Delete the node (edges cascade in CLI), reconnect upstream to downstream. | [CLI: Remove a node](references/flow-editing-operations-cli.md#remove-a-node-and-reconnect) / [JSON: Remove a node](references/flow-editing-operations-json.md#remove-a-node-and-reconnect) |
-| **Remove an edge** | Find the edge ID, delete it. | [CLI: Delete an edge](references/flow-editing-operations-cli.md#delete-an-edge) / [JSON: Delete an edge](references/flow-editing-operations-json.md#delete-an-edge) |
+| **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [JSON: Insert a node](references/flow-editing-operations-json.md#insert-a-node-between-two-existing-nodes) (default) or [CLI: Insert a node](references/flow-editing-operations-cli.md#insert-a-node-between-two-existing-nodes) (opt-in) |
+| **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [JSON: Insert a decision branch](references/flow-editing-operations-json.md#insert-a-decision-branch) (default) or [CLI: Insert a decision branch](references/flow-editing-operations-cli.md#insert-a-decision-branch) (opt-in) |
+| **Remove a node** | Delete the node, sweep edges/definitions/variables, reconnect upstream to downstream. | [JSON: Remove a node](references/flow-editing-operations-json.md#remove-a-node-and-reconnect) (default) or [CLI: Remove a node](references/flow-editing-operations-cli.md#remove-a-node-and-reconnect) (opt-in, auto-cascades) |
+| **Remove an edge** | Find the edge ID, delete it. | [JSON: Delete an edge](references/flow-editing-operations-json.md#delete-an-edge) (default) or [CLI: Delete an edge](references/flow-editing-operations-cli.md#delete-an-edge) (opt-in) |
 | **Add a workflow variable** | Edit `variables.globals` in the `.flow` file (JSON only). For `out` variables, map on every End node. See [variables-and-expressions.md](references/variables-and-expressions.md). | [JSON: Add a workflow variable](references/flow-editing-operations-json.md#add-a-workflow-variable) |
 | **Update a state variable** | Add a `variableUpdates` entry for `inout` variables (JSON only). See [variables-and-expressions.md](references/variables-and-expressions.md). | [JSON: Add a variable update](references/flow-editing-operations-json.md#add-a-variable-update) |
 | **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (JSON only). | [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) + [subflow/impl.md](references/plugins/subflow/impl.md) |
-| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) / [JSON: Replace trigger](references/flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) + [scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) |
+| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [JSON: Replace trigger](references/flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) + [scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) |
 | **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md) |
-| **Add a resource node** | Discover via registry, add with CLI or JSON, wire edges. Use `core.logic.mock` if unpublished. | [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
+| **Add a resource node** | Discover via registry, add via JSON (default) or CLI (opt-in), wire edges. Use `core.logic.mock` if unpublished. | [JSON: Replace a mock](references/flow-editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) + relevant plugin's `impl.md` |
 | **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
 
 
@@ -192,7 +192,7 @@ Phase 2 takes the approved architectural plan and resolves all implementation de
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Read [references/flow-editing-operations.md](references/flow-editing-operations.md)** to choose between CLI and direct JSON strategies for each operation. Common approach: use CLI for node/edge CRUD, direct JSON for variables, variableUpdates, subflows, and output mapping.
+**Read [references/flow-editing-operations.md](references/flow-editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
@@ -342,9 +342,9 @@ When you finish building or editing a flow, report to the user:
 
 ## References
 
-- **[Flow Editing Operations](references/flow-editing-operations.md)** — Strategy selection matrix for CLI vs. direct JSON editing. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
-  - [CLI Strategy](references/flow-editing-operations-cli.md) — All node/edge operations via `uip flow node` and `uip flow edge` commands
-  - [Direct JSON Strategy](references/flow-editing-operations-json.md) — All operations via direct `.flow` file editing (variables, subflows, in-place updates)
+- **[Flow Editing Operations](references/flow-editing-operations.md)** — Strategy selection matrix; **Direct JSON is the default**. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
+  - [Direct JSON Strategy](references/flow-editing-operations-json.md) — Default for all `.flow` edits: node/edge CRUD, variables, subflows, output mapping, in-place input updates.
+  - [CLI Strategy](references/flow-editing-operations-cli.md) — Carve-outs (connector, connector-trigger, inline-agent) and explicit user opt-in for `uip flow node` and `uip flow edge` commands.
 - **[Planning Phase 1: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery (`registry search`/`list`), plugin index for node selection, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
 - **[Planning Phase 2: Implementation Resolution](references/planning-impl.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), wiring rules, and flow patterns. **Read this after the architectural plan is approved.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example

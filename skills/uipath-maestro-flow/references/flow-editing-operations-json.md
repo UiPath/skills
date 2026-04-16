@@ -2,7 +2,7 @@
 
 All flow file modifications via direct read-modify-write of the `.flow` JSON file. This strategy gives full control over every field but requires manual management of definitions, variables, and edge integrity.
 
-> **When to use this strategy:** Use for operations the CLI does not support (variables, variableUpdates, subflows, output mapping) or when you prefer direct file control. See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
+> **When to use this strategy:** Direct JSON is the default for all `.flow` edits. Use CLI (see [flow-editing-operations-cli.md](flow-editing-operations-cli.md)) only for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
 
 ---
 
@@ -18,6 +18,19 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 | Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
 | `targetPort` | Auto-set | Set `targetPort` on every edge (validate rejects without it) |
 | `bindings_v2.json` | Auto-managed by `node configure` | Edit `bindings_v2.json` manually for connector nodes |
+
+---
+
+## Pre-flight Checklist
+
+Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Direct JSON default, **you** are responsible for them.
+
+1. **Definitions.** For every new node type, run `uip flow registry get <type> --output json`. Copy the `Data.Node` object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Never hand-write or paraphrase (Critical Rule #7).
+2. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
+3. **`targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (Critical Rule #6). Look up ports in the relevant plugin's `planning.md` or in [flow-file-format.md — Standard ports](flow-file-format.md).
+4. **Node outputs block.** Every data-producing node needs an `outputs` block on the node instance (not just in `definitions`). Action nodes: `output` + `error`. Trigger nodes: `output`. End/terminate: none. (Critical Rule #18.)
+5. **`variables.nodes`.** Add an entry for the new node's outputs. Optional under today's runtime, but expected for completeness and diff clarity.
+6. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
 
 ---
 
