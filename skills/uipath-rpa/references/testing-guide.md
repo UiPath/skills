@@ -113,6 +113,8 @@ Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **P
 ```
 
 > **Note:** The `entryPoints` block above applies to Process projects only. For Tests and Library projects, only `fileInfoCollection` is needed.
+
+> **`editingStatus` lifecycle:** Set to `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
 ```
 
 ### What NOT to Do

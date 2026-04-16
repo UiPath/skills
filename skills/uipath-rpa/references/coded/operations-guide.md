@@ -85,11 +85,12 @@ Coded test cases automate and validate application behavior using a structured *
    - Structured code in three phases: **Arrange**, **Act**, **Assert**
 3. Update `project.json`:
    - Add entry to `entryPoints` array (**Process projects only** — skip `entryPoints` for Tests and Library projects)
-   - Add entry to `designOptions.fileInfoCollection` with `testCaseType: "TestCase"`, `publishAsTestCase: true`
-5. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
+   - Add entry to `designOptions.fileInfoCollection` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`
+4. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
    - Optionally create `.variations/` data file for parameterized test data
    - For CLI-based data sources (variations files, Test Data Queues, Data Service), see [../testing-guide.md § Data-Driven Testing](../testing-guide.md)
-6. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+6. **Update `editingStatus`** — When the user asks to mark a test case as ready/publishable, update its `editingStatus` in `fileInfoCollection` from `"InProgress"` to `"Publishable"`. Do NOT change this automatically — only when explicitly requested
 
 **Test case structure — Given/When/Then:**
 

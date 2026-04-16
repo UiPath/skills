@@ -138,6 +138,8 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
 }
 ```
 
+> **`editingStatus` lifecycle:** Set `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
+
 ### Variant: Library Project (Reference Only)
 
 Replace the `designOptions` block. Key differences from the Process template:
