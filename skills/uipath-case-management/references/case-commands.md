@@ -591,7 +591,7 @@ Manage the local resource cache. Requires `uip login` for tenant-specific resour
 # Refresh cache from all resource types
 uip case registry pull
 uip case registry pull --force             # ignore 30-min TTL and force refresh
-uip case registry pull --solutionId <id>  # include a specific solution's resources
+uip case registry pull --solution-id <id>  # include a specific solution's resources
 
 # List all cached resources
 uip case registry list --output json
@@ -601,9 +601,28 @@ uip case registry search <keyword>
 uip case registry search <keyword> --type process
 uip case registry search --filter "name:contains=Apple,category=Pipelines"
 uip case registry search <keyword> --filter "name:contains=Foo" --type agent
+
+# Get a resource by identifier (entityKey, id, or uiPathActivityTypeId)
+uip case registry get <identifier>
+uip case registry get <identifier> --type agent
+uip case registry get <uiPathActivityTypeId> --type typecache-activities --connection-id <uuid>
+
+# Look up a connector activity/trigger from the local TypeCache index
+uip case registry get-connector --type typecache-activities --activity-type-id <id>
+uip case registry get-connector --type typecache-triggers --activity-type-id <id>
+
+# Look up a connector and fetch available connections from Integration Service
+uip case registry get-connection --type typecache-activities --activity-type-id <id>
+uip case registry get-connection --type typecache-triggers --activity-type-id <id>
 ```
 
-Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache`, `action-apps`, `solution`.
+Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
+
+Options for `pull`:
+| Flag | Description |
+|------|-------------|
+| `-f, --force` | Force refresh, ignore 30-min cache TTL |
+| `-s, --solution-id <id>` | Include the registry of the specified solution |
 
 Options for `search`:
 | Flag | Description |
@@ -614,7 +633,41 @@ Options for `search`:
 
 Filter format: `field=value` or `field:operator=value`. Supported fields: `name`, `description`, `category`, `tags`. Supported operators: `equals`, `contains`, `in`, `startsWith`, `endsWith`. At least one of keyword or `--filter` is required.
 
-Cache lives at `~/.uipcli/case-resources/` and expires after 30 minutes.
+Options for `get`:
+| Flag | Description |
+|------|-------------|
+| `<identifier>` | **(required)** The entityKey (process types), id (action-apps), or uiPathActivityTypeId (typecache) of the resource |
+| `-t, --type <type>` | Limit to a specific resource type: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution` |
+| `--connection-id <id>` | Connection UUID for connector-specific IS field metadata. Only applies to `typecache-activities` / `typecache-triggers` results — enriches the resource with input/output definitions from Integration Service |
+
+Output: `{ MatchCount, Resources: [{ ResourceType, Resource }] }`.
+
+Options for `get-connector`:
+| Flag | Description |
+|------|-------------|
+| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
+| `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` UUID to look up |
+
+Looks up a connector activity or trigger from the local TypeCache index. Returns the raw cache entry and its connector config (connector key, connector type, operation name). Does NOT fetch connections — use `get-connection` for that.
+
+Output: `{ Entry, Config }`.
+
+Options for `get-connection`:
+| Flag | Description |
+|------|-------------|
+| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
+| `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` UUID to look up |
+
+Looks up a connector from the local TypeCache index AND fetches available connections from Integration Service. **Requires `uip login`.** Use this to find the `connectionId` needed by `uip case tasks add-connector --connection-id`.
+
+Output: `{ Entry, Config, Connections }`.
+
+> **Common mistakes:**
+> - `uip case get-connector` — wrong. The command is `uip case registry get-connector`.
+> - `--connector-key` — not a valid flag. Use `--activity-type-id` with the `uiPathActivityTypeId` UUID.
+> - `--type activity` — invalid. Use `--type typecache-activities` or `--type typecache-triggers`.
+
+Cache lives at `~/.uip/case-resources/` and expires after 30 minutes.
 
 ---
 
@@ -642,9 +695,8 @@ Options for `list`:
 | Flag | Description |
 |------|-------------|
 | `-t, --tenant <name>` | Tenant name (defaults to authenticated tenant) |
-| `-f, --folder-key <key>` | Filter by folder key (GUID) |
+| `-f, --folder-key <key>` | **(required)** Folder key (GUID) |
 | `--filter <odata>` | Additional OData filter expression |
-| `--folder-id <id>` | Folder ID (`OrganizationUnitId`, required for client credentials auth) |
 | `--login-validity <minutes>` | Minimum minutes before token expiration triggers refresh (default: `10`) |
 
 Options for `get`:
@@ -653,8 +705,7 @@ Options for `get`:
 | `<process-key>` | **(required)** Process key (from `list`) |
 | `<feed-id>` | **(required)** Feed ID (from `list`) |
 | `-t, --tenant <name>` | Tenant name |
-| `-f, --folder-key <key>` | Folder key (GUID) |
-| `--folder-id <id>` | Folder ID |
+| `-f, --folder-key <key>` | **(required)** Folder key (GUID) |
 | `--login-validity <minutes>` | Min minutes before token refresh |
 
 Options for `run`:
@@ -665,7 +716,6 @@ Options for `run`:
 | `-i, --inputs <json>` | Input parameters as JSON string or `@file.json` (also reads from stdin) |
 | `-t, --tenant <name>` | Tenant name |
 | `--release-key <key>` | Release key (GUID, from `list`) |
-| `--folder-id <id>` | Folder ID |
 | `--feed-id <id>` | Feed ID for package lookup |
 | `--robot-ids <ids>` | Comma-separated robot IDs |
 | `--validate` | Validate inputs against process schema before running |
@@ -705,7 +755,7 @@ Options for `status`:
 |------|-------------|
 | `<job-key>` | **(required)** Job key (GUID from `process run`) |
 | `-t, --tenant <name>` | Tenant name |
-| `--folder-id <id>` | Folder ID |
+| `--folder-key <key>` | Folder key (GUID, defaults to authenticated folder) |
 | `--detailed` | Show full response with all fields |
 | `--login-validity <minutes>` | Min minutes before token refresh |
 
@@ -768,13 +818,23 @@ uip case processes incidents <process-key> --folder-key <key>
 
 ---
 
-## uip case incidents
+## uip case incident
 
-View Case incident summaries across all processes. **Requires `uip login`.**
+View and retrieve Case incidents. **Requires `uip login`.**
 
 ```bash
-uip case incidents list
+# Get incident summaries across all processes
+uip case incident summary
+
+# Get a single incident by ID
+uip case incident get <incident-id> --folder-key <key>
 ```
+
+Options for `get`:
+| Flag | Description |
+|------|-------------|
+| `<incident-id>` | **(required)** Incident ID |
+| `--folder-key <key>` | **(required)** Folder key |
 
 ---
 
