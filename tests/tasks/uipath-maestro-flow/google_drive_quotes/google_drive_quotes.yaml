@@ -1,10 +1,9 @@
 task_id: skill-flow-google-drive-quotes
 description: >
   Create a UiPath Flow that uses the Google Drive IS connector to locate a
-  document named "Quotes" inside a folder supplied as an input variable and
-  output its contents. Exercises connector discovery, connection binding,
-  reference resolution, node configuration with a dynamic input, and cloud
-  debug execution.
+  document named "quote.txt" inside the "Flow E2E Sandbox" folder and output
+  its contents. Exercises connector discovery, connection binding, reference
+  resolution, node configuration, and cloud debug execution.
 tags: [uipath-maestro-flow, e2e, generate, connector]
 max_iterations: 1
 
@@ -19,18 +18,10 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath Flow project named "GoogleDriveQuotes" that takes a Google
-  Drive folder URL as an input variable, locates a document named "Quotes"
-  inside that folder, and outputs the document's contents.
-
-  The flow should accept the folder URL as an input and work for any folder
-  the user supplies — do NOT hardcode the folder. For the "Flow E2E Sandbox"
-  folder, the URL will be:
-
-    https://drive.google.com/drive/u/0/folders/17l9eNEERL4GD7bGF6BkajAOKXcq_OnYr
-
-  Use the Google Drive IS connector to find and read the document. Output the
-  document contents as a result variable.
+  Create a UiPath Flow project named "GoogleDriveQuotes" that reads the
+  document "quote.txt" from the Google Drive folder "Flow E2E Sandbox"
+  (https://drive.google.com/drive/u/0/folders/17l9eNEERL4GD7bGF6BkajAOKXcq_OnYr)
+  and outputs its contents.
 
   Do NOT run flow debug — just validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
