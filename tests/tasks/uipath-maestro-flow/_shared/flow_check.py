@@ -49,13 +49,13 @@ def run_debug(
     if data is not None:
         _register_solution_cleanup((data.get("Data") or {}).get("solutionId"))
     if r.returncode != 0:
-        _fail(f"flow debug exit {r.returncode}\n{r.stderr[:500]}")
+        _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     if data is None:
-        _fail(f"Could not parse JSON from flow debug\n{r.stdout[:500]}")
+        _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
     payload = data.get("Data") or {}
     status = payload.get("finalStatus")
     if status != "Completed":
-        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout[:1000]}")
+        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
     return payload
 
 
