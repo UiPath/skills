@@ -206,7 +206,7 @@ Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `references/activity-docs/UiPath.System.Activities/` for full details.
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `../activity-docs/UiPath.System.Activities/` for full details.
 
 ## HTTP Request Activity Complexity
 

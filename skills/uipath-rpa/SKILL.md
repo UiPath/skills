@@ -136,7 +136,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
-| **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/` |
+| **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [connector-capabilities.md](references/connector-capabilities.md) → [xaml/workflow-guide.md § Step 1.9](references/xaml/workflow-guide.md) |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
@@ -270,7 +270,7 @@ uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project
 ### Step 2 — Find activity docs (priority order)
 
 1. **Check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`** — auto-generated, most accurate. Use `Glob` + `Read` (not `Grep` — `.local/` is gitignored).
-2. **Fall back to bundled references** at `../../references/activity-docs/{PackageId}/` — pick the version folder closest to what is installed.
+2. **Fall back to bundled references** at `references/activity-docs/{PackageId}/` — pick the version folder closest to what is installed.
 
 ## UI Automation References
 
