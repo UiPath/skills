@@ -1,6 +1,6 @@
-task_id: skill-flow-google-drive-quotes
+task_id: skill-flow-onedrive-quotes
 description: >
-  Create a UiPath Flow that uses the Google Drive IS connector to locate a
+  Create a UiPath Flow that uses the OneDrive IS connector to locate a
   document named "quote.txt" inside the "Flow E2E Sandbox" folder and output
   its contents. Exercises connector discovery, connection binding, reference
   resolution, node configuration, and cloud debug execution.
@@ -18,9 +18,9 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath Flow project named "GoogleDriveQuotes" that reads the
-  document "quote.txt" from the Google Drive folder "Flow E2E Sandbox"
-  (https://drive.google.com/drive/folders/17l9eNEERL4GD7bGF6BkajAOKXcq_OnYr)
+  Create a UiPath Flow project named "OneDriveQuotes" that reads the document
+  "quote.txt" from the OneDrive folder "Flow E2E Sandbox"
+  (https://uipath-my.sharepoint.com/personal/bai_li_uipath_com/Documents/Flow%20E2E%20Sandbox)
   and outputs its contents.
 
   Do NOT run flow debug — just validate the flow.
@@ -31,7 +31,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip flow validate passes on the flow file"
-    command: "uip flow validate GoogleDriveQuotes/GoogleDriveQuotes/GoogleDriveQuotes.flow"
+    command: "uip flow validate OneDriveQuotes/OneDriveQuotes/OneDriveQuotes.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -39,8 +39,8 @@ success_criteria:
 
   # ── End-to-end execution ────────────────────────────────────────────────
   - type: run_command
-    description: "Flow debug runs successfully and output contains the Quotes document body"
-    command: "python3 $TASK_DIR/check_google_drive_quotes.py"
+    description: "Flow debug runs successfully and output contains the quote.txt document body"
+    command: "python3 $TASK_DIR/check_onedrive_quotes.py"
     timeout: 300
     expected_exit_code: 0
     weight: 6.0
