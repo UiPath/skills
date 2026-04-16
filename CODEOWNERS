@@ -7,8 +7,8 @@
 # Hooks
 /hooks/ @DragosUnguru
 
-# Activity references
-/references/ @DragosUnguru
+# Activity references (bundled inside uipath-rpa skill)
+/skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
 /skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
