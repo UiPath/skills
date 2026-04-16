@@ -115,11 +115,21 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 ---
 
-## Step 3 - Let the user choose the type of task
+## Step 3 — Choose Task Type
 
-Always let the user select whether he wants to use a new inline schema or create a new coded action app or reference an existing action app. Do not do any registry search by yourself and determine which type to use.
-If the user says they want to use an existing deployed action app, ask: "What is the name of the deployed action app?"
-**If the user chooses an existing deployed action app, skip to Step 4b else go to Step 4a**
+Present the user with three options. Do not choose on their behalf or perform any registry search.
+
+| # | Option | Description |
+|---|---|---|
+| 1 | **QuickForm** | Inline typed form — fields rendered by Action Center from the schema you design here |
+| 2 | **New Coded Action App** | Scaffold a new React + TypeScript app inside the solution — full UI control |
+| 3 | **Existing Deployed App** | Reference an app already deployed to Orchestrator |
+
+| User selects | Next step |
+|---|---|
+| QuickForm | Go to Step 4a |
+| New Coded Action App | Go to Step 4c |
+| Existing Deployed App → ask: "What is the name of the deployed action app?" | Go to Step 4b |
 
 ---
 
@@ -157,6 +167,18 @@ When the user says they want to use an existing deployed Action app:
    - **Zero matches** → report the error and ask the user to verify the app name or check that it is deployed.
 4. **Retrieve app configuration** (Step 3 of the reference) — extracts `inputSchema`, `inOutSchema`, `appSystemName`, `appVersionRef` needed to populate `inputs.app`.
 5. **Write the HITL node immediately** — the app owns its schema. Skip Step 5 entirely. Go directly to Step 6 Common configuration and write the node using the configuration retrieved above. Do not ask the user to design or confirm a schema.
+
+---
+
+## Step 4c — New Coded Action App: Gather Setup Details
+
+1. **Ask for the app name**: "What would you like to name the coded action app? (This becomes the project folder name.)"
+2. **Ask for the source path**: "What is the path to your coded action app source code? (The contents of this folder will be placed under `source/` inside the new project.)"
+3. **Locate the solution directory** (`<SOLUTION_DIR>`): find the `.uipx` file in the flow's directory, then its parent directory.
+4. **Read the source schema**: parse `<SOURCE_PATH>/action-schema.json` — this drives both the resource file's `actionSchema` and the HITL node's `inputSchema`/`inOutSchema`/`outcomes`. Read `<SOURCE_PATH>/uipath.json` to get `clientId`, which becomes `externalClientId` in the resource file.
+5. Go directly to Step 6 (skip Step 5 — schema comes from the source code, not from conversation).
+
+Full scaffolding instructions: **[references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md)**
 
 ---
 
@@ -212,6 +234,20 @@ After writing, validate:
 
 ```bash
 uip flow validate <file> --format json
+```
+
+### Surface: Flow — Coded Action App (new inline)
+
+Step 4c must be completed first — app name confirmed, solution directory located, SDK tarball identified, schema designed and confirmed.
+
+Scaffold the project directory and all source files, add the project to the solution, write the solution resource files, then write the HITL node with `inputs.type = "custom"` and `inputs.app` referencing the new app (`appSystemName: null` since the app has not been deployed yet).
+
+Full reference: **[references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md)** — complete project structure, all file templates, UUID generation, solution CLI commands, resource file templates (`resources/solution_folder/app/codedAction/` and `resources/solution_folder/package/`), node JSON with `inputs.app` field mapping, and post-creation build instructions.
+
+After writing, validate:
+
+```bash
+uip flow validate <file> --output json
 ```
 
 ### Surface: Flow — AppTask (deployed action app only)
@@ -279,4 +315,5 @@ After completing the wiring:
 
 - **[QuickForm Node JSON](references/hitl-node-quickform.md)** — Full node JSON, definition entry, edge format, `variables.nodes` regeneration, four schema conversion examples.
 - **[AppTask Node JSON](references/hitl-node-apptask.md)** — App lookup via direct API, node JSON with `inputs.type = "custom"`, app field mapping.
+- **[Coded Action App (inline)](references/hitl-node-coded-action-app.md)** — Scaffold a new React coded action app inside the solution; full project template, resource files, HITL node JSON.
 - **[HITL Business Pattern Recognition](references/hitl-patterns.md)** — Signal tables for detecting when a process needs a human checkpoint. Includes proactive recommendation language and when NOT to recommend HITL.
