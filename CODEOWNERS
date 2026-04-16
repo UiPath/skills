@@ -29,6 +29,7 @@
 
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
+/tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
 /skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin

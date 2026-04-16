@@ -1,0 +1,95 @@
+task_id: skill-hitl-e2e-invoice-approval-greenfield
+description: >
+  E2E golden scenario (green field): agent builds a complete invoice approval
+  flow from scratch — detecting write-back + approval gate signals,
+  designing schema, adding HITL node, wiring all handles, and validating.
+  Real business use case. Full Discover -> Plan -> Build -> Verify loop.
+tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow that extracts invoice data from a SharePoint folder
+  and posts the approved invoices to SAP. Finance needs to review and
+  approve each invoice before it is posted — we cannot write to SAP
+  without human sign-off.
+
+  Save a summary to report.json:
+  {
+    "project_name": "<name you used>",
+    "hitl_node_id": "<id of the HITL node>",
+    "schema": {
+      "inputs": ["<fields shown to finance manager>"],
+      "outputs": ["<fields manager fills in>"],
+      "outcomes": ["<approval buttons>"]
+    },
+    "handles_wired": ["<list of handles you wired>"],
+    "validation_passed": true,
+    "result_variable": "<how downstream nodes access the decision>"
+  }
+
+success_criteria:
+  - type: file_contains
+    description: "report.json contains a HITL node ID (non-placeholder)"
+    path: "report.json"
+    includes:
+      - '"hitl_node_id": "'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate.*--format\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Schema contains invoice-relevant inputs and Approve/Reject outcomes"
+    path: "report.json"
+    assertions:
+      - expression: "length(schema.inputs)"
+        operator: gte
+        expected: 2
+      - expression: "length(schema.outcomes)"
+        operator: gte
+        expected: 2
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "Schema outcomes include Approve and Reject"
+    path: "report.json"
+    includes:
+      - "Approve"
+      - "Reject"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json includes completed in wired handles"
+    path: "report.json"
+    includes:
+      - "completed"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent captured the runtime result variable"
+    path: "report.json"
+    includes:
+      - "$vars."
+      - ".result"
+    weight: 1.5
+    pass_threshold: 1.0
