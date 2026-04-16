@@ -220,7 +220,6 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 
 **Correct — direct child elements (what Studio actually serializes):**
 ```xml
-<!-- Literal string values -->
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
@@ -228,39 +227,16 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
     <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
-
-<!-- Variable bindings (VB project — brackets are VB expressions) -->
-<ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml"
-    DisplayName="Process Data" UnSafe="False">
-  <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="in_Name">[nameVar]</InArgument>
-    <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[resultVar]</OutArgument>
-    <InOutArgument x:TypeArguments="x:Int32" x:Key="io_Count">[countVar]</InOutArgument>
-  </ui:InvokeWorkflowFile.Arguments>
-</ui:InvokeWorkflowFile>
-
-<!-- Variable bindings (C# project — use CSharpValue for expressions) -->
-<ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml"
-    DisplayName="Process Data" UnSafe="False">
-  <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="in_Name">
-      <CSharpValue x:TypeArguments="x:String">nameVar</CSharpValue>
-    </InArgument>
-    <OutArgument x:TypeArguments="x:String" x:Key="out_Result">
-      <CSharpReference x:TypeArguments="x:String">resultVar</CSharpReference>
-    </OutArgument>
-  </ui:InvokeWorkflowFile.Arguments>
-</ui:InvokeWorkflowFile>
 ```
 
 **Wrong — Dictionary wrapper (from `get-default-activity-xaml` empty state):**
 ```xml
-<ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml"
-    DisplayName="Process Data">
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
+    DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)">
   <ui:InvokeWorkflowFile.Arguments>
     <scg:Dictionary x:TypeArguments="x:String, Argument">
-      <InArgument x:TypeArguments="x:String" x:Key="in_Name">[nameVar]</InArgument>
-      <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[resultVar]</OutArgument>
+      <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
+      <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
     </scg:Dictionary>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
@@ -271,8 +247,7 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 2. Use the correct argument direction: `InArgument` for `in_*`, `OutArgument` for `out_*`, `InOutArgument` for `io_*`
 3. The `x:TypeArguments` must match the callee's argument type
 4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
-5. For variable bindings in **VB projects**, use bracket expressions: `[variableName]`
-6. For variable bindings in **C# projects**, use `<CSharpValue>` for In/InOut arguments and `<CSharpReference>` for Out/InOut arguments
+5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
 
 ## InvokeCode Language Property
 
