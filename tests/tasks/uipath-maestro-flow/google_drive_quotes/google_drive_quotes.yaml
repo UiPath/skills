@@ -1,0 +1,56 @@
+task_id: skill-flow-google-drive-quotes
+description: >
+  Create a UiPath Flow that uses the Google Drive IS connector to locate a
+  document named "Quotes" inside a folder supplied as an input variable and
+  output its contents. Exercises connector discovery, connection binding,
+  reference resolution, node configuration with a dynamic input, and cloud
+  debug execution.
+tags: [uipath-maestro-flow, e2e, generate, connector]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "GoogleDriveQuotes" that takes a Google
+  Drive folder URL as an input variable, locates a document named "Quotes"
+  inside that folder, and outputs the document's contents.
+
+  The flow should accept the folder URL as an input and work for any folder
+  the user supplies — do NOT hardcode the folder. For the "Flow E2E Sandbox"
+  folder, the URL will be:
+
+    https://drive.google.com/drive/u/0/folders/17l9eNEERL4GD7bGF6BkajAOKXcq_OnYr
+
+  Use the Google Drive IS connector to find and read the document. Output the
+  document contents as a result variable.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip flow validate passes on the flow file"
+    command: "uip flow validate GoogleDriveQuotes/GoogleDriveQuotes/GoogleDriveQuotes.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── End-to-end execution ────────────────────────────────────────────────
+  - type: run_command
+    description: "Flow debug runs successfully and output contains the Quotes document body"
+    command: "python3 $TASK_DIR/check_google_drive_quotes.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
