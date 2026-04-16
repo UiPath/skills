@@ -137,6 +137,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/` |
+| **Use Data Fabric entities** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [activity-docs overview](../../references/activity-docs/UiPath.DataService.Activities/25.9/activities/overview.md) |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [connector-capabilities.md](references/connector-capabilities.md) → [xaml/workflow-guide.md § Step 1.9](references/xaml/workflow-guide.md) |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
@@ -231,6 +232,8 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expre
 | Assign | built-in | Set variable/argument values |
 | For Each | built-in | Iterate over a collection |
 | Invoke Workflow File | built-in | Call another workflow file |
+| Create Entity Record | `UiPath.DataService.Activities` | Create a Data Fabric entity record |
+| Query Entity Records | `UiPath.DataService.Activities` | Query Data Fabric records with filters |
 
 ### XAML File Anatomy
 
