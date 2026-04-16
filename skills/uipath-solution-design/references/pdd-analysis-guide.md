@@ -138,6 +138,8 @@ Extract into a table:
 Watch for:
 - URLs may be environment-specific (localhost for dev, internal DNS for prod). Note both if available.
 - SPA details (hash routing, pushState) affect how the robot navigates. Capture these.
+- **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified, mark as `[SME REVIEW]` — do not default to O365.
+- **FTP/SFTP** — note whether the PDD specifies FTP, SFTP, or cloud storage (S3, Azure Blob). Capture host/path if mentioned.
 
 ### Development Details
 
@@ -155,6 +157,33 @@ Extract:
 - **Canonical test data** — the specific test case used for development and verification
 - **Selector references** — if provided (rare in traditional PDDs, common in agent-ready PDDs)
 - **Value mapping tables** — additional mappings not covered in the detailed process steps
+
+### Reporting Requirements
+
+Extract:
+- **Report type** — Excel, email summary, dashboard data, PDF
+- **Report frequency** — real-time, daily, weekly, per-run
+- **Report content** — what data appears in the report (success counts, error details, processing times, item-level outcomes)
+- **Report recipients** — who receives the report
+- **Monitoring tool** — where the report is visualized (Excel, Power BI, Orchestrator Insights, custom dashboard)
+
+Watch for:
+- Reporting requirements are often in a separate section or table near the end of the PDD. They are easy to miss.
+- If the PDD mentions reporting, this is a signal for a dedicated Reporting project in the project decomposition decision (see [Product Selection Guide](product-selection-guide.md) Level 2.5).
+- If the PDD has no reporting section but mentions logging or monitoring, mark reporting as `[DEFAULT]` — Orchestrator logs only.
+
+### Project Decomposition Signals
+
+While extracting data, watch for signals that indicate the process should be split into multiple projects. These feed into Level 2.5 of the [Product Selection Guide](product-selection-guide.md):
+
+1. **Distinct processing stages** — does the process have clearly separate phases (e.g., "collect emails" → "extract data" → "generate output")? Note stage boundaries.
+2. **Per-item transactional processing** — are items processed independently where one failure should not block others? Note where per-item processing starts/ends.
+3. **Document Understanding with human validation** — does the process use DU extraction followed by Action Centre / human review? This is a common split point.
+4. **Multiple output channels** — does the process produce output to multiple unrelated systems (e.g., XML to MQ + files to FTP + report to email)?
+5. **Reporting** — does the PDD specify reporting requirements? This often warrants a dedicated project.
+6. **Queue mentions** — does the PDD mention queues, batches, or "items to process"? This suggests queue-based architecture.
+
+Capture these signals as a structured list in your internal model. They will be used during product selection.
 
 ## Gap Detection Checklist
 
@@ -174,3 +203,5 @@ After extraction, verify these items exist. Flag missing ones:
 | Data retention requirements | `[SME REVIEW]` — compliance decision |
 | Credential rotation policy | `[DEFAULT]` — assume Orchestrator asset management |
 | Test data / canonical case | `[SME REVIEW]` — needed for testing strategy |
+| Reporting requirements | `[DEFAULT]` — Orchestrator logs only (no dedicated report) |
+| Email protocol (when email is used) | `[SME REVIEW]` — needed for package selection (IMAP vs O365 vs Exchange) |

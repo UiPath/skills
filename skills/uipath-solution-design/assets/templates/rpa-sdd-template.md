@@ -1,8 +1,8 @@
 # Solution Design Document — <PROCESS_NAME>
 
-<!-- Use this template when the primary product is RPA Process, RPA Library, or RPA Test Automation.
-     Select the specific Project Type in §11 based on the PDD's intent.
-     Phase 2 sections: §5, §9, §11, §12. Phase 3 sections: all others. -->
+> **Template:** RPA Process / Library / Test Automation.
+> **Phase 2 sections:** §5, §9, §10, §11, §12, §13, §14. **Phase 3 sections:** all others.
+> **Before filling §10-§11:** Run Level 2.5 (Project Decomposition) from product-selection-guide.md. The decomposition decision determines whether §10-§11 describe one project or a Master Project with multiple sub-projects.
 
 ---
 
@@ -25,11 +25,14 @@
 7. Exception Handling
 8. Error Handling
 9. Application Inventory
-10. Credentials & Assets
+10. Master Project Architecture
 11. Project Structure
-12. Implementation Mode
-13. Testing Strategy
-14. Implementation Plan
+12. Queue Architecture
+13. Implementation Mode
+14. Packages
+15. Credentials & Assets
+16. Testing Strategy
+17. Implementation Plan
 
 ---
 
@@ -60,8 +63,7 @@
 
 ## 2. Process Map
 
-<!-- Build the process map STRICTLY from the steps extracted in Phase 1. Do not invent steps.
-     Use mermaid flowchart syntax. One node per extracted step. -->
+> **Build the process map STRICTLY from the steps extracted in Phase 1.** Do not invent steps. Use mermaid flowchart syntax. One node per extracted step.
 
 ```mermaid
 flowchart TD
@@ -78,7 +80,7 @@ flowchart TD
 
 ## 3. Detailed Process Steps
 
-<!-- Single summary table for ALL steps. Add Step Details subsections ONLY for complex steps. -->
+> **Single summary table for ALL steps.** Add Step Details subsections ONLY for complex steps.
 
 ### Step Summary
 
@@ -104,13 +106,15 @@ flowchart TD
 
 ## 5. Data Definitions
 
-<!-- Generate ONLY Option A (if §12 selects Coded C# or Hybrid) OR Option B (if §12 selects XAML).
-     Delete the other option entirely.
-     Type design constraints:
-     - Keep types flat — no inheritance
-     - Use `record` for immutable data, `class` for mutable
-     - Maximum 15 properties per type
-     - Default to `string` unless PDD specifies numeric, date, or boolean operations -->
+> **Generate ONLY Option A or Option B based on §13 Implementation Mode.** Delete the other entirely.
+> - If §13 selects Coded C# or Hybrid → use **Option A**
+> - If §13 selects XAML → use **Option B**
+>
+> **Type design constraints:**
+> 1. Keep types flat — no inheritance
+> 2. Use `record` for immutable data, `class` for mutable
+> 3. Maximum 15 properties per type
+> 4. Default to `string` unless PDD specifies numeric, date, or boolean operations
 
 ### Option A — Coded C# / Hybrid Mode
 
@@ -196,49 +200,120 @@ public enum <EnumName>
 
 ## 9. Application Inventory
 
-<!-- List all applications. For SaaS integrations (Salesforce, Jira, etc.), flag "Integration Service"
-     in the Access Method column — the implementation plan will create a task to configure the connector. -->
+> **List all applications.** For SaaS integrations (Salesforce, Jira, etc.), flag "Integration Service" in the Access Method column — the implementation plan will create a task to configure the connector. For email, specify the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — do not default to O365.
 
 | # | Application | Interface | Access Method | Role | Interaction Pattern | Session Management |
 |---|---|---|---|---|---|---|
-| 1 | <APP_NAME> | <WEB/DESKTOP/API> | <URL_OR_INTEGRATION_SERVICE> | <SOURCE/TARGET/UTILITY> | <READ/WRITE/READ-WRITE/TRANSIENT> | <PER_RUN/PER_ITEM> |
+| 1 | <APP_NAME> | <WEB/DESKTOP/API> | <URL_OR_PROTOCOL_OR_INTEGRATION_SERVICE> | <SOURCE/TARGET/UTILITY> | <READ/WRITE/READ-WRITE/TRANSIENT> | <PER_RUN/PER_ITEM> |
 
 ---
 
-## 10. Credentials & Assets
+## 10. Master Project Architecture
 
-| Asset Name | Type | Description | Notes |
-|---|---|---|---|
-| `<ASSET_NAME>` | <CREDENTIAL/TEXT/INT/BOOL> | <WHAT_IT_STORES> | <NOTES> |
+> **This section is produced by Level 2.5 (Project Decomposition) from the Product Selection Guide.**
+> Generate EITHER Option A (Master Project) OR Option B (Single Project). **Delete the other entirely.**
+> Decision rule: if 2+ decomposition signals matched in Level 2.5 → Option A. Otherwise → Option B.
+
+### Option A — Master Project (multiple queue-connected sub-projects)
+
+**Pattern:** <PATTERN_NAME — e.g., Dispatcher / DU Performer / Output Performer / Reporting>
+
+**Decomposition signals matched:**
+- <SIGNAL_1_FROM_LEVEL_2.5>
+- <SIGNAL_2_FROM_LEVEL_2.5>
+
+#### Sub-projects overview
+
+| # | Project Name | Role | Framework | Input Queue | Output Queue | PDD Steps |
+|---|---|---|---|---|---|---|
+| 1 | `<NAME>_Dispatcher` | <ROLE_DESCRIPTION> | Sequence | — | `<QUEUE_1>` | <STEP_NUMBERS> |
+| 2 | `<NAME>_Performer` | <ROLE_DESCRIPTION> | REFramework | `<QUEUE_1>` | `<QUEUE_2>` | <STEP_NUMBERS> |
+| 3 | `<NAME>_Reporting` | <ROLE_DESCRIPTION> | Sequence | `<QUEUE_2>` | — | — |
+
+#### Data flow diagram
+
+```mermaid
+flowchart LR
+    D["<NAME>_Dispatcher"] -->|"<QUEUE_1>"| P["<NAME>_Performer"]
+    P -->|"<QUEUE_2>"| R["<NAME>_Reporting"]
+```
+
+> Each sub-project has its own §11 Project Structure, §13 Implementation Mode, and §14 Packages subsection below.
+
+### Option B — Single Project
+
+**Decomposition signals matched:** 0-1 (threshold not met)
+
+> Skip this section. §11 describes a single project. §12 Queue Architecture is not applicable.
 
 ---
 
 ## 11. Project Structure
 
+> **For Master Project (Option A in §10):** repeat this entire section per sub-project, with a heading like "### 11.1 ProjectName_Dispatcher", "### 11.2 ProjectName_Performer", etc.
+> **For Single Project (Option B in §10):** use this section once.
+>
+> Framework determines folder layout:
+> - REFramework → use the REFramework structure below
+> - Sequence → use the Sequence structure below
+
 ### Project Type
 
-<!-- Select ONE based on the PDD's intent: -->
+Select ONE based on the PDD's intent (applies to all sub-projects in a Master Project):
 
 - [ ] **Process** — standard end-to-end automation (default)
 - [ ] **Library** — reusable component consumed by other automations
 - [ ] **Test Automation** — test cases validating application behavior
 
+> **For Master Project:** repeat the Recommended Structure, Workflow Inventory, and Workflow Dependencies subsections below per sub-project.
+
 ### Recommended Structure
+
+> **Choose the layout matching the project's framework.** REFramework projects use the REF folder structure. Sequence projects use a simple flat structure.
+
+#### REFramework layout (for Performer projects)
 
 ```text
 <PROJECT_NAME>/
 ├── project.json
-├── <MAIN_WORKFLOW>
-├── <FOLDER>/
+├── Main.xaml
+├── Framework/
+│   ├── InitAllSettings.xaml
+│   ├── InitAllApplications.xaml
+│   ├── GetTransactionData.xaml
+│   ├── Process.xaml
+│   ├── SetTransactionStatus.xaml
+│   ├── CloseAllApplications.xaml
+│   └── KillAllProcesses.xaml
+├── Process/
 │   ├── <WORKFLOW_FILE>
 │   └── ...
 ├── Data/
+│   ├── Config.xlsx
+│   └── ...
+└── Tests/
+    └── ...
+```
+
+#### Sequence layout (for Dispatcher / Reporting / simple projects)
+
+```text
+<PROJECT_NAME>/
+├── project.json
+├── Main.xaml
+├── Process/
+│   ├── <WORKFLOW_FILE>
+│   └── ...
+├── Data/
+│   ├── Config.xlsx
 │   └── ...
 └── Tests/
     └── ...
 ```
 
 ### Workflow Inventory
+
+> **For Master Project:** one workflow inventory table per sub-project. **For Single Project:** one workflow inventory table total.
 
 | # | Workflow File | Responsibility | PDD Steps | Inputs | Outputs |
 |---|---|---|---|---|---|
@@ -254,7 +329,38 @@ public enum <EnumName>
 
 ---
 
-## 12. Implementation Mode
+## 12. Queue Architecture
+
+> **Include this section ONLY for Master Project (Option A in §10).** Delete entirely for Single Project. Defines the Orchestrator queues that connect sub-projects.
+
+### Queue Definitions
+
+| Queue Name | Producer Project | Consumer Project | Trigger Type | Max Retries |
+|---|---|---|---|---|
+| `<QUEUE_NAME>` | `<PRODUCER_PROJECT>` | `<CONSUMER_PROJECT>` | <QUEUE_TRIGGER / SCHEDULED / MANUAL> | <MAX_RETRIES> |
+
+### Queue Item Schema
+
+#### `<QUEUE_NAME>` — SpecificContent fields
+
+| Field Name | Type | Source | Description |
+|---|---|---|---|
+| `<FIELD_NAME>` | <STRING/INT/BOOL> | <SOURCE_STEP_OR_VARIABLE> | <DESCRIPTION> |
+
+> **Repeat the Queue Item Schema subsection for each queue.**
+
+### Queue Processing Rules
+
+- Each Performer project processes one queue item at a time via REFramework's `GetTransactionData`.
+- On business exception: set queue item status to **Failed** (do not retry), push item to reporting queue with exception details.
+- On system error: set queue item status to **Failed** (auto-retry up to Max Retries), then push to reporting queue if retries exhausted.
+- Dispatcher must populate ALL SpecificContent fields listed above — missing fields cause Performer failures.
+
+---
+
+## 13. Implementation Mode
+
+> **For Master Project:** specify the mode per sub-project if they differ. A Dispatcher may be XAML while a Performer with heavy data logic is Hybrid.
 
 **Recommendation:** <XAML / Coded C# / Hybrid>
 
@@ -264,7 +370,33 @@ public enum <EnumName>
 
 ---
 
-## 13. Testing Strategy
+## 14. Packages
+
+> **List required NuGet packages.** For Master Project: one table per sub-project. Infer packages from the Application Inventory (§9) and process steps:
+> - Email via IMAP → `UiPath.Mail.Activities`
+> - Email via O365 → `UiPath.MicrosoftOffice365.Activities`
+> - Document Understanding → `UiPath.IntelligentOCR.Activities`, `UiPath.DocumentUnderstanding.ML.Activities`
+> - Excel → `UiPath.Excel.Activities`
+> - SAP → `UiPath.SAP.BAPI.Activities`
+> - Web automation → `UiPath.UIAutomation.Activities`
+> - Always include `UiPath.System.Activities`
+
+| Package | Version | Purpose |
+|---|---|---|
+| `UiPath.System.Activities` | Latest | Core activities (data tables, files, Orchestrator, workflow operators) |
+| `<PACKAGE_NAME>` | <VERSION_OR_LATEST> | <WHY_NEEDED_—_REFERENCE_APP_OR_STEP> |
+
+---
+
+## 15. Credentials & Assets
+
+| Asset Name | Type | Description | Notes |
+|---|---|---|---|
+| `<ASSET_NAME>` | <CREDENTIAL/TEXT/INT/BOOL> | <WHAT_IT_STORES> | <NOTES> |
+
+---
+
+## 16. Testing Strategy
 
 ### Canonical Test Case
 
@@ -288,9 +420,19 @@ public enum <EnumName>
 |---|---|---|---|
 | E1 | <YES/NO> | <SIMULATION_METHOD> | <EXPECTED_BEHAVIOR> |
 
+### End-to-End Pipeline Test (Master Project only)
+
+> **Include this subsection only for Master Project (Option A in §10).** Delete for Single Project.
+
+| Test Scenario | Setup | Trigger | Expected Flow | Assertions |
+|---|---|---|---|---|
+| Happy path | <SETUP> | <TRIGGER_DISPATCHER> | Dispatcher → Queue → Performer → Queue → Reporting | <FINAL_STATE_ASSERTIONS> |
+| Performer failure + retry | <SETUP_BAD_ITEM> | <TRIGGER> | Item fails in Performer, retried, succeeds on retry | Queue item retry count incremented, final status Success |
+| Business exception | <SETUP_BRE_ITEM> | <TRIGGER> | Item fails in Performer with BRE, pushed to reporting | Reporting queue has item with BRE details |
+
 ---
 
-## 14. Implementation Plan
+## 17. Implementation Plan
 
 > **Instructions for the implementing agent:**
 > Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
@@ -298,39 +440,125 @@ public enum <EnumName>
 > When done with each task, verify the output matches the SDD's expected structure before proceeding to the next task.
 > Each task description below is a self-contained prompt. Execute it as written.
 
-### Task 1 — Create project scaffolding
+> **Choose the correct plan based on §10.** Delete the plan you do NOT use.
+> - Master Project (Option A in §10) → use the **Master Project Implementation Plan** below
+> - Single Project (Option B in §10) → use the **Single Project Implementation Plan** below
+
+### Master Project Implementation Plan
+
+#### Task 1 — Configure shared assets and credentials
 **Dependencies:** none
-**References:** §11 Project Structure, §12 Implementation Mode
+**References:** §15 Credentials & Assets
+
+> Create each Orchestrator asset listed in §15: <LIST_EACH_ASSET>.
+> Use the exact asset names, types, and values from §15.
+
+#### Task 2 — Create Orchestrator queues
+**Dependencies:** none
+**References:** §12 Queue Architecture
+
+> Create each Orchestrator queue listed in §12: <LIST_EACH_QUEUE_WITH_MAX_RETRIES>.
+> Use the exact queue names from §12.
+
+#### Task 3 — Configure Integration Service connectors
+**Dependencies:** none
+**References:** §9 Application Inventory (rows flagged as Integration Service)
+
+> Configure each Integration Service connector listed in §9. Skip this task if no connectors are flagged.
+
+#### Task 4 — Create project scaffolding (all sub-projects)
+**Dependencies:** none
+**References:** §10 Sub-projects overview, §11 Project Structure (per sub-project), §13 Implementation Mode
+
+> For each sub-project in §10:
+> 1. Create a UiPath Process project named `<PROJECT_NAME>` using <IMPLEMENTATION_MODE> mode.
+> 2. If the project uses REFramework, install the REFramework template.
+> 3. Set up the folder structure exactly as defined in §11 for that sub-project.
+> 4. Install the packages listed in §14 for that sub-project.
+> Verify all folders and project.json exist for each sub-project before proceeding.
+
+#### Task 5 — Define data models
+**Dependencies:** Task 4
+**References:** §5 Data Definitions → <TYPE_NAMES>
+
+> Create the data types defined in §5: <LIST_EACH_TYPE_AND_FILE>.
+> Use the exact field names, types, and structure from §5. Do not add fields not in the SDD.
+> Place shared data models in each sub-project that uses them.
+
+#### Task 6..N-3 — Implement sub-project workflows
+**Dependencies:** Tasks 4, 5
+**References:** §11 Workflow Inventory (per sub-project), §3 Detailed Process Steps, §12 Queue Architecture
+
+> **One task per sub-project.** Implement in dependency order: Dispatcher first, then Performers that consume its queues, then Reporting last. Each task is a self-contained prompt.
+
+> Implement all workflows for `<SUB_PROJECT_NAME>` per §11.<N> Workflow Inventory.
+> This sub-project covers PDD steps <STEP_NUMBERS> and uses <FRAMEWORK>.
+> Queue input: <INPUT_QUEUE_OR_NONE>. Queue output: <OUTPUT_QUEUE_OR_NONE>.
+> Populate queue items with the exact SpecificContent fields defined in §12 for `<OUTPUT_QUEUE>`.
+> Read queue items using the exact SpecificContent fields defined in §12 for `<INPUT_QUEUE>`.
+> Handle errors per §7, §8, and §12 Queue Processing Rules.
+
+#### Task N-2 — Wire up exception and error handling
+**Dependencies:** All workflow tasks
+**References:** §7 Exception Handling, §8 Error Handling, §12 Queue Processing Rules
+
+> Verify all business exceptions (§7) and system error handlers (§8) are wired across all sub-projects.
+> Verify queue item status is set correctly per §12 Queue Processing Rules:
+> - Business exception → Failed (no retry), push to reporting queue
+> - System error → Failed (auto-retry), push to reporting queue if retries exhausted
+
+#### Task N-1 — Implement test suite
+**Dependencies:** All workflow tasks
+**References:** §16 Testing Strategy
+
+> Build the test suite per §16. Create tests for:
+> - Per-project unit tests (canonical test case, exception test cases, error scenarios)
+> - End-to-end pipeline tests (§16 End-to-End Pipeline Test) — verify items flow from Dispatcher through all queues to Reporting
+
+#### Task N — End-to-end pipeline validation
+**Dependencies:** Task N-1
+**References:** §16 End-to-End Pipeline Test
+
+> Run the full pipeline end-to-end: trigger Dispatcher, verify items appear in each queue,
+> verify Performer processes items correctly, verify Reporting generates expected output.
+> Validate against the assertions in §16 End-to-End Pipeline Test.
+
+### Single Project Implementation Plan
+
+#### Task 1 — Create project scaffolding
+**Dependencies:** none
+**References:** §11 Project Structure, §13 Implementation Mode
 
 > Create a UiPath <PROJECT_TYPE> project named `<PROJECT_NAME>` using <IMPLEMENTATION_MODE> mode.
 > Set up the folder structure exactly as defined in §11 Recommended Structure.
+> Install the packages listed in §14.
 > Configure project.json per the implementation mode. Verify all folders and project.json exist before proceeding.
 
-### Task 2 — Define data models
+#### Task 2 — Define data models
 **Dependencies:** none
 **References:** §5 Data Definitions → <TYPE_NAMES>
 
 > Create the data types defined in §5: <LIST_EACH_TYPE_AND_FILE>.
 > Use the exact field names, types, and structure from §5. Do not add fields not in the SDD.
 
-### Task 3 — Configure assets and credentials
+#### Task 3 — Configure assets and credentials
 **Dependencies:** none
-**References:** §10 Credentials & Assets
+**References:** §15 Credentials & Assets
 
-> Create each Orchestrator asset listed in §10: <LIST_EACH_ASSET>.
-> Use the exact asset names, types, and values from §10.
+> Create each Orchestrator asset listed in §15: <LIST_EACH_ASSET>.
+> Use the exact asset names, types, and values from §15.
 
-### Task 4 — Configure Integration Service connectors
+#### Task 4 — Configure Integration Service connectors
 **Dependencies:** none
 **References:** §9 Application Inventory (rows flagged as Integration Service)
 
 > Configure each Integration Service connector listed in §9. Skip this task if no connectors are flagged.
 
-### Task 5..N-2 — Implement workflows
+#### Task 5..N-2 — Implement workflows
 **Dependencies:** Tasks 1, 2
 **References:** §11 Workflow Inventory → specific row, §3 Detailed Process Steps → specific steps
 
-<!-- One task per workflow in the inventory. Each task is a self-contained prompt. -->
+> **One task per workflow in the inventory.** Each task is a self-contained prompt.
 
 > Implement `<WORKFLOW_FILE>` per §11 Workflow Inventory row #<N>.
 > This workflow covers PDD steps <STEP_NUMBERS>. Read §3 Step Summary rows for those steps.
@@ -340,7 +568,7 @@ public enum <EnumName>
 > Use the exact data field names from §5 Data Definitions.
 > Handle errors per §7 and §8 for the steps covered by this workflow.
 
-### Task N-1 — Implement exception and error handling
+#### Task N-1 — Implement exception and error handling
 **Dependencies:** All workflow tasks
 **References:** §7 Exception Handling, §8 Error Handling
 
@@ -348,14 +576,14 @@ public enum <EnumName>
 > Each exception/error row in §7 and §8 specifies the trigger step, detection condition, and required action.
 > Implement exactly what the SDD specifies — do not add unspecified handlers.
 
-### Task N — Implement test suite
+#### Task N — Implement test suite
 **Dependencies:** All workflow tasks
-**References:** §13 Testing Strategy
+**References:** §16 Testing Strategy
 
-> Build the test suite per §13. Create tests for:
-> - The canonical test case (§13 Canonical Test Case) — verify happy path end-to-end
-> - Each exception test case (§13 Exception Test Cases) — verify each business exception triggers correctly
-> - Each testable system error scenario (§13 System Error Scenarios)
+> Build the test suite per §16. Create tests for:
+> - The canonical test case (§16 Canonical Test Case) — verify happy path end-to-end
+> - Each exception test case (§16 Exception Test Cases) — verify each business exception triggers correctly
+> - Each testable system error scenario (§16 System Error Scenarios)
 
 ---
 

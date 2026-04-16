@@ -95,6 +95,19 @@ Apply the [Product Selection Guide](product-selection-guide.md) decision tree. P
 - **Reasoning** — bullet points mapping PDD signals to the chosen product
 - **Alternatives considered** — rejected products and why
 
+### Step 4.5: Run Project Decomposition (RPA only)
+
+If the primary product is **RPA Process**, run Level 2.5 (Project Decomposition) from the [Product Selection Guide](product-selection-guide.md). This determines whether the SDD describes a single project or a Master Project with multiple queue-connected sub-projects.
+
+1. Evaluate the 6 decomposition signals against the PDD data extracted in Step 2.
+2. If 2+ signals match → **Master Project**. Select the decomposition pattern (Dispatcher/Performer, Dispatcher/DU/Output, etc.).
+3. If 0-1 signals match → **Single Project**.
+4. For Master Project: produce the sub-projects table, queue schema, and framework assignments per the Level 2.5 output format.
+
+This decision is critical — it determines the entire §10-§12 structure of the RPA template. Getting it wrong means rewriting the SDD.
+
+Skip this step for RPA Library, RPA Test Automation, and all non-RPA products.
+
 ### Step 5: Check for Agent/Coded App Gaps
 
 If the primary product is **Agents** or **Coded Apps** AND required product-specific information is missing from the PDD, follow the Gap Handling flow in the [Product Selection Guide](product-selection-guide.md). All questions use the numbered-choice format.
@@ -135,6 +148,11 @@ Present to the user:
 **Alternatives considered:**
 - <REJECTED_PRODUCT> — rejected because <REASON>
 
+## Project Architecture (RPA only)
+**Pattern:** <SINGLE_PROJECT / MASTER_PROJECT_PATTERN_NAME>
+**Sub-projects:** <PROJECT_TABLE_WITH_ROLES_FRAMEWORKS_QUEUES — or "N/A" for single project>
+**Decomposition signals matched:** <LIST_MATCHED_SIGNALS — or "0-1 (single project)">
+
 ### Clarifying Questions
 <NUMBERED_QUESTIONS_IF_ANY>
 ```
@@ -154,10 +172,13 @@ Based on the primary product selected in Phase 1, load the matching template fro
 The architectural core sections differ per template. For each product, generate these sections in Phase 2:
 
 **RPA (Process / Library / Test Automation):**
-- §5 Data Definitions (C# records or dictionary tables per §12 Implementation Mode)
-- §9 Application Inventory (flag Integration Service connectors)
-- §11 Project Structure (project type, folder layout, workflow inventory)
-- §12 Implementation Mode (XAML / Coded / Hybrid — apply Level 2 from product-selection-guide)
+- §5 Data Definitions (C# records or dictionary tables per §13 Implementation Mode)
+- §9 Application Inventory (flag Integration Service connectors, specify email protocol)
+- §10 Master Project Architecture (apply Level 2.5 from product-selection-guide — Single vs Master Project, sub-projects, queue schema)
+- §11 Project Structure (per sub-project if Master Project: project type, framework, folder layout, workflow inventory)
+- §12 Queue Architecture (Master Project only — queue definitions, item schemas, processing rules)
+- §13 Implementation Mode (XAML / Coded / Hybrid — apply Level 2 from product-selection-guide)
+- §14 Packages (infer NuGet packages from §9 Application Inventory and process steps)
 
 **Maestro Flow:**
 - §3 Nodes Inventory (with node type per node)
@@ -202,7 +223,8 @@ Each template has a primary inventory table. Map PDD steps to units:
 
 | Product | Primary Inventory | Unit Type |
 |---|---|---|
-| RPA | Workflow Inventory | `.xaml` or `.cs` workflow files |
+| RPA (Single Project) | Workflow Inventory | `.xaml` or `.cs` workflow files |
+| RPA (Master Project) | Workflow Inventory **per sub-project** | `.xaml` or `.cs` workflow files, grouped by sub-project |
 | Flow | Nodes Inventory | Flow nodes |
 | Case | Tasks Grid | Tasks per lane/index |
 | Agents | Tools | Python functions, RPA/API workflow bindings |
@@ -210,6 +232,11 @@ Each template has a primary inventory table. Map PDD steps to units:
 | API Workflows | Execution Flow steps | Activities (HTTP, Connector, Script) |
 
 Each unit must have: **a concrete responsibility, specific PDD step references, and defined inputs/outputs.**
+
+**For RPA Master Project:** decompose in two passes:
+1. First, assign each PDD step to a sub-project based on the §10 sub-projects table (each sub-project lists its PDD steps).
+2. Then, within each sub-project, decompose the assigned steps into workflow files.
+3. For REFramework sub-projects, the main workflows (Init, GetTransactionData, Process, SetTransactionStatus) come from the framework — only the Process-specific workflows go in the inventory.
 
 ### Step 4: Flag Integrated Components
 
@@ -252,8 +279,8 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - Compliance Constraints (Case)
 - Roles & RACI Matrix (Case)
 - Evaluation Criteria (Agents)
-- Testing Strategy
-- Implementation Plan (final section — task breakdown)
+- Testing Strategy (including End-to-End Pipeline Test for RPA Master Projects)
+- Implementation Plan (final section — task breakdown, using Master Project or Single Project plan per §10)
 
 ### Step 1.5: Resolve SME Review Items
 
@@ -294,7 +321,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > These items are marked `[SME REVIEW]` in the document. The automation can be built with defaults, but these must be verified before production.
 ```
 
-3. **Target SDD length: 300-800 lines of markdown.** For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
+3. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
 4. Write to `<PROCESS_NAME_KEBAB_CASE>-sdd.md` in the current working directory.
 5. Output a summary in the conversation:
 

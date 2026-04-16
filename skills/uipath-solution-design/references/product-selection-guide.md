@@ -175,6 +175,83 @@ Applies only when Level 1 selected RPA Process, Library, or Test Automation. Ski
 
 The skill that builds the workflows owns the final, detailed decision — this is a directional recommendation.
 
+## Level 2.5 — Project Decomposition (RPA only)
+
+Applies only when Level 1 selected RPA Process. Skip for Library, Test Automation, and all non-RPA products.
+
+Most real-world RPA processes require multiple projects connected by Orchestrator queues — not a single monolithic project. This decision determines whether the SDD describes one project or a **Master Project** (multiple queue-connected sub-projects).
+
+### Decision table
+
+Walk through the signals. **If 2 or more signals match → Master Project.** If 0-1 match → Single Project.
+
+| # | Signal in PDD | What it means |
+|---|---|---|
+| 1 | Process has distinct stages with different characteristics (e.g., email ingestion vs. data extraction vs. output generation) | Each stage becomes a separate project that can be developed, tested, and scaled independently |
+| 2 | Transactional processing where items can fail independently and must be retried per item | Queue-based retry requires Performer projects consuming from Orchestrator queues using REFramework |
+| 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU + validation is a distinct processing stage that benefits from its own project and queue |
+| 4 | Different processing speeds per stage (e.g., fast email download vs. slow DU extraction) | Independent projects allow different robot counts per stage for throughput balancing |
+| 5 | Reporting requirements (Excel report, email summary, dashboard data) | Dedicated Reporting project reads from a reporting queue populated by all other stages |
+| 6 | Multiple output channels from a single input (e.g., XML to MQ + files to FTP + report to email) | Separate Performer per output channel avoids coupling unrelated integrations |
+
+### Common decomposition patterns
+
+#### Dispatcher / Performer (most common)
+
+Use when the process collects items from a source (email, folder, spreadsheet, API) and then processes each item transactionally.
+
+```text
+[Dispatcher] → Queue → [Performer] → Reporting Queue → [Reporting]
+```
+
+- **Dispatcher**: collects items, creates queue items with all required data. Runs as a simple sequence (no REFramework).
+- **Performer**: processes one transaction item at a time. Uses **REFramework** for retry, logging, and state management.
+- **Reporting** (optional): reads from a reporting queue, generates reports. Runs on a schedule or after Performer completes.
+
+#### Dispatcher / DU Performer / Output Performer
+
+Use when the process has Document Understanding with human validation as a middle stage.
+
+```text
+[Dispatcher] → DU Queue → [DU Performer] → Output Queue → [Output Performer]
+                                ↓                              ↓
+                          Action Centre                  Reporting Queue
+                                                               ↓
+                                                         [Reporting]
+```
+
+- **Dispatcher**: downloads emails/files, creates queue items.
+- **DU Performer**: runs DU extraction, sends low-confidence items to Action Centre, pushes validated results to the output queue. Uses REFramework.
+- **Output Performer**: generates output (XML, CSV, API calls), uploads to target systems. Uses REFramework.
+- **Reporting**: aggregates outcomes from all stages.
+
+### Output of this decision
+
+Produce:
+
+1. **Pattern**: Single Project or Master Project (name the pattern: Dispatcher/Performer, Dispatcher/DU/Output, etc.)
+2. **Sub-projects** (if Master Project): table with project name, role, input queue, output queue, framework choice
+3. **Queue schema**: queue names, which project produces, which consumes, and what data fields go in `SpecificContent`
+
+| # | Project Name | Role | Framework | Input Queue | Output Queue |
+|---|---|---|---|---|---|
+| 1 | `<NAME>_Dispatcher` | Collect items from source, dispatch to processing queue | Sequence | — | `<QUEUE_1>` |
+| 2 | `<NAME>_Performer` | Process each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
+| 3 | `<NAME>_Reporting` | Generate reports from processing outcomes | Sequence | `<REPORTING_QUEUE>` | — |
+
+### REFramework guidance
+
+REFramework is the standard UiPath framework for transactional processes. It provides: Init → Get Transaction → Process Transaction → End Process states, with built-in retry, exception handling, and logging.
+
+| Project Role | Framework | Why |
+|---|---|---|
+| Performer (queue-based) | **REFramework** | Built-in transaction retry, state management, exception routing |
+| Dispatcher (collects and pushes items) | **Sequence** | Simple linear flow — no transaction retry needed |
+| Reporting (reads queue, generates output) | **Sequence** or **REFramework** | Sequence if simple aggregation; REFramework if items can fail independently |
+| Single Project (no queues) | **Sequence** or **REFramework** | REFramework if processing multiple items with per-item retry; Sequence if simple linear |
+
+When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.
+
 ## Level 3 — Capability Add-ons
 
 These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section and create implementation tasks that will route to the correct skill.
@@ -265,6 +342,12 @@ In the Phase 1 summary, include a dedicated section:
 **Alternatives considered:**
 - <REJECTED_PRODUCT> — rejected because <REASON>
 - ...
+
+## Project Architecture (RPA only)
+**Pattern:** <SINGLE_PROJECT / MASTER_PROJECT_PATTERN_NAME>
+**Sub-projects:** <PROJECT_TABLE_OR_N/A>
+**Queue schema:** <QUEUE_TABLE_OR_N/A>
+**Decomposition signals matched:** <LIST_MATCHED_SIGNALS_FROM_LEVEL_2.5>
 ```
 
 Wait for user confirmation before proceeding to Phase 2. If the user disagrees with the primary, re-run the decision tree with their preference.
