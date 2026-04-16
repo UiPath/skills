@@ -17,6 +17,7 @@ Runs ``uip flow debug --output json`` and asserts:
 
 from __future__ import annotations
 
+import atexit
 import glob
 import json
 import os
@@ -48,6 +49,7 @@ def run_debug(
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout[:500]}")
     payload = data.get("Data") or {}
+    _register_solution_cleanup(payload.get("solutionId"))
     status = payload.get("finalStatus")
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout[:1000]}")
@@ -196,6 +198,36 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
 
 
 # ── Internals ───────────────────────────────────────────────────────────────
+
+
+_solutions_to_cleanup: set[str] = set()
+_cleanup_registered = False
+
+
+def _register_solution_cleanup(solution_id: str | None) -> None:
+    """Queue a Studio Web solution for deletion at process exit.
+
+    ``flow debug`` creates/overwrites a solution on Studio Web each run. Tests
+    that invoke it accumulate solutions in the target tenant; best-effort
+    cleanup keeps the tenant tidy without failing the test if deletion fails.
+    """
+    global _cleanup_registered
+    if not solution_id:
+        return
+    _solutions_to_cleanup.add(solution_id)
+    if not _cleanup_registered:
+        atexit.register(_cleanup_solutions)
+        _cleanup_registered = True
+
+
+def _cleanup_solutions() -> None:
+    for sid in _solutions_to_cleanup:
+        subprocess.run(
+            ["uip", "solution", "delete", sid, "--output", "json"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
 
 
 def _parse_json(stdout: str) -> dict | None:
