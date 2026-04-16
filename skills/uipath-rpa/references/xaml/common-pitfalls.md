@@ -273,7 +273,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `UiPath.UIAutomation.Activities` | `UiPath.UIAutomationNext.Activities` | Modern UI activities use "Next" namespace |
 | `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
 
-Use `uip rpa get-default-activity-xaml --use-studio` to get correct xmlns declarations — never guess namespace mappings.
+Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
 
 ## Portable vs Windows Framework Limitations
 
@@ -314,9 +314,9 @@ Use `uip rpa get-default-activity-xaml --use-studio` to get correct xmlns declar
 2. Remove attributes that don't exist in the target version
 3. Cap `Version` attributes to the maximum supported by the target package
 4. Add `<AssemblyReference>netstandard</AssemblyReference>` if type resolution errors persist
-5. Use `uip rpa get-errors --use-studio` to validate after changes
+5. Use `uip rpa get-errors` to validate after changes
 
-**Prevention:** When using `uip rpa get-default-activity-xaml --use-studio`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
+**Prevention:** When using `uip rpa get-default-activity-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
 
 ## Expression Language Mismatch
 
@@ -354,7 +354,7 @@ Common validation error: `"The type 'Dictionary<,>' is defined in an assembly th
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages --use-studio`.
+**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages`.
 
 ## Invalid Use of `x:` Prefix for Non-Builtin CLR Types
 
@@ -524,7 +524,7 @@ The same registration rules apply to `<upa:ProcessDiagram>` and its node types (
 - `PropertyName="{x:Null}"` explicitly sets a property to null — this is serialized and persisted
 - Omitting a property entirely means "use the default value" — which may or may not be null
 - Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
-- When `uip rpa get-default-activity-xaml --use-studio` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
+- When `uip rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
 
 ## Literal Curly Braces in Attribute Values
 
@@ -574,7 +574,7 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 ### `get-errors --file-path` requires relative paths
 
-The `--file-path` parameter of `uip rpa get-errors --use-studio` must be a path **relative to the project directory**:
+The `--file-path` parameter of `uip rpa get-errors` must be a path **relative to the project directory**:
 - Correct: `--file-path "Workflows/SendEmail.xaml"`
 - Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
 
@@ -587,9 +587,9 @@ All `uip rpa` commands default to the current working directory as the project r
 ### Studio IPC connection failures
 
 `uip rpa` commands communicate with Studio Desktop via IPC. If Studio is not running, not responding, or has no project open, commands will fail with connection errors. Recovery steps:
-1. `uip rpa list-instances --output json --use-studio` — check if Studio is running
+1. `uip rpa list-instances --output json` — check if Studio is running
 2. `uip rpa start-studio` — start Studio if not running
-3. `uip rpa open-project --project-dir "..." --use-studio` — open the project if Studio has no project loaded
+3. `uip rpa open-project --project-dir "..."` — open the project if Studio has no project loaded
 4. If Studio is running but unresponsive, the user may need to restart it manually
 
 ### CLI output format for parsing

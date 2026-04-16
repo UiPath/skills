@@ -11,13 +11,11 @@
    Note which windows (w-refs and titles) are already present.
 2. **Run the workflow:**
    ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
-   ```
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json   ```
    If the run fails, [`uia-selector-recovery.md`](uia-selector-recovery.md) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **stop the debug session:**
    ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json --use-studio
-   ```
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json   ```
 4. **List windows again:**
    ```bash
    servo targets

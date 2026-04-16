@@ -87,8 +87,8 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 ### Common Rules (Both Modes)
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
-2. **ALWAYS use `uip rpa create-project --use-studio`** to create new projects — never write `project.json` or scaffolding manually.
-3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
+2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
+3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
@@ -263,9 +263,7 @@ Check `project.json` → `dependencies` for the required package.
 - **If absent** → install:
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json --use-studio
-uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output jsonuip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json```
 
 ### Step 2 — Find activity docs (priority order)
 
@@ -296,7 +294,7 @@ When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
 2. **Validation status** — whether all files passed validation (or remaining errors)
 3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
-4. **How to run** — the `uip rpa run-file --use-studio` command (if applicable)
+4. **How to run** — the `uip rpa run-file` command (if applicable)
 5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
 6. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."
 

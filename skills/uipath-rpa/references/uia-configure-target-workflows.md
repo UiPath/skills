@@ -48,11 +48,9 @@ The skill will search the Object Repository for existing matches before creating
 
 ```bash
 # 1. Indicate a screen (creates App automatically if none exists)
-uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
+uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json
 # 2. Indicate elements on that screen (use --parent-id from step 1 result's Data.reference)
-uip rpa indicate-element --name "<ElementName>" --activity-class-name "<TypeInto|Click|GetText|...>" --parent-id "<screen-reference>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
+uip rpa indicate-element --name "<ElementName>" --activity-class-name "<TypeInto|Click|GetText|...>" --parent-id "<screen-reference>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 Both commands return `{ "Data": { "reference": "..." } }` — use that reference ID to retrieve XAML snippets and for OR lookups. After indication, Studio regenerates Object Repository files. For coded workflows, re-read `ObjectRepository.cs` to get descriptor paths. For XAML workflows, use the reference IDs to retrieve XAML snippets and embed them into activities as the workflow is created — see **Embedding OR Entries in XAML Activities** below.

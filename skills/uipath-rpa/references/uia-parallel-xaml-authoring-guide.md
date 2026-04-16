@@ -61,8 +61,7 @@
      --file-path "<XAML_FILE_PATH>" \
      --project-dir "<PROJECT_DIR>" \
      --output json \
-     --use-studio
-   ```
+       ```
 
 5. **Self-repair** (D-10): If `get-errors` returns errors, fix and re-run. Max 3 fix cycles. After 3 attempts, stop and report remaining errors to the main conversation. **If the CLI itself times out** (Studio unresponsive, validation hung), the agent must report `"Validation unavailable — Studio not responding; file written but unverified."` and exit — never hang.
 
@@ -90,8 +89,7 @@
      --file-path "<XAML_FILE_PATH>" \
      --project-dir "<PROJECT_DIR>" \
      --output json \
-     --use-studio
-   ```
+       ```
 
 5. **Self-repair** (D-10): Max 3 fix cycles, then report to main conversation. If the CLI times out, the agent reports the timeout explicitly — never hangs.
 
@@ -148,8 +146,7 @@ These three rules govern what the orchestrator may and may not do while a `Write
      --file-path "<XAML_FILE_PATH>" \
      --project-dir "<PROJECT_DIR>" \
      --output json \
-     --use-studio
-   ```
+       ```
    Do NOT run `run-file` as a validation step — the target application state is not guaranteed to be in the correct starting state after the pipeline.
 
 2. **Add entry point to `project.json`.** Add the new workflow to the `entryPoints[]` array:
@@ -251,8 +248,7 @@ Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
    timeout 60000 uip rpa get-default-activity-xaml \
      --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard" \
      --project-dir "<PROJECT_DIR>" \
-     --output json --use-studio
-   ```
+     --output json   ```
    Use the returned XAML as-is for the NApplicationCard element.
 4. Fetch the TargetApp XAML for the registered screen:
    ```bash
@@ -274,8 +270,7 @@ Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
 
 After writing the file:
 ```bash
-timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
 If it returns errors, fix and re-validate. Max 3 fix attempts. If the CLI times out (Studio unresponsive), report: "Validation unavailable — Studio not responding; file written but unverified." Do not hang.
 
 ## Placeholders
@@ -311,8 +306,7 @@ Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g
    timeout 60000 uip rpa get-default-activity-xaml \
      --activity-class-name "<class>" \
      --project-dir "<PROJECT_DIR>" \
-     --output json --use-studio
-   ```
+     --output json   ```
    Use the returned XAML as the structural base for every instance of that activity type.
 
 2. Fetch all OR element XAML snippets in a single call:
@@ -340,8 +334,7 @@ For Delay with VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" />`.
 
 After editing:
 ```bash
-timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
 Fix on error, max 3 attempts. If CLI times out, report the timeout explicitly — do NOT hang.
 
 ## Placeholders
