@@ -200,6 +200,7 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 
 **Correct:**
 ```xml
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml" />
 <ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml" />
 ```
 
@@ -209,7 +210,7 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 <ui:InvokeWorkflowFile WorkflowFileName="[&quot;Workflows\ProcessData.xaml&quot;]" />
 ```
 
-The path is relative to the project root directory. Use backslashes for subfolder paths (e.g., `Workflows\SendEmail.xaml`).
+The path is relative to the project root directory. Use backslashes for subfolder paths (e.g., `Workflows\SendEmail.xaml`). If the file is at the project root, use just the filename (e.g., `ResetSpotify.xaml`).
 
 ### Arguments Must NOT Use a Dictionary Wrapper
 
@@ -219,12 +220,35 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 
 **Correct — direct child elements (what Studio actually serializes):**
 ```xml
+<!-- Literal string values -->
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
+    DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
+  <ui:InvokeWorkflowFile.Arguments>
+    <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+  </ui:InvokeWorkflowFile.Arguments>
+</ui:InvokeWorkflowFile>
+
+<!-- Variable bindings (VB project — brackets are VB expressions) -->
 <ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml"
-    DisplayName="Process Data">
+    DisplayName="Process Data" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
     <InArgument x:TypeArguments="x:String" x:Key="in_Name">[nameVar]</InArgument>
     <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[resultVar]</OutArgument>
     <InOutArgument x:TypeArguments="x:Int32" x:Key="io_Count">[countVar]</InOutArgument>
+  </ui:InvokeWorkflowFile.Arguments>
+</ui:InvokeWorkflowFile>
+
+<!-- Variable bindings (C# project — use CSharpValue for expressions) -->
+<ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml"
+    DisplayName="Process Data" UnSafe="False">
+  <ui:InvokeWorkflowFile.Arguments>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Name">
+      <CSharpValue x:TypeArguments="x:String">nameVar</CSharpValue>
+    </InArgument>
+    <OutArgument x:TypeArguments="x:String" x:Key="out_Result">
+      <CSharpReference x:TypeArguments="x:String">resultVar</CSharpReference>
+    </OutArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
@@ -246,7 +270,9 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 1. Each argument key (`x:Key`) must match the argument name defined in the callee workflow's `x:Members` exactly (case-sensitive)
 2. Use the correct argument direction: `InArgument` for `in_*`, `OutArgument` for `out_*`, `InOutArgument` for `io_*`
 3. The `x:TypeArguments` must match the callee's argument type
-4. Values in brackets (e.g., `[nameVar]`) are expression bindings to variables in the caller workflow
+4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
+5. For variable bindings in **VB projects**, use bracket expressions: `[variableName]`
+6. For variable bindings in **C# projects**, use `<CSharpValue>` for In/InOut arguments and `<CSharpReference>` for Out/InOut arguments
 
 ## InvokeCode Language Property
 
