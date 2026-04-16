@@ -43,13 +43,16 @@ def run_debug(
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    # Parse and register cleanup *before* any early exit: a faulted/errored
+    # debug run still uploads a solution to Studio Web that needs deleting.
+    data = _parse_json(r.stdout)
+    if data is not None:
+        _register_solution_cleanup((data.get("Data") or {}).get("solutionId"))
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\n{r.stderr[:500]}")
-    data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from flow debug\n{r.stdout[:500]}")
     payload = data.get("Data") or {}
-    _register_solution_cleanup(payload.get("solutionId"))
     status = payload.get("finalStatus")
     if status != "Completed":
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout[:1000]}")
