@@ -169,9 +169,10 @@ The architectural core sections differ per template. For each product, generate 
 **Case Management:**
 - §3 Stages
 - §4 Tasks Grid (per stage, lanes × index)
-- §8 Task Type Registry (RPA / AGENT / API_WORKFLOW / CONNECTOR / HITL)
-- §9 Integrated Components
-- §10 Project Structure
+- §7 Data Definitions (case data objects, supporting objects, data flow)
+- §13 Task Type Registry (RPA / AGENT / API_WORKFLOW / CONNECTOR / HITL)
+- §14 Integrated Components
+- §15 Project Structure
 
 **Agents:**
 - §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function)
@@ -244,12 +245,13 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 **Phase 3 produces:** All remaining sections — typically:
 - Business Rules (RPA, Case)
 - Value Mappings (RPA)
-- Exception / Error Handling
+- Exception / Error Handling (all)
 - Credentials & Assets (RPA)
 - Triggers (Flow)
 - SLA Rules & Escalations (Case)
+- Compliance Constraints (Case)
+- Roles & RACI Matrix (Case)
 - Evaluation Criteria (Agents)
-- Error Handling (all)
 - Testing Strategy
 - Implementation Plan (final section — task breakdown)
 

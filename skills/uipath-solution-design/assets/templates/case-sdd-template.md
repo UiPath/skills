@@ -2,7 +2,7 @@
 
 <!-- Use this template when the primary product is Case Management.
      Case Management organizes work into stages with tasks, SLA rules, and escalation.
-     Phase 2 sections: §3, §4, §8, §9, §10. Phase 3 sections: all others. -->
+     Phase 2 sections: §3, §4, §7, §13, §14, §15. Phase 3 sections: all others. -->
 
 ---
 
@@ -21,13 +21,18 @@
 3. Stages
 4. Tasks Grid
 5. Entry / Exit Conditions
-6. SLA Rules
-7. Escalations
-8. Task Type Registry
-9. Integrated Components
-10. Project Structure
-11. Testing Strategy
-12. Implementation Plan
+6. Business Rules
+7. Data Definitions
+8. SLA Rules
+9. Escalations
+10. Exception Handling
+11. Compliance Constraints
+12. Roles & RACI Matrix
+13. Task Type Registry
+14. Integrated Components
+15. Project Structure
+16. Testing Strategy
+17. Implementation Plan
 
 ---
 
@@ -122,7 +127,54 @@ flowchart LR
 
 ---
 
-## 6. SLA Rules
+## 6. Business Rules
+
+<!-- Extract every business rule from the PDD. Assign IDs if the PDD does not.
+     Include the regulatory authority when the rule has a legal or compliance basis.
+     Rules must reference the task(s) where they are enforced — this links rules to implementation. -->
+
+| ID | Rule Name | Trigger Point | Condition | Action | Affected Tasks | Source / Authority |
+|---|---|---|---|---|---|---|
+| BR-01 | <RULE_NAME> | <STAGE_AND_TASK> | <WHEN_DOES_IT_APPLY> | <WHAT_TO_DO> | <TASK_NAMES_FROM_§4> | <REGULATORY_CITATION_OR_BUSINESS_SOURCE> |
+
+---
+
+## 7. Data Definitions
+
+<!-- Define the data objects that flow through the case lifecycle.
+     Use JSON schema style for Case Management (case data is JSON-based).
+     Keep objects flat — no deep nesting. Max 15 fields per object.
+     Default to `string` unless the PDD specifies numeric, date, or boolean operations. -->
+
+### Case Data Object
+
+<!-- The primary case record that persists across all stages. -->
+
+| Field | Type | Source | Stage Written | Description | Sensitivity |
+|---|---|---|---|---|---|
+| <FIELD_NAME> | <string / number / boolean / date> | <SOURCE_SYSTEM_OR_STAGE> | <STAGE_NUMBER> | <DESCRIPTION> | <PHI / PII / Internal / Public> |
+
+### Supporting Data Objects
+
+<!-- Secondary objects created or consumed during the case lifecycle (e.g., notification records, compliance forms, care plans). -->
+
+#### <OBJECT_NAME>
+
+| Field | Type | Description |
+|---|---|---|
+| <FIELD_NAME> | <TYPE> | <DESCRIPTION> |
+
+### Data Flow
+
+<!-- How data moves between stages and external systems. -->
+
+| From | To | Data | Trigger | Frequency |
+|---|---|---|---|---|
+| <SOURCE_STAGE_OR_SYSTEM> | <TARGET_STAGE_OR_SYSTEM> | <DATA_FIELDS> | <EVENT> | <PER_CASE / BATCH / SCHEDULED> |
+
+---
+
+## 8. SLA Rules
 
 | SLA ID | Applies To | Type | Duration / Condition | At-Risk Threshold |
 |---|---|---|---|---|
@@ -130,7 +182,7 @@ flowchart LR
 
 ---
 
-## 7. Escalations
+## 9. Escalations
 
 | Escalation ID | Trigger | Action | Notify |
 |---|---|---|---|
@@ -138,7 +190,66 @@ flowchart LR
 
 ---
 
-## 8. Task Type Registry
+## 10. Exception Handling
+
+<!-- Business exceptions are anticipated process-level deviations (incomplete docs, duplicates, out-of-network).
+     System errors are infrastructure failures (system outage, connector timeout, auth failure).
+     Separate from §9 Escalations, which cover SLA-triggered actions. -->
+
+### Business Exceptions
+
+| ID | Exception Name | Trigger Task | Trigger Condition | Resolution | Escalation Path | SLA Impact |
+|---|---|---|---|---|---|---|
+| BX-01 | <EXCEPTION_NAME> | <TASK_NAME_FROM_§4> | <HOW_TO_DETECT> | <WHAT_TO_DO> | <WHO_TO_ESCALATE_TO> | <SLA_IMPACT_DESCRIPTION> |
+
+**Default handler:** For any unanticipated business exception, <DEFAULT_ACTION>.
+
+### System Errors
+
+| ID | Error Name | Trigger Task | Trigger Condition | Retry Policy | Action |
+|---|---|---|---|---|---|
+| SE-01 | <ERROR_NAME> | <TASK_NAME_FROM_§4> | <HOW_TO_DETECT> | <RETRY_COUNT_AND_BACKOFF> | <WHAT_TO_DO> |
+
+**Default handler:** For any unanticipated system error, <DEFAULT_ACTION>.
+
+---
+
+## 11. Compliance Constraints
+
+<!-- Regulatory and compliance requirements that constrain implementation decisions.
+     Only include constraints that directly affect how tasks are built or configured.
+     Reference the task or stage where each constraint is enforced. -->
+
+| Regulation / Standard | Applies To | Constraint | Implementation Impact |
+|---|---|---|---|
+| <REGULATION_NAME> | <STAGE_OR_TASK> | <WHAT_IS_REQUIRED_OR_PROHIBITED> | <HOW_THIS_CONSTRAINS_THE_BUILD> |
+
+### Audit & Traceability Requirements
+
+- <AUDIT_REQUIREMENT_1>
+
+---
+
+## 12. Roles & RACI Matrix
+
+### Role Definitions
+
+| Role | Primary Responsibilities | Key Decisions | Classification |
+|---|---|---|---|
+| <ROLE_NAME> | <RESPONSIBILITIES> | <DECISIONS> | <INTERNAL / EXTERNAL / REGULATORY> |
+
+### RACI Matrix
+
+<!-- R = Responsible, A = Accountable, C = Consulted, I = Informed.
+     Map roles to stages. Use this to configure task assignments and notification targets. -->
+
+| Stage | <ROLE_1> | <ROLE_2> | <ROLE_3> | <ROLE_4> |
+|---|---|---|---|---|
+| <STAGE_NAME> | <R/A/C/I/—> | <R/A/C/I/—> | <R/A/C/I/—> | <R/A/C/I/—> |
+
+---
+
+## 13. Task Type Registry
 
 <!-- Each task maps to a taskTypeId from the registry. Registry resolution happens at implementation time;
      this section lists the *kinds* of tasks needed so the registry query can target them. -->
@@ -154,7 +265,7 @@ flowchart LR
 
 ---
 
-## 9. Integrated Components
+## 14. Integrated Components
 
 ### RPA Processes Invoked
 
@@ -190,7 +301,7 @@ flowchart LR
 
 ---
 
-## 10. Project Structure
+## 15. Project Structure
 
 ```text
 <CASE_PROJECT_NAME>/
@@ -204,7 +315,7 @@ flowchart LR
 
 ---
 
-## 11. Testing Strategy
+## 16. Testing Strategy
 
 ### Canonical Test Case
 
@@ -216,15 +327,29 @@ flowchart LR
 
 1. <ASSERTION_1>
 
+### Exception Test Cases
+
+| Exception ID | Test Setup | Trigger | Expected Outcome |
+|---|---|---|---|
+| BX-01 | <HOW_TO_SET_UP> | <WHAT_TRIGGERS_IT> | <EXPECTED_BEHAVIOR> |
+
 ### SLA Breach Scenarios
 
 | Scenario | Setup | Expected Escalation |
 |---|---|---|
 | <SCENARIO> | <SETUP> | <EXPECTED> |
 
+### Acceptance Criteria
+
+<!-- Derived from PDD KPIs. Each criterion defines a measurable threshold the implementation must meet. -->
+
+| # | Criterion | Measurement | Threshold |
+|---|---|---|---|
+| 1 | <CRITERION_NAME> | <HOW_MEASURED> | <PASS_THRESHOLD> |
+
 ---
 
-## 12. Implementation Plan
+## 17. Implementation Plan
 
 > **Instructions for the implementing agent:**
 > Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
@@ -239,39 +364,48 @@ flowchart LR
 
 ### Task 2 — Resolve registry taskTypeIds
 **Dependencies:** Task 1
-**References:** §8 Task Type Registry
+**References:** §13 Task Type Registry
 
-> Match each task name from §8 to a taskTypeId in the registry. Query the registry for each task type kind listed (RPA, AGENT, API_WORKFLOW, CONNECTOR_ACTIVITY, CONNECTOR_TRIGGER, HITL).
+> Match each task name from §13 to a taskTypeId in the registry. Query the registry for each task type kind listed (RPA, AGENT, API_WORKFLOW, CONNECTOR_ACTIVITY, CONNECTOR_TRIGGER, HITL).
 
 ### Task 3 — Create integrated components
 **Dependencies:** none
-**References:** §9 Integrated Components
+**References:** §14 Integrated Components
 
-> For each RPA process in §9: create the RPA project (this will trigger the RPA skill).
-> For each Agent in §9: create the agent project.
-> For each API Workflow in §9: create the API Workflow.
-> For each connector in §9: configure the Integration Service connector.
+> For each RPA process in §14: create the RPA project (this will trigger the RPA skill).
+> For each Agent in §14: create the agent project.
+> For each API Workflow in §14: create the API Workflow.
+> For each connector in §14: configure the Integration Service connector.
 > Skip any category that has no entries.
 
 ### Task 4 — Build caseplan.json
 **Dependencies:** Tasks 2, 3
-**References:** §3 Stages, §4 Tasks Grid, §5 Entry/Exit Conditions, §8 Task Type Registry
+**References:** §3 Stages, §4 Tasks Grid, §5 Entry/Exit Conditions, §6 Business Rules, §7 Data Definitions, §13 Task Type Registry
 
 > Generate the full caseplan.json from the resolved registry entries and the SDD's stage/task/condition definitions.
 > Use the exact stage names, task grid layout (lanes × index), and entry/exit conditions from §3-§5.
+> Implement business rules from §6 at the task and stage boundaries specified.
+> Use data field names from §7 for case data schema.
 
 ### Task 5 — Configure SLA rules and escalations
 **Dependencies:** Task 4
-**References:** §6 SLA Rules, §7 Escalations
+**References:** §8 SLA Rules, §9 Escalations
 
-> Wire up SLA rules per §6: each SLA row specifies scope, type, duration, and at-risk threshold.
-> Wire up escalation rules per §7: each row specifies trigger, action, and notification target.
+> Wire up SLA rules per §8: each SLA row specifies scope, type, duration, and at-risk threshold.
+> Wire up escalation rules per §9: each row specifies trigger, action, and notification target.
 
-### Task 6 — Deploy and test
-**Dependencies:** Task 5
-**References:** §11 Testing Strategy
+### Task 6 — Implement exception and error handling
+**Dependencies:** Task 4
+**References:** §10 Exception Handling
 
-> Deploy the case plan. Run the canonical test case from §11. Verify happy path assertions and SLA breach scenarios.
+> Wire up business exception handlers per §10: each row specifies trigger task, detection condition, resolution, and SLA impact.
+> Wire up system error handlers per §10: each row specifies trigger task, detection condition, retry policy, and fallback action.
+
+### Task 7 — Deploy and test
+**Dependencies:** Tasks 5, 6
+**References:** §16 Testing Strategy
+
+> Deploy the case plan. Run the canonical test case from §16. Verify happy path assertions, exception test cases, and SLA breach scenarios. Validate acceptance criteria thresholds.
 
 ---
 

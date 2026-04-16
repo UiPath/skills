@@ -171,9 +171,8 @@ success_criteria:
       - "Active Directory"
       - "SharePoint"
       - "Outlook"
-      - "FB60"
     weight: 1.5
-    pass_threshold: 0.75
+    pass_threshold: 1.0
 
   - type: file_contains
     description: "SDD preserves exception and error IDs"
