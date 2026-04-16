@@ -130,30 +130,28 @@ Data-driven testing executes the same test case multiple times with different in
 | **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI: `add-test-data-variation` |
 | **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution | CLI: `add-test-data-queue` |
 | **Data Service** | UiPath Automation Cloud | Centralized, secure, shared test data | CLI: `add-test-data-entity` |
-| **Excel/CSV files** | Local file system | Large data sets, familiar spreadsheet format | Studio GUI only |
-| **Auto-generated** | Studio generates at design time | Quick smoke tests with synthetic values | Studio GUI only |
 
 > For coded data-driven tests using default parameters, see [coded/operations-guide.md § Add a Test Case File](coded/operations-guide.md).
 
-### Source 1: Variations Files (Coded & XAML)
+### Variations Files (Coded & XAML)
 
-Store test data in the `.variations/` folder at the project root. Each file maps to a test case and contains rows of input data.
+Store test data in the `.variations/` folder at the project root. Each JSON file maps to a test case and contains rows of input data.
 
 ```
 MyProject/
 ├── .variations/
-│   └── TestProcessInvoice.csv
+│   └── TestProcessInvoice.json
 ├── TestProcessInvoice.cs
 └── project.json
 ```
 
-The `.variations/` directory is available in all project types (Process, Tests, Library).
+The `.variations/` directory is available in all project types (Process, Tests, Library). Data files must be in **JSON format**.
 
 ### Adding Test Data via CLI
 
 Three commands attach different data source types to a test case. All three register the data source in project metadata, extract arguments from the source schema, and add them to the test case (via Studio's workflow management API for XAML, via Roslyn for coded test cases).
 
-#### `add-test-data-variation` — File-based (CSV, Excel)
+#### `add-test-data-variation` — File-based (JSON)
 
 ```bash
 uip rpa add-test-data-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
@@ -162,16 +160,18 @@ uip rpa add-test-data-variation --test-case-path "<TEST_CASE_FILE>" --data-varia
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--test-case-path` | Yes | Relative path to the test case file (`.xaml` or `.cs`) |
-| `--data-variation-path` | Yes | Relative path to the data file (CSV, Excel) |
+| `--data-variation-path` | Yes | Relative path to the JSON data file in `.variations/` |
 
-Parses columns from the file and creates one argument per column with matching type and a default value from the first row.
+Parses fields from the JSON file and creates one argument per field with matching type and a default value from the first entry.
 
 **Example:**
 ```bash
-uip rpa add-test-data-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.csv" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa add-test-data-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json --use-studio
 ```
 
 #### `add-test-data-queue` — Orchestrator Test Data Queue
+
+> **Prerequisite:** Use the **uipath-platform** skill to discover queue details (name, ID, folder) before calling this command.
 
 ```bash
 uip rpa add-test-data-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json --use-studio
@@ -184,14 +184,18 @@ uip rpa add-test-data-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<Q
 | `--folder-path` | Yes | Orchestrator folder path |
 | `--queue-id` | Yes | Orchestrator ID of the queue |
 
-Creates an `IDictionary<string, object>` argument named after the queue (camelCase). Use the **uipath-platform** skill to discover queue details (name, ID, folder) before calling this command.
+Creates an `IDictionary<string, object>` argument named after the queue (camelCase).
 
 **Example:**
 ```bash
 uip rpa add-test-data-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json --use-studio
 ```
 
+> **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
+
 #### `add-test-data-entity` — Data Service Entity
+
+> **Prerequisite:** Use the **uipath-platform** skill to discover available Data Service entities (name, type) before calling this command.
 
 ```bash
 uip rpa add-test-data-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
@@ -210,33 +214,13 @@ Creates an argument of the entity type named after the entity (camelCase). Requi
 uip rpa add-test-data-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
 ```
 
-### Source 2: Excel/CSV Files — Studio GUI Only
-
-> **Agent cannot perform this.** Configuring Excel/CSV data sources requires Studio's Test Data GUI (right-click → Add Test Data → Source: File). There is no CLI command for this. Use `add-test-data-variation` with a `.variations/` file instead.
-
-**Key rule for manual setup:** Column header names MUST match the test case argument names exactly. Mismatched names silently pass `null` values.
-
-### Source 3: Data Service Entities — Studio GUI Only
-
-> **Agent cannot perform this.** Configuring Data Service entity sources requires Studio's Test Data GUI (Test Data tab → Source: Data Service). Use the `add-test-data-entity` CLI command instead.
-
-### Source 4: Test Data Queues — XAML Consumption via Studio GUI
-
-> **Agent cannot configure XAML test data queue consumption via GUI.** The Studio GUI path (right-click → Add Test Data → Source: Test Data Queue) is not available to the agent. Use the `add-test-data-queue` CLI command instead, which works for both coded and XAML test cases.
-
-**Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
-
-### Source 5: Auto-Generated Data — Studio GUI Only
-
-> **Agent cannot perform this.** Auto-generating synthetic test data requires Studio's Test Data GUI (Test Data tab → Source: Auto Generate). There is no CLI equivalent.
-
 ### Data-Driven Testing Best Practices
 
 1. **Separate test data from test logic** — keep data in external sources, not hardcoded in test cases
 2. **Include both positive and negative scenarios** — test expected failures too (invalid inputs, boundary values)
-3. **Name data variations descriptively** — use column names like `ExpectedResult`, `Scenario` for traceability
+3. **Name data fields descriptively** — use field names like `ExpectedResult`, `Scenario` for traceability
 4. **Keep data sets small and focused** — each data set should test one concern; avoid combinatorial explosion
-5. **Prefer CLI commands** (`add-test-data-variation`, `add-test-data-queue`, `add-test-data-entity`) over Studio GUI steps — the agent can execute these directly
+5. **Use JSON format** for `.variations/` data files
 
 ---
 
