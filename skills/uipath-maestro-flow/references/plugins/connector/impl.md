@@ -18,6 +18,10 @@ For generic node/edge add, delete, and wiring procedures, see [flow-editing-oper
 
 ---
 
+## Critical: Connector Definition Must Include `form`
+
+> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
+
 ## Configuration Workflow
 
 Follow these steps for every connector node.

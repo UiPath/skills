@@ -12,6 +12,10 @@ uip flow registry get core.action.http --output json
 
 Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, required inputs `method` and `url`.
 
+## Critical: `model` Field
+
+> **Never hardcode the `model` field.** The HTTP node requires a `model.expansion` block for the BPMN engine to capture outputs into flow variables at runtime. Without it, `$vars.{nodeId}.output` will be `null` after execution even though the node completes successfully. Always copy the full `model` object from `uip flow registry get core.action.http --output json` → `Data.Node.model`. The examples below use `"<COPY_FROM_REGISTRY>"` as a placeholder — replace it with the actual model from the registry.
+
 ## JSON Structure
 
 ### Basic GET
@@ -46,7 +50,7 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
       "var": "error"
     }
   },
-  "model": { "type": "bpmn:ServiceTask" }
+  "model": "<COPY_FROM_REGISTRY>"
 }
 ```
 
@@ -81,7 +85,7 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
       "var": "error"
     }
   },
-  "model": { "type": "bpmn:ServiceTask" }
+  "model": "<COPY_FROM_REGISTRY>"
 }
 ```
 
@@ -123,7 +127,7 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
       "var": "error"
     }
   },
-  "model": { "type": "bpmn:ServiceTask" }
+  "model": "<COPY_FROM_REGISTRY>"
 }
 ```
 
