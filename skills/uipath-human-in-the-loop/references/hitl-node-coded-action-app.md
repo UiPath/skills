@@ -46,24 +46,9 @@ Create this structure relative to `<SOLUTION_DIR>` (the directory containing the
 ```
 <SOLUTION_DIR>/
 └── <APP_NAME>/
-    ├── .project/
-    │   └── JitCustomTypes.json
     ├── project.uiproj
     ├── webAppManifest.json
     └── source/          ← contents copied from <SOURCE_PATH> provided by the user
-```
-
-### `<APP_NAME>/.project/JitCustomTypes.json`
-
-```json
-{
-  "version": "4.0.0.0",
-  "bundleHash": null,
-  "addedAssemblyNames": [],
-  "discardedAssemblyNames": [],
-  "discardedAssemblyReplacements": {},
-  "assembliesJitInfo": {}
-}
 ```
 
 ### `<APP_NAME>/project.uiproj`

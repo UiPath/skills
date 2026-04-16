@@ -23,7 +23,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before writing anything.** Show the designed schema (Step 4) and wait for explicit confirmation.
+1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
 2. **Always wire at least the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow. Wire `cancelled` and `timeout` to end nodes or handlers unless the user explicitly defers them.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 4. **Validate after every change.** Run `uip flow validate <file> --format json` after writing the node and edges.
@@ -127,102 +127,20 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 | User selects | Next step |
 |---|---|
-| QuickForm | Go to Step 4a |
-| New Coded Action App | Go to Step 4c |
-| Existing Deployed App → ask: "What is the name of the deployed action app?" | Go to Step 4b |
+| QuickForm | Read [references/hitl-node-quickform.md](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
+| New Coded Action App | Read [references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
+| Existing Deployed App → ask: "What is the name of the deployed action app?" | Read [references/hitl-node-apptask.md](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
 
 ---
 
-## Step 4a — Extract the Schema Through Conversation
-
-Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
-
-| What you need to know | Question to ask |
-|---|---|
-| What the reviewer sees | "What information does the reviewer need to make their decision?" |
-| What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
-| What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
-
-**Common business descriptions → schema translations:**
-
-| Business description | Schema shape |
-|---|---|
-| "Human reviews and approves/rejects an invoice" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |
-| "Reviewer checks agent-drafted email before sending" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |
-| "Escalate to human when confidence < 0.7" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |
-| "Human fills in missing vendor data" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |
-| "Approve before writing to ServiceNow" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |
-
----
-
-## Step 4b — Resolve the Deployed Action App (AppTask only)
-
-When the user says they want to use an existing deployed Action app:
-
-1. **Ask for the app name** if not already provided: "What is the name of the deployed app?"
-2. **Search for the app** using the Studio backend resource API — see [references/hitl-node-apptask.md](references/hitl-node-apptask.md) Steps 1–2 for the credential sourcing and search call.
-3. **Handle search results:**
-   - **Exactly one match** → confirm the app name with the user and proceed.
-   - **Multiple matches** → list them by number (name + folder path) and ask the user to pick one: "I found multiple apps matching that name. Which one should I use? [1] … [2] …"
-   - **Zero matches** → report the error and ask the user to verify the app name or check that it is deployed.
-4. **Retrieve app configuration** (Step 3 of the reference) — extracts `inputSchema`, `inOutSchema`, `appSystemName`, `appVersionRef` needed to populate `inputs.app`.
-5. **Write the HITL node immediately** — the app owns its schema. Skip Step 5 entirely. Go directly to Step 6 Common configuration and write the node using the configuration retrieved above. Do not ask the user to design or confirm a schema.
-
----
-
-## Step 4c — New Coded Action App: Gather Setup Details
-
-1. **Ask for the app name**: "What would you like to name the coded action app? (This becomes the project folder name.)"
-2. **Ask for the source path**: "What is the path to your coded action app source code? (The contents of this folder will be placed under `source/` inside the new project.)"
-3. **Locate the solution directory** (`<SOLUTION_DIR>`): find the `.uipx` file in the flow's directory, then its parent directory.
-4. **Read the source schema**: parse `<SOURCE_PATH>/action-schema.json` — this drives both the resource file's `actionSchema` and the HITL node's `inputSchema`/`inOutSchema`/`outcomes`. Read `<SOURCE_PATH>/uipath.json` to get `clientId`, which becomes `externalClientId` in the resource file.
-5. Go directly to Step 6 (skip Step 5 — schema comes from the source code, not from conversation).
-
-Full scaffolding instructions: **[references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md)**
-
----
-
-## Step 5 — Design the Schema
-
-The CLI accepts this format for `--schema`:
-
-```json
-{
-  "inputs":   [{ "name": "fieldName", "type": "string" }],
-  "outputs":  [{ "name": "fieldName", "type": "string" }],
-  "inOuts":   [{ "name": "fieldName", "type": "string" }],
-  "outcomes": [{ "name": "Approve",  "type": "string" }]
-}
-```
-
-| Field | Human can… | Use for |
-|---|---|---|
-| `inputs` | Read only | Context the human needs to make a decision |
-| `outputs` | Write | Data the automation needs back |
-| `inOuts` | Read + modify | Data the human can see and optionally correct |
-| `outcomes` | Click one | Named action buttons |
-
-**Supported types:** `string`, `number`, `boolean`, `date`
-
-**Design rules:**
-- `inputs`: everything the human needs to decide — IDs, amounts, context
-- `outputs`: only what downstream nodes actually use
-- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
-- Keep it focused — don't add fields the automation won't use
-
-**Show the designed schema to the user and confirm before running the CLI.**
-
----
-
-
-## Step 6 - Common configuration
+## Step 4 — Common configuration
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
 | Priority | "Is this normal priority, or high/critical?" |
 
 ---
 
-## Step 7 — Write the Node Directly
+## Step 5 — Write the Node Directly
 
 ### Surface: Flow — QuickForm (inline schema only)
 
@@ -298,7 +216,7 @@ The Maestro HITL CLI is not yet available. Guide the user to add the HITL node m
 
 ---
 
-## Step 8 — Report to the User
+## Step 6 — Report to the User
 
 After completing the wiring:
 

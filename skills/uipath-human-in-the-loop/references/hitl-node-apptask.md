@@ -107,7 +107,7 @@ Flatten both `solutionResources` and `availableResources` folder groups into a s
 
   Use `nextPageCursor` to fetch additional pages if the list is truncated. Do not proceed until the user selects.
 
-- **Zero matches** → stop and tell the user: "No deployed app named `<APP_NAME>` was found. Verify the name and that the app is deployed, then try again."
+- **Zero matches** → stop and tell the user: "No deployed app named `<APP_NAME>` was found. Verify the name and that the app is deployed, then try again. Show them the app name, folder name and type"
 
 ### Step 3 — Retrieve app configuration
 
