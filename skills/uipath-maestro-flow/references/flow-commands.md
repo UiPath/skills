@@ -43,6 +43,17 @@ Checks:
 
 Exit code 0 = valid, 1 = invalid.
 
+## uip flow tidy
+
+Auto-layout nodes in the `.flow` file for a clean horizontal arrangement. Run after validation passes and before publishing or debugging.
+
+```bash
+uip flow tidy <path/to/file.flow>
+uip flow tidy <path/to/file.flow> --output json
+```
+
+Repositions nodes in the top-level `layout` section. Does not modify node logic, edges, or definitions — only layout coordinates. Always run tidy before `uip solution upload` or `uip flow debug` to ensure the flow renders cleanly in Studio Web.
+
 ## uip flow pack
 
 Pack a Flow project into a `.nupkg` for Orchestrator deployment.
