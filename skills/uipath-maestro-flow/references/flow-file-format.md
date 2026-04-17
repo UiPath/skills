@@ -185,7 +185,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 | `core.control.end` | Graceful end | `bpmn:EndEvent` | — |
 | `core.logic.terminate` | Abort workflow | `bpmn:EndEvent` | — |
 
-For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](planning-impl.md).
+For full details on each node (ports, inputs, outputs, when to use), see the relevant plugin under [plugins/](plugins/) — each plugin folder has `planning.md` (selection/ports) and `impl.md` (registry validation, connection binding, reference fields).
 
 Discover all available types:
 ```bash
