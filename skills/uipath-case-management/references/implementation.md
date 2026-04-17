@@ -212,7 +212,7 @@ Debug is for **testing that the case runs correctly** — not for publishing or 
 
 ## Step 14 — Publish to Studio Web
 
-**This is the default publish target.** When the user wants to publish, view, or share the case, upload it to Studio Web using `solution bundle` + `solution upload`:
+**This is the default publish target.** When the user wants to publish, view, or share the case, upload the solution directly to Studio Web:
 
 Always ask user:
 
@@ -222,15 +222,12 @@ Use `AskUserQuestion` with options: "Yes", "No"
 
 If the user says yes:
 ```bash
-# Bundle the solution directory into a .uis file
-uip solution bundle "<SolutionDir>" --output json
-
-# Upload the .uis to Studio Web
-uip solution upload "<SolutionName>.uis" --output json
+# Upload the solution folder (containing the .uipx) to Studio Web
+uip solution upload <SolutionDir> --output json
 ```
 
-The `bundle` command requires a solution directory containing a `.uipx` file. If the project was created with `uip case init`, it lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip case init`, it already lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
 
-**Do NOT run `uip case pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the case directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`solution bundle` + `solution upload`).
+**Do NOT run `uip case pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the case directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
 
 For Orchestrator deployment when explicitly requested, see [case-commands.md](case-commands.md) for `uip case pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
