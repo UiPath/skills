@@ -94,7 +94,7 @@ For the exact JSON structure of each resource type, consult `bindings-reference.
 
 - `version` is always `"2.0"`
 - Each resource entry has `resource`, `key`, `value`, and `metadata` fields
-- The `key` is `<name>.<folder_path>` for most types, just `<connection_key>` for connections
+- The `key` is `<name>.<folder_path>` for most types, just `<connection_key>` for connections. When `folder_path` is empty, omit the dot separator — the key is just `<name>`
 - `ActivityName` in metadata always uses the `_async` variant name
 - Connection entries use `ConnectionId` instead of `name` and have no `folderPath`
 - The `app` resource type uses the app name as `DisplayLabel`; all others use `"FullName"`
@@ -211,7 +211,7 @@ credential = sdk.assets.retrieve_credential("cred_name", folder_path="folder_key
 }
 ```
 
-**Key construction:** `<name>.<folder_path>` — the first positional argument joined with the `folder_path` keyword argument by a dot.
+**Key construction:** `<name>.<folder_path>` — the first positional argument joined with the `folder_path` keyword argument by a dot. When `folder_path` is empty, omit the dot — use just `<name>`.
 
 **Parameter extraction:**
 - `name` — first positional argument to `retrieve_async()` / `retrieve()`
