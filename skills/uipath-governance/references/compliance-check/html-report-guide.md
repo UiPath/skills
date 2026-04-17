@@ -32,8 +32,8 @@ The output is a **self-contained, single-file HTML document** with inline CSS, n
 | Condition | `{{OVERALL_STATUS}}` | `{{OVERALL_BADGE_CLASS}}` |
 |---|---|---|
 | All clauses compliant | `Compliant` | `badge-pass` |
-| Some compliant, some drifted/not-deployed | `Non-Compliant` | `badge-fail` |
-| All drifted or not-deployed | `Non-Compliant` | `badge-fail` |
+| Some compliant, some drifted | `Non-Compliant` | `badge-fail` |
+| All drifted | `Non-Compliant` | `badge-fail` |
 | Only non-mandatory clauses drifted | `Partially Compliant` | `badge-partial` |
 
 ### Summary placeholders
@@ -43,10 +43,8 @@ The output is a **self-contained, single-file HTML document** with inline CSS, n
 | `{{TOTAL_CLAUSES}}` | Total number of in-scope clauses |
 | `{{COMPLIANT_COUNT}}` | Count of clauses with `status: "compliant"` |
 | `{{DRIFTED_COUNT}}` | Count of clauses with `status: "drifted"` |
-| `{{NOT_DEPLOYED_COUNT}}` | Count of clauses with `status: "not-deployed"` |
 | `{{COMPLIANT_PCT}}` | `(compliant / total) * 100` |
 | `{{DRIFTED_PCT}}` | `(drifted / total) * 100` |
-| `{{NOT_DEPLOYED_PCT}}` | `(notDeployed / total) * 100` |
 
 ## Generating clause rows
 
@@ -80,11 +78,10 @@ Replace the `<!-- {{CLAUSE_ROWS}} -->` comment with one `<tr>` per clause. Use t
 |---|---|---|
 | `compliant` | `pill-compliant` | `Compliant` |
 | `drifted` | `pill-drifted` | `Drifted` |
-| `not-deployed` | `pill-not-deployed` | `Not Deployed` |
 
 ### Row ordering
 
-Order rows: drifted first (sorted by obligation: Mandatory > ConditionalMandatory > Recommended > Optional), then not-deployed, then compliant.
+Order rows: drifted first (sorted by obligation: Mandatory > ConditionalMandatory > Recommended > Optional), then compliant.
 
 ## Generating drift details
 

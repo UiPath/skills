@@ -28,8 +28,7 @@ Single audit JSON written per compliance check run.
   "summary": {
     "totalClauses": 9,
     "compliant": 7,
-    "drifted": 1,
-    "notDeployed": 1,
+    "drifted": 2,
     "skippedPolicies": 3
   },
 
@@ -80,11 +79,18 @@ Single audit JSON written per compliance check run.
       "name": "Segregation of Duties",
       "category": "A.5 – Organizational Controls",
       "obligationLevel": "Mandatory",
-      "status": "not-deployed",
+      "status": "drifted",
       "contributions": [
         {
           "product": "AITrustLayer",
-          "properties": []
+          "properties": [
+            {
+              "path": "container.segregation-of-duties-enforced",
+              "expected": true,
+              "actual": null,
+              "match": false
+            }
+          ]
         }
       ]
     }
@@ -135,7 +141,7 @@ Single audit JSON written per compliance check run.
 | `name` | string | Clause display name |
 | `category` | string | Clause category |
 | `obligationLevel` | string | `"Mandatory"` / `"ConditionalMandatory"` / `"Recommended"` / `"Optional"` |
-| `status` | string | `"compliant"` / `"drifted"` / `"not-deployed"` |
+| `status` | string | `"compliant"` / `"drifted"` |
 | `contributions[]` | array | Per-product property comparisons |
 
 ### `contributions[].properties[]`
@@ -144,7 +150,7 @@ Single audit JSON written per compliance check run.
 |---|---|---|
 | `path` | string | Dot-separated property path in `formData` |
 | `expected` | any | Value from the pack |
-| `actual` | any | Value from the live tenant (null if not-deployed) |
+| `actual` | any | Value from the live tenant (null if the path is absent from the live policy) |
 | `match` | boolean | Whether expected equals actual |
 | `classificationType` | string | Present only on mismatched properties. From the policy reference classification. |
 
@@ -162,7 +168,6 @@ Single audit JSON written per compliance check run.
 |---|---|
 | `compliant` | All contributing properties match between pack and tenant |
 | `drifted` | One or more properties differ |
-| `not-deployed` | No matching policy found on the tenant for this product |
 
 ## Write rules
 

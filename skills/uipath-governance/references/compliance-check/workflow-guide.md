@@ -86,39 +86,104 @@ Drift checks always resolve the **effective policy for the currently authenticat
 
 The pack's `deploymentLevel` is still captured for the report (it describes *where* the pack expected the policy to land), but it does not drive the CLI call.
 
-## Step 5 — Fetch and diff (per applicable policy)
+## Step 5 — Walk clauses and diff against effective policy
 
-For each applicable policy file, sequentially:
+Iterate `clause-map.json` clause-first. Expected values come from the policy file referenced by each contribution; live values come from `get-by-user`. Two in-memory caches live for the duration of a single run:
 
-1. Read the policy file from the pack:
-   - `expectedFormData = policyFile.formData`
-   - `licenseTypeIdentifier = policyFile.policy.licenseTypeIdentifier`
-   - `productIdentifier = policyFile.policy.productIdentifier`
-2. **Dispatch to the product plugin** with `{ expectedFormData, licenseTypeIdentifier, productIdentifier, tenantId, tenantName, deploymentLevel, policyName, policyFile }`:
-   - `productIdentifier == "AITrustLayer"` → [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md)
-   - Any other `productIdentifier` → skip (should not reach here due to Step 2 partition, but guard defensively)
-3. Collect the plugin's return: `{ status, effectivePolicyName, effectiveDeployment, properties[] }`.
+```
+policyFileCache  : map<relativePath, parsedPolicyJson>       # parse each policy file once
+cliCache         : map<"{licenseType}|{productIdentifier}", CliResult>   # one CLI call per unique (license, product)
+```
+
+For each in-scope clause (from Step 3), sequentially:
+
+```
+clauseResult = {
+    clauseId, name, category, obligationLevel,
+    status: unknown,
+    contributions: []
+}
+
+for contribution in clause.contributions:
+    policyFile = policyFileCache.load(contribution.uipolicyFile)
+
+    # V1 scope — only AITL product policies are diffed
+    if policyFile.policyKind != "product"
+       or policyFile.policy.productIdentifier != "AITrustLayer":
+        clauseResult.contributions.append({
+            product: policyFile.policy?.productIdentifier or policyFile.accessPolicy?.accessPolicyType,
+            status: "skipped",
+            reason: "out-of-version-scope",
+            properties: []
+        })
+        continue
+
+    product = policyFile.policy.productIdentifier
+    license = policyFile.policy.licenseTypeIdentifier
+    expectedFormData = policyFile.formData
+    key = "{license}|{product}"
+
+    # Cache hit? Reuse. Otherwise call the CLI once.
+    # The CLI always returns an effective deployed policy for a valid (license, product, tenant) —
+    # there is no "not deployed" branch at the fetch level.
+    if key not in cliCache:
+        cliCache[key] = invoke plugin [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md)
+                        with (license, product, UIPATH_TENANT_ID)
+        # → returns CliResult { policyName, deployment, data }
+
+    live = cliCache[key]
+
+    properties = []
+    for propertyPath in contribution.properties:
+        expected = jsonPath(expectedFormData, propertyPath)
+        actual   = jsonPath(live.data,        propertyPath)
+        properties.append({
+            path: propertyPath,
+            expected, actual,
+            match: deepEqual(expected, actual)
+        })
+    # A missing path (actual == null) counts as a mismatch — it's drift, not a
+    # special "not-applied" case. The tenant is non-compliant either way.
+
+    clauseResult.contributions.append({
+        product,
+        status: "checked",
+        effectivePolicyName: live.policyName,
+        effectiveDeployment: live.deployment,
+        properties
+    })
+
+clauseResult.status = aggregate(clauseResult.contributions)
+```
+
+### Value comparison rules (AITL)
+
+Consult the quirks table in [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md) before equality-checking. In particular: `allow-llm-model-auto-routing` is a `"yes"`/`"no"` string (not boolean), `traces-ttl`/`traces-ttl-effective` are duration strings, `pii-*` values are enums, and arrays like `pii-entity-table` are order-independent and matched by `identifier`.
+
+For drifted (`match: false`) properties, enrich with `classificationType` if it's available in the policy reference data.
+
+### `aggregate(contributions)` — first match wins
+
+1. Any `checked` contribution has a property with `match == false` → **`drifted`**
+2. At least one `checked` contribution (rule 1 didn't fire) → **`compliant`**
+3. All contributions `skipped` → **`skipped`** (clause excluded from compliant / drifted counts)
+
+`skipped` contributions never drive the clause status — they're recorded for audit but ignored in the decision. A missing property path is treated as drift under rule 1.
 
 ### Dispatch table (V1)
 
 | `productIdentifier` | Plugin |
 |---|---|
 | `AITrustLayer` | [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md) |
-| Any other | **SKIP** (record `out-of-version-scope`) |
+| Any other | **SKIP** per contribution (record `out-of-version-scope`) |
 
-## Step 6 — Map results to clauses
+### Caching invariants
 
-For each clause in `clause-map.json` that is in scope:
+- `cliCache` is **per-run only** — do not persist across invocations.
+- Key is `{licenseType}|{productIdentifier}`. `tenantIdentifier` is not in the key because it's constant per run (from `~/.uipath/.auth`).
+- Twenty clauses pointing at the same `(license, product)` pair must produce **exactly one** `get-by-user` call.
 
-1. Find all contributions to applicable policy files.
-2. For each contribution, look up the property results from the plugin's return.
-3. Determine clause status:
-   - If the plugin returned `status: "not-deployed"` → clause is `not-deployed`
-   - If ALL contributing properties have `match: true` → clause is `compliant`
-   - If ANY contributing property has `match: false` → clause is `drifted`
-4. For drifted properties, enrich with `classificationType` if available from the policy reference data.
-
-## Step 7 — Terminal summary
+## Step 6 — Terminal summary
 
 Print a human-readable summary:
 
@@ -127,24 +192,24 @@ Compliance Check: iso-27001-2022 v1.0.0 → tenant DefaultTenant
 
   ✓ A.8.11  Data Masking                    compliant
   ✗ A.8.12  Data Leakage Prevention         drifted (2 properties)
-  ✗ A.5.3   Segregation of Duties           not-deployed
+  ✗ A.5.3   Segregation of Duties           drifted (3 properties)
 
-Result: 1/3 compliant, 1 drifted, 1 not-deployed
+Result: 1/3 compliant, 2 drifted
 Skipped (V1 scope): Development, Robot, StudioWeb
 Report: ./compliance-report-iso-27001-2022-20260416T143000Z.json
 ```
 
-Order: drifted clauses first (by obligation level: Mandatory > ConditionalMandatory > Recommended > Optional), then not-deployed, then compliant.
+Order: drifted clauses first (by obligation level: Mandatory > ConditionalMandatory > Recommended > Optional), then compliant.
 
-## Step 8 — Write JSON report
+## Step 7 — Write JSON report
 
 Write to `./compliance-report-{packId}-{timestamp}.json` per [report-format.md](report-format.md).
 
-Include ALL clauses (compliant, drifted, not-deployed) and ALL skipped policies.
+Include ALL clauses (compliant, drifted) and ALL skipped policies.
 
 Do NOT commit or stage the report file.
 
-## Step 8b — Generate HTML report
+## Step 7b — Generate HTML report
 
 Generate a self-contained HTML report for auditor review using the template at `assets/templates/compliance-report-template.html`.
 
@@ -159,9 +224,9 @@ The HTML report is a **fixed-format, self-contained file** with no external depe
 
 Do NOT commit or stage the HTML report file.
 
-## Step 9 — Remediation handoff
+## Step 8 — Remediation handoff
 
-If any clause has `status: "drifted"` or `status: "not-deployed"`:
+If any clause has `status: "drifted"`:
 
 ```
 Some clauses are not compliant. Would you like me to re-apply the
@@ -183,5 +248,5 @@ All checked clauses are compliant. No action needed.
 | Not logged in | 0 | Halt. Ask user to `uip login`. |
 | Malformed pack | 1 | Halt. Surface the validation error. |
 | No applicable policies | 2 | Write report with all skipped. Exit cleanly. |
-| Plugin returns error | 5 | Halt. Surface the error. Write partial report. |
+| CLI call fails | 5 | Halt. Surface the error. Write partial report. |
 | Unknown clause ID in scope filter | 3 | Halt. Surface the unknown ID. |

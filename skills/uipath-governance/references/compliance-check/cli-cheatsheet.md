@@ -79,8 +79,7 @@ Returns the effective policy after applying the full USER → GROUP → TENANT �
 
 | Response | Meaning | Action |
 |---|---|---|
-| `200` with `Data.data` | Policy effectively applied | Diff `Data.data` vs pack `formData` |
-| `204 No Content` (`Data.Message == "No policy applies to this user."`) | No policy in the inheritance chain | Record clause/policy as `not-deployed` |
+| `200` with `Data.data` | Effective deployed policy (always returned for valid input) | Diff `Data.data` vs pack `formData` |
 | `404` | License, product, or tenant identifier invalid | Halt. Surface the invalid input. |
 
 ## Products (discovery)
@@ -117,7 +116,6 @@ curl -sS -G "{identityBase}/api/Directory/Search/{orgId}" \
 | HTTP | Context | Meaning | Action |
 |---|---|---|---|
 | `401 / 403` | any | Session expired or insufficient perms | Halt. Ask user to `uip login`. |
-| `204` | `get-by-user` | No policy applies in the inheritance chain | Record clause/policy as `not-deployed`. |
 | `404` | `get-by-user` | Invalid license / product / tenant identifier | Halt and surface — this is not drift. |
 | `404` | `list` / `product get` | Resource not found | Surface as pack or input error. |
 | `5xx` | any | Server-side | Retry once after 3s. Then halt and surface. |

@@ -47,10 +47,11 @@ Parse the response:
 
 ### Response shortcuts
 
+The CLI always returns an effective deployed policy for a valid `(license, product, tenant)` — there is no "not deployed" branch. During diffing, a property path that's missing from `Data.data` is treated as drift (`actual: null`, `match: false`).
+
 | Situation | Response | Action |
 |---|---|---|
-| No policy in chain | `204` / `Data.Message == "No policy applies to this user."` | Return `not-deployed` result (see below). |
-| Invalid license / product / tenant | `404 Not Found` | Halt. Surface the invalid input; do not fall back to `not-deployed`. |
+| Invalid license / product / tenant | `404 Not Found` | Halt. Surface the invalid input. |
 | Auth expired | `401 / 403` | Halt. Ask user to `uip login`. |
 
 ## Step 2 — Deep diff
@@ -105,16 +106,20 @@ If a path exists in the live policy but not in the pack:
 }
 ```
 
-### Not deployed (no policy in inheritance chain, i.e. 204)
+### Missing property path (treated as drift)
 
 ```jsonc
 {
-  "status": "not-deployed",
-  "effectivePolicyName": null,
-  "effectiveDeployment": null,
-  "properties": []
+  "status": "checked",
+  "effectivePolicyName": "<Data.policy-name>",
+  "effectiveDeployment": { "type": "TENANT", "name": "<tenant or principal name>" },
+  "properties": [
+    { "path": "pii-processing-mode", "expected": "DetectionAndMasking", "actual": null, "match": false }
+  ]
 }
 ```
+
+`actual: null` marks the path as absent from the live policy — the contribution still participates in the clause's drift aggregation.
 
 ## Error handling
 
@@ -122,7 +127,6 @@ If a path exists in the live policy but not in the pack:
 |---|---|
 | `401 / 403` on `get-by-user` | Halt. Ask user to `uip login`. |
 | `404` on `get-by-user` | Halt. License, product, or tenant identifier is invalid — this is a pack or auth-context problem, not drift. |
-| `204` on `get-by-user` | Treat as `not-deployed`. |
 | `5xx` | Retry once after 3s. On second failure, halt and surface. |
 
 ## What this plugin does NOT do
