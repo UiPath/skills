@@ -1,0 +1,109 @@
+name: Daily E2E Tests
+
+concurrency:
+  group: daily-e2e
+  cancel-in-progress: false
+
+on:
+  schedule:
+    # 07:00 UTC every day
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+  # TEMPORARY: remove before merging to main
+  push:
+    branches: [akshaya/scheduled_action]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    name: Run all e2e tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/uipcli
+          token: ${{ secrets.GH_PAT }}
+          path: .uipcli
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Build and install uip CLI from source
+        working-directory: .uipcli
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+        run: |
+          bun install
+          bun run build
+          cd packages/cli && npm link
+
+      - name: Configure git to use GH_PAT
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: git config --global url."https://${GH_PAT}@github.com/".insteadOf "https://github.com/"
+
+      - name: make install
+        working-directory: tests
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: make install
+
+      - name: Run e2e tests
+        env:
+          SKILLS_REPO_PATH: ${{ github.workspace }}
+          API_BACKEND: bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+        working-directory: tests
+        id: e2e
+        run: make e2e
+        continue-on-error: true
+
+      - name: Print experiment report
+        if: always()
+        working-directory: tests
+        run: |
+          for f in runs/*/experiment.md runs/*/e2e/variant.md runs/*/e2e/*/task.json; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+              echo ""
+            fi
+          done
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-runs-${{ github.run_id }}
+          path: tests/runs/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Fail if tests failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1
