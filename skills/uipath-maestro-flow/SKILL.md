@@ -218,13 +218,11 @@ Common error categories:
 
 ### Step 7 — Tidy node layout
 
-After validation passes, auto-layout the nodes so they render cleanly in Studio Web:
+After validation passes, auto-layout nodes before publishing or debugging:
 
 ```bash
 uip flow tidy <ProjectName>.flow --output json
 ```
-
-This repositions nodes in the top-level `layout` section for a clean horizontal arrangement. Always run tidy before publishing or debugging — it ensures the flow looks professional when others open it.
 
 ### Step 8 — Debug (cloud) — only when explicitly requested
 
@@ -323,7 +321,7 @@ Do not run any of these actions without an explicit user selection.
 | `uip flow validate` | Local JSON schema + cross-reference check | No |
 | `uip flow debug` | Converts to BPMN, uploads to Studio Web, runs in Orchestrator, streams results | Yes |
 
-Always `validate` locally, then `tidy`, before `debug`. Validation is instant; tidy auto-layouts nodes; debug is a cloud round-trip.
+Always `validate` → `tidy` → `debug`. Validation is instant; tidy auto-layouts nodes; debug is a cloud round-trip.
 
 ### CLI output format
 
@@ -342,7 +340,7 @@ When you finish building or editing a flow, report to the user:
 1. **File path** of the `.flow` file created or edited
 2. **What was built** — summary of nodes added, edges wired, and logic implemented
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
-4. **Tidy status** — confirm `flow tidy` was run to auto-layout nodes
+4. **Tidy status** — confirm `flow tidy` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
