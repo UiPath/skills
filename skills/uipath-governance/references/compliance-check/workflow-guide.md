@@ -77,23 +77,27 @@ Filter clauses to those with at least one contribution to an `applicable` policy
 
 ## Step 4 — Resolve deployment target
 
-For each applicable policy file, read `deploymentLevel` from the policy:
+Drift checks always resolve the **effective policy for the currently authenticated user** via `get-by-user`. The full USER → GROUP → TENANT → GLOBAL inheritance chain is applied server-side, so the orchestrator does not select a principal.
 
-| `deploymentLevel` | Target |
+| Context | Target |
 |---|---|
-| `tenant` | Use `UIPATH_TENANT_ID` from `~/.uipath/.auth`. No prompt needed. |
-| `group` | If user named a group, use it. Otherwise, list groups via Identity Directory Search (see [cli-cheatsheet.md](cli-cheatsheet.md)) and ask user to select. |
-| `user` | If user named a user, use it. Otherwise, list users and ask user to select. |
+| Tenant context | `UIPATH_TENANT_ID` from `~/.uipath/.auth`. No prompt. |
+| Group / user context | Not applicable in check mode — `get-by-user` resolves to whichever layer (incl. GROUP / USER) overrides for the authenticated session. |
+
+The pack's `deploymentLevel` is still captured for the report (it describes *where* the pack expected the policy to land), but it does not drive the CLI call.
 
 ## Step 5 — Fetch and diff (per applicable policy)
 
 For each applicable policy file, sequentially:
 
-1. Read the policy file from the pack to get `expectedFormData = policyFile.formData`.
-2. **Dispatch to the product plugin:**
+1. Read the policy file from the pack:
+   - `expectedFormData = policyFile.formData`
+   - `licenseTypeIdentifier = policyFile.policy.licenseTypeIdentifier`
+   - `productIdentifier = policyFile.policy.productIdentifier`
+2. **Dispatch to the product plugin** with `{ expectedFormData, licenseTypeIdentifier, productIdentifier, tenantId, tenantName, deploymentLevel, policyName, policyFile }`:
    - `productIdentifier == "AITrustLayer"` → [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md)
    - Any other `productIdentifier` → skip (should not reach here due to Step 2 partition, but guard defensively)
-3. Collect the plugin's return: `{ status, policyId, properties[] }`.
+3. Collect the plugin's return: `{ status, effectivePolicyName, effectiveDeployment, properties[] }`.
 
 ### Dispatch table (V1)
 

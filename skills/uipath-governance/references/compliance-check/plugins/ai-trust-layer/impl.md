@@ -8,41 +8,54 @@ Product-specific logic for checking AITrustLayer policies against the live tenan
 {
   "policyFile": "policies/ai-trust-layer.json",
   "productIdentifier": "AITrustLayer",
+  "licenseTypeIdentifier": "NoLicense",
   "expectedFormData": { /* from the pack's policy file */ },
   "policyName": "iso-27001-2022-ai-trust-layer",
   "deploymentLevel": "tenant",
-  "targetId": "<TENANT_GUID>",
-  "targetName": "DefaultTenant"
+  "tenantId": "<UIPATH_TENANT_ID from ~/.uipath/.auth>",
+  "tenantName": "DefaultTenant"
 }
 ```
 
-## Step 1 — Find the deployed policy
+`licenseTypeIdentifier` and `productIdentifier` come from the pack's `policy` block. `tenantId` comes from `~/.uipath/.auth`. The plugin always resolves the effective policy for the **currently authenticated user** — it does not target a specific group/user principal.
+
+## Step 1 — Resolve the effective policy
 
 ```bash
-uip admin aops-policy list --product-name AITrustLayer --search "<POLICY_NAME>" --output json
+uip admin aops-policy deployment get-by-user \
+  <LICENSE_TYPE> <PRODUCT_IDENTIFIER> <TENANT_GUID> \
+  --output json
 ```
 
-Parse `Data` array. Match by `name` field (exact, case-sensitive).
-
-If no match is found, try listing all AITL policies:
+Example:
 
 ```bash
-uip admin aops-policy list --product-name AITrustLayer --output json
+uip admin aops-policy deployment get-by-user NoLicense AITrustLayer 22986e36-8b04-4593-b82f-aae4c14bb2dc --output json
 ```
 
-If still no match, return `not-deployed` result (see below).
+This returns the effective policy after the full USER → GROUP → TENANT → GLOBAL inheritance chain.
 
-## Step 2 — Fetch the full policy
+Parse the response:
 
-```bash
-uip admin aops-policy get <POLICY_IDENTIFIER> --output json
-```
+| Path | Meaning |
+|---|---|
+| `Data.data` | Live effective `formData` — compare against `expectedFormData` |
+| `Data.policy-name` | Name of the policy that ended up applying |
+| `Data.deployment.type` | Which layer applied: `USER` / `GROUP` / `TENANT` / `GLOBAL` |
+| `Data.deployment.name` | Principal or tenant name at that layer |
+| `Data.availability` | Days remaining until re-evaluation |
 
-Parse `Data.policyFormData` — this is the live `formData`.
+### Response shortcuts
 
-## Step 3 — Deep diff
+| Situation | Response | Action |
+|---|---|---|
+| No policy in chain | `204` / `Data.Message == "No policy applies to this user."` | Return `not-deployed` result (see below). |
+| Invalid license / product / tenant | `404 Not Found` | Halt. Surface the invalid input; do not fall back to `not-deployed`. |
+| Auth expired | `401 / 403` | Halt. Ask user to `uip login`. |
 
-Walk every leaf property in `expectedFormData` and compare against the live `formData`.
+## Step 2 — Deep diff
+
+Walk every leaf property in `expectedFormData` and compare against the live `formData` returned in `Data.data`.
 
 ### Comparison rules
 
@@ -78,12 +91,13 @@ If a path exists in the live policy but not in the pack:
 
 ## Return to orchestrator
 
-### Success (policy found, diff complete)
+### Success (policy effectively applied, diff complete)
 
 ```jsonc
 {
   "status": "checked",
-  "policyId": "<GUID>",
+  "effectivePolicyName": "<Data.policy-name>",
+  "effectiveDeployment": { "type": "TENANT", "name": "<tenant or principal name>" },
   "properties": [
     { "path": "pii-processing-mode", "expected": "DetectionAndMasking", "actual": "DetectionAndMasking", "match": true },
     { "path": "container.pii-in-flight-agents", "expected": true, "actual": false, "match": false }
@@ -91,12 +105,13 @@ If a path exists in the live policy but not in the pack:
 }
 ```
 
-### Not deployed
+### Not deployed (no policy in inheritance chain, i.e. 204)
 
 ```jsonc
 {
   "status": "not-deployed",
-  "policyId": null,
+  "effectivePolicyName": null,
+  "effectiveDeployment": null,
   "properties": []
 }
 ```
@@ -105,8 +120,9 @@ If a path exists in the live policy but not in the pack:
 
 | Error | Action |
 |---|---|
-| `401 / 403` on `list` or `get` | Halt. Ask user to `uip login`. |
-| `404` on `get` (policy deleted between list and get) | Treat as `not-deployed`. |
+| `401 / 403` on `get-by-user` | Halt. Ask user to `uip login`. |
+| `404` on `get-by-user` | Halt. License, product, or tenant identifier is invalid — this is a pack or auth-context problem, not drift. |
+| `204` on `get-by-user` | Treat as `not-deployed`. |
 | `5xx` | Retry once after 3s. On second failure, halt and surface. |
 
 ## What this plugin does NOT do

@@ -43,27 +43,45 @@ UIPATH_ACCESS_TOKEN=$(grep '^UIPATH_ACCESS_TOKEN=' "$AUTH_FILE" | cut -d'=' -f2-
 ## Policy Read Commands
 
 ```bash
-# List policies (optionally filter by product)
+# List policies (optionally filter by product) — used only for skipped/reporting context
 uip admin aops-policy list --output json
 uip admin aops-policy list --product-name AITrustLayer --output json
-uip admin aops-policy list --search "<POLICY_NAME>" --output json
-
-# Get a specific policy by ID (returns full formData)
-uip admin aops-policy get <POLICY_IDENTIFIER> --output json
 ```
 
-## Effective Policy Resolution
+## Effective Policy Resolution (primary)
 
 ```bash
-# Get the effective policy for a product at tenant scope
-uip admin aops-policy deployment get-by-tenant \
-  --license-type <LICENSE_TYPE> \
-  --product-name <PRODUCT_IDENTIFIER> \
-  --tenant-identifier <TENANT_GUID> \
+# Resolve the effective policy for the currently authenticated user
+uip admin aops-policy deployment get-by-user \
+  <LICENSE_TYPE> <PRODUCT_IDENTIFIER> <TENANT_GUID> \
   --output json
 ```
 
-Returns the effective policy after applying the USER → GROUP → TENANT → GLOBAL inheritance chain.
+Positional args (all required):
+- `<LICENSE_TYPE>` — e.g. `NoLicense`, `Attended` (from the pack's `policy.licenseTypeIdentifier`)
+- `<PRODUCT_IDENTIFIER>` — e.g. `AITrustLayer` (from the pack's `policy.productIdentifier`)
+- `<TENANT_GUID>` — `UIPATH_TENANT_ID` from `~/.uipath/.auth`
+
+Returns the effective policy after applying the full USER → GROUP → TENANT → GLOBAL inheritance chain for the calling user. Response shape:
+
+```jsonc
+{
+  "Result": "Success",
+  "Code": "AopsPolicyDeploymentGetByUser",
+  "Data": {
+    "availability": 30,
+    "policy-name": "<effective policy name>",
+    "deployment": { "type": "USER|GROUP|TENANT|GLOBAL", "name": "<principal/tenant name>" },
+    "data": { /* live formData — compare this against the pack's expectedFormData */ }
+  }
+}
+```
+
+| Response | Meaning | Action |
+|---|---|---|
+| `200` with `Data.data` | Policy effectively applied | Diff `Data.data` vs pack `formData` |
+| `204 No Content` (`Data.Message == "No policy applies to this user."`) | No policy in the inheritance chain | Record clause/policy as `not-deployed` |
+| `404` | License, product, or tenant identifier invalid | Halt. Surface the invalid input. |
 
 ## Products (discovery)
 
@@ -72,7 +90,9 @@ uip admin aops-policy product list --output json
 uip admin aops-policy product get <PRODUCT_IDENTIFIER> --output json
 ```
 
-## Identity Directory Search (for group/user level checks)
+## Identity Directory Search (not used in V1 check mode)
+
+`get-by-user` resolves the effective policy for the authenticated session, so V1 drift checks do **not** look up group or user principals. The directory search endpoints remain documented for future scope (e.g. running a check as an admin on behalf of a named principal):
 
 ```bash
 # Groups
@@ -94,8 +114,10 @@ curl -sS -G "{identityBase}/api/Directory/Search/{orgId}" \
 
 ## Error codes
 
-| HTTP | Meaning | Action |
-|---|---|---|
-| `401 / 403` | Session expired or insufficient perms | Halt. Ask user to `uip login`. |
-| `404` | Policy or product not found | Record as `not-deployed`. |
-| `5xx` | Server-side | Retry once after 3s. Then halt and surface. |
+| HTTP | Context | Meaning | Action |
+|---|---|---|---|
+| `401 / 403` | any | Session expired or insufficient perms | Halt. Ask user to `uip login`. |
+| `204` | `get-by-user` | No policy applies in the inheritance chain | Record clause/policy as `not-deployed`. |
+| `404` | `get-by-user` | Invalid license / product / tenant identifier | Halt and surface — this is not drift. |
+| `404` | `list` / `product get` | Resource not found | Surface as pack or input error. |
+| `5xx` | any | Server-side | Retry once after 3s. Then halt and surface. |
