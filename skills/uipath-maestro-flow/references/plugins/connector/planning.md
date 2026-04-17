@@ -14,7 +14,7 @@ Prefer higher tiers when connecting to external services:
 | --- | --- | --- |
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
 | 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector's IS connection for auth |
-| 3 | **Standalone HTTP Request** (`core.action.http`) | No connector exists, or quick prototyping — you handle auth manually via headers |
+| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
 | 4 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
 
 ### Prerequisites
@@ -25,7 +25,7 @@ Prefer higher tiers when connecting to external services:
 
 ### When NOT to Use
 
-- **No connector exists for the service** — use `core.action.http` instead
+- **No connector exists for the service** — use `core.action.http.v2` manual mode instead
 - **Simple GET request with no auth** — `core.action.http` is simpler and faster to configure
 - **The operation needs desktop/browser interaction** — use an RPA resource node
 - **The task requires reasoning or judgment** — use an agent node
