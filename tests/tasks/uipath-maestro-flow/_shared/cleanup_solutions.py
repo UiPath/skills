@@ -6,6 +6,12 @@ after evaluation completes; finds every ``.uipx`` file under it, reads
 ``SolutionId``, and best-effort deletes each via ``uip solution delete``.
 ``.uipx`` files without a ``SolutionId`` are skipped.
 
+Cleanup policy is controlled by the ``FLOW_E2E_CLEANUP`` env var:
+
+* ``always`` (default) — delete regardless of outcome. Use in CI.
+* ``never`` — delete nothing. Use when actively debugging locally so the
+  solution stays available in Studio Web for inspection.
+
 Best-effort: failures here never affect pass/fail (post_run results are
 informational only), so this script always exits 0.
 """
@@ -15,11 +21,23 @@ from __future__ import annotations
 import glob
 import json
 import logging
+import os
 import subprocess
 import sys
 
 logging.basicConfig(level=logging.INFO, format="cleanup_solutions: %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def _resolve_policy() -> str:
+    policy = os.environ.get("FLOW_E2E_CLEANUP", "always").lower()
+    if policy not in ("always", "never"):
+        logger.warning(
+            "FLOW_E2E_CLEANUP=%r is invalid (expected always|never); treating as 'always'",
+            policy,
+        )
+        return "always"
+    return policy
 
 
 def main() -> int:
@@ -28,7 +46,9 @@ def main() -> int:
         logger.info("no .uipx files under cwd; nothing to do.")
         return 0
 
+    policy = _resolve_policy()
     deleted: list[str] = []
+    preserved: list[str] = []
     skipped: list[str] = []
     failed: list[str] = []
 
@@ -45,6 +65,15 @@ def main() -> int:
         if not sid:
             logger.info("no SolutionId in %s, skipping", path)
             skipped.append(path)
+            continue
+
+        if policy == "never":
+            logger.info(
+                "FLOW_E2E_CLEANUP=never; preserving %s (delete later with: uip solution delete %s)",
+                sid,
+                sid,
+            )
+            preserved.append(sid)
             continue
 
         r = subprocess.run(
@@ -66,8 +95,10 @@ def main() -> int:
             failed.append(sid)
 
     logger.info(
-        "summary deleted=%d skipped=%d failed=%d",
+        "summary policy=%s deleted=%d preserved=%d skipped=%d failed=%d",
+        policy,
         len(deleted),
+        len(preserved),
         len(skipped),
         len(failed),
     )
