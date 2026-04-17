@@ -13,8 +13,8 @@ Prefer higher tiers when connecting to external services:
 | Tier | Approach | When to Use |
 | --- | --- | --- |
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
-| 2 | **HTTP Request within a connector** | A connector exists but lacks the specific endpoint — connector still handles auth |
-| 3 | **Standalone HTTP Request** (`core.action.http`) | No connector exists, or quick prototyping — you handle auth manually |
+| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector's IS connection for auth |
+| 3 | **Standalone HTTP Request** (`core.action.http`) | No connector exists, or quick prototyping — you handle auth manually via headers |
 | 4 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
 
 ### Prerequisites
@@ -74,9 +74,15 @@ uip is connections list "<connector-key>" --output json
 - `$vars.{nodeId}.output` — the connector response (structure depends on the operation)
 - `$vars.{nodeId}.error` — error details if the call fails
 
-## HTTP Fallback
+## HTTP Fallback (Managed HTTP Request)
 
-When a connector exists but lacks the specific endpoint, use the connector's HTTP Request activity. The connector still manages authentication; you supply the path and payload. Note as `connector: <service> (HTTP fallback)` during planning.
+When a connector exists but lacks the specific curated activity, use `core.action.http.v2` (Managed HTTP Request). This node proxies through the `uipath-uipath-http` connector and uses the **target connector's** IS connection for authentication — you supply the API path and payload.
+
+> **Do NOT use `core.action.http` (v1) with `authenticationType: "connection"` for this.** The v1 node does not pass IS credentials at runtime. Always use `core.action.http.v2`.
+
+See [http/planning.md](../http/planning.md) for full selection heuristics and [http/impl.md](../http/impl.md) for configuration via `uip flow node configure`.
+
+Note as `managed-http: <service> — <operation>` during planning.
 
 ## Planning Annotation
 

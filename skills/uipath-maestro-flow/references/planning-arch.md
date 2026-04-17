@@ -86,7 +86,8 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | Node Type | Plugin | When to Select |
 | --- | --- | --- |
 | `core.action.script` | [script](plugins/script/planning.md) | Custom logic, data transformation, computation, formatting |
-| `core.action.http` | [http](plugins/http/planning.md) | Call a REST API where no connector exists, or quick prototyping |
+| `core.action.http.v2` | [http](plugins/http/planning.md) | Call a REST API with IS connector-managed auth (connector exists but lacks the curated activity) |
+| `core.action.http` | [http](plugins/http/planning.md) | Call a REST API with manual auth or no auth — no connector exists, or quick prototyping |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by on a collection |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
@@ -151,8 +152,8 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 When the flow needs to call an external service, use this decision order — prefer higher tiers:
 
 1. **Pre-built Integration Service connector** — Use when a connector exists and covers the use case. See [connector](plugins/connector/planning.md).
-2. **HTTP Request within a connector** — Use when a connector exists but lacks the specific endpoint. See [connector](plugins/connector/planning.md) HTTP Fallback section.
-3. **Standalone HTTP Request** (`core.action.http`) — Use for one-off API calls to services without connectors. See [http](plugins/http/planning.md).
+2. **Managed HTTP Request** (`core.action.http.v2`) — Use when a connector exists but lacks the specific curated activity. Uses the connector's IS connection for auth. See [http](plugins/http/planning.md).
+3. **Standalone HTTP Request** (`core.action.http`) — Use for one-off API calls to services without connectors, with manual auth or no auth. See [http](plugins/http/planning.md).
 4. **RPA workflow node** — Use only when the target system has no API (legacy desktop apps, terminals). See [rpa](plugins/rpa/planning.md).
 
 ---
@@ -167,6 +168,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.trigger.scheduled` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
 | `core.action.script` | `input` | `success` |
+| `core.action.http.v2` | `input` | `output` |
 | `core.action.http` | `input` | `default`, `branch-{id}` (dynamic per branch) |
 | `core.action.transform` | `input` | `output` |
 | `core.logic.delay` | `input` | `output` |
@@ -429,9 +431,10 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 ### "I need to call an external service"
 
-1. Is there a connector? -> [connector](plugins/connector/planning.md)
-2. No connector, but has a REST API? -> [http](plugins/http/planning.md)
-3. No API at all (desktop app, terminal)? -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished
+1. Is there a connector with a curated activity? -> [connector](plugins/connector/planning.md)
+2. Connector exists but lacks the specific activity? -> `core.action.http.v2` (managed HTTP with connector auth) — see [http](plugins/http/planning.md)
+3. No connector exists, but has a REST API? -> `core.action.http` (standalone HTTP with manual auth) — see [http](plugins/http/planning.md)
+4. No API at all (desktop app, terminal)? -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished
 
 ### "I need to branch"
 

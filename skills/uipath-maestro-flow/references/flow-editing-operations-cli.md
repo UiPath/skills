@@ -105,14 +105,39 @@ uip flow node configure <ProjectName>.flow <NODE_ID> \
 **What the CLI handles automatically:**
 - Populates `inputs.detail` (connectionId, method, endpoint, bodyParameters, etc.)
 - Creates connection binding entries in `bindings_v2.json`
+- Creates connection resource files under `resources/solution_folder/connection/`
 
-The `--detail` JSON schema differs between connector activity nodes and connector trigger nodes — see [connector/impl.md](plugins/connector/impl.md) and [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the exact fields.
+The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/impl.md](plugins/connector/impl.md), [connector-trigger/impl.md](plugins/connector-trigger/impl.md), and [http/impl.md](plugins/http/impl.md) for the exact fields.
 
 **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file:
 
 ```bash
 uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"
 ```
+
+### Configure a managed HTTP node
+
+After adding a `core.action.http.v2` node, configure it with target connector and connection details:
+
+```bash
+uip flow node configure <ProjectName>.flow <NODE_ID> \
+  --detail '{
+    "authentication": "connector",
+    "targetConnector": "<TARGET_CONNECTOR_KEY>",
+    "connectionId": "<TARGET_CONNECTION_ID>",
+    "folderKey": "<FOLDER_KEY>",
+    "method": "GET",
+    "path": "/api/endpoint",
+    "query": {"param1": "value1"}
+  }'
+```
+
+**What the CLI handles automatically:**
+- Wraps your fields into the full `inputs.detail` structure (connector: `uipath-uipath-http`, bodyParameters, configuration)
+- Generates `bindings_v2.json` with the target connector's connection
+- Creates a connection resource file under `resources/solution_folder/connection/`
+
+See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and JSON structure.
 
 ### Validate
 

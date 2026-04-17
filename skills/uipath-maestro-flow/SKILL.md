@@ -275,6 +275,8 @@ Do not run any of these actions without an explicit user selection.
 - **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
 - **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.
 - **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
+- **Never use `core.action.http` (v1) for connector-authenticated requests** — the v1 node's `authenticationType: "connection"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) instead. See [http/planning.md](references/plugins/http/planning.md).
+- **Never hand-write `inputs.detail` for managed HTTP nodes** — run `uip flow node configure` to populate the `inputs.detail` structure, generate `bindings_v2.json`, and create the connection resource file. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
 
 ## Task Navigation
 
@@ -353,7 +355,7 @@ When you finish building or editing a flow, report to the user:
 - **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
   - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
   - [script](references/plugins/script/) — Custom JavaScript logic via Jint ES2020
-  - [http](references/plugins/http/) — REST API calls, response branching, connection auth
+  - [http](references/plugins/http/) — REST API calls: `core.action.http.v2` (managed HTTP with IS connector auth) and `core.action.http` (standalone with manual auth)
   - [decision](references/plugins/decision/) — Binary if/else branching
   - [switch](references/plugins/switch/) — Multi-way branching (3+ paths)
   - [loop](references/plugins/loop/) — Collection iteration (sequential/parallel)
