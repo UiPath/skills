@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa
-description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, and hybrid projects. Create, edit, build, run, debug. For Orchestrator/deploy→uipath-platform. For agents→uipath-agents. For legacy (.NET 4.6.1)→uipath-rpa-legacy."
+description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, hybrid projects. Create, edit, build, run, debug. Deploy→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
 ---
 
 # UiPath RPA Assistant
