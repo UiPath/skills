@@ -7,9 +7,10 @@ The output is a **self-contained, single-file HTML document** with inline CSS, n
 ## How to generate
 
 1. Read the template file: `assets/templates/compliance-report-template.html`
-2. Replace all `{{PLACEHOLDER}}` tokens with actual values
-3. Generate the clause rows and drift detail blocks
-4. Write the populated HTML to `./compliance-report-{packId}-{timestamp}.html`
+2. Load the property reference: `assets/uipath_policy_reference_classified.json` — used to resolve property path → human-readable description (see [Property description + classification lookup](#property-description--classification-lookup) below)
+3. Replace all `{{PLACEHOLDER}}` tokens with actual values
+4. Generate the clause rows and drift detail blocks
+5. Write the populated HTML to `./compliance-report-{packId}-{timestamp}.html`
 
 ## Placeholder reference
 
@@ -96,7 +97,7 @@ Replace the `<!-- {{DRIFT_DETAILS}} -->` comment with one block per **drifted** 
   <table>
     <thead>
       <tr>
-        <th>Property</th>
+        <th>Control</th>
         <th>Expected</th>
         <th>Actual</th>
         <th style="width: 70px">Match</th>
@@ -105,7 +106,7 @@ Replace the `<!-- {{DRIFT_DETAILS}} -->` comment with one block per **drifted** 
     <tbody>
       <!-- One row per property -->
       <tr>
-        <td><code>{{PROPERTY_PATH}}</code></td>
+        <td><div class="control-desc">{{CONTROL_LABEL}}</div></td>
         <td><span class="val-expected">{{EXPECTED_VALUE}}</span></td>
         <td><span class="val-actual">{{ACTUAL_VALUE}}</span></td>
         <td><span class="{{MATCH_CLASS}}">{{MATCH_ICON}}</span></td>
@@ -114,6 +115,69 @@ Replace the `<!-- {{DRIFT_DETAILS}} -->` comment with one block per **drifted** 
   </table>
 </div>
 ```
+
+### Control label lookup
+
+Do NOT label rows with the raw property path when a description is available. Resolve each path against the reference at `assets/uipath_policy_reference_classified.json` and use the field's `description` as the label. Do **not** render the raw property path or the `classification_type` — they add noise the auditor doesn't need.
+
+**Reference file layout:**
+
+```jsonc
+{
+  "AITrustLayer": {
+    "_product_name": "AITrustLayer",
+
+    "global-control-toggle": {
+      "type": "boolean",
+      "description": "Master switch. Must be true for all sub-controls to take effect…"
+    },
+
+    "container": {
+      "type": "object",
+      "fields": {
+        "pii-in-flight-agents": {
+          "type": "boolean",
+          "description": "Scan and redact PII in data sent to/from Agents at runtime."
+        }
+      }
+    },
+
+    "pii-entity-table": {
+      "type": "array",
+      "item_schema": {
+        "pii-entity-confidence-threshold": {
+          "description": "Minimum confidence score for detection…"
+        }
+      }
+    }
+  }
+}
+```
+
+Top-level keys starting with `_` (e.g. `_product_name`, `_section_pii`) are metadata and must be ignored during lookup.
+
+**Traversal algorithm** — given a product (e.g. `AITrustLayer`) and a dotted path (e.g. `container.pii-in-flight-agents`):
+
+```
+node = reference[product]
+for segment in path.split("."):
+    if segment in node:
+        node = node[segment]
+    elif node.fields and segment in node.fields:
+        node = node.fields[segment]
+    elif node.item_schema and segment in node.item_schema:
+        node = node.item_schema[segment]
+    else:
+        node = null
+        break
+```
+
+**Rendering rules:**
+
+| Situation | `{{CONTROL_LABEL}}` |
+|---|---|
+| Description found | `node.description` verbatim |
+| No description (unmapped path, or product missing from reference) | Fall back to the raw path wrapped in `<code>…</code>` so it's still intelligible to the auditor |
 
 ### Match display
 

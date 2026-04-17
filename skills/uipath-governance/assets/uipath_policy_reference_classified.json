@@ -1,0 +1,714 @@
+{
+  "_title": "UiPath Automation Ops — Complete Governance Policy Reference (Classified)",
+  "_version": "2024.10 (Automation Cloud)",
+  "_source": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/governance-intro",
+  "_usage": "This file is documentation only. Copy the relevant policy block into your compliance pack (e.g. hipaa_policies.json) and adjust values.",
+  "_classification_legend": {
+    "Model Usage": "Controls which AI models/LLM features are enabled or accessible",
+    "Data Residency": "Controls where data is sent, stored, or processed — third-party provider compliance (BAA/DPA)",
+    "Content Safety": "Controls for PII detection/redaction, content filtering, and blocking harmful or unauthorized content",
+    "Cost & Budget": "Controls for token limits, resource consumption, and cost management",
+    "Audit & Logging": "Controls for audit trails, trace retention, logging, and traceability",
+    "Safety": "Quality gates, analyzer enforcement, feature access restrictions, and runtime behavioral controls",
+    "Fairness & Bias": "Controls ensuring equitable treatment across demographic categories and consistent AI output quality"
+  },
+
+  "_policy_metadata": {
+    "_description": "Fields common to ALL policy types — set in the policy shell, not in policyFormData",
+    "name":         { "type": "string",  "required": true,  "description": "Unique display name shown in Automation Ops UI" },
+    "description":  { "type": "string",  "required": false, "default": "", "description": "Free-text description" },
+    "priority":     { "type": "integer", "required": false, "default": 1,  "description": "Lower number = higher precedence when multiple group-level policies apply to same user" },
+    "availability": { "type": "integer", "required": false, "default": 30, "unit": "days", "description": "How long the product caches the policy when it cannot reach Automation Ops" }
+  },
+
+  "AITrustLayer": {
+    "_category": "AI Trust Layer",
+    "_product_name": "AITrustLayer",
+    "_description": "Controls which generative AI features and third-party AI providers users can access. Applied to all UiPath products that call external LLMs.",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/settings-for-ai-trust-layer-policies",
+
+    "global-control-toggle": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Master switch. Must be true for all sub-controls to take effect. Set false to disable ALL AI governance (not recommended)."
+    },
+
+    "_section_product_toggles": "──── AI Product Feature Toggles ────────────────────────────────",
+
+    "agents": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable UiPath Agents (autonomous AI agents). Disable to block agent creation and execution."
+    },
+    "agenthub": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Agent Hub / Coded Agents. Disable to block coded agent deployments."
+    },
+    "apps": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable AI features inside UiPath Apps (e.g. AI-powered form filling, Autopilot in apps)."
+    },
+    "jarvis": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Autopilot for Everyone (Jarvis). Disable to prevent end-users from using the Autopilot assistant."
+    },
+    "documentunderstanding": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Document Understanding AI features. When enabled, documents are sent to LLM APIs for extraction. Disable if documents contain sensitive data not covered by BAA/DPA."
+    },
+    "communicationsmining": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Communications Mining (IXP). Processes emails/tickets through AI classification."
+    },
+    "healing-agent": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Healing Agent GenAI recovery. Allows automation to self-heal UI failures using AI. Disable for strict deterministic execution."
+    },
+    "wingman": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Wingman AI assistant (Studio/Studio Web AI suggestions). Disable to prevent AI-generated code suggestions."
+    },
+    "uipath-testmanager": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Test Manager AI features (AI-generated test cases, analysis)."
+    },
+    "uia": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable UIAutomation GenAI activities (Computer Vision, etc.). Note: core UIAutomation (non-AI) is unaffected by this toggle."
+    },
+    "uipath-ai-rdk": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable UiPath AI Runtime Dev Kit (GenAI activities package). Disable to block custom LLM activity usage in automations."
+    },
+
+    "_section_audit": "──── Audit & Data Retention ──────────────────────────────────────",
+
+    "saveprompts": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": true,
+      "description": "Save all AI prompt inputs and model outputs to trace logs. Required for audit trails. Maps to 'Input/output saving for audit' in the UI."
+    },
+    "traces-ttl-enforcement": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": false,
+      "description": "Enforce a maximum retention period on AI trace data. When false, traces are retained for 30 days. When true, traces-ttl applies."
+    },
+    "traces-ttl": {
+      "classification_type": "Audit & Logging",
+      "type": "enum",
+      "values": ["1d", "7d"],
+      "default": "7d",
+      "description": "Maximum retention for AI trace data when enforcement is on. Only '1d' and '7d' are accepted by the API."
+    },
+    "traces-ttl-effective": {
+      "classification_type": "Audit & Logging",
+      "type": "enum",
+      "values": ["1d", "7d", "30d"],
+      "default": "30d",
+      "description": "Read-only effective value shown in UI. Set same as traces-ttl when enforcement is on."
+    },
+    "traces-disable-insights": {
+      "classification_type": "Data Residency",
+      "type": "boolean",
+      "default": false,
+      "description": "Prevent AI trace data from flowing into UiPath Insights analytics. Enable to reduce data exposure surface for sensitive workloads."
+    },
+
+    "_section_pii": "──── PII Protection In-Flight ───────────────────────────────────",
+
+    "container": {
+      "classification_type": "Content Safety",
+      "type": "object",
+      "description": "PII scanning controls applied to data passing through AI calls in-flight.",
+      "fields": {
+        "pii-in-flight-agents": {
+          "classification_type": "Content Safety",
+          "type": "boolean",
+          "default": false,
+          "description": "Scan and redact PII in data sent to/from Agents at runtime."
+        },
+        "pii-in-flight-uipath-ai-rdk": {
+          "classification_type": "Content Safety",
+          "type": "boolean",
+          "default": false,
+          "description": "Scan and redact PII in data sent to/from UiPath AI RDK activities at runtime."
+        }
+      }
+    },
+
+    "_section_providers": "──── Third-Party AI Provider Controls ───────────────────────────",
+
+    "anthropic-control-toggle": {
+      "classification_type": "Data Residency",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow use of Anthropic (Claude) models. Disable until Anthropic BAA/DPA is in place."
+    },
+    "azure-openai-control-toggle": {
+      "classification_type": "Data Residency",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow use of Azure OpenAI models. Microsoft Azure has HIPAA BAA available — verify before enabling."
+    },
+    "gemini-control-toggle": {
+      "classification_type": "Data Residency",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow use of Google Gemini models. Disable until Google Cloud DPA is verified."
+    },
+
+    "submit": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Internal form submission flag. Always set to true."
+    },
+
+    "_section_pii_table": "──── PII Entity Detection Table ──────────────────────────────────",
+
+    "pii-entity-table": {
+      "classification_type": "Fairness & Bias",
+      "type": "array",
+      "description": "List of PII entity categories to detect and redact. Per-category confidence thresholds ensure equitable data protection across demographic and personal-information categories.",
+      "item_schema": {
+        "pii-entity-category": {
+          "type": "enum",
+          "values": [
+            "Person", "Address", "Date", "PhoneNumber", "EugpsCoordinates",
+            "Email", "CreditCardNumber", "InternationalBankingAccountNumber",
+            "SwiftCode", "ABARoutingNumber", "USDriversLicenseNumber",
+            "UKDriversLicenseNumber", "USIndividualTaxpayerIdentification",
+            "UKUniqueTaxpayerNumber", "USBankAccountNumber",
+            "USSocialSecurityNumber", "UsukPassportNumber", "URL", "IPAddress"
+          ],
+          "description": "PII category name"
+        },
+        "pii-entity-confidence-threshold": {
+          "classification_type": "Fairness & Bias",
+          "type": "float",
+          "range": "0.0 – 1.0",
+          "default": 0.5,
+          "description": "Minimum confidence score for detection. Lower = more sensitive but more false positives. Per-category thresholds impact equitable detection across populations."
+        },
+        "pii-entity-is-enabled": {
+          "classification_type": "Fairness & Bias",
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this category is actively scanned. Disabling categories may create unequal protection."
+        },
+        "identifier": {
+          "type": "string",
+          "pattern": "{category}{threshold_without_dot}",
+          "example": "Person0.5",
+          "description": "Unique row key required by the API. Format: category name + threshold value concatenated."
+        }
+      }
+    }
+  },
+
+  "Studio": {
+    "_category": "Studio (Development)",
+    "_product_name": "Development",
+    "_description": "Controls Studio IDE behavior — analyzer enforcement, code quality gates, publishing rules, and design defaults. Applied when users open Studio.",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/settings-for-studio-policies",
+
+    "_section_analyzer": "──── Save & Publish — Analyzer Gates ────────────────────────────",
+
+    "enforceAnalyzerBeforePublish": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Block publishing to Orchestrator if Workflow Analyzer finds errors."
+    },
+    "enforceAnalyzerBeforeRun": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Block local debug/run if Workflow Analyzer finds errors."
+    },
+    "enforceAnalyzerBeforePushCheckIn": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Block Git push/check-in if Workflow Analyzer finds errors."
+    },
+    "analyzeRpaXamlFilesOnly": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "When true, Analyzer only runs on RPA XAML files, skipping test files and coded workflows."
+    },
+    "enforceCheckInBeforePublish": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": false,
+      "description": "Require source control check-in before publishing (ensures all code is versioned)."
+    },
+    "exportAnalyzerResults": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": false,
+      "description": "Automatically export Workflow Analyzer results to a file on each run. Studio only (not StudioX)."
+    },
+    "enforceReleaseNotes": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": false,
+      "description": "Require developers to add release notes before publishing. Studio only."
+    },
+
+    "_section_ai": "──── AI & Packages ───────────────────────────────────────────────",
+
+    "enableAiActivitySuggestions": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": false,
+      "description": "Enable AI-powered activity suggestions (Wingman) in the Activities panel."
+    },
+    "autoUpdatePackagesForAutopilot": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": false,
+      "description": "Automatically update activity packages to versions required by Autopilot."
+    },
+    "enableAllAvailableActivities": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Show all activities including unlicensed ones. When false, only licensed activities appear."
+    },
+    "allowPreviewPackagesInActivitiesPanel": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Show preview/pre-release packages in the Activities panel."
+    },
+
+    "_section_deps": "──── Build & Dependencies ────────────────────────────────────────",
+
+    "separateRuntimeDependencies": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Split design-time and runtime dependencies into separate nuspec sections. Improves robot deployment reliability."
+    },
+    "includeSources": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": false,
+      "description": "Include source XAML files in the published NuGet package. Required for source-level audit."
+    },
+    "objectRepositoryEnforced": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Require use of Object Repository for UI element descriptors. Improves maintainability."
+    },
+
+    "_section_design": "──── Design Style ────────────────────────────────────────────────",
+
+    "defaultLanguage": {
+      "classification_type": "Safety",
+      "type": "enum",
+      "values": ["VisualBasic", "C#"],
+      "default": "VisualBasic",
+      "description": "Default coding language for new projects."
+    },
+    "useModernForNewProjects": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Use Modern design experience for new projects (recommended for new deployments)."
+    },
+    "defaultCompatibility": {
+      "classification_type": "Safety",
+      "type": "enum",
+      "values": ["Windows-Legacy", "Windows", "Cross-platform"],
+      "default": "Windows",
+      "description": "Default target framework for new projects."
+    },
+    "allowedCompatibilityFrameworks": {
+      "classification_type": "Safety",
+      "type": "array",
+      "values": ["Windows-Legacy", "Windows", "Cross-platform"],
+      "default": ["Windows-Legacy", "Windows", "Cross-platform"],
+      "description": "Which target frameworks developers are allowed to select. Limit to enforce standardization."
+    }
+  },
+
+  "StudioWeb": {
+    "_category": "Studio Web",
+    "_product_name": "StudioWeb",
+    "_description": "Controls the browser-based Studio Web IDE. Focused on agentic/AI workflow development gates.",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/settings-for-studio-web-policies",
+
+    "_section_agent_quality": "──── Agent Quality Gates ─────────────────────────────────────",
+
+    "enforceMinAgentScore": {
+      "classification_type": "Safety",
+      "type": "boolean + threshold",
+      "default": false,
+      "description": "Block publishing if agent quality score is below the configured threshold. Agent score evaluates system prompt clarity, tool configuration, and overall readiness."
+    },
+    "enforceMaxTemperature": {
+      "classification_type": "Model Usage",
+      "type": "boolean + range",
+      "default": false,
+      "description": "Block publishing if LLM temperature setting exceeds the configured maximum. Controls output determinism."
+    },
+    "enforceMaxTokens": {
+      "classification_type": "Cost & Budget",
+      "type": "boolean + integer",
+      "default": false,
+      "description": "Block publishing if max tokens per agent response exceeds the configured limit."
+    },
+
+    "_section_features": "──── Feature Toggles ─────────────────────────────────────────────",
+
+    "allowUserFeedback": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to send feedback on AI outputs."
+    },
+    "allowImportProjects": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to import existing projects into Studio Web."
+    },
+    "allowPublishOutsidePersonalWorkspace": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow publishing to shared Orchestrator folders (not just Personal Workspace)."
+    },
+    "allowAutopilot": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow use of Autopilot within Studio Web."
+    },
+    "enforceDependenciesAutoUpdate": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically update activity packages to latest compatible versions."
+    },
+
+    "_section_analyzer": "──── Workflow Analyzer Rules ─────────────────────────────────────",
+
+    "workflowAnalyzerRules": {
+      "classification_type": "Safety",
+      "ST-USG-014": {
+        "classification_type": "Safety",
+        "description": "AllowedPackages rule — controls which NuGet packages can be used.",
+        "parameters": {
+          "ProhibitedPackages": { "type": "string", "format": "comma-separated, supports * wildcard", "example": "UiPath.Excel.*,SomeThirdParty.*" },
+          "AllowedPackages":    { "type": "string", "format": "comma-separated, supports * wildcard", "example": "UiPath.*" }
+        }
+      },
+      "ST-USG-026": {
+        "classification_type": "Safety",
+        "description": "AllowedActivities rule — controls which activity types can be used.",
+        "parameters": {
+          "ProhibitedActivities": { "type": "string", "format": "comma-separated, supports * wildcard", "example": "UiPath.Python.*" },
+          "AllowedActivities":    { "type": "string", "format": "comma-separated, supports * wildcard", "example": "UiPath.UIAutomation.*,UiPath.Mail.*" }
+        }
+      }
+    }
+  },
+
+  "Robot": {
+    "_category": "Robot",
+    "_product_name": "Robot",
+    "_description": "Runtime governance rules enforced by the Robot executor. Block or warn when automations interact with unauthorized apps/URLs or send emails to blocked recipients.",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/settings-for-robot-policies",
+
+    "runtimeAnalyzerRules": {
+      "classification_type": "Safety",
+      "type": "array of rule objects",
+      "description": "List of runtime governance rules. Currently two supported rule IDs.",
+
+      "RT-UIA-001": {
+        "classification_type": "Safety",
+        "_description": "App/URL Restrictions — blocks or warns when automation interacts with unauthorized applications or URLs.",
+        "_applies_to": "All UI automation activities; packages: GSuite, Mail, Office 365",
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this rule is active."
+        },
+        "action": {
+          "type": "enum",
+          "values": ["Error", "Warning"],
+          "default": "Error",
+          "description": "Error = halt execution. Warning = log and continue."
+        },
+        "parameters": {
+          "whitelistApps": {
+            "classification_type": "Safety",
+            "type": "string",
+            "format": "comma or semicolon separated, supports wildcards * and ?",
+            "default": "",
+            "example": "chrome.exe,notepad.exe,MyApp.*",
+            "description": "Applications explicitly allowed. Whitelist takes priority over blacklist when both configured."
+          },
+          "whitelistUrls": {
+            "classification_type": "Safety",
+            "type": "string",
+            "format": "comma or semicolon separated, supports wildcards * and ?",
+            "default": "",
+            "example": "*.mycompany.com,app.salesforce.com",
+            "description": "URLs explicitly allowed."
+          },
+          "blacklistApps": {
+            "classification_type": "Safety",
+            "type": "string",
+            "format": "comma or semicolon separated, supports wildcards * and ?",
+            "default": "",
+            "example": "*.exe,cmd.exe",
+            "description": "Applications explicitly blocked."
+          },
+          "blacklistUrls": {
+            "classification_type": "Safety",
+            "type": "string",
+            "format": "comma or semicolon separated, supports wildcards * and ?",
+            "default": "",
+            "example": "*.socialmedia.com",
+            "description": "URLs explicitly blocked."
+          },
+          "CustomMessage": {
+            "type": "string",
+            "default": "UI automation detected on '{0}' which is not an allowed application/url as defined by your organization.",
+            "description": "Message shown to user/logged when rule triggers. {0} = the blocked app/URL name."
+          }
+        }
+      },
+
+      "RT-OUT-001": {
+        "classification_type": "Content Safety",
+        "_description": "Email Outbound Blocklist — blocks or warns when automation sends email to blocked recipients.",
+        "_applies_to": "Send Email, Reply To Email, Forward Email, Send Notifications, Create Calendar Event activities",
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this rule is active."
+        },
+        "action": {
+          "type": "enum",
+          "values": ["Error", "Warning"],
+          "default": "Error",
+          "description": "Error = halt execution. Warning = log and continue."
+        },
+        "parameters": {
+          "blocklist": {
+            "classification_type": "Content Safety",
+            "type": "array of strings",
+            "format": "email addresses or domains, comma or semicolon separated",
+            "default": [],
+            "example": ["external@competitor.com", "*@publicdomain.com"],
+            "description": "Email addresses/domains that automations are not allowed to contact."
+          },
+          "CustomMessage": {
+            "type": "string",
+            "default": "The email recipient '{0}' is restricted by your organization's governance policy.",
+            "description": "Message shown/logged when rule triggers. {0} = the blocked recipient."
+          }
+        }
+      }
+    }
+  },
+
+  "Assistant": {
+    "_category": "Assistant",
+    "_product_name": "Assistant",
+    "_description": "Controls UiPath Assistant runtime features — widgets, feature availability, and execution context for attended users.",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/settings-for-assistant-policies",
+
+    "_section_widgets": "──── Widgets ──────────────────────────────────────────────────────",
+
+    "allowCustomWidgets": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to add custom (non-official) widgets to their Assistant."
+    },
+    "useOfficialFeeds": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Restrict widget installation to official UiPath NuGet feeds only."
+    },
+    "widgets": {
+      "classification_type": "Safety",
+      "type": "array",
+      "description": "List of widgets and whether they are enabled. Unlisted widgets follow allowCustomWidgets.",
+      "known_widgets": [
+        { "nugetPackageName": "UiPath.Apps.Widget",            "description": "UiPath Apps launcher widget" },
+        { "nugetPackageName": "UiPath.Marketplace.Widget",     "description": "UiPath Marketplace browsing widget" },
+        { "nugetPackageName": "UiPath.AutomationStore.Widget", "description": "Automation Store widget (v21.10+)" },
+        { "nugetPackageName": "UiPath.Autopilot.Widget",       "description": "Autopilot for Everyone widget (v2024.10.1+)" }
+      ],
+      "item_schema": {
+        "enabled":           { "type": "boolean" },
+        "nugetPackageName":  { "type": "string" },
+        "version":           { "type": "string", "description": "Pin to specific version or leave empty for latest" }
+      }
+    },
+
+    "_section_features": "──── Feature Toggles (v23.10.0+) ────────────────────────────────",
+
+    "allowLoggingLevelChange": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to change the logging verbosity in Assistant settings."
+    },
+    "displayEDRProtectionStatus": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Show EDR (Endpoint Detection & Response) protection status indicator in Assistant."
+    },
+    "allowRunOutsidePersonalWorkspace": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to run automations from shared Orchestrator folders (not only Personal Workspace)."
+    },
+    "allowShareAutomationUrl": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to copy and share automation trigger URLs."
+    },
+    "enablePictureInPicture": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Picture-in-Picture mode (run attended automations in isolated virtual desktop)."
+    },
+    "enableStudioWeb": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Show the Studio Web launch button in Assistant."
+    },
+    "enableActionCenter": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Action Center integration for human-in-the-loop task approval workflows."
+    },
+    "autoLaunchAtStartup": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Automatically start Assistant when Windows starts."
+    },
+    "minimizeAssistantDuringExecution": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": false,
+      "description": "Minimize the Assistant window when an automation is running."
+    },
+    "enableTaskCapture": {
+      "classification_type": "Audit & Logging",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Task Capture (screen recording for process documentation)."
+    },
+    "enableTaskMining": {
+      "classification_type": "Model Usage",
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Task Mining (AI process discovery from user activity)."
+    },
+    "useLocalUserPreferences": {
+      "classification_type": "Safety",
+      "type": "boolean",
+      "default": true,
+      "description": "Allow users to override certain Assistant settings with local preferences."
+    }
+  },
+
+  "IntegrationService": {
+    "_category": "Integration Service",
+    "_product_name": "IntegrationService",
+    "_description": "Controls which third-party connectors and authentication methods are available to automations. Applied when automations create connections or call connector activities.",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/settings-for-integration-service-policies",
+    "_important": "Policy affects new connections only. Existing connections and running workflows are not affected. Allow up to 5 minutes for policy cache refresh.",
+
+    "defaultConnectorState": {
+      "classification_type": "Data Residency",
+      "type": "enum",
+      "values": ["Enabled", "Disabled"],
+      "default": "Enabled",
+      "description": "Default state for connectors not explicitly listed. Set to 'Disabled' for zero-trust (deny-all) posture."
+    },
+
+    "_section_connectors": "──── Per-Connector Configuration (managed in UI) ─────────────────",
+    "_connector_note": "Individual connectors are enabled/disabled in the Automation Ops UI after the policy is created. Each connector supports: enable/disable toggle, allowed authentication types, pre-defined authentication parameters (e.g. API keys, OAuth2 client credentials, custom site URLs).",
+
+    "_example_connector_config": {
+      "connectorName": "OpenAI",
+      "enabled": false,
+      "allowedAuthTypes": ["ApiKey"],
+      "predefinedParams": {
+        "apiKey": "set-by-admin"
+      }
+    }
+  },
+
+  "_deployment_reference": {
+    "_title": "Policy Deployment Levels & Priority",
+    "_docs": "https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/deploy-governance-policies",
+
+    "priority_order": {
+      "1_highest": "User-level policy",
+      "2_middle":  "Group-level policy (lowest priority number wins when user in multiple groups)",
+      "3_lowest":  "Tenant-level policy",
+      "4_fallback": "File-based governance (Studio/StudioX only, when no Orchestrator connection)"
+    },
+
+    "options_per_level": {
+      "No Policy": "Disables governance enforcement at this level",
+      "Inherit":   "Inherits from the next higher level",
+      "Custom":    "Applies the selected named policy"
+    },
+
+    "supported_license_types": {
+      "No License":           ["Studio Web", "AI Trust Layer", "Assistant Web", "Integration Service"],
+      "Attended":             ["Assistant", "Robot"],
+      "RPA Developer":        ["Studio", "StudioX", "Assistant", "Robot"],
+      "Automation Developer": ["Studio Pro", "Studio", "StudioX", "Assistant", "Robot"],
+      "Citizen Developer":    ["StudioX", "Assistant", "Robot"],
+      "Unattended Robot":     ["Robot (Production, Testing, NonProduction)"]
+    }
+  }
+}
