@@ -114,6 +114,20 @@ If the user picks **RPA workflow**, record `Project type: XAML` and move on. **N
 
 If the user provides a path, read the document and use it to inform the plan. Skip if the user is modifying an existing automation or already referenced a document.
 
+### Question 4: Test coverage depth
+
+> How thorough should automated testing be? (Testing is mandatory — this sets the depth only.)
+>
+> 1. **Standard coverage** *(recommended)* — automated tests for the primary flow plus the main edge cases and error paths I can infer from the request or PDD.
+> 2. **Happy path only** — automated tests for the primary success flow; edge-case coverage is deferred.
+
+Record the answer in the plan header as `Test coverage: standard | happy-path`. The `Testing (MANDATORY)` task in the plan body references this field so the specialist knows the scope.
+
+**Skip this question** when:
+- The user already stated coverage depth in the request (e.g., "full tests", "happy path only", "smoke test", "include edge cases") — record directly.
+- The plan contains **no generation skill** (pure `uipath-servo` interaction, pure `uipath-platform` ops, pure read-only diagnostics) → record `Test coverage: N/A`.
+- The request is a small modification to an existing automation and the user has not asked for new tests — default to `standard` for touched paths and note the assumption in Decisions & Trade-offs.
+
 ### Default: Expression language
 
 Always use **VB.NET** for XAML workflows. Note this in the plan. Do not ask.
@@ -262,6 +276,7 @@ Record the answers in the plan header. **The handoff is informational** — `uip
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
+**Test coverage:** <standard / happy-path / N/A>
 
 ## Understanding
 
@@ -293,11 +308,19 @@ In `interactive` mode this section is optional — the user is available to reso
 
 - [ ] <concrete sub-step: action + file paths / activity names / commands>
 - [ ] <concrete sub-step: expected outcome or verification>
-- [ ] Validate: <what to check before moving on>
+- [ ] Validate: <compile/build/lint/run check>
 
 ## Task 2: <skill-name> — <short description>
 
 - [ ] ...
+
+## Task N: <generation-skill> — Testing (MANDATORY)
+
+> One Testing task per generation skill in the plan (`uipath-rpa`, `uipath-maestro-flow`, `uipath-agents`, `uipath-coded-apps`). Place it immediately after that skill's generation task(s) and **before** any deploy task (`uipath-platform`). Do not describe the testing procedure here — the specialist owns it.
+
+- [ ] Load `<generation-skill>` and run its testing workflow end-to-end at the depth set in the header `Test coverage` field (`standard` or `happy-path`). See that skill's testing references for the exact commands, test-case authoring pattern, and best practices.
+- [ ] Testing is **mandatory** for every generation task in this plan — do not skip, do not mark complete without executed tests.
+- [ ] Validate: all tests pass; record results and any skipped/failing tests in the plan as blockers.
 ```
 
 ### 5b. Plan quality rules
@@ -305,18 +328,20 @@ In `interactive` mode this section is optional — the user is available to reso
 1. **No placeholders.** Every sub-step has concrete details — activity names, package dependencies, file paths, CLI commands. Never "TBD", "as needed", "similar to Task N".
 2. **Granular sub-steps.** One clear action per step.
 3. **Checkbox syntax.** `- [ ]` on every sub-step.
-4. **End every task with a validation step** (build, run, test, or verify output).
+4. **End every generation task with a `Validate:` sub-step** — a compile/build/lint check.
+4a. **Every plan MUST include a dedicated Testing task per generation skill** (see the `Task N: <generation-skill> — Testing (MANDATORY)` block in Step 5a). The Testing task is **mandatory** — never a `Validate:` sub-step, never optional, never skipped. It routes to the specialist's testing references and does NOT describe the testing procedure.
 5. **Capture all Step 1 preferences in the plan header.**
 5a. **Autonomous plans MUST include a populated Stop conditions section.** Without concrete stop items, downstream specialists have no way to distinguish "keep going" from "ask the user" and will default to asking — defeating autonomous mode.
-6. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (e.g., target-configuration procedures, OR registration steps, XAML authoring pipelines, auth flows). Each specialist's own docs own those details.
+6. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe the skill's internal flow (target-configuration, OR registration, XAML authoring pipelines, auth flows, **testing procedures / best practices**). Each specialist's own docs own those details.
 
 ### 5c. Self-review before saving
 
 1. **Coverage** — Every requirement / PDD step appears in at least one task.
 2. **Placeholder scan** — No "TBD", "TODO", "as needed", "if appropriate", "similar to".
-3. **Skill order** — Correct specialist per task; skills load in the right order (e.g., RPA before platform deploy).
-4. **Validation gaps** — Every task ends with a validation step.
-5. **No internal-flow leakage** — The plan does not duplicate steps from any specialist's own references.
+3. **Skill order** — Correct specialist per task; skills load in the right order (e.g., RPA before platform deploy; Testing task before deploy).
+4. **Validation gaps** — Every generation task ends with a `Validate:` compile/build/lint check.
+5. **Testing task present** — A dedicated `Testing (MANDATORY)` task exists for **every** generation skill in the plan (`uipath-rpa`, `uipath-maestro-flow`, `uipath-agents`, `uipath-coded-apps`). The task routes to the specialist's testing references — it does not describe the procedure.
+6. **No internal-flow leakage** — The plan does not duplicate steps from any specialist's own references (including testing procedures).
 
 Fix issues before saving.
 
@@ -350,3 +375,4 @@ Save as `YYYY-MM-DD-<feature-name>.md`:
 14. **Do not inject the user's domain or app name into the question text.** Ask "What kind of application are we automating?" — not "What kind of HR application…". "Is the app open on your machine?" — not "Is the HR app open…". The domain is captured in the plan header; keeping questions generic makes them reusable and prevents the agent from sounding like it's reading back a template.
 15. **Do not omit `Execution autonomy` from the plan header, and do not leave `Stop conditions` empty when autonomy is `autonomous`.** Downstream specialists rely on both to decide whether to interrupt. If the user did not answer the autonomy question, default to `autonomous` for simultaneous mode and note that choice in Decisions & Trade-offs. Populate Stop conditions with the hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources) — do not leave a generic placeholder.
 16. **Do not route new projects to `uipath-rpa-legacy`.** Legacy is for existing .NET Framework 4.6.1 projects only. New projects always go to `uipath-rpa` unless the user explicitly asks for legacy.
+17. **Do not omit the mandatory Testing task, and do not inline testing procedures.** Every generation skill in the plan gets its own `Testing (MANDATORY)` task that routes to that skill's testing references. Never replace it with a `Validate:` sub-step, never describe test-case authoring / data-driven testing / mock testing / assertion patterns in the plan — those live in each specialist's own testing guide and will drift if duplicated here.
