@@ -9,7 +9,7 @@
       "name": "uipath",
       "source": "./",
       "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "author": {
         "name": "UiPath"
       },
