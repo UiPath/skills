@@ -8,7 +8,7 @@
 
 ## Phase 0: Plan the Workflow
 
-> **CRITICAL:** Complete Phase 0 before spawning any agent. The orchestrator's job in Phase 0 is to plan screens and actions, then determine the few values agents cannot derive themselves (expression language, x:Class). All other data (activity templates, xmlns, TextExpression, TargetApp XAML, OR element snippets) is retrieved inside the agent — see [Prompt Templates](#prompt-templates).
+> **CRITICAL:** Complete Phase 0 before spawning any agent. The orchestrator's job in Phase 0 is to plan screens and actions, then determine the few values agents cannot derive themselves (expression language, x:Class). All other data (activity templates, xmlns, TextExpression blocks) is retrieved inside the agent, and target attachment happens inside the agent per [uia-target-attachment-guide.md](uia-target-attachment-guide.md) — see [Prompt Templates](#prompt-templates).
 
 1. **Identify screens.** List each distinct application state the workflow will interact with. A "screen" is a stable UI state where one or more elements need to be targeted — a page, a modal dialog, an inline form, or a panel that appears after an action.
 
@@ -24,7 +24,7 @@
 
    b. **x:Class value** — derived from the output `.xaml` filename per the naming rule in [xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md): folder separators become underscores, not dots. Root-level `MyWorkflow.xaml` → `x:Class="MyWorkflow"`. Subfolder `Workflows/MyWorkflow.xaml` → `x:Class="Workflows_MyWorkflow"`. Passed to the scaffolding agent prompt.
 
-   All other data (activity templates, xmlns, TextExpression blocks, TargetApp XAML, OR element snippets) is retrieved by the agent itself — see the agent prompt templates in [Prompt Templates](#prompt-templates).
+   All other data (activity templates, xmlns, TextExpression blocks) is retrieved by the agent itself, and target attachment happens inside the agent per [uia-target-attachment-guide.md](uia-target-attachment-guide.md) — see the agent prompt templates in [Prompt Templates](#prompt-templates).
 
 6. **Create a split task list** before starting Phase 1. Each screen produces TWO tasks with distinct lifecycles — `Configure-<ScreenName>` (owned by the main conversation, completes when OR registration finishes) and `Write-<ScreenName>` (owned by a background agent, completes on `<task-notification>`). Splitting these prevents the ambiguous "configure done but write running" status that collapses the Task list progress view.
 
@@ -44,7 +44,7 @@
 
 ## Phase 1: Scaffolding Agent
 
-1. **When to spawn:** Immediately after the first screen is registered in the Object Repository (TARGET-8 screen creation), before element configuration for that screen begins. The scaffolding agent depends only on the TargetApp XAML from the first screen registration — not on any element targets.
+1. **When to spawn:** Immediately after the first screen is registered in the Object Repository (TARGET-8 screen creation), before element configuration for that screen begins. The scaffolding agent depends only on the first screen reference being registered — not on any element targets.
 
 2. **Run mode:** Spawn the scaffolding agent with `run_in_background: true`. Foreground mode blocks the main conversation and defeats the purpose of the parallel pipeline — while the scaffolding agent works, the main conversation must advance the application to the next screen and configure its targets. The scaffolding agent creates a new file with no concurrent access risk, so background mode is safe.
 
@@ -52,8 +52,8 @@
    - Reads `<PROJECT_DIR>/project.json` to obtain `expressionLanguage`.
    - Reads an existing `.xaml` in the project root (e.g., `Main.xaml`) to extract the root `<Activity>` xmlns declarations and both `<TextExpression.NamespacesForImplementation>` and `<TextExpression.ReferencesForImplementation>` blocks. Copied verbatim into the new file.
    - Runs `uip rpa get-default-activity-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard"` for the NApplicationCard template.
-   - Runs `uip rpa uia object-repository get-screen-xaml --reference-id "<SCREEN_REFERENCE_ID>"` for the TargetApp XAML.
-   - Writes the complete `.xaml` file: `<Activity>` root with `x:Class`, namespace declarations, TextExpression blocks, NApplicationCard with embedded TargetApp, and an empty `<Sequence DisplayName="Do">` (open/close form, not self-closing) inside the ApplicationCard body where screen agents will insert activities.
+   - Writes the complete `.xaml` file: `<Activity>` root with `x:Class`, namespace declarations, TextExpression blocks, an NApplicationCard carrying `sap2010:WorkflowViewState.IdRef="NApplicationCard_1"` (no `<uix:NApplicationCard.TargetApp>` child — attachment happens next), and an empty `<Sequence DisplayName="Do">` (open/close form, not self-closing) inside the ApplicationCard body where screen agents will insert activities.
+   - Attaches the registered screen to the NApplicationCard (activity ref ID `NApplicationCard_1`) per [uia-target-attachment-guide.md](uia-target-attachment-guide.md). Every CLI call is wrapped with `timeout 60000`.
 
 4. **Post-write verification** (D-09): The agent runs `get-errors` itself, wrapped with a `timeout`:
    ```bash
@@ -67,21 +67,20 @@
 
 6. **Prompt template:** See [Scaffolding Agent Template](#scaffolding-agent-template) for the complete Agent() call.
 
-> **CRITICAL:** The agent must strip the `xmlns` attribute from the `<TargetApp>` element returned by `get-screen-xaml` before embedding it. The root `<Activity>` element's namespace declarations already cover it. Duplicate xmlns causes namespace-related validation errors.
-
 ## Phase 2: Screen Activity Agents
 
 1. **Spawn precondition** — Do NOT spawn `Write-<N>` until ALL of the following hold (the orchestrator MUST verify each via `TaskGet` before calling `Agent()`):
-   - (a) `Configure-<N>` is `completed` (screen N's element targets are fully configured and registered in the OR — but the orchestrator does NOT pre-fetch the snippets; the agent fetches them itself via `get-elements-xaml`).
+   - (a) `Configure-<N>` is `completed` (screen N's element targets are fully configured and registered in the OR — the orchestrator hands off only reference IDs; the agent attaches them to activities itself via `link-element`).
    - (b) `Write-<N-1>` is `completed` (or `Write-Scaffold` for N=1). **If `Write-<N-1>` is `in_progress`, do NOT spawn — the chain is violated.** See [Waiting for Background Agents](#waiting-for-background-agents).
 
 2. **Run mode:** Spawn each screen activity agent with `run_in_background: true`. While the agent writes screen N, the main conversation must advance the application to screen N+1 and configure its targets (`Configure-<N+1>`) — but it must NOT spawn `Write-<N+1>` until `Write-<N>` is `completed`. The chain requires each agent to read the previous agent's finalized file state.
 
 3. **What the agent does** (the agent retrieves its own data — orchestrator does NOT pre-fetch):
    - Reads the file and locates the inner `<Sequence DisplayName="Do">`. Ordering safety is enforced upstream by the task queueing model (see [Waiting for Background Agents](#waiting-for-background-agents) — `Write-<N>` cannot spawn until `Write-<N-1>` is `completed`), so the agent treats the file as in a known good state.
+   - Assigns unique `sap2010:WorkflowViewState.IdRef` values to each new activity per the IdRef contract in [uia-target-attachment-guide.md](uia-target-attachment-guide.md#idref-contract).
    - Runs `uip rpa get-default-activity-xaml --activity-class-name "<class>"` (with `timeout`) for each activity class in its action list.
-   - Runs `uip rpa uia object-repository get-elements-xaml --reference-ids "<csv>"` (with `timeout`) for the ref IDs in its action list.
-   - Constructs and inserts activities immediately before the closing `</Sequence>` of the inner `<Sequence DisplayName="Do">`. Does NOT modify any content before the insertion point.
+   - Constructs and inserts activities immediately before the closing `</Sequence>` of the inner `<Sequence DisplayName="Do">`. Each activity carries its assigned IdRef and has NO `.Target` / `.SearchedElement.Target` child — attachment happens next. Does NOT modify any content before the insertion point.
+   - For each action with a `reference_id`, attaches it to the activity's assigned IdRef per [uia-target-attachment-guide.md](uia-target-attachment-guide.md), passing the action's `target_property` when set. Every CLI call is wrapped with `timeout 60000`.
 
 4. **Post-write verification** (D-09): Agent runs `get-errors` itself, wrapped with a `timeout`:
    ```bash
@@ -95,8 +94,6 @@
 
 6. **Prompt template:** See [Screen Activity Agent Template](#screen-activity-agent-template) for the complete Agent() call.
 
-> **CRITICAL:** The agent must strip `xmlns` attributes from all `<TargetAnchorable>` elements returned by `get-elements-xaml` before embedding them. The root `<Activity>` element's namespace declarations already cover them.
-
 ### Screen Boundaries
 
 A "screen" equals everything configured before advancing the application to the next workflow state via servo. This may include intermediate servo clicks within the same logical state (for example, navigating to a list view to reveal a "New" button before configuring it) — per the Complete-then-advance rule in [uia-multi-step-flows.md](uia-multi-step-flows.md).
@@ -104,7 +101,7 @@ A "screen" equals everything configured before advancing the application to the 
 All `uia-configure-target` calls for the current workflow state must complete before spawning the write agent for that screen AND before using servo to advance to the next state.
 
 See also: [uia-multi-step-flows.md](uia-multi-step-flows.md) for the Complete-then-advance rule.
-See also: [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for OR embedding patterns and passing OR data to write agents.
+See also: [uia-target-attachment-guide.md](uia-target-attachment-guide.md) and [uia-configure-target-workflows.md](uia-configure-target-workflows.md).
 
 ### Chained Dependency Model
 
@@ -164,8 +161,8 @@ These three rules govern what the orchestrator may and may not do while a `Write
 
 ## Prompt Construction Rules
 
-1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or `<TargetAnchorable>` snippets into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent runs `get-default-activity-xaml` and `get-elements-xaml` itself for everything it needs.
-2. Describe actions as a structured list with exact data values (`display_name`, `type`, `reference_id`, optional `text`/`duration_seconds`) — see [Action List Format](#action-list-format). Each action carries enough detail for the agent to construct the activity from the template + OR snippet it retrieves.
+1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or `<TargetAnchorable>` snippets into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent runs `get-default-activity-xaml` itself for activity templates, and uses `link-element` / `link-screen` to attach targets. Snippet fetches (`get-elements-xaml`, `get-screen-xaml`) run only on the fallback path — per ref whose link call failed.
+2. Describe actions as a structured list with exact data values (`display_name`, `type`, `reference_id`, optional `text`/`duration_seconds`/`target_property`) — see [Action List Format](#action-list-format). Each action carries enough detail for the agent to construct the activity from the template it retrieves and then attach the target via `link-element`.
 3. Specify interaction patterns **explicitly** for each non-trivial interaction: dropdown selection (Click then TypeInto with `[k(enter)]`), wait durations between actions, checkbox toggling, element reuse across repeated form instances. These go in a per-screen notes block in the prompt.
 4. Specify **expression-language-specific syntax** for inline expressions. CSharp: `<Delay>` uses an `<InArgument x:TypeArguments="x:TimeSpan">` with a `<CSharpValue>` containing `TimeSpan.FromSeconds(N)`. VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" />`. Always match the `expressionLanguage` value passed in the prompt.
 5. All context (action list, interaction patterns) goes **inline in the Agent() prompt parameter** as labeled blocks (D-06). Do not pass context via temp `.md` files or any other file-based method.
@@ -177,7 +174,7 @@ These three rules govern what the orchestrator may and may not do while a `Write
 
 ### Reused Forms (Same OR Targets, Different Data)
 
-When the same form appears more than once (for example, a "Save & New" pattern that reopens the same contact form), treat the repetitions as screens that share the same `<TargetAnchorable>` snippets but have different action sequences and data values.
+When the same form appears more than once (for example, a "Save & New" pattern that reopens the same contact form), treat the repetitions as screens that reuse the same OR element references but have different action sequences and data values. Each activity instance gets its own unique `sap2010:WorkflowViewState.IdRef` and its own `link-element` call — the same `--reference-id` linked to multiple `--activity-ref-id`s.
 
 **Prefer a single write agent when all of these hold:**
 - The repetitions are back-to-back in the workflow (no intervening pipeline work).
@@ -215,10 +212,10 @@ Write agents are typically fast — they perform pure text generation against a 
 2. Do NOT have a screen activity agent modify activities from earlier screens — insert before the closing `</Sequence>` tag only.
 3. Do NOT spawn `Write-<N>` while `Write-<N-1>` is `in_progress`. Check `TaskGet(Write-<N-1>)` first; only spawn if `completed`. Spawning early breaks the chain — the agents will race on the same insertion point.
 4. Do NOT poll for agent completion. No `sleep`, no `Monitor` + `until` loop, no `ScheduleWakeup`, no file-growth checks, no respawning the agent to "see if it's done". Either do non-conflicting work, or reply with a one-line status and stop. The runtime delivers `<task-notification>` asynchronously.
-5. Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or OR `<TargetAnchorable>` snippets into the agent prompt. Pass reference IDs, activity class names, and a structured action list — the agent retrieves its own XAML.
-6. Do NOT pass unstable selectors (auto-generated numeric IDs, `css-selector` attributes, hash-based class names) to write agents — identify and fix them during target configuration via selector improvement before the agent retrieves OR snippets.
+5. Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or OR `<TargetAnchorable>` snippets into the agent prompt. Pass reference IDs, activity class names, and a structured action list — the agent retrieves activity templates itself and links targets via `link-element` / `link-screen`.
+6. Do NOT pass unstable selectors (auto-generated numeric IDs, `css-selector` attributes, hash-based class names) to write agents — identify and fix them during target configuration via selector improvement before the agent attaches targets.
 7. Do NOT duplicate pipeline logic in SKILL.md or other reference files — those files route here; this file is the single source of truth for the pipeline.
-8. Do NOT skip the selector stability gate before the agent retrieves OR snippets. Syntactically valid XAML that uses runtime-broken selectors is harder to debug than a build error.
+8. Do NOT skip the selector stability gate before the agent attaches targets. Syntactically valid XAML that uses runtime-broken selectors is harder to debug than a build error.
 9. Do NOT modify the `.xaml` file from the main conversation while a write agent is running. The chained model depends on each agent reading the current valid file state; concurrent edits produce an unknown file state for the next agent.
 10. Do NOT spawn write agents in foreground mode — this blocks the main conversation and serializes the pipeline. Always use `run_in_background: true` so the main conversation can configure the next screen's targets in parallel.
 11. Do NOT call agent-side CLI commands without a `timeout` wrapper. A hung Studio causes `get-errors` to block indefinitely — agents must fail fast, not hang.
@@ -250,25 +247,27 @@ Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
      --project-dir "<PROJECT_DIR>" \
      --output json   ```
    Use the returned XAML as-is for the NApplicationCard element.
-4. Fetch the TargetApp XAML for the registered screen:
-   ```bash
-   timeout 60000 uip rpa uia object-repository get-screen-xaml \
-     --reference-id "<SCREEN_REFERENCE_ID>" \
-     --project-dir "<PROJECT_DIR>"
-   ```
-   Strip the `xmlns` attribute from the returned `<TargetApp>` element before embedding it inside `<uix:NApplicationCard.TargetApp>`.
-
 ## File structure requirements
 
 - Root `<Activity>` with `x:Class="<X_CLASS_VALUE>"` (derived from `<OUTPUT_XAML_PATH>` per the naming rule in [xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md): folder separators become underscores).
 - `mc:Ignorable="sap sap2010"`, `sap2010:ExpressionActivityEditor.ExpressionActivityEditor="<CSharp|VB>"`, `sap2010:WorkflowViewState.IdRef="ActivityBuilder_1"`.
 - The `<TextExpression.*>` blocks from step 2.
-- A single NApplicationCard from step 3 with TargetApp from step 4 embedded.
+- A single NApplicationCard from step 3 with `sap2010:WorkflowViewState.IdRef="NApplicationCard_1"` and NO `<uix:NApplicationCard.TargetApp>` child (linking attaches it in the next step).
 - Inside `<uix:NApplicationCard.Body>` → `<ActivityAction>`, create an empty `<Sequence DisplayName="Do"></Sequence>`. Use open/close form (not self-closing).
+
+## Attachment guide
+
+<attachment-guide>
+<ATTACHMENT_GUIDE_CONTENT>
+</attachment-guide>
+
+## Attach the screen to the NApplicationCard
+
+Following the attachment guide above, attach screen `<SCREEN_REFERENCE_ID>` to activity `NApplicationCard_1`. Wrap every CLI call with `timeout 60000`.
 
 ## Validation
 
-After writing the file:
+After attachment:
 ```bash
 timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
 If it returns errors, fix and re-validate. Max 3 fix attempts. If the CLI times out (Studio unresponsive), report: "Validation unavailable — Studio not responding; file written but unverified." Do not hang.
@@ -278,9 +277,11 @@ If it returns errors, fix and re-validate. Max 3 fix attempts. If the CLI times 
 | Placeholder | Value |
 |---|---|
 | <OUTPUT_XAML_PATH> | <fill in> |
+| <RELATIVE_XAML_PATH> | <OUTPUT_XAML_PATH> relative to <PROJECT_DIR> |
 | <X_CLASS_VALUE> | <fill in> |
 | <PROJECT_DIR> | <fill in> |
 | <SCREEN_REFERENCE_ID> | <fill in> |
+| <ATTACHMENT_GUIDE_CONTENT> | Verbatim contents of `uia-target-attachment-guide.md` — orchestrator reads the file and pastes the body here |
 """
 )
 ```
@@ -309,30 +310,32 @@ Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g
      --output json   ```
    Use the returned XAML as the structural base for every instance of that activity type.
 
-2. Fetch all OR element XAML snippets in a single call:
-   ```bash
-   timeout 60000 uip rpa uia object-repository get-elements-xaml \
-     --reference-ids "<COMMA_SEPARATED_REF_IDS>" \
-     --project-dir "<PROJECT_DIR>"
-   ```
-   Parse the output (separated by `=== <Element Name> ===` headers). For each `<TargetAnchorable>` returned, strip the `xmlns` attribute and add the `uix:` prefix when embedding.
+## Attachment guide
+
+<attachment-guide>
+<ATTACHMENT_GUIDE_CONTENT>
+</attachment-guide>
 
 ## Action list — implement in this EXACT order
 
-Insert the following activities IMMEDIATELY BEFORE the closing `</Sequence>` tag of the inner `<Sequence DisplayName="Do">`. Do NOT modify any content before the insertion point.
+Insert the following activities IMMEDIATELY BEFORE the closing `</Sequence>` tag of the inner `<Sequence DisplayName="Do">`. Do NOT modify any content before the insertion point. Each new activity carries a unique `sap2010:WorkflowViewState.IdRef` assigned per the IdRef contract in the attachment guide above, and has NO `.Target` / `.SearchedElement.Target` child — attachment happens after insertion.
 
 <ACTION_LIST>
 
-Each action has fields: `display_name`, `type` (NClick | NTypeInto | Delay | ...), and either `reference_id` (for UI activities) with optional `text` (for NTypeInto) or `duration_seconds` (for Delay).
+Each action has fields: `display_name`, `type` (NClick | NTypeInto | Delay | ...), and either `reference_id` (for UI activities) with optional `text` (for NTypeInto) and optional `target_property` (for activities whose target is not at `.Target`, e.g., `SearchedElement.Target`), or `duration_seconds` (for Delay).
 
-For NClick: wrap the element's `<uix:TargetAnchorable>` inside `<uix:NClick.Target>...</uix:NClick.Target>`.
-For NTypeInto: set `Text` as an attribute on `<uix:NTypeInto>` and wrap the TargetAnchorable in `<uix:NTypeInto.Target>...</uix:NTypeInto.Target>`.
-For Delay with CSharp: `<Delay><Delay.Duration><InArgument x:TypeArguments="x:TimeSpan"><CSharpValue x:TypeArguments="x:TimeSpan">TimeSpan.FromSeconds(N)</CSharpValue></InArgument></Delay.Duration></Delay>` — duration as an InArgument, NOT an attribute.
-For Delay with VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" />`.
+For NClick: insert `<uix:NClick ... sap2010:WorkflowViewState.IdRef="NClick_<N>" />` with no `.Target` child.
+For NTypeInto: set `Text` as an attribute on `<uix:NTypeInto ... sap2010:WorkflowViewState.IdRef="NTypeInto_<N>" Text="...">` with no `.Target` child.
+For Delay with CSharp: `<Delay sap2010:WorkflowViewState.IdRef="Delay_<N>"><Delay.Duration><InArgument x:TypeArguments="x:TimeSpan"><CSharpValue x:TypeArguments="x:TimeSpan">TimeSpan.FromSeconds(N)</CSharpValue></InArgument></Delay.Duration></Delay>` — duration as an InArgument, NOT an attribute.
+For Delay with VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" sap2010:WorkflowViewState.IdRef="Delay_<N>" />`.
+
+## Attach targets
+
+For every action with a `reference_id`, follow the attachment guide above to attach the OR reference to the IdRef you assigned. Pass `target_property` when the action specifies one. Wrap every CLI call with `timeout 60000`.
 
 ## Validation
 
-After editing:
+After attachment (and any fallback embedding):
 ```bash
 timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
 Fix on error, max 3 attempts. If CLI times out, report the timeout explicitly — do NOT hang.
@@ -342,11 +345,12 @@ Fix on error, max 3 attempts. If CLI times out, report the timeout explicitly �
 | Placeholder | Value |
 |---|---|
 | <OUTPUT_XAML_PATH> | <fill in> |
+| <RELATIVE_XAML_PATH> | <OUTPUT_XAML_PATH> relative to <PROJECT_DIR> |
 | <PROJECT_DIR> | <fill in> |
 | <EXPRESSION_LANGUAGE> | CSharp or VB |
 | <ACTIVITY_CLASS_LIST> | comma-separated fully-qualified activity class names |
-| <COMMA_SEPARATED_REF_IDS> | ref IDs this agent needs snippets for |
 | <ACTION_LIST> | JSON or YAML list — see [Action List Format](#action-list-format) |
+| <ATTACHMENT_GUIDE_CONTENT> | Verbatim contents of `uia-target-attachment-guide.md` — orchestrator reads the file and pastes the body here |
 """
 )
 ```
@@ -366,9 +370,12 @@ The orchestrator composes the action list once per screen agent from the registe
 Minimum fields per entry:
 - `display_name` — string. Becomes the activity's `DisplayName`.
 - `type` — `NClick`, `NTypeInto`, `Delay`, `NSelectItem`, `NGoToUrl`, etc.
-- For UI activities: `reference_id` — the OR reference ID. The agent looks up the snippet from the `get-elements-xaml` output it fetches itself.
+- For UI activities: `reference_id` — the OR reference ID. The agent passes this to `link-element --reference-id` after inserting the activity.
+- For UI activities whose target is not at `.Target`: optional `target_property` — dot-separated property path (e.g., `"SearchedElement.Target"`). Passed to `link-element --target-property` and used by the fallback embed path. Omit when the default `.Target` applies.
 - For `NTypeInto`: optional `text` — the text to type.
 - For `Delay`: `duration_seconds` instead of `reference_id`.
+
+The agent assigns `sap2010:WorkflowViewState.IdRef` per the contract in the Screen Activity Agent Template — the orchestrator does NOT specify IdRefs in the action list.
 
 ## Task Structure
 

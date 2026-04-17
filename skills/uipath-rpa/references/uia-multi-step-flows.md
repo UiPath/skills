@@ -57,7 +57,7 @@ servo click <servo-element-ref>
 
 ## Spawning XAML Write Agents
 
-After completing all `uia-configure-target` calls for a screen (through TARGET-8 for all elements) and retrieving OR XAML snippets via `get-elements-xaml`, spawn a write agent to add that screen's activities to the workflow file. Each write agent depends on the previous one completing — they form a strict chain.
+After completing all `uia-configure-target` calls for a screen (through TARGET-8 for all elements), spawn a write agent to add that screen's activities to the workflow file. The orchestrator hands off only OR reference IDs — the agent inserts plain activities with unique `sap2010:WorkflowViewState.IdRef` attributes and attaches targets itself via `link-element`. Each write agent depends on the previous one completing — they form a strict chain.
 
 The screen boundary for write agents aligns with the Complete-then-advance rule above: everything configured before the next servo advance belongs to one write agent's scope.
 
