@@ -7,6 +7,8 @@ Generate coder_eval task YAML files (and optional check scripts) to increase tes
 - `<skill-name> <focus>` — target specific areas (e.g., `uipath-platform authentication and folder listing`)
 - `<skill-name> <test-type>` — generate only that tier (e.g., `uipath-maestro-flow smoke`)
 
+**Argument precedence.** After the skill name, if everything remaining is exactly one of `smoke`, `integration`, or `e2e`, treat it as `<test-type>`. Otherwise, treat the entire remainder (one or more whitespace-separated words) as a free-form `<focus>` description. To combine a focus area with a test-type filter, include the tier word inside the focus string (e.g., `uipath-platform smoke tests for authentication`) — this will be parsed as a focus since it contains more than just the tier keyword.
+
 **Output:** Task YAML files (+ optional `check_*.py` scripts) in `tests/tasks/<skill-name>/`.
 
 ---
@@ -90,8 +92,6 @@ Available criterion types (from coder_eval):
 | `file_contains` | A file contains expected strings | Smoke: verify report content |
 | `json_check` | JSON structure and values via JMESPath assertions | Smoke: verify structured output |
 | `run_command` | Execute a shell command, check exit code (and optionally stdout) | E2E: run validation tools, run check scripts |
-| `file_check` | Combined existence + string + regex checks | Any: unified file validation |
-| `file_matches_regex` | Regex pattern match in a file | Any: pattern verification |
 
 Operators for `json_check` assertions: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
 
@@ -165,9 +165,17 @@ When an e2e test needs a check script (to verify artifact execution or complex o
 2. Follow the pattern from existing check scripts (e.g., `check_calculator_flow.py`):
    - Shebang: `#!/usr/bin/env python3`
    - Module docstring explaining what it checks
-   - Import from `_shared` helpers if the skill has them, otherwise write standalone checks
    - Use `sys.exit("FAIL: ...")` on failure
    - Use `print("OK: ...")` on success
+   - If importing from `tests/tasks/<skill-name>/_shared/`, first add the skill task directory (the parent of the check script's directory) to `sys.path`, because the script is run as `python3 $TASK_DIR/check_<name>.py`. Use the bootstrap pattern already used by existing scripts such as `check_calculator_flow.py`:
+     ```python
+     import os
+     import sys
+
+     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+     from _shared.<module> import <name>  # noqa: E402
+     ```
+   - If the skill has no `_shared` helpers, write standalone checks instead.
 3. Reference the script in the task YAML using `$TASK_DIR`:
    ```yaml
    - type: run_command
