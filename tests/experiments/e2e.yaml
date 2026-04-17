@@ -17,5 +17,11 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
+  # Append default post_run to every e2e task: delete Studio Web solutions
+  # uploaded by `uip flow debug` (no-op for tasks that don't produce .uipx).
+  post_run:
+    - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+      timeout: 120
+
 variants:
   - variant_id: default

@@ -43,14 +43,14 @@ def run_debug(
         cmd.extend(["--inputs", json.dumps(inputs)])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
-        _fail(f"flow debug exit {r.returncode}\n{r.stderr[:500]}")
+        _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
     if data is None:
-        _fail(f"Could not parse JSON from flow debug\n{r.stdout[:500]}")
+        _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
     payload = data.get("Data") or {}
     status = payload.get("finalStatus")
     if status != "Completed":
-        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout[:1000]}")
+        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
     return payload
 
 
