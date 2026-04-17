@@ -19,6 +19,7 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 - User wants to **create test cases** with assertions
 - User wants to **call an Integration Service connector** (Jira, Salesforce, ServiceNow, Slack, etc.)
 - User wants to **use UI automation** to interact with desktop or web applications
+- User wants to **read, insert, update, or delete Data Fabric entity records** as part of an automation
 
 ## Precondition: Project Context
 
@@ -144,6 +145,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [connector-capabilities.md](references/connector-capabilities.md) → [xaml/workflow-guide.md § Step 1.9](references/xaml/workflow-guide.md) |
+| **Read/write Data Fabric entity records** | Both | Install `UiPath.DataService.Activities` → add connection to `entitiesStores` in `project.json` → use `dataService` service (coded) or DataService activities (XAML). For entity schema/bulk ops use the `uipath-data-fabric` CLI skill. |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
 | **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
 | **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |
@@ -168,17 +170,18 @@ Coded workflows use standard C# development: create file → write code → vali
 
 Each service on `CodedWorkflow` requires its NuGet package in `project.json`. Without it: `CS0103`.
 
-| Service Property | Required Package |
-|-----------------|------------------|
-| `system` | `UiPath.System.Activities` |
-| `testing` | `UiPath.Testing.Activities` |
-| `uiAutomation` | `UiPath.UIAutomation.Activities` |
-| `excel` | `UiPath.Excel.Activities` |
-| `word` | `UiPath.Word.Activities` |
-| `powerpoint` | `UiPath.Presentations.Activities` |
-| `mail` | `UiPath.Mail.Activities` |
-| `office365` | `UiPath.MicrosoftOffice365.Activities` |
-| `google` | `UiPath.GSuite.Activities` |
+| Service Property | Required Package | Notes |
+|-----------------|------------------|-------|
+| `system` | `UiPath.System.Activities` | Queues, assets, credentials, jobs/processes, storage buckets, file ops |
+| `testing` | `UiPath.Testing.Activities` | Test assertions and verification |
+| `uiAutomation` | `UiPath.UIAutomation.Activities` | Desktop/web UI automation |
+| `excel` | `UiPath.Excel.Activities` | Excel read/write operations |
+| `word` | `UiPath.Word.Activities` | Word document operations |
+| `powerpoint` | `UiPath.Presentations.Activities` | PowerPoint operations |
+| `mail` | `UiPath.Mail.Activities` | Email send/receive |
+| `office365` | `UiPath.MicrosoftOffice365.Activities` | M365 mail, calendar, OneDrive, Excel Online |
+| `google` | `UiPath.GSuite.Activities` | Gmail, Drive, Sheets, Docs |
+| `dataService` | `UiPath.DataService.Activities` | Data Fabric entity CRUD — requires `entitiesStores` configured in `project.json` |
 
 For infrastructure/cloud packages (azure, gcp, aws, azureAD, citrix, hyperv, etc.), see [coded/codedworkflow-reference.md](references/coded/codedworkflow-reference.md).
 
