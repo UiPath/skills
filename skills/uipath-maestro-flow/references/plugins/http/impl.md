@@ -12,7 +12,7 @@
 uip flow registry get core.action.http.v2 --output json
 ```
 
-Confirm: input port `input`, output port `output`, model serviceType `Intsvc.UnifiedHttpRequest`.
+Confirm: input port `input`, output port `default`, model serviceType `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
@@ -77,14 +77,14 @@ uip flow node configure <ProjectName>.flow <nodeId> \
 
 ### Step 4 — Wire edges
 
-The managed HTTP node uses port `output`:
+The managed HTTP node uses port `default`:
 
 ```bash
 uip flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
   --source-port <port> --target-port input --output json
 
 uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
-  --source-port output --target-port input --output json
+  --source-port default --target-port input --output json
 ```
 
 ## Debug
