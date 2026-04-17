@@ -40,7 +40,8 @@ Extract:
 - **Process name** — the official name used in the PDD title and overview
 - **Objective** — what the automation achieves (faster processing, error reduction, etc.)
 - **Department/function** — who owns the process
-- **Key contacts** — SME, reviewer, approver (if listed)
+- **Key contacts** — SME / Process Owner, Solution Architect, Business Analyst, Developer(s), Project Manager (only roles the PDD explicitly names). **Destination:** §1 Delivery Team table in the RPA SDD. Omit rows for roles the PDD does not name; do not invent.
+- **Master project / process full name** — if the PDD names the Master Project explicitly (e.g., a "Process Full Name" cell such as `PurchaseOrders_DataExtraction`), capture it verbatim. **This literal name becomes the project-name prefix** used in Level 2.5 sub-project naming — it overrides any PascalCase short-name derived from the process title.
 
 Watch for:
 - The PDD may describe the project initiative context (e.g., "part of a larger digital transformation"). Capture this as context but do not let it expand the SDD scope.

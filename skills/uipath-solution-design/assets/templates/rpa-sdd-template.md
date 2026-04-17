@@ -31,8 +31,9 @@
 13. Implementation Mode
 14. Packages
 15. Credentials & Assets
-16. Testing Strategy
-17. Implementation Plan
+16. Deployment Environment
+17. Testing Strategy
+18. Implementation Plan
 
 ---
 
@@ -48,6 +49,18 @@
 | **Avg. handling time (manual)** | <MANUAL_TIME> |
 | **Avg. handling time (automated target)** | <AUTOMATED_TIME> |
 | **Exception rate** | <ESTIMATED_RATE> |
+
+### Delivery Team
+
+> Populate from the PDD's Key Contacts section. Include only roles the PDD lists — do not invent names. Omit any row where the PDD is silent. Operational runtime details (robot type, UiPath version, hosts, scalability) live in §16 Deployment Environment.
+
+| Role | Name | Contact |
+|---|---|---|
+| Solution Architect | <NAME> | <EMAIL> |
+| Business Analyst | <NAME> | <EMAIL> |
+| Developer(s) | <NAME> | <EMAIL> |
+| Project Manager | <NAME> | <EMAIL> |
+| SME / Process Owner | <NAME> | <EMAIL> |
 
 ### In Scope
 
@@ -106,17 +119,20 @@ flowchart TD
 
 ## 5. Data Definitions
 
-> **Generate ONLY Option A or Option B based on §13 Implementation Mode.** Delete the other entirely.
+> **Universal constraints — apply to both Option A and Option B:**
+> 1. Keep types flat — no inheritance, no nesting more than one level deep.
+> 2. Maximum 15 properties (Option A) or 15 keys / columns (Option B) per entity. If more are needed, split the entity along a domain boundary.
+> 3. Default every property / key to `string` unless the PDD specifies a numeric, date, or boolean operation on it. Converting later is cheaper than guessing wrong.
+> 4. Name properties / keys in the PDD's vocabulary (e.g., `InvoiceNumber`, not `doc_id`).
+>
+> **Which option to fill in:** Generate ONLY Option A or Option B based on §13 Implementation Mode. Delete the other entirely.
 > - If §13 selects Coded C# or Hybrid → use **Option A**
 > - If §13 selects XAML → use **Option B**
->
-> **Type design constraints:**
-> 1. Keep types flat — no inheritance
-> 2. Use `record` for immutable data, `class` for mutable
-> 3. Maximum 15 properties per type
-> 4. Default to `string` unless PDD specifies numeric, date, or boolean operations
 
 ### Option A — Coded C# / Hybrid Mode
+
+> **Option A-specific rule:** use `record` for immutable transaction/output data, `class` for mutable working state. Prefer `record` unless mutation is required mid-workflow.
+
 
 #### Transaction Data
 
@@ -200,7 +216,7 @@ public enum <EnumName>
 
 ## 9. Application Inventory
 
-> **List all applications.** For SaaS integrations (Salesforce, Jira, etc.), flag "Integration Service" in the Access Method column — the implementation plan will create a task to configure the connector. For email, specify the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — do not default to O365.
+> **List all applications.** For SaaS integrations (Salesforce, Jira, etc.), flag `Integration Service — <CONNECTOR_SLUG>` in the Access Method column (e.g., `Integration Service — salesforce`) — the implementation plan will create a task to configure the connector, and §14 only needs `UiPath.IntegrationService.Activities` for all connectors combined. For email, specify the protocol (IMAP, O365 Graph API, Exchange/EWS, POP3) — do not default to O365. See the [Package Selection Guide](../../references/package-selection-guide.md) for the full Access Method → Package mapping.
 
 | # | Application | Interface | Access Method | Role | Interaction Pattern | Session Management |
 |---|---|---|---|---|---|---|
@@ -385,14 +401,9 @@ Sub-type reference:
 
 ## 14. Packages
 
-> **List required NuGet packages.** For Master Project: one table per sub-project. Infer packages from the Application Inventory (§9) and process steps:
-> - Email via IMAP → `UiPath.Mail.Activities`
-> - Email via O365 → `UiPath.MicrosoftOffice365.Activities`
-> - Document Understanding → `UiPath.IntelligentOCR.Activities`, `UiPath.DocumentUnderstanding.ML.Activities`
-> - Excel → `UiPath.Excel.Activities`
-> - SAP → `UiPath.SAP.BAPI.Activities`
-> - Web automation → `UiPath.UIAutomation.Activities`
-> - Always include `UiPath.System.Activities`
+> **List required NuGet packages only.** For Master Project: one table per sub-project. Infer packages from §9 Application Inventory and the process steps using the [Package Selection Guide](../../references/package-selection-guide.md) — it contains the full Application-Type → Package matrix, Integration Service vs NuGet decision rules, and a selection checklist.
+>
+> **Do NOT list Integration Service connectors in this table.** Integration Service connections are declared in §9 Application Inventory (Access Method = `Integration Service — <CONNECTOR_SLUG>`) and run on `UiPath.IntegrationService.Activities` — that package is the only §14 entry needed for them. See the Package Selection Guide's "Integration Service Connectors vs NuGet Packages" section for side-by-side examples.
 
 | Package | Version | Purpose |
 |---|---|---|
@@ -409,7 +420,54 @@ Sub-type reference:
 
 ---
 
-## 16. Testing Strategy
+## 16. Deployment Environment
+
+> **Operational / infrastructure details.** These fields typically come from the deployment team, not the PDD. If the PDD does not provide them, fill with `[SME REVIEW]` — do not invent values. This section drives robot provisioning, pre-production checks, and version compatibility.
+
+### Robot & Runtime
+
+| Field | Value |
+|---|---|
+| **Robot type** | <ATTENDED / UNATTENDED / BOR (Back-Office) / FOR (Front-Office)> |
+| **Trigger** | <QUEUE_BASED / SCHEDULED / MANUAL / EVENT> |
+| **Orchestrator tenant / folder** | <TENANT_NAME> / <FOLDER_PATH> |
+| **UiPath Studio version** | <e.g., 24.10.5> |
+| **UiPath Robot version** | <e.g., 24.10> |
+| **Orchestrator** | <Cloud / On-prem version> |
+| **Cross-platform / Windows-only** | <Windows Legacy / Windows / Cross-platform> |
+| **Recommended screen resolution** | <e.g., 1920×1080> (UI automation projects only) |
+| **Source repository** | <GIT_URL_OR_SME_REVIEW> |
+| **Shared libraries referenced** | <COMMA_SEPARATED_LIBRARY_NAMES_OR_NONE — from the Phase 1 Org Context question> |
+
+### Development & Production Hosts
+
+| Environment | Machine Name(s) / VM Pool | Notes |
+|---|---|---|
+| Development | <VM_1>, <VM_2> | <NOTES> |
+| UAT | <VM_1>, <VM_2> | <NOTES> |
+| Production | <VM_1>, <VM_2> | <NOTES> |
+
+### Runtime Prerequisites
+
+List every prerequisite required on the robot machine before first run:
+
+- <e.g., Microsoft Excel installed (Office 365 or 2019+)>
+- <e.g., Microsoft Outlook installed if using Classic Outlook activities>
+- <e.g., Chrome browser + UiPath Chrome Extension>
+- <e.g., Network access to SharePoint / SAP endpoints>
+- <e.g., Certificate trust for internal CAs>
+
+### Scalability & Concurrency
+
+| Field | Value |
+|---|---|
+| **Scalable (multi-robot)?** | <YES / NO> |
+| **Concurrent job limit** | <N> (Orchestrator queue trigger concurrency) |
+| **Peak window** | <TIME_WINDOW> |
+
+---
+
+## 17. Testing Strategy
 
 ### Canonical Test Case
 
@@ -445,7 +503,7 @@ Sub-type reference:
 
 ---
 
-## 17. Implementation Plan
+## 18. Implementation Plan
 
 > **Instructions for the implementing agent:**
 > Execute tasks in the order listed below. For each task, read the referenced SDD sections BEFORE starting.
@@ -522,19 +580,19 @@ Sub-type reference:
 
 #### Task N-1 — Implement test suite
 **Dependencies:** All workflow tasks
-**References:** §16 Testing Strategy
+**References:** §17 Testing Strategy
 
-> Build the test suite per §16. Create tests for:
+> Build the test suite per §17. Create tests for:
 > - Per-project unit tests (canonical test case, exception test cases, error scenarios)
-> - End-to-end pipeline tests (§16 End-to-End Pipeline Test) — verify items flow from Dispatcher through all queues to Reporting
+> - End-to-end pipeline tests (§17 End-to-End Pipeline Test) — verify items flow from Dispatcher through all queues to Reporting
 
 #### Task N — End-to-end pipeline validation
 **Dependencies:** Task N-1
-**References:** §16 End-to-End Pipeline Test
+**References:** §17 End-to-End Pipeline Test
 
 > Run the full pipeline end-to-end: trigger Dispatcher, verify items appear in each queue,
 > verify Performer processes items correctly, verify Reporting generates expected output.
-> Validate against the assertions in §16 End-to-End Pipeline Test.
+> Validate against the assertions in §17 End-to-End Pipeline Test.
 
 ### Single Project Implementation Plan
 
@@ -591,12 +649,12 @@ Sub-type reference:
 
 #### Task N — Implement test suite
 **Dependencies:** All workflow tasks
-**References:** §16 Testing Strategy
+**References:** §17 Testing Strategy
 
-> Build the test suite per §16. Create tests for:
-> - The canonical test case (§16 Canonical Test Case) — verify happy path end-to-end
-> - Each exception test case (§16 Exception Test Cases) — verify each business exception triggers correctly
-> - Each testable system error scenario (§16 System Error Scenarios)
+> Build the test suite per §17. Create tests for:
+> - The canonical test case (§17 Canonical Test Case) — verify happy path end-to-end
+> - Each exception test case (§17 Exception Test Cases) — verify each business exception triggers correctly
+> - Each testable system error scenario (§17 System Error Scenarios)
 
 ---
 

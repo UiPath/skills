@@ -149,7 +149,41 @@ When the primary scope is RPA Process (not a Solution), Part A directly produces
 | 2 | `<NAME>_Performer` | Process each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
 | 3 | `<NAME>_Reporting` | Generate reports from processing outcomes | Sequence | `<REPORTING_QUEUE>` | — |
 
+Queue definitions for the `<QUEUE_1>` and `<REPORTING_QUEUE>` placeholders are authored in §12 of the RPA template (`assets/templates/rpa-sdd-template.md`). §12 is the single source of truth for queue shape — `Queue Definitions` table + one `Queue Item Schema` subsection per queue. Do not invent a different column layout in Part A or Part B.
+
 For Solutions, feed the rows produced by Part A into Level 2.5 Part B of [product-selection-guide.md](product-selection-guide.md#part-b--merge-into-the-final-project-list) to merge with the non-RPA projects.
+
+### Sub-project naming convention (rule R-07)
+
+Every row in the project list uses the pattern:
+
+```
+<PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>
+```
+
+- `<PROCESS_SHORT_NAME_PASCAL>` — a PascalCase short-name derived from the PDD process name. Strip filler words (`Process`, `Automation`, `RPA`) and any version suffix. Example: "Invoice Processing Automation v2" → `InvoiceProcessing`.
+- `<ROLE_SUFFIX>` — one of the registered suffixes below. Invent a new suffix only when a role is not covered.
+
+| Suffix | Role |
+|---|---|
+| `_Dispatcher` | Collects items from a source and pushes them onto a queue |
+| `_Performer` | Consumes queue items and processes each transactionally (REFramework) |
+| `_DUPerformer` | Performer variant dedicated to Document Understanding extraction + validation |
+| `_OutputPerformer` | Performer variant that consumes validated data and writes to a downstream system (API, file, message bus) |
+| `_Reporting` | Reads a reporting queue and generates reports / dashboards / summary emails |
+| `_SharedUtils` | RPA Library containing reusable workflows called by other projects in the Solution |
+
+Worked example — PDD: "Weekly Vendor Invoice Ingestion". Short-name: `VendorInvoice`. Unified project list:
+
+| # | Project Name | Role |
+|---|---|---|
+| 1 | `VendorInvoice_Dispatcher` | Download vendor emails + attachments, enqueue |
+| 2 | `VendorInvoice_DUPerformer` | Classify + extract invoice fields, send to Action Centre on low confidence |
+| 3 | `VendorInvoice_OutputPerformer` | Post validated invoices to the ERP API |
+| 4 | `VendorInvoice_Reporting` | Aggregate outcomes into the weekly ops email |
+| 5 | `VendorInvoice_SharedUtils` | Shared vendor lookup + currency conversion helpers |
+
+For RPA Library and RPA Test Automation projects in a Solution that are **not** queue-connected sub-projects of a Master Project, use the same short-name prefix but pick a role suffix that reflects the project's purpose (e.g., `_SharedUtils`, `_Regression`, `_SmokeTests`).
 
 ## REFramework guidance
 
@@ -158,8 +192,11 @@ REFramework is the standard UiPath framework for transactional processes. It pro
 | Project Role | Framework | Why |
 |---|---|---|
 | Performer (queue-based) | **REFramework** | Built-in transaction retry, state management, exception routing |
-| Dispatcher (collects and pushes items) | **Sequence** | Simple linear flow — no transaction retry needed |
-| Reporting (reads queue, generates output) | **Sequence** or **REFramework** | Sequence if simple aggregation; REFramework if items can fail independently |
+| Dispatcher — atomic collect-then-commit (e.g., single SQL query, single folder scan) | **Sequence** | Collection is one unit of work; no per-item retry semantics required |
+| Dispatcher — retryable items (e.g., paginated API, flaky source where individual pages/items can fail) | **REFramework** | Each retrieved item is itself a transaction; per-item retry + state tracking justify REFramework |
+| Reporting (reads queue, generates output) | **REFramework** *(default)* or Sequence | Use REFramework when per-item reporting failures must be tracked, or when the reporting queue can exceed ~10 items per run (typical for daily/weekly aggregation over a Master Project). Use Sequence only for atomic end-of-run aggregation of a small, fixed set of items where a single failure can fail the whole run without loss. |
 | Single Project (no queues) | **Sequence** or **REFramework** | REFramework if processing multiple items with per-item retry; Sequence if simple linear |
+
+**Rule R-04 — REFramework boundary:** a project uses REFramework when its unit of work is an **item that can fail, be retried, and be tracked independently**. A project uses Sequence when its unit of work is **atomic** (the whole run succeeds or fails as one).
 
 When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.

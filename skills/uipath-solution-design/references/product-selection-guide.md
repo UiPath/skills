@@ -149,25 +149,51 @@ The goal of Level 1.75 is to produce a concrete list of projects the SDD will co
 
 ### Pass A — Select products to include (multi-select)
 
-`AskUserQuestion` has a hard 4-option cap per question. Use **two paired multi-select questions in a single call** to cover all 8 products.
+`AskUserQuestion` has a hard 4-option cap per question. Pass A covers 8 candidate products, so it **must be a single `AskUserQuestion` call containing two question objects**, each with `multiSelect: true` and ≤4 options. The user answers both questions on one screen; both sets of selections return together.
 
+Invoke exactly like this:
+
+```json
+AskUserQuestion({
+  "questions": [
+    {
+      "question": "Which core automation layers should the Solution include?",
+      "multiSelect": true,
+      "options": [
+        { "label": "RPA",             "description": "Attended/unattended RPA Process, Library, or Test Automation project(s)" },
+        { "label": "Maestro Flow",    "description": "Long-running orchestration across RPA, Agents, APIs, and HITL" },
+        { "label": "Case Management", "description": "Stage-based workflows with SLA, approvals, and evidence" },
+        { "label": "Agents",          "description": "LLM-driven reasoning, tool use, and decisioning" }
+      ]
+    },
+    {
+      "question": "Which supporting products should the Solution include?",
+      "multiSelect": true,
+      "options": [
+        { "label": "Coded Apps",      "description": "Custom web UI for operators or business users" },
+        { "label": "API Workflows",   "description": "Callable system-to-system integration hosted in Orchestrator" },
+        { "label": "RPA Library",     "description": "Reusable workflows distributed via NuGet — implies RPA selected above" },
+        { "label": "RPA Test Automation", "description": "Regression / validation project — implies RPA selected above" }
+      ]
+    }
+  ]
+})
 ```
-AskUserQuestion — TWO questions in one call, both multiSelect=true
 
-Question 1 — "Which core automation layers should the Solution include?"
-  [X] RPA                (checked by default if Level 1 signals matched RPA)
-  [X] Maestro Flow       (checked if Flow signals matched)
-  [X] Case Management    (checked if Case signals matched)
-  [X] Agents             (checked if Agent signals matched)
+**Pre-selection rules** — before calling `AskUserQuestion`, mark each option as pre-selected if the corresponding Level 1 signal matched:
 
-Question 2 — "Which supporting products should the Solution include?"
-  [X] Coded Apps         (checked if Coded Apps signals matched)
-  [X] API Workflows      (checked if API Workflow signals matched or called by another product)
-  [X] RPA Library        (checked if Library signals matched — implies RPA also checked in Q1)
-  [X] RPA Test Automation (checked if Test Automation signals matched — implies RPA also checked in Q1)
-```
+| Option | Pre-select when |
+|---|---|
+| RPA | Level 1 RPA signals matched (UI, transactional processing, queue-based) |
+| Maestro Flow | Level 1 Flow signals matched (orchestration across products) |
+| Case Management | Level 1 Case signals matched (stages, SLA, approvals) |
+| Agents | Level 1 Agent signals matched (AI reasoning, tool use) |
+| Coded Apps | Level 1 Coded Apps signals matched (custom UI, data entry forms) |
+| API Workflows | Level 1 API Workflow signals matched OR another selected product needs a callable integration |
+| RPA Library | Library signals matched in the PDD (shared helpers, NuGet distribution) — and pre-select RPA if so |
+| RPA Test Automation | Test Automation signals matched (regression pack, assertions) — and pre-select RPA if so |
 
-Pre-check the options that matched PDD signals so the user sees the recommended composition first; they can uncheck anything they don't want or add the "Other" option for products not listed.
+Use the client's pre-selection mechanism (`defaultSelected: true` or equivalent) so the user opens the screen with the recommended composition already checked. They can uncheck, add, or leave as-is. If no signals match for an option, leave it unchecked — the user adds it explicitly if they disagree.
 
 ### Pass B — Resolve quantities per product
 
@@ -227,7 +253,10 @@ Produce:
 
 1. **Pattern** per project group: Single Project, Master Project (queue-connected), or N/A (non-RPA).
 2. **Unified project list** — one row per concrete project the SDD will describe, covering all products in the scope.
-3. **Queue schema** for any Master Projects: queue names, producer/consumer, `SpecificContent` fields.
+3. **Queue schema** for any Master Projects. The canonical shape is **§12 of the RPA template** — two tables per Master Project group:
+   - `Queue Definitions` with columns `Queue Name | Producer Project | Consumer Project | Trigger Type | Max Retries`
+   - `Queue Item Schema` (one sub-section per queue) with columns `Field Name | Type | Source | Description`
+   Do not invent a different shape here. At Part B, list only the queue names + producer/consumer mapping as a preview; the full schema is filled in Phase 2 against the template.
 4. **Cross-product integration notes** — which Flow nodes call which RPA project, which Agent tools call which API Workflow, etc.
 
 Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Automation + RPA Process expanded into a Master Project):

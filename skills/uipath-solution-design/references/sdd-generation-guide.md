@@ -36,7 +36,9 @@ TaskCreate: subject="Write SDD to disk",                 activeForm="Writing SDD
 TaskCreate: subject="Create implementation tasks",       activeForm="Creating implementation tasks…"
 ```
 
-Mark each task `in_progress` when starting and `completed` when done. If TaskCreate is unavailable, skip this step — progress tracking is not a blocker.
+Mark each task `in_progress` when starting and `completed` when done.
+
+**Rule G-8 — Task creation is best-effort and never blocks SDD output.** If any `TaskCreate` or `TaskUpdate` call fails at any point (tool unavailable, runtime error, timeout), log a single warning to the user, continue the SDD generation without progress tasks, and do not retry. The SDD file itself — and, in Phase 3, the Implementation Plan section inside it — is the authoritative deliverable. Progress tasks are a UX convenience only. This rule applies to both the progress tasks created here and the implementation tasks created in Phase 3 Step 3.
 
 These are **separate from** the Implementation Plan tasks created in Phase 3 Step 3. These track the SDD generation process itself; those track the downstream implementation work.
 
@@ -79,6 +81,26 @@ Follow the [PDD Analysis Guide](pdd-analysis-guide.md) to extract data from the 
 | Development prerequisites | Prerequisites for development | No |
 | Credentials and assets | Credentials and asset management | Yes |
 | Test data | Appendix | No |
+
+**Key Contacts go into §1 Delivery Team.** The PDD's Key Contacts section (SA, BA, developers, PM, SME / Process Owner) populates the Delivery Team table in §1 of the RPA template. Include only roles the PDD explicitly names — do not invent or leave rows as `[SME REVIEW]`; omit silent rows instead.
+
+### Step 2.5: Org Context Check
+
+One piece of context cannot be inferred from any PDD — whether the organization maintains shared RPA libraries that every new project must reference (e.g., `CommonLibrary`, `<Company>.Activities`). Ask this question in BOTH Autonomous and Interactive modes — it is a hard blocker for correct §14 Packages content.
+
+Use `AskUserQuestion` with the numbered-choice format:
+
+> Does your organization maintain shared RPA libraries (e.g., `CommonLibrary`) that every new project must reference in its §14 Packages?
+>
+> 1. **No / none that apply here** *(recommended)* — I will not list any shared library in §14
+> 2. **Yes — CommonLibrary** — I will include `CommonLibrary` in each sub-project's §14 Packages
+> 3. **Yes — other** — you will name the libraries; I will include them in each sub-project's §14
+
+Record the answer and propagate in Phase 2:
+- Add the library names to each sub-project's §14 Packages table (one row per shared library, per sub-project).
+- Add the same list to §16 Deployment Environment → "Shared libraries referenced".
+
+Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workflows) — shared RPA libraries do not apply to those products' package models.
 
 ### Step 3: Detect Gaps
 
@@ -309,6 +331,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - Value Mappings (RPA)
 - Exception / Error Handling (all)
 - Credentials & Assets (RPA)
+- Deployment Environment (RPA — robot type, Studio/Robot versions, VM hosts, screen resolution, scalability). Fill `[SME REVIEW]` when the PDD does not specify — these fields typically come from the deployment team, not the PDD. Never invent VM names, version pins, or robot types.
 - Triggers (Flow)
 - SLA Rules & Escalations (Case)
 - Compliance Constraints (Case)
@@ -376,7 +399,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 > **Progress:** Mark "Write SDD to disk" as `completed`. Mark "Create implementation tasks" as `in_progress`.
 
-Create tasks via TaskCreate that map to the Implementation Plan section. If TaskCreate is unavailable or fails, the implementation plan in the SDD file is sufficient — do not block SDD completion on task creation failures.
+Create tasks via TaskCreate that map to the Implementation Plan section. Apply rule G-8 (defined in Step 0.5): if any `TaskCreate` call fails, log a single warning, continue, and do not retry — the Implementation Plan section in the SDD file is the authoritative deliverable.
 
 Each task must:
 
