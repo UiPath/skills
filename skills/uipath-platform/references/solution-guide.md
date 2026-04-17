@@ -171,7 +171,6 @@ uip solution deploy run -n "MyDeployment" --package-name "MySolution" --package-
 
 | Command | Description |
 |---------|-------------|
-| `uip solution bundle <solutionPath>` | Bundle solution directory into a .uis file (`-d` for destination) |
 | `uip solution upload <solutionPath>` | Upload solution to UiPath Studio Web (directory, .uipx, or .uis) |
 | `uip solution resource refresh [solutionPath]` | Re-scan projects and sync resource declarations from bindings |
 | `uip solution project import --source <path>` | Copy external project into solution and register in .uipx |
