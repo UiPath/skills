@@ -1,118 +1,54 @@
-# Implementation Phase: tasks.md → Case Definition
+# Implementation Phase: tasks.md → caseplan.json
 
-Execute the approved `tasks.md` plan by translating each declarative task specification into `uip case` CLI commands. This phase creates the case project, builds the case definition, validates it, and optionally debugs or publishes.
+Execute the approved `tasks.md` plan by translating each declarative task specification into `uip case` CLI commands. Build `caseplan.json`, validate, and optionally debug or publish.
 
 > **Prerequisite:** The user must have explicitly approved `tasks.md` from the [Planning Phase](planning.md) before starting.
 >
-> **Input:** `tasks/tasks.md` — the complete handoff artifact from the Planning Phase.
+> **Input:** `tasks/tasks.md` — the complete handoff artifact.
+
+> **Per-node-type CLI detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to run the exact CLI for a specific node, consult the matching plugin's `impl.md`:
+> - Root case → `plugins/case/impl.md`
+> - Stages → `plugins/stages/impl.md`
+> - Edges → `plugins/edges/impl.md`
+> - Tasks → `plugins/tasks/<type>/impl.md`
+> - Triggers → `plugins/triggers/<type>/impl.md`
+> - Conditions → `plugins/conditions/<scope>/impl.md`
+> - SLA → `plugins/sla/impl.md`
 
 ---
 
-## Step 6 — Create Case project structure
+## Step 6 — Create the Case project structure
 
-The case file must be inside a proper solution/project structure:
-```bash
-mkdir -p <directory>
-
-# Create the solution
-cd <directory> && uip solution new <solutionName>
-
-# Create the case project inside the solution
-cd <solutionName> && uip case init <projectName>
-
-# Add the project to the solution
-uip solution project add \
-  <projectName> \
-  <solutionName>.uipx
-```
-
-This scaffolds a complete project. See [case-schema.md](case-schema.md) for the full project structure.
-
-```bash
-uip case cases add --name <CaseName> --file <directory>/<solutionName>/<projectName>/caseplan.json
-```
-
-> **`caseplan.json` is the literal filename — do not substitute the case name or project name here.**
-
-This scaffolds a minimal case JSON file with a root node and a default Trigger node.
-
-Optional flags:
-- `--case-identifier <string>` — defaults to the name
-- `--identifier-type constant|external` — default: `constant`
-- `--case-app-enabled` — enable the Case App UI
+The case file must live inside a solution + project. Scaffolding commands (solution new → case init → project add) plus the `cases add` invocation that creates `caseplan.json` live in [`plugins/case/impl.md`](plugins/case/impl.md). Run them in order, then capture the initial Trigger node ID returned by `cases add` for use in Step 8.
 
 ## Step 7 — Add stages
 
-```bash
-uip case stages add <file> --label "Review Application" --output json --is-required
-uip case stages add <file> --label "Exception Handler" --type exception --output json
-```
+For each stage in `tasks.md §4.4`, run the CLI per [`plugins/stages/impl.md`](plugins/stages/impl.md). **Capture the `StageId` for every stage** into the name → ID map — downstream edges, tasks, conditions, and SLA all reference it.
 
-Stage types: `stage` (default), `exception`, `trigger`.
-
-Stages are auto-positioned. Each stage gets a unique ID in the output — save it for adding tasks and edges.
+`isRequired` from `tasks.md` is planning-only metadata; it is not passed on `stages add`. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
 ## Step 8 — Connect stages with edges
 
-The default trigger ID is `trigger_1`. Connect it to the first stage, then connect stages in sequence. Add edge labels for conditions if needed.
+For each edge in `tasks.md §4.5`, run the CLI per [`plugins/edges/impl.md`](plugins/edges/impl.md). Edge type is inferred automatically from the `--source` node.
 
-```bash
-uip case edges add <file> --source <trigger-id> --target <first-stage-id> --output json
-uip case edges add <file> --source <stage-id> --target <next-stage-id> --label "Approved" --output json
-```
+For multi-trigger cases, add the additional triggers first via the appropriate trigger plugin, then wire their IDs as edge sources.
 
-Edge type is inferred automatically: Trigger → `TriggerEdge`, Stage → `Edge`.
+## Step 9 — Add tasks and bind inputs/outputs
 
-Source/target handle directions default to `right`/`left` for stage edges and trigger edges.
+For each task entry in `tasks.md §4.6`, open the matching plugin's `impl.md` (`plugins/tasks/<type>/impl.md`) and run its command. **Capture the `TaskId` returned in `--output json`** — cross-task references and conditions need it.
 
-For multi-trigger cases, add extra triggers:
+After adding a task, bind its inputs per the two modes documented in [bindings-and-expressions.md](bindings-and-expressions.md):
 
-```bash
-uip case triggers add-timer <file> --every 1h --output json
-uip case triggers add-timer <file> --every 2d --at 2026-04-26T10:00:00.000Z --output json
-uip case triggers add-timer <file> --time-cycle "R/PT1H" --output json
-```
-
-Capture the returned trigger ID, then connect it to its target stage with an edge.
-
-## Step 9 — Add tasks to stages and bind variables
-
-```bash
-uip case tasks add <file> <stage-id> --type process --display-name "Run Background Check" --name "BackgroundCheck" --folder-path "Shared" --task-type-id <taskTypeId> --output json
-uip case tasks add <file> <stage-id> --type agent --display-name "AI Analysis" --task-type-id <taskTypeId> --output json
-uip case tasks add <file> <stage-id> --type action --display-name "Human Review" \
-  --task-title "Please review this application" \
-  --priority Medium \
-  --recipient reviewer@example.com \
-  --task-type-id <taskTypeId> --output json
-```
-
-Valid task types: `process`, `agent`, `api-workflow`, `rpa`, `external-agent`, `case-management`.
-
-Use `--lane <index>` for parallel execution (lane 0, 1, 2, etc.).
-
-**Bind task inputs and wire outputs** after adding each task. For each task in tasks.md, translate its `inputs` specification into `uip case var bind` commands.
-
-**Discover available inputs and outputs** — after adding a task with `--task-type-id`, the task is auto-enriched with input/output schemas. To inspect what inputs and outputs are available:
-
-```bash
-uip case tasks describe --type <type> --id <taskTypeId> --output json
-```
-
-Use the output to confirm that the input and output names in tasks.md match the actual schema.
-
-**Bind literal or expression values** — for each input specified as `input_name = "<value>"` in tasks.md:
+**Literal / expression mode** (for `input_name = "<value>"`):
 
 ```bash
 uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
 ```
 
-Valid expression prefixes: `=metadata.<field>`, `=js:<expression>`, `=vars.<varId>`, `=datafabric.<entity>`, `=bindings.<name>`, `=orchestrator.JobAttachments`.
+**Cross-task reference mode** (for `input_name <- "Stage Name"."Task Name".output_name`):
 
-**Wire cross-task references** — for each input specified as `input_name <- "Stage Name"."Task Name".output_name` in tasks.md:
-
-1. Look up the source stage ID and source task ID from the IDs captured when those tasks were added in earlier steps.
-2. Run the bind command:
+1. Look up the source stage ID and source task ID from the capture map built in Steps 7 and 9.
+2. Run:
 
 ```bash
 uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
@@ -122,65 +58,53 @@ uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
   --output json
 ```
 
-**Binding order** — process bindings in task order as listed in tasks.md. Since tasks are ordered by dependency (`order: after T24`), binding each task's inputs immediately after adding it ensures all source tasks already exist. If a cross-task reference points to a task not yet added, defer that binding until the source task is created.
+**Binding order.** Process tasks in the order listed in `tasks.md` (already dependency-sorted by `order: after T<n>`). Bind each task's inputs immediately after adding it. If a cross-task reference points to a task not yet added, halt — `tasks.md` ordering is wrong; report to the user.
 
-## Step 10 — Add entry and exit conditions
+**Lane concept is not used.** Do not pass `--lane`. All tasks go into lane 0 by default.
 
-Only add conditions specified in tasks.md.
+### Step 9.1 — Skeleton tasks for unresolved resources
 
-**Stage entry conditions:**
+When a task entry's `taskTypeId` (or `type-id` / `connection-id` for connector tasks) is `<UNRESOLVED: …>`, create a **skeleton task** instead of halting. See [skeleton-tasks.md](skeleton-tasks.md) for the canonical reference.
+
+**Process / agent / rpa / action / api-workflow / case-management:**
+
 ```bash
-uip case stage-entry-conditions add <file> <stage-id> --display-name "<name>" \
-  --rule-type selected-stage-completed --selected-stage-id <id>
-```
-
-**Stage exit conditions:**
-```bash
-uip case stage-exit-conditions add <file> <stage-id> --display-name "<name>" \
-  --rule-type selected-tasks-completed --selected-tasks-ids "<task-id1>,<task-id2>" \
-  --marks-stage-complete true
-```
-
-**Case exit conditions:**
-```bash
-uip case case-exit-conditions add <file> --display-name "<name>" \
-  --rule-type required-stages-completed --marks-case-complete true
-```
-
-**Task entry conditions:**
-```bash
-uip case task-entry-conditions add <file> <stage-id> <task-id> \
+uip case tasks add <file> <stage-id> \
+  --type <process|agent|rpa|action|api-workflow|case-management> \
   --display-name "<name>" \
-  --rule-type selected-tasks-completed --selected-tasks-ids "<id>"
+  [--is-required] \
+  [--should-run-only-once] \
+  --output json
 ```
 
-Rule types:
-- Stage entry: `case-entered`, `selected-stage-exited`, `selected-stage-completed`, `wait-for-connector`, `adhoc`
-- Stage exit: `selected-tasks-completed`, `wait-for-connector`, `required-tasks-completed`
-- Case exit: `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `required-stages-completed`
-- Task entry: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc`
-
-## Step 11 — Add SLA and escalation rules
-
-Set SLA duration on the root case or on individual stages. Only configure SLA if specified in tasks.md.
+**Connector activity / trigger:**
 
 ```bash
-# Root-level SLA
-uip case sla set <file> --count 5 --unit d
-
-# Per-stage SLA
-uip case sla set <file> --count 2 --unit w --stage-id <stage-id>
-
-# Escalation rule
-uip case sla escalation add <file> \
-  --trigger-type at-risk --at-risk-percentage 80 \
-  --recipient-scope User --recipient-target <target> --recipient-value <value>
-
-# Conditional SLA rule
-uip case sla rules add <file> --expression "=js:someCondition" --count 3 --unit d
+uip case tasks add-connector <file> <stage-id> \
+  --type <activity|trigger> \
+  --display-name "<name>" \
+  --output json
 ```
 
-SLA units: `h` (hours), `d` (days), `w` (weeks), `m` (months).
+**Skip `uip case var bind` entirely for skeleton tasks** — it rejects bindings without a resolved task-type schema. Capture the intended wiring from the `# wiring notes` block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+
+Skeleton tasks integrate with the rest of the graph:
+- **Task-entry conditions** use the captured skeleton `TaskId` normally.
+- **Stage-exit `selected-tasks-completed`** rules reference skeleton `TaskId`s normally.
+- **Cross-task variable bindings** are deferred — the user adds them via `uip case var bind` after attaching the real resource.
+
+## Step 10 — Add conditions
+
+For each condition in `tasks.md §4.7`, open the matching plugin:
+
+- Stage entry → [`plugins/conditions/stage-entry-conditions/impl.md`](plugins/conditions/stage-entry-conditions/impl.md)
+- Stage exit → [`plugins/conditions/stage-exit-conditions/impl.md`](plugins/conditions/stage-exit-conditions/impl.md)
+- Task entry → [`plugins/conditions/task-entry-conditions/impl.md`](plugins/conditions/task-entry-conditions/impl.md)
+- Case exit → [`plugins/conditions/case-exit-conditions/impl.md`](plugins/conditions/case-exit-conditions/impl.md)
+
+## Step 11 — SLA and escalation
+
+For each entry in `tasks.md §4.8`, run the matching sub-operation per [`plugins/sla/impl.md`](plugins/sla/impl.md): `sla set` for defaults, `sla rules add` for conditional overrides (root only), `sla escalation add` for notification rules.
 
 ## Step 12 — Validate
 
@@ -190,44 +114,43 @@ uip case validate <file>
 
 On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to Step 13.
 
-On failure: the output lists each `[error]` or `[warning]` with its path and message. Fix the reported issues and re-run `validate` until it passes.
+On failure: output lists `[error]` and `[warning]` entries with path and message. Fix the reported issues (usually via a targeted re-run of the earlier step) and re-run `validate`.
 
-## Step 13 — Ask about debug
+**Retry policy.** Up to 3 validation retries per session. After the 3rd failure, halt and ask the user with **AskUserQuestion**: show the remaining errors and options — `Retry with fix`, `Pause for manual edit`, `Abort`.
 
-Once the case file passes validation, tell the user and ask:
+## Step 13 — Post-build prompt
 
-> "Case file created and validated. Do you want to debug it? This will upload it to Studio Web and run a debug session."
+Once validation passes, ask the user what to do next.
 
-Use `AskUserQuestion` with options: "Yes", "No"
+Use **AskUserQuestion** with options:
 
-If the user says yes:
+- `Run debug session` — proceed to Step 14.
+- `Publish to Studio Web` — proceed to Step 15.
+- `Done` — exit.
+- `Something else` — free-form prompt.
+
+After debug or publish completes, return to this prompt so the user can chain the other action (e.g., debug first, then publish). Exit when the user selects `Done`.
+
+For further authoring changes (add a task, tweak a condition, etc.), the user updates `sdd.md` and re-runs the skill from Phase 1 — this skill does not offer in-place incremental edits.
+
+## Step 14 — Optional: Debug session
+
+> Debug executes the case for real — it will send emails, post messages, call APIs, write to databases. Only run debug when the user explicitly asks. Never run it automatically.
+
 ```bash
 uip case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json
 ```
 
-Requires `uip login`. Uploads to Studio Web, triggers a debug session in Orchestrator, and streams results.
+Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
 
-**Do NOT run `case debug` automatically.** Debug executes the case for real — it will send emails, post Slack messages, call APIs, write to databases, etc. Only run debug when the user explicitly asks.
-Debug is for **testing that the case runs correctly** — not for publishing or viewing. To publish, use Step 14 instead.
+## Step 15 — Optional: Publish to Studio Web
 
-## Step 14 — Publish to Studio Web
+**Default publish target.** Uploads the case to Studio Web for visualization and editing.
 
-**This is the default publish target.** When the user wants to publish, view, or share the case, upload the solution directly to Studio Web:
-
-Always ask user:
-
-> "Do you want to publish it to Studio Web? This will upload it and make it available for visualization and editing."
-
-Use `AskUserQuestion` with options: "Yes", "No"
-
-If the user says yes:
 ```bash
-# Upload the solution folder (containing the .uipx) to Studio Web
-uip solution upload <SolutionDir> --output json
+uip solution upload "<SolutionDir>" --output json
 ```
 
-`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip case init`, it already lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+Accepts the solution directory (the folder containing the `.uipx`) directly — no intermediate bundling step. `upload` pushes to Studio Web — share the returned URL with the user.
 
-**Do NOT run `uip case pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the case directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
-
-For Orchestrator deployment when explicitly requested, see [case-commands.md](case-commands.md) for `uip case pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
+> **Do NOT run `uip case pack` + `uip solution publish` unless the user explicitly asks for Orchestrator deployment.** That path puts the case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.

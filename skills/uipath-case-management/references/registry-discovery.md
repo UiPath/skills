@@ -10,11 +10,21 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 ## Prerequisites
 
-Run `uip case registry pull` before any lookups. This populates the local cache at `~/.uip/case-resources/`. All subsequent discovery is done by reading these cache files directly — no CLI search commands needed.
+Run `uip case registry pull` before any lookups. This populates the local cache at `~/.uipcli/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
+
+## CLI Search Gaps
+
+The `uip case registry search` command has known gaps. In particular, it fails to return results for certain resource types even when the resource is present in the cache (most commonly affecting **action-apps** / HITL tasks). When search returns an empty or incomplete result for a resource you know exists:
+
+1. Do **not** retry the same search with different keywords.
+2. Fall back to reading the cache files directly using the procedure in this document.
+3. Record the gap in `registry-resolved.json` so the audit trail reflects the fallback.
+
+Direct cache-file inspection is the authoritative discovery method for this skill.
 
 ## Cache File Index
 
-Each resource type has a `<type>-index.json` file at `~/.uip/case-resources/`:
+Each resource type has a `<type>-index.json` file at `~/.uipcli/case-resources/`:
 
 | File | Identifier field | Name field | Folder field |
 |------|-----------------|------------|--------------|
@@ -58,7 +68,7 @@ For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache look
 For each task in the sdd.md, extract the **name** and **folder path** from the Process References table, then filter the cache file:
 
 ```bash
-cat ~/.uip/case-resources/<type>-index.json | python3 -c "
+cat ~/.uipcli/case-resources/<type>-index.json | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 for item in data:
@@ -118,49 +128,9 @@ Additional `--type` values not discoverable through cache: `rpa`, `external-agen
 
 ## Connector Tasks
 
-For results from `typecache-activities-index.json` or `typecache-triggers-index.json`:
+For entries in `typecache-activities-index.json` or `typecache-triggers-index.json`, the full resolution pipeline (get-connector → get-connection → pick connection → describe) lives in [connector-integration.md](connector-integration.md). Registry discovery provides only the `uiPathActivityTypeId`; everything else is handled there.
 
 - **Only use entries that have a `uiPathActivityTypeId` field.** Skip entries without it — these are non-connector activities and are not supported as case tasks at this time.
-- The implementation agent can retrieve full connector details using:
-  ```bash
-  uip case registry get-connector --type <typecache-activities|typecache-triggers> --activity-type-id "<uiPathActivityTypeId>" --output json
-  ```
-- To check available connections for the connector:
-  ```bash
-  uip case registry get-connection --type <typecache-activities|typecache-triggers> --activity-type-id "<uiPathActivityTypeId>" --output json
-  ```
-
-### Handling Connection Results
-
-The `get-connection` response includes `Entry`, `Config`, and `Connections`:
-
-```json
-{
-  "Result": "Success",
-  "Code": "ConnectionGetSuccess",
-  "Data": {
-    "Entry": {
-      "uiPathActivityTypeId": "718fdc36-73a8-3607-8604-ddef95bb9967",
-      "displayName": "Send Email",
-      "configuration": "{}"
-    },
-    "Config": {
-      "connectorKey": "gmail",
-      "objectName": "message"
-    },
-    "Connections": [
-      { "id": "conn-1", "name": "My Gmail" },
-      { "id": "conn-2", "name": "Work Gmail" }
-    ]
-  }
-}
-```
-
-When processing connection results:
-- The sdd.md provides the necessary information to identify the correct connection. Match the connection name from the sdd.md against the `Connections` list.
-- If **`Connections` is empty**, no connection has been configured for this connector in Integration Service. Flag this to the user — they need to create a connection before the task can run.
-- The `Config.connectorKey` identifies the Integration Service connector (e.g., `gmail`, `uipath-drip-drip`).
-- The `Config.objectName` identifies the specific operation within the connector.
 
 ## Output Contract
 

@@ -1,6 +1,6 @@
-# Case Management JSON Schema Reference
+# Case Management JSON Schema — Cross-Cutting Reference
 
-A case definition JSON file is the **source of truth** for a Case Management workflow. It is edited locally using `uip case` commands and then deployed to Orchestrator.
+Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl.md`.
 
 ## Top-level structure
 
@@ -49,8 +49,8 @@ Metadata and configuration for the case definition.
 | `caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
 | `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `version` | string | Schema version — `"v12"` for current schema |
-| `data.sla` | SlaSchema? | Default SLA for the case |
-| `data.slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules |
+| `data.sla` | SlaSchema? | Default SLA for the case (see §5) |
+| `data.slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules (see §5) |
 | `data.uipath` | object? | Variable and binding declarations |
 | `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
@@ -66,22 +66,15 @@ Metadata and configuration for the case definition.
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
-| `rules` | Rules? | DNF rule set (see §5) |
-| `marksCaseComplete` | boolean? | Whether this condition closes the case |
+Rule structure uses DNF — see §4.
 
 ---
 
-## 2. nodes
-
-Discriminated union on `type`. Three node types exist.
+## 2. nodes (three types, discriminated on `type`)
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
-Entry point. Created automatically by `uip case cases add`. There should be exactly one.
+Entry point. Created automatically by `uip case cases add`. Exactly one per case.
 
 ```json
 {
@@ -90,18 +83,16 @@ Entry point. Created automatically by `uip case cases add`. There should be exac
   "position": { "x": 200, "y": 0 },
   "data": {
     "label": "Start",
-    "uipath": {
-      "serviceType": "None"
-    }
+    "uipath": { "serviceType": "None" }
   }
 }
 ```
 
-`serviceType` options: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`.
+`serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl.md`.
 
 ### b) Stage Node — `"case-management:Stage"`
 
-Standard workflow stage. Contains tasks organized in parallel lanes.
+Standard workflow stage. Contains tasks.
 
 ```json
 {
@@ -110,30 +101,24 @@ Standard workflow stage. Contains tasks organized in parallel lanes.
   "position": { "x": 600, "y": 200 },
   "data": {
     "label": "Review Application",
-    "tasks": [
-      [
-        { "id": "<taskId>", "type": "process", "displayName": "Run KYC", "data": { "name": "KYC", "folderPath": "Shared" } }
-      ]
-    ],
+    "tasks": [ [ { ... task ... } ] ],
     "sla": { "count": 2, "unit": "d" },
     "entryConditions": [],
     "exitConditions": [],
-    "description": "some desc"
+    "description": "..."
   }
 }
 ```
-
-`tasks` is a 2D array: `tasks[lane][index]`. Outer = parallel lanes, inner = sequential tasks per lane.
 
 **StageNodeData fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `label` | string? | Display label |
-| `tasks` | Task[][]? | 2D array of tasks (lanes × sequential) |
+| `tasks` | Task[][]? | 2D array: `tasks[lane][index]`. The skill writes all tasks into `tasks[0]` — lane concept is not used. |
 | `sla` | SlaSchema? | SLA for this stage |
-| `entryConditions` | EntryCondition[]? | Conditions for entering the stage |
-| `exitConditions` | ExitCondition[]? | Conditions for exiting the stage |
+| `entryConditions` | EntryCondition[]? | See §3 |
+| `exitConditions` | ExitCondition[]? | See §3 |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 | `description` | string? | Stage description |
 
@@ -141,61 +126,53 @@ Standard workflow stage. Contains tasks organized in parallel lanes.
 
 Like a Stage but also supports expression-driven SLA rules.
 
-```json
-{
-  "id": "<shortId>",
-  "type": "case-management:ExceptionStage",
-  "position": { "x": 1100, "y": 200 },
-  "data": {
-    "label": "Handle Rejection",
-    "tasks": [],
-    "entryConditions": [
-      { "id": "<id>", "displayName": "Fraud detected", "rules": [], "isInterrupting": true }
-    ],
-    "exitConditions": [
-      {
-        "id": "<id>",
-        "displayName": "Return to review",
-        "type": "return-to-origin",
-        "rules": []
-      }
-    ],
-    "slaRules": []
-  }
-}
-```
-
-ExceptionStage `data` extends StageNodeData with:
+Extends StageNodeData with:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules for this exception stage |
 
-### EntryCondition
+---
+
+## 3. Conditions (cross-cutting)
+
+All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl.md`.
+
+### EntryCondition (stage-level)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
 | `displayName` | string? | Human-readable label |
-| `rules` | Rules? | DNF rule set (see §5) |
-| `isInterrupting` | boolean? | Whether this condition interrupts the current stage |
+| `rules` | Rules | DNF rule set — see §4 |
+| `isInterrupting` | boolean? | Whether the condition interrupts the current stage |
 
-### ExitCondition
+### ExitCondition (stage-level)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string? | Unique ID |
 | `displayName` | string? | Human-readable label |
-| `rules` | Rules? | DNF rule set (see §5) |
+| `rules` | Rules | DNF rule set — see §4 |
 | `type` | string? | `"exit-only"` \| `"wait-for-user"` \| `"return-to-origin"` |
 | `exitToStageId` | string? | Target stage ID when routing to a specific stage |
 | `marksStageComplete` | boolean? | Whether this exit marks the stage complete |
 
+### TaskEntryCondition (task-level)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string? | Unique ID |
+| `displayName` | string? | Human-readable label |
+| `rules` | Rules | DNF rule set — see §4 |
+
+### CaseExitCondition (case-level)
+
+See `root.caseExitConditions` in §1.
+
 ---
 
-## 3. edges
-
-Discriminated union on `type`. Two edge types exist.
+## 4. edges (two types, discriminated on `type`)
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 
@@ -205,8 +182,8 @@ Connects Trigger → Stage. No rules.
 {
   "id": "<shortId>",
   "type": "case-management:TriggerEdge",
-  "source": "<trigger-node-id>",
-  "target": "<stage-node-id>",
+  "source": "<trigger-id>",
+  "target": "<stage-id>",
   "sourceHandle": "<trigger-id>____source____right",
   "targetHandle": "<stage-id>____target____left",
   "data": { "label": "Start" }
@@ -215,7 +192,7 @@ Connects Trigger → Stage. No rules.
 
 ### b) Edge — `"case-management:Edge"`
 
-Connects Stage → Stage. Transition conditions are defined via ExitConditions on the source stage node, not on the edge itself.
+Connects Stage → Stage. Transition conditions live on the source stage's `exitConditions`, not on the edge.
 
 ```json
 {
@@ -229,82 +206,13 @@ Connects Stage → Stage. Transition conditions are defined via ExitConditions o
 }
 ```
 
-**EdgeData fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `label` | string? | Display label on the edge |
-| `waypoints` | unknown? | Visual routing waypoints |
-
-Handle format: `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>`.
-Directions: `right`, `left`, `top`, `bottom`.
+Handle format: `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>`. Directions: `right`, `left`, `top`, `bottom`.
 
 ---
 
-## 4. Tasks
+## 5. Rules (DNF — OR of AND-clauses)
 
-All tasks share a `BaseTask`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string? | Unique task ID (auto-generated) |
-| `elementId` | string? | Element ID |
-| `displayName` | string? | Human-readable label shown in the UI |
-| `type` | string | Task type (see below) |
-| `data` | object | Type-specific configuration |
-| `skipCondition` | string? | Expression — skip the task when truthy |
-| `entryConditions` | TaskEntryCondition[]? | Conditions controlling task entry |
-| `conditions` | TaskCondition[]? | **Deprecated** — use `entryConditions` instead |
-| `shouldRunOnReEntry` | boolean? | Re-run when stage is re-entered |
-| `description` | string? | Task description |
-
-### Task types
-
-| Type | `data` fields |
-|------|---------------|
-| `process` | `name?`, `folderPath?`, `inputs?`, `outputs?`, `context?` |
-| `action` | `name?`, `folderPath?`, `taskTitle?`, `labels?`, `priority?`, `actionCatalogName?`, `recipient?` |
-| `agent` | `name?`, `folderPath?`, `inputs?`, `outputs?`, `context?` |
-| `api-workflow` | `name?`, `folderPath?`, `inputs?`, `outputs?`, `context?` |
-| `rpa` | `name?`, `folderPath?`, `inputs?`, `outputs?`, `context?` |
-| `external-agent` | `name?`, `folderPath?`, `serviceType?`, `bindings?` |
-| `wait-for-timer` | `timer?`, `timeDuration?`, `timeDate?`, `timeCycle?` |
-| `wait-for-connector` | `name?`, `folderPath?`, `serviceType?`, `bindings?` |
-| `execute-connector-activity` | `name?`, `folderPath?`, `serviceType?`, `bindings?` |
-| `case-management` | `name?`, `folderPath?`, `inputs?`, `outputs?`, `context?` |
-
-### TaskEntryCondition
-
-```json
-{
-  "id": "<id>",
-  "displayName": "Run only if not verified",
-  "rules": [[{ "rule": "current-stage-entered" }]]
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string? | Unique ID |
-| `displayName` | string? | Human-readable label |
-| `rules` | Rules? | DNF rule set (see §5) |
-
-### TaskCondition (deprecated)
-
-```json
-{
-  "id": "<id>",
-  "displayName": "Skip if already verified",
-  "actionType": "skip",
-  "rules": [[{ "rule": "current-stage-entered" }]]
-}
-```
-
----
-
-## 5. Rules (DNF: OR of AND-clauses)
-
-Rules are used in entry/exit conditions and task conditions.
+Used by every condition type (entry, exit, task-entry, case-exit).
 
 ```
 Rules = Rule[][]
@@ -312,7 +220,7 @@ Rules = Rule[][]
   Inner array = AND conditions within a group
 ```
 
-### Rule types
+### Rule types (cross-cutting catalog)
 
 | `rule` | Additional fields | Description |
 |--------|-------------------|-------------|
@@ -321,27 +229,18 @@ Rules = Rule[][]
 | `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
 | `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
 | `selected-tasks-completed` | `id?`, `selectedTasksIds?`, `conditionExpression?` | Specific tasks have all completed |
+| `required-tasks-completed` | `id?`, `conditionExpression?` | All required tasks in the stage have completed |
+| `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 
+Not every rule type is valid at every level — see each condition plugin's `impl.md` for the allowed subset per location.
+
 ```json
 { "rule": "case-entered", "id": "<id>" }
-
 { "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
-
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
-
 { "rule": "adhoc", "id": "<id>", "conditionExpression": "in.Score > 700" }
-
-{
-  "rule": "wait-for-connector",
-  "id": "<id>",
-  "uipath": {
-    "serviceType": "Intsvc.EventTrigger",
-    "outputs": [],
-    "bindings": []
-  }
-}
 ```
 
 ---
@@ -367,14 +266,10 @@ Rules = Rule[][]
 ```
 
 Time units: `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
-
 Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`.
-
 Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`.
 
-### SlaRuleEntry
-
-Expression-driven SLAs allow per-case-instance SLA overrides:
+### SlaRuleEntry (expression-driven overrides)
 
 ```json
 {
@@ -384,9 +279,44 @@ Expression-driven SLAs allow per-case-instance SLA overrides:
 }
 ```
 
+Evaluated in array order; the first truthy expression wins. The trailing entry with `expression: "=js:true"` (or equivalent) acts as the default.
+
 ---
 
-## Minimal example
+## 7. Tasks — BaseTask shape (shared)
+
+All tasks inside a stage share this envelope. Per-type `data` fields live in each task plugin's `impl.md`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string? | Unique task ID (auto-generated) |
+| `elementId` | string? | Element ID |
+| `displayName` | string? | Human-readable label shown in the UI |
+| `type` | string | Task type — see task plugins under `plugins/tasks/` |
+| `data` | object | Type-specific configuration — see corresponding plugin's `impl.md` |
+| `skipCondition` | string? | Expression — skip the task when truthy |
+| `entryConditions` | TaskEntryCondition[]? | See §3 |
+| `shouldRunOnReEntry` | boolean? | Re-run when stage is re-entered |
+| `description` | string? | Task description |
+
+**Task type catalog** (full shape in each plugin's `impl.md`):
+
+| Task `type` | Plugin |
+|-------------|--------|
+| `process` | `plugins/tasks/process/` |
+| `action` | `plugins/tasks/action/` |
+| `agent` | `plugins/tasks/agent/` |
+| `rpa` | `plugins/tasks/rpa/` |
+| `api-workflow` | `plugins/tasks/api-workflow/` |
+| `case-management` | `plugins/tasks/case-management/` |
+| `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `wait-for-connector` | `plugins/tasks/connector-trigger/` |
+| `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
+| `external-agent` | *(reserved — not covered in current milestone)* |
+
+---
+
+## 8. Minimal example
 
 ```json
 {
