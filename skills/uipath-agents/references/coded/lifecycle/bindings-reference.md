@@ -30,7 +30,15 @@ If `bindings.json` does not exist, create it with the empty skeleton:
 
 ### Step 2: Scan Code for Resource Calls
 
-Search all Python files for UiPath SDK resource calls that produce bindings. The eight bindable resource types are:
+Search **every** Python file found in Step 1 for UiPath SDK resource calls that produce bindings. Do NOT limit scanning to the main entry point (`main.py` / `graph.py`) — resource calls are frequently in helper modules, utility files, or store layers.
+
+**Scanning strategy:**
+1. Grep ALL `**/*.py` files (excluding `.venv/`, `__pycache__/`, `.uipath/`) for SDK service method patterns listed below.
+2. When a match is found, read the file to extract the argument values (resource name, folder path).
+3. If the argument is a **module-level constant** (e.g., `BUCKET = "my-bucket"`) rather than an inline string literal, **resolve it** — search the same file (and imports from sibling modules) for the constant definition and use its literal value. This is not dynamic; it is a resolvable constant.
+4. Only flag values as truly dynamic when they come from function calls, f-strings, environment variables, or runtime state that cannot be statically determined.
+
+The eight bindable resource types are:
 
 | SDK Service | Method Pattern | Resource Type | Identifier Param |
 |------------|---------------|---------------|-----------------|
@@ -43,9 +51,9 @@ Search all Python files for UiPath SDK resource calls that produce bindings. The
 | `.connections.retrieve` / `.retrieve_async` | `("connection_key")` | `connection` | `key` (positional) |
 | `.mcp.retrieve` / `.retrieve_async` | `(slug="slug", folder_path="folder")` | `mcpServer` | `slug` |
 
-Use Grep to find calls matching these patterns. Then read the surrounding code to extract the literal string values for resource name and folder path.
+Use Grep to find calls matching these patterns across all project Python files. Then read the surrounding code to extract the literal string values for resource name and folder path.
 
-**Important:** Only literal string arguments can be bound. If a value is dynamic (variable, f-string, function call), flag it to the user — it requires manual handling or refactoring.
+**Important:** Only literal or constant-resolvable string arguments can be bound. If a value is truly dynamic (computed at runtime from function calls, f-strings with variables, environment variables, or user input), flag it to the user — it requires manual handling or refactoring. Module-level constants (e.g., `BUCKET = "my-bucket"`) are NOT dynamic — resolve them to their literal values.
 
 ### Step 3: Compare with Existing Bindings
 
@@ -109,10 +117,10 @@ For detailed bindings.json schema, all eight resource type templates, SDK method
 
 ## Edge Cases
 
-- **Multiple entry points (code scanning)** — Scan all Python files, not just `main.py`. LangGraph agents may define tools in separate modules.
+- **Multiple entry points (code scanning)** — Scan ALL Python files in the project (`**/*.py`, excluding `.venv/`, `__pycache__/`, `.uipath/`), not just `main.py` or `graph.py`. Resource calls commonly live in helper modules (e.g., `storage.py`, `utils.py`, tool definition files). When arguments use module-level constants, resolve them to their literal values before creating bindings.
 - **Multiple entry points (entrypoint binding)** — When `entry-points.json` has multiple entrypoints, ask the user per-resource which entrypoint it belongs to. User can choose "None" to skip entrypoint binding for that resource.
 - **Duplicate resources** — If the same resource (same name + folder) is called multiple times, produce only one binding entry.
-- **No folder_path** — Some asset calls omit `folder_path`. In that case, use an empty string `""` for `folderPath.defaultValue` and construct the key as just `<name>.` (name followed by a dot and empty string).
+- **No folder_path** — Some calls omit `folder_path`. In that case, use an empty string `""` for `folderPath.defaultValue` and construct the key as just `<name>` (no trailing dot).
 - **LangGraph ContextGroundingVectorStore** — `ContextGroundingVectorStore(index_name="...", folder_path="...")` creates an `index` binding with the same structure as `context_grounding.retrieve_async`.
 - **Sync vs async** — Both `retrieve()` and `retrieve_async()` produce the same binding. Always use the `_async` method name in `ActivityName`.
 - **Jobs resume** — `sdk.jobs.resume(process_name="...")` creates a `process` binding (identifier param is `process_name`, not `name`).
@@ -657,15 +665,36 @@ Not every SDK service supports resource overrides. The following services have N
 
 ---
 
-## Dynamic Values
+## Dynamic Values vs Resolvable Constants
 
-If the resource name or folder path is constructed dynamically at runtime (e.g., from a variable, f-string, or function return), it cannot be statically bound. Flag these to the user as requiring manual bindings.json entries or refactoring to use literal string values.
+Not every non-literal argument is dynamic. **Resolve module-level constants before flagging a value as dynamic.**
 
-Example of a dynamic value that cannot be auto-bound:
+**Resolvable (DO bind):**
 ```python
+# Module-level constant — resolve to its literal value
+BUCKET = "one-alpha-signals"
+sdk.buckets.list_files(name=BUCKET, prefix="kiss/")  # → bind as "one-alpha-signals"
+
+# Constant imported from a sibling module in the same project
+from .config import QUEUE_NAME  # where QUEUE_NAME = "invoices"
+sdk.queues.create_item(item={"Name": QUEUE_NAME, ...})  # → bind as "invoices"
+```
+
+**Truly dynamic (flag to user):**
+```python
+# Runtime function call — cannot resolve statically
 asset_name = get_config("asset_name")
 asset = await sdk.assets.retrieve_async(asset_name, folder_path=folder)
+
+# f-string with runtime variable
+bucket = f"data-{environment}"
+sdk.buckets.upload(name=bucket, ...)
+
+# Environment variable
+queue = os.environ["QUEUE_NAME"]
 ```
+
+**Resolution strategy:** When a non-literal argument is found, search the same file for an assignment to that variable name at module scope (e.g., `BUCKET = "..."`). If not found in the same file, check imports from sibling modules within the project (not third-party packages). If the value traces back to a string literal through constants only, use that literal. Otherwise, flag as dynamic.
 
 ---
 
