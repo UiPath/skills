@@ -2,7 +2,7 @@
 
 > **Template:** RPA Process / Library / Test Automation.
 > **Phase 2 sections:** §5, §9, §10, §11, §12, §13, §14. **Phase 3 sections:** all others.
-> **Before filling §10-§11:** Run Level 2.5 (Project Decomposition) from product-selection-guide.md. The decomposition decision determines whether §10-§11 describe one project or a Master Project with multiple sub-projects.
+> **Before filling §10-§11:** Run Level 2.5 Part A (RPA Decomposition Signals) from rpa-product-guide.md. The decomposition decision determines whether §10-§11 describe one project or a Master Project with multiple sub-projects.
 
 ---
 
@@ -210,9 +210,9 @@ public enum <EnumName>
 
 ## 10. Master Project Architecture
 
-> **This section is produced by Level 2.5 (Project Decomposition) from the Product Selection Guide.**
+> **This section is produced by Level 2.5 Part A (RPA Decomposition Signals) from rpa-product-guide.md.**
 > Generate EITHER Option A (Master Project) OR Option B (Single Project). **Delete the other entirely.**
-> Decision rule: if 2+ decomposition signals matched in Level 2.5 → Option A. Otherwise → Option B.
+> Decision rule: if 2+ decomposition signals matched in Part A → Option A. Otherwise → Option B.
 
 ### Option A — Master Project (multiple queue-connected sub-projects)
 
@@ -224,11 +224,15 @@ public enum <EnumName>
 
 #### Sub-projects overview
 
-| # | Project Name | Role | Framework | Input Queue | Output Queue | PDD Steps |
-|---|---|---|---|---|---|---|
-| 1 | `<NAME>_Dispatcher` | <ROLE_DESCRIPTION> | Sequence | — | `<QUEUE_1>` | <STEP_NUMBERS> |
-| 2 | `<NAME>_Performer` | <ROLE_DESCRIPTION> | REFramework | `<QUEUE_1>` | `<QUEUE_2>` | <STEP_NUMBERS> |
-| 3 | `<NAME>_Reporting` | <ROLE_DESCRIPTION> | Sequence | `<QUEUE_2>` | — | — |
+> **Sub-type column:** one of Process / Library / Test Automation. Libraries and Test Automation projects do not use Orchestrator queues — put `—` in Input Queue / Output Queue for those rows.
+
+| # | Project Name | Sub-type | Role | Framework | Input Queue | Output Queue | PDD Steps |
+|---|---|---|---|---|---|---|---|
+| 1 | `<NAME>_Dispatcher` | Process | <ROLE_DESCRIPTION> | Sequence | — | `<QUEUE_1>` | <STEP_NUMBERS> |
+| 2 | `<NAME>_Performer` | Process | <ROLE_DESCRIPTION> | REFramework | `<QUEUE_1>` | `<QUEUE_2>` | <STEP_NUMBERS> |
+| 3 | `<NAME>_Reporting` | Process | <ROLE_DESCRIPTION> | Sequence | `<QUEUE_2>` | — | — |
+| 4 | `<NAME>_SharedLib` | Library | <ROLE_DESCRIPTION> | — | — | — | — |
+| 5 | `<NAME>_Regression` | Test Automation | <ROLE_DESCRIPTION> | — | — | — | <TEST_STEPS> |
 
 #### Data flow diagram
 
@@ -259,13 +263,22 @@ flowchart LR
 
 ### Project Type
 
-Select ONE based on the PDD's intent (applies to all sub-projects in a Master Project):
+Select the sub-type **per project** (sourced from Level 1.5 / Level 1.75 Pass C). A Master Project may mix sub-types — for example, a Performer (Process) alongside a shared Library and a Test Automation project validating the Performer.
 
-- [ ] **Process** — standard end-to-end automation (default)
-- [ ] **Library** — reusable component consumed by other automations
-- [ ] **Test Automation** — test cases validating application behavior
+| # | Project Name | Sub-type |
+|---|---|---|
+| 1 | `<PROJECT_NAME_1>` | Process |
+| 2 | `<PROJECT_NAME_2>` | Library |
+| 3 | `<PROJECT_NAME_3>` | Test Automation |
 
-> **For Master Project:** repeat the Recommended Structure, Workflow Inventory, and Workflow Dependencies subsections below per sub-project.
+Sub-type reference:
+
+- **Process** — standard end-to-end automation (default)
+- **Library** — reusable component consumed by other automations (no queue I/O; published as NuGet)
+- **Test Automation** — test cases validating application behavior (Test Manager integration; no Master Project queue I/O)
+
+> **For Master Project (Option A in §10):** repeat the Recommended Structure, Workflow Inventory, and Workflow Dependencies subsections below **per sub-project**, honoring the sub-type selected in the table above.
+> **Libraries and Test Automation projects inside a Master Project do not consume or produce Orchestrator queues** — their rows in §10 and §12 use `—` for Input Queue / Output Queue.
 
 ### Recommended Structure
 

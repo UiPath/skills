@@ -2,7 +2,7 @@
 
 Step-by-step instructions for transforming a PDD into an SDD. Follow the 3-phase interaction model described in SKILL.md.
 
-## Phase 1 — PDD Analysis & Product Selection
+## Phase 1 — PDD Analysis & Scope Selection
 
 ### Step 0: Determine Execution Mode
 
@@ -84,29 +84,56 @@ Follow the [PDD Analysis Guide](pdd-analysis-guide.md) to extract data from the 
 
 Scan for missing or vague information. Use the Gap Detection Checklist in the [PDD Analysis Guide](pdd-analysis-guide.md) to classify each gap as `[DEFAULT]` or `[SME REVIEW]`.
 
-### Step 4: Select the Product
+### Step 4: Select the Primary Scope
 
 > **Progress:** Mark "Read PDD and extract data" as `completed`. Mark "Select product" as `in_progress`.
 
-Apply the [Product Selection Guide](product-selection-guide.md) decision tree. Produce:
+Apply the [Product Selection Guide](product-selection-guide.md) Level 1 decision table. Produce:
 
-- **Primary product** (one of: RPA Process, RPA Library, RPA Test Automation, Maestro Flow, Case Management, Agents, Coded Apps, API Workflows)
-- **Integrated components** (any of: RPA processes, Agents, API Workflows, Integration Service connectors, HITL, Coded Apps)
-- **Reasoning** — bullet points mapping PDD signals to the chosen product
-- **Alternatives considered** — rejected products and why
+- **Primary scope** — one of: Agents, Coded Apps, API Workflows, Case Management, Maestro Flow, **RPA** (sub-type next), **Solution** (composition next)
+- **Solution signals** — note any that matched, even if Level 1 picked a single product (these become candidate additional projects if the user customizes)
+- **Reasoning** — bullet points mapping PDD signals to the chosen scope
+- **Alternatives considered** — rejected scopes and why
 
-### Step 4.5: Run Project Decomposition (RPA only)
+### Step 4.25: RPA Sub-type Selection (if RPA or Solution includes RPA)
 
-If the primary product is **RPA Process**, run Level 2.5 (Project Decomposition) from the [Product Selection Guide](product-selection-guide.md). This determines whether the SDD describes a single project or a Master Project with multiple queue-connected sub-projects.
+If Level 1 selected **RPA**, run Level 1.5 from the [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) to confirm the sub-type (Process / Library / Test Automation). Always ask the user via `AskUserQuestion` even when only one signal set matches.
 
+If Level 1 selected **Solution** and the composition includes RPA projects, defer Level 1.5 to Step 4.3 Pass C — sub-type runs once per RPA project in the composition.
+
+### Step 4.3: Solution Composition (if Level 1 = Solution OR user customizes)
+
+Run Level 1.75 from the [Product Selection Guide](product-selection-guide.md) when:
+
+- Level 1 selected **Solution** (auto-proceed), OR
+- The user picked "Solution (customize)" from the recommendation screen in Step 6
+
+Execute the three passes:
+
+1. **Pass A** — paired multi-select `AskUserQuestion` (two questions in one call, 4 options each, `multiSelect: true`) with the recommended products pre-checked.
+2. **Pass B** — resolve counts per product using numbered-choice questions.
+3. **Pass C** — per-RPA-project, run Level 1.5 from the [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) to pick sub-type.
+
+Output: the Level 1.75 project list with Product, Sub-type, Source Signal columns.
+
+### Step 4.5: Run Project Decomposition
+
+Run Level 2.5 for every scope. The work is trivial for single-project scopes and substantive for RPA Process and Solutions.
+
+**Part A — RPA decomposition signals** (per RPA Process project in the scope). See [RPA Product Guide → Level 2.5 Part A](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals).
 1. Evaluate the 6 decomposition signals against the PDD data extracted in Step 2.
-2. If 2+ signals match → **Master Project**. Select the decomposition pattern (Dispatcher/Performer, Dispatcher/DU/Output, etc.).
-3. If 0-1 signals match → **Single Project**.
-4. For Master Project: produce the sub-projects table, queue schema, and framework assignments per the Level 2.5 output format.
+2. If 2+ signals match → **Master Project** for that RPA Process. Select the pattern (Dispatcher/Performer, Dispatcher/DU/Output, etc.).
+3. If 0-1 signals match → **Single Project** for that RPA Process.
 
-This decision is critical — it determines the entire §10-§12 structure of the RPA template. Getting it wrong means rewriting the SDD.
+Skip Part A for RPA Library, RPA Test Automation, and non-RPA products.
 
-Skip this step for RPA Library, RPA Test Automation, and all non-RPA products.
+**Part B — Merge into unified project list.** See [Product Selection Guide → Level 2.5 Part B](product-selection-guide.md#part-b--merge-into-the-final-project-list).
+1. Combine every project produced by Part A with the non-RPA projects from Level 1 / Level 1.75.
+2. Produce the unified project list with columns Product, Sub-type, Role, Framework, Input Queue, Output Queue.
+3. For any Master Projects, include the queue schema table.
+4. Note cross-product integration points (Flow → RPA, Agent tool → API Workflow, etc.).
+
+This decision is critical — it determines the §10-§12 structure of the RPA template, the Project Inventory section of every non-RPA template, and the Solution overview SDD structure. Getting it wrong means rewriting the SDD.
 
 ### Step 5: Check for Agent/Coded App Gaps
 
@@ -120,9 +147,9 @@ Summary:
 
 Never auto-fallback. The user must choose explicitly.
 
-### Step 6: Present Summary + Product Recommendation
+### Step 6: Present Summary + Scope Recommendation
 
-Present to the user:
+Emit the summary block described in "Presenting the Recommendation" in the [Product Selection Guide](product-selection-guide.md). The **recommended scope appears first**; single-product alternatives and "Solution (customize)" follow as alternatives in the confirmation `AskUserQuestion` call.
 
 ```markdown
 ## PDD Analysis Summary
@@ -136,36 +163,44 @@ Present to the user:
 **System Errors:** <ERROR_COUNT> defined in PDD
 **Gaps Detected:** <DEFAULT_COUNT> [DEFAULT], <SME_REVIEW_COUNT> [SME REVIEW]
 
-## Recommended Product
-
-**Primary:** <PRIMARY_PRODUCT>
-**Integrated components:** <INTEGRATED_PRODUCTS_OR_NONE>
-
+## Recommended Scope
+**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
 **Reasoning:**
 - <PDD_SIGNAL_1> → <PRODUCT_MAPPING>
 - <PDD_SIGNAL_2> → <PRODUCT_MAPPING>
 
 **Alternatives considered:**
-- <REJECTED_PRODUCT> — rejected because <REASON>
+- <REJECTED_OPTION> — rejected because <REASON>
 
-## Project Architecture (RPA only)
-**Pattern:** <SINGLE_PROJECT / MASTER_PROJECT_PATTERN_NAME>
-**Sub-projects:** <PROJECT_TABLE_WITH_ROLES_FRAMEWORKS_QUEUES — or "N/A" for single project>
-**Decomposition signals matched:** <LIST_MATCHED_SIGNALS — or "0-1 (single project)">
+## Project List
+<UNIFIED_PROJECT_LIST_FROM_LEVEL_2.5_PART_B>
+
+## Queue Architecture (RPA Master Project rows only)
+<QUEUE_TABLE_OR_N/A>
+**Decomposition signals matched:** <LIST_MATCHED_SIGNALS_PER_RPA_PROCESS_PROJECT_OR_N/A>
 
 ### Clarifying Questions
 <NUMBERED_QUESTIONS_IF_ANY>
 ```
 
-Wait for user confirmation. Ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed. If the user disagrees with the product recommendation, re-run Step 4 with their preference.
+Then call `AskUserQuestion` with the confirmation question from the Product Selection Guide's "Presenting the Recommendation" section (recommendation as option 1, single-product alternatives, then "Solution (customize)").
+
+**If the user picks "Solution (customize)":** re-run Level 1.75 per the customize branch in the guide, then re-emit this summary with the customized project list, then re-ask the confirmation question. Max 3 revisions — after that, proceed with the latest composition.
+
+**If the user picks a single-product alternative:** re-run Step 4 (and Step 4.25 if RPA) with the user's choice as the forced primary.
+
+Ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed.
 
 ## Phase 2 — Architecture Review
 
 > **Progress:** Mark "Select product" as `completed`. Mark "Generate architecture (Phase 2)" as `in_progress`.
 
-### Step 1: Load the Product-Specific Template
+### Step 1: Load the Template(s)
 
-Based on the primary product selected in Phase 1, load the matching template from the [Template Mapping table in the Product Selection Guide](product-selection-guide.md#template-mapping).
+Load from the [Template Mapping table in the Product Selection Guide](product-selection-guide.md#template-mapping):
+
+- **Single-product scope:** load the one template matching the Level 1 primary.
+- **Solution scope:** load the solution overview structure PLUS one template per project in the Level 2.5 unified project list. RPA Master Projects share one RPA template file across their sub-projects; unrelated RPA projects each get their own file.
 
 ### Step 2: Generate the Architectural Core
 
@@ -174,10 +209,10 @@ The architectural core sections differ per template. For each product, generate 
 **RPA (Process / Library / Test Automation):**
 - §5 Data Definitions (C# records or dictionary tables per §13 Implementation Mode)
 - §9 Application Inventory (flag Integration Service connectors, specify email protocol)
-- §10 Master Project Architecture (apply Level 2.5 from product-selection-guide — Single vs Master Project, sub-projects, queue schema)
+- §10 Master Project Architecture (apply Level 2.5 Part A from [rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) — Single vs Master Project, sub-projects, queue schema)
 - §11 Project Structure (per sub-project if Master Project: project type, framework, folder layout, workflow inventory)
 - §12 Queue Architecture (Master Project only — queue definitions, item schemas, processing rules)
-- §13 Implementation Mode (XAML / Coded / Hybrid — apply Level 2 from product-selection-guide)
+- §13 Implementation Mode (XAML / Coded / Hybrid — apply Level 2 from [rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode))
 - §14 Packages (infer NuGet packages from §9 Application Inventory and process steps)
 
 **Maestro Flow:**
@@ -304,7 +339,7 @@ Before writing the SDD, collect all `[SME REVIEW]` items. If there are any:
 
 This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD.
 
-### Step 2: Write the SDD File
+### Step 2: Write the SDD File(s)
 
 > **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
 
@@ -322,13 +357,18 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ```
 
 3. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
-4. Write to `<PROCESS_NAME_KEBAB_CASE>-sdd.md` in the current working directory.
+4. Write the output file(s) to the current working directory:
+   - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB_CASE>-sdd.md`.
+   - **Solution scope:** the solution overview at `<SOLUTION_NAME_KEBAB>-solution-sdd.md` PLUS one per-project SDD at `<PROJECT_NAME_KEBAB>-sdd.md` for each project in the unified project list. Put the `[SME REVIEW]` warning block in the solution overview AND in any per-project file where a review item lives in that project.
 5. Output a summary in the conversation:
 
 ```markdown
-## SDD Generated: `<FILENAME>`
+## SDD Generated
 
-<COUNT> sections, <LINE_COUNT> lines.
+<FILENAME_1> — <COUNT> sections, <LINE_COUNT> lines
+<FILENAME_2> — <COUNT> sections, <LINE_COUNT> lines
+...
+
 <SME_REVIEW_COUNT> unresolved SME review items (if any — list them).
 ```
 

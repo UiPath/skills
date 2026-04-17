@@ -1,33 +1,46 @@
 # Product Selection Guide
 
-This is the most important decision the SDD makes. Select the wrong product and the implementation plan is wrong. This guide produces a product recommendation from PDD signals, covering all 7 UiPath products.
+This is the most important decision the SDD makes. Select the wrong product and the implementation plan is wrong. This guide produces a scope recommendation from PDD signals, covering all 7 UiPath products and multi-project Solutions.
 
-## Three Levels of Decision
+## Levels of Decision
 
 | Level | Decision | Scope |
 |---|---|---|
-| **1. Product** | Which UiPath product is the primary? Which are integrated components? | All PDDs |
-| **2. Authoring mode** | XAML, Coded C#, or Hybrid | Only when primary is RPA |
-| **3. Capabilities** | Which add-on capabilities are needed (HITL, Integration Service, API Workflow as component)? | All products |
+| **1. Primary scope** | Single product or multi-project Solution? | All PDDs |
+| **1.5. RPA sub-type** | Process, Library, or Test Automation | Only when RPA is selected at Level 1 (or included in a Solution) |
+| **1.75. Solution composition** | Which products and how many projects of each | Only when Level 1 = Solution |
+| **2. Authoring mode** | XAML, Coded C#, or Hybrid | Per RPA project in the final list |
+| **2.5. Project decomposition** | Final project list with roles, frameworks, queues | All scopes (trivial for single-project; substantive for RPA Process queue patterns and Solutions) |
+| **3. Capabilities** | HITL, Integration Service, API Workflow as component | All products |
 
-## Level 1 — Product Selection
+## Level 1 — Primary Scope Selection
 
 ### Decision table
 
-Walk through in priority order. **First match wins** as the primary. All matching signals below the primary become integrated components.
+Walk through in priority order. **First match wins.** Signals that match *below* the primary become candidate additional projects in a Solution (see Solution Signals below).
 
-| Priority | Signal in PDD | Primary Product |
-|----------|---------------|-----------------|
+| Priority | Signal in PDD | Primary Scope |
+|----------|---------------|---------------|
 | 1 | AI reasoning, LLM judgment, tool calling, RAG, knowledge retrieval | Agents |
 | 2 | Web dashboard, internal tool, Action Center form as the deliverable | Coded Apps |
 | 3 | System-to-system API integration (synchronous, no UI, no bots) | API Workflows |
 | 4 | Case lifecycle with stages, SLA tracking, approval gates, task routing | Case Management |
 | 5 | Orchestrating MULTIPLE automation types (RPA + agents + apps) | Maestro Flow |
-| 6 | Reusable component consumed by other automations (not standalone) | RPA Library |
-| 7 | Primary goal is TESTING an application's behavior | RPA Test Automation |
-| 8 | None of the above (UI automation, data processing, queue-based) | RPA Process (default) |
+| 6 | UI automation, data processing, reusable component, or application testing (no other product fits) | **RPA** (sub-type decided at Level 1.5) |
+| 7 | Multiple coordinated projects across products or mixed RPA sub-types (e.g., Flow + API Workflows, or 2 Libraries + 1 Test Automation project) | **Solution** (composition decided at Level 1.75) |
 
-> **Ambiguous dual-product PDDs:** If the PDD appears to match two products roughly equally, the priority ordering above is intentional. Present both products in the recommendation with explicit reasoning for each, mark the higher-priority match as the default, and let the user confirm via `AskUserQuestion`.
+### Solution Signals
+
+A Solution is the correct primary when any of the following applies, even if a single product would otherwise match at priority 1-6:
+
+- The PDD describes **two or more distinct top-level products** that must coexist (e.g., Flow that calls an API Workflow that is itself a deliverable).
+- The PDD mentions **reusable components** that other automations consume (Library) AND a standalone process that uses them.
+- The PDD calls out a **dedicated test suite / regression pack** alongside the process being tested (Test Automation + the Process it validates).
+- The PDD describes **multiple independent streams** with no single runtime orchestrator (e.g., separate dispatchers feeding separate performers with no Flow tying them together).
+
+When any of the above applies, set the default primary to **Solution** and pre-compose the product list from the matched signals. Otherwise default to the highest single-product match.
+
+> **Ambiguous dual-product PDDs:** If exactly two products match with similar strength and no Solution signal applies, mark the higher-priority match as the default single-product recommendation and offer Solution (customize) as an alternative in the recommendation screen. Let the user confirm via `AskUserQuestion`.
 
 ### Signals per product
 
@@ -118,139 +131,115 @@ Walk through in priority order. **First match wins** as the primary. All matchin
 - External systems involved
 - Trigger type (manual, scheduled, event)
 
-#### RPA Library
+#### RPA (sub-type and decomposition decided in rpa-product-guide.md)
 
-**Signals the PDD is describing a Library:**
-- "Reusable component" for other projects
-- "Standard activity" used across multiple processes
-- Not a complete end-to-end process
-- Public workflows meant to appear as activities in other projects
-- Distributed via NuGet
+When Level 1 selects RPA, load the [RPA Product Guide](rpa-product-guide.md) for sub-type signals (Library / Test Automation / Process), Level 1.5 sub-type confirmation, Level 2 authoring mode, and Level 2.5 Part A decomposition. Do not reproduce those decisions here.
 
-**Required PDD information:**
-- Public workflow signatures (inputs, outputs)
-- Dependencies
-- Intended consumers
+## Level 1.5 — RPA Sub-type Selection
 
-#### RPA Test Automation
+See [RPA Product Guide → Level 1.5](rpa-product-guide.md#level-15--rpa-sub-type-selection).
 
-**Signals the PDD is describing Test Automation:**
-- Primary goal is validating application behavior
-- Test cases with assertions
-- Test Manager integration
-- Data-driven testing with variations
-- Regression test suite
+When a Solution composition at Level 1.75 includes two or more RPA projects, run Level 1.5 **once per project** — do not assume they share a sub-type.
 
-**Required PDD information:**
-- Application(s) under test
-- Test case list
-- Expected outcomes per test
+## Level 1.75 — Solution Composition
 
-#### RPA Process (default)
+Applies only when Level 1 = Solution OR when the user picks "Solution (customize)" from the recommendation screen at Phase 1 Step 6. Skip otherwise.
 
-**Signals:**
-- UI-heavy automation (web forms, desktop apps, Excel, email)
-- Data processing between applications
-- Attended or unattended execution
-- Queue-based transactional processing
-- Standard end-to-end business process
+The goal of Level 1.75 is to produce a concrete list of projects the SDD will cover. Composition runs in three passes.
 
-**This is the default when no other product matches.**
+### Pass A — Select products to include (multi-select)
+
+`AskUserQuestion` has a hard 4-option cap per question. Use **two paired multi-select questions in a single call** to cover all 8 products.
+
+```
+AskUserQuestion — TWO questions in one call, both multiSelect=true
+
+Question 1 — "Which core automation layers should the Solution include?"
+  [X] RPA                (checked by default if Level 1 signals matched RPA)
+  [X] Maestro Flow       (checked if Flow signals matched)
+  [X] Case Management    (checked if Case signals matched)
+  [X] Agents             (checked if Agent signals matched)
+
+Question 2 — "Which supporting products should the Solution include?"
+  [X] Coded Apps         (checked if Coded Apps signals matched)
+  [X] API Workflows      (checked if API Workflow signals matched or called by another product)
+  [X] RPA Library        (checked if Library signals matched — implies RPA also checked in Q1)
+  [X] RPA Test Automation (checked if Test Automation signals matched — implies RPA also checked in Q1)
+```
+
+Pre-check the options that matched PDD signals so the user sees the recommended composition first; they can uncheck anything they don't want or add the "Other" option for products not listed.
+
+### Pass B — Resolve quantities per product
+
+For products that naturally appear more than once in a Solution (RPA projects most commonly), ask for the count. Use numbered-choice `AskUserQuestion` with defaults derived from the signals:
+
+> How many RPA projects does the Solution need?
+>
+> 1. **1** *(recommended if the PDD describes a single end-to-end RPA flow)*
+> 2. **2**
+> 3. **3 or more** — you will specify the list in the next step
+
+If the user picks "3 or more", follow up with a free-text-style question (use `AskUserQuestion` with numbered options covering the most likely counts, plus "Other" for custom).
+
+Flow, Case Management, Agents, Coded Apps, and API Workflows default to **1** each unless the PDD explicitly describes multiple instances.
+
+### Pass C — Run Level 1.5 per RPA project
+
+For each RPA project in the composition, run Level 1.5 to pick its sub-type (Process / Library / Test Automation). Present one `AskUserQuestion` per RPA project — do not batch unless the PDD clearly assigns the same sub-type to all of them.
+
+### Output of Level 1.75
+
+Produce a **project list** that feeds Level 2 and Level 2.5:
+
+| # | Project Name (proposed) | Product | RPA Sub-type | Source Signal |
+|---|---|---|---|---|
+| 1 | `<NAME>_Flow` | Maestro Flow | — | "orchestrates extraction + reporting" |
+| 2 | `<NAME>_Extractor` | RPA | Process | "email ingestion + DU extraction" |
+| 3 | `<NAME>_SharedUtils` | RPA | Library | "reusable helpers across projects" |
+| 4 | `<NAME>_Regression` | RPA | Test Automation | "weekly regression pack" |
+| 5 | `<NAME>_LookupApi` | API Workflows | — | "called as a tool from the Flow" |
+
+Present this project list in the Phase 1 summary (see "Presenting the Recommendation" below).
 
 ## Level 2 — Authoring Mode (RPA only)
 
-Applies only when Level 1 selected RPA Process, Library, or Test Automation. Skip otherwise.
+See [RPA Product Guide → Level 2](rpa-product-guide.md#level-2--authoring-mode). Applies to every RPA project in the scope (Process, Library, or Test Automation).
 
-| Process Characteristic | Recommended Mode |
+## Level 2.5 — Project Decomposition
+
+Produces the final project list that Phase 2 turns into SDD sections. Runs for every scope, but the substantive work differs:
+
+| Scope | What Level 2.5 does |
 |---|---|
-| Primarily UI automation (clicking, typing, reading screens) | **XAML** |
-| Simple linear or transactional flow (REFramework) | **XAML** |
-| Heavy use of pre-built activity packages (SAP, Salesforce, Excel) | **XAML** |
-| Significant data transformation (parsing, regex, hashing, aggregation) | **Coded C#** |
-| REST API integrations (HTTP calls, pagination, auth tokens) | **Coded C#** |
-| Complex branching logic (5+ decision paths) | **Coded C#** |
-| Custom data models needed (typed DTOs, enums) | **Coded C#** |
-| UI automation AND complex data logic | **Hybrid** |
-| Multiple applications with different interaction patterns | **Hybrid** |
+| Single product, single project (e.g., one Agent, one Flow, one Coded App) | Trivial — produces a one-row project list. Skip Part A. |
+| RPA Process (single product) | Part A — run the RPA decomposition signals from the [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals). Skip Part B (Part A's narrower table is the final project list). |
+| Solution (Level 1.75) | Part A — run the RPA decomposition signals on every RPA Process project in the composition. Part B — merge with the non-RPA projects from the Level 1.75 project list to produce the unified project list. |
 
-The skill that builds the workflows owns the final, detailed decision — this is a directional recommendation.
+### Part A — RPA decomposition signals
 
-## Level 2.5 — Project Decomposition (RPA only)
+See [RPA Product Guide → Level 2.5 Part A](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals). That file holds the 6 signals, the common decomposition patterns (Dispatcher/Performer, Dispatcher/DU/Output), and the narrower single-product project list. Apply Part A to every RPA Process project in the scope.
 
-Applies only when Level 1 selected RPA Process. Skip for Library, Test Automation, and all non-RPA products.
+### Part B — Merge into the final project list
 
-Most real-world RPA processes require multiple projects connected by Orchestrator queues — not a single monolithic project. This decision determines whether the SDD describes one project or a **Master Project** (multiple queue-connected sub-projects).
-
-### Decision table
-
-Walk through the signals. **If 2 or more signals match → Master Project.** If 0-1 match → Single Project.
-
-| # | Signal in PDD | What it means |
-|---|---|---|
-| 1 | Process has distinct stages with different characteristics (e.g., email ingestion vs. data extraction vs. output generation) | Each stage becomes a separate project that can be developed, tested, and scaled independently |
-| 2 | Transactional processing where items can fail independently and must be retried per item | Queue-based retry requires Performer projects consuming from Orchestrator queues using REFramework |
-| 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU + validation is a distinct processing stage that benefits from its own project and queue |
-| 4 | Different processing speeds per stage (e.g., fast email download vs. slow DU extraction) | Independent projects allow different robot counts per stage for throughput balancing |
-| 5 | Reporting requirements (Excel report, email summary, dashboard data) | Dedicated Reporting project reads from a reporting queue populated by all other stages |
-| 6 | Multiple output channels from a single input (e.g., XML to MQ + files to FTP + report to email) | Separate Performer per output channel avoids coupling unrelated integrations |
-
-### Common decomposition patterns
-
-#### Dispatcher / Performer (most common)
-
-Use when the process collects items from a source (email, folder, spreadsheet, API) and then processes each item transactionally.
-
-```text
-[Dispatcher] → Queue → [Performer] → Reporting Queue → [Reporting]
-```
-
-- **Dispatcher**: collects items, creates queue items with all required data. Runs as a simple sequence (no REFramework).
-- **Performer**: processes one transaction item at a time. Uses **REFramework** for retry, logging, and state management.
-- **Reporting** (optional): reads from a reporting queue, generates reports. Runs on a schedule or after Performer completes.
-
-#### Dispatcher / DU Performer / Output Performer
-
-Use when the process has Document Understanding with human validation as a middle stage.
-
-```text
-[Dispatcher] → DU Queue → [DU Performer] → Output Queue → [Output Performer]
-                                ↓                              ↓
-                          Action Centre                  Reporting Queue
-                                                               ↓
-                                                         [Reporting]
-```
-
-- **Dispatcher**: downloads emails/files, creates queue items.
-- **DU Performer**: runs DU extraction, sends low-confidence items to Action Centre, pushes validated results to the output queue. Uses REFramework.
-- **Output Performer**: generates output (XML, CSV, API calls), uploads to target systems. Uses REFramework.
-- **Reporting**: aggregates outcomes from all stages.
-
-### Output of this decision
+After Part A has been applied to every RPA Process project, merge with the rest of the Level 1.75 composition (or the single product from Level 1) to produce the unified project list.
 
 Produce:
 
-1. **Pattern**: Single Project or Master Project (name the pattern: Dispatcher/Performer, Dispatcher/DU/Output, etc.)
-2. **Sub-projects** (if Master Project): table with project name, role, input queue, output queue, framework choice
-3. **Queue schema**: queue names, which project produces, which consumes, and what data fields go in `SpecificContent`
+1. **Pattern** per project group: Single Project, Master Project (queue-connected), or N/A (non-RPA).
+2. **Unified project list** — one row per concrete project the SDD will describe, covering all products in the scope.
+3. **Queue schema** for any Master Projects: queue names, producer/consumer, `SpecificContent` fields.
+4. **Cross-product integration notes** — which Flow nodes call which RPA project, which Agent tools call which API Workflow, etc.
 
-| # | Project Name | Role | Framework | Input Queue | Output Queue |
-|---|---|---|---|---|---|
-| 1 | `<NAME>_Dispatcher` | Collect items from source, dispatch to processing queue | Sequence | — | `<QUEUE_1>` |
-| 2 | `<NAME>_Performer` | Process each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
-| 3 | `<NAME>_Reporting` | Generate reports from processing outcomes | Sequence | `<REPORTING_QUEUE>` | — |
+Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Automation + RPA Process expanded into a Master Project):
 
-### REFramework guidance
-
-REFramework is the standard UiPath framework for transactional processes. It provides: Init → Get Transaction → Process Transaction → End Process states, with built-in retry, exception handling, and logging.
-
-| Project Role | Framework | Why |
-|---|---|---|
-| Performer (queue-based) | **REFramework** | Built-in transaction retry, state management, exception routing |
-| Dispatcher (collects and pushes items) | **Sequence** | Simple linear flow — no transaction retry needed |
-| Reporting (reads queue, generates output) | **Sequence** or **REFramework** | Sequence if simple aggregation; REFramework if items can fail independently |
-| Single Project (no queues) | **Sequence** or **REFramework** | REFramework if processing multiple items with per-item retry; Sequence if simple linear |
-
-When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.
+| # | Project Name | Product | Sub-type | Role | Framework | Input Queue | Output Queue |
+|---|---|---|---|---|---|---|---|
+| 1 | `<NAME>_Flow` | Maestro Flow | — | Orchestrates extraction and reporting | — | — | — |
+| 2 | `<NAME>_Dispatcher` | RPA | Process | Collects emails, dispatches to processing queue | Sequence | — | `<QUEUE_1>` |
+| 3 | `<NAME>_Performer` | RPA | Process | Processes each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
+| 4 | `<NAME>_SharedUtils` | RPA | Library | Reusable date/string/mapping helpers used by Performer | — | — | — |
+| 5 | `<NAME>_IntegrationLib` | RPA | Library | Salesforce + ServiceNow wrappers used by Performer | — | — | — |
+| 6 | `<NAME>_Regression` | RPA | Test Automation | Regression pack validating Performer behavior | — | — | — |
 
 ## Level 3 — Capability Add-ons
 
@@ -291,7 +280,9 @@ These are capabilities added to the primary product, not standalone products. Wh
 
 ## Template Mapping
 
-Based on the Level 1 primary, select the template:
+### Single-product scope
+
+Based on the Level 1 primary, select one template:
 
 | Primary Product | Template |
 |---|---|
@@ -301,6 +292,28 @@ Based on the Level 1 primary, select the template:
 | Agents | `../assets/templates/agent-sdd-template.md` |
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
 | API Workflows | `../assets/templates/api-workflow-sdd-template.md` |
+
+### Solution scope (Level 1 = Solution or user picked Solution (customize))
+
+A Solution produces **one SDD file per project in the Level 2.5 unified project list** plus a **solution overview SDD** that ties them together. Use the kebab-case project name from the unified list as the filename.
+
+| Output file | Template | How many |
+|---|---|---|
+| `<SOLUTION_NAME_KEBAB>-solution-sdd.md` | Solution overview (see structure below) | Exactly 1 |
+| `<PROJECT_NAME_KEBAB>-sdd.md` | Per-project — pick the template matching that project's product | One per project in the unified list |
+
+For RPA projects in the Solution, use the RPA template once per RPA *group* — if the Level 2.5 Part A decomposition produced a Master Project (e.g., Dispatcher + Performer + Reporting), those sub-projects share one RPA SDD file (§10/§11 cover the sub-projects). If two RPA projects are unrelated (e.g., a Library not called by the Performer), they each get their own RPA SDD file.
+
+### Solution overview SDD structure
+
+The solution overview SDD includes:
+
+1. Solution Overview (objective, business context)
+2. Project Inventory — the unified project list from Level 2.5 Part B
+3. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
+4. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
+5. Per-Project SDD Index — filename + one-line scope per project
+6. Consolidated Implementation Plan — task ordering across projects (integrated components built before their consumers)
 
 ## Gap Handling for Agent / Coded App
 
@@ -330,24 +343,56 @@ Do not auto-fallback. The user must choose explicitly.
 
 ## Presenting the Recommendation
 
-In the Phase 1 summary, include a dedicated section:
+The recommendation screen always puts the **recommended scope at the top** and offers **single-product alternatives plus "Solution (customize)"** below. The recommended scope is determined by Level 1:
+
+- If Level 1 produced a single product → the recommendation is that single product (with its Level 1.5 sub-type if RPA).
+- If Level 1 produced Solution (one or more Solution Signals matched) → the recommendation is the **pre-composed Solution**, with the pre-checked product list from Pass A of Level 1.75.
+
+### Summary block
+
+Emit this block as the Phase 1 summary content:
 
 ```markdown
-## Recommended Product
-**Primary:** <PRODUCT>
-**Integrated components:** <PRODUCT_1>, <PRODUCT_2>, ... (or "None")
+## Recommended Scope
+**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
 **Reasoning:**
 - <SIGNAL_FROM_PDD> → <PRODUCT_MAPPING>
 - ...
 **Alternatives considered:**
-- <REJECTED_PRODUCT> — rejected because <REASON>
+- <REJECTED_OPTION> — rejected because <REASON>
 - ...
 
-## Project Architecture (RPA only)
-**Pattern:** <SINGLE_PROJECT / MASTER_PROJECT_PATTERN_NAME>
-**Sub-projects:** <PROJECT_TABLE_OR_N/A>
-**Queue schema:** <QUEUE_TABLE_OR_N/A>
-**Decomposition signals matched:** <LIST_MATCHED_SIGNALS_FROM_LEVEL_2.5>
+## Project List
+<UNIFIED_PROJECT_LIST_FROM_LEVEL_2.5_PART_B — include Product, Sub-type, Role, Framework, Input/Output Queue columns>
+
+## Queue Architecture (RPA Master Project rows only)
+<QUEUE_TABLE_OR_N/A>
+**Decomposition signals matched:** <LIST_MATCHED_SIGNALS_PER_RPA_PROCESS_PROJECT_OR_N/A>
 ```
 
-Wait for user confirmation before proceeding to Phase 2. If the user disagrees with the primary, re-run the decision tree with their preference.
+### Confirmation question
+
+Right after emitting the summary, confirm the scope via `AskUserQuestion` with the numbered-choice format. **The recommended option is always item 1.**
+
+> I recommend the following scope for this SDD. Which should I use?
+>
+> 1. **<RECOMMENDED_SCOPE>** *(recommended)* — <ONE_LINE_REASON>
+> 2. **<STRONGEST_SINGLE_PRODUCT_ALTERNATIVE>** — <ONE_LINE_REASON_OR_TRADEOFF>
+> 3. **<SECOND_SINGLE_PRODUCT_ALTERNATIVE_OR_OMIT_IF_NONE>** — <ONE_LINE_REASON>
+> 4. **Solution (customize)** — I will ask you to check every product the Solution should include
+
+When the recommendation is already a Solution, still include **Solution (customize)** as an option so the user can adjust the composition. When the recommendation is a single product, **Solution (customize)** lets the user upgrade to a multi-project design.
+
+### Customize branch
+
+If the user picks **Solution (customize)**:
+
+1. Run Level 1.75 Pass A (paired multi-select) — pre-check the recommended products from the default composition (or from the signals if the default was single-product).
+2. Run Level 1.75 Pass B — resolve quantities per product.
+3. Run Level 1.75 Pass C — sub-type per RPA project.
+4. Run Level 2.5 to produce the unified project list.
+5. Re-emit the summary block with the customized project list, then re-run the confirmation question. The customized composition replaces option 1 (still marked *recommended*) so the user can confirm or customize again (max 3 revisions — after that, proceed with the latest composition and tag disagreements as `[SME REVIEW]`).
+
+### If the user disagrees with a single-product recommendation
+
+Re-run Level 1 (and Level 1.5 if the chosen fallback is RPA) with the user's preference as the forced primary, then re-present.

@@ -169,12 +169,12 @@ Extract:
 
 Watch for:
 - Reporting requirements are often in a separate section or table near the end of the PDD. They are easy to miss.
-- If the PDD mentions reporting, this is a signal for a dedicated Reporting project in the project decomposition decision (see [Product Selection Guide](product-selection-guide.md) Level 2.5).
+- If the PDD mentions reporting, this is a signal for a dedicated Reporting project in the project decomposition decision (see [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) Level 2.5 Part A).
 - If the PDD has no reporting section but mentions logging or monitoring, mark reporting as `[DEFAULT]` — Orchestrator logs only.
 
 ### Project Decomposition Signals
 
-While extracting data, watch for signals that indicate the process should be split into multiple projects. These feed into Level 2.5 of the [Product Selection Guide](product-selection-guide.md):
+While extracting data, watch for signals that indicate the process should be split into multiple projects. These feed into Level 2.5 Part A of the [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals):
 
 1. **Distinct processing stages** — does the process have clearly separate phases (e.g., "collect emails" → "extract data" → "generate output")? Note stage boundaries.
 2. **Per-item transactional processing** — are items processed independently where one failure should not block others? Note where per-item processing starts/ends.
