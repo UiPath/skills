@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "[PREVIEW] UiPath Flow projects (.flow files) — orchestrate RPA, agents, apps. Create, edit, validate, run flows via uip CLI: nodes, variables, subflows, triggers. For XAML or C# workflows→uipath-rpa."
+description: "[PREVIEW] Build automations, orchestrate business processes, connect systems, and handle document/data workflows using UiPath Flows (.flow). Create, edit, validate, run via uip CLI. For C#/XAML workflows→uipath-rpa. For agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
