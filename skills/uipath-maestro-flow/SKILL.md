@@ -146,13 +146,20 @@ Use `registry search`/`list` to discover node types and connectors. Use `registr
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Read [references/flow-editing-operations.md](references/flow-editing-operations.md)** to choose between CLI and direct JSON strategies for each operation. Common approach: use CLI for node/edge CRUD, direct JSON for variables, variableUpdates, subflows, and output mapping.
+**Reference docs for this step:**
+- **[planning-arch.md](references/planning-arch.md)** — Capability discovery, Plugin Index (node-type catalog), external-service decision order, Standard Port Reference, Wiring Rules, Common Topology Patterns, Node Selection Heuristics. Use this to pick the right node types and wire them correctly.
+- **[planning-impl.md](references/planning-impl.md)** — Registry validation workflow, per-node `impl.md` lookup table, connector/resource resolution steps, Product Heuristics (agent vs workflow logic), and wiring constraints.
+- **[flow-editing-operations.md](references/flow-editing-operations.md)** — Strategy selection between CLI and direct JSON editing for each operation.
 
-For each node type:
-1. Run `uip flow registry get <nodeType> --output json` to fetch ports, inputs, and the `definitions` entry.
-2. Follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration (see the [Node Plugins](#references) list below).
-3. For connector nodes, bind the connection per [connector/impl.md](references/plugins/connector/impl.md).
-4. For resource nodes (RPA, agent, flow, etc.), confirm the resource is published via `registry search` and resolve its input/output schema via `registry get`. Use `core.logic.mock` for unpublished resources and flag the gap.
+**Build workflow:**
+
+1. If the flow uses connectors or published resources, run capability discovery ([planning-arch.md — Capability Discovery](references/planning-arch.md#capability-discovery)) to confirm they exist and connections are healthy.
+2. Select node types from the [Plugin Index](references/planning-arch.md#plugin-index); read each chosen plugin's `planning.md` for selection heuristics and `impl.md` for node-specific inputs and JSON structure.
+3. For every node type (including OOTB), run `uip flow registry get <nodeType> --output json` — copy the returned `definition` verbatim into the `.flow` file's `definitions` array.
+4. For connector nodes, bind the connection per [connector/impl.md](references/plugins/connector/impl.md).
+5. For resource nodes (RPA, agent, flow, etc.), resolve via `registry get` per the resource plugin's `impl.md`. Use `core.logic.mock` for unpublished resources.
+6. Wire edges according to the [Standard Port Reference](references/planning-arch.md#standard-port-reference) and [Wiring Rules](references/planning-arch.md#wiring-rules).
+7. Add global variables directly in the `.flow` JSON per [variables-and-expressions.md](references/variables-and-expressions.md). Every `out` variable must be mapped on every reachable End node.
 
 Build the full flow (trigger → actions → branches → end/terminate) in one pass. Do not validate between individual edits — intermediate states are expected to be invalid.
 
@@ -239,8 +246,9 @@ Do not run any of these actions without an explicit user selection.
 | I need to... | Read these |
 | --- | --- |
 | **Edit an existing flow** | Common Edits section + [references/flow-editing-operations.md](references/flow-editing-operations.md) |
-| **Add/delete/wire nodes and edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
-| **Choose the right node type** | [references/plugins/](references/plugins/) — browse plugin folders, each with a `planning.md` (selection heuristics, ports) and `impl.md` (configuration, JSON structure) |
+| **Add/delete/wire nodes and edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) + [planning-arch.md — Wiring Rules](references/planning-arch.md#wiring-rules) |
+| **Choose the right node type** | [planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + [planning-arch.md — Node Selection Heuristics](references/planning-arch.md#node-selection-heuristics) + relevant plugin's `planning.md` |
+| **Validate node types and resolve connectors/resources** | [planning-impl.md](references/planning-impl.md) — registry validation, per-node plugin lookup, connector/resource resolution |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/plugins/script/impl.md](references/plugins/script/impl.md) |
@@ -302,6 +310,8 @@ When you finish building or editing a flow, report to the user:
 - **[Flow Editing Operations](references/flow-editing-operations.md)** — Strategy selection matrix for CLI vs. direct JSON editing. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
   - [CLI Strategy](references/flow-editing-operations-cli.md) — All node/edge operations via `uip flow node` and `uip flow edge` commands
   - [Direct JSON Strategy](references/flow-editing-operations-json.md) — All operations via direct `.flow` file editing (variables, subflows, in-place updates)
+- **[Flow Node & Architecture Reference](references/planning-arch.md)** — Capability discovery, Plugin Index (node-type catalog), external-service decision order, Standard Port Reference, Wiring Rules, Common Topology Patterns, Node Selection Heuristics. **Read this to select nodes and wire edges.**
+- **[Node Registry & Build Reference](references/planning-impl.md)** — Registry validation workflow, per-node `impl.md` lookup table, connector and resource resolution, Product Heuristics, wiring constraints. **Read this while building each node.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates

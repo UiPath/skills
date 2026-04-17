@@ -45,6 +45,6 @@ Use an HTTP Request node to call a REST API where no pre-built connector exists,
 | `branches` | No | Response routing conditions |
 | `authenticationType` | No | `manual` or from a connector connection |
 
-## Planning Annotation
+## Notes
 
-In the architectural plan, note the HTTP method and URL pattern. Use `<PLACEHOLDER>` for values that Phase 2 must resolve.
+Use `<PLACEHOLDER>` for any URL or input value the user has not supplied — resolve before adding the node.

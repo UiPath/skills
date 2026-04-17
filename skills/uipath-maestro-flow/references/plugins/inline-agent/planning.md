@@ -59,9 +59,7 @@ This creates a `<FlowProjectDir>/<projectId-uuid>/` directory containing `agent.
 
 No `uip login` or registry refresh is required for this workflow.
 
-## Planning Annotation
+## Notes
 
-In the architectural plan:
-
-- `inline-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow` runs
-- If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) annotation instead
+- The agent's `projectId` UUID is assigned when `uip agent init --inline-in-flow` runs — use a placeholder until the CLI generates the real ID.
+- If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) node type instead.

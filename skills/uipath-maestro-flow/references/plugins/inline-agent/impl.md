@@ -42,7 +42,7 @@ For detailed agent configuration (contentTokens format, model settings, resource
 
 ## Registry Validation
 
-Even though `uipath.agent.autonomous` is OOTB, validate it against the registry during Phase 2 to confirm the current product state:
+Even though `uipath.agent.autonomous` is OOTB, validate it against the registry before adding the node to confirm the current product state:
 
 ```bash
 uip flow registry get uipath.agent.autonomous --output json
