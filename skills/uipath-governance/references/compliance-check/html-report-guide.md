@@ -2,50 +2,55 @@
 
 Generate an auditor-facing HTML compliance report from the template at `assets/templates/compliance-report-template.html`.
 
+The template is the **single source of truth** for layout and CSS. It ships with the skill and must not be modified at runtime. Rendering is pure data substitution: the skill reads the template, replaces placeholders, and writes a new HTML file. Do not inject additional `<style>` blocks, change class names, or alter the document structure — the template already contains everything.
+
 The output is a **self-contained, single-file HTML document** with inline CSS, no external dependencies (no CDN fonts, no JavaScript, no images). It renders identically in any modern browser and prints cleanly.
 
 ## How to generate
 
-1. Read the template file: `assets/templates/compliance-report-template.html`
-2. Load the property reference: `assets/uipath_policy_reference_classified.json` — used to resolve property path → human-readable description (see [Property description + classification lookup](#property-description--classification-lookup) below)
-3. Replace all `{{PLACEHOLDER}}` tokens with actual values
-4. Generate the clause rows and drift detail blocks
+1. Read the template file verbatim: `assets/templates/compliance-report-template.html`
+2. Load the property reference: `assets/uipath_policy_reference_classified.json` — used to resolve property path → human-readable description (see [Control label lookup](#control-label-lookup) below)
+3. Replace every scalar `{{PLACEHOLDER}}` token (see [Scalar placeholders](#scalar-placeholders) below)
+4. Replace the three HTML-comment anchors with generated blocks:
+   - `<!-- {{CLAUSE_ROWS}} -->` → concatenated `<tr>` rows, one per clause
+   - `<!-- {{DRIFT_DETAILS}} -->` → concatenated drift blocks, one per drifted clause
+   - `<!-- {{SKIPPED_POLICIES_BLOCK}} -->` → skipped-policies `<div>` or the empty string
 5. Write the populated HTML to `./compliance-report-{packId}-{timestamp}.html`
 
-## Placeholder reference
+### Substitution invariants
 
-### Header placeholders
+- Every scalar placeholder in the template must be replaced. No `{{…}}` may survive in the final file.
+- HTML-escape every user-sourced string before substituting (pack names, clause names/categories, effective policy name, value fields). `&`, `<`, `>`, `"`, `'` must be encoded.
+- Do not replace the three anchor comments with anything but the exact HTML fragments described below.
+- If there are no drifted clauses, replace `<!-- {{DRIFT_DETAILS}} -->` with `<p class="empty-note">No drifted clauses.</p>`.
+- If `skippedPolicies` is empty, replace `<!-- {{SKIPPED_POLICIES_BLOCK}} -->` with the empty string.
+
+## Scalar placeholders
+
+Every token below appears literally in `compliance-report-template.html`. Replace each with the value from the compliance result. Values other than numeric counts must be HTML-escaped.
 
 | Placeholder | Source | Example |
 |---|---|---|
-| `{{PACK_NAME}}` | `manifest.packName` | `ISO/IEC 42001:2023 — AI Trust Layer Controls` |
-| `{{PACK_VERSION}}` | `manifest.version` | `1.0.0` |
-| `{{PACK_ID}}` | `manifest.packId` | `iso-42001-2023-aitl` |
-| `{{STANDARD_NAME}}` | `clauseMap.standardName` | `ISO/IEC 42001:2023` |
-| `{{TENANT_NAME}}` | From `~/.uipath/.auth` `UIPATH_TENANT_NAME` | `appsdevDefault` |
-| `{{DEPLOYMENT_LEVEL}}` | From the policy file's `deploymentLevel` | `tenant` |
-| `{{GENERATED_AT}}` | ISO 8601 timestamp | `2026-04-16 14:56 UTC` |
-| `{{OVERALL_STATUS}}` | Derived from results (see below) | `Non-Compliant` |
-| `{{OVERALL_BADGE_CLASS}}` | CSS class for the badge (see below) | `badge-fail` |
+| `{{PACK_NAME}}` | `report.pack.packName` | `ISO/IEC 42001:2023 — AI Trust Layer Controls` |
+| `{{PACK_VERSION}}` | `report.pack.version` | `1.0.0` |
+| `{{TENANT_NAME}}` | `UIPATH_TENANT_NAME` | `appsdevDefault` |
+| `{{GENERATED_AT}}` | `report.generatedAt`, formatted as `YYYY-MM-DD HH:MM UTC` | `2026-04-17 15:24 UTC` |
+| `{{OVERALL_STATUS}}` | Derived (see below) | `Non-Compliant` |
+| `{{OVERALL_BADGE_CLASS}}` | Derived (see below) | `badge-fail` |
+| `{{TOTAL_CLAUSES}}` | `report.summary.totalClauses` | `21` |
+| `{{COMPLIANT_COUNT}}` | `report.summary.compliant` | `3` |
+| `{{DRIFTED_COUNT}}` | `report.summary.drifted` | `18` |
+| `{{COMPLIANT_PCT}}` | `round(compliant / total * 100)` (integer) | `14` |
+| `{{DRIFTED_PCT}}` | `round(drifted / total * 100)` (integer) | `86` |
 
 ### Overall status logic
 
 | Condition | `{{OVERALL_STATUS}}` | `{{OVERALL_BADGE_CLASS}}` |
 |---|---|---|
-| All clauses compliant | `Compliant` | `badge-pass` |
-| Some compliant, some drifted | `Non-Compliant` | `badge-fail` |
-| All drifted | `Non-Compliant` | `badge-fail` |
-| Only non-mandatory clauses drifted | `Partially Compliant` | `badge-partial` |
-
-### Summary placeholders
-
-| Placeholder | Source |
-|---|---|
-| `{{TOTAL_CLAUSES}}` | Total number of in-scope clauses |
-| `{{COMPLIANT_COUNT}}` | Count of clauses with `status: "compliant"` |
-| `{{DRIFTED_COUNT}}` | Count of clauses with `status: "drifted"` |
-| `{{COMPLIANT_PCT}}` | `(compliant / total) * 100` |
-| `{{DRIFTED_PCT}}` | `(drifted / total) * 100` |
+| All in-scope clauses compliant | `Compliant` | `badge-pass` |
+| At least one Mandatory or ConditionalMandatory clause drifted | `Non-Compliant` | `badge-fail` |
+| All clauses drifted | `Non-Compliant` | `badge-fail` |
+| Only non-mandatory (Recommended / Optional) clauses drifted | `Partially Compliant` | `badge-partial` |
 
 ## Generating clause rows
 
@@ -193,9 +198,23 @@ for segment in path.split("."):
 - `null` (missing from tenant): render as `null`
 - Arrays: render as `[array]` with a note — the drift detail table is for scalar leaf properties
 
-## Generating skipped policies section
+## Generating the skipped policies block
 
-If `skippedPolicies` is non-empty, include the skipped policies section. Otherwise omit it entirely.
+Replace `<!-- {{SKIPPED_POLICIES_BLOCK}} -->` with either:
+
+- The empty string, if `report.skippedPolicies` is empty.
+- A single `<div>` block following this structure:
+
+```html
+<div class="skipped-policies">
+  <h2 style="margin-top:0">Skipped Policies</h2>
+  <p class="empty-note">The following policy files were recorded but not diffed (out of V1 scope):</p>
+  <ul>
+    <li><code>{{FILE}}</code> — {{PRODUCT}} ({{REASON}})</li>
+    <!-- repeated per skipped entry -->
+  </ul>
+</div>
+```
 
 ## Output path
 

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Compliance Report — {{PACK_NAME}}</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 32px; color: #0f172a; background: #f8fafc; }
+.container { max-width: 1080px; margin: 0 auto; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,0.08); }
+h1 { margin: 0 0 4px; font-size: 24px; font-weight: 600; }
+.sub { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+.badge { display: inline-block; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+.badge-pass { background: #dcfce7; color: #166534; }
+.badge-fail { background: #fee2e2; color: #991b1b; }
+.badge-partial { background: #fef3c7; color: #92400e; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
+.stat { padding: 16px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.stat .num { font-size: 28px; font-weight: 700; color: #0f172a; }
+.stat .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
+.stat .pct { font-size: 12px; color: #94a3b8; }
+h2 { font-size: 16px; font-weight: 600; margin: 32px 0 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { text-align: left; padding: 10px 12px; background: #f1f5f9; color: #475569; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e8f0; }
+tbody td { padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+.clause-id { font-family: "SF Mono", Menlo, monospace; font-weight: 600; font-size: 12px; color: #475569; }
+.clause-name { font-weight: 500; }
+.clause-category { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.obligation-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.tag-mandatory { background: #fef2f2; color: #991b1b; }
+.tag-conditional { background: #fff7ed; color: #9a3412; }
+.tag-recommended { background: #eff6ff; color: #1e40af; }
+.tag-optional { background: #f1f5f9; color: #475569; }
+.status-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+.pill-compliant { background: #dcfce7; color: #166534; }
+.pill-drifted { background: #fee2e2; color: #991b1b; }
+.pill-skipped { background: #f1f5f9; color: #64748b; }
+.drift-count { color: #991b1b; font-weight: 600; }
+.drift-detail { margin-top: 20px; padding: 16px; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; }
+.drift-detail-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #fecaca; }
+.drift-detail table { background: white; border-radius: 6px; overflow: hidden; }
+.control-desc { font-weight: 500; font-size: 13px; color: #0f172a; line-height: 1.4; }
+.val-expected { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: #166534; }
+.val-actual { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: #991b1b; }
+.val-match { color: #166534; font-weight: 700; }
+.val-mismatch { color: #991b1b; font-weight: 700; }
+code { font-family: "SF Mono", Menlo, monospace; font-size: 12px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+.skipped-policies { margin-top: 24px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.skipped-policies ul { margin: 8px 0 0; padding-left: 20px; color: #64748b; font-size: 13px; }
+.empty-note { color: #64748b; font-size: 13px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>{{PACK_NAME}} <span class="badge {{OVERALL_BADGE_CLASS}}">{{OVERALL_STATUS}}</span></h1>
+  <div class="sub">Pack v{{PACK_VERSION}} · Tenant <b>{{TENANT_NAME}}</b> · Generated {{GENERATED_AT}}</div>
+
+  <div class="summary-grid">
+    <div class="stat"><div class="num">{{TOTAL_CLAUSES}}</div><div class="label">Total Clauses</div></div>
+    <div class="stat"><div class="num">{{COMPLIANT_COUNT}}</div><div class="label">Compliant</div><div class="pct">{{COMPLIANT_PCT}}%</div></div>
+    <div class="stat"><div class="num">{{DRIFTED_COUNT}}</div><div class="label">Drifted</div><div class="pct">{{DRIFTED_PCT}}%</div></div>
+  </div>
+
+  <h2>Clauses</h2>
+  <table>
+    <thead>
+      <tr><th>Clause</th><th>Name</th><th>Obligation</th><th>Status</th><th>Drift</th></tr>
+    </thead>
+    <tbody>
+      <!-- {{CLAUSE_ROWS}} -->
+    </tbody>
+  </table>
+
+  <h2>Drift Details</h2>
+  <!-- {{DRIFT_DETAILS}} -->
+
+  <!-- {{SKIPPED_POLICIES_BLOCK}} -->
+
+</div>
+</body>
+</html>
