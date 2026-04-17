@@ -118,7 +118,7 @@ using <ProjectNamespace>.ObjectRepository;
 
 #### Step 2 — Check UILibrary NuGet packages
 
-Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package --use-studio`.
+Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa inspect-package`.
 
 For UILibrary packages, use the **package** namespace, not the project namespace:
 ```csharp

@@ -83,11 +83,11 @@ using System.Text.RegularExpressions;  // regex
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
 - **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see [ui-automation-guide.md](../ui-automation-guide.md)) in strict order. Do NOT write any UI code until descriptors are resolved:
   1. Read `ObjectRepository.cs` — use existing descriptors if present
-  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa inspect-package --use-studio`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
+  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa inspect-package`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles snapshot capture, element discovery, selector generation, selector improvement, and OR registration. Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow. Fallback: `indicate-application` / `indicate-element` if the skill docs are unavailable
   4. UITask (ScreenPlay) is ONLY for when selectors are genuinely brittle/unreliable — NEVER as a first approach
   5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
-- Use `uip rpa inspect-package --use-studio` for API discovery when documentation is unclear
+- Use `uip rpa inspect-package` for API discovery when documentation is unclear
 
 ### IResource / ILocalResource — Converting File Paths
 
@@ -120,8 +120,7 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
 ### Validation Loop (Critical Rule #14)
-uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
-
+uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json
 @../validation-guide.md
 
 ### Error Handling
@@ -152,13 +151,13 @@ C) <user-driven approach>
 
 ### Project & Code Structure
 
-- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa create-project --use-studio` (Critical Rule #1)
+- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa create-project` (Critical Rule #1)
 - Never generate C# code without first searching for existing .cs files (API Discovery)
 - Never edit files without reading them first
 - Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #4)
 - Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
-- Never guess service method names — verify with existing code or `uip rpa inspect-package --use-studio`
+- Never guess service method names — verify with existing code or `uip rpa inspect-package`
 
 ### UI Automation
 
@@ -210,4 +209,4 @@ C) <user-driven approach>
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |
 | **inspect-package cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
-| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa create-project --use-studio` instead of writing `project.json` manually |
+| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa create-project` instead of writing `project.json` manually |
