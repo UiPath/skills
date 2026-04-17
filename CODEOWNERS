@@ -47,3 +47,7 @@
 
 # Test skill (reports, manual test automation, manual test execution)
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath
+
+# Data Fabric skill (CLI entity/record management)
+/skills/uipath-data-fabric/ @aditi-goyal-uipath
+/tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath

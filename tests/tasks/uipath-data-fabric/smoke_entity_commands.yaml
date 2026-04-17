@@ -11,6 +11,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
   I need to set up a "Products" entity in Data Fabric with the following fields:
   - name (text)
   - price (decimal)
@@ -28,8 +30,10 @@ initial_prompt: |
   }
 
   Important:
-  - The uip CLI is available but may not be connected to a live Data Fabric
-    tenant. Run the commands anyway and capture whatever output or errors occur.
+  - The uip CLI is available but is NOT connected to a live Data Fabric tenant
+    in this environment. Commands will fail with auth errors — that is expected.
+    Run each command once, record the result (success or error) in report.json,
+    and move on. Do NOT retry or attempt to login.
   - Use --output json on every uip df command.
   - Do NOT delete the entity.
 
