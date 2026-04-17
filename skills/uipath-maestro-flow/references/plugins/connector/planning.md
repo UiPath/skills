@@ -76,7 +76,9 @@ uip is connections list "<connector-key>" --output json
 
 ## HTTP Fallback (Managed HTTP Request)
 
-When a connector exists but lacks the specific curated activity, use `core.action.http.v2` (Managed HTTP Request). This node proxies through the `uipath-uipath-http` connector and uses the **target connector's** IS connection for authentication — you supply the API path and payload.
+When a connector exists but lacks the specific curated activity, use `core.action.http.v2` (Managed HTTP Request). This node proxies through the `uipath-uipath-http` connector and uses the **target connector's** IS connection for authentication — you supply the API URL and payload.
+
+> **Do NOT use individual connector HTTP request nodes** (e.g., `uipath.connector.<key>.http-request`). Always use the unified `core.action.http.v2` Managed HTTP Request node for non-curated API calls.
 
 > **Do NOT use `core.action.http` (v1) with `authenticationType: "connection"` for this.** The v1 node does not pass IS credentials at runtime. Always use `core.action.http.v2`.
 

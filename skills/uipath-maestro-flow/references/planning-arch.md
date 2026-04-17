@@ -428,8 +428,8 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 ### "I need to call an external service"
 
-1. Is there a connector with a curated activity? -> [connector](plugins/connector/planning.md)
-2. Connector exists but lacks the specific activity? -> `core.action.http.v2` connector mode — see [http](plugins/http/planning.md)
+1. Is there a connector with a curated activity? Run `uip flow registry list --output json` and check for typed nodes matching `uipath.connector.<key>.<operation>`. If the desired operation appears as a node type, it is a curated activity -> [connector](plugins/connector/planning.md)
+2. Connector exists but the operation is not listed as a curated node type? -> `core.action.http.v2` connector mode — see [http](plugins/http/planning.md)
 3. No connector exists, but has a REST API? -> `core.action.http.v2` manual mode — see [http](plugins/http/planning.md)
 4. No API at all (desktop app, terminal)? -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished
 

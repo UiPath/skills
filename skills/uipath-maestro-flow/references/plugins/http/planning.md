@@ -24,7 +24,7 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 
 | Mode | When to use | Key `--detail` fields |
 | --- | --- | --- |
-| **Connector** | A connector exists for the service — uses IS connection for OAuth/API key auth | `authentication: "connector"`, `targetConnector`, `connectionId`, `folderKey`, `path` |
+| **Connector** | A connector exists for the service — uses IS connection for OAuth/API key auth | `authentication: "connector"`, `targetConnector`, `connectionId`, `folderKey`, `url` |
 | **Manual** | No connector, or public API with no auth needed | `authentication: "manual"`, `url` |
 
 ## Ports
@@ -50,7 +50,7 @@ Run `uip flow node configure` with a `--detail` JSON. The CLI builds the full `i
 | `targetConnector` | Yes | Target connector key (e.g., `"uipath-salesforce-slack"`) |
 | `connectionId` | Yes | Target connector's IS connection ID (from `uip is connections list`) |
 | `folderKey` | Yes | Orchestrator folder key (from `uip is connections list`) |
-| `path` | No | API endpoint path (e.g., `"/conversations.replies"`) |
+| `url` | No | API endpoint URL/path (e.g., `"/conversations.replies"`). Auto-fills both `bodyParameters.path` and `bodyParameters.url`. |
 | `query` | No | Query parameters as key-value object |
 | `headers` | No | Additional headers as key-value object |
 | `body` | No | Request body (for POST/PUT/PATCH) |
