@@ -70,7 +70,7 @@ Record each item with a short summary.
 ### 2e. Identify infrastructure dependencies
 
 Determine what environment each skill requires to be testable:
-- **Local-only** — Can run without cloud auth or special hardware (e.g., flow validate, solution bundle)
+- **Local-only** — Can run without cloud auth or special hardware (e.g., flow validate, solution pack)
 - **Cloud auth required** — Needs UiPath tenant authentication (e.g., platform ops, flow debug, deploy)
 - **Platform-specific** — Needs Windows, Studio Desktop, Servo CLI, display, browser extension, etc.
 
@@ -233,7 +233,7 @@ Use this template when the skill has at least one test task.
 Group by theme. Include cross-cutting features (variable management, expression syntax, planning phases, publishing, editing existing artifacts, etc.) that have no coverage:
 
 - **Control flow:** `core.logic.switch`, `core.logic.loop`, `core.logic.merge`, `core.subflow`, `core.logic.terminate`
-- **Publishing:** `uip solution bundle`, `uip solution upload`, `uip flow pack`
+- **Publishing:** `uip solution upload`, `uip flow pack`
 - **Planning:** Phase 1 arch plan generation, Phase 2 impl plan resolution, mermaid diagram validation
 - **Editing:** No test modifies an existing flow (all tests create from scratch)
 

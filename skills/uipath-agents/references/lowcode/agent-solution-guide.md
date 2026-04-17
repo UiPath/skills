@@ -354,14 +354,8 @@ uip solution project add ./MySolution/Agent2 ./MySolution/MySolution.uipx --outp
 
 ### Upload to Studio Web
 
-Always bundle first, then upload the `.uis` file. Do not pass a directory path directly to `uip solution upload`.
-
 ```bash
-# Step 1: Bundle to .uis
-uip solution bundle ./MySolution -d ./output --output json
-
-# Step 2: Upload the .uis file
-uip solution upload ./output/MySolution.uis --output json
+uip solution upload ./MySolution --output json
 ```
 
 ### Pack and publish
