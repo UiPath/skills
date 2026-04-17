@@ -1,0 +1,88 @@
+task_id: skill-hitl-e2e-gdpr-compliance-greenfield
+description: >
+  E2E golden scenario (green field): agent builds a GDPR deletion request
+  flow with a privacy officer sign-off checkpoint. Tests proactive compliance
+  pattern detection, schema design with Reject path, timeout wiring.
+  Real business use case. Full Discover -> Plan -> Build -> Verify loop.
+tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow that processes GDPR data deletion requests. Each
+  request must be reviewed and signed off by a privacy officer before the
+  deletion runs — we need an audit trail for every decision. If the officer
+  doesn't respond within 7 days, escalate automatically.
+
+  Save results to report.json:
+  {
+    "project_name": "<name used>",
+    "hitl_node_id": "<id>",
+    "schema": {
+      "inputs": ["<what the privacy officer sees>"],
+      "outputs": ["<what they fill in>"],
+      "outcomes": ["<their choices>"]
+    },
+    "timeout_configured": "<ISO 8601 duration used>",
+    "handles_wired": ["<list of handles wired>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_contains
+    description: "report.json contains a HITL node ID (non-placeholder)"
+    path: "report.json"
+    includes:
+      - '"hitl_node_id": "'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Timeout duration is captured in report.json (ISO 8601)"
+    path: "report.json"
+    includes:
+      - '"timeout_configured": "P'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+validate.*--format\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Schema includes Approve and Reject outcomes"
+    path: "report.json"
+    includes:
+      - "Approve"
+      - "Reject"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Timeout handle is wired"
+    path: "report.json"
+    includes:
+      - "timeout"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0

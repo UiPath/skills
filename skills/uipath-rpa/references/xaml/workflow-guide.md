@@ -7,7 +7,7 @@ Discovery-first approach with iterative error-driven refinement for generating a
 1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
 2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
-4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa get-errors --use-studio`, fix what breaks, repeat.
+4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa get-errors`, fix what breaks, repeat.
 5. **Validate After Every Change** — **MUST** validate with `get-errors` after every change. **NEVER** assume an edit succeeded.
 6. **Fix Errors by Category** — Triage in order: Package → Structure → Type → Activity Properties → Logic.
 
@@ -94,8 +94,7 @@ Read: file_path="{projectRoot}/ExistingWorkflow.xaml"
 Use when you need to find which activity implements a user-described action:
 
 ```bash
-uip rpa find-activities --query "send mail" --limit 10 --output json --use-studio
-```
+uip rpa find-activities --query "send mail" --limit 10 --output json```
 
 - Results are **global** — not limited to installed packages
 - If a useful activity is in an uninstalled package, install it immediately
@@ -117,15 +116,13 @@ uip rpa find-activities --query "send mail" --limit 10 --output json --use-studi
 
 ### Step 1.6: Resolve Activity Properties (Fallback)
 
-Use `uip rpa get-default-activity-xaml --use-studio` when activity docs are insufficient:
+Use `uip rpa get-default-activity-xaml` when activity docs are insufficient:
 
 ```bash
 # Non-dynamic activity:
-uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json --use-studio
-
+uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json --use-studio
-```
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
 
 For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"`. See [jit-custom-types-schema.md](jit-custom-types-schema.md).
 
@@ -134,9 +131,7 @@ For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSch
 Use when activity docs, `find-activities`, and `get-default-activity-xaml` don't provide enough context:
 
 ```bash
-uip rpa list-workflow-examples --tags web --limit 10 --output json --use-studio
-uip rpa get-workflow-example --key "<BLOB_PATH>" --use-studio
-```
+uip rpa list-workflow-examples --tags web --limit 10 --output jsonuip rpa get-workflow-example --key "<BLOB_PATH>"```
 
 **Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
 
@@ -195,8 +190,7 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 ### Step 3.1: Check for Errors
 
 ```bash
-uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json --use-studio
-```
+uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json```
 
 `--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks.
 

@@ -2,6 +2,8 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
+> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see [flow-editing-operations-cli.md](flow-editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+
 ## uip flow init
 
 Scaffold a new Flow project directory. **Always create a solution first** (see Quick Start Step 2 in SKILL.md).
@@ -32,6 +34,7 @@ uip flow validate <path/to/file.flow> --verbose --output json
 ```
 
 Checks:
+
 - JSON parses correctly
 - All required fields present (including `targetPort` on edges)
 - Every node `type:typeVersion` has a matching entry in `definitions`
@@ -52,40 +55,29 @@ uip flow pack <ProjectDir> <OutputDir> --output json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
-> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `solution bundle` + `solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
-
-## uip solution bundle
-
-Bundle a local solution directory into a `.uis` file for upload to Studio Web.
-
-```bash
-uip solution bundle <solutionPath>
-uip solution bundle <solutionPath> --output <outputDir> --name <name>
-```
-
-The `<solutionPath>` must be a directory containing a `.uipx` file. Output: a `.uis` zip file.
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
 
 ## uip solution upload
 
-Upload a `.uis` solution file to Studio Web. **Requires `uip login`.**
+Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
-uip solution upload <solutionFile.uis> --output json
+uip solution upload <SolutionDir> --output json
 ```
 
-Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, use `solution bundle` + `solution upload` to push to Studio Web. Share the resulting URL with the user.
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
 
 ## uip flow debug
 
 Debug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.**
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 
 # Pass input arguments to the flow
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> \
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
 
@@ -94,6 +86,19 @@ The argument is the **project directory path** (the folder containing `project.u
 Use `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).
 
 Run `uip flow debug --help` to discover additional options.
+
+### Reporting the run back to the user
+
+The CLI response includes a **Studio Web URL** (where the user can inspect the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary** you report back to the user:
+
+```
+Studio Web URL: <url>
+Instance ID: <instanceId>
+
+<run status, node traces, errors, etc.>
+```
+
+If either value is not present in the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
 
 ## uip flow process
 
@@ -115,68 +120,9 @@ uip flow job status <job-key> --output json
 uip flow job traces <job-key> --output json
 ```
 
-## uip flow node
+## uip flow node / uip flow edge
 
-Add, list, and delete nodes in a `.flow` file. Automatically manages the `definitions` array.
-
-```bash
-uip flow node add <ProjectName>.flow <nodeType> --output json \
-  --input '{"expression": "..."}' \
-  --label "My Node" \
-  --position 300,400
-
-uip flow node list <ProjectName>.flow --output json
-```
-
-`node add` inserts the node into `nodes` and its definition into `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.). After adding nodes, use `node list` to get the assigned IDs for wiring edges.
-
-> **Shell quoting tip:** If `--input` JSON contains special characters, write it to a temp file: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
-
-### uip flow node delete
-
-Delete a node from a `.flow` file. Automatically removes connected edges, orphaned bindings, orphaned definitions, and node variables owned by the deleted node.
-
-```bash
-uip flow node delete <path/to/file.flow> <nodeId>
-uip flow node delete <path/to/file.flow> <nodeId> --output json
-```
-
-Use `uip flow node list` to find the node ID.
-
-### uip flow node configure
-
-Configure a connector node with connection details and parameter values. Run after `node add` for connector nodes. See the relevant node guide in `nodes/` for the full `--detail` JSON schema.
-
-## uip flow edge
-
-Add, list, and delete edges in a `.flow` file.
-
-```bash
-uip flow edge add <ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
-  --source-port success \
-  --target-port input
-```
-
-### uip flow edge delete
-
-Delete an edge from a `.flow` file.
-
-```bash
-uip flow edge delete <path/to/file.flow> <edgeId>
-uip flow edge delete <path/to/file.flow> <edgeId> --output json
-```
-
-Use `uip flow edge list` to find the edge ID.
-
-### uip flow edge list
-
-List all edges in a `.flow` file.
-
-```bash
-uip flow edge list <path/to/file.flow> --output json
-```
-
-Run `uip flow node --help` or `uip flow edge --help` for all options.
+See [flow-editing-operations-cli.md](flow-editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
 
 ## uip flow registry
 

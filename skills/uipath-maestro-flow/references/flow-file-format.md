@@ -14,12 +14,13 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   "definitions": [],
   "bindings": [],
   "variables": {},
-  "metadata": {
-    "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-01T00:00:00.000Z"
+  "layout": {
+    "nodes": {}
   }
 }
 ```
+
+`solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip flow init` and packaging. Do not add them manually.
 
 ## Project structure (from `uip flow init`)
 
@@ -40,22 +41,110 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   "id": "rollDice",
   "type": "core.action.script",
   "typeVersion": "1.0.0",
-  "ui": {
-    "position": { "x": 400, "y": 144 },
-    "size": { "width": 96, "height": 96 },
-    "collapsed": false
-  },
   "display": { "label": "Roll Dice" },
   "inputs": {
     "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
+  },
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the script",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the script fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
   },
   "model": { "type": "bpmn:ScriptTask" }
 }
 ```
 
-**Required fields**: `id`, `type`, `typeVersion`, `ui.position`
+**Required fields**: `id`, `type`, `typeVersion`
 
-**Layout**: Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` (spacing ~200px) and a consistent `y` baseline (e.g., `y: 144`). For decision branches, offset the `y` value for each branch path. Never use vertical (top-to-bottom) layout.
+> **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
+
+### Node outputs
+
+Nodes that produce data consumed by downstream nodes **must** include an `outputs` block on the node instance. This tells the runtime how to capture the node's results into `$vars.{nodeId}.{outputId}`. Without it, downstream `$vars` references may not resolve.
+
+Each output entry has:
+
+- `type` — data type (usually `"object"`)
+- `description` — human-readable description
+- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=result.Error"` for errors)
+- `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
+
+The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
+
+```json
+"outputs": {
+  "output": {
+    "type": "object",
+    "description": "The return value of the <node type>",
+    "source": "=result.response",
+    "var": "output"
+  },
+  "error": {
+    "type": "object",
+    "description": "Error information if the <node type> fails",
+    "source": "=result.Error",
+    "var": "error"
+  }
+}
+```
+
+Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port:
+
+```json
+"outputs": {
+  "output": {
+    "type": "object",
+    "description": "The return value of the trigger.",
+    "source": "=result.response",
+    "var": "output"
+  }
+}
+```
+
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](plugins/end/impl.md)).
+
+## Layout
+
+Node positioning is stored in a **top-level `layout` object**, not on individual nodes. Do NOT put `ui` or `position` on node instances.
+
+```json
+"layout": {
+  "nodes": {
+    "start": {
+      "position": { "x": 200, "y": 144 },
+      "size": { "width": 96, "height": 96 },
+      "collapsed": false
+    },
+    "rollDice": {
+      "position": { "x": 400, "y": 144 },
+      "size": { "width": 96, "height": 96 },
+      "collapsed": false
+    },
+    "end": {
+      "position": { "x": 600, "y": 144 },
+      "size": { "width": 96, "height": 96 },
+      "collapsed": false
+    }
+  }
+}
+```
+
+Each key in `layout.nodes` is a node `id`. Every node in the `nodes` array should have a corresponding entry.
+
+**Layout rules:**
+- Horizontal canvas — place nodes left-to-right with increasing `x` (spacing ~200px) and a consistent `y` baseline (e.g., `y: 144`)
+- For decision branches, offset the `y` value for each branch path
+- Standard size is `{ "width": 96, "height": 96 }` for all node types
+- Never use vertical (top-to-bottom) layout
 
 ## Edge — both ports required
 
@@ -143,18 +232,38 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
-      "ui": { "position": { "x": 200, "y": 144 } },
       "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
       "model": { "type": "bpmn:StartEvent", "entryPointId": "<uuid>" }
     },
     {
       "id": "rollDice",
       "type": "core.action.script",
       "typeVersion": "1.0.0",
-      "ui": { "position": { "x": 400, "y": 144 } },
       "display": { "label": "Roll Dice" },
       "inputs": {
         "script": "return { roll: Math.floor(Math.random() * 6) + 1 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
       },
       "model": { "type": "bpmn:ScriptTask" }
     },
@@ -162,7 +271,6 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "end",
       "type": "core.logic.terminate",
       "typeVersion": "1.0.0",
-      "ui": { "position": { "x": 600, "y": 144 } },
       "inputs": {},
       "model": { "type": "bpmn:EndEvent", "eventDefinition": "bpmn:TerminateEventDefinition" }
     }
@@ -185,7 +293,26 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
   ],
   "definitions": [],
   "bindings": [],
-  "variables": {}
+  "variables": {},
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": { "x": 200, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "rollDice": {
+        "position": { "x": 400, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "end": {
+        "position": { "x": 600, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      }
+    }
+  }
 }
 ```
 

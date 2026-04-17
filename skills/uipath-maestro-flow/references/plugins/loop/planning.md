@@ -34,11 +34,13 @@ Use a Loop node to iterate over a collection of items. Supports sequential and p
 | `collection` | Yes | Expression pointing to an array (e.g., `$vars.fetchData.output.body.items`) |
 | `parallel` | No | `true` to execute all iterations concurrently (default: sequential) |
 
-## Internal Variables (available inside loop body only)
+## Loop Variables (available inside loop body only)
 
-- `iterator.currentItem` — the item being processed in this iteration
-- `iterator.currentIndex` — 0-based iteration index
-- `iterator.collection` — the full collection
+- `$vars.<loopId>.currentItem` — the item being processed in this iteration
+- `$vars.<loopId>.currentIndex` — 0-based iteration index
+- `$vars.<loopId>.collection` — the full collection
+
+Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
 
 ## Wiring Rules
 
@@ -46,3 +48,4 @@ Use a Loop node to iterate over a collection of items. Supports sequential and p
 - The last node in the loop body connects back to the loop's `loopBack` port
 - After all iterations, execution continues from the `success` port
 - Do not create cycles except through the `loopBack` mechanism
+- **Every node inside the loop body must have `"parentId": "<loopId>"`** — without this, variableUpdates will not fire per-iteration and loop variables will be inaccessible

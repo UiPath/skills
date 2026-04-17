@@ -1,0 +1,61 @@
+# Template for a new coder_eval test task.
+#
+# Copy this file to tests/tasks/<skill-name>/<feature>/<feature>_<scenario>.yaml
+# and replace all <PLACEHOLDER> values. Files in tests/tasks/ are auto-discovered
+# and run by `make smoke|integration|e2e` based on their `tags`, so DO NOT leave
+# this template inside tests/tasks/.
+#
+# Naming convention:
+#   tests/tasks/<skill-folder>/<feature>/<feature>_<scenario>.yaml
+#   e.g. tests/tasks/uipath-rpa/excel-automation/excel-automation_greenfield.yaml
+#
+# Test tiers (set via the second tag and the experiment used at runtime):
+#   activation   — Does the right skill trigger for the right query?
+#   smoke        — Skill + CLI produces a valid project (1-3 simple scenarios).
+#   integration  — Correct output across varied scenarios, scoped to the skill.
+#   e2e          — Full loop: Explore → Plan → Build → Validate → Deploy → Run.
+
+task_id: skill-<short-name>-<scenario>
+description: >
+  One or two sentences describing what the test validates and why it matters.
+  Use a folded scalar (>) for multi-line; YAML strips the newlines.
+tags: [<uipath-skill-name>, <tier>, <feature-or-modifier>]
+
+# Optional — uncomment and tune for e2e tests that need longer runs:
+# max_iterations: 1
+# agent:
+#   type: claude-code
+#   permission_mode: acceptEdits
+#   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+#   turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Goal-oriented prompt — describe what to build, not how. Let the skill
+  teach the agent the workflow.
+
+  For e2e tests, append:
+    Do NOT ask for approval, confirmation, or feedback.
+    Do NOT pause between planning and implementation.
+    Before starting, load the <uipath-skill-name> skill and follow its workflow.
+
+success_criteria:
+  # Verify the agent invoked the expected CLI. See tests/README.md for the
+  # full list of criterion types: command_executed, file_exists, file_contains,
+  # json_check, run_command.
+  - type: command_executed
+    description: "Agent invoked the expected uip command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+<command>'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Expected artifact was created"
+    path: "<expected/output/path>"
+    weight: 1.5
+    pass_threshold: 1.0

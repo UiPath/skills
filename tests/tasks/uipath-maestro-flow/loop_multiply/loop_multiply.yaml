@@ -1,0 +1,44 @@
+task_id: skill-flow-loop-multiply
+description: >
+  Create a UiPath Flow that uses a Loop node to multiply the numbers
+  [13, 15, 17] together and return the product (3315). Exercises loop node
+  wiring, variable updates, and state accumulation.
+tags: [uipath-maestro-flow, e2e, generate, ootb]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "LoopMultiply" that multiplies the
+  numbers [13, 15, 17] together using a Loop node and returns the product.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip flow validate passes on the flow file"
+    command: "uip flow validate LoopMultiply/LoopMultiply/LoopMultiply.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution checks ──────────────────────────────────────────────────
+  - type: run_command
+    description: "Flow has a loop node and debug returns 3315 (13*15*17)"
+    command: "python3 $TASK_DIR/check_loop_multiply.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

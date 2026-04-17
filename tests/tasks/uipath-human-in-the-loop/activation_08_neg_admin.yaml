@@ -1,0 +1,36 @@
+task_id: skill-hitl-activation-neg-admin
+description: >
+  Negative activation test: agent must NOT use the uipath-human-in-the-loop
+  skill for Action Center runtime administration queries. This is task
+  management, not automation authoring.
+tags: [uipath-human-in-the-loop, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  How do I reassign a pending Action Center task that has been sitting for
+  3 days without a response to a different user in our team?
+
+  Write an answer.json file with:
+  {
+    "answer": "<your guidance on how to reassign Action Center tasks>",
+    "hitl_authoring_needed": false
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote an answer.json"
+    path: "answer.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent did not recommend HITL authoring"
+    path: "answer.json"
+    includes:
+      - '"hitl_authoring_needed": false'
+    weight: 2.0
+    pass_threshold: 1.0
+

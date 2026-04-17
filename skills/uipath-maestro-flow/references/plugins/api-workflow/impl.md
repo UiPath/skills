@@ -24,13 +24,9 @@ Confirm:
 - `inputDefinition` — typically empty
 - `outputDefinition.error` — error schema
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.api-workflow.{key}" --output json \
-  --label "Call API Function" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -39,9 +35,22 @@ uip flow node add <ProjectName>.flow "uipath.core.api-workflow.{key}" --output j
   "id": "callApiFunction",
   "type": "uipath.core.api-workflow.346b8959-c126-48d3-9c46-942abcf944d7",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Call API Function" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the API workflow",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the API workflow fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": {
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",

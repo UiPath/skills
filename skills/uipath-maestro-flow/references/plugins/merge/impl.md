@@ -25,28 +25,16 @@ Confirm: input port `input` (accepts multiple connections), output port `output`
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.logic.merge --output json \
-  --label "Join Branches" \
-  --position 600,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
-## Wiring Pattern
+## Wiring
 
-```bash
-# Both parallel branches connect to the same merge node
-uip flow edge add <ProjectName>.flow callApiA joinBranches --output json \
-  --source-port success --target-port input
+- `input` — accepts multiple incoming edges (one per parallel branch). All branches must reach the merge before it continues.
+- `output` — single outgoing edge to the next downstream node.
 
-uip flow edge add <ProjectName>.flow callApiB joinBranches --output json \
-  --source-port success --target-port input
-
-# Continue after merge
-uip flow edge add <ProjectName>.flow joinBranches combineResults --output json \
-  --source-port output --target-port input
-```
+See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
 
 ## Debug
 

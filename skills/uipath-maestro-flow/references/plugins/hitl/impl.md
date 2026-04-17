@@ -22,19 +22,9 @@ Confirm:
 - `model.serviceType` — `Actions.HITL`
 - `model.bindings.resourceSubType` — the app type
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.human-task.{key}" --output json \
-  --label "Review Data" \
-  --position 400,300
-```
-
-## Wiring Pattern
-
-```
-[Automation nodes] -> [HITL] -> [Continue with human's input]
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the node type and `model` fields from the JSON structure section in your registry validation.
 
 The human task node's output (`$vars.{nodeId}.output`) contains the form data submitted by the user.
 
@@ -46,7 +36,7 @@ The human task node's output (`$vars.{nodeId}.output`) contains the form data su
 
 ## Common Pattern — Human-in-the-Loop
 
-```
+```text
 Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?) ->
   true: Script (submit) -> End
   false: End

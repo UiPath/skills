@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa
-description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, and hybrid projects. Create, edit, build, run, debug. For Orchestrator/deploy→uipath-platform. For agents→uipath-agents."
+description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, and hybrid projects. Create, edit, build, run, debug. For Orchestrator/deploy→uipath-platform. For agents→uipath-agents. For legacy (.NET 4.6.1)→uipath-rpa-legacy."
 ---
 
 # UiPath RPA Assistant
@@ -87,12 +87,22 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 ### Common Rules (Both Modes)
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
-2. **ALWAYS use `uip rpa create-project --use-studio`** to create new projects — never write `project.json` or scaffolding manually.
-3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
+2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
+3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
 7. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
+
+### Execution Discipline (Both Modes)
+
+**Run to completion — do not declare work done while plan tasks remain.** If a plan file exists at `docs/plans/*.md` referenced by this request (or discoverable there for this feature), read its header before acting and during every checkpoint.
+
+- If the header has `Execution autonomy: autonomous`: continue until ALL plan task checkboxes are `[x]` OR a concrete item from the plan's `Stop conditions` section is hit.
+- If the header has `Execution autonomy: interactive`, or no plan file exists: use judgment and confirm with the user on material decisions.
+- Before declaring the task done, re-read the plan and enumerate any unchecked boxes. If unchecked tasks remain and no Stop condition was hit, keep going — do not summarize partial work as "Done".
+- "Feels expensive", "many tool calls used", "natural pause point", "partial result looks usable", and "too complex to continue in one session" are **NOT** Stop conditions. Only the concrete hard blockers in the plan's `Stop conditions` section count.
+- Plan decisions already made are authoritative. Do not `AskUserQuestion` about structure, file count, selector strategy, or capture approach when the plan specifies them — those questions belonged to the planner.
 
 ### Coded-Specific Rules
 
@@ -131,7 +141,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
-| **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `../../references/activity-docs/{PackageId}/{closest}/` |
+| **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [connector-capabilities.md](references/connector-capabilities.md) → [xaml/workflow-guide.md § Step 1.9](references/xaml/workflow-guide.md) |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
@@ -140,6 +150,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Troubleshoot coded errors** | Coded | [coded/coding-guidelines.md § Common Issues](references/coded/coding-guidelines.md) |
 | **Troubleshoot XAML errors** | XAML | [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) → [validation-guide.md](references/validation-guide.md) |
 | **Understand project structure** | Both | [project-structure.md](references/project-structure.md) |
+| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) |
 
 ## Coded Workflows Quick Reference
 
@@ -237,6 +248,14 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 - [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 
+### Multi-Screen UI Automation Workflows
+
+For XAML workflows targeting 2 or more distinct screens requiring `uia-configure-target`, use the parallel authoring pipeline instead of writing the entire workflow in a single pass. The pipeline chains write agents per screen, overlapping target configuration with XAML generation. See [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md).
+
+- Use split tasks (`Configure-<N>` + `Write-<N>`) with `addBlockedBy` to enforce the chained write model — see the parallel authoring guide.
+
+Single-screen workflows skip the pipeline — one agent writes the complete file in a single pass.
+
 ## Resolving Packages & Activity Docs
 
 Follow this flow whenever you need to use an activity package:
@@ -249,14 +268,12 @@ Check `project.json` → `dependencies` for the required package.
 - **If absent** → install:
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json --use-studio
-uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output jsonuip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json```
 
 ### Step 2 — Find activity docs (priority order)
 
 1. **Check `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`** — auto-generated, most accurate. Use `Glob` + `Read` (not `Grep` — `.local/` is gitignored).
-2. **Fall back to bundled references** at `../../references/activity-docs/{PackageId}/` — pick the version folder closest to what is installed.
+2. **Fall back to bundled references** at `references/activity-docs/{PackageId}/` — pick the version folder closest to what is installed.
 
 ## UI Automation References
 
@@ -268,12 +285,22 @@ Additional UIA procedures and guides:
 - [uia-multi-step-flows.md](references/uia-multi-step-flows.md) — Advancing application state between screens
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow and indication fallback
+- [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) — Parallel XAML authoring pipeline for multi-screen workflows
 
 ## Completion Output
+
+**Before reporting "done", verify the plan is complete.** If a plan file at `docs/plans/*.md` drove this work:
+1. Re-read the plan and scan its task checkboxes.
+2. If any `[ ]` boxes remain AND the plan's header says `Execution autonomy: autonomous` AND no `Stop conditions` item was hit — **do not report done**. Resume execution on the next unchecked task.
+3. If unchecked boxes remain because a Stop condition was hit, name the exact stop-condition item in the report.
+4. If the plan is fully checked off, or execution autonomy is `interactive`, proceed to the report format below.
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
 2. **Validation status** — whether all files passed validation (or remaining errors)
-3. **How to run** — the `uip rpa run-file --use-studio` command (if applicable)
-4. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
-5. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."
+3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
+4. **How to run** — the `uip rpa run-file` command (if applicable)
+5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)
+6. **Trouble?** — if the user hit issues during this session, mention: "If something didn't work as expected, use `/uipath-feedback` to send a report."
+
+Do NOT use framing like "complete", "done", "finished", or "the automation is built" unless every plan task is checked off. "Partial", "stopped at <task N>", or "blocked by <stop condition>" is the honest framing otherwise.

@@ -1,0 +1,49 @@
+task_id: skill-hitl-activation-data-enrichment
+description: >
+  Activation test: agent should detect a data enrichment pattern where a
+  human must fill in incomplete extracted data before the flow continues.
+tags: [uipath-human-in-the-loop, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  OCR extracted invoice data from a PDF but several fields are blank —
+  vendor code, cost center, and PO number are missing. Route incomplete
+  records to a human to fill in the missing data before the invoice is
+  posted to the accounting system.
+
+  Write a recommendation.json file with:
+  {
+    "hitl_needed": true,
+    "pattern": "<which business pattern applies>",
+    "proposed_schema": {
+      "inputs": ["<what the human sees — already extracted fields>"],
+      "inOuts": ["<fields the human fills in and returns>"],
+      "outcomes": ["<button names>"]
+    }
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified HITL is needed"
+    path: "recommendation.json"
+    includes:
+      - '"hitl_needed": true'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent used inOuts (not just outputs) for the fill-in fields"
+    path: "recommendation.json"
+    includes:
+      - "inOut"
+    weight: 1.5
+    pass_threshold: 1.0

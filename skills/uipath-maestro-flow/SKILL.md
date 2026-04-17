@@ -42,151 +42,31 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 14. **For resources not yet published, use mock placeholders** — add a `core.logic.mock` node, tell the user which skill to use for creation, then replace the mock after publishing. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md)).
 15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 16. **Always use horizontal layout** — Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` values and the same `y` baseline (e.g., `y: 144`). Never stack nodes vertically.
+17. **Node positioning goes in top-level `layout`, NOT on nodes** — Do not put a `ui` block on node instances. Store position/size in the `layout.nodes` object at the top level of the `.flow` file, keyed by node `id`. See [flow-file-format.md — Layout](references/flow-file-format.md#layout).
+18. **Every node that produces data MUST have `outputs` on the node instance** — Without an `outputs` block, downstream `$vars` references will not resolve at runtime. Action nodes need `output` + `error`; trigger nodes need `output` only; end/terminate nodes do not use this pattern. See [flow-file-format.md — Node outputs](references/flow-file-format.md#node-outputs). **Wrong:** relying on `outputDefinition` in `definitions` alone. **Right:** `outputs` on the node instance itself.
+19. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
 
 ## Common Edits (existing flows)
 
-For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Run `uip flow validate` once after all edits are complete.
+For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Each recipe links to the detailed step-by-step procedure in the [flow editing operations guide](references/flow-editing-operations.md). Run `uip flow validate` once after all edits are complete.
 
-### Change a script body
+**Read [references/flow-editing-operations.md](references/flow-editing-operations.md) first** to choose between CLI and direct JSON strategies for each operation.
 
-1. Note the node's connected edges: `uip flow edge list <ProjectName>.flow --output json`
-2. Delete the node: `uip flow node delete <ProjectName>.flow <nodeId>` (this also removes its edges)
-3. Re-add with the updated script:
-   ```bash
-   uip flow node add <ProjectName>.flow core.action.script --output json \
-     --input "$(cat /tmp/new_script.json)" \
-     --label "<same label>" --position <same x>,<same y>
-   ```
-   Script nodes must return an object (`return { key: value }`), not a scalar. Write complex scripts to a temp file first.
-4. Re-wire edges from step 1 using `uip flow edge add`
+| Edit | Description | Guide |
+|------|-------------|-------|
+| **Change a script body or node inputs** | Edit the node's `inputs` in-place in the `.flow` JSON. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [JSON: Update node inputs](references/flow-editing-operations-json.md#update-node-inputs) |
+| **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [CLI: Insert a node](references/flow-editing-operations-cli.md#insert-a-node-between-two-existing-nodes) / [JSON: Insert a node](references/flow-editing-operations-json.md#insert-a-node-between-two-existing-nodes) |
+| **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [CLI: Insert a decision branch](references/flow-editing-operations-cli.md#insert-a-decision-branch) / [JSON: Insert a decision branch](references/flow-editing-operations-json.md#insert-a-decision-branch) |
+| **Remove a node** | Delete the node (edges cascade in CLI), reconnect upstream to downstream. | [CLI: Remove a node](references/flow-editing-operations-cli.md#remove-a-node-and-reconnect) / [JSON: Remove a node](references/flow-editing-operations-json.md#remove-a-node-and-reconnect) |
+| **Remove an edge** | Find the edge ID, delete it. | [CLI: Delete an edge](references/flow-editing-operations-cli.md#delete-an-edge) / [JSON: Delete an edge](references/flow-editing-operations-json.md#delete-an-edge) |
+| **Add a workflow variable** | Edit `variables.globals` in the `.flow` file (JSON only). For `out` variables, map on every End node. See [variables-and-expressions.md](references/variables-and-expressions.md). | [JSON: Add a workflow variable](references/flow-editing-operations-json.md#add-a-workflow-variable) |
+| **Update a state variable** | Add a `variableUpdates` entry for `inout` variables (JSON only). See [variables-and-expressions.md](references/variables-and-expressions.md). | [JSON: Add a variable update](references/flow-editing-operations-json.md#add-a-variable-update) |
+| **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (JSON only). | [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) + [subflow/impl.md](references/plugins/subflow/impl.md) |
+| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) / [JSON: Replace trigger](references/flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) + [scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) |
+| **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md) |
+| **Add a resource node** | Discover via registry, add with CLI or JSON, wire edges. Use `core.logic.mock` if unpublished. | [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
+| **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
 
-### Add a node between two existing nodes
-
-1. Delete the edge connecting the two existing nodes:
-   ```bash
-   uip flow edge list <ProjectName>.flow --output json   # find the edge ID
-   uip flow edge delete <ProjectName>.flow <edgeId>
-   ```
-2. Add the new node:
-   ```bash
-   uip flow node add <ProjectName>.flow <nodeType> --output json \
-     --input '...' --label "My Node" --position <x>,<y>
-   ```
-3. Wire the upstream node to the new node, and the new node to the downstream node:
-   ```bash
-   uip flow edge add <ProjectName>.flow <upstreamNodeId> <newNodeId> --output json \
-     --source-port <port> --target-port input
-   uip flow edge add <ProjectName>.flow <newNodeId> <downstreamNodeId> --output json \
-     --source-port success --target-port input
-   ```
-4. Check ports: see [references/flow-file-format.md — Standard ports](references/flow-file-format.md) for source/target ports by node type
-
-### Add a branch (decision node)
-
-1. Delete the edge where you want to insert the branch:
-   ```bash
-   uip flow edge list <ProjectName>.flow --output json   # find the edge ID
-   uip flow edge delete <ProjectName>.flow <edgeId>
-   ```
-2. Add the decision node:
-   ```bash
-   uip flow node add <ProjectName>.flow core.logic.decision --output json \
-     --input '{"expression": "=js:..."}' --label "Check Condition" --position <x>,<y>
-   ```
-3. Wire the upstream node to the decision, and the decision to both branches:
-   ```bash
-   uip flow edge add <ProjectName>.flow <upstreamNodeId> <decisionNodeId> --output json \
-     --source-port <port> --target-port input
-   uip flow edge add <ProjectName>.flow <decisionNodeId> <trueBranchNodeId> --output json \
-     --source-port true --target-port input
-   uip flow edge add <ProjectName>.flow <decisionNodeId> <falseBranchNodeId> --output json \
-     --source-port false --target-port input
-   ```
-
-### Remove an edge
-
-```bash
-uip flow edge list <ProjectName>.flow --output json   # find the edge ID
-uip flow edge delete <ProjectName>.flow <edgeId>
-```
-
-### Remove a node
-
-```bash
-uip flow node list <ProjectName>.flow --output json   # find the node ID
-uip flow node delete <ProjectName>.flow <nodeId>
-```
-
-The CLI automatically removes connected edges, orphaned bindings, orphaned definitions, and node variables owned by the deleted node. After deleting, reconnect the upstream and downstream nodes:
-
-```bash
-uip flow edge add <ProjectName>.flow <upstreamNodeId> <downstreamNodeId> --output json \
-  --source-port <port> --target-port input
-```
-
-### Update node inputs (expression, label, etc.)
-
-The CLI does not have a `node update` command. To change a node's inputs, delete the node and re-add it with the updated values:
-
-1. Note the node's connected edges: `uip flow edge list <ProjectName>.flow --output json`
-2. Delete the node: `uip flow node delete <ProjectName>.flow <nodeId>`
-3. Re-add with updated inputs:
-   ```bash
-   uip flow node add <ProjectName>.flow <nodeType> --output json \
-     --input '{"expression": "=js:$vars.amount <= 1000000", "trueLabel": "Under 10 Lakh", "falseLabel": "Over 10 Lakh"}' \
-     --label "Amount Under 10 Lakh?" --position <same x>,<same y>
-   ```
-4. Re-wire all edges from step 1 using `uip flow edge add`
-
-Common cases: decision expressions/labels, script bodies, HTTP URLs, connector parameters.
-
-### Add a workflow variable
-
-Edit `variables.globals` in the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md) for the full schema.
-
-1. Add the variable object to `variables.globals` with the correct `direction` (`in`, `out`, or `inout`)
-2. For `out` variables: add output mapping to every reachable End node's `outputs`
-3. For `inout` variables: add `variableUpdates` entries on nodes that modify the state
-4. Validate: `uip flow validate`
-
-### Update a state variable on a node
-
-Add a `variableUpdates` entry to update an `inout` variable when a specific node completes:
-
-1. Ensure the variable exists in `variables.globals` with `direction: "inout"`
-2. Add the update expression to `variables.variableUpdates.{nodeId}`:
-   ```json
-   { "variableId": "counter", "expression": "=js:$vars.counter + 1" }
-   ```
-3. Validate: `uip flow validate`
-
-### Create a subflow
-
-1. Add a `core.subflow` node to the parent flow's `nodes` array with `inputs` matching the subflow's `in` variables
-2. Add a `subflows.{nodeId}` entry with its own `nodes`, `edges`, and `variables`
-3. The subflow must have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
-4. Define subflow inputs (`direction: "in"`) and outputs (`direction: "out"`) in `subflows.{nodeId}.variables.globals`
-5. Map outputs on the subflow's End node
-6. See [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) for the full JSON structure
-
-### Add a scheduled trigger
-
-Replace `core.trigger.manual` with `core.trigger.scheduled`:
-
-1. Change the start node's `type` to `core.trigger.scheduled`
-2. Add timer inputs: `timerType: "timeCycle"`, `timerPreset: "R/PT1H"` (or custom)
-3. Add the `eventDefinition` to `model`: `"eventDefinition": "bpmn:TimerEventDefinition"`
-4. See [references/plugins/scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) for presets
-
-### Add a resource node (RPA process, agent, etc.)
-
-See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md)) for the full workflow. Summary:
-
-1. `uip flow registry pull --force` to refresh
-2. `uip flow registry search "<name>" --output json` to find the resource
-3. `uip flow node add` with the discovered node type
-4. Wire edges and validate
-5. If the resource doesn't exist yet, use a `core.logic.mock` placeholder and tell the user which skill to use
 
 ## Quick Start
 
@@ -223,7 +103,7 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 ### Step 2 — Create a solution and Flow project
 
-Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, ask the user whether they want to use one of them or create a new solution. If no existing solutions are found, create a new one automatically.
+Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See Critical Rule #19.
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -312,62 +192,9 @@ Phase 2 takes the approved architectural plan and resolves all implementation de
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Prefer CLI commands for all node and edge operations.** They handle definitions, port wiring, and cleanup automatically, eliminating the most common build errors. To update a node's inputs, delete the node and re-add it with the new values (see Common Edits). Fall back to direct JSON editing only for `variables`, `variableUpdates`, and `subflows`.
+**Read [references/flow-editing-operations.md](references/flow-editing-operations.md)** to choose between CLI and direct JSON strategies for each operation. Common approach: use CLI for node/edge CRUD, direct JSON for variables, variableUpdates, subflows, and output mapping.
 
-#### Adding nodes
-
-```bash
-uip flow node add <ProjectName>.flow <nodeType> --output json \
-  --input '{"expression": "$vars.fetchData.output.statusCode === 200"}' \
-  --label "Check Status" \
-  --position 300,400
-```
-
-The command automatically adds the node to the `nodes` array and its definition to `definitions`. Use `--input` to set node-specific inputs (script body, expression, URL, etc.).
-
-> **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write the JSON to a temp file and pass it: `uip flow node add <file> <nodeType> --input "$(cat /tmp/input.json)" --output json`
-
-After adding nodes, list them to get the assigned IDs for wiring:
-
-```bash
-uip flow node list <ProjectName>.flow --output json
-```
-
-#### Adding edges
-
-```bash
-uip flow edge add <ProjectName>.flow <sourceNodeId> <targetNodeId> --output json \
-  --source-port success \
-  --target-port input
-```
-
-The command automatically adds `targetPort` and validates the edge structure.
-
-#### Configuring connector nodes
-
-After adding a connector node with `node add`, configure it using the resolved values from Phase 2:
-
-```bash
-uip flow node configure <ProjectName>.flow <nodeId> \
-  --detail '<JSON from plugin impl.md>'
-```
-
-The `--detail` JSON structure varies by node type — see [connector/impl.md](references/plugins/connector/impl.md) for the exact schema and examples. The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs**, not display names.
-
-> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
-
-#### Deleting nodes and edges
-
-```bash
-uip flow node delete <ProjectName>.flow <nodeId>       # removes node + connected edges + orphaned defs
-uip flow edge delete <ProjectName>.flow <edgeId>        # removes a single edge
-```
-
-Use `node list` / `edge list` to discover IDs before deleting.
-
-#### When to fall back to JSON editing
-
-Fall back to direct JSON editing only for operations not covered by the CLI — such as editing `variables`, `variableUpdates`, or `subflows`. For node input changes, use the delete + re-add pattern (see Common Edits above). See [references/flow-file-format.md](references/flow-file-format.md) for the JSON schema.
+For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
 ### Step 6 — Validate loop
 
@@ -394,30 +221,42 @@ Common error categories:
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir>
+UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
 
+**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip flow debug](references/flow-commands.md#uip-flow-debug).
+
 ### Step 8 — Publish to Studio Web
 
-**This is the default publish target.** When the user wants to publish, view, or share the flow, upload it to Studio Web using `solution bundle` + `solution upload`:
+**This is the default publish target.** When the user wants to publish, view, or share the flow, upload the solution directly to Studio Web:
 
 ```bash
-# Bundle the solution directory into a .uis file
-uip solution bundle <SolutionDir> --output .
-
-# Upload the .uis to Studio Web
-uip solution upload <SolutionName>.uis --output json
+# Upload the solution folder (containing the .uipx) to Studio Web
+uip solution upload <SolutionDir> --output json
 ```
 
-The `bundle` command requires a solution directory containing a `.uipx` file. If the project was created with `uip flow init`, it lives inside a solution directory already. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip flow init`, it already lives inside a solution directory. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
 
-**Do NOT run `uip flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`solution bundle` + `solution upload`).
+**Do NOT run `uip flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
 
 For Orchestrator deployment when explicitly requested, see [references/flow-commands.md](references/flow-commands.md) for `uip flow pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
+
+#### Post-build choice prompt
+
+When the build completes and it is time to offer next steps (see Completion Output → "Next step"), use `AskUserQuestion` to present a dropdown with these options (per Critical Rule #19):
+
+| Option | Action |
+|--------|--------|
+| **Publish to Studio Web** (default) | Run `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
+| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 7). Confirm consent first — debug executes the flow for real. |
+| **Deploy to Orchestrator** | Run `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
+| **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
+
+Do not run any of these actions without an explicit user selection.
 
 ## Anti-Patterns
 
@@ -429,6 +268,8 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 - **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
 - **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, insert a `core.logic.mock` placeholder and tell the user which skill to use. Do not invoke other skills.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
+- **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
+- **Never omit `outputs` on nodes that produce data** — action nodes need `output` + `error`, trigger nodes need `output`. The `outputDefinition` in `definitions` is for the registry schema, not for runtime binding — without `outputs` on the node instance, `$vars` references downstream will fail silently.
 - **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip flow validate` once after the full build is complete (Step 6).
 - **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
 - **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
@@ -439,23 +280,25 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 
 | I need to... | Read these |
 | --- | --- |
-| **Edit an existing flow** | Common Edits section |
+| **Edit an existing flow** | Common Edits section + [references/flow-editing-operations.md](references/flow-editing-operations.md) |
+| **Add/delete/wire nodes and edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
 | **Generate a flow plan** | [references/planning-arch.md](references/planning-arch.md) + [references/planning-impl.md](references/planning-impl.md) + Step 4 |
 | **Choose the right node type** | [references/planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/plugins/script/impl.md](references/plugins/script/impl.md) |
-| **Wire nodes with edges** | [references/flow-file-format.md — Edges](references/flow-file-format.md) |
+| **Wire nodes with edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) + [references/flow-file-format.md — Standard ports](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip flow registry search <keyword>` |
 | **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Publish to Studio Web** | Step 8 (solution bundle + upload) |
+| **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
-| **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) |
+| **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) + [JSON: Variable Operations](references/flow-editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
-| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see the relevant resource plugin's `impl.md` for the mock replacement workflow |
+| **Embed an AI agent tightly coupled to this flow** | [references/plugins/inline-agent/](references/plugins/inline-agent/) — scaffolded via `uip agent init --inline-in-flow`, node type `uipath.agent.autonomous` |
+| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [references/plugins/transform/impl.md](references/plugins/transform/impl.md) |
-| **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + Common Edits |
+| **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [references/plugins/delay/](references/plugins/delay/) or [references/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [references/plugins/queue/impl.md](references/plugins/queue/impl.md) |
 
@@ -489,17 +332,25 @@ When you finish building or editing a flow, report to the user:
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
 4. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 5. **Missing connections** — any connector nodes that need connections the user must create
-6. **Next step** — ask if the user wants to debug the flow (do not run debug automatically)
-7. **Publish offer** — ask if the user wants to publish to Studio Web (do not publish automatically). If yes, run `solution bundle` + `solution upload` and share the Studio Web URL.
+6. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
+   - **Publish to Studio Web** — run `uip solution upload <SolutionDir>` and share the URL
+   - **Debug the solution** — run `uip flow debug <ProjectDir>` (requires explicit consent — side effects are real)
+   - **Deploy to Orchestrator** — hand off to the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip flow pack` + `uip solution publish`
+   - **Something else** (last option) — accept free-form input and act on it
+
+   Do not run any of these actions automatically. Wait for the user's selection.
 
 ## References
 
+- **[Flow Editing Operations](references/flow-editing-operations.md)** — Strategy selection matrix for CLI vs. direct JSON editing. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
+  - [CLI Strategy](references/flow-editing-operations-cli.md) — All node/edge operations via `uip flow node` and `uip flow edge` commands
+  - [Direct JSON Strategy](references/flow-editing-operations-json.md) — All operations via direct `.flow` file editing (variables, subflows, in-place updates)
 - **[Planning Phase 1: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery (`registry search`/`list`), plugin index for node selection, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
 - **[Planning Phase 2: Implementation Resolution](references/planning-impl.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), wiring rules, and flow patterns. **Read this after the architectural plan is approved.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
-- **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with parameters
+- **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
-- **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, CLI commands, debug):
+- **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
   - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
   - [script](references/plugins/script/) — Custom JavaScript logic via Jint ES2020
   - [http](references/plugins/http/) — REST API calls, response branching, connection auth
@@ -519,7 +370,8 @@ When you finish building or editing a flow, report to the user:
   - [api-workflow](references/plugins/api-workflow/) — Published API functions (`uipath.core.api-workflow.{key}`)
   - [hitl](references/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
   - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
+  - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
-- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `solution bundle` + `solution upload` (Step 8).
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

@@ -66,8 +66,7 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`.
 List running UiPath Studio instances and their IPC status.
 
 ```bash
-uip rpa list-instances --output json --use-studio
-```
+uip rpa list-instances --output json```
 
 No command-specific options.
 
@@ -81,8 +80,7 @@ Ensure a Studio instance is running. Resolution waterfall:
 3. Start a new instance via `--studio-dir` -- poll until available
 
 ```bash
-uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json```
 
 ---
 
@@ -93,8 +91,7 @@ uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json --use-studio
 Create a new UiPath project from a template. Also available as `uip rpa new`.
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json --use-studio
-```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
@@ -112,8 +109,7 @@ uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json -
 Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance, so this is rarely required.
 
 ```bash
-uip rpa open-project --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa open-project --project-dir "<PROJECT_DIR>" --output json```
 
 No command-specific options.
 
@@ -127,11 +123,9 @@ Run or debug a workflow file using Studio.
 
 ```bash
 # Run (default -- closes app on completion or error):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
+uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 # Debug (pauses on error -- keeps app open for inspection/repair):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
-```
+uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -149,8 +143,7 @@ uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command St
 Return validation errors for a file or project. By default, forces Studio to re-validate before returning errors.
 
 ```bash
-uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json --use-studio
-```
+uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -166,8 +159,7 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json --us
 Install or update NuGet packages in the project.
 
 ```bash
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json --use-studio
-```
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -186,9 +178,7 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 Get available versions for a NuGet package.
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --output json --use-studio
-uip rpa get-versions --package-id <PackageId> --include-prerelease --output json --use-studio
-```
+uip rpa get-versions --package-id <PackageId> --output jsonuip rpa get-versions --package-id <PackageId> --include-prerelease --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -204,8 +194,7 @@ uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
 Get unautomated test case IDs from Test Manager.
 
 ```bash
-uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json```
 
 No command-specific options.
 
@@ -216,8 +205,7 @@ No command-specific options.
 Get steps for specific test cases from Test Manager.
 
 ```bash
-uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -409,9 +397,7 @@ When `uip` commands fail, diagnose by error category:
 Search for activities by keyword. Global search -- not limited to installed packages.
 
 ```bash
-uip rpa find-activities --query "<KEYWORD>" --output json --use-studio
-uip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json --use-studio
-```
+uip rpa find-activities --query "<KEYWORD>" --output jsonuip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -427,11 +413,9 @@ Get the default XAML template for an activity. Two modes depending on whether th
 
 ```bash
 # Non-dynamic activity:
-uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json --use-studio
-
+uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json --use-studio
-```
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -446,9 +430,7 @@ uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id
 Search example workflows by service tags.
 
 ```bash
-uip rpa list-workflow-examples --tags "service1,service2" --output json --use-studio
-uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json --use-studio
-```
+uip rpa list-workflow-examples --tags "service1,service2" --output jsonuip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -463,8 +445,7 @@ uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 
 Retrieve the full XAML content of an example workflow.
 
 ```bash
-uip rpa get-workflow-example --key "<BLOB_PATH>" --output json --use-studio
-```
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -477,9 +458,7 @@ uip rpa get-workflow-example --key "<BLOB_PATH>" --output json --use-studio
 Focus an activity in the Studio designer view.
 
 ```bash
-uip rpa focus-activity --activity-id "<IDREF>" --output json --use-studio
-uip rpa focus-activity --output json --use-studio
-```
+uip rpa focus-activity --activity-id "<IDREF>" --output jsonuip rpa focus-activity --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -513,8 +492,7 @@ Use the `packageId` and `version` from results with `uip rpa new --template-pack
 Close the current project in Studio.
 
 ```bash
-uip rpa close-project --output json --use-studio
-```
+uip rpa close-project --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|

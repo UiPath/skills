@@ -24,13 +24,9 @@ Confirm:
 - `inputDefinition` — typically empty
 - `outputDefinition.error` — error schema
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.agentic-process.{key}" --output json \
-  --label "Run Orchestration" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -39,9 +35,22 @@ uip flow node add <ProjectName>.flow "uipath.core.agentic-process.{key}" --outpu
   "id": "runOrchestration",
   "type": "uipath.core.agentic-process.5f9ad95a-b862-46c7-98c3-a9be2e5b922f",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Run Orchestration" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the agentic process",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the agentic process fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": {
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgenticProcess",

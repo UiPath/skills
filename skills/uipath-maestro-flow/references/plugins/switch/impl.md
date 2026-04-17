@@ -43,32 +43,13 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.logic.switch --output json \
-  --input '{"cases": [{"id": "high", "label": "High", "expression": "$vars.classify.output.priority === '\''high'\''"}, {"id": "low", "label": "Low", "expression": "$vars.classify.output.priority === '\''low'\''"}]}' \
-  --label "Route by Priority" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
-## Wiring Example
+## Wiring
 
-```bash
-# Case edges
-uip flow edge add <ProjectName>.flow routeByPriority handleHigh --output json \
-  --source-port case-high --target-port input
-
-uip flow edge add <ProjectName>.flow routeByPriority handleMedium --output json \
-  --source-port case-medium --target-port input
-
-uip flow edge add <ProjectName>.flow routeByPriority handleLow --output json \
-  --source-port case-low --target-port input
-
-# Default fallback
-uip flow edge add <ProjectName>.flow routeByPriority handleUnknown --output json \
-  --source-port default --target-port input
-```
+Each case creates a dynamic output port `case-{id}`. An optional `default` port handles unmatched values. Ensure edge `sourcePort` matches `case-{id}` exactly. See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
 
 ## Debug
 

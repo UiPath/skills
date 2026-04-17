@@ -24,13 +24,9 @@ Confirm:
 - `inputDefinition` — typically empty
 - `outputDefinition.error` — error schema
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow "uipath.core.flow.{key}" --output json \
-  --label "Validate Data" \
-  --position 400,300
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -39,9 +35,22 @@ uip flow node add <ProjectName>.flow "uipath.core.flow.{key}" --output json \
   "id": "validateData",
   "type": "uipath.core.flow.629edef0-8ce8-428e-a922-3f8bf19ea682",
   "typeVersion": "1.0.0",
-  "ui": { "position": { "x": 400, "y": 300 } },
   "display": { "label": "Validate Data" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the flow",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the flow fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": {
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgenticProcess",

@@ -20,7 +20,7 @@ uip is connections list "<connector-key>" --output json
 uip is connections ping "<connection-id>" --output json
 ```
 
-**If no connection exists**, tell the user before proceeding — they must create one in the IS portal or via `uip is connections create "<connector-key>"`.
+**If `connections list` returns empty**, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
 ### Step 2 — Get enriched trigger metadata
 
@@ -93,6 +93,10 @@ uip is resources execute list "<connector-key>" "<reference.objectName>" \
 
 Use the resolved IDs in the trigger's event parameter configuration.
 
+> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
+
+**Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
+
 ### Step 4 — Validate required event parameters
 
 Check every field in `eventParameters.fields` where `required: true`. All required event parameters must have values before building the flow.
@@ -110,21 +114,7 @@ Each trigger type has a different output schema — field names like `.text`, `.
 
 ### Step 5 — Replace the manual trigger with the connector trigger node
 
-The trigger node replaces the default `core.trigger.manual` start node. **Use CLI commands — do NOT manually edit the JSON to remove the start node.** The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically.
-
-```bash
-# 1. Delete the manual trigger (also removes its edges and orphaned definition)
-uip flow node delete <PROJECT>.flow start --output json
-
-# 2. Add the connector trigger node
-uip flow node add <PROJECT>.flow <triggerNodeType> \
-  --label "Email Received" --position 200,144 --output json
-# → Note the generated node ID from the response (e.g., "emailReceived1")
-
-# 3. Re-wire the edge from the new trigger to the next node
-uip flow edge add <PROJECT>.flow <newTriggerId> <nextNodeId> \
-  --source-port output --target-port input --output json
-```
+Follow the [CLI: Replace manual trigger with connector trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.
 
 ### Step 6 — Configure the trigger node
 
@@ -138,7 +128,7 @@ uip flow node configure <PROJECT>.flow <triggerId> --detail '{
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
   "eventParameters": { "<paramName>": "<RESOLVED_VALUE>" },
-  "filterExpression": "((fields.<fieldName><`value`>))"
+  "filterExpression": "(contains(subject, 'urgent'))"
 }'
 ```
 
@@ -150,11 +140,78 @@ uip flow node configure <PROJECT>.flow <triggerId> --detail '{
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
 | `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
-| `filterExpression` | No | JMESPath filter using `((fields.<fieldName><`value`>))` syntax — omit to trigger on all events |
+| `filterExpression` | No | JMESPath filter expression — see [JMESPath Filter Expressions](#jmespath-filter-expressions) below. Omit to trigger on all events |
 
 The command populates `inputs.detail` (including the internal `configuration` blob) and creates workflow-level connection bindings.
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
+
+---
+
+## JMESPath Filter Expressions
+
+Filter expressions use JMESPath syntax to narrow which events fire the trigger. They are passed as a string in the `filterExpression` field of `--detail` (Step 6). Field names come from `filterFields` returned by `registry get` (Step 2).
+
+### Syntax Rules
+
+1. Wrap the full expression in parentheses: `(expression)`
+2. Field names are bare identifiers — no `fields.` prefix: `subject`, `fromAddress`, `status`
+3. String values use single quotes: `'value'`
+4. Use `==` / `!=` for equality/inequality comparisons
+5. Use functions for substring/prefix matching: `contains(field, 'value')`, `starts_with(field, 'value')`
+6. Use `&&` for AND, `||` for OR — not `and` / `or` keywords
+
+### Supported Functions and Operators
+
+| Syntax | Description | Example |
+|---|---|---|
+| `field == 'value'` | Exact match | `fromAddress == 'boss@example.com'` |
+| `field != 'value'` | Not equal | `status != 'read'` |
+| `contains(field, 'value')` | Field contains substring | `contains(subject, 'urgent')` |
+| `starts_with(field, 'value')` | Field starts with prefix | `starts_with(subject, 'RE:')` |
+
+### Combining Conditions
+
+| Operator | Meaning | Example |
+|---|---|---|
+| `&&` | AND — both must match | `(status == 'new' && contains(subject, 'urgent'))` |
+| `\|\|` | OR — either can match | `(status == 'new' \|\| status == 'updated')` |
+| `()` | Grouping for precedence | `((contains(name, 'Inbox') \|\| id != '123') && type == 'mail')` |
+
+### Examples
+
+| Scenario | `filterExpression` value |
+|---|---|
+| Emails containing "urgent" in subject | `(contains(subject, 'urgent'))` |
+| Emails from a specific sender | `(fromAddress == 'boss@example.com')` |
+| Specific folder AND subject match | `(parentFolderId == 'AAMk...' && contains(subject, 'E2e test'))` |
+| Multiple senders (OR) | `(fromAddress == 'a@ex.com' \|\| fromAddress == 'b@ex.com')` |
+| Exclude read emails | `(status != 'read')` |
+| Subject prefix match | `(starts_with(subject, 'RE:'))` |
+| Complex: folder match OR name match | `(contains(FolderName, 'Inbox') \|\| FolderId != '12345')` |
+
+### How to Build a Filter Expression from `filterFields`
+
+1. Run `registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array
+2. Each field object has a `name` (e.g., `fromAddress`, `subject`) — use these as the field argument
+3. Choose the syntax based on the user's intent:
+   - Exact match → `fieldName == 'value'`
+   - Exclusion → `fieldName != 'value'`
+   - Substring match → `contains(fieldName, 'value')`
+   - Prefix match → `starts_with(fieldName, 'value')`
+4. Combine multiple conditions with `&&` (AND) or `||` (OR)
+5. Wrap the full expression in parentheses
+6. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filterExpression` entirely
+
+### What NOT to Generate
+
+| Invalid expression | Why it fails | Valid replacement |
+|---|---|---|
+| `((fields.subject == 'test'))` | Double parens, `fields.` prefix | `(subject == 'test')` |
+| `` fields.fromAddress == `value` `` | Backtick quoting, `fields.` prefix | `(fromAddress == 'value')` |
+| `{ "condition": "equals", "field": "status" }` | Transform filter syntax, not JMESPath | `(status == 'new')` |
+| `subject contains 'test'` | English word order, not JMESPath function syntax | `(contains(subject, 'test'))` |
+| `((fields.subject<\`test\`>))` | Legacy placeholder template — not valid JMESPath | `(contains(subject, 'test'))` |
 
 ---
 
@@ -252,7 +309,7 @@ uip flow debug . --output json
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
-| Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `((fields.<fieldName><`value`>))` |
+| Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `(field == 'value')` or `(contains(field, 'value'))` — see [JMESPath Filter Expressions](#jmespath-filter-expressions) |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
 | `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
 
@@ -265,3 +322,4 @@ uip flow debug . --output json
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
 6. **Use `uip flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
+8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid in filter expressions. Using a field name not in that list produces a silent no-match at runtime

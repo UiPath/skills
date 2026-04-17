@@ -26,7 +26,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 1. **Confirm schema with the user before writing anything.** Show the designed schema (Step 4) and wait for explicit confirmation.
 2. **Always wire at least the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow. Wire `cancelled` and `timeout` to end nodes or handlers unless the user explicitly defers them.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
-4. **Validate after every change.** Run `uip flow validate <file> --output json` after writing the node and edges.
+4. **Validate after every change.** Run `uip flow validate <file> --format json` after writing the node and edges.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
 6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
 
@@ -183,7 +183,7 @@ Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quick
 After writing, validate:
 
 ```bash
-uip flow validate <file> --output json
+uip flow validate <file> --format json
 ```
 
 ### Surface: Flow — AppTask (deployed coded app)
@@ -195,7 +195,7 @@ Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask
 After writing, validate:
 
 ```bash
-uip flow validate <file> --output json
+uip flow validate <file> --format json
 ```
 
 ### Surface: Coded Agent

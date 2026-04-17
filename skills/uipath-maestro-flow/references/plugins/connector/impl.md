@@ -2,6 +2,8 @@
 
 How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, `bindings_v2.json` schema, and debugging.
 
+For generic node/edge add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+
 ## How Connector Nodes Differ from OOTB
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) bound in `bindings_v2.json`. Without it, the node cannot authenticate.
@@ -15,6 +17,10 @@ How to configure connector activity nodes: connection binding, enriched metadata
    - `queryParameters` — field-value pairs for query string parameters
 
 ---
+
+## Critical: Connector Definition Must Include `form`
+
+> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
 
 ## Configuration Workflow
 
@@ -36,9 +42,7 @@ uip is connections ping "<connection-id>" --output json
 
 **If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
 
-**If no connection exists**, tell the user before proceeding — they must create one in the IS portal or via `uip is connections create "<connector-key>"`.
-
-**Folder key note**: The `--folder-key` parameter specifies which Orchestrator folder to list/create connections in. If omitted, the CLI defaults to UiPath's Personal Workspace folder. If you have the folder path but not the folder key, refer to the Orchestrator CLI documentation to get the key first.
+**If `connections list` returns empty**, the CLI scoped to Personal Workspace by default — check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
 **Read [/uipath:uipath-platform — Integration Service — connections.md](/uipath:uipath-platform) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
 
@@ -86,6 +90,8 @@ uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=
 ```
 
 Use the resolved IDs (not display names) in the flow's node `inputs`. Present options to the user when multiple matches exist.
+
+> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including: identifying reference fields, dependency chains (resolve parent fields before children), pagination, describe failures, and fallback strategies.
 

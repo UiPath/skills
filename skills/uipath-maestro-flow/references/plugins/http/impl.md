@@ -12,6 +12,10 @@ uip flow registry get core.action.http --output json
 
 Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, required inputs `method` and `url`.
 
+## Critical: `model` Field
+
+> **Never hardcode the `model` field.** The HTTP node requires a `model.expansion` block for the BPMN engine to capture outputs into flow variables at runtime. Without it, `$vars.{nodeId}.output` will be `null` after execution even though the node completes successfully. Always copy the full `model` object from `uip flow registry get core.action.http --output json` → `Data.Node.model`. The examples below use `"<COPY_FROM_REGISTRY>"` as a placeholder — replace it with the actual model from the registry.
+
 ## JSON Structure
 
 ### Basic GET
@@ -32,7 +36,21 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
     "timeout": "PT15M",
     "retryCount": 0
   },
-  "model": { "type": "bpmn:ServiceTask" }
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
+  "model": "<COPY_FROM_REGISTRY>"
 }
 ```
 
@@ -53,7 +71,21 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
     "body": "=js:JSON.stringify({ name: $vars.recordName, type: $vars.recordType })",
     "contentType": "application/json"
   },
-  "model": { "type": "bpmn:ServiceTask" }
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
+  "model": "<COPY_FROM_REGISTRY>"
 }
 ```
 
@@ -81,7 +113,21 @@ Confirm: input port `input`, output ports `default` + dynamic `branch-{id}`, req
       }
     ]
   },
-  "model": { "type": "bpmn:ServiceTask" }
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the HTTP request",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the HTTP request fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
+  "model": "<COPY_FROM_REGISTRY>"
 }
 ```
 
@@ -101,14 +147,11 @@ When a connector exists but lacks the specific endpoint, use the connector's HTT
 }
 ```
 
-## Adding via CLI
+## Adding / Editing
 
-```bash
-uip flow node add <ProjectName>.flow core.action.http --output json \
-  --input '{"method": "GET", "url": "https://api.example.com/data"}' \
-  --label "Fetch Data" \
-  --position 300,200
-```
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+
+When using response branching, each branch creates a dynamic output port (`branch-{id}`). Unmatched responses go to `default`. See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
 
 ## Debug
 
