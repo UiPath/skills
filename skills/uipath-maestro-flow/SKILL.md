@@ -146,20 +146,26 @@ Use `registry search`/`list` to discover node types and connectors. Use `registr
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
+**Editing strategy: use CLI for node/edge CRUD, direct JSON for everything else.** Read [references/flow-editing-operations.md](references/flow-editing-operations.md) for the full strategy matrix. The common split:
+
+- **CLI** (`uip flow node add/update/delete`, `uip flow edge add/delete`, `uip flow variable add/delete`, `uip flow binding add`) — for adding, wiring, and removing nodes and edges, and for binding resources. The CLI auto-manages the `definitions` array, input serialization, and `bindings_v2.json` — hand-written JSON misses this metadata and causes silent runtime failures that pass local `validate`.
+- **Direct JSON edit** — for `variables`, `variableUpdates`, subflows, `outputs` mapping on End nodes, and in-place script-body / input tweaks.
+
 **Reference docs for this step:**
 - **[planning-arch.md](references/planning-arch.md)** — Capability discovery, Plugin Index (node-type catalog), external-service decision order, Standard Port Reference, Wiring Rules, Common Topology Patterns, Node Selection Heuristics. Use this to pick the right node types and wire them correctly.
 - **[planning-impl.md](references/planning-impl.md)** — Registry validation workflow, per-node `impl.md` lookup table, connector/resource resolution steps, Product Heuristics (agent vs workflow logic), and wiring constraints.
-- **[flow-editing-operations.md](references/flow-editing-operations.md)** — Strategy selection between CLI and direct JSON editing for each operation.
+- **[flow-editing-operations.md](references/flow-editing-operations.md)** — Full CLI vs direct-JSON strategy matrix per operation.
 
 **Build workflow:**
 
 1. If the flow uses connectors or published resources, run capability discovery ([planning-arch.md — Capability Discovery](references/planning-arch.md#capability-discovery)) to confirm they exist and connections are healthy.
 2. Select node types from the [Plugin Index](references/planning-arch.md#plugin-index); read each chosen plugin's `planning.md` for selection heuristics and `impl.md` for node-specific inputs and JSON structure.
-3. For every node type (including OOTB), run `uip flow registry get <nodeType> --output json` — copy the returned `definition` verbatim into the `.flow` file's `definitions` array.
-4. For connector nodes, bind the connection per [connector/impl.md](references/plugins/connector/impl.md).
-5. For resource nodes (RPA, agent, flow, etc.), resolve via `registry get` per the resource plugin's `impl.md`. Use `core.logic.mock` for unpublished resources.
-6. Wire edges according to the [Standard Port Reference](references/planning-arch.md#standard-port-reference) and [Wiring Rules](references/planning-arch.md#wiring-rules).
-7. Add global variables directly in the `.flow` JSON per [variables-and-expressions.md](references/variables-and-expressions.md). Every `out` variable must be mapped on every reachable End node.
+3. For every node type (including OOTB), run `uip flow registry get <nodeType> --output json` to confirm current ports, inputs, and the `definition` entry.
+4. **Add each node via `uip flow node add`** — do not hand-write node entries in the `.flow` file. The CLI copies the `definition` from the registry and sets `outputs`/`error` blocks correctly.
+5. **Wire edges via `uip flow edge add`** with matching `sourcePort` / `targetPort` from the [Standard Port Reference](references/planning-arch.md#standard-port-reference) and [Wiring Rules](references/planning-arch.md#wiring-rules).
+6. For connector nodes, bind the connection per [connector/impl.md](references/plugins/connector/impl.md) (`uip flow binding add`).
+7. For resource nodes (RPA, agent, flow, etc.), resolve via `registry get` per the resource plugin's `impl.md`, then add via CLI. Use `core.logic.mock` for unpublished resources.
+8. Edit the `.flow` JSON directly only for `variables.globals`, `variableUpdates`, subflow definitions, and End-node `outputs` mapping (see [variables-and-expressions.md](references/variables-and-expressions.md)). Every `out` variable must be mapped on every reachable End node.
 
 Build the full flow (trigger → actions → branches → end/terminate) in one pass. Do not validate between individual edits — intermediate states are expected to be invalid.
 
