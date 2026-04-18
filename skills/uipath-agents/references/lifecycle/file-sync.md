@@ -1,44 +1,43 @@
 # File Synchronization
 
+> **Agent type: Both coded and low-code agents.** The same `uip codedagents push` / `pull` commands work for both. For coded agents the primary files synced are `main.py`, `pyproject.toml`, `uv.lock`, and config JSONs. For low-code agents the primary file is `agent.json` (no `pyproject.toml` or `uv.lock`).
+
 Sync project files between local development and remote Studio Web storage.
 
 ## Quick Reference
 
 ```bash
 # Pull remote files to local
-uip codedagent pull
+uip codedagents pull
 
 # Push local files to remote (mirrors local state)
-uip codedagent push
+uip codedagents push
 
 # Force overwrite without prompts
-uip codedagent push --overwrite
-uip codedagent pull --overwrite
+uip codedagents push --overwrite
+uip codedagents pull --overwrite
 ```
 
 ## Documentation
 
-- **[File Sync Guide](file-sync.md)** — Complete sync workflow
-  - Push and pull commands with all options
-  - `UIPATH_PROJECT_ID` setup
-  - Conflict resolution strategies
-  - Common workflows (clone, collaborate, CI/CD)
-  - Troubleshooting
+- **[Authentication](authentication.md)** — Required before push or pull
+- **[Deployment](deployment.md)** — Deploy after syncing
+- **[Running Agents](running-agents.md)** — Test locally before pushing changes
 
 ## Prerequisites
 
-- Authentication configured — if not authenticated, use the [authentication reference](../../authentication.md) first
-- `UIPATH_PROJECT_ID` set in `.env` or environment — also required by the [evaluate reference](evaluate.md) when reporting evaluation results to Studio Web (`--report` flag)
+- Authentication configured — if not authenticated, use the [authentication reference](authentication.md) first
+- `UIPATH_PROJECT_ID` set in `.env` or environment — also required by the [eval workflow](evaluations/eval-workflow.md) when reporting evaluation results to Studio Web (`--report` flag)
 
 ## Troubleshooting
 
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `UIPATH_PROJECT_ID environment variable not found` | Missing project ID in `.env` | Create a Coded Agent project in Studio Web, copy its ID, add `UIPATH_PROJECT_ID=<id>` to `.env` |
-| `Your local version is behind the remote version. Aborted!` | Push requires interactive confirmation that CLI cannot provide | Use `uip codedagent push --overwrite` to force push |
+| `Your local version is behind the remote version. Aborted!` | Push requires interactive confirmation that CLI cannot provide | Use `uip codedagents push --overwrite` to force push |
 | Push deleted unexpected files | Push mirrors local state — removes remote files not present locally | This is by design. Review local files before pushing |
-| `Conflict on pull` | Remote and local both changed | Use `uip codedagent pull --overwrite` to force remote, or manually resolve differences |
-| `401 Unauthorized` | Auth expired | Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` |
+| `Conflict on pull` | Remote and local both changed | Use `uip codedagents pull --overwrite` to force remote, or manually resolve differences |
+| `401 Unauthorized` | Auth expired | Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` |
 
 ## Additional Instructions
 
@@ -86,12 +85,12 @@ export UIPATH_PROJECT_ID=12345
 Or inline for a single command:
 
 ```bash
-UIPATH_PROJECT_ID=12345 uip codedagent push
+UIPATH_PROJECT_ID=12345 uip codedagents push
 ```
 
 ### Authentication
 
-Run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` to configure your credentials. This sets up:
+Run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to configure your credentials. This sets up:
 - `UIPATH_URL` - Your UiPath instance URL
 - `UIPATH_ACCESS_TOKEN` - Bearer token for API access
 - `UIPATH_TENANT_NAME` - Your tenant identifier
@@ -103,7 +102,7 @@ Run `uip login --output json` then `uip login tenant set "<TENANT>" --output jso
 Download remote project files to your local environment.
 
 ```bash
-uip codedagent pull
+uip codedagents pull
 ```
 
 ### What It Does
@@ -123,12 +122,12 @@ uip codedagent pull
 
 **Pull remote files (with confirmation on conflicts):**
 ```bash
-uip codedagent pull
+uip codedagents pull
 ```
 
 **Pull and automatically overwrite local changes:**
 ```bash
-uip codedagent pull --overwrite
+uip codedagents pull --overwrite
 ```
 
 ### Use Cases
@@ -145,7 +144,7 @@ uip codedagent pull --overwrite
 Upload local project files to remote storage, keeping remote in sync with local state.
 
 ```bash
-uip codedagent push
+uip codedagents push
 ```
 
 ### What It Does
@@ -167,22 +166,24 @@ uip codedagent push
 
 **Push with confirmation prompts:**
 ```bash
-uip codedagent push
+uip codedagents push
 ```
 
 **Push and skip confirmation (batch/automation):**
 ```bash
-uip codedagent push --overwrite
+uip codedagents push --overwrite
 ```
 
 **Push without updating dependencies lock:**
 ```bash
-uip codedagent push --nolock
+uip codedagents push --nolock
 ```
+
+> **Low-code agents:** The `--nolock` flag is not relevant (no `uv.lock` file).
 
 **Push without syncing resources:**
 ```bash
-uip codedagent push --ignore-resources
+uip codedagents push --ignore-resources
 ```
 
 ### Use Cases
@@ -202,13 +203,13 @@ If local files differ from remote, you have two options:
 
 **Option 1: Review and confirm each conflict**
 ```bash
-uip codedagent pull
+uip codedagents pull
 # Interactive prompts will ask about each conflicting file
 ```
 
 **Option 2: Auto-overwrite local files with remote**
 ```bash
-uip codedagent pull --overwrite
+uip codedagents pull --overwrite
 ```
 
 ### Push with Conflicts
@@ -217,13 +218,13 @@ If remote files differ from local, you have two options:
 
 **Option 1: Review and confirm each change**
 ```bash
-uip codedagent push
+uip codedagents push
 # Interactive prompts will ask about each file to overwrite
 ```
 
 **Option 2: Force push local state (overwrite all remote files)**
 ```bash
-uip codedagent push --overwrite
+uip codedagents push --overwrite
 ```
 
 ---
@@ -240,13 +241,13 @@ UIPATH_PROJECT_ID=my-project-123
 Then work with your project:
 ```bash
 # Pull all remote files to local
-uip codedagent pull
+uip codedagents pull
 
 # Make changes locally
 # ... edit your files ...
 
 # Push changes back to remote
-uip codedagent push
+uip codedagents push
 ```
 
 ### Workflow 2: Collaborative Development
@@ -258,16 +259,16 @@ UIPATH_PROJECT_ID=shared-project
 
 **Developer A:**
 ```bash
-uip codedagent pull          # Get latest from team
+uip codedagents pull          # Get latest from team
 # ... make changes ...
-uip codedagent push --overwrite  # Push back
+uip codedagents push --overwrite  # Push back
 ```
 
 **Developer B:**
 ```bash
-uip codedagent pull --overwrite  # Get latest from Developer A
+uip codedagents pull --overwrite  # Get latest from Developer A
 # ... make their own changes ...
-uip codedagent push --overwrite
+uip codedagents push --overwrite
 ```
 
 ### Workflow 3: Automated Sync in CI/CD
@@ -283,9 +284,9 @@ Script:
 set -e
 
 # Sync files
-uip codedagent pull --overwrite
+uip codedagents pull --overwrite
 # ... run tests or build ...
-uip codedagent push --overwrite
+uip codedagents push --overwrite
 ```
 
 ### Workflow 4: Selective Sync (Skip Resources)
@@ -298,10 +299,10 @@ UIPATH_PROJECT_ID=my-project
 Then selectively sync:
 ```bash
 # Push code without syncing resource files
-uip codedagent push --ignore-resources
+uip codedagents push --ignore-resources
 
 # Later, sync resources separately
-uip codedagent push
+uip codedagents push
 ```
 
 ---
@@ -319,6 +320,8 @@ uip codedagent push
 | `uv.lock` | Dependency lock file (can skip with `--nolock`) |
 | `.py`, `.json`, `.yaml` files | Project source files |
 
+> **Low-code agents:** The primary file synced is `agent.json`. No `pyproject.toml`, `main.py`, or `uv.lock` files are involved.
+
 ### Files Excluded from Sync
 
 - `__pycache__/` - Python cache
@@ -326,6 +329,8 @@ uip codedagent push
 - `.env` - Environment variables (don't sync secrets!)
 - `.uipath/` - Build artifacts
 - Other files based on `packOptions` in `uipath.json`
+
+> **After pulling on a new machine:** `.env` is excluded from sync for security. After pulling, manually recreate `.env` with `UIPATH_PROJECT_ID=<id>` and re-run `uip login --format json` + `uip login tenant set "<TENANT>" --format json` to restore credentials.
 
 ---
 
@@ -357,7 +362,7 @@ See [Environment Setup](#environment-setup) above for how to set these.
    - Use environment variables or secure vaults instead
 
 4. **Test Before Pushing**
-   - Test your local changes with `uip codedagent run`
+   - Test your local changes with `uip codedagents run`
    - Verify everything works before pushing to remote
 
 5. **Use Version Control Locally**
@@ -384,14 +389,14 @@ UIPATH_PROJECT_ID=your-project-id
 Or set it as an environment variable:
 ```bash
 export UIPATH_PROJECT_ID=your-project-id
-uip codedagent push
+uip codedagents push
 ```
 
 ### "Authentication failed"
 
 **Error:** Command fails with "Unauthorized" or "Invalid token"
 
-**Solution:** Re-run `uip login --output json` then `uip login tenant set "<TENANT>" --output json` to refresh credentials.
+**Solution:** Re-run `uip login --format json` then `uip login tenant set "<TENANT>" --format json` to refresh credentials.
 
 ### "Files were unexpectedly deleted"
 
@@ -409,8 +414,8 @@ uip codedagent push
 **Solution:** Choose a strategy:
 ```bash
 # Keep local version (push --overwrite)
-uip codedagent push --overwrite
+uip codedagents push --overwrite
 
 # Keep remote version (pull --overwrite)
-uip codedagent pull --overwrite
+uip codedagents pull --overwrite
 ```
