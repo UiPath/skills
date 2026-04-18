@@ -41,12 +41,15 @@ During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskType
 
 ## CLI Shape
 
+> Skeletons take `--lane <n>` the same way full tasks do — one task per lane index for FE readability. Lane is layout only; it carries no execution semantics.
+
 ### Non-connector tasks
 
 ```bash
 uip case tasks add <file> <stage-id> \
   --type <process|agent|rpa|action|api-workflow|case-management> \
   --display-name "<name>" \
+  --lane <n> \
   [--is-required] \
   [--should-run-only-once] \
   --output json
@@ -60,6 +63,7 @@ uip case tasks add <file> <stage-id> \
 uip case tasks add-connector <file> <stage-id> \
   --type <activity|trigger> \
   --display-name "<name>" \
+  --lane <n> \
   --output json
 ```
 
@@ -94,9 +98,9 @@ Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output w
 
 ## `tasks.md` Planning-Entry Shape
 
-A skeleton-bound entry keeps every structural field and moves the lost wiring into a comment block the user will act on later:
+A skeleton-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:
 
-```markdown
+````markdown
 ## T20: Add process task "Validate Submission Completeness" to "Submission Review"
 - taskTypeId: <UNRESOLVED: process-index.json empty in tenant>
 - folder-path: <UNRESOLVED>
@@ -104,15 +108,17 @@ A skeleton-bound entry keeps every structural field and moves the lost wiring in
 - isRequired: true
 - order: after T19
 - verify: Confirm Result: Success, capture TaskId (skeleton — user to attach process + bindings)
-# wiring notes (user must attach after publishing the process):
-#   lob = =metadata.lob
-#   sourceDocs <- "Submission Review"."Fetch Submission from U Submit".submissionData
-#   outputs expected: submissionComplete, missingItems, tier
+```text
+wiring notes (user must attach after publishing the process):
+  lob = =metadata.lob
+  sourceDocs <- "Submission Review"."Fetch Submission from U Submit".submissionData
+  outputs expected: submissionComplete, missingItems, tier
 ```
+````
 
 Rules:
 - **Omit `inputs:` and `outputs:` lines** — no schema to wire against.
-- **Capture the intended wiring in a `# wiring notes` comment block** so the user sees the mapping when they upgrade.
+- **Capture the intended wiring in a fenced ```` ```text ```` code block** so the user sees the mapping when they upgrade. **Do not start wiring lines with `#`** — they would render as markdown H1 headings; the fenced code block renders as preformatted text.
 - **Keep every other field** — order, verify, is-required, run-only-once, display-name.
 
 ## What Validation Catches
@@ -152,7 +158,7 @@ There is no single `tasks edit --task-type-id` flag today. The upgrade path depe
 
 ### 4. Bind inputs and outputs
 
-Use the `# wiring notes` block from `tasks.md` as the reference. For each input:
+Use the fenced `wiring notes` code block from `tasks.md` as the reference. For each input:
 
 ```bash
 # Literal / expression

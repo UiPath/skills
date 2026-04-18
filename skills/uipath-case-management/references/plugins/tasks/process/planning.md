@@ -38,7 +38,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 If no match is found across both cache files after `uip case registry pull --force`:
 
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
-- Omit `inputs:` and `outputs:`; capture intended wiring in a `# wiring notes` comment block.
+- Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
 - Continue planning for remaining tasks.
 - Execution creates a skeleton task (no `--task-type-id`, no bindings). See [skeleton-tasks.md](../../../skeleton-tasks.md).
 
@@ -55,5 +55,6 @@ If no match is found across both cache files after `uip case registry pull --for
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
+- lane: <n>  # FE layout coordinate; increment per task within the stage
 - verify: Confirm Result: Success, capture TaskId
 ```

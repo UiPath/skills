@@ -28,7 +28,7 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a `# wiring notes` comment block. Execution creates a skeleton task — see [skeleton-tasks.md](../../../skeleton-tasks.md).
+Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a skeleton task — see [skeleton-tasks.md](../../../skeleton-tasks.md).
 
 ## tasks.md Entry Format
 
@@ -42,5 +42,6 @@ Mark `<UNRESOLVED: api-workflow "<name>" in folder "<folder>" not found in api-i
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
+- lane: <n>  # FE layout coordinate; increment per task within the stage
 - verify: Confirm Result: Success, capture TaskId
 ```

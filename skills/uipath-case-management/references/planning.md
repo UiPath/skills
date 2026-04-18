@@ -90,7 +90,7 @@ For every task, trigger, and condition in the sdd.md:
 When a resource cannot be resolved (CLI gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `type-id` / `connection-id` slot.
-2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a `# wiring notes (user must attach):` comment block under the entry for later manual setup.
+2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [skeleton-tasks.md § `tasks.md` Planning-Entry Shape](skeleton-tasks.md).
 3. Keep every other structural field (display-name, isRequired, runOnlyOnce, order). Task-entry conditions still emit normally.
 4. **Continue planning — do not halt.**
 
@@ -158,13 +158,14 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `true` if not specified)
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — dependency on previous tasks (`after T05`, etc.)
+- **lane** — FE layout coordinate (integer, increments per task within the stage starting at 0)
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
 > **No `uip` commands in task entries.** Each task is a declarative specification. Never write shell commands inside a task body — the execution phase translates specs into CLI calls.
 
-> **Lane concept is not used.** All tasks go into `tasks[0]`. Do not set `--lane`.
+> **Record `lane: <n>` per task** (incrementing within each stage, starting at 0). Lane is a FE layout coordinate with no execution semantics — task ordering and parallelism are expressed via task-entry conditions, not lanes.
 
 > **Skeleton shape for unresolved resources.** If `taskTypeId` / `type-id` / `connection-id` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [skeleton-tasks.md](skeleton-tasks.md) for the full pattern and upgrade path.
 
@@ -198,4 +199,4 @@ Use **AskUserQuestion** with options: `Approve and proceed`, `Request changes`.
 
 If the user requests changes, update `tasks.md` and re-present. Do NOT proceed to the Implementation Phase until the user explicitly approves.
 
-**After approval:** run `/compact` (if supported by your runner) to free planning-phase context, then re-read `tasks.md` before proceeding to the [Implementation Phase](implementation.md). `tasks.md` is the complete handoff artifact — all resolved IDs, inputs, outputs, and references are captured there.
+**After approval:** re-read `tasks.md` before proceeding to the [Implementation Phase](implementation.md). `tasks.md` is the complete handoff artifact — all resolved IDs, inputs, outputs, and references are captured there.

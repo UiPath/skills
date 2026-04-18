@@ -60,7 +60,7 @@ uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
 
 **Binding order.** Process tasks in the order listed in `tasks.md` (already dependency-sorted by `order: after T<n>`). Bind each task's inputs immediately after adding it. If a cross-task reference points to a task not yet added, halt — `tasks.md` ordering is wrong; report to the user.
 
-**Lane concept is not used.** Do not pass `--lane`. All tasks go into lane 0 by default.
+**Pass `--lane <n>` on every task add**, incrementing per task within a stage (starting at 0). Lane is a FE layout coordinate; it does not affect execution. Sequencing and parallelism come from task-entry conditions.
 
 ### Step 9.1 — Skeleton tasks for unresolved resources
 
@@ -86,7 +86,7 @@ uip case tasks add-connector <file> <stage-id> \
   --output json
 ```
 
-**Skip `uip case var bind` entirely for skeleton tasks** — it rejects bindings without a resolved task-type schema. Capture the intended wiring from the `# wiring notes` block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip `uip case var bind` entirely for skeleton tasks** — it rejects bindings without a resolved task-type schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
 
 Skeleton tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured skeleton `TaskId` normally.
