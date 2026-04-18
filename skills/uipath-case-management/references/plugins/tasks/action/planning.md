@@ -32,7 +32,7 @@ See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for 
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:` and the `task-title:` line; capture intended wiring in a `# wiring notes` comment block. Execution creates a skeleton action task (no `--task-type-id`, no `--task-title`) — see [skeleton-tasks.md](../../../skeleton-tasks.md).
+Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:` and the `task-title:` line; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a skeleton action task (no `--task-type-id`, no `--task-title`) — see [skeleton-tasks.md](../../../skeleton-tasks.md).
 
 ## Recipient Handling
 
@@ -63,5 +63,6 @@ This follows Critical Rule #19 — for open-ended inputs like an email address, 
 - outputs: decision, comments
 - isRequired: true
 - order: after T<m>
+- lane: <n>  # FE layout coordinate; increment per task within the stage
 - verify: Confirm Result: Success, capture TaskId
 ```

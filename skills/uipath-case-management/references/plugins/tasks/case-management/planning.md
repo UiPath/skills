@@ -33,7 +33,7 @@ If sdd.md describes a simple stage-to-stage flow within the same case, do not us
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagement-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a `# wiring notes` comment block. Execution creates a skeleton task — see [skeleton-tasks.md](../../../skeleton-tasks.md). Note: if the referenced sub-case has not been deployed yet, it will not appear in the registry — the user must deploy it before the parent case can reference it.
+Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagement-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a skeleton task — see [skeleton-tasks.md](../../../skeleton-tasks.md). Note: if the referenced sub-case has not been deployed yet, it will not appear in the registry — the user must deploy it before the parent case can reference it.
 
 ## tasks.md Entry Format
 
@@ -47,5 +47,6 @@ Mark `<UNRESOLVED: case "<name>" in folder "<folder>" not found in caseManagemen
 - runOnlyOnce: true
 - isRequired: true
 - order: after T<m>
+- lane: <n>  # FE layout coordinate; increment per task within the stage
 - verify: Confirm Result: Success, capture TaskId
 ```

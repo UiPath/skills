@@ -115,7 +115,7 @@ Standard workflow stage. Contains tasks.
 | Field | Type | Description |
 |-------|------|-------------|
 | `label` | string? | Display label |
-| `tasks` | Task[][]? | 2D array: `tasks[lane][index]`. The skill writes all tasks into `tasks[0]` — lane concept is not used. |
+| `tasks` | Task[][]? | 2D array: `tasks[lane][index]`. The skill places one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns. Lane has no execution meaning — sequencing and parallelism live in task-entry conditions. |
 | `sla` | SlaSchema? | SLA for this stage |
 | `entryConditions` | EntryCondition[]? | See §3 |
 | `exitConditions` | ExitCondition[]? | See §3 |

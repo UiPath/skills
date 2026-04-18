@@ -57,5 +57,6 @@ Discover exact keys from the `describe` response. Use resolved IDs (not display 
 - input-values: {"body":{"field":"value"},"queryParameters":{"key":"val"}}
 - isRequired: true
 - order: after T<m>
+- lane: <n>  # FE layout coordinate; increment per task within the stage
 - verify: Confirm Result: Success, capture TaskId
 ```

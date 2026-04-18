@@ -356,12 +356,11 @@ Output: `{ File, StageId, TaskId, InputName, Value, [SourceStage, SourceTask, So
 Manage tasks within a stage node.
 
 ```bash
-# Add a task to a stage (lane 0 by default)
-uip case tasks add <file> <stage-id> --type process --display-name "Run KYC" --name "KYC" --folder-path "Shared"
-uip case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-title "Review" --priority High
-uip case tasks add <file> <stage-id> --type agent --display-name "AI Scoring" --should-run-only-once
-uip case tasks add <file> <stage-id> --type wait-for-timer
-uip case tasks add <file> <stage-id> --type process --lane 1  # parallel lane
+# Add a task to a stage — pass --lane <n>, one index per task within the stage (FE layout only)
+uip case tasks add <file> <stage-id> --type process --display-name "Run KYC" --name "KYC" --folder-path "Shared" --lane 0
+uip case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-title "Review" --priority High --lane 1
+uip case tasks add <file> <stage-id> --type agent --display-name "AI Scoring" --should-run-only-once --lane 2
+uip case tasks add <file> <stage-id> --type wait-for-timer --lane 3
 
 # Add a task and inline-enrich with API bindings (process/agent/rpa/action/api-workflow/case-management)
 uip case tasks add <file> <stage-id> --type process --task-type-id <entityKey> --display-name "KYC"
@@ -411,7 +410,7 @@ Valid task types:
 | `execute-connector-activity` | Execute a connector action |
 | `case-management` | Sub-case process |
 
-Tasks are stored as a 2D array: `tasks[lane][index]`. Use `--lane <n>` to place tasks in parallel execution lanes.
+Tasks are stored as a 2D array: `tasks[lane][index]`. `--lane <n>` is a FE layout coordinate only — it does not imply parallel execution. Parallelism is controlled by task-entry conditions.
 
 Options for `add`:
 | Flag | Description |
@@ -420,7 +419,7 @@ Options for `add`:
 | `-d, --display-name <name>` | Display name for the task |
 | `-n, --name <name>` | Process or workflow name |
 | `--folder-path <path>` | Folder path for the process or workflow |
-| `--lane <n>` | Parallel lane index (default: `0`) |
+| `--lane <n>` | FE layout coordinate (default: `0`). Pass a unique index per task within a stage; layout only, no execution impact. |
 | `--task-type-id <id>` | Entity key / action-app ID to auto-enrich with bindings, inputs, and outputs (enrichable types only) |
 | `--should-run-only-once` | Whether the task should run only once |
 | `--description <text>` | Description of the task |
@@ -436,7 +435,7 @@ Options for `add-connector`:
 | `--type-id <id>` | **(required)** `uiPathActivityTypeId` UUID from the TypeCache |
 | `--connection-id <id>` | **(required)** Connection UUID to bind to the task |
 | `-d, --display-name <name>` | Override display name for the task |
-| `--lane <n>` | Parallel lane index (default: `0`) |
+| `--lane <n>` | FE layout coordinate (default: `0`). Pass a unique index per task within a stage; layout only, no execution impact. |
 | `--input-values <json>` | JSON object of input values keyed by input name (use `tasks describe` to discover names) |
 | `--filter <expression>` | Filter expression for trigger type |
 

@@ -34,7 +34,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 7. **One T-entry per sdd.md declaration — no omissions.** Every stage, edge, task, trigger, condition, and SLA rule declared in `sdd.md` gets its own T-numbered entry, even when the declared value looks like a "default" (e.g., condition rule-type `current-stage-entered` / `case-entered`, stage-exit type `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`). Never group multiple items under one T-number. Never skip a declaration on the grounds that "the default behavior would already cover it" — if `sdd.md` wrote it down, `tasks.md` must emit a T-task for it.
 8. **Always regenerate `tasks.md` from scratch** — never do incremental updates. Avoids stale state from previous runs.
 9. **HARD STOP before execution.** After generating `tasks.md`, present it to the user and require explicit approval via **AskUserQuestion** (`Approve and proceed` / `Request changes`). Do not execute until approved.
-10. **After approval, run `/compact` if supported by the runner**, then re-read `tasks.md`. `tasks.md` is the complete handoff artifact — all IDs, inputs, outputs, and references are captured there.
+10. **After approval, re-read `tasks.md` before executing.** `tasks.md` is the complete handoff artifact — all IDs, inputs, outputs, and references are captured there.
 11. **Unresolved task resources produce skeleton tasks — never mock, never fabricate.** Keep the `<UNRESOLVED: ...>` marker on the `taskTypeId` / `type-id` / `connection-id` slot in `tasks.md`, and omit `inputs:` / `outputs:` from that task entry. At execution time, the task is created in `caseplan.json` with `--type` + `--display-name` only (skeleton task) — no task-type-id, no connection-id, no variable bindings. Task-entry conditions and `selected-tasks-completed` rules still reference the skeleton's `TaskId`, so the workflow structure stays reviewable. The user attaches the real resource + bindings externally before runtime. See [references/skeleton-tasks.md](references/skeleton-tasks.md). Never fabricate a task-type-id or connection-id to "fill the gap".
 12. **Persist every registry resolution to `registry-resolved.json`** with full detail: search query, all matched results, selected result, rationale. This is the debug audit trail.
 13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `--source-stage <id> --source-task <id> --source-output <name>` at execution time. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md).
@@ -42,7 +42,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 15. **Connector integration uses the 3-step pipeline**: `get-connector` → `get-connection` → (optional) `tasks describe --connection-id`. One plugin (`connector-activity` / `connector-trigger` / event-`trigger`) per integration pattern — schema is data-driven. See [references/connector-integration.md](references/connector-integration.md).
 16. **Enrichable non-connector task types** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`) pass `--task-type-id` on `tasks add` to auto-populate inputs/outputs. Connector variants use `tasks add-connector` with `--type-id` + `--connection-id` instead.
 17. **Every stage needs at least one inbound edge** or it will be orphaned. The Trigger node created automatically by `cases add` is the entry point for all single-trigger cases.
-18. **No lanes.** All tasks go into `tasks[0]` of the stage's `tasks` 2D array. Do not pass `--lane`.
+18. **One task per lane (UI layout only).** Pass `--lane <n>` on every `tasks add` / `tasks add-connector`, incrementing `n` per task within a stage. Lane is a rendering coordinate for the FE — it does not affect execution. Parallelism and sequencing are controlled entirely by task-entry conditions.
 19. **User questions use AskUserQuestion with a "Something else" escape hatch.** Whenever a decision has finite enumerable choices (≤5), present a dropdown with those options AND "Something else" as the last option. For open-ended inputs (e.g., `--every 1h` vs `2h` vs `1d`), use a direct prompt. Never force a false choice.
 20. **Validate after build, not during.** Run `uip case validate` only after all stages, edges, tasks, conditions, and SLA are added. Intermediate states are expected to be invalid. Retry up to 3× on failure; on the 3rd failure, halt and ask the user with options: `Retry with fix` / `Pause for manual edit` / `Abort`.
 21. **Never run `uip case debug` automatically** — it executes the case for real (sends emails, posts messages, calls APIs). Only run on explicit user consent.
@@ -75,7 +75,7 @@ Present `tasks.md` to the user for approval. **Do NOT proceed until the user exp
 7. Validate (Step 12)
 8. Post-build loop (Step 13) — AskUserQuestion dropdown for next steps; loop until user selects `Done`
 
-After the user approves `tasks.md`: run `/compact` (if supported by your runner) to free planning-phase context, then re-read `tasks.md` before proceeding.
+After the user approves `tasks.md`, re-read `tasks.md` before proceeding.
 
 ## Quick Start
 
@@ -121,9 +121,9 @@ Order: stages → edges → tasks → conditions → SLA. One T-numbered entry p
 
 **AskUserQuestion**: `Approve and proceed` / `Request changes`. Loop on `Request changes`. Do not execute without explicit approval.
 
-### Step 6 — /compact and execute
+### Step 6 — Re-read tasks.md and execute
 
-Run `/compact` (if runner supports), re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute each T-entry in order. Open the matching plugin's `impl.md` for each task/trigger/condition.
+Re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute each T-entry in order. Open the matching plugin's `impl.md` for each task/trigger/condition.
 
 ### Step 7 — Validate
 
@@ -209,7 +209,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe the condition in natural language; the execution phase determines the exact expression form.
 - **Do NOT fabricate task-type-ids or connection-ids.** When a resource is unresolved, use skeleton-task creation: `tasks add --type <t> --display-name <n>` with no `--task-type-id`, and for connectors `tasks add-connector --type <t> --display-name <n>` with no `--type-id` / `--connection-id`. Skip input/output bindings entirely — `var bind` needs a resolved schema. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
 - **Do NOT invoke other skills automatically.** If the case needs a process, agent, or action that doesn't exist, emit a skeleton task (per Rule #11) and list the missing resources in the completion report so the user can register them externally. On-demand resource creation is a future milestone, not today.
-- **Do NOT pass `--lane` to `tasks add`.** Lane concept is not used.
+- **Do NOT place multiple tasks in the same lane.** The FE renders same-lane tasks stacked in one column, which is unreadable for non-trivial stages. Give each task its own `--lane` index. Lane carries no execution semantics — it's layout only.
 - **Do NOT edit `content/*.bpmn` files.** They are auto-generated and will be overwritten.
 - **Do NOT run `uip case debug` automatically.** It executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.
 - **Do NOT execute CLI commands in parallel.** Each command may depend on IDs returned by the previous one — run them sequentially.

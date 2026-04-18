@@ -57,5 +57,6 @@ If the filter cannot be translated unambiguously, ask the user.
 - filter: "((fields.status=`Open`))"
 - isRequired: true
 - order: after T<m>
+- lane: <n>  # FE layout coordinate; increment per task within the stage
 - verify: Confirm Result: Success, capture TaskId
 ```
