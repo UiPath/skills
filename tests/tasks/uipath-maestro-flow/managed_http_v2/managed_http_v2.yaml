@@ -5,7 +5,7 @@ description: >
   core.action.http v1 — the http plugin mandates v2 for all HTTP requests,
   including manual-auth calls. Verifies the agent chooses v2 and does not fall
   back to the legacy v1 node type.
-tags: [uipath-maestro-flow, e2e, generate, ootb]
+tags: [uipath-maestro-flow, integration, generate, ootb]
 max_iterations: 1
 
 agent:
