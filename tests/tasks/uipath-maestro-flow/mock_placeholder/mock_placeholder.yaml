@@ -1,0 +1,74 @@
+task_id: skill-flow-mock-placeholder
+description: >
+  Create a UiPath Flow that references an RPA process that has not yet been
+  published to the tenant. Per Critical Rule 14 and Anti-Pattern 7, the agent
+  must insert a core.logic.mock placeholder and tell the user which skill to
+  invoke (uipath-rpa) to create the real process — not hallucinate a resource
+  key, and not chain to another skill automatically. Local-only: no cloud
+  debug is performed because the mock node produces no side effects.
+tags: [uipath-maestro-flow, e2e, generate, ootb, mock]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "MockInvoicePipeline" that triggers
+  manually, invokes an RPA process called "GenerateInvoicePdf" to produce a
+  PDF from an invoice number, and returns the resulting file path as a string
+  output.
+
+  The RPA process "GenerateInvoicePdf" does NOT exist in the tenant yet.
+
+  Also save a report to report.json summarizing what you did, including which
+  skill the user should use to create the missing process:
+    {
+      "project_name": "MockInvoicePipeline",
+      "missing_resource": "GenerateInvoicePdf",
+      "next_skill": "<name of the skill that creates RPA processes>"
+    }
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Do NOT invoke other skills automatically. Only produce the handoff instructions in report.json.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip flow validate passes on the flow file"
+    command: "uip flow validate MockInvoicePipeline/MockInvoicePipeline/MockInvoicePipeline.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Structural check: mock node is present --
+  - type: run_command
+    description: "Flow contains a core.logic.mock placeholder (not a hallucinated rpa node)"
+    command: "python3 $TASK_DIR/check_mock_placeholder.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # -- Handoff: report points to the correct skill --
+  - type: json_check
+    description: "report.json names uipath-rpa as the skill that creates the missing process"
+    path: "report.json"
+    assertions:
+      - expression: "missing_resource"
+        operator: equals
+        expected: "GenerateInvoicePdf"
+      - expression: "next_skill"
+        operator: contains
+        expected: "uipath-rpa"
+    weight: 2.0
+    pass_threshold: 1.0

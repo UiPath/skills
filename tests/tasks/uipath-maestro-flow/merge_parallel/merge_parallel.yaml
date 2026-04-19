@@ -1,0 +1,53 @@
+task_id: skill-flow-merge-parallel
+description: >
+  Create a UiPath Flow that fans out to two parallel HTTP calls (Seattle and
+  Phoenix open-meteo), then synchronizes them with a Merge node before
+  returning both temperatures. Exercises the core.logic.merge plugin and the
+  parallel-execution-with-merge topology pattern — neither is covered by any
+  existing test.
+tags: [uipath-maestro-flow, e2e, generate, ootb]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "ParallelCityWeather" that fetches the
+  current temperature for Seattle and Phoenix in parallel from open-meteo
+  (https://api.open-meteo.com/v1/forecast with latitude/longitude and
+  current=temperature_2m, temperature_unit=fahrenheit), synchronizes both
+  branches with a Merge node, and returns both temperatures in a single
+  output containing the strings "Seattle" and "Phoenix".
+
+  Both HTTP calls must run in parallel (fan out from the trigger, converge at
+  the Merge node) — do not wire them sequentially.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip flow validate passes on the flow file"
+    command: "uip flow validate ParallelCityWeather/ParallelCityWeather/ParallelCityWeather.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Structural and execution checks --
+  - type: run_command
+    description: "Flow contains a merge node with two parallel HTTP inputs and debug returns both cities"
+    command: "python3 $TASK_DIR/check_merge_parallel.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
