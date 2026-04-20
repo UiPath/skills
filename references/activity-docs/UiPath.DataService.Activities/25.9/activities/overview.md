@@ -76,11 +76,18 @@ Using `udd:IEntity` produces: `Selected Entity type (UiPath.DataService.Definiti
 | Property | Type | Default | Category | Description |
 |----------|------|---------|----------|-------------|
 | `EntityId` | `InArgument<Guid>` | — | — | Entity GUID from `EntitiesStore.json` → `Entities[].Id` |
-| `ScopeValue` | `InArgument<string>` | `"Tenant"` | — | `"Folder"` or `"Tenant"`. Use Folder when project has a SolutionId; Tenant for standalone. See [Solution Context](#solution-context-folder-vs-tenant-scope) |
-| `SolutionEntityKey` | `InArgument<string>` | `{x:Null}` | — | Solution resource key for the entity. Set only when ScopeValue is Folder |
-| `SolutionEntityName` | `InArgument<string>` | `{x:Null}` | — | Entity display name in the solution. Set only when ScopeValue is Folder |
 | `ContinueOnError` | `InArgument<bool>` | `false` | Common | Continue workflow on activity error |
 | `TimeoutInMs` | `InArgument<int>` | `30000` | Common | Timeout in milliseconds |
+
+### Solution Scope Properties (Conditional)
+
+> **These properties only apply when the project has a SolutionId** (i.e., is part of a Data Service solution). For standalone projects without a SolutionId, **omit these properties entirely** — they have no effect and setting them on a standalone project may cause unexpected behavior. See [Solution Context](#solution-context-folder-vs-tenant-scope) for how to determine scope.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ScopeValue` | `InArgument<string>` | `"Tenant"` | `"Folder"` or `"Tenant"`. Use Folder when project has a SolutionId; Tenant for standalone. See [Solution Context](#solution-context-folder-vs-tenant-scope) |
+| `SolutionEntityKey` | `InArgument<string>` | `{x:Null}` | Solution resource key for the entity. Set only when ScopeValue is Folder |
+| `SolutionEntityName` | `InArgument<string>` | `{x:Null}` | Entity display name in the solution. Set only when ScopeValue is Folder |
 
 ## Entity Metadata — EntitiesStore.json
 

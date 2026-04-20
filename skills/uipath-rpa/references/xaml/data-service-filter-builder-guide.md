@@ -46,7 +46,10 @@ The filter elements use namespaces already required by `QueryEntityRecords`. Ens
 ```xml
 xmlns:uda="clr-namespace:UiPath.DataService.Activities;assembly=UiPath.DataService.Activities.Core"
 xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+xmlns:local="clr-namespace:<ProjectName>;assembly=DataService.<ProjectName>"
 ```
+
+The `local:` namespace is required for entity type arguments (e.g., `x:TypeArguments="local:NumericEntity"`). It **must** include `assembly=DataService.<ProjectName>` — without the assembly qualifier, the XAML parser cannot locate entity types. See [overview.md § XAML Namespace Declarations](../../../../references/activity-docs/UiPath.DataService.Activities/25.9/activities/overview.md#xaml-namespace-declarations) for the full set of required declarations.
 
 If any `FilterValues` entry uses `DateTimeOffset`, `Guid`, or `String[]`, also declare:
 
@@ -383,15 +386,14 @@ Query `NumericEntity` where: NumField equals 23, AND CreatedBy.IsActive equals T
 Entity is VB project. EntityId from EntitiesStore.json: `cd543a02-3621-f111-9a48-000d3a354532`.
 
 ```xml
-<uda:QueryEntityRecords x:TypeArguments="b:NumericEntity"
+<uda:QueryEntityRecords x:TypeArguments="local:NumericEntity"
     OutputRecords="{x:Null}"
-    SolutionEntityKey="{x:Null}" SolutionEntityName="{x:Null}"
     SortAscending="True" SortByField="{x:Null}" TotalRecords="{x:Null}"
     ContinueOnError="False" DisplayName="Query Entity Records"
     EntityId="cd543a02-3621-f111-9a48-000d3a354532"
     ExpansionDepth="2"
     QueriedEntityId="cd543a02-3621-f111-9a48-000d3a354532"
-    ScopeValue="Tenant" Skip="0" TimeoutInMs="30000" Top="100">
+    Skip="0" TimeoutInMs="30000" Top="100">
   <uda:QueryEntityRecords.FilterArguments>
     <uda:FilterArgument FilterActivityType="{x:Null}">
       <uda:FilterArgument.Filter>
