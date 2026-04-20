@@ -4,6 +4,60 @@ The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` f
 
 ---
 
+## Step 1 — Extract the Schema Through Conversation
+
+Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
+
+| What you need to know | Question to ask |
+|---|---|
+| What the reviewer sees | "What information does the reviewer need to make their decision?" |
+| What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
+| What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
+
+**Common business descriptions → schema translations:**
+
+| Business description | Schema shape |
+|---|---|
+| "Human reviews and approves/rejects an invoice" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |
+| "Reviewer checks agent-drafted email before sending" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |
+| "Escalate to human when confidence < 0.7" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |
+| "Human fills in missing vendor data" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |
+| "Approve before writing to ServiceNow" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |
+
+---
+
+## Step 2 — Design the Schema
+
+The CLI accepts this format for `--schema`:
+
+```json
+{
+  "inputs":   [{ "name": "fieldName", "type": "string" }],
+  "outputs":  [{ "name": "fieldName", "type": "string" }],
+  "inOuts":   [{ "name": "fieldName", "type": "string" }],
+  "outcomes": [{ "name": "Approve",  "type": "string" }]
+}
+```
+
+| Field | Human can… | Use for |
+|---|---|---|
+| `inputs` | Read only | Context the human needs to make a decision |
+| `outputs` | Write | Data the automation needs back |
+| `inOuts` | Read + modify | Data the human can see and optionally correct |
+| `outcomes` | Click one | Named action buttons |
+
+**Supported types:** `string`, `number`, `boolean`, `date`
+
+**Design rules:**
+- `inputs`: everything the human needs to decide — IDs, amounts, context
+- `outputs`: only what downstream nodes actually use
+- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
+- Keep it focused — don't add fields the automation won't use
+
+**Show the designed schema to the user and confirm before running the CLI.**
+
+---
+
 ## Full Node JSON
 
 ```json

@@ -23,7 +23,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before writing anything.** Show the designed schema (Step 4) and wait for explicit confirmation.
+1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
 2. **Always wire at least the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow. Wire `cancelled` and `timeout` to end nodes or handlers unless the user explicitly defers them.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 4. **Validate after every change.** Run `uip flow validate <file> --format json` after writing the node and edges.
@@ -115,66 +115,34 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 ---
 
-## Step 3 — Extract the Schema Through Conversation
+## Step 3 — Choose Task Type
 
-Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
+Present the user with three options. Do not choose on their behalf or perform any registry search.
 
-| What you need to know | Question to ask |
+| # | Option | Description |
+|---|---|---|
+| 1 | **QuickForm** | Inline typed form — fields rendered by Action Center from the schema you design here |
+| 2 | **New Coded Action App** | Scaffold a new React + TypeScript app inside the solution — full UI control |
+| 3 | **Existing Deployed App** | Reference an app already deployed to Orchestrator |
+
+| User selects | Next step |
 |---|---|
-| What the reviewer sees | "What information does the reviewer need to make their decision?" |
-| What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
-| What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
-| Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
-| Priority | "Is this normal priority, or high/critical?" |
-| Form type | "Should this use a quick inline form, or a deployed Action Center app?" |
-
-**Common business descriptions → schema translations:**
-
-| Business description | Schema shape |
-|---|---|
-| "Human reviews and approves/rejects an invoice" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |
-| "Reviewer checks agent-drafted email before sending" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |
-| "Escalate to human when confidence < 0.7" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |
-| "Human fills in missing vendor data" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |
-| "Approve before writing to ServiceNow" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |
+| QuickForm | Read [references/hitl-node-quickform.md](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
+| New Coded Action App | Read [references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
+| Existing Deployed App → ask: "What is the name of the deployed action app?" | Read [references/hitl-node-apptask.md](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
 
 ---
 
-## Step 4 — Design the Schema
+## Step 4 — Common configuration
 
-The CLI accepts this format for `--schema`:
-
-```json
-{
-  "inputs":   [{ "name": "fieldName", "type": "string" }],
-  "outputs":  [{ "name": "fieldName", "type": "string" }],
-  "inOuts":   [{ "name": "fieldName", "type": "string" }],
-  "outcomes": [{ "name": "Approve",  "type": "string" }]
-}
-```
-
-| Field | Human can… | Use for |
-|---|---|---|
-| `inputs` | Read only | Context the human needs to make a decision |
-| `outputs` | Write | Data the automation needs back |
-| `inOuts` | Read + modify | Data the human can see and optionally correct |
-| `outcomes` | Click one | Named action buttons |
-
-**Supported types:** `string`, `number`, `boolean`, `date`
-
-**Design rules:**
-- `inputs`: everything the human needs to decide — IDs, amounts, context
-- `outputs`: only what downstream nodes actually use
-- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
-- Keep it focused — don't add fields the automation won't use
-
-**Show the designed schema to the user and confirm before running the CLI.**
+| Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
+| Priority | "Is this normal priority, or high/critical?" |
 
 ---
 
 ## Step 5 — Write the Node Directly
 
-### Surface: Flow — QuickForm (inline schema)
+### Surface: Flow — QuickForm (inline schema only)
 
 Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`.
 
@@ -186,11 +154,27 @@ After writing, validate:
 uip flow validate <file> --format json
 ```
 
-### Surface: Flow — AppTask (deployed coded app)
+### Surface: Flow — Coded Action App (new inline)
 
-First resolve the app by name via a direct API call (no CLI), then write the node JSON with `inputs.type = "custom"`.
+Step 4c must be completed first — app name confirmed, solution directory located, SDK tarball identified, schema designed and confirmed.
 
-Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask.md)** — credential reading, app lookup curl command, complete node JSON, `inputs.app` field mapping.
+Scaffold the project directory and all source files, add the project to the solution, write the solution resource files, then write the HITL node with `inputs.type = "custom"` and `inputs.app` referencing the new app (`appSystemName: null` since the app has not been deployed yet).
+
+Full reference: **[references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md)** — complete project structure, all file templates, UUID generation, solution CLI commands, resource file templates (`resources/solution_folder/app/codedAction/` and `resources/solution_folder/package/`), node JSON with `inputs.app` field mapping, and post-creation build instructions.
+
+After writing, validate:
+
+```bash
+uip flow validate <file> --output json
+```
+
+### Surface: Flow — AppTask (deployed action app only)
+
+Step 4b must be completed first — app resolved, configuration retrieved. Then:
+
+Resolve the solution context (`.uipx` file), write solution resource files, register the app reference, merge `debug_overwrites.json`, then write the node JSON with `inputs.type = "custom"` and `inputs.app` populated from the Step 3b configuration.
+
+Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask.md)** — credential sourcing from `~/.uipath/.auth`, solution context resolution, app search/selection (with multi-match list), retrieve-configuration, resource file writing, reference registration, debug overwrites, complete node JSON, `inputs.app` field mapping.
 
 After writing, validate:
 
@@ -228,7 +212,7 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 4. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
+The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 5. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 
@@ -237,7 +221,7 @@ The Maestro HITL CLI is not yet available. Guide the user to add the HITL node m
 After completing the wiring:
 
 1. **What was inserted** — node ID, label, insertion point
-2. **Schema summary** — what the human will see (`inputs`), fill in (`outputs`/`inOuts`), and click (`outcomes`)
+2. **Schema summary** — what the human will see (`inputs`), fill in (`outputs`/`inOuts`), and click (`outcomes`). For deployed action app show the actionSchema from the retrieve-configuration api response here.
 3. **Edges wired** — which handles were connected and to which nodes; any handles left unwired
 4. **Runtime variables** — `<NodeId>.result` and `<NodeId>.status` and how to reference them
 5. **Validation result** — pass or errors to fix
@@ -249,4 +233,5 @@ After completing the wiring:
 
 - **[QuickForm Node JSON](references/hitl-node-quickform.md)** — Full node JSON, definition entry, edge format, `variables.nodes` regeneration, four schema conversion examples.
 - **[AppTask Node JSON](references/hitl-node-apptask.md)** — App lookup via direct API, node JSON with `inputs.type = "custom"`, app field mapping.
+- **[Coded Action App (inline)](references/hitl-node-coded-action-app.md)** — Scaffold a new React coded action app inside the solution; full project template, resource files, HITL node JSON.
 - **[HITL Business Pattern Recognition](references/hitl-patterns.md)** — Signal tables for detecting when a process needs a human checkpoint. Includes proactive recommendation language and when NOT to recommend HITL.
