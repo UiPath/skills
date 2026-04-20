@@ -10,6 +10,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 ## When to Use This Skill
 
 - User wants to **label documents in an IXP project** (this is the most common case — run the full labelling workflow automatically)
+- User wants to **improve extraction scores / prompts** for an IXP project
 - User wants to **create an IXP project** and upload documents
 - User wants to **list or inspect IXP projects**
 - User asks about IXP extraction, taxonomy, or labellings
@@ -17,13 +18,15 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 
 ## Critical Rules
 
-1. **When the user asks to label a project, run the FULL labelling workflow automatically** — do NOT ask the user to do individual steps. Execute Steps 1-6 from the "Label an Existing Project" section below end-to-end.
-2. **Always use `--output json`** when parsing CLI output programmatically
-3. **Always use temp files for curl payloads** — never pass JSON inline with `-d '...'`. Write to a temp file first (`echo "$VAR" > /tmp/ixp_payload.json`) then use `-d @/tmp/ixp_payload.json`. Field values can contain quotes, newlines, and special characters that break shell expansion.
-4. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
-5. **Confirm labellings one document at a time** — each document needs its own extraction review and labelling confirmation
-6. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references
-7. **IXP projects require tenant admin** — the `project create` command will fail without admin access
+1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT source `~/.uipath/.auth`, do NOT load auth tokens, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase, do NOT run `--help` to discover options. All commands, flags, and their usage are fully documented below.
+2. **When the user asks to label a project, run the FULL labelling workflow automatically** — do NOT ask the user to do individual steps. Execute Steps 1-6 from the "Label an Existing Project" section below end-to-end.
+3. **When the user asks to improve scores/prompts, run the FULL improve workflow automatically** — execute Steps 1-6 from the "Improve Extraction Prompts" section end-to-end.
+4. **Always use `--output json`** when parsing CLI output programmatically
+5. **Always use temp files for JSON payloads** — when passing JSON to `--extractions` or `--entity-defs`, write to a temp file first (`cat > /tmp/ixp_payload.json << 'EOF' ... EOF`) then use `"$(cat /tmp/ixp_payload.json)"`. Field values can contain quotes, newlines, and special characters that break shell expansion.
+6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
+7. **Confirm labellings one document at a time** — each document needs its own extraction review and labelling confirmation
+8. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references
+9. **IXP projects require tenant admin** — the `project create` command will fail without admin access
 
 ## Available CLI Commands
 
@@ -48,6 +51,67 @@ uip ixp project create "<name>" <folder-path> --description "<what to extract>" 
 ```
 
 The `Owner` and `Name` values from the output are needed for subsequent commands.
+
+### Get Taxonomy
+
+```bash
+uip ixp project taxonomy <owner> <dataset-name> --output json
+```
+
+Returns `EntityDefs` (with `id`, `name`, `title`, `trainable`, `instructions`) and `LabelGroups`.
+
+### Get Metrics
+
+```bash
+uip ixp project metrics <owner> <dataset-name> --output json
+```
+
+Returns `ProjectScore`, `ProjectScoreQuality`, and per-field-group `F1`, `Precision`, `Recall`, `ErrorRate`, `Documents`.
+
+### Update Prompts / Instructions
+
+Updates extraction instructions on entity_defs. The `--entity-defs` flag takes a JSON array of ALL entity_defs (not just changed ones — omitting one may delete it). Each entry must have `id`, `name`, `title`, `inherits_from`, `trainable`, and the new `instructions`.
+
+```bash
+uip ixp project update-prompts <owner> <dataset-name> \
+  --entity-defs '<json array of all entity_defs>' \
+  --label-instructions '<optional top-level instructions>' \
+  --output json
+```
+
+Flags:
+- `-e, --entity-defs <json>` (required) — JSON array of entity_defs with updated instructions
+- `-i, --label-instructions <text>` (optional) — default label group instructions
+- `-t, --tenant <tenant-name>` (optional)
+
+### List Documents
+
+```bash
+uip ixp document list <owner> <dataset-name> --output json
+```
+
+Returns `[{ Uid, AttachmentRef }]` for each document.
+
+### Get Document Text (OCR)
+
+```bash
+uip ixp document text <attachment-ref> --output json
+```
+
+### Get Document Selections (OCR words with bounding polygons)
+
+```bash
+uip ixp document pages <attachment-ref> --output json
+uip ixp document selections <attachment-ref> --page <n> --output json
+```
+
+### Download Document Page Image
+
+```bash
+uip ixp document image <attachment-ref> --page <n> --output /tmp/ixp_page.png --output json
+```
+
+Then use the **Read tool** to view the image.
 
 ### Confirm IXP Predictions
 
@@ -77,129 +141,76 @@ The command handles parent label injection, sentiment, spans, and dismissed form
 
 **This is the primary workflow.** When the user asks to "label a project", run ALL of these steps automatically without asking.
 
-### Setup — Read Auth and Build Base URL
+### Step 1 — Get All Documents
 
 ```bash
-source ~/.uipath/.auth
-BASE="${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/${UIPATH_TENANT_NAME}/reinfer_/api"
+uip ixp document list <owner> <dataset-name> --output json
 ```
 
-All subsequent API calls use `Authorization: Bearer ${UIPATH_ACCESS_TOKEN}`.
+Returns a list of `{ Uid, AttachmentRef }` for each document.
 
-### Step 1 — Find the Design Source
+### Step 2 — Get the Taxonomy
 
 ```bash
-OWNER="<owner>"
-DATASET="<dataset-name>"
-DESIGN_SOURCE=$(curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  "${BASE}/v1/sources/${OWNER}" | jq -r '.sources[] | select(._kind == "ixp_design") | .id')
+uip ixp project taxonomy <owner> <dataset-name> --output json
 ```
 
-### Step 2 — Get All Documents
-
-```bash
-cat > /tmp/ixp_query.json << EOF
-{"filter": {"sources": ["${DESIGN_SOURCE}"]}, "order": {"kind": "recent"}, "limit": 50}
-EOF
-curl -s -X POST -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  "${BASE}/_private/datasets/${OWNER}/${DATASET}/query" \
-  -d @/tmp/ixp_query.json
-```
-
-Collect from the response:
-- `results[].comment.uid` — the comment UID (use variable name `DOC_UID`, never `UID`)
-- `results[].comment.attachments[0].attachment_reference` — for document retrieval
-
-### Step 3 — Get the Taxonomy
-
-Fetch the dataset to get the full taxonomy (entity_defs + label_groups):
-
-```bash
-curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  "${BASE}/v1/datasets/${OWNER}/${DATASET}"
-```
-
-From the response, extract:
-- `dataset.entity_defs[]` — each has `id` (hex), `name` (field type name), `title`, `trainable`
-- `dataset.label_groups[]` — each has `name` (field group name), `label_defs[]` which contain:
-  - `label_defs[].name` — the label/field group name (may be hierarchical like `"Invoice > Details"`)
-  - `label_defs[].moon_form[]` — each entry has `kind` (matching an entity_def name) and `field_id`
-
-The taxonomy maps label groups → labels → fields → entity_defs. For extraction:
+Returns `EntityDefs` and `LabelGroups`. From these:
 - Each `label_def` with `moon_form` entries defines a field group to extract
 - Each `moon_form` entry's `kind` tells you the field type name, and `field_id` is what you submit in the labelling
 - The entity_def `name` matching `moon_form.kind` gives you the human-readable field name
 
-If `GET /v1/datasets/...` returns 401, fall back to learning taxonomy from predictions:
-
-```bash
-curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  "${BASE}/_private/datasets/${OWNER}/${DATASET}/labellings?id=<any_comment_uid>&compute_moon_predictions=true"
-```
-
-From `results[0].moon_forms[0].predicted`:
-- `label.name` → field group name
-- `captures[].fields[].field_id` → the hex field ID
-- `captures[].fields[].name` → human-readable field name
-
-### Step 4 — For Each Document: Read the Document
+### Step 3 — For Each Document: Read the Document
 
 There are two modes. **Use DOM mode by default.** Only use Vision mode if the user explicitly asks for it (e.g. "use images", "use vision").
 
 #### DOM Mode (default)
 
-Fetch structured OCR selections (words with bounding polygons) for each page:
+Get OCR selections (words with bounding polygons) for each page:
 
 ```bash
 # Get page count
-PAGE_COUNT=$(curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  "${BASE}/_private/attachments/${ATTACHMENT_REF}/render" | jq '.page_metadata | length')
+uip ixp document pages <attachment-ref> --output json
 
-# Get selections for each page (0-indexed)
-for i in $(seq 0 $((PAGE_COUNT - 1))); do
-  curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-    "${BASE}/_private/attachments/${ATTACHMENT_REF}/selections/pages/${i}"
-done
+# Get selections for a page (0-based index)
+uip ixp document selections <attachment-ref> --page 0 --output json
 ```
 
-Each page returns `selections[]` where each selection has:
+Each selection has:
 - `kind`: `"word"`
 - `text`: the word text
 - `polygon.vertices[]`: bounding box with `{x, y}` coordinates (normalized 0-1)
-- `parent`: index of parent selection (for grouping words into lines/blocks)
 
 Use the spatial layout to understand document structure:
 - **Tables**: words at similar x coordinates form columns, similar y form rows
 - **Key-value pairs**: label on the left, value on the right at similar y
 - **Reading order**: sort by y then x to reconstruct natural reading order
 
-#### Vision Mode (only when user explicitly requests images/vision)
-
-Download page images and view them directly:
+Or get the full text directly:
 
 ```bash
-PAGE_COUNT=$(curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  "${BASE}/_private/attachments/${ATTACHMENT_REF}/render" | jq '.page_metadata | length')
+uip ixp document text <attachment-ref> --output json
+```
 
-for i in $(seq 0 $((PAGE_COUNT - 1))); do
-  curl -s -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-    "${BASE}/_private/attachments/${ATTACHMENT_REF}/thumbnail/pages/${i}" \
-    -o "/tmp/ixp_page_${i}.png"
-done
+#### Vision Mode (only when user explicitly requests images/vision)
+
+Download page images and view them:
+
+```bash
+uip ixp document image <attachment-ref> --page 0 --output /tmp/ixp_page_0.png --output json
 ```
 
 Then use the **Read tool** to view each image (`Read /tmp/ixp_page_0.png`, etc.).
 
-### Step 5 — Extract Field Values
+### Step 4 — Extract Field Values
 
-Using the document data from Step 4 and the taxonomy from Step 3, extract values for every field:
+Using the document data from Step 3 and the taxonomy from Step 2, extract values for every field:
 - Match labels to their values based on spatial proximity
 - Read tables by tracking column alignment
 - Parse amounts, dates, names in their natural format
 - If a field is not found in the document, skip it (do NOT include it with empty value)
 
-### Step 6 — Submit the Labelling
+### Step 5 — Submit the Labelling
 
 Write the extractions JSON to a temp file, then pass it to the CLI:
 
@@ -216,39 +227,110 @@ cat > /tmp/ixp_extractions.json << 'EXTRACTIONS_EOF'
 ]
 EXTRACTIONS_EOF
 
-uip ixp labelling label "${OWNER}" "${DATASET}" "${DOC_UID}" \
+uip ixp labelling label <owner> <dataset-name> <comment-uid> \
   --extractions "$(cat /tmp/ixp_extractions.json)" --output json
 ```
 
-The command handles parent labels, sentiment, spans, and dismissed format automatically — just provide the label names, field IDs, and extracted values.
-
 ### Batch Loop Pattern
 
-Process all documents by looping Steps 4-6. Track progress and errors:
+Process all documents by looping Steps 3-5. Track progress and errors. Do NOT stop on the first error — continue with remaining documents and report the summary at the end.
+
+### Step 6 — Show Metrics
+
+After all documents are labelled:
 
 ```bash
-SUCCEEDED=0
-FAILED=0
-TOTAL=<number of documents>
-
-for each document (DOC_UID, ATTACHMENT_REF) from Step 2:
-    # Step 4 — Read the document (DOM or Vision)
-    # Step 5 — Extract field values
-    # Step 6 — Submit labelling
-
-    if labelling succeeded:
-        SUCCEEDED=$((SUCCEEDED + 1))
-    else:
-        FAILED=$((FAILED + 1))
-    fi
-
-    echo "Progress: $((SUCCEEDED + FAILED))/${TOTAL} (${SUCCEEDED} ok, ${FAILED} failed)"
-done
-
-echo "Done: ${SUCCEEDED}/${TOTAL} labelled, ${FAILED} failed"
+uip ixp project metrics <owner> <dataset-name> --output json
 ```
 
-Do NOT stop on the first error — continue with the remaining documents and report the summary at the end.
+Report project score, quality rating, and per-field-group F1/precision/recall. Highlight any fields with low F1 scores (< 0.5).
+
+## Improve Extraction Prompts
+
+**When the user asks to improve scores/prompts, run this workflow automatically.** This reads the current metrics and taxonomy, identifies weak fields, writes better instructions, and updates them.
+
+### Step 1 — Get Current Metrics
+
+```bash
+uip ixp project metrics <owner> <dataset-name> --output json
+```
+
+Use the **actual F1 scores from the API** — do NOT calculate F1 manually. Identify field groups with F1 < 0.7 as targets for improvement.
+
+### Step 2 — Get Current Taxonomy with Instructions
+
+```bash
+uip ixp project taxonomy <owner> <dataset-name> --output json
+```
+
+From the response, find the `EntityDefs` with their current `instructions`. Note which entity_defs correspond to the low-scoring field groups (match via `moon_form[].kind` → entity_def `name`).
+
+### Step 3 — Read Sample Documents
+
+Pick 2-3 documents and read them (DOM or Vision, per Step 3 of the labelling workflow):
+
+```bash
+uip ixp document list <owner> <dataset-name> --output json
+uip ixp document text <attachment-ref> --output json
+```
+
+This gives Claude context about what the actual documents look like, so it can write better instructions.
+
+### Step 4 — Write Improved Instructions
+
+For each low-scoring entity_def, write a better `instructions` string. Good instructions should:
+- **Be specific about what the field contains** — e.g. "The invoice number, typically formatted as INV-XXXX or #XXXX, found near the top of the document"
+- **Describe where to find it** — e.g. "Usually in the top-right corner, near the date"
+- **Include format examples** — e.g. "Dates should be in MM/DD/YYYY format"
+- **Clarify ambiguous cases** — e.g. "If multiple addresses are present, use the billing address, not the shipping address"
+- **Mention what it is NOT** — e.g. "Do not confuse with the PO number, which starts with PO-"
+
+Also update `_default_label_group_instructions` with general guidance about the document type.
+
+### Step 5 — Update the Dataset
+
+Write the entity_defs JSON to a temp file and pass it to the CLI:
+
+```bash
+cat > /tmp/ixp_entity_defs.json << 'ENTITY_DEFS_EOF'
+[
+  {
+    "id": "<existing_entity_def_id>",
+    "name": "<existing_name>",
+    "title": "<existing_title>",
+    "inherits_from": [],
+    "trainable": true,
+    "instructions": "<new improved instructions>"
+  }
+]
+ENTITY_DEFS_EOF
+
+uip ixp project update-prompts <owner> <dataset-name> \
+  --entity-defs "$(cat /tmp/ixp_entity_defs.json)" \
+  --label-instructions "<new top-level instructions>" \
+  --output json
+```
+
+> **Important:** Include ALL entity_defs in the update (not just changed ones), preserving existing `id`, `name`, `title`, `trainable`, and `inherits_from` values. Only change the `instructions` field. Omitting an entity_def from the array may delete it.
+
+### Step 6 — Re-label All Documents
+
+`update-prompts` alone does NOT change the F1 scores. The stored `ProjectScore` and field-group F1 reflect the last trained `ModelVersion`, which is validated against the existing ground-truth labellings — not against the new prompts. To make the new prompts take effect, you MUST re-label every document using Steps 1-5 of the "Label an Existing Project" workflow. This overwrites the stored labellings with Claude's new extractions produced under the new prompts, triggering server-side retraining.
+
+### Step 7 — Wait ~60 seconds, Then Re-check Metrics
+
+IXP retrains server-side after labellings are submitted. After re-labelling all documents, wait ~60 seconds before checking metrics:
+
+```bash
+uip ixp project metrics <owner> <dataset-name> --output json
+```
+
+Compare the new `ModelVersion` against the previous one:
+- If `ModelVersion` has advanced, report the new F1 scores vs the prior baseline
+- If `ModelVersion` is unchanged, wait another ~60 seconds and re-check (retraining occasionally takes longer)
+- Do NOT poll faster than once per 60 seconds — retraining is not instant, and faster polling wastes calls
+
+Report which fields improved and which still need work.
 
 ## New Project Workflow
 
@@ -260,64 +342,42 @@ uip ixp project create "<name>" <folder-path> --description "<what to extract>" 
 
 Then follow "Label an Existing Project" above using the Owner and Name from the output.
 
-## Labelling JSON Format
+## Extractions JSON Format
 
-The labelling POST body must follow this exact structure:
+The `--extractions` flag on `uip ixp labelling label` takes a JSON array:
 
 ```json
-{
-  "moon_forms": [{
-    "group": "default",
-    "assigned": [
-      {
-        "label": { "name": "<field group name>", "sentiment": "positive" },
-        "captures": [{
-          "fields": [
-            {
-              "field_id": "<field_id>",
-              "formatted_value": "<extracted value>",
-              "spans": []
-            }
-          ]
-        }]
-      }
-    ],
-    "dismissed": { "captures": [] }
-  }],
-  "entities": { "assigned": [], "dismissed": [] }
-}
+[
+  {
+    "label": "Invoice > Company Information",
+    "fields": [
+      { "field_id": "e8a39a45177cdd72", "formatted_value": "Acme Corp" },
+      { "field_id": "a2298dc0c3fa32d9", "formatted_value": "123 Main St" }
+    ]
+  }
+]
 ```
 
-### Format Rules (MUST follow — the API rejects invalid payloads)
+- Only include fields with non-empty `formatted_value`
+- The CLI handles parent labels, sentiment, spans, and dismissed format automatically
 
-1. **`sentiment`** must be the string `"positive"` — not a number
-2. **`dismissed`** must be an object `{ "captures": [] }` — not an array `[]`
-3. **`spans: []`** is required on every field — even when empty
-4. **Parent labels are required** — hierarchical label `"Invoice > Details"` requires a separate entry for `"Invoice"` with empty captures:
-   ```json
-   { "label": { "name": "Invoice", "sentiment": "positive" }, "captures": [{ "fields": [] }] }
-   ```
-5. **Omit empty fields** — do NOT include fields with `formatted_value: ""`
-6. **`group`** must be `"default"`
+## CLI Commands Reference
 
-## API Endpoints Reference
-
-| Action | Method | Endpoint |
-|--------|--------|----------|
-| List projects | GET | `/_private/projects` |
-| Get project | GET | `/_private/projects/<name>` |
-| Create IXP dataset | PUT | `/_private/ixp/datasets` |
-| Get dataset (taxonomy) | GET | `/v1/datasets/<owner>/<dataset_name>` |
-| List sources in project | GET | `/v1/sources/<owner>` |
-| Upload document | PUT | `/_private/sources/id:<source_id>/documents` |
-| Suggest taxonomy | POST | `/_private/ixp/projects/<owner>/<dataset>/suggest-taxonomy` |
-| Import taxonomy | POST | `/_private/ixp/projects/<owner>/<dataset>/import-taxonomy` |
-| Query comments | POST | `/_private/datasets/<owner>/<dataset>/query` |
-| Get page metadata | GET | `/_private/attachments/<ref>/render` |
-| Get page image | GET | `/_private/attachments/<ref>/thumbnail/pages/<index>` |
-| Get OCR selections | GET | `/_private/attachments/<ref>/selections/pages/<index>` |
-| Get labellings | GET | `/_private/datasets/<owner>/<dataset>/labellings?id=<uid>&compute_moon_predictions=true` |
-| Confirm labelling | POST | `/_private/datasets/<owner>/<dataset>/labellings/<comment_uid>` |
+| Command | Description |
+|---------|-------------|
+| `uip ixp project list` | List IXP projects |
+| `uip ixp project get <name>` | Get a project |
+| `uip ixp project create <name> <folder> -d <desc>` | Create project, upload docs, suggest+import taxonomy |
+| `uip ixp project taxonomy <owner> <dataset>` | Get taxonomy (entity_defs + label_groups) |
+| `uip ixp project metrics <owner> <dataset>` | Get validation metrics (F1, precision, recall) |
+| `uip ixp project update-prompts <owner> <dataset> --entity-defs <json>` | Update field instructions |
+| `uip ixp document list <owner> <dataset>` | List documents (UIDs + attachment refs) |
+| `uip ixp document text <attachment-ref>` | Get full OCR text |
+| `uip ixp document selections <attachment-ref> --page <n>` | Get OCR words with bounding polygons |
+| `uip ixp document pages <attachment-ref>` | Get page count |
+| `uip ixp document image <attachment-ref> --page <n> -o <path>` | Download page image |
+| `uip ixp labelling confirm <owner> <dataset>` | Confirm IXP predictions as-is |
+| `uip ixp labelling label <owner> <dataset> <uid> --extractions <json>` | Submit Claude extractions |
 
 ## Reference Navigation
 

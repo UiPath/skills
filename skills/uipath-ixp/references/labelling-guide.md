@@ -1,137 +1,118 @@
-# IXP Labelling API Guide
+# IXP Labelling Guide
 
 ## Overview
 
-The labelling API confirms (or corrects) extractions for documents in an IXP project. This guide covers the exact format and rules for submitting labellings.
+All IXP operations use `uip ixp` CLI commands. Do NOT use curl or direct API calls.
 
-## Confirming Predictions for a Single Document
+## Submitting Extractions for a Single Document
 
-**Endpoint:** `POST /_private/datasets/<owner>/<dataset_name>/labellings/<comment_uid>`
-
-**Auth:** User token via `Authorization: Bearer <token>` header. Requires `DATASETS_REVIEW` permission on the project.
-
-### Request Body Structure
-
-```json
-{
-  "moon_forms": [{
-    "group": "default",
-    "assigned": [ ...capture groups... ],
-    "dismissed": { "captures": [] }
-  }],
-  "entities": { "assigned": [], "dismissed": [] }
-}
-```
-
-### Capture Group Structure
-
-Each capture group represents one field group (label) with its extracted fields:
-
-```json
-{
-  "label": {
-    "name": "Invoice > Company Information",
-    "sentiment": "positive"
-  },
-  "captures": [{
+```bash
+cat > /tmp/ixp_extractions.json << 'EOF'
+[
+  {
+    "label": "Invoice > Company Information",
     "fields": [
-      {
-        "field_id": "e8a39a45177cdd72",
-        "formatted_value": "Acme Corp",
-        "spans": []
-      },
-      {
-        "field_id": "a2298dc0c3fa32d9",
-        "formatted_value": "123 Main St, City",
-        "spans": []
-      }
+      { "field_id": "e8a39a45177cdd72", "formatted_value": "Acme Corp" },
+      { "field_id": "a2298dc0c3fa32d9", "formatted_value": "123 Main St, City" }
     ]
-  }]
-}
+  }
+]
+EOF
+
+uip ixp labelling label <owner> <dataset-name> <comment-uid> \
+  --extractions "$(cat /tmp/ixp_extractions.json)" --output json
 ```
 
-### Hierarchical Labels
+The command handles parent labels, sentiment, spans, and dismissed format automatically.
 
-When a label has hierarchy (uses ` > ` separator), ALL ancestor labels must also be in the `assigned` array:
+## Confirming IXP Predictions As-Is
 
-For label `"Invoice > Company Information"`:
-- Must also include `"Invoice"` as a separate capture group with empty captures
-
-```json
-{
-  "label": { "name": "Invoice", "sentiment": "positive" },
-  "captures": [{ "fields": [] }]
-}
+```bash
+uip ixp labelling confirm <owner> <dataset-name> --output json
 ```
-
-### Field Rules
-
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `field_id` | string | Yes | Hex ID from the taxonomy |
-| `formatted_value` | string | Yes | The extracted text value |
-| `spans` | array | Yes | Pass `[]` when no text span positions available |
-| `document_spans` | array | No | Polygon coordinates on the document page |
-
-### Validation Rules
-
-1. `sentiment` must be `"positive"` or `"negative"` (string, not number)
-2. `dismissed` in `moon_forms` must be an **object** `{ "captures": [] }`, not an array
-3. Each field must have either `span` or `spans` (pass `spans: []` to satisfy this)
-4. Only include fields that have a non-empty `formatted_value`
-5. `group` must be `"default"`
 
 ## Getting Document Data
 
-### Query Comments in a Source
+### List All Documents
 
-```
-POST /_private/datasets/<owner>/<dataset_name>/query
-{
-  "filter": { "sources": ["<source_id>"] },
-  "order": { "kind": "recent" },
-  "limit": 50
-}
+```bash
+uip ixp document list <owner> <dataset-name> --output json
 ```
 
-Returns comments with `uid` and `attachments[].attachment_reference`.
+Returns `{ Uid, AttachmentRef }` for each document.
 
-### Get OCR Text for a Document
+### Get OCR Text
 
-1. Get page count:
-   ```
-   GET /_private/attachments/<attachment_reference>/render
-   ```
-   Returns `page_metadata` array (one entry per page).
-
-2. Get words per page:
-   ```
-   GET /_private/attachments/<attachment_reference>/selections/pages/<page_index>
-   ```
-   Returns `selections` array with `{ kind: "word", text: "..." }` entries.
-
-3. Join all words with spaces, pages with double newlines.
-
-### Get Taxonomy from Labellings
-
-```
-GET /_private/datasets/<owner>/<dataset_name>/labellings?id=<comment_uid>&compute_moon_predictions=true
+```bash
+uip ixp document text <attachment-ref> --output json
 ```
 
-The response includes `moon_forms[].predicted` capture groups which contain:
-- `label.name` — the field group name
-- `captures[].fields[].field_id` — the field ID
-- `captures[].fields[].name` — the field name
-- `captures[].fields[].formatted_value` — the IXP-predicted value
+### Get OCR Selections (words with bounding polygons)
 
-Use these to build the taxonomy schema for Claude's extraction prompt.
-
-## Finding the Design Source
-
-The design source is where uploaded documents live. To find it:
-
-```
-GET /v1/sources/<owner>
+```bash
+uip ixp document pages <attachment-ref> --output json
+uip ixp document selections <attachment-ref> --page 0 --output json
 ```
 
-Filter sources by `_kind === "ixp_design"` and use its `id`.
+### Download Page Image
+
+```bash
+uip ixp document image <attachment-ref> --page 0 --output /tmp/ixp_page_0.png --output json
+```
+
+Then use the **Read tool** to view it.
+
+## Getting the Taxonomy
+
+```bash
+uip ixp project taxonomy <owner> <dataset-name> --output json
+```
+
+Returns `EntityDefs` and `LabelGroups`. From these:
+- Each `label_def` with `moon_form` entries defines a field group
+- Each `moon_form` entry's `kind` matches an entity_def `name`, and `field_id` is what you submit
+- The entity_def `name` gives you the human-readable field name
+
+## Getting Metrics
+
+```bash
+uip ixp project metrics <owner> <dataset-name> --output json
+```
+
+Returns project score, quality rating, and per-field-group F1/precision/recall.
+
+## Updating Prompts/Instructions
+
+```bash
+cat > /tmp/ixp_entity_defs.json << 'EOF'
+[
+  {
+    "id": "<existing_id>",
+    "name": "<existing_name>",
+    "title": "<existing_title>",
+    "inherits_from": [],
+    "trainable": true,
+    "instructions": "<new improved instructions>"
+  }
+]
+EOF
+
+uip ixp project update-prompts <owner> <dataset-name> \
+  --entity-defs "$(cat /tmp/ixp_entity_defs.json)" \
+  --label-instructions "<new top-level instructions>" \
+  --output json
+```
+
+> **Important:** Include ALL entity_defs in the update, not just changed ones. Omitting one may delete it.
+
+## Extractions JSON Format
+
+Each extraction has:
+- `label` — the field group name (e.g. `"Invoice > Company Information"`)
+- `fields[]` — array of `{ "field_id": "<hex id>", "formatted_value": "<value>" }`
+
+Only include fields with non-empty `formatted_value`. The CLI handles:
+- Parent label injection for hierarchical labels
+- Setting `sentiment: "positive"`
+- Adding `spans: []` to each field
+- Formatting `dismissed` as an object
