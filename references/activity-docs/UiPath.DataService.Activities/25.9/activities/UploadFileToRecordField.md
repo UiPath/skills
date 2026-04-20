@@ -17,7 +17,7 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Common | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Common | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, set `ScopeValue="Tenant"` and `SolutionEntityKey`/`SolutionEntityName` to `{x:Null}`. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, **omit these properties entirely** — the members do not exist on the activity in standalone scope. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
 
 ## XAML Example — Upload from FilePath
 
@@ -27,8 +27,6 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
     FileResource="{x:Null}"
     InputEntity="{x:Null}"
     OutputEntity="{x:Null}"
-    SolutionEntityKey="{x:Null}"
-    SolutionEntityName="{x:Null}"
     ContinueOnError="False"
     DisplayName="Upload File to ENTITY_NAME"
     EntityId="ENTITY_GUID"
@@ -36,14 +34,13 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
     Field="FILE_FIELD_NAME"
     FilePath="C:\path\to\file.pdf"
     RecordId="[recordIdVariable]"
-    ScopeValue="Tenant"
     TimeoutInMs="30000" />
 ```
 
 - `Field` — bare string, not expression-wrapped. Use the field name exactly as it appears in `EntitiesStore.json`
 - `FilePath` — bare string for literal paths. Use expression syntax (`[variableName]`) only when the path comes from a variable
 - When using `FilePath`, set `FileResource="{x:Null}"`
-- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them
+- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them for properties that exist on the activity (do not include `ScopeValue`/`SolutionEntityKey`/`SolutionEntityName` in standalone projects)
 
 ## XAML Example — Upload from FileResource (Round-Trip)
 
@@ -53,8 +50,6 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
     FilePath="{x:Null}"
     InputEntity="{x:Null}"
     OutputEntity="{x:Null}"
-    SolutionEntityKey="{x:Null}"
-    SolutionEntityName="{x:Null}"
     ContinueOnError="False"
     DisplayName="Upload File to ENTITY_NAME"
     EntityId="ENTITY_GUID"
@@ -62,7 +57,6 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
     Field="FILE_FIELD_NAME"
     FileResource="[downloadedFileResource]"
     RecordId="[recordIdVariable]"
-    ScopeValue="Tenant"
     TimeoutInMs="30000" />
 ```
 

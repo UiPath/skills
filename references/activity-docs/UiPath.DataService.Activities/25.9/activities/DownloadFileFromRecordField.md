@@ -15,7 +15,7 @@ Downloads a file from a file-type field on an entity record. Category: **DataSer
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Common | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Common | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, set `ScopeValue="Tenant"` and `SolutionEntityKey`/`SolutionEntityName` to `{x:Null}`. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, **omit these properties entirely** — the members do not exist on the activity in standalone scope. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
 
 No `ExpansionDepth` — download returns a file, not an entity.
 
@@ -25,21 +25,18 @@ No `ExpansionDepth` — download returns a file, not an entity.
 <uda:DownloadFileFromRecordField
     x:TypeArguments="local:ENTITY_NAME"
     FilePath="{x:Null}"
-    SolutionEntityKey="{x:Null}"
-    SolutionEntityName="{x:Null}"
     ContinueOnError="False"
     DisplayName="Download File from ENTITY_NAME"
     DownloadedFileResource="[downloadedFileResource]"
     EntityId="ENTITY_GUID"
     Field="FILE_FIELD_NAME"
     RecordId="[recordIdVariable]"
-    ScopeValue="Tenant"
     TimeoutInMs="30000" />
 ```
 
 - `Field` — bare string, not expression-wrapped. Use the field name exactly as it appears in `EntitiesStore.json`
 - `FilePath` — set to `{x:Null}` when using `DownloadedFileResource` (preferred). If saving to a specific path, use a bare string: `FilePath="C:\downloads\output.pdf"`
-- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them
+- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them for properties that exist on the activity (do not include `ScopeValue`/`SolutionEntityKey`/`SolutionEntityName` in standalone projects)
 
 ### Variable Declaration
 
@@ -58,15 +55,12 @@ When copying a file between records, chain `DownloadedFileResource` directly int
 <uda:DownloadFileFromRecordField
     x:TypeArguments="local:ENTITY_NAME"
     FilePath="{x:Null}"
-    SolutionEntityKey="{x:Null}"
-    SolutionEntityName="{x:Null}"
     ContinueOnError="False"
     DisplayName="Download File"
     DownloadedFileResource="[downloadedFileResource]"
     EntityId="ENTITY_GUID"
     Field="FILE_FIELD_NAME"
     RecordId="[sourceRecordId]"
-    ScopeValue="Tenant"
     TimeoutInMs="30000" />
 
 <!-- Step 2: Upload — pass downloadedFileResource as FileResource, set FilePath to {x:Null} -->
@@ -75,8 +69,6 @@ When copying a file between records, chain `DownloadedFileResource` directly int
     FilePath="{x:Null}"
     InputEntity="{x:Null}"
     OutputEntity="{x:Null}"
-    SolutionEntityKey="{x:Null}"
-    SolutionEntityName="{x:Null}"
     ContinueOnError="False"
     DisplayName="Upload File"
     EntityId="ENTITY_GUID"
@@ -84,7 +76,6 @@ When copying a file between records, chain `DownloadedFileResource` directly int
     Field="FILE_FIELD_NAME"
     FileResource="[downloadedFileResource]"
     RecordId="[targetRecordId]"
-    ScopeValue="Tenant"
     TimeoutInMs="30000" />
 ```
 
