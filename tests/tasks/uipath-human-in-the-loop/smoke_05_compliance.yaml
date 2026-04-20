@@ -1,8 +1,7 @@
-task_id: skill-hitl-activation-approval-gate
+task_id: skill-hitl-smoke-compliance
 description: >
-  Activation test: agent should detect an approval gate pattern and recommend
-  HITL even though the user said "approve" rather than "HITL". Verifies
-  proactive business-language-based triggering.
+  Smoke test: agent should detect a compliance checkpoint pattern from
+  regulatory language. Verifies the skill fires on audit/sign-off signals.
 tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
@@ -10,18 +9,18 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow that extracts expense report data and emails it to
-  finance — but a manager must approve each expense report before the email
-  is sent.
+  Automate GDPR data deletion requests. Each request requires documented
+  sign-off from our data privacy officer before the deletion actually runs —
+  we need an audit trail for every decision.
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": true,
+    "hitl_needed": "<true or false — your assessment>",
     "pattern": "<which business pattern applies>",
     "proposed_schema": {
-      "inputs": ["<field names>"],
-      "outputs": ["<field names>"],
-      "outcomes": ["<button names>"]
+      "inputs": ["<what the privacy officer will see>"],
+      "outputs": ["<what they fill in>"],
+      "outcomes": ["<their decision options>"]
     }
   }
 
@@ -41,9 +40,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Agent identified an approval gate pattern"
+    description: "Agent identified compliance/audit pattern"
     path: "recommendation.json"
     includes:
-      - "approval"
+      - "complian"
     weight: 1.5
     pass_threshold: 1.0

@@ -1,6 +1,6 @@
-task_id: skill-hitl-activation-neg-admin
+task_id: skill-hitl-smoke-neg-admin
 description: >
-  Negative activation test: agent must NOT use the uipath-human-in-the-loop
+  Negative smoke test: agent must NOT use the uipath-human-in-the-loop
   skill for Action Center runtime administration queries. This is task
   management, not automation authoring.
 tags: [uipath-human-in-the-loop, smoke]
@@ -16,7 +16,7 @@ initial_prompt: |
   Write an answer.json file with:
   {
     "answer": "<your guidance on how to reassign Action Center tasks>",
-    "hitl_authoring_needed": false
+    "hitl_authoring_needed": "<true or false — is this an authoring task?>"
   }
 
 success_criteria:
@@ -33,4 +33,3 @@ success_criteria:
       - '"hitl_authoring_needed": false'
     weight: 2.0
     pass_threshold: 1.0
-

@@ -28,33 +28,23 @@ Before designing the schema, ask these focused questions if the business descrip
 
 ## Step 2 — Design the Schema
 
-The CLI accepts this format for `--schema`:
+The node schema uses `fields[]` entries inside `inputs.schema`. Use these conceptual roles to plan the fields before writing the node JSON:
 
-```json
-{
-  "inputs":   [{ "name": "fieldName", "type": "string" }],
-  "outputs":  [{ "name": "fieldName", "type": "string" }],
-  "inOuts":   [{ "name": "fieldName", "type": "string" }],
-  "outcomes": [{ "name": "Approve",  "type": "string" }]
-}
-```
+| Role | `direction` value | Human can… | Use for |
+|---|---|---|---|
+| Input field | `"input"` | Read only | Context the human needs to make a decision |
+| Output field | `"output"` | Write | Data the automation needs back |
+| InOut field | `"inOut"` | Read + modify | Data the human can see and optionally correct |
 
-| Field | Human can… | Use for |
-|---|---|---|
-| `inputs` | Read only | Context the human needs to make a decision |
-| `outputs` | Write | Data the automation needs back |
-| `inOuts` | Read + modify | Data the human can see and optionally correct |
-| `outcomes` | Click one | Named action buttons |
-
-**Supported types:** `string`, `number`, `boolean`, `date`
+**Supported field types:** `text` (maps from `string`), `number`, `boolean`, `date`
 
 **Design rules:**
-- `inputs`: everything the human needs to decide — IDs, amounts, context
-- `outputs`: only what downstream nodes actually use
+- Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
+- Output fields: only what downstream nodes actually use; set `required: true` for mandatory outputs
 - `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
 - Keep it focused — don't add fields the automation won't use
 
-**Show the designed schema to the user and confirm before running the CLI.**
+**Show the designed schema to the user and confirm before writing the node.**
 
 ---
 
@@ -172,10 +162,15 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
   ],
   "model": { "type": "bpmn:UserTask" },
   "inputDefinition": {
-    "channels": [],
+    "type": "quick",
     "schema": {
-      "inputs": [], "outputs": [], "inOuts": [],
-      "outcomes": [{ "name": "Submit", "type": "string" }]
+      "fields": [],
+      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
+    },
+    "recipient": {
+      "channels": ["Email", "ActionCenter"],
+      "connections": {},
+      "assignee": { "type": "group" }
     },
     "timeout": "PT24H",
     "priority": "normal"

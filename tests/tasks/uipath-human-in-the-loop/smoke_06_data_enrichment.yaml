@@ -1,6 +1,6 @@
-task_id: skill-hitl-activation-data-enrichment
+task_id: skill-hitl-smoke-data-enrichment
 description: >
-  Activation test: agent should detect a data enrichment pattern where a
+  Smoke test: agent should detect a data enrichment pattern where a
   human must fill in incomplete extracted data before the flow continues.
 tags: [uipath-human-in-the-loop, smoke]
 
@@ -16,7 +16,7 @@ initial_prompt: |
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": true,
+    "hitl_needed": "<true or false — your assessment>",
     "pattern": "<which business pattern applies>",
     "proposed_schema": {
       "inputs": ["<what the human sees — already extracted fields>"],
@@ -38,6 +38,14 @@ success_criteria:
     includes:
       - '"hitl_needed": true'
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified a data enrichment pattern"
+    path: "recommendation.json"
+    includes:
+      - "enrich"
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_contains

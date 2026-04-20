@@ -1,6 +1,6 @@
-task_id: skill-hitl-activation-escalation
+task_id: skill-hitl-smoke-escalation
 description: >
-  Activation test: agent should detect an exception escalation pattern from
+  Smoke test: agent should detect an exception escalation pattern from
   AI confidence threshold language. Verifies the skill fires on escalation
   signals without explicit HITL mention.
 tags: [uipath-human-in-the-loop, smoke]
@@ -16,7 +16,7 @@ initial_prompt: |
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": true,
+    "hitl_needed": "<true or false — your assessment>",
     "pattern": "<which business pattern applies>",
     "insertion_point": "<where in the flow the HITL node should go>",
     "proposed_schema": {
@@ -46,4 +46,12 @@ success_criteria:
     includes:
       - "escalat"
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent proposed an insertion point after the AI classifier"
+    path: "recommendation.json"
+    includes:
+      - "classif"
+    weight: 1.0
     pass_threshold: 1.0

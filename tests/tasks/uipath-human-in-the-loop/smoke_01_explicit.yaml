@@ -1,8 +1,8 @@
-task_id: skill-hitl-activation-explicit
+task_id: skill-hitl-smoke-explicit
 description: >
-  Activation test: agent should trigger the uipath-human-in-the-loop skill
+  Smoke test: agent should trigger the uipath-human-in-the-loop skill
   when explicitly asked to add a HITL node. Verifies the skill fires for
-  direct HITL language.
+  direct HITL language and that the agent identifies the correct pattern.
 tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
@@ -15,7 +15,7 @@ initial_prompt: |
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": true,
+    "hitl_needed": "<true or false — your assessment>",
     "pattern": "<which business pattern applies>",
     "proposed_schema": {
       "inputs": ["<field names the human will see>"],
@@ -37,6 +37,14 @@ success_criteria:
     includes:
       - '"hitl_needed": true'
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent named a specific pattern (non-empty pattern field)"
+    path: "recommendation.json"
+    includes:
+      - "approval"
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_contains
