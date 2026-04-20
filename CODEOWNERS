@@ -54,3 +54,7 @@
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath
 /tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath
+
+# Session Logs skill (opt-in Claude Code session capture) — owned with hooks team
+/skills/uipath-session-logs/ @DragosUnguru
+/tests/tasks/uipath-session-logs/ @DragosUnguru

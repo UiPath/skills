@@ -1,0 +1,83 @@
+task_id: skill-session-logs-enable-and-inspect
+description: >
+  Skill-guided evaluation: agent uses the uipath-session-logs skill to explain
+  how to enable opt-in session capture, where logs land, and how to inspect
+  them. Tests whether the skill front-loads the env var name, the log
+  directory, and the jq/jsonl schema correctly.
+tags: [uipath-session-logs, smoke, capture]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A teammate asks: "I hit a bug while Claude was running the uipath-rpa skill
+  and I want to capture the session next time so I can file a bug report.
+  How do I turn on session capture, where do the logs end up, and how do I
+  list every Bash command Claude ran?"
+
+  Write your answer to answer.md as a concise guide. At minimum cover:
+    1. The exact environment variable to set (and the values that enable it).
+    2. The on-disk path where logs are written (relative to the project).
+    3. The file that contains every tool invocation and its schema.
+    4. A copy-pasteable jq one-liner that prints every Bash command the agent
+       ran during the captured session.
+
+  Also save a summary to report.json with the fields:
+    {
+      "env_var": "<the exact env var name>",
+      "log_dir_pattern": "<relative path pattern including <session-id>>",
+      "tool_log_file": "<filename>",
+      "disable_method": "<what the user does to turn it off>"
+    }
+
+success_criteria:
+  - type: file_exists
+    description: "answer.md was created"
+    path: "answer.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Answer names UIPATH_SESSION_LOG and the logs dir"
+    path: "answer.md"
+    includes:
+      - "UIPATH_SESSION_LOG"
+      - ".uipath-logs/"
+      - "tools.jsonl"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Answer includes a jq recipe for Bash commands"
+    path: "answer.md"
+    includes:
+      - "jq"
+      - "Bash"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has the expected values"
+    path: "report.json"
+    assertions:
+      - expression: "env_var"
+        operator: equals
+        expected: "UIPATH_SESSION_LOG"
+      - expression: "log_dir_pattern"
+        operator: contains
+        expected: ".uipath-logs"
+      - expression: "tool_log_file"
+        operator: contains
+        expected: "tools.jsonl"
+      - expression: "disable_method"
+        operator: contains
+        expected: "unset"
+    weight: 2.0
+    pass_threshold: 0.75

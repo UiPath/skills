@@ -1,0 +1,120 @@
+task_id: skill-session-logs-e2e-hook-roundtrip
+description: >
+  End-to-end evaluation: agent uses the uipath-session-logs skill to
+  (1) enable capture in a sandbox, (2) drive the logger hook with synthetic
+  hook payloads, and (3) inspect the resulting .uipath-logs/ tree to confirm
+  the expected files (session.json, prompts.jsonl, tools.jsonl, summary.json)
+  are produced with the documented schema.
+tags: [uipath-session-logs, e2e, capture, hook]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  The UiPath plugin ships a session logger hook at
+  ${CLAUDE_PLUGIN_ROOT}/hooks/uipath-session-logger.sh that is wired into
+  Claude Code's SessionStart / UserPromptSubmit / PreToolUse / PostToolUse /
+  Stop events. Your job is to prove the logger works end-to-end in this
+  sandbox by driving it directly with synthetic hook payloads.
+
+  Steps:
+    1. Resolve the absolute path to the logger script. It lives at
+       <repo-root>/hooks/uipath-session-logger.sh relative to the SKILLS_REPO_PATH
+       env var that the test harness exports.
+    2. Create a solution.json and a project.json in the current working
+       directory so the SessionStart hook has something to snapshot.
+    3. Export UIPATH_SESSION_LOG=1.
+    4. Invoke the hook script five times by piping JSON payloads (each
+       including "session_id":"eval-01" and "cwd":"<current working dir>"):
+          a. SessionStart
+          b. UserPromptSubmit with a "prompt" field
+          c. PreToolUse with tool_name=Bash and tool_input.command="uip --version"
+          d. PostToolUse with tool_name=Bash and tool_response.exit_code=0
+          e. Stop
+    5. Verify .uipath-logs/eval-01/ contains: session.json, prompts.jsonl,
+       tools.jsonl, project-snapshot/solution.json, project-snapshot/project.json,
+       and summary.json.
+    6. Write a report.json with:
+       {
+         "log_dir": ".uipath-logs/eval-01",
+         "files_found": ["<list of files under the log dir>"],
+         "tool_counts": <jq -r '.tool_counts' summary.json>,
+         "prompt_count": <jq '.prompt_count' summary.json>,
+         "error_count": <jq '.error_count' summary.json>
+       }
+
+  Important:
+    - Use `--output json` semantics when documenting commands, but here you
+      are driving the hook directly, so printf + pipe is fine.
+    - Do NOT hand-write the JSONL files yourself — only the hook script
+      should produce them.
+
+success_criteria:
+  - type: file_exists
+    description: "SessionStart snapshotted solution.json"
+    path: ".uipath-logs/eval-01/project-snapshot/solution.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SessionStart snapshotted project.json"
+    path: ".uipath-logs/eval-01/project-snapshot/project.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "session.json written by the logger"
+    path: ".uipath-logs/eval-01/session.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "prompts.jsonl contains the submitted prompt"
+    path: ".uipath-logs/eval-01/prompts.jsonl"
+    includes:
+      - "\"prompt\""
+      - "\"session_id\":\"eval-01\""
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "tools.jsonl contains matching pre and post entries for Bash"
+    path: ".uipath-logs/eval-01/tools.jsonl"
+    includes:
+      - "\"phase\":\"pre\""
+      - "\"phase\":\"post\""
+      - "\"tool\":\"Bash\""
+      - "uip --version"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "summary.json written on Stop"
+    path: ".uipath-logs/eval-01/summary.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "summary.json tool_counts.Bash is 1 and error_count is 0"
+    command: "python -c \"import json,sys; s=json.load(open('.uipath-logs/eval-01/summary.json')); sys.exit(0 if s['tool_counts'].get('Bash')==1 and s['error_count']==0 and s['prompt_count']==1 else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json summarises the capture correctly"
+    path: "report.json"
+    assertions:
+      - expression: "log_dir"
+        operator: contains
+        expected: ".uipath-logs/eval-01"
+      - expression: "prompt_count"
+        operator: equals
+        expected: 1
+      - expression: "error_count"
+        operator: equals
+        expected: 0
+    weight: 1.5
+    pass_threshold: 0.75
