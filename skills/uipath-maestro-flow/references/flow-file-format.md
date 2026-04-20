@@ -12,7 +12,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
   "nodes": [],
   "edges": [],
   "definitions": [],
-  "bindings": [],     // Orchestrator resource references — see "Bindings — Orchestrator resource bindings" below
+  "bindings": [],
   "variables": {},
   "layout": {
     "nodes": {}
@@ -21,6 +21,8 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip flow init` and packaging. Do not add them manually.
+
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](plugins/connector/impl.md) for the connector-binding shape.
 
 ## Project structure (from `uip flow init`)
 
