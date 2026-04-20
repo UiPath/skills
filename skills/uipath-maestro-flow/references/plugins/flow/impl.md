@@ -30,6 +30,8 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 
 ## JSON Structure
 
+### Node instance (inside `nodes[]`)
+
 ```json
 {
   "id": "validateData",
@@ -55,6 +57,7 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgenticProcess",
     "version": "v2",
+    "section": "Published",
     "bindings": {
       "resource": "process",
       "resourceSubType": "Flow",
@@ -64,10 +67,50 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
         "name": "Validate Data Flow",
         "folderPath": "Shared"
       }
-    }
+    },
+    "context": [
+      { "name": "name",       "type": "string", "value": "=bindings.bValidateDataName",       "default": "Validate Data Flow" },
+      { "name": "folderPath", "type": "string", "value": "=bindings.bValidateDataFolderPath", "default": "Shared" },
+      { "name": "_label",     "type": "string", "value": "Validate Data Flow" }
+    ]
   }
 }
 ```
+
+> `resourceKey` takes the form `<FolderPath>.<FlowName>` — confirm the exact value from `uip flow registry get` output.
+
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same flow — do NOT create duplicates.
+
+```json
+"bindings": [
+  {
+    "id": "bValidateDataName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.Validate Data Flow",
+    "default": "Validate Data Flow",
+    "propertyAttribute": "name",
+    "resourceSubType": "Flow"
+  },
+  {
+    "id": "bValidateDataFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.Validate Data Flow",
+    "default": "Shared",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "Flow"
+  }
+]
+```
+
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 ## Debug
 

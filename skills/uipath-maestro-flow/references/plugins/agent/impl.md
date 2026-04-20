@@ -30,17 +30,9 @@ Confirm:
 
 For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
-**This node type needs top-level `bindings[]` entries.** `uipath.core.agent.*` is a resource node — it invokes a published Orchestrator agent, and the runtime resolves the target via two process-style bindings in the flow's top-level `bindings[]` array (regenerated into `bindings_v2.json` at `flow debug`/`flow pack` time). The CLI's `flow node add` wires these automatically; when hand-writing JSON, follow the [Resource Node Bindings](../../flow-editing-operations-json.md#resource-node-bindings-direct-json) procedure. **For agent nodes:** `resourceSubType = "Agent"`, `orchestratorType = "agent"`.
-
 ## JSON Structure
 
-A complete agent node requires three pieces in the `.flow` file:
-
-1. The **node entry** in `nodes[]` (with `model.bindings` and `model.context[]`)
-2. Two **top-level bindings** in `bindings[]` (one for `name`, one for `folderPath`)
-3. The **definition** in `definitions[]` (copied verbatim from `uip flow registry get`)
-
-### Node entry
+### Node instance (inside `nodes[]`)
 
 ```json
 {
@@ -49,6 +41,20 @@ A complete agent node requires three pieces in the `.flow` file:
   "typeVersion": "1.0.0",
   "display": { "label": "Classify Intent" },
   "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the agent",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the agent fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
   "model": {
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgentJob",
@@ -65,51 +71,48 @@ A complete agent node requires three pieces in the `.flow` file:
       }
     },
     "context": [
-      { "name": "name", "type": "string", "value": "=bindings.bKEFLMRB2", "default": "Apple Genius Agent" },
-      { "name": "folderPath", "type": "string", "value": "=bindings.bwSwZQsvT", "default": "Shared" },
-      { "name": "_label", "type": "string", "value": "Apple Genius Agent" }
+      { "name": "name",       "type": "string", "value": "=bindings.bClassifyIntentName",       "default": "Apple Genius Agent" },
+      { "name": "folderPath", "type": "string", "value": "=bindings.bClassifyIntentFolderPath", "default": "Shared" },
+      { "name": "_label",     "type": "string", "value": "Apple Genius Agent" }
     ]
   }
 }
 ```
 
-- `resourceKey`, `name`, `folderPath` come from `Data.Node.model.bindings` in `uip flow registry get` — copy verbatim, don't paraphrase the path.
-- `context[]` values must use `=bindings.<id>` where `<id>` matches an entry in the flow's top-level `bindings[]` (next block).
-- `inputs` takes whatever the agent expects — check `Data.Node.inputDefinition.properties` from `registry get`.
-- The node instance does not need an `outputs` block; downstream `$vars.{nodeId}.output` resolves from `variables.nodes[]` + the definition's `outputDefinition`.
+> `resourceKey` takes the form `<FolderPath>.<AgentName>` — confirm the exact value from `uip flow registry get` output.
 
-### Top-level `bindings[]` entries
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
-Append these two entries to the flow's top-level `bindings[]` array (sibling of `nodes`, `edges`, `definitions`):
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same agent — do NOT create duplicates.
 
 ```json
-{
-  "id": "bKEFLMRB2",
-  "name": "name",
-  "type": "string",
-  "resource": "process",
-  "resourceKey": "Shared.Apple Genius Agent",
-  "default": "Apple Genius Agent",
-  "propertyAttribute": "name",
-  "resourceSubType": "Agent"
-},
-{
-  "id": "bwSwZQsvT",
-  "name": "folderPath",
-  "type": "string",
-  "resource": "process",
-  "resourceKey": "Shared.Apple Genius Agent",
-  "default": "Shared",
-  "propertyAttribute": "folderPath",
-  "resourceSubType": "Agent"
-}
+"bindings": [
+  {
+    "id": "bClassifyIntentName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.Apple Genius Agent",
+    "default": "Apple Genius Agent",
+    "propertyAttribute": "name",
+    "resourceSubType": "Agent"
+  },
+  {
+    "id": "bClassifyIntentFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.Apple Genius Agent",
+    "default": "Shared",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "Agent"
+  }
+]
 ```
 
-- The two `id`s must match the `=bindings.<id>` references inside the node's `model.context[]`.
-- `resourceKey` must equal the `resourceKey` in the node's `model.bindings`.
-- If another agent node in the same flow targets the same published agent (same `resourceKey`), reuse these two binding entries — do not duplicate.
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
 
-See [Resource Node Bindings](../../flow-editing-operations-json.md#resource-node-bindings-direct-json) for the general procedure shared across agent / rpa-workflow / api-workflow nodes.
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 ## Accessing Output
 

@@ -17,9 +17,7 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 | Edge cleanup on delete | Auto-removes connected edges | Find and remove all edges referencing the deleted node |
 | Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
 | `targetPort` | Auto-set | Set `targetPort` on every edge (validate rejects without it) |
-| Resource bindings (agent, rpa-workflow, api-workflow) | Auto-added to top-level `bindings[]` by `node add`; `model.context[]` references auto-wired | Add two entries to top-level `bindings[]` per node (name + folderPath) and wire `model.context[]` with `=bindings.<id>` refs — see [Resource Node Bindings](#resource-node-bindings-direct-json). `flow validate` passes without them, but `flow debug` faults at runtime. |
-| Connector bindings | Auto-added to top-level `bindings[]` by `node configure`; `model.context[].connection` reference auto-wired | Add one `resource: "Connection"` entry per unique connection to top-level `bindings[]` and wire `model.context[].connection` with `=bindings.<id>` — see [Connector Node Configuration](#connector-node-configuration-direct-json). |
-| `bindings_v2.json` | Regenerated from top-level `bindings[]` at `flow debug`/`flow pack` time | **Never edit this file directly** — any manual edits are overwritten on the next debug/pack. All binding authoring goes through the `.flow` file's top-level `bindings[]`. |
+| `bindings_v2.json` | Auto-managed by `node configure` | Edit `bindings_v2.json` manually for connector nodes |
 
 ---
 
@@ -33,7 +31,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 4. **`targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (Critical Rule #6). Look up ports in the relevant plugin's `planning.md` or in [flow-file-format.md — Standard ports](flow-file-format.md).
 5. **Node outputs block.** Every data-producing node needs an `outputs` block on the node instance (not just in `definitions`). Action nodes: `output` + `error`. Trigger nodes: `output`. End/terminate: none. (Critical Rule #18.)
 6. **`variables.nodes`.** Add an entry for the new node's outputs. Optional under today's runtime, but expected for completeness and diff clarity.
-7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then sweep the flow's top-level `bindings[]` — only remove a binding if no remaining node uses the same `resourceKey` (bindings are shared at the connector/resource level, not per node). Do not edit `bindings_v2.json` directly; it is regenerated from `bindings[]` at debug/pack.
+7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
 
 > **Anti-pattern: editing a `.flow` that is not colocated with `project.uiproj`.**
 > A `.flow` file outside the flow project directory is invisible to `uip flow debug`, to the Studio solution, and to any checker that discovers the project via `**/project.uiproj`. It will still pass `uip flow validate <PATH>.flow` because that command only checks JSON-schema correctness of the file you hand it — it does not verify the file is the project's canonical flow. Always edit the `.flow` that sits next to `project.uiproj`.
@@ -80,6 +78,12 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
    - Paste the `Data.Node` object from the registry response
    - One definition per unique `type` — not one per node instance
 
+> **Resource nodes — extra step.** If the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`:
+> 1. Add `model.context[]` on the node instance with `=bindings.<id>` refs for `name` and `folderPath` (plus a static `_label`)
+> 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`)
+>
+> Without these, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
+
 4. Add node output variables to `variables.nodes` (optional — the CLI regenerates these, but direct builds should include them for completeness):
 
 ```json
@@ -108,8 +112,6 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 **Layout rule:** Use horizontal layout — increasing `x` values left-to-right, consistent `y` baseline (e.g., `y: 144`). Space nodes ~200px apart on the x-axis.
 
-6. **If the node type is `uipath.core.agent.*`, `uipath.core.rpa-workflow.*`, or `uipath.core.api-workflow.*`** — follow [Resource Node Bindings](#resource-node-bindings-direct-json) below to append two entries to the top-level `bindings[]` and wire `model.context[]` on the node. Skipping this step makes the flow pass `flow validate` but fault at `flow debug` (the generated `bindings_v2.json` ends up empty, so the runtime can't resolve the Orchestrator resource).
-
 ### Delete a node
 
 1. Remove the node object from `nodes`
@@ -118,7 +120,6 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 4. Remove the node's entry from `variables.nodes`
 5. Remove any `variableUpdates` entries keyed by the node's `id`
 6. If the node is a connector node, remove its binding from `bindings_v2.json` **only if no other node in the flow uses the same connector**. Bindings are shared at the connector level (keyed by `metadata.Connector`), not per node.
-7. If the node is a resource node (`uipath.core.agent.*`, `uipath.core.rpa-workflow.*`, `uipath.core.api-workflow.*`), remove its two entries from the top-level `bindings[]` (the `name` and `folderPath` entries whose `resourceKey` matches the deleted node's `model.bindings.resourceKey`) **only if no other node in the flow uses the same `resourceKey`**. Bindings are shared across nodes that invoke the same Orchestrator resource.
 
 ### Add an edge
 
@@ -265,8 +266,7 @@ Only `inout` variables can be updated. `in` variables are read-only.
 6. Copy the definition from registry into `definitions`
 7. Re-create all edges using the new node's `id`
 8. Add node variables to `variables.nodes`
-9. **If the real node is `uipath.core.agent.*`, `uipath.core.rpa-workflow.*`, or `uipath.core.api-workflow.*`** — follow [Resource Node Bindings](#resource-node-bindings-direct-json) to add two top-level `bindings[]` entries and wire `model.context[]`. `flow validate` passes without these; `flow debug` faults.
-10. Validate: `uip flow validate <ProjectName>.flow --output json`
+9. Validate: `uip flow validate <ProjectName>.flow --output json`
 
 ### Replace manual trigger with scheduled trigger
 
@@ -354,9 +354,7 @@ See [subflow/impl.md](plugins/subflow/impl.md) for the full JSON structure and r
 
 ## Connector Node Configuration (Direct JSON)
 
-When not using `uip flow node configure`, a connector node needs three pieces in the `.flow` file: the `inputs.detail` block, two entries in the top-level `bindings[]`, and the node's `model.context[]` must keep the placeholder format so it matches the bindings.
-
-> **Never edit `bindings_v2.json` directly.** That file is regenerated from the flow's top-level `bindings[]` at `flow debug` / `flow pack` time — any manual edits are overwritten.
+When not using `uip flow node configure`, you must manually set up:
 
 ### 1. `inputs.detail` on the node
 
@@ -364,164 +362,46 @@ When not using `uip flow node configure`, a connector node needs three pieces in
 {
   "inputs": {
     "detail": {
-      "connector": "<CONNECTOR_KEY>",
       "connectionId": "<CONNECTION_UUID>",
-      "connectionResourceId": "<CONNECTION_UUID>",
-      "connectionFolderKey": "<FOLDER_KEY>",
+      "folderKey": "<FOLDER_KEY>",
       "method": "<HTTP_METHOD>",
       "endpoint": "<API_PATH>",
       "bodyParameters": { "<FIELD>": "<VALUE>" },
-      "queryParameters": { "<FIELD>": "<VALUE>" },
-      "errorState": { "issues": [] }
+      "queryParameters": { "<FIELD>": "<VALUE>" }
     }
   }
 }
 ```
 
-The `method` and `endpoint` come from `connectorMethodInfo` in the `registry get --connection-id` response. `configuration`, `multipartParameters`, and `inputMetadata` also need to be populated for activities to run — see [connector/impl.md](plugins/connector/impl.md) for the full `inputs.detail` structure.
+The `method` and `endpoint` come from `connectorMethodInfo` in the `registry get --connection-id` response.
 
-### 2. Keep `model.context[]` placeholders
-
-The registry manifest returns `model.context[]` with placeholder values like `<bindings.<CONNECTOR_KEY> connection>` and `<bindings.FolderKey>`. **Leave these placeholders in place** — do not rewrite them to `=bindings.<id>`. The runtime matches bindings to nodes by name via the placeholder form.
-
-```json
-"model": {
-  "context": [
-    { "name": "connectorKey", "type": "string", "value": "<CONNECTOR_KEY>" },
-    { "name": "connection", "type": "string", "value": "<bindings.<CONNECTOR_KEY> connection>" },
-    { "name": "folderKey", "type": "string", "value": "<bindings.FolderKey>" }
-  ]
-}
-```
-
-### 3. Connection bindings in top-level `.flow` `bindings[]`
-
-Append these two entries to the flow's top-level `bindings[]` array (sibling of `nodes`, `edges`, `definitions`):
+### 2. Connection binding in `bindings_v2.json`
 
 ```json
 {
-  "id": "<CONN_BINDING_ID>",
-  "name": "<CONNECTOR_KEY> connection",
-  "type": "string",
-  "resource": "Connection",
-  "resourceKey": "<CONNECTION_UUID>",
-  "default": "<CONNECTION_UUID>",
-  "propertyAttribute": "ConnectionId"
-},
-{
-  "id": "<FOLDER_BINDING_ID>",
-  "name": "FolderKey",
-  "type": "string",
-  "resource": "Connection",
-  "resourceKey": "<CONNECTION_UUID>",
-  "default": "<FOLDER_KEY>",
-  "propertyAttribute": "FolderKey"
-}
-```
-
-- `resource: "Connection"` is capital-C (not `"connection"`). The runtime is case-sensitive here.
-- Both bindings share the same `resourceKey` (the connection UUID).
-- The `name: "<CONNECTOR_KEY> connection"` value must exactly match what's inside the node's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix).
-- **Share bindings across nodes using the same connection:** if two connector nodes use the same connection, reuse the same two binding entries — do not add duplicates.
-
-At `flow debug`/`flow pack` time the CLI maps each binding to a `Connection` resource in `bindings_v2.json` (adding `id = "Connection<resourceKey>"`, `metadata.Connector`, etc.). See [connector/impl.md](plugins/connector/impl.md) for the generated `bindings_v2.json` shape (reference only).
-
----
-
-## Resource Node Bindings (Direct JSON)
-
-Resource nodes — `uipath.core.agent.*`, `uipath.core.rpa-workflow.*`, `uipath.core.api-workflow.*` — invoke a published Orchestrator resource. They need **two entries per node in the flow's top-level `bindings[]` array** (one for `name`, one for `folderPath`) plus a matching `model.context[]` on the node. The CLI's `uip flow node add` creates these automatically; when hand-writing JSON, you must create them yourself.
-
-**Why it matters.** At `flow debug` and `flow pack` time the CLI regenerates `bindings_v2.json` from the flow's top-level `bindings[]`. An empty top-level `bindings[]` produces an empty `bindings_v2.json`, and the runtime faults on "resource not found" even though `flow validate` passes (validate only checks the `.flow` JSON schema — it does not check that resource-backed nodes have bindings).
-
-### Step 1 — Pull the manifest
-
-```bash
-uip flow registry get <NODE_TYPE> --output json
-```
-
-From `Data.Node.model.bindings`, record:
-- `resourceKey` — a path-like string (e.g. `"Shared/CountLetters CodedAgent.CountLetters"`). Do not replace this with the node type's GUID; use what the registry returns.
-- `resourceSubType` — see the per-prefix table below.
-- `orchestratorType` — see the per-prefix table below.
-- `values.name` and `values.folderPath` — the default name and folder-path strings.
-
-| Node type prefix | `resourceSubType` | `orchestratorType` |
-|---|---|---|
-| `uipath.core.agent.` | `Agent` | `agent` |
-| `uipath.core.rpa-workflow.` | `Process` | `process` |
-| `uipath.core.api-workflow.` | `Api` | `api` |
-
-### Step 2 — Pick two binding IDs
-
-Generate two unique IDs, one per binding entry. Convention used by the CLI: a lowercase `b` followed by 8 random alphanumerics (e.g. `bKEFLMRB2`, `bwSwZQsvT`). Any short unique string works; just make sure the two IDs differ from each other and from any existing binding IDs in the flow.
-
-### Step 3 — Append two entries to top-level `bindings[]`
-
-```json
-"bindings": [
-  {
-    "id": "<NAME_BINDING_ID>",
-    "name": "name",
-    "type": "string",
-    "resource": "process",
-    "resourceKey": "<RESOURCE_KEY>",
-    "default": "<NAME_VALUE>",
-    "propertyAttribute": "name",
-    "resourceSubType": "<SUB_TYPE>"
-  },
-  {
-    "id": "<FOLDER_BINDING_ID>",
-    "name": "folderPath",
-    "type": "string",
-    "resource": "process",
-    "resourceKey": "<RESOURCE_KEY>",
-    "default": "<FOLDER_PATH_VALUE>",
-    "propertyAttribute": "folderPath",
-    "resourceSubType": "<SUB_TYPE>"
-  }
-]
-```
-
-If `bindings[]` doesn't exist at the top level of the flow yet, add it as a sibling of `nodes`, `edges`, `definitions`.
-
-### Step 4 — Wire `model.context[]` on the node
-
-Inside the node's `model`, add a `context` array that references the two binding IDs:
-
-```json
-"model": {
-  "type": "bpmn:ServiceTask",
-  "serviceType": "<SERVICE_TYPE>",
-  "version": "v2",
-  "section": "Published",
-  "bindings": {
-    "resource": "process",
-    "resourceSubType": "<SUB_TYPE>",
-    "resourceKey": "<RESOURCE_KEY>",
-    "orchestratorType": "<ORCH_TYPE>",
-    "values": {
-      "name": "<NAME_VALUE>",
-      "folderPath": "<FOLDER_PATH_VALUE>"
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "Connection",
+      "key": "<CONNECTION_UUID>",
+      "id": "Connection<CONNECTION_UUID>",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "<CONNECTION_UUID>",
+          "isExpression": false,
+          "displayName": "<CONNECTOR_KEY> connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "<ACTIVITY_DISPLAY_NAME>",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "<CONNECTOR_KEY> connection",
+        "UseConnectionService": "true",
+        "Connector": "<CONNECTOR_KEY>"
+      }
     }
-  },
-  "context": [
-    { "name": "name", "type": "string", "value": "=bindings.<NAME_BINDING_ID>", "default": "<NAME_VALUE>" },
-    { "name": "folderPath", "type": "string", "value": "=bindings.<FOLDER_BINDING_ID>", "default": "<FOLDER_PATH_VALUE>" },
-    { "name": "_label", "type": "string", "value": "<NAME_VALUE>" }
   ]
 }
 ```
 
-- `model.bindings.resourceKey` must equal the `resourceKey` on both top-level entries (this is how the CLI matches nodes to bindings when generating `bindings_v2.json`).
-- `context[].value` uses `=bindings.<id>` — not `<bindings.<name>>`, not a raw string.
-- The `_label` context entry is Studio Web's display label; set it to the `name` value.
-- `serviceType` comes from the registry manifest (e.g. `Orchestrator.StartAgentJob` for agents). Copy it verbatim.
-
-### Shared bindings across multiple nodes
-
-If two nodes invoke the same resource (same `resourceKey`), they should share the same two binding entries — don't duplicate. Both nodes reference the same `<NAME_BINDING_ID>` and `<FOLDER_BINDING_ID>` from their `model.context[]`.
-
-### Per-plugin details
-
-See the relevant plugin's `impl.md` for node-type-specific values and a complete worked example: [agent/impl.md](plugins/agent/impl.md), [rpa/impl.md](plugins/rpa/impl.md), [api-workflow/impl.md](plugins/api-workflow/impl.md).
+See [connector/impl.md](plugins/connector/impl.md) for the full schema and multi-connector examples.

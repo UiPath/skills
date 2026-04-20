@@ -22,6 +22,8 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip flow init` and packaging. Do not add them manually.
 
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](plugins/connector/impl.md) for the connector-binding shape.
+
 ## Project structure (from `uip flow init`)
 
 ```
@@ -341,13 +343,55 @@ Flow input and output parameters are declared through **variables** in the `.flo
 
 The packaging/debug step derives `entry-points.json` from these variable declarations.
 
-## Bindings — top-level `bindings[]` in the `.flow` file
+## Bindings — Orchestrator resource bindings (top-level `bindings[]`)
 
-When a flow uses connector nodes or resource nodes (agent, rpa-workflow, api-workflow), the runtime needs to know which authenticated connection or Orchestrator resource to invoke. These bindings are authored in the `.flow` file's **top-level `bindings[]` array**.
+The top-level `bindings` array (a sibling of `nodes`, `edges`, `definitions`, `variables`, `layout`) holds resource-reference indirections for **Orchestrator resource nodes** — RPA workflows, agents, flows, agentic processes, API workflows, and HITL apps.
 
-At `flow debug` / `flow pack` time the CLI regenerates `content/bindings_v2.json` from the top-level `bindings[]`. **`bindings_v2.json` is always generated, never hand-authored** — any manual edits to it are overwritten on the next debug/pack.
+Each entry gives a node instance's `model.context[]` a resolvable target for the `name` and `folderPath` attributes it passes to Orchestrator:
 
-See the relevant plugin guide under `plugins/` for per-node-type binding shapes:
-- [Resource Node Bindings](flow-editing-operations-json.md#resource-node-bindings-direct-json) — agent, rpa-workflow, api-workflow (`resource: "process"`)
-- [connector/impl.md](plugins/connector/impl.md) — connector activities (`resource: "Connection"`)
-- [connector-trigger/impl.md](plugins/connector-trigger/impl.md) — connector triggers (additional `EventTrigger`/`Property` resources derived at pack time)
+```json
+"bindings": [
+  {
+    "id": "<UNIQUE_ID>",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "<FolderPath>.<ResourceName>",
+    "default": "<ResourceName>",
+    "propertyAttribute": "name",
+    "resourceSubType": "Process"
+  },
+  {
+    "id": "<UNIQUE_ID_2>",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "<FolderPath>.<ResourceName>",
+    "default": "<FolderPath>",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "Process"
+  }
+]
+```
+
+**Rules:**
+
+- Add **two entries** per resource node (one for `name`, one for `folderPath`).
+- **Share** entries across node instances that reference the same resource — do not duplicate.
+- Entry IDs are unique strings within the file. Descriptive IDs (e.g. `bDepositRpaName`) are preferred over short random IDs.
+- The node instance's `model.context[].value` references an entry via `"value": "=bindings.<id>"`.
+- `resourceSubType` mirrors the node's `model.bindings.resourceSubType`: `Process` (rpa), `Agent` (agent), `Flow` (flow), `ProcessOrchestration` (agentic-process), `Api` (api-workflow), or the app type for HITL.
+
+**Why this is required.** The registry's `Data.Node.model.context[].value` fields are template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — they are NOT runtime-resolvable. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without both pieces, `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip flow validate` passes.
+
+**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
+
+See each resource plugin's `impl.md` for the full JSON per node type: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [flow](plugins/flow/impl.md), [agentic-process](plugins/agentic-process/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md).
+
+**Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
+
+## Bindings — connector connection binding
+
+When a flow uses connector nodes, the runtime needs to know **which authenticated connection** to use for each connector. This is configured in `content/bindings_v2.json`.
+
+See the relevant node guide in `nodes/` for the full `bindings_v2.json` schema, connection resource field reference, JSON examples, and the connection fetching workflow.

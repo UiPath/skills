@@ -170,6 +170,8 @@ A connector node's `model.context[]` (returned by `uip flow registry get`) conta
 
 At runtime, the engine matches each placeholder to a top-level `bindings[]` entry whose `name` equals the string inside `<bindings.…>`.
 
+> **Matching differs from resource nodes.** For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl), `model.context[].value` is rewritten to `=bindings.<id>` — match-by-ID. For connector nodes, `model.context[].value` keeps its registry template form and matches by `name` instead. Don't confuse the two patterns.
+
 ### Authoring top-level `bindings[]`
 
 For every unique connection used in the flow, add **two entries** to top-level `bindings[]`:
@@ -199,7 +201,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 
 | Field | Value |
 |-------|-------|
-| `id` | Short unique ID (convention: `b` + 8 random alphanumerics, e.g. `bKEFLMRB2`). |
+| `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
 | `name` (connection binding) | `"<CONNECTOR_KEY> connection"` — must match the string inside the node's `model.context[].connection` placeholder (without `<bindings.` prefix and `>` suffix). |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
@@ -215,7 +217,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 ```json
 "bindings": [
   {
-    "id": "bKEFLMRB2",
+    "id": "bJiraConn",
     "name": "uipath-atlassian-jira connection",
     "type": "string",
     "resource": "Connection",
@@ -224,7 +226,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
     "propertyAttribute": "ConnectionId"
   },
   {
-    "id": "bwSwZQsvT",
+    "id": "bJiraFolder",
     "name": "FolderKey",
     "type": "string",
     "resource": "Connection",
@@ -241,10 +243,10 @@ Two unique connections → four entries in `bindings[]` (two per connection):
 
 ```json
 "bindings": [
-  { "id": "bJIRAconn", "name": "uipath-atlassian-jira connection", "type": "string", "resource": "Connection", "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e", "default": "7622a703-5d85-4b55-849b-6c02315b9e6e", "propertyAttribute": "ConnectionId" },
-  { "id": "bJIRAfold", "name": "FolderKey", "type": "string", "resource": "Connection", "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e", "default": "folder-uuid-for-jira", "propertyAttribute": "FolderKey" },
-  { "id": "bSLACKconn", "name": "uipath-salesforce-slack connection", "type": "string", "resource": "Connection", "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "propertyAttribute": "ConnectionId" },
-  { "id": "bSLACKfold", "name": "FolderKey", "type": "string", "resource": "Connection", "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "default": "folder-uuid-for-slack", "propertyAttribute": "FolderKey" }
+  { "id": "bJiraConn",   "name": "uipath-atlassian-jira connection",   "type": "string", "resource": "Connection", "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e", "default": "7622a703-5d85-4b55-849b-6c02315b9e6e", "propertyAttribute": "ConnectionId" },
+  { "id": "bJiraFolder", "name": "FolderKey",                          "type": "string", "resource": "Connection", "resourceKey": "7622a703-5d85-4b55-849b-6c02315b9e6e", "default": "folder-uuid-for-jira",                "propertyAttribute": "FolderKey" },
+  { "id": "bSlackConn",  "name": "uipath-salesforce-slack connection", "type": "string", "resource": "Connection", "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "propertyAttribute": "ConnectionId" },
+  { "id": "bSlackFolder","name": "FolderKey",                          "type": "string", "resource": "Connection", "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "default": "folder-uuid-for-slack",               "propertyAttribute": "FolderKey" }
 ]
 ```
 
@@ -252,7 +254,7 @@ Both `FolderKey` entries share the same `name` but have distinct `resourceKey`s 
 
 ### Generated `bindings_v2.json` (reference only — do not edit)
 
-At debug/pack time, the CLI's `getBindingResources` + `generateBindingsJson` derives `content/bindings_v2.json` from the top-level `bindings[]` above. One `Connection` resource per unique `resourceKey`; the `FolderKey` bindings are absorbed as metadata (they do not produce standalone resource entries). The generated output looks like:
+At debug/pack time, the CLI derives `content/bindings_v2.json` from the top-level `bindings[]` above. One `Connection` resource per unique `resourceKey`; the `FolderKey` bindings are absorbed as metadata (they do not produce standalone resource entries). The generated output looks like:
 
 ```json
 {

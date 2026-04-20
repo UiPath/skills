@@ -190,7 +190,7 @@ Phase 2 takes the approved architectural plan and resolves all implementation de
 
 ### Step 5 — Build the flow
 
-Edit `<ProjectName>.flow` directly in the project root. Resource and connector bindings go into the flow's top-level `bindings[]` array — `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
 **Read [references/flow-editing-operations.md](references/flow-editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
 
@@ -276,6 +276,7 @@ Do not run any of these actions without an explicit user selection.
 - **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
 - **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, insert a `core.logic.mock` placeholder and tell the user which skill to use. Do not invoke other skills.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
+- **Never leave `<bindings.name>` / `<bindings.folderPath>` template placeholders on resource-node instances** — these are registry templates for `model.context[]`, not runtime values. For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl): add `model.context[]` with `=bindings.<id>` refs on the node instance AND add matching entries to the top-level `bindings[]` array. The `definitions` entry stays verbatim from the registry (Critical Rule #7 still applies). Without both pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder." See the resource plugin's `impl.md`.
 - **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
 - **Never omit `outputs` on nodes that produce data** — action nodes need `output` + `error`, trigger nodes need `output`. The `outputDefinition` in `definitions` is for the registry schema, not for runtime binding — without `outputs` on the node instance, `$vars` references downstream will fail silently.
 - **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip flow validate` once after the full build is complete (Step 6).
@@ -285,7 +286,6 @@ Do not run any of these actions without an explicit user selection.
 - **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
 - **Never use `core.action.http` (v1) for connector-authenticated requests** — the v1 node's `authenticationType: "connection"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) instead. See [http/planning.md](references/plugins/http/planning.md).
 - **Never hand-write `inputs.detail` for managed HTTP nodes** — run `uip flow node configure` to populate the `inputs.detail` structure, generate `bindings_v2.json`, and create the connection resource file. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
-- **Never add a resource node (`uipath.core.agent.*`, `uipath.core.rpa-workflow.*`, `uipath.core.api-workflow.*`) without populating the flow's top-level `bindings[]`** — each resource node needs two entries there (one for `name`, one for `folderPath`) plus a matching `model.context[]` on the node using `=bindings.<id>` references. The CLI's `flow node add` wires this automatically; hand-written JSON must do it explicitly. `flow validate` passes without these bindings, but `flow debug` regenerates an empty `bindings_v2.json` from the empty `bindings[]` and the runtime faults. See [Resource Node Bindings](references/flow-editing-operations-json.md#resource-node-bindings-direct-json).
 
 ## Task Navigation
 
