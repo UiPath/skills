@@ -15,8 +15,18 @@ Execute the approved `tasks.md` plan by translating each declarative task specif
 > - Conditions → `plugins/conditions/<scope>/impl.md`
 > - SLA → `plugins/sla/impl.md`
 > - Global variables & arguments → `plugins/variables/global-vars/impl.md`
+> - Task I/O binding → `plugins/variables/io-binding/impl.md`
+> - Logging → `plugins/logging/impl.md`
 
 ---
+
+## Issue Log — Initialize Before Step 6
+
+Before any build step, initialize an empty issue list. All plugins append to this shared list during execution. See [`plugins/logging/impl.md`](plugins/logging/impl.md) for the entry format, severity levels, and file schema.
+
+```python
+issues = []  # shared across all steps — passed to each plugin
+```
 
 ## Step 6 — Create the Case project structure
 
@@ -42,26 +52,14 @@ For multi-trigger cases, add the additional triggers first via the appropriate t
 
 For each task entry in `tasks.md §4.6`, open the matching plugin's `impl.md` (`plugins/tasks/<type>/impl.md`) and run its command. **Capture the `TaskId` returned in `--output json`** — cross-task references and conditions need it.
 
-After adding a task, bind its inputs per the two modes documented in [bindings-and-expressions.md](bindings-and-expressions.md):
+After adding a task, bind its inputs by editing `caseplan.json` directly per [`plugins/variables/io-binding/impl.md`](plugins/variables/io-binding/impl.md):
 
-**Literal / expression mode** (for `input_name = "<value>"`):
+1. Read `caseplan.json`, find the task's `data.inputs[]` by name.
+2. For literals/expressions (`input = "<value>"`): write the value string to `input.value`.
+3. For cross-task references (`input <- "Stage"."Task".output`): resolve the source output's `var` field from the JSON, then write `=vars.<var>` to the target input's `value`.
+4. Write `caseplan.json` back.
 
-```bash
-uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
-```
-
-**Cross-task reference mode** (for `input_name <- "Stage Name"."Task Name".output_name`):
-
-1. Look up the source stage ID and source task ID from the capture map built in Steps 7 and 9.
-2. Run:
-
-```bash
-uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
-  --source-stage <source-stage-id> \
-  --source-task <source-task-id> \
-  --source-output <output-name> \
-  --output json
-```
+For **connector tasks**, pass variable references inline in `--input-values` at creation time (e.g., `"=vars.amount"`). Resolve cross-task `var` IDs from `caseplan.json` before constructing the `--input-values` JSON.
 
 **Binding order.** Process tasks in the order listed in `tasks.md` (already dependency-sorted by `order: after T<n>`). Bind each task's inputs immediately after adding it. If a cross-task reference points to a task not yet added, halt — `tasks.md` ordering is wrong; report to the user.
 
@@ -91,12 +89,12 @@ uip case tasks add-connector <file> <stage-id> \
   --output json
 ```
 
-**Skip `uip case var bind` entirely for skeleton tasks** — it rejects bindings without a resolved task-type schema. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip all input binding for skeleton tasks** — they have no inputs (created without `--task-type-id`). Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
 
 Skeleton tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured skeleton `TaskId` normally.
 - **Stage-exit `selected-tasks-completed`** rules reference skeleton `TaskId`s normally.
-- **Cross-task variable bindings** are deferred — the user adds them via `uip case var bind` after attaching the real resource.
+- **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
 
 ## Step 10 — Add conditions
 
@@ -122,6 +120,10 @@ On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "V
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix the reported issues (usually via a targeted re-run of the earlier step) and re-run `validate`.
 
 **Retry policy.** Up to 3 validation retries per session. After the 3rd failure, halt and ask the user with **AskUserQuestion**: show the remaining errors and options — `Retry with fix`, `Pause for manual edit`, `Abort`.
+
+## Step 12.1 — Dump issue log
+
+Write the issue list to `tasks/build-issues.md` per [`plugins/logging/impl.md`](plugins/logging/impl.md), grouped by plugin with a summary index. This file is the source of truth for the completion report. Write it even if zero issues were logged (confirms a clean build).
 
 ## Step 13 — Post-build prompt
 
