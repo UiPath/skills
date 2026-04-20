@@ -6,7 +6,7 @@ description: >
   sync between agent.json and entry-points.json, the {{input.X}}
   syntax, and contentTokens construction. A check script verifies
   deep equivalence of the two schema files.
-tags: [uipath-agents, smoke, schema, messages]
+tags: [uipath-agents, smoke, schema]
 
 sandbox:
   driver: tempdir

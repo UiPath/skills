@@ -1,0 +1,85 @@
+task_id: skill-agent-multi-agent-solution
+description: >
+  End-to-end test: create a UiPath solution with two low-code agents where
+  ParentAgent calls ToolAgent as a solution-internal agent tool. Validates
+  both agents, bundles and packs the solution. Exercises the resource.json
+  tool format, location/folderPath conventions, referenceKey resolution,
+  and packaging.
+tags: [uipath-agents, e2e, multi-agent, resource]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "OrchestratorSol" with two low-code
+  agents, "ParentAgent" and "ToolAgent". ToolAgent echoes back the
+  string it receives. ParentAgent should use ToolAgent as a tool.
+
+  Do NOT upload, publish, or deploy.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized agent projects with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked projects to the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the projects"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ParentAgent project was initialized"
+    path: "OrchestratorSol/ParentAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ToolAgent project was initialized"
+    path: "OrchestratorSol/ToolAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ParentAgent has a ToolAgent resource.json file"
+    path: "OrchestratorSol/ParentAgent/resources/ToolAgent/resource.json"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "resource.json wires ToolAgent correctly (type, location, properties, schemas) and UUIDs are distinct"
+    command: "python3 $TASK_DIR/check_multi_agent_solution.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
