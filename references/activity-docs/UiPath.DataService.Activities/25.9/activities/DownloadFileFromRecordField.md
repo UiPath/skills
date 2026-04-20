@@ -34,7 +34,41 @@ No `ExpansionDepth` — download returns a file, not an entity.
     TimeoutInMs="30000" />
 ```
 
+## Round-Trip Pattern (Download → Upload)
+
+When copying a file between records, chain `DownloadedFileResource` directly into `UploadFileToRecordField.FileResource`. This preserves the original filename and avoids fabricating temp paths.
+
+```xml
+<!-- Step 1: Download — capture DownloadedFileResource, omit FilePath -->
+<uda:DownloadFileFromRecordField
+    x:TypeArguments="local:SOURCE_ENTITY"
+    DisplayName="Download File from Source"
+    EntityId="SOURCE_ENTITY_GUID"
+    RecordId="[sourceRecordId]"
+    Field="[&quot;FileFieldName&quot;]"
+    DownloadedFileResource="[downloadedFile]"
+    TimeoutInMs="30000" />
+
+<!-- Step 2: Upload — pass downloadedFile as FileResource, not FilePath -->
+<uda:UploadFileToRecordField
+    x:TypeArguments="local:TARGET_ENTITY"
+    DisplayName="Upload File to Target"
+    EntityId="TARGET_ENTITY_GUID"
+    RecordId="[targetRecordId]"
+    Field="[&quot;FileFieldName&quot;]"
+    FileResource="[downloadedFile]"
+    ExpansionDepth="2"
+    TimeoutInMs="30000" />
+```
+
+> **Prefer `FileResource` over `FilePath`** when the file originates from another activity. `ILocalResource` (from download) is assignment-compatible with `IResource` (upload input). Using `FilePath` with a fabricated temp path loses the original filename metadata.
+
+Variable declarations needed:
+- `downloadedFile` — type `UiPath.DataService.Activities.Resources.ILocalResource` (from download `OutArgument`)
+- The upload accepts `IResource` — `ILocalResource` satisfies this interface
+
 ## Key Rules
 
 - `DownloadedFileResource` returns an `ILocalResource` with the local file path — use `.LocalPath` to get the path
 - If `FilePath` is specified, the file is saved to that location; otherwise a temporary location is used
+- **For round-trip file copies, omit `FilePath` and use `DownloadedFileResource` → `FileResource` chaining** — see pattern above

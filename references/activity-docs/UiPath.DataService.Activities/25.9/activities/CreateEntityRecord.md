@@ -92,5 +92,32 @@ Replace: `ENTITY_NAME` (entity class), `ENTITY_GUID` (from `EntitiesStore.json` 
 - Set `IsInRecordView="[False]"` and populate both `InputEntityInFieldView` and `RecordState.SelectedFields` — do NOT use `InputEntity`
 - Include every required non-system field (`IsRequired: true` AND `IsSystemField: false`) in both `SelectedFields` and the `InputEntityInFieldView` expression — omitting a required field fails validation
 - `RequiredFieldCount` must equal the count of `DynamicEntityField` entries with `IsRequired="True"`
+- **Empty records are valid.** If the entity has no required non-system fields, use `RequiredFieldCount="0"` with an empty `SelectedFields` list (`Capacity="0"`), and `InputEntityInFieldView="[New ENTITY_NAME()]"` with no field initializers. This is common for entities with only a file-type field or all-optional fields
 - `VisibleDynamicPropertiesInfo` must always be set to `{x:Null}` — the type `DynamicPropertiesInfo` is not public
 - Entity fields cannot be set as direct activity properties — `<uda:CreateEntityRecord.FieldName>` produces `Cannot set unknown member`
+
+## XAML Example — Empty Record (No Required Fields)
+
+```xml
+<uda:CreateEntityRecord
+    x:TypeArguments="local:ENTITY_NAME"
+    OutputEntity="{x:Null}"
+    VisibleDynamicPropertiesInfo="{x:Null}"
+    ContinueOnError="False"
+    DisplayName="Create Empty ENTITY_NAME Record"
+    EntityId="ENTITY_GUID"
+    ExpansionDepth="2"
+    InputEntityInFieldView="[New ENTITY_NAME()]"
+    IsInRecordView="[False]"
+    TimeoutInMs="30000">
+  <uda:CreateEntityRecord.State>
+    <udam:RecordState IsInRecordView="False" RequiredFieldCount="0">
+      <udam:RecordState.SelectedFields>
+        <scg:List x:TypeArguments="udam:DynamicEntityField" Capacity="0" />
+      </udam:RecordState.SelectedFields>
+    </udam:RecordState>
+  </uda:CreateEntityRecord.State>
+</uda:CreateEntityRecord>
+```
+
+Use this pattern for entities where all non-system fields are optional (e.g., a file-only entity where the file is uploaded separately via `UploadFileToRecordField`).

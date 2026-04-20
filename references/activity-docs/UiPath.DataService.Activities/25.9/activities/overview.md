@@ -21,7 +21,18 @@ Activity patterns for `UiPath.DataService.Activities`. All activities are generi
    ```
 4. **Entity metadata** lives in `.entities/EntitiesStore.json` — use it to look up entity IDs, field IDs, field names, types, and required flags
 
+**Stop if prerequisites are not met.** Before proceeding with any Data Service activity:
+1. Read `project.json` and check `entitiesStores`. If the array is missing, empty, or has no entries → **stop and tell the user**: "No entity stores configured. Import entities via Studio > Data Service tab > Import Entities, then retry."
+2. Check that `{PROJECT_DIR}/.entities/EntitiesStore.json` exists. If the file is missing → **stop and tell the user**: "EntitiesStore.json not found. The project has no imported entities. Import entities via Studio > Data Service tab > Import Entities, then retry."
+3. Read `EntitiesStore.json` and check `Entities`. If the array is empty → **stop and tell the user**: "EntitiesStore.json contains no entities. The tenant may have no entities, or none were imported. Import entities via Studio, then retry."
+
+Do not attempt to create Data Service XAML without a valid, non-empty `EntitiesStore.json` — the generated code will fail validation.
+
 Only entities explicitly imported via Studio are available as CLR types in the generated DLL. An entity present in `EntitiesStore.json` but not imported produces: `Cannot create unknown type '{clr-namespace:...}EntityName'`.
+
+### Entity Lookup Scope
+
+**Only read `EntitiesStore.json` from the resolved `PROJECT_DIR`.** The path is always `{PROJECT_DIR}/.entities/EntitiesStore.json`. Do not search for `EntitiesStore.json` in sibling directories, parent folders, or other projects — even if multiple projects are open in Studio. If the entity you need is not in the project's own `EntitiesStore.json`, ask the user to import it via Studio > Data Service tab > "Import Entities" rather than looking elsewhere.
 
 ## XAML Namespace Declarations
 

@@ -35,8 +35,38 @@ Uploads a file to a file-type field on an entity record. Category: **DataService
     TimeoutInMs="30000" />
 ```
 
+## Round-Trip Pattern (Download → Upload)
+
+When copying a file from one record to another, use `FileResource` — not `FilePath` — to chain the download output directly:
+
+```xml
+<!-- Download captures DownloadedFileResource (ILocalResource) -->
+<uda:DownloadFileFromRecordField
+    x:TypeArguments="local:SOURCE_ENTITY"
+    DisplayName="Download File"
+    EntityId="SOURCE_ENTITY_GUID"
+    RecordId="[sourceRecordId]"
+    Field="[&quot;FileFieldName&quot;]"
+    DownloadedFileResource="[downloadedFile]"
+    TimeoutInMs="30000" />
+
+<!-- Upload consumes it via FileResource (IResource) — preserves original filename -->
+<uda:UploadFileToRecordField
+    x:TypeArguments="local:TARGET_ENTITY"
+    DisplayName="Upload File"
+    EntityId="TARGET_ENTITY_GUID"
+    RecordId="[targetRecordId]"
+    Field="[&quot;FileFieldName&quot;]"
+    FileResource="[downloadedFile]"
+    ExpansionDepth="2"
+    TimeoutInMs="30000" />
+```
+
+> **Prefer `FileResource` over `FilePath`** when the source is another activity's output. `ILocalResource` (from `DownloadFileFromRecordField`) is assignment-compatible with `IResource`. Using `FilePath` with a fabricated temp path loses the original filename metadata.
+
 ## Key Rules
 
 - Either `FilePath` or `FileResource` must be provided — if both are null, validation fails
+- **Prefer `FileResource` for round-trip file copies** — pass the `ILocalResource` from download directly; this preserves the original filename
 - If `FileResource` is provided, it is resolved to a local path at runtime via `ToLocalResource().ResolveAsync()`
 - The `Field` property must match a field with `FieldDisplayType: "File"` in `EntitiesStore.json`
