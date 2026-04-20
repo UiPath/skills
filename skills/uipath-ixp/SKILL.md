@@ -92,26 +92,13 @@ uip ixp document list <owner> <dataset-name> --output json
 
 Returns `[{ Uid, AttachmentRef }]` for each document.
 
-### Get Document Text (OCR)
+### Get Document (download original file)
 
 ```bash
-uip ixp document text <attachment-ref> --output json
+uip ixp document get <owner> <comment-uid> -o /tmp/ixp_doc.png --output json
 ```
 
-### Get Document Selections (OCR words with bounding polygons)
-
-```bash
-uip ixp document pages <attachment-ref> --output json
-uip ixp document selections <attachment-ref> --page <n> --output json
-```
-
-### Download Document Page Image
-
-```bash
-uip ixp document image <attachment-ref> --page <n> --output /tmp/ixp_page.png --output json
-```
-
-Then use the **Read tool** to view the image.
+Downloads the original document file (image/PDF). Then use the **Read tool** to view it visually. This is the primary way to read a document for extraction.
 
 ### Confirm IXP Predictions
 
@@ -162,52 +149,30 @@ Returns `EntityDefs` and `LabelGroups`. From these:
 
 ### Step 3 — For Each Document: Read the Document
 
-There are two modes. **Use DOM mode by default.** Only use Vision mode if the user explicitly asks for it (e.g. "use images", "use vision").
-
-#### DOM Mode (default)
-
-Get OCR selections (words with bounding polygons) for each page:
+Download the original document image and its OCR text:
 
 ```bash
-# Get page count
-uip ixp document pages <attachment-ref> --output json
+# Download the document image
+uip ixp document get <owner> <comment-uid> -o /tmp/ixp_doc.png --output json
 
-# Get selections for a page (0-based index)
-uip ixp document selections <attachment-ref> --page 0 --output json
-```
-
-Each selection has:
-- `kind`: `"word"`
-- `text`: the word text
-- `polygon.vertices[]`: bounding box with `{x, y}` coordinates (normalized 0-1)
-
-Use the spatial layout to understand document structure:
-- **Tables**: words at similar x coordinates form columns, similar y form rows
-- **Key-value pairs**: label on the left, value on the right at similar y
-- **Reading order**: sort by y then x to reconstruct natural reading order
-
-Or get the full text directly:
-
-```bash
+# Get the OCR text (uses the attachment ref from document list)
 uip ixp document text <attachment-ref> --output json
 ```
 
-#### Vision Mode (only when user explicitly requests images/vision)
+Then use the **Read tool** to view the image:
 
-Download page images and view them:
-
-```bash
-uip ixp document image <attachment-ref> --page 0 --output /tmp/ixp_page_0.png --output json
+```
+Read /tmp/ixp_doc.png
 ```
 
-Then use the **Read tool** to view each image (`Read /tmp/ixp_page_0.png`, etc.).
+Use the **image** to understand the document layout and locate fields visually. Use the **OCR text** as the source of exact character values to submit — this ensures the `formatted_value` strings match exactly what IXP sees.
 
 ### Step 4 — Extract Field Values
 
-Using the document data from Step 3 and the taxonomy from Step 2, extract values for every field:
-- Match labels to their values based on spatial proximity
-- Read tables by tracking column alignment
-- Parse amounts, dates, names in their natural format
+Using the document image and OCR text from Step 3, and the taxonomy from Step 2, extract values for every field:
+- Use the **image** to understand the document layout and identify which fields are present
+- Use the **OCR text** to get the exact character values — every `formatted_value` you submit MUST be a substring of the OCR text, character-for-character
+- Do NOT "fix" OCR characters (e.g., `Ó` → `O`, `l` → `1`) — use exactly what the OCR returned
 - If a field is not found in the document, skip it (do NOT include it with empty value)
 
 ### Step 5 — Submit the Labelling
@@ -249,13 +214,28 @@ Report project score, quality rating, and per-field-group F1/precision/recall. H
 
 **When the user asks to improve scores/prompts, run this workflow automatically.** This reads the current metrics and taxonomy, identifies weak fields, writes better instructions, and updates them.
 
-### Step 1 — Get Current Metrics
+### Step 1 — Get Current Metrics and Diagnose Fields
 
 ```bash
 uip ixp project metrics <owner> <dataset-name> --output json
 ```
 
 Use the **actual F1 scores from the API** — do NOT calculate F1 manually. Identify field groups with F1 < 0.7 as targets for improvement.
+
+**Diagnose each low-scoring field** using the per-field Precision, Recall, and Documents values from the metrics:
+
+1. **Classify the action** for each field:
+   - `Documents = 0` AND `F1 = 0` → **SKIP** (no predictions — nothing to learn from)
+   - `Documents < 1` → **SKIP** (insufficient data for meaningful refinement)
+   - Otherwise → **REFINE**
+
+2. **Diagnose the problem type** for fields marked REFINE:
+   - `Precision < 0.5` AND `Recall >= 0.8` → **PRECISION** problem — model finds the field but extracts wrong values
+   - `Recall < 0.5` AND `Precision >= 0.8` → **RECALL** problem — model misses the field entirely
+   - `Precision < 0.5` AND `Recall < 0.5` → **BOTH** problem — model both misses fields and extracts wrong values
+   - Otherwise → **MIXED** problem
+
+Print a diagnosis summary to the user showing each field's score, action, problem type, and precision/recall before proceeding. Only continue with fields marked REFINE.
 
 ### Step 2 — Get Current Taxonomy with Instructions
 
@@ -267,23 +247,40 @@ From the response, find the `EntityDefs` with their current `instructions`. Note
 
 ### Step 3 — Read Sample Documents
 
-Pick 2-3 documents and read them (DOM or Vision, per Step 3 of the labelling workflow):
+Pick 2-3 documents and view them as images to understand document structure:
 
 ```bash
 uip ixp document list <owner> <dataset-name> --output json
-uip ixp document text <attachment-ref> --output json
+uip ixp document get <owner> <comment-uid> -o /tmp/ixp_sample.png --output json
 ```
 
-This gives Claude context about what the actual documents look like, so it can write better instructions.
+Then use the **Read tool** to view the image. This gives Claude visual context about where fields appear in the document, which is critical for writing location-aware instructions (especially for RECALL problems).
 
-### Step 4 — Write Improved Instructions
+### Step 4 — Write Improved Instructions (Diagnosis-Driven)
 
-For each low-scoring entity_def, write a better `instructions` string. Good instructions should:
-- **Be specific about what the field contains** — e.g. "The invoice number, typically formatted as INV-XXXX or #XXXX, found near the top of the document"
-- **Describe where to find it** — e.g. "Usually in the top-right corner, near the date"
-- **Include format examples** — e.g. "Dates should be in MM/DD/YYYY format"
-- **Clarify ambiguous cases** — e.g. "If multiple addresses are present, use the billing address, not the shipping address"
-- **Mention what it is NOT** — e.g. "Do not confuse with the PO number, which starts with PO-"
+For each field marked REFINE in Step 1, rewrite its `instructions` using the diagnosis from Step 1 and the document context from Step 3.
+
+**First, audit the current instruction quality.** Check whether the existing instruction has:
+- **Location hint** — any of: "page", "top of", "section", "header", "signature block", "end of the document", "boxed", "table", "bottom", "labeled"
+- **Example value** — "example" or "e.g."
+- **Format guidance** — "format" or "pattern"
+- **Sufficient length** — at least 50 characters
+
+Note which quality gaps exist — the rewrite must fill them.
+
+**Then, apply diagnosis-specific fixes:**
+
+- **PRECISION problem** → The model finds the field but extracts wrong values. Be more specific about **WHAT** value to extract and what **NOT** to extract. Clarify ambiguous cases (e.g., "Use the billing address, not the shipping address"). Add negative examples if helpful.
+- **RECALL problem** → The model misses the field. Better describe **WHERE** to find it using section headings, labels, or document structure (e.g., "Found in the header area, near the company logo" or "In the table labeled 'Payment Details'").
+- **BOTH problem** → Both precision and recall are failing. Rewrite the instruction entirely — describe what the field is, where it appears, what format to expect, and what to avoid.
+- **MIXED problem** → Address whichever quality gaps were identified in the audit above.
+
+**Instruction rules:**
+1. **NEVER reference specific page numbers** (e.g., "page 28", "page 7"). Use section headings, labels, or content descriptions instead — page numbers vary between documents.
+2. Include **format guidance** (e.g., "Format: NNN-NN-NNNN") and a **realistic example** when possible.
+3. Keep instructions **2-4 sentences**. Be direct and specific.
+4. The instruction goes on the **field group label** (the parent that contains the sub-fields). Write it to guide extraction of ALL fields in that group, not just one.
+5. Fill all identified quality gaps: add location hints if missing, add examples if missing, add format guidance if missing.
 
 Also update `_default_label_group_instructions` with general guidance about the document type.
 
@@ -372,9 +369,8 @@ The `--extractions` flag on `uip ixp labelling label` takes a JSON array:
 | `uip ixp project metrics <owner> <dataset>` | Get validation metrics (F1, precision, recall) |
 | `uip ixp project update-prompts <owner> <dataset> --entity-defs <json>` | Update field instructions |
 | `uip ixp document list <owner> <dataset>` | List documents (UIDs + attachment refs) |
-| `uip ixp document text <attachment-ref>` | Get full OCR text |
-| `uip ixp document selections <attachment-ref> --page <n>` | Get OCR words with bounding polygons |
-| `uip ixp document pages <attachment-ref>` | Get page count |
+| `uip ixp document get <owner> <comment-uid> -o <path>` | Download original document file for viewing |
+| `uip ixp document text <attachment-ref>` | Get OCR text for exact character values |
 | `uip ixp document image <attachment-ref> --page <n> -o <path>` | Download page image |
 | `uip ixp labelling confirm <owner> <dataset>` | Confirm IXP predictions as-is |
 | `uip ixp labelling label <owner> <dataset> <uid> --extractions <json>` | Submit Claude extractions |
