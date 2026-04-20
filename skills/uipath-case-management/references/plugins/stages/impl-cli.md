@@ -1,4 +1,6 @@
-# stages — Implementation
+# stages — CLI Implementation
+
+Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `stages = CLI`. For the direct-JSON path (the current default for this plugin), see [`impl-json.md`](impl-json.md).
 
 ## CLI Command
 
@@ -18,7 +20,7 @@ uip maestro case stages add <file> \
 | `--type` | no | `stage` (default) \| `exception`. The `trigger` value exists in the schema but is reserved for the auto-created trigger node — do not pass it manually. |
 | `--description` | no | Free-form description. |
 
-There is **no `--is-required` flag**. `isRequired` from `tasks.md` is consumed by later case-exit-condition calls, not by `stages add` itself.
+There is **no `--is-required` flag**. `isRequired` from `tasks.md` is consumed by later case-exit-condition calls, not by `stages add` itself. The direct-JSON path fills this gap explicitly — see [`impl-json.md` § Known CLI divergences](impl-json.md#known-cli-divergences).
 
 ## Example — Regular Stage
 
@@ -42,16 +44,55 @@ uip maestro case stages add caseplan.json \
 
 ## Resulting JSON Shape
 
+> **ID format.** Stage IDs are `Stage_` + 6 random chars from `[A-Za-z0-9]` (e.g. `Stage_aB3kL9`). Exception stages share the same `Stage_` prefix. See [case-schema.md](../../case-schema.md) for the full ID table.
+>
+> **Position is stateful.** The CLI computes `position = { x: 100 + existingStageCount * 500, y: 200 }` by counting stages already in `schema.nodes`. The first stage lands at `x: 100`, the second at `x: 600`, the third at `x: 1100`, etc.
+>
+> **Render fields are required.** The CLI hard-codes `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`. All must be present for Studio Web to render correctly.
+
 ### Regular stage
 
 ```json
 {
-  "id": "stg00000001",
+  "id": "Stage_aB3kL9",
   "type": "case-management:Stage",
-  "position": { "x": 600, "y": 200 },
+  "position": { "x": 100, "y": 200 },
+  "style": { "width": 304, "opacity": 0.8 },
+  "measured": { "width": 304, "height": 128 },
+  "width": 304,
+  "zIndex": 1001,
   "data": {
     "label": "PO Receipt & Triage",
     "description": "Receive incoming POs and classify for downstream processing",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
+    "tasks": []
+  }
+}
+```
+
+> **Regular Stage has no `entryConditions`/`exitConditions` at creation time.** The CLI's `stages add` does not initialize these fields for `case-management:Stage`; only `ExceptionStage` gets empty arrays upfront. Regular stages gain these fields later when `stage-entry-conditions add` / `stage-exit-conditions add` runs against them.
+
+### Exception stage
+
+Same top-level render fields as regular stage. Adds `entryConditions` and `exitConditions` to `data`:
+
+```json
+{
+  "id": "Stage_cD4mNt",
+  "type": "case-management:ExceptionStage",
+  "position": { "x": 600, "y": 200 },
+  "style": { "width": 304, "opacity": 0.8 },
+  "measured": { "width": 304, "height": 128 },
+  "width": 304,
+  "zIndex": 1001,
+  "data": {
+    "label": "Exception Handling",
+    "description": "Fallback handler for POs that fail classification",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
     "tasks": [],
     "entryConditions": [],
     "exitConditions": []
@@ -59,25 +100,10 @@ uip maestro case stages add caseplan.json \
 }
 ```
 
-### Exception stage
-
-```json
-{
-  "id": "stg00000002",
-  "type": "case-management:ExceptionStage",
-  "position": { "x": 1100, "y": 200 },
-  "data": {
-    "label": "Exception Handling",
-    "description": "Fallback handler for POs that fail classification",
-    "tasks": [],
-    "entryConditions": [],
-    "exitConditions": [],
-    "slaRules": []
-  }
-}
-```
-
-The only schema-level difference is the `type` literal (`Stage` vs `ExceptionStage`) and the presence of a `slaRules` array on exception stages (always empty after `stages add`; populated manually or by future CLI support).
+Schema-level differences from regular Stage:
+- `type` is `case-management:ExceptionStage`
+- `data.entryConditions: []` and `data.exitConditions: []` are present (initialized empty by the CLI)
+- `slaRules` may be added later by `sla rules add` — not emitted at `stages add` time
 
 ## Post-Add Validation
 

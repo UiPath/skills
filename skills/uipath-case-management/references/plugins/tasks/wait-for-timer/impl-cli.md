@@ -28,7 +28,7 @@ After creation, the task's `data` is empty. If the sdd.md specifies a duration, 
 
 ### Pattern B — Case-level scheduled trigger (preferred for scheduled events)
 
-Use [`plugins/triggers/timer/`](../../triggers/timer/impl.md) — most "timer" behavior in sdd.md is better modeled as a case-level timer trigger than an in-stage wait.
+Use [`plugins/triggers/timer/`](../../triggers/timer/impl-cli.md) — most "timer" behavior in sdd.md is better modeled as a case-level timer trigger than an in-stage wait.
 
 ## Example
 
@@ -42,10 +42,12 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Resulting JSON Shape
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
+
 ```json
 {
-  "id": "tsk00000009",
-  "elementId": "el_0009",
+  "id": "tWm4Vx9Tp",
+  "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "type": "wait-for-timer",
   "displayName": "Wait 24 hours",
   "data": {

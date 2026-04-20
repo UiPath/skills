@@ -52,10 +52,12 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 After the command runs, the stage's `data.tasks[0]` array gains an entry like:
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars (e.g. `t8GQTYo8O`). `elementId` is the composite `${stageId}-${taskId}` (e.g. `Stage_aB3kL9-t8GQTYo8O`).
+
 ```json
 {
-  "id": "tsk00000001",
-  "elementId": "el_0001",
+  "id": "t8GQTYo8O",
+  "elementId": "Stage_aB3kL9-t8GQTYo8O",
   "type": "process",
   "displayName": "Run KYC",
   "data": {

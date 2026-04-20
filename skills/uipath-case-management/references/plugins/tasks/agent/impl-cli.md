@@ -36,10 +36,12 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Resulting JSON Shape
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
+
 ```json
 {
-  "id": "tsk00000002",
-  "elementId": "el_0002",
+  "id": "tH3kLmNp9",
+  "elementId": "Stage_aB3kL9-tH3kLmNp9",
   "type": "agent",
   "displayName": "Classify Purchase Order",
   "data": {
@@ -55,7 +57,7 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Binding Inputs
 
-Same as [process/impl.md](../process/impl.md#binding-inputs-and-outputs) — use `uip maestro case var bind` with `--value` or `--source-*` per [bindings-and-expressions.md](../../../bindings-and-expressions.md).
+Same as [process/impl-cli.md](../process/impl-cli.md#binding-inputs-and-outputs) — use `uip maestro case var bind` with `--value` or `--source-*` per [bindings-and-expressions.md](../../../bindings-and-expressions.md).
 
 ## Post-Add Validation
 

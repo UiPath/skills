@@ -78,8 +78,8 @@ Stages are created **after** the root case (T01) and **before** any edges, tasks
 ```markdown
 ## T<n>: Create stage "<label>"
 - type: stage
-- description: "<optional description>"
-- isRequired: true
+- description: "<description from sdd.md>"
+- isRequired: <true|false from sdd.md; false if unspecified>
 - order: after T<m>
 - verify: Confirm Result: Success, capture StageId
 ```
@@ -89,8 +89,8 @@ Exception variant:
 ```markdown
 ## T<n>: Create exception stage "<label>"
 - type: exception
-- description: "<optional description>"
-- isRequired: false
+- description: "<description from sdd.md>"
+- isRequired: <true|false from sdd.md; false if unspecified>
 - order: after T<m>
 - verify: Confirm Result: Success, capture StageId
 ```

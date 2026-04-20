@@ -1,28 +1,37 @@
 # Implementation Phase: tasks.md → caseplan.json
 
-Execute the approved `tasks.md` plan by translating each declarative task specification into `uip maestro case` CLI commands. Build `caseplan.json`, validate, and optionally debug or publish.
+Execute the approved `tasks.md` plan, building `caseplan.json` via either `uip maestro case` CLI commands or direct JSON edits (per-plugin). Validate, then optionally debug or publish.
 
 > **Prerequisite:** The user must have explicitly approved `tasks.md` from the [Planning Phase](planning.md) before starting.
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Per-node-type CLI detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to run the exact CLI for a specific node, consult the matching plugin's `impl.md`:
-> - Root case → `plugins/case/impl.md`
-> - Stages → `plugins/stages/impl.md`
-> - Edges → `plugins/edges/impl.md`
-> - Tasks → `plugins/tasks/<type>/impl.md`
-> - Triggers → `plugins/triggers/<type>/impl.md`
-> - Conditions → `plugins/conditions/<scope>/impl.md`
-> - SLA → `plugins/sla/impl.md`
-> - Global variables & arguments → `plugins/variables/global-vars/impl.md`
-> - Task I/O binding → `plugins/variables/io-binding/impl.md`
-> - Logging → `plugins/logging/impl.md`
+## Strategy selection (per plugin)
+
+Before executing each plugin's T-entries, consult the strategy matrix in [case-editing-operations.md](case-editing-operations.md).
+
+- **`Strategy = JSON`** → use the plugin's `impl-json.md` + [case-editing-operations-json.md](case-editing-operations-json.md) for cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops).
+- **`Strategy = CLI`** → use the plugin's `impl-cli.md` + [case-editing-operations-cli.md](case-editing-operations-cli.md) for cross-cutting mechanics.
+
+Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
+
+> **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
+> - Root case → `plugins/case/impl-cli.md`
+> - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
+> - Edges → `plugins/edges/impl-cli.md`
+> - Tasks → `plugins/tasks/<type>/impl-cli.md`
+> - Triggers → `plugins/triggers/<type>/impl-cli.md`
+> - Conditions → `plugins/conditions/<scope>/impl-cli.md`
+> - SLA → `plugins/sla/impl-cli.md`
+> - Global variables & arguments → `plugins/variables/global-vars/impl-json.md`
+> - Task I/O binding → `plugins/variables/io-binding/impl-json.md`
+> - Logging → `plugins/logging/impl-json.md`
 
 ---
 
 ## Issue Log — Initialize Before Step 6
 
-Before any build step, initialize an empty issue list. All plugins append to this shared list during execution. See [`plugins/logging/impl.md`](plugins/logging/impl.md) for the entry format, severity levels, and file schema.
+Before any build step, initialize an empty issue list. All plugins append to this shared list during execution. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, and file schema.
 
 ```python
 issues = []  # shared across all steps — passed to each plugin
@@ -30,29 +39,29 @@ issues = []  # shared across all steps — passed to each plugin
 
 ## Step 6 — Create the Case project structure
 
-The case file must live inside a solution + project. Scaffolding commands (solution new → case init → project add) plus the `cases add` invocation that creates `caseplan.json` live in [`plugins/case/impl.md`](plugins/case/impl.md). Run them in order, then capture the initial Trigger node ID returned by `cases add` for use in Step 8.
+The case file must live inside a solution + project. Scaffolding commands (solution new → case init → project add) plus the `cases add` invocation that creates `caseplan.json` live in [`plugins/case/impl-cli.md`](plugins/case/impl-cli.md). Run them in order, then capture the initial Trigger node ID returned by `cases add` for use in Step 8.
 
 ## Step 6.1 — Declare global variables and arguments
 
-For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl.md`](plugins/variables/global-vars/impl.md). This step populates `root.data.uipath.variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
+For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates `root.data.uipath.variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
 
 ## Step 7 — Add stages
 
-For each stage in `tasks.md §4.4`, run the CLI per [`plugins/stages/impl.md`](plugins/stages/impl.md). **Capture the `StageId` for every stage** into the name → ID map — downstream edges, tasks, conditions, and SLA all reference it.
+For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). Strategy per the matrix in [case-editing-operations.md](case-editing-operations.md) — currently `stages` is on the **JSON** strategy (pilot); [`plugins/stages/impl-cli.md`](plugins/stages/impl-cli.md) is the fallback. **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json` for JSON strategy) — downstream edges, tasks, conditions, and SLA all reference it.
 
 `isRequired` from `tasks.md` is planning-only metadata; it is not passed on `stages add`. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
 ## Step 8 — Connect stages with edges
 
-For each edge in `tasks.md §4.5`, run the CLI per [`plugins/edges/impl.md`](plugins/edges/impl.md). Edge type is inferred automatically from the `--source` node.
+For each edge in `tasks.md §4.5`, run the CLI per [`plugins/edges/impl-cli.md`](plugins/edges/impl-cli.md). Edge type is inferred automatically from the `--source` node.
 
 For multi-trigger cases, add the additional triggers first via the appropriate trigger plugin, then wire their IDs as edge sources.
 
 ## Step 9 — Add tasks and bind inputs/outputs
 
-For each task entry in `tasks.md §4.6`, open the matching plugin's `impl.md` (`plugins/tasks/<type>/impl.md`) and run its command. **Capture the `TaskId` returned in `--output json`** — cross-task references and conditions need it.
+For each task entry in `tasks.md §4.6`, open the matching plugin's `impl-cli.md` (`plugins/tasks/<type>/impl-cli.md`) and run its command. **Capture the `TaskId` returned in `--output json`** — cross-task references and conditions need it.
 
-After adding a task, bind its inputs by editing `caseplan.json` directly per [`plugins/variables/io-binding/impl.md`](plugins/variables/io-binding/impl.md):
+After adding a task, bind its inputs by editing `caseplan.json` directly per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
 1. Read `caseplan.json`, find the task's `data.inputs[]` by name.
 2. For literals/expressions (`input = "<value>"`): write the value string to `input.value`.
@@ -100,14 +109,14 @@ Skeleton tasks integrate with the rest of the graph:
 
 For each condition in `tasks.md §4.7`, open the matching plugin:
 
-- Stage entry → [`plugins/conditions/stage-entry-conditions/impl.md`](plugins/conditions/stage-entry-conditions/impl.md)
-- Stage exit → [`plugins/conditions/stage-exit-conditions/impl.md`](plugins/conditions/stage-exit-conditions/impl.md)
-- Task entry → [`plugins/conditions/task-entry-conditions/impl.md`](plugins/conditions/task-entry-conditions/impl.md)
-- Case exit → [`plugins/conditions/case-exit-conditions/impl.md`](plugins/conditions/case-exit-conditions/impl.md)
+- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-cli.md`](plugins/conditions/stage-entry-conditions/impl-cli.md)
+- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-cli.md`](plugins/conditions/stage-exit-conditions/impl-cli.md)
+- Task entry → [`plugins/conditions/task-entry-conditions/impl-cli.md`](plugins/conditions/task-entry-conditions/impl-cli.md)
+- Case exit → [`plugins/conditions/case-exit-conditions/impl-cli.md`](plugins/conditions/case-exit-conditions/impl-cli.md)
 
 ## Step 11 — SLA and escalation
 
-For each entry in `tasks.md §4.8`, run the matching sub-operation per [`plugins/sla/impl.md`](plugins/sla/impl.md): `sla set` for defaults, `sla rules add` for conditional overrides (root only), `sla escalation add` for notification rules.
+For each entry in `tasks.md §4.8`, run the matching sub-operation per [`plugins/sla/impl-cli.md`](plugins/sla/impl-cli.md): `sla set` for defaults, `sla rules add` for conditional overrides (root only), `sla escalation add` for notification rules.
 
 ## Step 12 — Validate
 
@@ -123,7 +132,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ## Step 12.1 — Dump issue log
 
-Write the issue list to `tasks/build-issues.md` per [`plugins/logging/impl.md`](plugins/logging/impl.md), grouped by plugin with a summary index. This file is the source of truth for the completion report. Write it even if zero issues were logged (confirms a clean build).
+Write the issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md), grouped by plugin with a summary index. This file is the source of truth for the completion report. Write it even if zero issues were logged (confirms a clean build).
 
 ## Step 13 — Post-build prompt
 

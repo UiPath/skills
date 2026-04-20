@@ -69,7 +69,7 @@ uip maestro case tasks add-connector <file> <stage-id> \
 
 ### In-stage timer
 
-Timers are a built-in type — they are never skeletons because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl.md`](plugins/tasks/wait-for-timer/impl.md).
+Timers are a built-in type — they are never skeletons because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl-cli.md`](plugins/tasks/wait-for-timer/impl-cli.md).
 
 ## Resulting JSON Shape
 
