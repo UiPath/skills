@@ -119,12 +119,57 @@ case "$EVENT" in
   SessionStart)
     # session.json — one-shot; do not overwrite a resumed session's metadata.
     if [ ! -f "$LOG_DIR/session.json" ]; then
-      ENV_JSON="$(env | awk -F= '/^UIPATH_/{k=$1; sub(/^[^=]*=/,""); printf "%s\t%s\n", k, $0}' \
+      # Secret-free subset of UIPATH_* env vars. Tokens are filtered out.
+      ENV_JSON="$(env \
+        | awk -F= '/^UIPATH_/ && !/^UIPATH_(ACCESS|REFRESH|ID)_TOKEN=/ && !/^UIPATH_CLIENT_SECRET=/ {k=$1; sub(/^[^=]*=/,""); printf "%s\t%s\n", k, $0}' \
         | jq -R -s '
             split("\n") | map(select(length>0)) | map(split("\t")) |
             map({key: .[0], value: .[1]}) | from_entries
           ' 2>/dev/null)"
       [ -z "$ENV_JSON" ] && ENV_JSON='{}'
+
+      # Pull non-secret identity from ~/.uipath/.auth (dotenv format written by `uip login`).
+      UIPATH_URL_VAL=""
+      UIPATH_ORG_VAL=""
+      UIPATH_ORG_ID_VAL=""
+      UIPATH_TENANT_VAL=""
+      UIPATH_TENANT_ID_VAL=""
+      AUTH_FILE="$HOME/.uipath/.auth"
+      if [ -f "$AUTH_FILE" ]; then
+        UIPATH_URL_VAL="$(awk -F= '/^UIPATH_URL=/{sub(/^[^=]*=/,""); print; exit}' "$AUTH_FILE" 2>/dev/null)"
+        UIPATH_ORG_VAL="$(awk -F= '/^UIPATH_ORGANIZATION_NAME=/{sub(/^[^=]*=/,""); print; exit}' "$AUTH_FILE" 2>/dev/null)"
+        UIPATH_ORG_ID_VAL="$(awk -F= '/^UIPATH_ORGANIZATION_ID=/{sub(/^[^=]*=/,""); print; exit}' "$AUTH_FILE" 2>/dev/null)"
+        UIPATH_TENANT_VAL="$(awk -F= '/^UIPATH_TENANT_NAME=/{sub(/^[^=]*=/,""); print; exit}' "$AUTH_FILE" 2>/dev/null)"
+        UIPATH_TENANT_ID_VAL="$(awk -F= '/^UIPATH_TENANT_ID=/{sub(/^[^=]*=/,""); print; exit}' "$AUTH_FILE" 2>/dev/null)"
+      fi
+      # Env vars override the auth file if both are set.
+      UIPATH_URL_VAL="${UIPATH_URL:-$UIPATH_URL_VAL}"
+      UIPATH_ORG_VAL="${UIPATH_ORGANIZATION_NAME:-$UIPATH_ORG_VAL}"
+      UIPATH_ORG_ID_VAL="${UIPATH_ORGANIZATION_ID:-$UIPATH_ORG_ID_VAL}"
+      UIPATH_TENANT_VAL="${UIPATH_TENANT_NAME:-$UIPATH_TENANT_VAL}"
+      UIPATH_TENANT_ID_VAL="${UIPATH_TENANT_ID:-$UIPATH_TENANT_ID_VAL}"
+
+      STUDIO_WEB_LINK=""
+      if [ -n "$UIPATH_URL_VAL" ] && [ -n "$UIPATH_ORG_VAL" ] && [ -n "$UIPATH_TENANT_VAL" ]; then
+        STUDIO_WEB_LINK="${UIPATH_URL_VAL%/}/${UIPATH_ORG_VAL}/${UIPATH_TENANT_VAL}/studio_/"
+      fi
+
+      UIPATH_BLOCK="$(jq -n \
+        --arg url "$UIPATH_URL_VAL" \
+        --arg org "$UIPATH_ORG_VAL" \
+        --arg org_id "$UIPATH_ORG_ID_VAL" \
+        --arg tenant "$UIPATH_TENANT_VAL" \
+        --arg tenant_id "$UIPATH_TENANT_ID_VAL" \
+        --arg sw "$STUDIO_WEB_LINK" \
+        '{
+          url: ($url | select(length>0)),
+          organization: ($org | select(length>0)),
+          organization_id: ($org_id | select(length>0)),
+          tenant: ($tenant | select(length>0)),
+          tenant_id: ($tenant_id | select(length>0)),
+          studio_web_link: ($sw | select(length>0))
+        } | with_entries(select(.value != null))' 2>/dev/null)"
+      [ -z "$UIPATH_BLOCK" ] && UIPATH_BLOCK='{}'
 
       jq -n \
         --arg session_id "$SESSION_ID" \
@@ -132,7 +177,8 @@ case "$EVENT" in
         --arg event "$EVENT" \
         --arg ts "$TS" \
         --argjson env "$ENV_JSON" \
-        '{session_id:$session_id, cwd:$cwd, hook_event_name:$event, start_ts:$ts, env:$env}' \
+        --argjson uipath "$UIPATH_BLOCK" \
+        '{session_id:$session_id, cwd:$cwd, hook_event_name:$event, start_ts:$ts, uipath:$uipath, env:$env}' \
         > "$LOG_DIR/session.json" 2>/dev/null \
         || warn "failed to write session.json"
     fi
@@ -224,6 +270,51 @@ case "$EVENT" in
     PROMPT_COUNT=0
     [ -f "$PROMPTS_FILE" ] && PROMPT_COUNT="$(wc -l < "$PROMPTS_FILE" | tr -d ' ')"
 
+    # Carry over the uipath identity block captured at SessionStart.
+    UIPATH_BLOCK='{}'
+    if [ -f "$SESSION_FILE" ]; then
+      UIPATH_BLOCK="$(jq -c '.uipath // {}' "$SESSION_FILE" 2>/dev/null)"
+      [ -z "$UIPATH_BLOCK" ] && UIPATH_BLOCK='{}'
+    fi
+
+    # Connector activities matrix — scan project snapshot + tools.jsonl for
+    # UiPath Integration Service activity/package references. Patterns covered:
+    #   UiPath.<Connector>.IntegrationService[.Activities][.<Activity>]
+    #   UiPath.IntegrationService.Activities.<Connector>[.<Activity>]
+    SNAP_DIR="$LOG_DIR/project-snapshot"
+    CONN_RAW="$(
+      {
+        [ -d "$SNAP_DIR" ] && find "$SNAP_DIR" -type f -exec \
+          grep -ohE 'UiPath\.[A-Za-z0-9]+\.IntegrationService(\.Activities)?(\.[A-Za-z0-9]+)?' {} + 2>/dev/null
+        [ -d "$SNAP_DIR" ] && find "$SNAP_DIR" -type f -exec \
+          grep -ohE 'UiPath\.IntegrationService\.Activities\.[A-Za-z0-9]+(\.[A-Za-z0-9]+)?' {} + 2>/dev/null
+        [ -f "$TOOLS_FILE" ] && \
+          grep -ohE 'UiPath\.[A-Za-z0-9]+\.IntegrationService(\.Activities)?(\.[A-Za-z0-9]+)?' "$TOOLS_FILE" 2>/dev/null
+        [ -f "$TOOLS_FILE" ] && \
+          grep -ohE 'UiPath\.IntegrationService\.Activities\.[A-Za-z0-9]+(\.[A-Za-z0-9]+)?' "$TOOLS_FILE" 2>/dev/null
+      } | sort
+    )"
+
+    CONN_MATRIX='{}'
+    if [ -n "$CONN_RAW" ]; then
+      CONN_MATRIX="$(printf '%s\n' "$CONN_RAW" | jq -R -s '
+        def parse:
+          (capture("^UiPath\\.(?<connector>[A-Za-z0-9]+)\\.IntegrationService(\\.Activities)?(\\.(?<activity>[A-Za-z0-9]+))?$"; "")) //
+          (capture("^UiPath\\.IntegrationService\\.Activities\\.(?<connector>[A-Za-z0-9]+)(\\.(?<activity>[A-Za-z0-9]+))?$"; "")) //
+          null;
+        split("\n") | map(select(length>0)) | map(parse) | map(select(. != null))
+        | group_by(.connector)
+        | map({
+            key: .[0].connector,
+            value: {
+              references: length,
+              activities: (map(.activity // empty) | unique)
+            }
+          }) | from_entries
+      ' 2>/dev/null)"
+      [ -z "$CONN_MATRIX" ] && CONN_MATRIX='{}'
+    fi
+
     TOTAL_BYTES=0
     for f in "$SESSION_FILE" "$PROMPTS_FILE" "$TOOLS_FILE"; do
       [ -f "$f" ] || continue
@@ -239,6 +330,8 @@ case "$EVENT" in
       --argjson error_count "$ERROR_COUNT" \
       --argjson prompt_count "$PROMPT_COUNT" \
       --argjson total_bytes "$TOTAL_BYTES" \
+      --argjson uipath "$UIPATH_BLOCK" \
+      --argjson connector_activities "$CONN_MATRIX" \
       --arg event "$EVENT" \
       '{
         session_id:$session_id,
@@ -248,6 +341,8 @@ case "$EVENT" in
         tool_counts:$tool_counts,
         error_count:$error_count,
         total_bytes:$total_bytes,
+        uipath:$uipath,
+        connector_activities:$connector_activities,
         finalized_on:$event
       }' > "$LOG_DIR/summary.json" 2>/dev/null \
       || warn "failed to write summary.json"

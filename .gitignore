@@ -74,3 +74,6 @@ c/
 
 # macOS Finder metadata
 **/.DS_Store
+
+# UiPath session logs
+**/.uipath-logs/
