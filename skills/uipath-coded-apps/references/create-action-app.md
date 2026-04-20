@@ -38,18 +38,33 @@ If no platform services are apparent from the request: skip to Q4. No SDK setup 
 After deducing scopes, present them to the user:
 > "Based on your request, the required OAuth scopes are: `<scopes>`. Reply ok to use these, or tell me what to change."
 
-### Q3a — Client ID (only if SDK needed)
+### Q3a — Environment (only if SDK needed)
+
+Ask:
+> "Which UiPath environment are you targeting? `cloud` (production), `staging`, or `alpha`?"
+
+Map the answer to the cloud host:
+
+| Environment | Cloud Host |
+|---|---|
+| cloud | `https://cloud.uipath.com` |
+| staging | `https://staging.uipath.com` |
+| alpha | `https://alpha.uipath.com` |
+
+Store the cloud host as `<cloud-host>`. This value is used to build the redirect URI in Q3b — **do not** skip this step and default to `https://cloud.uipath.com`, or staging/alpha users will register a redirect URI that never matches at runtime.
+
+### Q3b — Client ID (only if SDK needed)
 
 Ask:
 > "Do you have an existing OAuth External Application client ID?
-> It needs these scopes: `<deduced-scopes>` and this redirect URI: `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`
+> It needs these scopes: `<deduced-scopes>` and this redirect URI: `<cloud-host>/<orgName>/<tenantName>/actions_`
 >
 > - If yes, paste it
 > - If no, say **"create one"** and I'll set it up via browser automation"
 
 **If the user says "create one":** Follow [oauth-client-setup.md Step 2 (Setup B)](oauth-client-setup.md#step-2-ensure-playwright-is-available) to install Playwright into `~/.uipath-skills/playwright/`. Do **not** install into the user's app (`npm install -D playwright` adds ~300MB to devDependencies for a tool that runs once or twice).
 
-Then read [oauth-client-setup.md](oauth-client-setup.md) and follow it to create the External Application with the scopes above and redirect URI `<host>/<orgName>/<tenantName>/actions_`.
+Then read [oauth-client-setup.md](oauth-client-setup.md) and follow it to create the External Application with the scopes above and redirect URI `<cloud-host>/<orgName>/<tenantName>/actions_` — pass `<cloud-host>` as `--cloud-host` to the script.
 
 Store the resulting client ID as `<client-id>`.
 

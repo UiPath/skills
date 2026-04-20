@@ -70,11 +70,41 @@ import { join } from 'path';
 
 const APP_URL = 'http://localhost:5173';
 const USER_DATA_DIR = join(homedir(), '.uipath-playwright-profile');
+const SCRIPT_NAME = 'reproduce';
 
 // Regex used to locate the login trigger on an app that renders an explicit
 // login screen (the scaffold template uses "Sign in with UiPath"). Adjust
 // if your app uses different text (e.g., "Continue", "Authenticate").
 const LOGIN_BUTTON_REGEX = /sign in|log in|login|continue|authenticate/i;
+
+// Hoisted so the unhandledRejection handler can snapshot page state and close
+// the persistent-profile context on failure. Without closing, Chrome stays
+// alive after the Node process dies and blocks the next run against the same
+// profile until the user manually kills Chrome.
+let __page = null;
+let __context = null;
+process.on('unhandledRejection', async (err) => {
+  if (__page) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const shotPath = `./${SCRIPT_NAME}-FAIL-${stamp}.png`;
+    try { await __page.screenshot({ path: shotPath, fullPage: true }); } catch {}
+    let htmlPreview = '';
+    try { htmlPreview = (await __page.content()).slice(0, 3000); } catch {}
+    let title = '';
+    try { title = await __page.title(); } catch {}
+    console.error(JSON.stringify({
+      status: 'error',
+      message: err?.message || String(err),
+      url: __page.url(), title,
+      screenshot: shotPath,
+      htmlPreview,
+    }, null, 2));
+  } else {
+    console.error(JSON.stringify({ status: 'error', message: err?.message || String(err) }));
+  }
+  try { await __context?.close(); } catch {}
+  process.exit(1);
+});
 
 // Pre-flight: confirm the dev server is reachable before launching Chrome.
 // Catches the common failure where the user Ctrl-C'd `npm run dev` between
@@ -98,7 +128,9 @@ async function checkDevServer() {
     headless: false,
     channel: 'chrome',
   });
+  __context = context;
   const page = context.pages()[0] || await context.newPage();
+  __page = page;
 
   // Capture ALL console messages (capped to last 50) plus errors separately.
   // Apps often log useful diagnostics via console.log/warn — don't drop them.
@@ -180,6 +212,12 @@ Parse the JSON output — it contains everything needed to classify the failure:
 - `consoleErrors` — JS errors only
 - `failedRequests` — any 4xx/5xx responses with status, URL, and truncated body
 - `errorText` — first 1000 chars of visible page text (catches on-screen error banners)
+
+**On unhandled failure** (script crashes mid-run — e.g. the login selector throws, the page navigates to an unreachable host, or Playwright hits a protocol error) the handler emits a different payload on **stderr**:
+```json
+{ "status": "error", "message": "...", "url": "...", "title": "...", "screenshot": "./reproduce-FAIL-<stamp>.png", "htmlPreview": "..." }
+```
+Read the `screenshot` path with the `Read` tool — it often diagnoses the failure by itself (e.g. a stuck login screen, an OAuth error page, a blank canvas). Fall back to `htmlPreview` if the screenshot is inconclusive. The cleanup step below removes these PNGs once you're done.
 
 **When to customize the script:**
 - **Login trigger text is different.** Adjust `LOGIN_BUTTON_REGEX` if the app's button doesn't match `sign in | log in | login | continue | authenticate`.

@@ -24,20 +24,18 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
 | **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
 
-**Always ask this before doing anything else:**
-> "Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"
-
 ## Critical Rules
 
-1. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
-2. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
-3. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
-4. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
-5. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
-6. **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
-7. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
-8. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
-9. **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
+1. **Identify the app type before doing anything else.** Ask: *"Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"* The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
+3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
+4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
+5. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
+6. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
+7. **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
+8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
+9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
+10. **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
 
 ## Task Navigation
 
