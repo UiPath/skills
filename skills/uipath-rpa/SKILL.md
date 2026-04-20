@@ -123,6 +123,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 20. **[XAML] ViewState handling depends on the operation.** When editing existing files, do NOT modify ViewState on nodes you are not changing. When generating new Flowchart/StateMachine/ProcessDiagram workflows, generate ViewState for each node (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). For Sequences, ViewState is optional.
 21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
+23. **[XAML] NEVER change the expression language** (VB ↔ C#) of an existing project. The `expressionLanguage` field in `project.json` is set at project creation and applies to every XAML file in the project. Switching it invalidates every existing expression. If the user wants a different language, create a new project with `uip rpa new --expression-language <VisualBasic|CSharp>`.
 
 ## Task Navigation
 
