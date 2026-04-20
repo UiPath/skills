@@ -1,18 +1,35 @@
 # Flow Node — Implementation
 
-Flow nodes invoke other published flows as subprocesses. Pattern: `uipath.core.flow.{key}`.
+Flow nodes invoke other flows as subprocesses. Pattern: `uipath.core.flow.{key}`.
 
 ## Discovery
+
+**Published (tenant registry):**
 
 ```bash
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.flow" --output json
 ```
 
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
 ## Registry Validation
+
+**Published:**
 
 ```bash
 uip maestro flow registry get "uipath.core.flow.{key}" --output json
+```
+
+**In-solution (local):**
+
+```bash
+uip maestro flow registry get "uipath.core.flow.{key}" --local --output json
 ```
 
 Confirm:
@@ -73,5 +90,5 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Flow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force` |
+| Node type not found in registry | Flow not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
 | Flow execution failed | Underlying flow errored | Check `$vars.{nodeId}.error` for details |

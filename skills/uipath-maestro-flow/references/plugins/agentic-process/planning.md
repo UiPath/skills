@@ -1,6 +1,6 @@
 # Agentic Process Node — Planning
 
-Agentic process nodes invoke published orchestration processes from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
+Agentic process nodes invoke orchestration processes from within a flow. Published processes appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -18,7 +18,8 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 | Invoke a published AI agent | No — use [Agent](../agent/planning.md) |
 | Call another published flow | No — use [Flow](../flow/planning.md) |
 | Need desktop/browser automation | No — use [RPA Workflow](../rpa/planning.md) |
-| Resource not yet published | No — use `core.logic.mock` placeholder |
+| Resource in same solution but not yet published | Yes — use `--local` discovery (see below) |
+| Resource not in the solution and not yet published | No — use `core.logic.mock` placeholder |
 
 ## Ports
 
@@ -32,12 +33,23 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 
 ## Discovery
 
+**Published (tenant registry):**
+
 ```bash
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.agentic-process" --output json
 ```
 
 Requires `uip login`. Only published agentic processes from your tenant appear.
+
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
 
 ## Planning Annotation
 

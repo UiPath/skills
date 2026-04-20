@@ -1,6 +1,6 @@
 # HITL Node — Planning
 
-HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
+HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. Published apps appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) apps in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -18,7 +18,8 @@ Use a HITL node when the flow needs to pause for human input, approval, or revie
 | Human reviews extracted data before submission | Yes |
 | Human resolves items the automation cannot handle | Yes |
 | Fully automated processing with no human involvement | No |
-| App not yet published | No — use `core.logic.mock` placeholder, tell user to create with `uipath-coded-apps` |
+| App in same solution but not yet published | Yes — use `--local` discovery (see below) |
+| App not in the solution and not yet published | No — use `core.logic.mock` placeholder, tell user to create with `uipath-coded-apps` |
 
 ## Ports
 
@@ -33,12 +34,23 @@ Use a HITL node when the flow needs to pause for human input, approval, or revie
 
 ## Discovery
 
+**Published (tenant registry):**
+
 ```bash
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
 Requires `uip login`. Only published apps from your tenant appear.
+
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
 
 ## Planning Annotation
 

@@ -1,18 +1,35 @@
 # API Workflow Node — Implementation
 
-API workflow nodes invoke published API functions. Pattern: `uipath.core.api-workflow.{key}`.
+API workflow nodes invoke API functions. Pattern: `uipath.core.api-workflow.{key}`.
 
 ## Discovery
+
+**Published (tenant registry):**
 
 ```bash
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.api-workflow" --output json
 ```
 
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
 ## Registry Validation
+
+**Published:**
 
 ```bash
 uip maestro flow registry get "uipath.core.api-workflow.{key}" --output json
+```
+
+**In-solution (local):**
+
+```bash
+uip maestro flow registry get "uipath.core.api-workflow.{key}" --local --output json
 ```
 
 Confirm:
@@ -73,5 +90,5 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force` |
+| Node type not found in registry | API workflow not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |

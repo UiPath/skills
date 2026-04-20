@@ -4,15 +4,30 @@ HITL nodes pause the flow for human input via a UiPath App. Pattern: `uipath.cor
 
 ## Discovery
 
+**Published (tenant registry):**
+
 ```bash
 uip maestro flow registry pull --force
 uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
+
 ## Registry Validation
 
 ```bash
+# Published resource:
 uip maestro flow registry get "uipath.core.human-task.{key}" --output json
+
+# In-solution resource:
+uip maestro flow registry get "uipath.core.human-task.{key}" --local --output json
 ```
 
 Confirm:
@@ -46,6 +61,6 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | App not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force` |
+| Node type not found in registry | App not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
