@@ -14,6 +14,7 @@ Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`)
 > - Triggers → `plugins/triggers/<type>/planning.md`
 > - Conditions → `plugins/conditions/<scope>/planning.md`
 > - SLA → `plugins/sla/planning.md`
+> - Global variables & arguments → `plugins/variables/global-vars/planning.md`
 
 ---
 
@@ -127,6 +128,14 @@ Title format: `Create case file "<name>"`
 
 Consult [`plugins/case/planning.md`](plugins/case/planning.md) for required fields (name, file path, case-identifier, identifier-type, case-app-enabled, description). Source all fields from sdd.md.
 
+### 4.2.1 Declare global variables and arguments
+
+Title format: `Declare <category> "<name>"` where category is `In argument`, `Out argument`, or `variable`.
+
+One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and trigger (T02), before stages. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
+
+Task-output variables (produced by tasks during execution) do NOT get T-entries here — they are wired automatically during task creation (§4.6).
+
 ### 4.3 Configure trigger (T02)
 
 Title format: `Configure <trigger-type> trigger "<name>"`
@@ -187,7 +196,7 @@ SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for
 
 ### 4.9 Not Covered section
 
-Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of the `uip case` CLI (e.g., Data Fabric entity schemas, global variables). These stay as notes for the user.
+Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of the `uip case` CLI (e.g., Data Fabric entity schemas). These stay as notes for the user.
 
 ---
 
