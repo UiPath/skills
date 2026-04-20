@@ -68,7 +68,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent UUID-named subdirectory exists with required files and no forbidden files"
+    description: "Inline agent layout + flow wiring (node model.source, serviceType, edges)"
     command: "python3 $TASK_DIR/check_inline_agent.py"
     timeout: 30
     expected_exit_code: 0
