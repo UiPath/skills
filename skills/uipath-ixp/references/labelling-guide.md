@@ -19,7 +19,7 @@ cat > /tmp/ixp_extractions.json << 'EOF'
 ]
 EOF
 
-uip ixp labelling label <owner> <dataset-name> <comment-uid> \
+uip ixp labelling label <project-name> <comment-uid> \
   --extractions "$(cat /tmp/ixp_extractions.json)" --output json
 ```
 
@@ -28,7 +28,7 @@ The command handles parent labels, sentiment, spans, and dismissed format automa
 ## Confirming IXP Predictions As-Is
 
 ```bash
-uip ixp labelling confirm <owner> <dataset-name> --output json
+uip ixp labelling confirm <project-name> --output json
 ```
 
 ## Getting Document Data
@@ -36,7 +36,7 @@ uip ixp labelling confirm <owner> <dataset-name> --output json
 ### List All Documents
 
 ```bash
-uip ixp document list <owner> <dataset-name> --output json
+uip ixp document list <project-name> --output json
 ```
 
 Returns `{ Uid, AttachmentRef }` for each document.
@@ -44,7 +44,7 @@ Returns `{ Uid, AttachmentRef }` for each document.
 ### Get Document (download original file)
 
 ```bash
-uip ixp document get <owner> <comment-uid> -o /tmp/ixp_doc.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_doc.png --output json
 ```
 
 Downloads the original document file. Then use the **Read tool** to view it visually.
@@ -52,7 +52,7 @@ Downloads the original document file. Then use the **Read tool** to view it visu
 ## Getting the Taxonomy
 
 ```bash
-uip ixp project taxonomy <owner> <dataset-name> --output json
+uip ixp project taxonomy <project-name> --output json
 ```
 
 Returns `EntityDefs` and `LabelGroups`. From these:
@@ -63,7 +63,7 @@ Returns `EntityDefs` and `LabelGroups`. From these:
 ## Getting Metrics
 
 ```bash
-uip ixp project metrics <owner> <dataset-name> --output json
+uip ixp project metrics <project-name> --output json
 ```
 
 Returns project score, quality rating, and per-field-group F1/precision/recall.
@@ -84,7 +84,7 @@ cat > /tmp/ixp_entity_defs.json << 'EOF'
 ]
 EOF
 
-uip ixp project update-prompts <owner> <dataset-name> \
+uip ixp project update-prompts <project-name> \
   --entity-defs "$(cat /tmp/ixp_entity_defs.json)" \
   --label-instructions "<new top-level instructions>" \
   --output json
