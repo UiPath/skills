@@ -1,17 +1,19 @@
 # Bindings & Expressions Reference
 
-How to wire values into task inputs — expression prefixes, cross-task output references, and the `uip case var bind` CLI.
+How to wire values into task inputs — expression prefixes, cross-task output references, and direct JSON editing.
 
 ## Two Binding Modes
 
 Every task input is wired using one of two modes. Pick based on the source of the value.
 
-| Mode | Tasks.md syntax | CLI form |
-|------|-----------------|---------|
-| **Literal or expression** | `input = "<value>"` | `uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>"` |
-| **Cross-task reference** | `input <- "Stage"."Task".output` | `uip case var bind <file> <stage-id> <task-id> <input-name> --source-stage <id> --source-task <id> --source-output <name>` |
+| Mode | Tasks.md syntax | Implementation |
+|------|-----------------|----------------|
+| **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
+| **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve source output's `var` → write `"=vars.<var>"` to target input's `value` |
 
-Exactly one of `--value` or all three `--source-*` options must be provided — not both.
+For the full JSON shapes and binding procedure, see [plugins/variables/io-binding/impl.md](plugins/variables/io-binding/impl.md).
+
+For connector tasks, pass expressions inline in `--input-values` at creation time — see [plugins/tasks/connector-activity/impl.md](plugins/tasks/connector-activity/impl.md).
 
 ## Expression Prefixes
 
@@ -34,7 +36,7 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 ## Cross-Task References
 
-Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase translates to **IDs** when executing `uip case var bind`.
+Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase resolves to variable IDs via direct JSON lookup.
 
 ### Planning syntax (in `tasks.md`)
 
@@ -68,18 +70,18 @@ Missing any of the three → halt planning and ask the user; do not fabricate.
 
 ### Implementation translation
 
-The execution phase resolves names to IDs using the case JSON:
+The execution phase resolves names to IDs by reading caseplan.json:
 
-```bash
-# Pseudo-code the skill follows:
-src_stage_id = find_stage_id_by_display_name(case.json, "Stage Name")
-src_task_id  = find_task_id_by_display_name(case.json, src_stage_id, "Task Name")
-
-uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
-  --source-stage "$src_stage_id" \
-  --source-task  "$src_task_id" \
-  --source-output "output_name"
+```python
+# Pseudo-code:
+src_stage = find_node_by_label(nodes, "Stage Name")
+src_task  = find_task_by_name(src_stage, "Task Name")
+src_output = find_output_by_name(src_task, "output_name")
+target_input.value = f"=vars.{src_output['var']}"
+# Write updated caseplan.json back to disk
 ```
+
+See [plugins/variables/io-binding/impl.md](plugins/variables/io-binding/impl.md) for the full procedure.
 
 ## Examples
 

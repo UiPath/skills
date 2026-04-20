@@ -37,7 +37,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 10. **After approval, re-read `tasks.md` before executing.** `tasks.md` is the complete handoff artifact — all IDs, inputs, outputs, and references are captured there.
 11. **Unresolved task resources produce skeleton tasks — never mock, never fabricate.** Keep the `<UNRESOLVED: ...>` marker on the `taskTypeId` / `type-id` / `connection-id` slot in `tasks.md`, and omit `inputs:` / `outputs:` from that task entry. At execution time, the task is created in `caseplan.json` with `--type` + `--display-name` only (skeleton task) — no task-type-id, no connection-id, no variable bindings. Task-entry conditions and `selected-tasks-completed` rules still reference the skeleton's `TaskId`, so the workflow structure stays reviewable. The user attaches the real resource + bindings externally before runtime. See [references/skeleton-tasks.md](references/skeleton-tasks.md). Never fabricate a task-type-id or connection-id to "fill the gap".
 12. **Persist every registry resolution to `registry-resolved.json`** with full detail: search query, all matched results, selected result, rationale. This is the debug audit trail.
-13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `--source-stage <id> --source-task <id> --source-output <name>` at execution time. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md).
+13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `=vars.<outputVarId>` at execution time by reading the source output's `var` field from caseplan.json. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [references/plugins/variables/io-binding/impl.md](references/plugins/variables/io-binding/impl.md).
 14. **Expression prefixes are fixed:** `=metadata.`, `=js:`, `=vars.`, `=datafabric.`, `=bindings.`, `=orchestrator.JobAttachments`, `=response`, `=result`, `=Error`, `=jsonString:`. Plain strings without a prefix are literals, not expressions.
 15. **Connector integration uses the 3-step pipeline**: `get-connector` → `get-connection` → (optional) `tasks describe --connection-id`. One plugin (`connector-activity` / `connector-trigger` / event-`trigger`) per integration pattern — schema is data-driven. See [references/connector-integration.md](references/connector-integration.md).
 16. **Enrichable non-connector task types** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`) pass `--task-type-id` on `tasks add` to auto-populate inputs/outputs. Connector variants use `tasks add-connector` with `--type-id` + `--connection-id` instead.
@@ -154,6 +154,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + `impl.md` |
 | **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + `impl.md` |
 | **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + `impl.md` |
+| **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + `impl.md` |
 | **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl.md` |
 | **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl.md` |
 | **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl.md` |
@@ -169,6 +170,8 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | [edges](references/plugins/edges/planning.md) | Edges between Trigger/Stage nodes (type inferred) |
 | [sla](references/plugins/sla/planning.md) | Default SLA, conditional SLA rules, escalation rules |
 | [global-vars](references/plugins/variables/global-vars/planning.md) | Case variables and arguments (inputs/outputs/inputOutputs) |
+| [io-binding](references/plugins/variables/io-binding/planning.md) | Task input/output wiring, cross-task references, JSON shapes |
+| [logging](references/plugins/logging/impl.md) | Shared issue log — format, severity levels, file dump |
 
 **Task plugins** (`references/plugins/tasks/`):
 
@@ -209,7 +212,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 - **Do NOT group multiple sdd.md tasks under one T-number.** Each task, trigger, edge, or condition gets its own numbered entry.
 - **Do NOT fabricate input or output names in cross-task references.** Run `uip case tasks describe` to discover actual names. A fabricated name becomes a silent runtime null.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe the condition in natural language; the execution phase determines the exact expression form.
-- **Do NOT fabricate task-type-ids or connection-ids.** When a resource is unresolved, use skeleton-task creation: `tasks add --type <t> --display-name <n>` with no `--task-type-id`, and for connectors `tasks add-connector --type <t> --display-name <n>` with no `--type-id` / `--connection-id`. Skip input/output bindings entirely — `var bind` needs a resolved schema. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
+- **Do NOT fabricate task-type-ids or connection-ids.** When a resource is unresolved, use skeleton-task creation: `tasks add --type <t> --display-name <n>` with no `--task-type-id`, and for connectors `tasks add-connector --type <t> --display-name <n>` with no `--type-id` / `--connection-id`. Skip input/output bindings entirely — skeletons have no input schema. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
 - **Do NOT invoke other skills automatically.** If the case needs a process, agent, or action that doesn't exist, emit a skeleton task (per Rule #11) and list the missing resources in the completion report so the user can register them externally. On-demand resource creation is a future milestone, not today.
 - **Do NOT place multiple tasks in the same lane.** The FE renders same-lane tasks stacked in one column, which is unreadable for non-trivial stages. Give each task its own `--lane` index. Lane carries no execution semantics — it's layout only.
 - **Do NOT edit `content/*.bpmn` files.** They are auto-generated and will be overwritten.
