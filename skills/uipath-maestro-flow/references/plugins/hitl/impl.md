@@ -24,9 +24,93 @@ Confirm:
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the node type and `model` fields from the JSON structure section in your registry validation.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 The human task node's output (`$vars.{nodeId}.output`) contains the form data submitted by the user.
+
+## JSON Structure
+
+### Node instance (inside `nodes[]`)
+
+```json
+{
+  "id": "reviewExtraction",
+  "type": "uipath.core.human-task.abc123",
+  "typeVersion": "1.0.0",
+  "display": { "label": "Review Extraction" },
+  "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "Form data submitted by the user",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the human task fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
+  "model": {
+    "type": "bpmn:ServiceTask",
+    "serviceType": "Actions.HITL",
+    "version": "v2",
+    "section": "Published",
+    "bindings": {
+      "resource": "process",
+      "resourceSubType": "<appType>",
+      "resourceKey": "Shared.Review Form App",
+      "orchestratorType": "human-task",
+      "values": {
+        "name": "Review Form App",
+        "folderPath": "Shared"
+      }
+    },
+    "context": [
+      { "name": "name",       "type": "string", "value": "=bindings.bReviewExtractionName",       "default": "Review Form App" },
+      { "name": "folderPath", "type": "string", "value": "=bindings.bReviewExtractionFolderPath", "default": "Shared" },
+      { "name": "_label",     "type": "string", "value": "Review Form App" }
+    ]
+  }
+}
+```
+
+> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip flow registry get` output.
+
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same app — do NOT create duplicates.
+
+```json
+"bindings": [
+  {
+    "id": "bReviewExtractionName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.Review Form App",
+    "default": "Review Form App",
+    "propertyAttribute": "name",
+    "resourceSubType": "<appType>"
+  },
+  {
+    "id": "bReviewExtractionFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.Review Form App",
+    "default": "Shared",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "<appType>"
+  }
+]
+```
+
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 ## Use Cases
 

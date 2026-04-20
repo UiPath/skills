@@ -31,6 +31,8 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 
 ## JSON Structure
 
+### Node instance (inside `nodes[]`)
+
 ```json
 {
   "id": "processInvoices",
@@ -59,19 +61,60 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartJob",
     "version": "v2",
+    "section": "Published",
     "bindings": {
       "resource": "process",
       "resourceSubType": "Process",
-      "resourceKey": "invoice-process-abc123",
+      "resourceKey": "Finance/Automation.Invoice Processor",
       "orchestratorType": "process",
       "values": {
         "name": "Invoice Processor",
         "folderPath": "Finance/Automation"
       }
-    }
+    },
+    "context": [
+      { "name": "name",       "type": "string", "value": "=bindings.bProcessInvoicesName",       "default": "Invoice Processor" },
+      { "name": "folderPath", "type": "string", "value": "=bindings.bProcessInvoicesFolderPath", "default": "Finance/Automation" },
+      { "name": "_label",     "type": "string", "value": "Invoice Processor" }
+    ]
   }
 }
 ```
+
+> `resourceKey` takes the form `<FolderPath>.<ResourceName>` — confirm the exact value from `uip flow registry get` output (it already has the correct key format).
+
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same RPA process — do NOT create duplicates.
+
+```json
+"bindings": [
+  {
+    "id": "bProcessInvoicesName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Finance/Automation.Invoice Processor",
+    "default": "Invoice Processor",
+    "propertyAttribute": "name",
+    "resourceSubType": "Process"
+  },
+  {
+    "id": "bProcessInvoicesFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Finance/Automation.Invoice Processor",
+    "default": "Finance/Automation",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "Process"
+  }
+]
+```
+
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 ## Mock Placeholder (If Not Yet Published)
 
