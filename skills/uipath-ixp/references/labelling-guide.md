@@ -41,26 +41,13 @@ uip ixp document list <owner> <dataset-name> --output json
 
 Returns `{ Uid, AttachmentRef }` for each document.
 
-### Get OCR Text
+### Get Document (download original file)
 
 ```bash
-uip ixp document text <attachment-ref> --output json
+uip ixp document get <owner> <comment-uid> -o /tmp/ixp_doc.png --output json
 ```
 
-### Get OCR Selections (words with bounding polygons)
-
-```bash
-uip ixp document pages <attachment-ref> --output json
-uip ixp document selections <attachment-ref> --page 0 --output json
-```
-
-### Download Page Image
-
-```bash
-uip ixp document image <attachment-ref> --page 0 --output /tmp/ixp_page_0.png --output json
-```
-
-Then use the **Read tool** to view it.
+Downloads the original document file. Then use the **Read tool** to view it visually.
 
 ## Getting the Taxonomy
 
