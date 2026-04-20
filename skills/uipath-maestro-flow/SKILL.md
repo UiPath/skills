@@ -206,7 +206,7 @@ uip maestro flow validate <ProjectName>.flow --output json
 
 **Validation loop:**
 1. Run `uip maestro flow validate`
-2. If valid → done, move to Step 7 (push to Studio Web)
+2. If valid → done, move to Step 7 (tidy layout)
 3. If errors → read the error messages, fix the `.flow` file
 4. Go to 1
 
@@ -216,7 +216,15 @@ Common error categories:
 - **Invalid node/edge references** — `sourceNodeId`/`targetNodeId` must reference existing node `id`s
 - **Duplicate IDs** — node and edge `id`s must be unique
 
-### Step 7 — Debug (cloud) — only when explicitly requested
+### Step 7 — Tidy node layout
+
+After validation passes, auto-layout nodes before publishing or debugging:
+
+```bash
+uip maestro flow tidy <ProjectName>.flow --output json
+```
+
+### Step 8 — Debug (cloud) — only when explicitly requested
 
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
@@ -226,13 +234,13 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
-> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
+> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
 
 **Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip maestro flow debug](references/flow-commands.md#uip-flow-debug).
 
-### Step 8 — Publish to Studio Web
+### Step 9 — Publish to Studio Web
 
-**This is the default publish target.** When the user wants to publish, view, or share the flow, upload the solution directly to Studio Web:
+**This is the default publish target.** After tidy (Step 7), when the user wants to publish, view, or share the flow, upload the solution directly to Studio Web:
 
 ```bash
 # Upload the solution folder (containing the .uipx) to Studio Web
@@ -252,7 +260,7 @@ When the build completes and it is time to offer next steps (see Completion Outp
 | Option | Action |
 |--------|--------|
 | **Publish to Studio Web** (default) | Run `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
-| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir>` (see Step 7). Confirm consent first — debug executes the flow for real. |
+| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir>` (see Step 8). Confirm consent first — debug executes the flow for real. |
 | **Deploy to Orchestrator** | Run `uip maestro flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
@@ -292,7 +300,7 @@ Do not run any of these actions without an explicit user selection.
 | **Wire nodes with edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) + [references/flow-file-format.md — Standard ports](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
 | **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
+| **Publish to Studio Web** | Step 9 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) + [JSON: Variable Operations](references/flow-editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
@@ -313,7 +321,7 @@ Do not run any of these actions without an explicit user selection.
 | `uip maestro flow validate` | Local JSON schema + cross-reference check | No |
 | `uip maestro flow debug` | Converts to BPMN, uploads to Studio Web, runs in Orchestrator, streams results | Yes |
 
-Always `validate` locally before `debug`. Validation is instant; debug is a cloud round-trip.
+Always `validate` → `tidy` → `debug`. Validation is instant; tidy auto-layouts nodes; debug is a cloud round-trip.
 
 ### CLI output format
 
@@ -332,9 +340,10 @@ When you finish building or editing a flow, report to the user:
 1. **File path** of the `.flow` file created or edited
 2. **What was built** — summary of nodes added, edges wired, and logic implemented
 3. **Validation status** — whether `flow validate` passes (or remaining errors if unresolvable)
-4. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
-5. **Missing connections** — any connector nodes that need connections the user must create
-6. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
+4. **Tidy status** — confirm `flow tidy` was run
+5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
+6. **Missing connections** — any connector nodes that need connections the user must create
+7. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
    - **Publish to Studio Web** — run `uip solution upload <SolutionDir>` and share the URL
    - **Debug the solution** — run `uip maestro flow debug <ProjectDir>` (requires explicit consent — side effects are real)
    - **Deploy to Orchestrator** — hand off to the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip maestro flow pack` + `uip solution publish`
@@ -374,6 +383,6 @@ When you finish building or editing a flow, report to the user:
   - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
   - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
-- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 9).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
