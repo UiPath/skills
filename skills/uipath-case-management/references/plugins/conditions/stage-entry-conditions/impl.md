@@ -19,6 +19,7 @@ uip case stage-entry-conditions add <file> <stage-id> \
 | `case-entered` | — |
 | `selected-stage-completed` | `--selected-stage-id` |
 | `selected-stage-exited` | `--selected-stage-id` |
+| `user-selected-stage` | — |
 | `wait-for-connector` | `--condition-expression` |
 
 `--is-interrupting` is optional (defaults to `false`).

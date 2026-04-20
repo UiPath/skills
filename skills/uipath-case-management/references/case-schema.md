@@ -26,10 +26,12 @@ Metadata and configuration for the case definition.
   "caseIdentifier": "LOAN",
   "caseAppEnabled": false,
   "caseIdentifierType": "constant",
-  "version": "v12",
+  "version": "v17",
+  "publishVersion": 2,
   "data": {
     "sla": { "count": 5, "unit": "d" },
     "slaRules": [],
+    "intsvcActivityConfig": "v2",
     "uipath": {
       "bindings": [],
       "variables": { "inputs": [], "outputs": [], "inputOutputs": [] }
@@ -48,9 +50,11 @@ Metadata and configuration for the case definition.
 | `caseIdentifier` | string | Identifier used at runtime |
 | `caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
 | `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
-| `version` | string | Schema version — `"v12"` for current schema |
+| `version` | string | Schema version — `"v17"` for current schema |
+| `publishVersion` | number? | Publish version — `2` for current schema |
 | `data.sla` | SlaSchema? | Default SLA for the case (see §5) |
 | `data.slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules (see §5) |
+| `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `data.uipath` | object? | Variable and binding declarations |
 | `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
@@ -70,7 +74,7 @@ Rule structure uses DNF — see §4.
 
 ---
 
-## 2. nodes (three types, discriminated on `type`)
+## 2. nodes (four types, discriminated on `type`)
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
@@ -120,6 +124,7 @@ Standard workflow stage. Contains tasks.
 | `entryConditions` | EntryCondition[]? | See §3 |
 | `exitConditions` | ExitCondition[]? | See §3 |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
+| `isRequired` | boolean? | Whether the stage must complete for the case to complete |
 | `description` | string? | Stage description |
 
 ### c) Exception Stage Node — `"case-management:ExceptionStage"`
@@ -131,6 +136,29 @@ Extends StageNodeData with:
 | Field | Type | Description |
 |-------|------|-------------|
 | `slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules for this exception stage |
+
+### d) Sticky Note Node — `"case-management:StickyNote"`
+
+Free-floating annotation node. Ignored at execution time; surfaced only in the authoring canvas.
+
+```json
+{
+  "id": "<shortId>",
+  "type": "case-management:StickyNote",
+  "position": { "x": 400, "y": 400 },
+  "data": {
+    "label": "Note",
+    "color": "yellow",
+    "content": "Reminder: confirm SLA with ops before publishing."
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data.label` | string? | Display label |
+| `data.color` | string? | Sticky note color |
+| `data.content` | string? | Note body |
 
 ---
 
@@ -232,6 +260,7 @@ Rules = Rule[][]
 | `required-tasks-completed` | `id?`, `conditionExpression?` | All required tasks in the stage have completed |
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
+| `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 
 Not every rule type is valid at every level — see each condition plugin's `impl.md` for the allowed subset per location.
@@ -296,7 +325,9 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl.md` |
 | `skipCondition` | string? | Expression — skip the task when truthy |
 | `entryConditions` | TaskEntryCondition[]? | See §3 |
-| `shouldRunOnReEntry` | boolean? | Re-run when stage is re-entered |
+| `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
+| `shouldRunOnReEntry` | boolean? | *(deprecated — use `shouldRunOnlyOnce`)* Re-run when stage is re-entered |
+| `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
 
 **Task type catalog** (full shape in each plugin's `impl.md`):

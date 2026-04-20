@@ -1,17 +1,17 @@
-# uip case — CLI Command Reference
+# uip maestro case — CLI Command Reference
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
 ---
 
-## uip case init
+## uip maestro case init
 
 Scaffold a new Case project with boilerplate files.
 
 ```bash
-uip case init <name>
-uip case init my-case-project
-uip case init my-case-project --force
+uip maestro case init <name>
+uip maestro case init my-case-project
+uip maestro case init my-case-project --force
 ```
 
 | Flag | Description |
@@ -23,14 +23,14 @@ Creates: `<name>/project.uiproj`, `<name>/content/operate.json`, `entry-points.j
 
 ---
 
-## uip case pack
+## uip maestro case pack
 
 Pack a Case project directory into a `.nupkg` file.
 
 ```bash
-uip case pack <projectPath> <outputPath>
-uip case pack ./my-case-project ./dist
-uip case pack ./my-case-project ./dist --name MyCase --version 2.0.0
+uip maestro case pack <projectPath> <outputPath>
+uip maestro case pack ./my-case-project ./dist
+uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 ```
 
 | Flag | Description |
@@ -56,14 +56,14 @@ uip solution upload <SolutionDir> --output json
 
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
 
-## uip case debug
+## uip maestro case debug
 
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`.**
 
 ```bash
-uip case debug <projectDirectory>
-uip case debug ./mySolution/myProject
-uip case debug ./mySolution/myProject --folder-id 42 --poll-interval 3000
+uip maestro case debug <projectDirectory>
+uip maestro case debug ./mySolution/myProject
+uip maestro case debug ./mySolution/myProject --folder-id 42 --poll-interval 3000
 ```
 
 | Flag | Description |
@@ -76,21 +76,21 @@ uip case debug ./mySolution/myProject --folder-id 42 --poll-interval 3000
 
 ---
 
-## uip case cases
+## uip maestro case cases
 
 Manage local case management definition JSON files.
 
 ```bash
 # Create a new case definition file
-uip case cases add --name <name> --file <output.json>
-uip case cases add --name "Loan Approval" --file loan-approval.json
-uip case cases add --name "Loan Approval" --file loan-approval.json \
+uip maestro case cases add --name <name> --file <output.json>
+uip maestro case cases add --name "Loan Approval" --file loan-approval.json
+uip maestro case cases add --name "Loan Approval" --file loan-approval.json \
   --case-identifier "LOAN" --identifier-type constant --case-app-enabled --description "Loan case"
 
 # Edit an existing case definition file
-uip case cases edit <file> --name <new-name>
-uip case cases edit loan-approval.json --case-identifier "LA" --identifier-type external
-uip case cases edit loan-approval.json --case-app-enabled
+uip maestro case cases edit <file> --name <new-name>
+uip maestro case cases edit loan-approval.json --case-identifier "LA" --identifier-type external
+uip maestro case cases edit loan-approval.json --case-app-enabled
 ```
 
 Options for `add`:
@@ -112,24 +112,24 @@ Options for `edit` (at least one required):
 
 ---
 
-## uip case stages
+## uip maestro case stages
 
 Manage stage nodes within a case definition JSON file.
 
 ```bash
 # Add a stage
-uip case stages add <file>
-uip case stages add <file> --label "Review" --type stage --description "Review Stage"
-uip case stages add <file> --label "Exception Handler" --type exception
+uip maestro case stages add <file>
+uip maestro case stages add <file> --label "Review" --type stage --description "Review Stage"
+uip maestro case stages add <file> --label "Exception Handler" --type exception
 
 # Edit a stage label
-uip case stages edit <file> <stage-id> --label "New Label"
+uip maestro case stages edit <file> <stage-id> --label "New Label"
 
 # Print a stage and its connected edges
-uip case stages get <file> <stage-id>
+uip maestro case stages get <file> <stage-id>
 
 # Remove a stage and its connected edges
-uip case stages remove <file> <stage-id>
+uip maestro case stages remove <file> <stage-id>
 ```
 
 Stage types: `stage` (default), `exception`, `trigger`.
@@ -140,28 +140,28 @@ Output on `add`: `{ StageId, Type, Label, Position }` — save `StageId` for tas
 
 ---
 
-## uip case stage-entry-conditions
+## uip maestro case stage-entry-conditions
 
 Manage entry conditions on a stage within a case management definition JSON file.
 
 ```bash
 # Add an entry condition to a stage
-uip case stage-entry-conditions add <file> <stage-id>
-uip case stage-entry-conditions add case.json <stage-id> --display-name "Pre-check"
-uip case stage-entry-conditions add case.json <stage-id> --display-name "Interrupt" --is-interrupting true
-uip case stage-entry-conditions add case.json <stage-id> --rule-type case-entered
-uip case stage-entry-conditions add case.json <stage-id> --rule-type selected-stage-exited --selected-stage-id <id>
+uip maestro case stage-entry-conditions add <file> <stage-id>
+uip maestro case stage-entry-conditions add case.json <stage-id> --display-name "Pre-check"
+uip maestro case stage-entry-conditions add case.json <stage-id> --display-name "Interrupt" --is-interrupting true
+uip maestro case stage-entry-conditions add case.json <stage-id> --rule-type case-entered
+uip maestro case stage-entry-conditions add case.json <stage-id> --rule-type selected-stage-exited --selected-stage-id <id>
 
 # Edit an entry condition
-uip case stage-entry-conditions edit <file> <stage-id> <condition-id> --display-name "Updated"
-uip case stage-entry-conditions edit case.json <stage-id> <condition-id> --is-interrupting false
-uip case stage-entry-conditions edit case.json <stage-id> <condition-id> --rule-type wait-for-connector --condition-expression "expr"
+uip maestro case stage-entry-conditions edit <file> <stage-id> <condition-id> --display-name "Updated"
+uip maestro case stage-entry-conditions edit case.json <stage-id> <condition-id> --is-interrupting false
+uip maestro case stage-entry-conditions edit case.json <stage-id> <condition-id> --rule-type wait-for-connector --condition-expression "expr"
 
 # Get an entry condition
-uip case stage-entry-conditions get <file> <stage-id> <condition-id>
+uip maestro case stage-entry-conditions get <file> <stage-id> <condition-id>
 
 # Remove an entry condition
-uip case stage-entry-conditions remove <file> <stage-id> <condition-id>
+uip maestro case stage-entry-conditions remove <file> <stage-id> <condition-id>
 ```
 
 Options for `add`:
@@ -171,7 +171,7 @@ Options for `add`:
 | `<stage-id>` | **(required)** ID of the stage node |
 | `-d, --display-name <name>` | Display name for the condition |
 | `--is-interrupting <bool>` | Whether the condition is interrupting (`true` or `false`) |
-| `--rule-type <type>` | Initial rule type: `case-entered`, `selected-stage-exited`, `selected-stage-completed`, `wait-for-connector` |
+| `--rule-type <type>` | Initial rule type: `case-entered`, `selected-stage-exited`, `selected-stage-completed`, `wait-for-connector`, `user-selected-stage` |
 | `--condition-expression <expr>` | Condition expression for the initial rule |
 | `--selected-stage-id <id>` | Stage ID for `selected-stage-*` initial rules |
 
@@ -188,29 +188,29 @@ Output on `add`: `{ File, StageId, ConditionId, DisplayName, IsInterrupting, Rul
 
 ---
 
-## uip case stage-exit-conditions
+## uip maestro case stage-exit-conditions
 
 Manage exit conditions on a stage within a case management definition JSON file.
 
 ```bash
 # Add an exit condition to a stage
-uip case stage-exit-conditions add <file> <stage-id>
-uip case stage-exit-conditions add case.json <stage-id> --display-name "Approved" --type exit-only
-uip case stage-exit-conditions add case.json <stage-id> --display-name "Go to Review" --exit-to-stage-id <stage-id>
-uip case stage-exit-conditions add case.json <stage-id> --marks-stage-complete true
-uip case stage-exit-conditions add case.json <stage-id> --rule-type selected-tasks-completed --selected-tasks-ids "<task-id1>,<task-id2>"
-uip case stage-exit-conditions add case.json <stage-id> --rule-type required-tasks-completed
+uip maestro case stage-exit-conditions add <file> <stage-id>
+uip maestro case stage-exit-conditions add case.json <stage-id> --display-name "Approved" --type exit-only
+uip maestro case stage-exit-conditions add case.json <stage-id> --display-name "Go to Review" --exit-to-stage-id <stage-id>
+uip maestro case stage-exit-conditions add case.json <stage-id> --marks-stage-complete true
+uip maestro case stage-exit-conditions add case.json <stage-id> --rule-type selected-tasks-completed --selected-tasks-ids "<task-id1>,<task-id2>"
+uip maestro case stage-exit-conditions add case.json <stage-id> --rule-type required-tasks-completed
 
 # Edit an exit condition
-uip case stage-exit-conditions edit <file> <stage-id> <condition-id> --display-name "New Name"
-uip case stage-exit-conditions edit case.json <stage-id> <condition-id> --type wait-for-user --exit-to-stage-id <id>
-uip case stage-exit-conditions edit case.json <stage-id> <condition-id> --rule-type wait-for-connector --condition-expression "expr"
+uip maestro case stage-exit-conditions edit <file> <stage-id> <condition-id> --display-name "New Name"
+uip maestro case stage-exit-conditions edit case.json <stage-id> <condition-id> --type wait-for-user --exit-to-stage-id <id>
+uip maestro case stage-exit-conditions edit case.json <stage-id> <condition-id> --rule-type wait-for-connector --condition-expression "expr"
 
 # Get an exit condition
-uip case stage-exit-conditions get <file> <stage-id> <condition-id>
+uip maestro case stage-exit-conditions get <file> <stage-id> <condition-id>
 
 # Remove an exit condition
-uip case stage-exit-conditions remove <file> <stage-id> <condition-id>
+uip maestro case stage-exit-conditions remove <file> <stage-id> <condition-id>
 ```
 
 Exit condition types: `exit-only`, `wait-for-user`, `return-to-origin`.
@@ -243,13 +243,13 @@ Output on `add`: `{ File, StageId, ConditionId, DisplayName, Type, ExitToStageId
 
 ---
 
-## uip case validate
+## uip maestro case validate
 
 Validate a case management JSON file against case management rules.
 
 ```bash
-uip case validate <file>
-uip case validate case.json
+uip maestro case validate <file>
+uip maestro case validate case.json
 ```
 
 | Flag | Description |
@@ -260,26 +260,26 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 
 ---
 
-## uip case triggers
+## uip maestro case triggers
 
 Manage triggers in a case management definition JSON file. Also updates `entry-points.json` in the same directory.
 
 ```bash
 # Add a manual trigger
-uip case triggers add-manual <file>
-uip case triggers add-manual case.json --display-name "Start Manually"
-uip case triggers add-manual case.json --position "-100,340"
+uip maestro case triggers add-manual <file>
+uip maestro case triggers add-manual case.json --display-name "Start Manually"
+uip maestro case triggers add-manual case.json --position "-100,340"
 
 # Add a timer trigger
-uip case triggers add-timer <file> --every <duration>
-uip case triggers add-timer case.json --every 1h
-uip case triggers add-timer case.json --every 2d --at 2026-04-26T10:40:00.000-07:00 --repeat 5
-uip case triggers add-timer case.json --time-cycle "R/PT1H"  # raw ISO 8601
+uip maestro case triggers add-timer <file> --every <duration>
+uip maestro case triggers add-timer case.json --every 1h
+uip maestro case triggers add-timer case.json --every 2d --at 2026-04-26T10:40:00.000-07:00 --repeat 5
+uip maestro case triggers add-timer case.json --time-cycle "R/PT1H"  # raw ISO 8601
 
 # Add a connector event trigger (requires uip login)
-uip case triggers add-event <file> --type-id <id> --connection-id <id>
-uip case triggers add-event case.json --type-id <uiPathActivityTypeId> --connection-id <uuid>
-uip case triggers add-event case.json --type-id <id> --connection-id <id> \
+uip maestro case triggers add-event <file> --type-id <id> --connection-id <id>
+uip maestro case triggers add-event case.json --type-id <uiPathActivityTypeId> --connection-id <uuid>
+uip maestro case triggers add-event case.json --type-id <id> --connection-id <id> \
   --event-params '{"project":"PROJ"}' --filter '((fields.status=`Open`))'
 ```
 
@@ -316,18 +316,18 @@ Output on add: `{ File, TriggerId, Type, DisplayName, [TimeCycle] }` — save `T
 
 ---
 
-## uip case var
+## uip maestro case var
 
 Manage variable bindings in a case management definition.
 
 ```bash
 # Bind a task input to a literal or expression value
-uip case var bind <file> <stage-id> <task-id> <input-name> --value "hello"
-uip case var bind case.json <stage-id> <task-id> Amount --value "=metadata.amount"
-uip case var bind case.json <stage-id> <task-id> Code --value "=js:Math.random()"
+uip maestro case var bind <file> <stage-id> <task-id> <input-name> --value "hello"
+uip maestro case var bind case.json <stage-id> <task-id> Amount --value "=metadata.amount"
+uip maestro case var bind case.json <stage-id> <task-id> Code --value "=js:Math.random()"
 
 # Bind a task input to another task's output
-uip case var bind <file> <stage-id> <task-id> <input-name> \
+uip maestro case var bind <file> <stage-id> <task-id> <input-name> \
   --source-stage <src-stage-id> --source-task <src-task-id> --source-output <output-name>
 ```
 
@@ -351,49 +351,49 @@ Output: `{ File, StageId, TaskId, InputName, Value, [SourceStage, SourceTask, So
 
 ---
 
-## uip case tasks
+## uip maestro case tasks
 
 Manage tasks within a stage node.
 
 ```bash
 # Add a task to a stage — pass --lane <n>, one index per task within the stage (FE layout only)
-uip case tasks add <file> <stage-id> --type process --display-name "Run KYC" --name "KYC" --folder-path "Shared" --lane 0
-uip case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-title "Review" --priority High --lane 1
-uip case tasks add <file> <stage-id> --type agent --display-name "AI Scoring" --should-run-only-once --lane 2
-uip case tasks add <file> <stage-id> --type wait-for-timer --lane 3
+uip maestro case tasks add <file> <stage-id> --type process --display-name "Run KYC" --name "KYC" --folder-path "Shared" --lane 0
+uip maestro case tasks add <file> <stage-id> --type action --display-name "Human Review" --task-title "Review" --priority High --lane 1
+uip maestro case tasks add <file> <stage-id> --type agent --display-name "AI Scoring" --should-run-only-once --lane 2
+uip maestro case tasks add <file> <stage-id> --type wait-for-timer --lane 3
 
 # Add a task and inline-enrich with API bindings (process/agent/rpa/action/api-workflow/case-management)
-uip case tasks add <file> <stage-id> --type process --task-type-id <entityKey> --display-name "KYC"
+uip maestro case tasks add <file> <stage-id> --type process --task-type-id <entityKey> --display-name "KYC"
 
 # Add a connector activity or trigger task with full enrichment (requires uip login)
-uip case tasks add-connector <file> <stage-id> --type activity --type-id <id> --connection-id <id>
-uip case tasks add-connector <file> <stage-id> --type trigger --type-id <id> --connection-id <id>
-uip case tasks add-connector <file> <stage-id> --type activity --type-id <id> --connection-id <id> \
+uip maestro case tasks add-connector <file> <stage-id> --type activity --type-id <id> --connection-id <id>
+uip maestro case tasks add-connector <file> <stage-id> --type trigger --type-id <id> --connection-id <id>
+uip maestro case tasks add-connector <file> <stage-id> --type activity --type-id <id> --connection-id <id> \
   --input-values '{"body":{"comment":"Hello"},"queryParameters":{"issueIdOrKey":"PROJ-1"}}'
-uip case tasks add-connector <file> <stage-id> --type trigger --type-id <id> --connection-id <id> \
+uip maestro case tasks add-connector <file> <stage-id> --type trigger --type-id <id> --connection-id <id> \
   --input-values '{"body":{"project":"PROJ"}}' --filter '((fields.status=`Open`))'
 
 # Edit a task
-uip case tasks edit <file> <stage-id> <task-id> --display-name "Updated Name"
-uip case tasks edit <file> <stage-id> <task-id> --name "NewProcess" --folder-path "Finance"
-uip case tasks edit <file> <stage-id> <task-id> --should-run-only-once --is-required
+uip maestro case tasks edit <file> <stage-id> <task-id> --display-name "Updated Name"
+uip maestro case tasks edit <file> <stage-id> <task-id> --name "NewProcess" --folder-path "Finance"
+uip maestro case tasks edit <file> <stage-id> <task-id> --should-run-only-once --is-required
 
 # Get a task
-uip case tasks get <file> <stage-id> <task-id>
+uip maestro case tasks get <file> <stage-id> <task-id>
 
 # Remove a task
-uip case tasks remove <file> <stage-id> <task-id>
+uip maestro case tasks remove <file> <stage-id> <task-id>
 
 # Enrich a task with input/output schemas from the API
-uip case tasks enrich --type <type> --id <id>
-uip case tasks enrich --type process --id <entityKey>
-uip case tasks enrich --type agent --id <entityKey> --element-id <elementId>
+uip maestro case tasks enrich --type <type> --id <id>
+uip maestro case tasks enrich --type process --id <entityKey>
+uip maestro case tasks enrich --type agent --id <entityKey> --element-id <elementId>
 
 # Describe a task type's input/output metadata (for binding discovery)
-uip case tasks describe --type <type> --id <id>
-uip case tasks describe --type process --id <entityKey>
-uip case tasks describe --type connector-activity --id <typeId> --connection-id <uuid>
-uip case tasks describe --type connector-trigger --id <typeId> --connection-id <uuid>
+uip maestro case tasks describe --type <type> --id <id>
+uip maestro case tasks describe --type process --id <entityKey>
+uip maestro case tasks describe --type connector-activity --id <typeId> --connection-id <uuid>
+uip maestro case tasks describe --type connector-trigger --id <typeId> --connection-id <uuid>
 ```
 
 Valid task types:
@@ -467,28 +467,69 @@ Enrichable types: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-man
 
 ---
 
-## uip case edges
+## uip maestro case sticky-notes
+
+Manage sticky notes within a case management definition JSON file. Sticky notes are freeform annotations on the canvas — they have no execution semantics.
+
+```bash
+# Add a sticky note
+uip maestro case sticky-notes add <file>
+uip maestro case sticky-notes add case.json --label "Reviewer Notes" --content "Check KYC output" --color "#FFEB3B"
+uip maestro case sticky-notes add case.json --label "Reminder" --position "400,120"
+
+# Edit a sticky note
+uip maestro case sticky-notes edit <file> <note-id> --label "Updated"
+uip maestro case sticky-notes edit case.json <note-id> --content "New text" --color "#90CAF9"
+
+# Get a sticky note
+uip maestro case sticky-notes get <file> <note-id>
+
+# Remove a sticky note
+uip maestro case sticky-notes remove <file> <note-id>
+```
+
+Options for `add`:
+| Flag | Description |
+|------|-------------|
+| `<file>` | **(required)** Path to the case management JSON file |
+| `-l, --label <label>` | Display label for the sticky note |
+| `--content <content>` | Text content of the sticky note |
+| `--color <color>` | Color of the sticky note |
+| `--position <x,y>` | Position as `x,y` coordinates (default: `0,0`) |
+
+Options for `edit` (at least one required):
+| Flag | Description |
+|------|-------------|
+| `-l, --label <label>` | New display label |
+| `--content <content>` | New text content |
+| `--color <color>` | New color |
+
+Output on `add`: `{ File, StickyNoteId, Label, Content, Color, Position }` — save `StickyNoteId` for future edits.
+
+---
+
+## uip maestro case edges
 
 Manage edges (connections) between stage nodes.
 
 ```bash
 # Add an edge (type inferred: TriggerEdge if source is Trigger, Edge otherwise)
-uip case edges add <file> --source <trigger-id> --target <stage-id>
-uip case edges add <file> --source <stage-id> --target <next-stage-id> --label "Approved"
-uip case edges add <file> --source <stage-id> --target <exception-stage-id> \
+uip maestro case edges add <file> --source <trigger-id> --target <stage-id>
+uip maestro case edges add <file> --source <stage-id> --target <next-stage-id> --label "Approved"
+uip maestro case edges add <file> --source <stage-id> --target <exception-stage-id> \
   --label "Rejected" --source-handle bottom --target-handle top
-uip case edges add <file> --source <stage-id> --target <next-stage-id> --z-index 10
+uip maestro case edges add <file> --source <stage-id> --target <next-stage-id> --z-index 10
 
 # Edit an edge
-uip case edges edit <file> <edge-id> --label "New Label"
-uip case edges edit <file> <edge-id> --z-index 10
-uip case edges edit <file> <edge-id> --source-handle right --target-handle left
+uip maestro case edges edit <file> <edge-id> --label "New Label"
+uip maestro case edges edit <file> <edge-id> --z-index 10
+uip maestro case edges edit <file> <edge-id> --source-handle right --target-handle left
 
 # Get an edge
-uip case edges get <file> <edge-id>
+uip maestro case edges get <file> <edge-id>
 
 # Remove an edge
-uip case edges remove <file> <edge-id>
+uip maestro case edges remove <file> <edge-id>
 ```
 
 Handle directions: `right` (default source), `left` (default target), `top`, `bottom`.
@@ -505,27 +546,27 @@ Options for `edit` (at least one required):
 
 ---
 
-## uip case case-exit-conditions
+## uip maestro case case-exit-conditions
 
 Manage exit conditions on a case within a case management definition JSON file.
 
 ```bash
 # Add an exit condition
-uip case case-exit-conditions add <file>
-uip case case-exit-conditions add case.json --display-name "Approved"
-uip case case-exit-conditions add case.json --display-name "Closed" --marks-case-complete true
-uip case case-exit-conditions add case.json --rule-type selected-stage-completed --selected-stage-id <id>
+uip maestro case case-exit-conditions add <file>
+uip maestro case case-exit-conditions add case.json --display-name "Approved"
+uip maestro case case-exit-conditions add case.json --display-name "Closed" --marks-case-complete true
+uip maestro case case-exit-conditions add case.json --rule-type selected-stage-completed --selected-stage-id <id>
 
 # Edit an exit condition
-uip case case-exit-conditions edit <file> <condition-id> --display-name "New Name"
-uip case case-exit-conditions edit case.json <condition-id> --marks-case-complete false
-uip case case-exit-conditions edit case.json <condition-id> --rule-type wait-for-connector --condition-expression "expr"
+uip maestro case case-exit-conditions edit <file> <condition-id> --display-name "New Name"
+uip maestro case case-exit-conditions edit case.json <condition-id> --marks-case-complete false
+uip maestro case case-exit-conditions edit case.json <condition-id> --rule-type wait-for-connector --condition-expression "expr"
 
 # Get an exit condition
-uip case case-exit-conditions get <file> <condition-id>
+uip maestro case case-exit-conditions get <file> <condition-id>
 
 # Remove an exit condition
-uip case case-exit-conditions remove <file> <condition-id>
+uip maestro case case-exit-conditions remove <file> <condition-id>
 ```
 
 Options for `add`:
@@ -551,26 +592,26 @@ Output on `add`: `{ File, ConditionId, DisplayName, MarksCaseComplete, Rules }` 
 
 ---
 
-## uip case task-entry-conditions
+## uip maestro case task-entry-conditions
 
 Manage entry conditions on a task within a case management definition JSON file.
 
 ```bash
 # Add an entry condition to a task
-uip case task-entry-conditions add <file> <stage-id> <task-id>
-uip case task-entry-conditions add case.json <stage-id> <task-id> --display-name "Pre-check"
-uip case task-entry-conditions add case.json <stage-id> <task-id> --rule-type current-stage-entered
-uip case task-entry-conditions add case.json <stage-id> <task-id> --rule-type selected-tasks-completed --selected-tasks-ids "<id1>,<id2>"
+uip maestro case task-entry-conditions add <file> <stage-id> <task-id>
+uip maestro case task-entry-conditions add case.json <stage-id> <task-id> --display-name "Pre-check"
+uip maestro case task-entry-conditions add case.json <stage-id> <task-id> --rule-type current-stage-entered
+uip maestro case task-entry-conditions add case.json <stage-id> <task-id> --rule-type selected-tasks-completed --selected-tasks-ids "<id1>,<id2>"
 
 # Edit an entry condition
-uip case task-entry-conditions edit <file> <stage-id> <task-id> <condition-id> --display-name "Updated"
-uip case task-entry-conditions edit case.json <stage-id> <task-id> <condition-id> --rule-type adhoc --condition-expression "expr"
+uip maestro case task-entry-conditions edit <file> <stage-id> <task-id> <condition-id> --display-name "Updated"
+uip maestro case task-entry-conditions edit case.json <stage-id> <task-id> <condition-id> --rule-type adhoc --condition-expression "expr"
 
 # Get an entry condition
-uip case task-entry-conditions get <file> <stage-id> <task-id> <condition-id>
+uip maestro case task-entry-conditions get <file> <stage-id> <task-id> <condition-id>
 
 # Remove an entry condition
-uip case task-entry-conditions remove <file> <stage-id> <task-id> <condition-id>
+uip maestro case task-entry-conditions remove <file> <stage-id> <task-id> <condition-id>
 ```
 
 Options for `add`:
@@ -596,29 +637,29 @@ Output on `add`: `{ File, StageId, TaskId, ConditionId, DisplayName, Rules }` �
 
 ---
 
-## uip case registry
+## uip maestro case registry
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
 ```bash
 # Refresh cache from all resource types
-uip case registry pull
-uip case registry pull --force             # ignore 30-min TTL and force refresh
-uip case registry pull --solution-id <id>  # include a specific solution's resources
+uip maestro case registry pull
+uip maestro case registry pull --force             # ignore 30-min TTL and force refresh
+uip maestro case registry pull --solution-id <id>  # include a specific solution's resources
 
 # List all cached resources
-uip case registry list --output json
+uip maestro case registry list --output json
 
 # Search for resources by keyword and/or field filters
-uip case registry search <keyword>
-uip case registry search <keyword> --type process
-uip case registry search --filter "name:contains=Apple,category=Pipelines"
-uip case registry search <keyword> --filter "name:contains=Foo" --type agent
+uip maestro case registry search <keyword>
+uip maestro case registry search <keyword> --type process
+uip maestro case registry search --filter "name:contains=Apple,category=Pipelines"
+uip maestro case registry search <keyword> --filter "name:contains=Foo" --type agent
 
 # Get a resource by identifier (entityKey, id, or uiPathActivityTypeId)
-uip case registry get <identifier>
-uip case registry get <identifier> --type agent
-uip case registry get <uiPathActivityTypeId> --type typecache-activities --connection-id <uuid>
+uip maestro case registry get <identifier>
+uip maestro case registry get <identifier> --type agent
+uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities --connection-id <uuid>
 ```
 
 Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.
@@ -649,13 +690,13 @@ Output: `{ MatchCount, Resources: [{ ResourceType, Resource }] }`.
 
 Cache lives at `~/.uipcli/case-resources/` and expires after 30 minutes.
 
-### uip case registry get-connector
+### uip maestro case registry get-connector
 
 Look up a connector activity or trigger from the local TypeCache index. Returns the raw cache entry and its connector config (connector key, connector type, operation name). Does NOT fetch connections — use `get-connection` for that.
 
 ```bash
-uip case registry get-connector --type typecache-activities --activity-type-id <uuid>
-uip case registry get-connector --type typecache-triggers --activity-type-id <uuid>
+uip maestro case registry get-connector --type typecache-activities --activity-type-id <uuid>
+uip maestro case registry get-connector --type typecache-triggers --activity-type-id <uuid>
 ```
 
 | Flag | Description |
@@ -665,13 +706,13 @@ uip case registry get-connector --type typecache-triggers --activity-type-id <uu
 
 Output: `{ Entry, Config }`.
 
-### uip case registry get-connection
+### uip maestro case registry get-connection
 
 Look up a connector and fetch available connections from Integration Service. **Requires `uip login`.**
 
 ```bash
-uip case registry get-connection --type typecache-activities --activity-type-id <uuid>
-uip case registry get-connection --type typecache-triggers --activity-type-id <uuid>
+uip maestro case registry get-connection --type typecache-activities --activity-type-id <uuid>
+uip maestro case registry get-connection --type typecache-triggers --activity-type-id <uuid>
 ```
 
 | Flag | Description |
@@ -683,24 +724,24 @@ Output: `{ Entry, Config, Connections }` — use a `Connections[].id` value as `
 
 ---
 
-## uip case process
+## uip maestro case process
 
 Manage and run Case processes. **Requires `uip login`.**
 
 ```bash
 # List available Case processes
-uip case process list
-uip case process list --folder-key <guid>
-uip case process list --filter "Name eq 'MyCase'"
+uip maestro case process list
+uip maestro case process list --folder-key <guid>
+uip maestro case process list --filter "Name eq 'MyCase'"
 
 # Get process schema and entry point details
-uip case process get <process-key> <feed-id>
-uip case process get <process-key> <feed-id> --folder-key <guid>
+uip maestro case process get <process-key> <feed-id>
+uip maestro case process get <process-key> <feed-id> --folder-key <guid>
 
 # Run a Case process
-uip case process run <process-key> <folder-key>
-uip case process run <process-key> <folder-key> --inputs '{"key":"value"}'
-uip case process run <process-key> <folder-key> --inputs @inputs.json --validate
+uip maestro case process run <process-key> <folder-key>
+uip maestro case process run <process-key> <folder-key> --inputs '{"key":"value"}'
+uip maestro case process run <process-key> <folder-key> --inputs @inputs.json --validate
 ```
 
 Options for `list`:
@@ -733,23 +774,23 @@ Options for `run`:
 | `--validate` | Validate inputs against process schema before running |
 | `--login-validity <minutes>` | Min minutes before token refresh |
 
-Output on `run`: `{ jobKey, state, traceId }` — use `jobKey` with `uip case job traces`.
+Output on `run`: `{ jobKey, state, traceId }` — use `jobKey` with `uip maestro case job traces`.
 
 ---
 
-## uip case job
+## uip maestro case job
 
 Monitor Case jobs. **Requires `uip login`.**
 
 ```bash
 # Stream traces for a running job
-uip case job traces <job-key>
-uip case job traces <job-key> --pretty
-uip case job traces <job-key> --poll-interval 5000
+uip maestro case job traces <job-key>
+uip maestro case job traces <job-key> --pretty
+uip maestro case job traces <job-key> --poll-interval 5000
 
 # Get job status
-uip case job status <job-key>
-uip case job status <job-key> --detailed
+uip maestro case job status <job-key>
+uip maestro case job status <job-key> --detailed
 ```
 
 Options for `traces`:
@@ -773,73 +814,73 @@ Options for `status`:
 
 ---
 
-## uip case instance
+## uip maestro case instance
 
 Manage live Case process instances. **Requires `uip login`.**
 
 ```bash
 # List instances
-uip case instance list
-uip case instance list --limit 20 --offset 0
-uip case instance list --process-key <key> --folder-key <key>
-uip case instance list --package-id <id> --error-code <code>
+uip maestro case instance list
+uip maestro case instance list --limit 20 --offset 0
+uip maestro case instance list --process-key <key> --folder-key <key>
+uip maestro case instance list --package-id <id> --error-code <code>
 
 # Get a specific instance
-uip case instance get <instance-id>
-uip case instance get <instance-id> --folder-key <key>
+uip maestro case instance get <instance-id>
+uip maestro case instance get <instance-id> --folder-key <key>
 
 # Lifecycle operations (all accept --folder-key and --comment)
-uip case instance pause <instance-id>
-uip case instance resume <instance-id>
-uip case instance cancel <instance-id>
-uip case instance retry <instance-id>
+uip maestro case instance pause <instance-id>
+uip maestro case instance resume <instance-id>
+uip maestro case instance cancel <instance-id>
+uip maestro case instance retry <instance-id>
 
 # Variables
-uip case instance variables <instance-id>
-uip case instance variables <instance-id> --parent-element-id <id>
+uip maestro case instance variables <instance-id>
+uip maestro case instance variables <instance-id> --parent-element-id <id>
 
 # Incidents for a specific instance
-uip case instance incidents <instance-id>
+uip maestro case instance incidents <instance-id>
 
 # Get the Case definition (JSON) for a process instance
-uip case instance asset <instance-id>
+uip maestro case instance asset <instance-id>
 
 # Migration: migrate instance to a different package version
-uip case instance migrate <instance-id> <new-version>
+uip maestro case instance migrate <instance-id> <new-version>
 
 # Go-to: move execution cursor from one element to another
-uip case instance goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
-uip case instance cursors <instance-id>
-uip case instance element-executions <instance-id>
+uip maestro case instance goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
+uip maestro case instance cursors <instance-id>
+uip maestro case instance element-executions <instance-id>
 ```
 
 ---
 
-## uip case processes
+## uip maestro case processes
 
 View Case process summaries. **Requires `uip login`.**
 
 ```bash
 # List all Case process summaries
-uip case processes list
+uip maestro case processes list
 
 # Get incidents for a specific process
-uip case processes incidents <process-key>
-uip case processes incidents <process-key> --folder-key <key>
+uip maestro case processes incidents <process-key>
+uip maestro case processes incidents <process-key> --folder-key <key>
 ```
 
 ---
 
-## uip case incident
+## uip maestro case incident
 
 View and retrieve Case incidents across all processes. **Requires `uip login`.**
 
 ```bash
 # Get incident summaries across all processes
-uip case incident summary
+uip maestro case incident summary
 
 # Get a single incident by ID
-uip case incident get <incident-id> --folder-key <key>
+uip maestro case incident get <incident-id> --folder-key <key>
 ```
 
 Options for `get`:
@@ -850,47 +891,47 @@ Options for `get`:
 
 ---
 
-## uip case sla
+## uip maestro case sla
 
 Manage SLA settings and escalation rules for case definitions (root level or per stage).
 
 ```bash
 # Set SLA on root or a stage
-uip case sla set <file> --count <n> --unit <u>
-uip case sla set case.json --count 5 --unit d
-uip case sla set case.json --count 2 --unit w --stage-id <stage-id>
+uip maestro case sla set <file> --count <n> --unit <u>
+uip maestro case sla set case.json --count 5 --unit d
+uip maestro case sla set case.json --count 2 --unit w --stage-id <stage-id>
 
 # Get SLA from root or a stage
-uip case sla get <file>
-uip case sla get case.json --stage-id <stage-id>
+uip maestro case sla get <file>
+uip maestro case sla get case.json --stage-id <stage-id>
 
 # Remove SLA from root or a stage
-uip case sla remove <file>
-uip case sla remove case.json --stage-id <stage-id>
+uip maestro case sla remove <file>
+uip maestro case sla remove case.json --stage-id <stage-id>
 
 # Add an escalation rule to an SLA
-uip case sla escalation add <file> --trigger-type at-risk --at-risk-percentage 80 \
+uip maestro case sla escalation add <file> --trigger-type at-risk --at-risk-percentage 80 \
   --recipient-scope User --recipient-target <target> --recipient-value <value>
-uip case sla escalation add case.json --trigger-type sla-breached \
+uip maestro case sla escalation add case.json --trigger-type sla-breached \
   --recipient-scope UserGroup --recipient-target <target> --recipient-value <value> \
   --display-name "Notify Manager" --stage-id <stage-id>
 
 # List escalation rules on an SLA
-uip case sla escalation list <file>
-uip case sla escalation list case.json --stage-id <stage-id>
+uip maestro case sla escalation list <file>
+uip maestro case sla escalation list case.json --stage-id <stage-id>
 
 # Remove an escalation rule by ID
-uip case sla escalation remove <file> <escalation-id>
-uip case sla escalation remove case.json <escalation-id> --stage-id <stage-id>
+uip maestro case sla escalation remove <file> <escalation-id>
+uip maestro case sla escalation remove case.json <escalation-id> --stage-id <stage-id>
 
 # Add a conditional SLA rule (expression-based, root level only)
-uip case sla rules add <file> --expression "=js:someCondition" --count 3 --unit d
+uip maestro case sla rules add <file> --expression "=js:someCondition" --count 3 --unit d
 
 # List all conditional SLA rules at root level
-uip case sla rules list <file>
+uip maestro case sla rules list <file>
 
 # Remove a conditional SLA rule by index (0-based)
-uip case sla rules remove <file> <index>
+uip maestro case sla rules remove <file> <index>
 ```
 
 SLA units: `h` (hours), `d` (days), `w` (weeks), `m` (months).
