@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Canary: standalone infra-health check for the Maestro Flow debug path.
 
-Runs ``uip flow debug`` on Canary/Canary/ and asserts the fan-out/merge
+Runs ``uip maestro flow debug`` on Canary/Canary/ and asserts the fan-out/merge
 flow's five plugin legs (coded agent, lowcode agent, RPA, API workflow,
 Slack) each completed with the expected output. A failing leg pinpoints
 whether the regression is infra (this task fails) or skill (this task
@@ -115,7 +115,7 @@ LEGS: list[
 
 def run_debug() -> dict:
     print(
-        f"$ uip flow debug {PROJECT_DIR} --output json  (timeout={DEBUG_TIMEOUT}s)",
+        f"$ uip maestro flow debug {PROJECT_DIR} --output json  (timeout={DEBUG_TIMEOUT}s)",
         flush=True,
     )
     t0 = time.monotonic()
@@ -137,7 +137,7 @@ def run_debug() -> dict:
         # only holds the "Tool factory already registered" warning and peer
         # chatter. Dump both so the real reason is visible.
         _die(
-            f"uip flow debug exit {r.returncode} in {dt:.1f}s\n"
+            f"uip maestro flow debug exit {r.returncode} in {dt:.1f}s\n"
             f"--- stderr ---\n{r.stderr}"
             f"--- stdout ---\n{r.stdout}"
         )

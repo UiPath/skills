@@ -26,8 +26,8 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "uip flow validate passes"
-    command: "uip flow validate SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow"
+    description: "uip maestro flow validate passes"
+    command: "uip maestro flow validate SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
