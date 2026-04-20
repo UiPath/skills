@@ -341,8 +341,13 @@ Flow input and output parameters are declared through **variables** in the `.flo
 
 The packaging/debug step derives `entry-points.json` from these variable declarations.
 
-## Bindings — connector connection binding
+## Bindings — top-level `bindings[]` in the `.flow` file
 
-When a flow uses connector nodes, the runtime needs to know **which authenticated connection** to use for each connector. This is configured in `content/bindings_v2.json`.
+When a flow uses connector nodes or resource nodes (agent, rpa-workflow, api-workflow), the runtime needs to know which authenticated connection or Orchestrator resource to invoke. These bindings are authored in the `.flow` file's **top-level `bindings[]` array**.
 
-See the relevant node guide in `nodes/` for the full `bindings_v2.json` schema, connection resource field reference, JSON examples, and the connection fetching workflow.
+At `flow debug` / `flow pack` time the CLI regenerates `content/bindings_v2.json` from the top-level `bindings[]`. **`bindings_v2.json` is always generated, never hand-authored** — any manual edits to it are overwritten on the next debug/pack.
+
+See the relevant plugin guide under `plugins/` for per-node-type binding shapes:
+- [Resource Node Bindings](flow-editing-operations-json.md#resource-node-bindings-direct-json) — agent, rpa-workflow, api-workflow (`resource: "process"`)
+- [connector/impl.md](plugins/connector/impl.md) — connector activities (`resource: "Connection"`)
+- [connector-trigger/impl.md](plugins/connector-trigger/impl.md) — connector triggers (additional `EventTrigger`/`Property` resources derived at pack time)

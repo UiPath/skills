@@ -190,7 +190,7 @@ Phase 2 takes the approved architectural plan and resolves all implementation de
 
 ### Step 5 — Build the flow
 
-Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
+Edit `<ProjectName>.flow` directly in the project root. Resource and connector bindings go into the flow's top-level `bindings[]` array — `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
 
 **Read [references/flow-editing-operations.md](references/flow-editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
 
@@ -285,6 +285,7 @@ Do not run any of these actions without an explicit user selection.
 - **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
 - **Never use `core.action.http` (v1) for connector-authenticated requests** — the v1 node's `authenticationType: "connection"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) instead. See [http/planning.md](references/plugins/http/planning.md).
 - **Never hand-write `inputs.detail` for managed HTTP nodes** — run `uip flow node configure` to populate the `inputs.detail` structure, generate `bindings_v2.json`, and create the connection resource file. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
+- **Never add a resource node (`uipath.core.agent.*`, `uipath.core.rpa-workflow.*`, `uipath.core.api-workflow.*`) without populating the flow's top-level `bindings[]`** — each resource node needs two entries there (one for `name`, one for `folderPath`) plus a matching `model.context[]` on the node using `=bindings.<id>` references. The CLI's `flow node add` wires this automatically; hand-written JSON must do it explicitly. `flow validate` passes without these bindings, but `flow debug` regenerates an empty `bindings_v2.json` from the empty `bindings[]` and the runtime faults. See [Resource Node Bindings](references/flow-editing-operations-json.md#resource-node-bindings-direct-json).
 
 ## Task Navigation
 
