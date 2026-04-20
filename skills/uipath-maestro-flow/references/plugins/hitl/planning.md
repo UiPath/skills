@@ -1,6 +1,6 @@
 # HITL Node — Planning
 
-HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## Node Type Pattern
 
@@ -34,8 +34,8 @@ Use a HITL node when the flow needs to pause for human input, approval, or revie
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.human-task" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
 Requires `uip login`. Only published apps from your tenant appear.

@@ -6,14 +6,14 @@ Procedure for resolving connector activity and connector trigger tasks against U
 
 Consult this reference when planning or implementing any of:
 
-- `connector-activity` task (added via `uip case tasks add-connector --type activity`)
-- `connector-trigger` task (added via `uip case tasks add-connector --type trigger`)
-- `event` case-level trigger (added via `uip case triggers add-event`)
+- `connector-activity` task (added via `uip maestro case tasks add-connector --type activity`)
+- `connector-trigger` task (added via `uip maestro case tasks add-connector --type trigger`)
+- `event` case-level trigger (added via `uip maestro case triggers add-event`)
 
 ## Prerequisites
 
 1. `uip login` — tenant-scoped connectors are only visible after authentication.
-2. `uip case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uipcli/case-resources/`.
+2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uipcli/case-resources/`.
 3. A healthy Integration Service connection must exist for the connector. If `Connections` is empty after `get-connection`, the user must create one in IS before proceeding.
 
 ## Three-Step Resolution Pipeline
@@ -34,7 +34,7 @@ Match on `displayName` from the sdd.md. **Skip entries without a `uiPathActivity
 ### Step 2 — Get connector metadata
 
 ```bash
-uip case registry get-connector --type <typecache-activities|typecache-triggers> \
+uip maestro case registry get-connector --type <typecache-activities|typecache-triggers> \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
@@ -47,7 +47,7 @@ Output: `{ Entry, Config }`.
 ### Step 3 — Get connections and pick one
 
 ```bash
-uip case registry get-connection --type <typecache-activities|typecache-triggers> \
+uip maestro case registry get-connection --type <typecache-activities|typecache-triggers> \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
@@ -65,9 +65,9 @@ Output: `{ Entry, Config, Connections }` where `Connections` is an array of `{ i
 For connector activities or triggers where the sdd.md requires wiring inputs to specific fields, run `tasks describe` to fetch the schema:
 
 ```bash
-uip case tasks describe --type connector-activity --id "<uiPathActivityTypeId>" \
+uip maestro case tasks describe --type connector-activity --id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" --output json
-uip case tasks describe --type connector-trigger --id "<uiPathActivityTypeId>" \
+uip maestro case tasks describe --type connector-trigger --id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" --output json
 ```
 
@@ -80,7 +80,7 @@ The `--connection-id` is required — without it, custom fields and dynamic enum
 ### Connector activity task
 
 ```bash
-uip case tasks add-connector <file> <stage-id> \
+uip maestro case tasks add-connector <file> <stage-id> \
   --type activity \
   --type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
@@ -92,7 +92,7 @@ uip case tasks add-connector <file> <stage-id> \
 ### Connector trigger task (inside a stage)
 
 ```bash
-uip case tasks add-connector <file> <stage-id> \
+uip maestro case tasks add-connector <file> <stage-id> \
   --type trigger \
   --type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
@@ -103,7 +103,7 @@ uip case tasks add-connector <file> <stage-id> \
 ### Event trigger (case-level, outside any stage)
 
 ```bash
-uip case triggers add-event <file> \
+uip maestro case triggers add-event <file> \
   --type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
   --event-params '{"project":"PROJ"}' \

@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add <file> <stage-id> \
+uip maestro case tasks add <file> <stage-id> \
   --type process \
   --display-name "<display-name>" \
   --name "<process-name>" \
@@ -32,12 +32,12 @@ uip case tasks add <file> <stage-id> \
 | `--is-required` | Stage completion depends on this task |
 | `--description` | Task description |
 
-Passing `--task-type-id` auto-enriches the task with inputs, outputs, and bindings. If enrichment fails, re-run `uip case tasks enrich --type process --id <entityKey>` separately.
+Passing `--task-type-id` auto-enriches the task with inputs, outputs, and bindings. If enrichment fails, re-run `uip maestro case tasks enrich --type process --id <entityKey>` separately.
 
 ## Example
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type process \
   --display-name "Run KYC" \
   --name "KYC" \
@@ -76,10 +76,10 @@ After `tasks add`, bind each input from tasks.md per [bindings-and-expressions.m
 
 ```bash
 # Literal or expression input
-uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
+uip maestro case var bind <file> <stage-id> <task-id> <input-name> --value "<value>" --output json
 
 # Cross-task reference input
-uip case var bind <file> <stage-id> <task-id> <input-name> \
+uip maestro case var bind <file> <stage-id> <task-id> <input-name> \
   --source-stage <src-stage-id> \
   --source-task <src-task-id> \
   --source-output <output-name> \

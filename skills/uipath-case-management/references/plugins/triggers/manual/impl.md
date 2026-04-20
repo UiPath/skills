@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case triggers add-manual <file> \
+uip maestro case triggers add-manual <file> \
   --display-name "<display-name>" \
   --output json
 ```
@@ -18,7 +18,7 @@ uip case triggers add-manual <file> \
 ## Example
 
 ```bash
-uip case triggers add-manual caseplan.json \
+uip maestro case triggers add-manual caseplan.json \
   --display-name "Start Manually" \
   --output json
 ```
@@ -43,6 +43,6 @@ The Trigger node in `caseplan.json.nodes`:
 
 ## Post-Add Validation
 
-Capture `TriggerId` from `--output json`. Use it as the `--source` when adding an edge from the trigger to the first stage (via `uip case edges add`).
+Capture `TriggerId` from `--output json`. Use it as the `--source` when adding an edge from the trigger to the first stage (via `uip maestro case edges add`).
 
 Confirm `data.uipath.serviceType == "None"` in `caseplan.json`.

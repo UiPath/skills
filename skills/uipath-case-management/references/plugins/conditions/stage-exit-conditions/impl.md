@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case stage-exit-conditions add <file> <stage-id> \
+uip maestro case stage-exit-conditions add <file> <stage-id> \
   --display-name "<name>" \
   --type <exit-only|wait-for-user|return-to-origin> \
   --exit-to-stage-id "<target-stage-id>" \
@@ -32,7 +32,7 @@ uip case stage-exit-conditions add <file> <stage-id> \
 ## Example — Complete when all required tasks finish
 
 ```bash
-uip case stage-exit-conditions add caseplan.json stg_triage_id \
+uip maestro case stage-exit-conditions add caseplan.json stg_triage_id \
   --display-name "All tasks done" \
   --type exit-only \
   --marks-stage-complete true \
@@ -43,7 +43,7 @@ uip case stage-exit-conditions add caseplan.json stg_triage_id \
 ## Example — Route to Escalation when specific tasks complete
 
 ```bash
-uip case stage-exit-conditions add caseplan.json stg_review_id \
+uip maestro case stage-exit-conditions add caseplan.json stg_review_id \
   --display-name "Route to Escalation" \
   --type exit-only \
   --exit-to-stage-id stg_escalation_id \
@@ -56,7 +56,7 @@ uip case stage-exit-conditions add caseplan.json stg_review_id \
 ## Example — Wait for user decision
 
 ```bash
-uip case stage-exit-conditions add caseplan.json stg_manager_review_id \
+uip maestro case stage-exit-conditions add caseplan.json stg_manager_review_id \
   --display-name "User picks next step" \
   --type wait-for-user \
   --marks-stage-complete true \
@@ -67,7 +67,7 @@ uip case stage-exit-conditions add caseplan.json stg_manager_review_id \
 ## Example — Return to origin on rework
 
 ```bash
-uip case stage-exit-conditions add caseplan.json stg_exception_id \
+uip maestro case stage-exit-conditions add caseplan.json stg_exception_id \
   --display-name "Rework — return to origin" \
   --type return-to-origin \
   --marks-stage-complete false \
@@ -104,7 +104,7 @@ Capture `ConditionId`. Confirm:
 ## Editing Existing Conditions
 
 ```bash
-uip case stage-exit-conditions edit <file> <stage-id> <condition-id> \
+uip maestro case stage-exit-conditions edit <file> <stage-id> <condition-id> \
   --display-name "<new-name>" \
   --type <new-type> \
   --exit-to-stage-id <id> \

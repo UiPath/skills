@@ -39,12 +39,12 @@ After the Orchestrator job data bundle (job details, logs, history) is collected
 
 1. **Determine runtime type** — check the job's `RuntimeType` or `Source` field. If it's a ProcessOrchestration job (Maestro BPMN), gather Maestro-specific data below. Standard Orchestrator jobs don't need these steps.
 2. **Resolve the Maestro instance ID** — for ProcessOrchestration jobs, the **Orchestrator job key IS the Maestro instance ID**. They are the same GUID. Do NOT use `ParentJobKey` — that is the parent Orchestrator job, not the Maestro instance.
-   - **User provided a job key and `RuntimeType` is `ProcessOrchestration`**: the job key is the instance ID. Go directly to `uip maestro instances get <job-key> -f <folder-key>`.
-   - **User provided a job key and `RuntimeType` is NOT `ProcessOrchestration`** (standard child job): the child job was spawned by a Maestro service task. Check `ParentJobKey` — that parent job's key may be the instance ID. Try `uip maestro instances get <parent-job-key> -f <folder-key>`.
-   - **Neither works**: search with `uip maestro incident summary --output json` to find the `processKey`, then `uip maestro processes incidents <process-key> --folder-key <folder-key>` to find incident records containing the `instanceId`.
+   - **User provided a job key and `RuntimeType` is `ProcessOrchestration`**: the job key is the instance ID. Go directly to `uip maestro bpmn instances get <job-key> -f <folder-key>`.
+   - **User provided a job key and `RuntimeType` is NOT `ProcessOrchestration`** (standard child job): the child job was spawned by a Maestro service task. Check `ParentJobKey` — that parent job's key may be the instance ID. Try `uip maestro bpmn instances get <parent-job-key> -f <folder-key>`.
+   - **Neither works**: search with `uip maestro bpmn incident summary --output json` to find the `processKey`, then `uip maestro bpmn processes incidents <process-key> --folder-key <folder-key>` to find incident records containing the `instanceId`.
    - **`instances list` may return empty** for completed or faulted instances. Always try `instances get` directly before concluding an instance doesn't exist. Do NOT rely on `instances list` alone.
-3. **Full incident details** — `uip maestro instances incidents <instance-id> -f <folder-key>`. This returns `errorDetails` with stack traces. Do NOT use `uip maestro incident summary` — that returns summaries only without error details.
-4. **Element executions** — `uip maestro instances element-executions <instance-id> -f <folder-key>` to see what each BPMN element did and where execution stopped
+3. **Full incident details** — `uip maestro bpmn instances incidents <instance-id> -f <folder-key>`. This returns `errorDetails` with stack traces. Do NOT use `uip maestro bpmn incident summary` — that returns summaries only without error details.
+4. **Element executions** — `uip maestro bpmn instances element-executions <instance-id> -f <folder-key>` to see what each BPMN element did and where execution stopped
 5. **Child jobs** — if the BPMN process has service tasks, list child jobs and check their state and error messages. The child's failure reason is often the actual root cause.
 
 ## Testing Prerequisites

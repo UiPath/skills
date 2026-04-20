@@ -5,8 +5,8 @@ Agent nodes invoke published UiPath AI agents. They are tenant-specific resource
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.agent" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
 Requires `uip login`. Only published agents from your tenant appear.
@@ -14,7 +14,7 @@ Requires `uip login`. Only published agents from your tenant appear.
 ## Registry Validation
 
 ```bash
-uip flow registry get "uipath.core.agent.{key}" --output json
+uip maestro flow registry get "uipath.core.agent.{key}" --output json
 ```
 
 Confirm:
@@ -93,7 +93,7 @@ Add a `core.logic.mock` placeholder and tell the user to create and publish the 
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Agent not published, or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | Agent not published, or registry stale | Run `uip login` then `uip maestro flow registry pull --force` |
 | Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details |
 | Empty `output.content` | Agent returned no response | Verify agent is configured correctly in Orchestrator |
 | `inputDefinition` is empty | Expected — agents typically accept input via flow wiring, not typed fields | Wire upstream data to the agent via `$vars` expressions |

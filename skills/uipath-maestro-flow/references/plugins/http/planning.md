@@ -39,7 +39,7 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 
 ## Key Inputs (`--detail` for `node configure`)
 
-Run `uip flow node configure` with a `--detail` JSON. The CLI builds the full `inputs.detail` payload, `bindings_v2.json`, and connection resource files automatically. **Do not hand-write `inputs.detail`.**
+Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the full `inputs.detail` payload, `bindings_v2.json`, and connection resource files automatically. **Do not hand-write `inputs.detail`.**
 
 **Connector mode** (IS connection auth):
 
@@ -70,7 +70,7 @@ Run `uip flow node configure` with a `--detail` JSON. The CLI builds the full `i
 
 - `uip login` required (for both modes — node type comes from registry)
 - For connector mode: a healthy IS connection for the **target connector**
-- `uip flow registry pull` to cache the `core.action.http.v2` definition
+- `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation
 

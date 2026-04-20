@@ -1,6 +1,6 @@
 # API Workflow Node — Planning
 
-API workflow nodes invoke published API functions from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+API workflow nodes invoke published API functions from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## Node Type Pattern
 
@@ -32,8 +32,8 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.api-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.api-workflow" --output json
 ```
 
 Requires `uip login`. Only published API workflows from your tenant appear.

@@ -74,7 +74,7 @@ Rule structure uses DNF — see §4.
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
-Entry point. Created automatically by `uip case cases add`. Exactly one per case.
+Entry point. Created automatically by `uip maestro case cases add`. Exactly one per case.
 
 ```json
 {

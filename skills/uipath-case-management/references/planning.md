@@ -1,6 +1,6 @@
 # Planning Phase: sdd.md → tasks.md
 
-Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`). This phase discovers registry resources, resolves task type IDs, and produces a declarative specification that the [Implementation Phase](implementation.md) executes via the `uip case` CLI.
+Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`). This phase discovers registry resources, resolves task type IDs, and produces a declarative specification that the [Implementation Phase](implementation.md) executes via the `uip maestro case` CLI.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
@@ -34,7 +34,7 @@ Registry discovery happens during planning, so login is required first.
 
 ```bash
 uip login status --output json
-uip case registry pull
+uip maestro case registry pull
 ```
 
 If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uipcli/case-resources/` so subsequent searches are local disk lookups.
@@ -187,7 +187,7 @@ SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for
 
 ### 4.9 Not Covered section
 
-Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of the `uip case` CLI (e.g., Data Fabric entity schemas, global variables). These stay as notes for the user.
+Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of the `uip maestro case` CLI (e.g., Data Fabric entity schemas, global variables). These stay as notes for the user.
 
 ---
 

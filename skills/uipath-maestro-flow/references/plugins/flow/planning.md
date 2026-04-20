@@ -1,6 +1,6 @@
 # Flow Node — Planning
 
-Flow nodes invoke other published flows as subprocesses from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+Flow nodes invoke other published flows as subprocesses from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## Node Type Pattern
 
@@ -32,8 +32,8 @@ Use a Flow node when you need to call another published flow as a subprocess.
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.flow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.flow" --output json
 ```
 
 Requires `uip login`. Only published flows from your tenant appear.

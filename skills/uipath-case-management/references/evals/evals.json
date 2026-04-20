@@ -7,7 +7,7 @@
             "expected_output": "Skill triggers, produces a tasks.md with ordered task entries covering case creation, stages, edges, tasks, and conditions, then executes CLI commands after user approval",
             "expectations": [
                 "The case-management skill was triggered",
-                "References uip case registry pull for upfront caching",
+                "References uip maestro case registry pull for upfront caching",
                 "Produces a tasks.md file with numbered task sections (T01, T02, etc.)",
                 "Includes registry lookups to resolve taskTypeIds",
                 "Generates a registry-resolved.json for audit",
@@ -29,12 +29,12 @@
         {
             "id": 3,
             "prompt": "Convert this case specification into a step-by-step plan and build the case",
-            "expected_output": "Skill triggers, produces an actionable tasks.md, then executes uip case CLI commands after user approval",
+            "expected_output": "Skill triggers, produces an actionable tasks.md, then executes uip maestro case CLI commands after user approval",
             "expectations": [
                 "The case-management skill was triggered",
                 "Produces tasks.md with declarative task entries (no CLI commands in tasks.md)",
                 "Cross-references use human-readable format like Stage.Task.field",
-                "Executes uip case CLI commands after user approves tasks.md"
+                "Executes uip maestro case CLI commands after user approves tasks.md"
             ]
         },
         {

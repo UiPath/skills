@@ -1,6 +1,6 @@
 # Agentic Process Node — Planning
 
-Agentic process nodes invoke published orchestration processes from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+Agentic process nodes invoke published orchestration processes from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## Node Type Pattern
 
@@ -33,8 +33,8 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.agentic-process" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.agentic-process" --output json
 ```
 
 Requires `uip login`. Only published agentic processes from your tenant appear.

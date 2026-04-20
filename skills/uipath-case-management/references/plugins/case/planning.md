@@ -1,6 +1,6 @@
 # case (root) — Planning
 
-The root case definition — the top-level container that every other node lives inside. Created exactly once per `caseplan.json` via `uip case cases add`.
+The root case definition — the top-level container that every other node lives inside. Created exactly once per `caseplan.json` via `uip maestro case cases add`.
 
 ## When to Use
 
@@ -30,7 +30,7 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
 ## Trigger Node is Auto-Created
 
-`uip case cases add` creates an implicit `case-management:Trigger` node inside `caseplan.json.nodes`. Do not add another trigger unless the case has multiple entry points (multi-trigger — see [triggers plugins](../triggers/)).
+`uip maestro case cases add` creates an implicit `case-management:Trigger` node inside `caseplan.json.nodes`. Do not add another trigger unless the case has multiple entry points (multi-trigger — see [triggers plugins](../triggers/)).
 
 ## tasks.md Entry Format
 
@@ -59,4 +59,4 @@ The case file lives inside a solution + project structure. Before T01 runs, the 
       caseplan.json   ← this file
 ```
 
-See [implementation.md Step 6](../../implementation.md) for the `uip solution new` / `uip case init` / `uip solution project add` sequence that must run before `cases add`.
+See [implementation.md Step 6](../../implementation.md) for the `uip solution new` / `uip maestro case init` / `uip solution project add` sequence that must run before `cases add`.

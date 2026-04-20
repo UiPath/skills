@@ -3,21 +3,21 @@
 ## CLI Command
 
 ```bash
-uip case tasks add <file> <stage-id> \
+uip maestro case tasks add <file> <stage-id> \
   --type wait-for-timer \
   --display-name "<display-name>" \
   --is-required \
   --output json
 ```
 
-> **Note:** The `uip case tasks add` command itself does not accept `--every`, `--at`, `--repeat`, or `--time-cycle` — those flags exist on `triggers add-timer`, not on `tasks add`. For in-stage timer tasks, `tasks add --type wait-for-timer` creates the task with default timer data; configure the duration afterwards with direct JSON editing OR (preferred) by using `triggers add-timer` and wiring via an edge.
+> **Note:** The `uip maestro case tasks add` command itself does not accept `--every`, `--at`, `--repeat`, or `--time-cycle` — those flags exist on `triggers add-timer`, not on `tasks add`. For in-stage timer tasks, `tasks add --type wait-for-timer` creates the task with default timer data; configure the duration afterwards with direct JSON editing OR (preferred) by using `triggers add-timer` and wiring via an edge.
 
 ## Two Patterns
 
 ### Pattern A — Simple in-stage wait (fixed delay)
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type wait-for-timer \
   --display-name "24-hour cooldown" \
   --is-required \
@@ -33,7 +33,7 @@ Use [`plugins/triggers/timer/`](../../triggers/timer/impl.md) — most "timer" b
 ## Example
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type wait-for-timer \
   --display-name "Wait 24 hours" \
   --is-required \

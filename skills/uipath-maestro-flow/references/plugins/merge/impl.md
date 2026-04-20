@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.merge --output json
+uip maestro flow registry get core.logic.merge --output json
 ```
 
 Confirm: input port `input` (accepts multiple connections), output port `output`.

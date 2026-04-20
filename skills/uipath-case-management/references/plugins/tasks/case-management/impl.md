@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add <file> <stage-id> \
+uip maestro case tasks add <file> <stage-id> \
   --type case-management \
   --display-name "<display-name>" \
   --name "<case-name>" \
@@ -17,7 +17,7 @@ uip case tasks add <file> <stage-id> \
 ## Example
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type case-management \
   --display-name "Run Vendor Onboarding Sub-Case" \
   --name "VendorOnboarding" \
@@ -48,7 +48,7 @@ uip case tasks add caseplan.json stg000abc123 \
 
 ## Binding Inputs
 
-Use `uip case var bind` per [bindings-and-expressions.md](../../../bindings-and-expressions.md).
+Use `uip maestro case var bind` per [bindings-and-expressions.md](../../../bindings-and-expressions.md).
 
 ## Post-Add Validation
 

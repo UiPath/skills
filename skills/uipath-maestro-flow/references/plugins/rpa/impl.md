@@ -5,14 +5,14 @@ RPA nodes invoke published RPA processes. Pattern: `uipath.core.rpa-workflow.{ke
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.rpa-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
 ## Registry Validation
 
 ```bash
-uip flow registry get "uipath.core.rpa-workflow.{key}" --output json
+uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json
 ```
 
 Confirm:
@@ -81,7 +81,7 @@ If the RPA process is not yet published, add a `core.logic.mock` placeholder and
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force` |
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |

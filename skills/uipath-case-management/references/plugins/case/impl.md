@@ -7,14 +7,14 @@ The case file must live inside a solution + project structure. Run these **befor
 ```bash
 mkdir -p <directory>
 cd <directory> && uip solution new <SolutionName>
-cd <SolutionName> && uip case init <ProjectName>
+cd <SolutionName> && uip maestro case init <ProjectName>
 uip solution project add <ProjectName> <SolutionName>.uipx
 ```
 
 ## CLI Command
 
 ```bash
-uip case cases add \
+uip maestro case cases add \
   --name "<name>" \
   --file "<SolutionDir>/<ProjectName>/caseplan.json" \
   --case-identifier "<identifier>" \
@@ -43,7 +43,7 @@ uip case cases add \
 ## Example
 
 ```bash
-uip case cases add \
+uip maestro case cases add \
   --name "Loan Approval" \
   --file "loan-approval-solution/loan-approval-project/caseplan.json" \
   --case-identifier "LOAN" \
@@ -95,7 +95,7 @@ Capture from `--output json`:
 ## Editing the Root Case
 
 ```bash
-uip case cases edit <file> \
+uip maestro case cases edit <file> \
   --name "<new-name>" \
   --case-identifier "<new-identifier>" \
   --identifier-type <constant|external> \

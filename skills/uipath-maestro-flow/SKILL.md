@@ -10,7 +10,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## When to Use This Skill
 
-- User wants to **create a new Flow project** with `uip flow init`
+- User wants to **create a new Flow project** with `uip maestro flow init`
 - User is **editing a `.flow` file** — adding nodes, edges, or logic
 - User wants to **explore available node types** via the registry
 - User wants to **validate** a Flow file locally
@@ -32,10 +32,10 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 5. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
 6. **`targetPort` is required on every edge** — `validate` rejects edges without it.
-7. **Every node type needs a `definitions` entry** — copy from `uip flow registry get <nodeType>` output. Never hand-write definitions.
+7. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <nodeType>` output. Never hand-write definitions.
 8. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
 9. **Do NOT run `flow debug` without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs).
-10. **Validate once at the end** — run `uip flow validate` only after all nodes, edges, and configuration are complete (Step 6). Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
+10. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete (Step 6). Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
 11. **Manage variables by editing `.flow` JSON directly** — there are no CLI commands for variable management. Add/remove/update variables in the `variables` section of the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 12. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 13. **`=js:` prefix rules** — Use `=js:` on value expressions (end node output `source`, variable updates, HTTP input fields). Do NOT use `=js:` on condition expressions (decision `expression`, switch case `expression`, HTTP branch `conditionExpression`) — those are always evaluated as JS automatically. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
@@ -48,7 +48,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Common Edits (existing flows)
 
-For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Each recipe links to the detailed step-by-step procedure in the [flow editing operations guide](references/flow-editing-operations.md). Run `uip flow validate` once after all edits are complete.
+For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Each recipe links to the detailed step-by-step procedure in the [flow editing operations guide](references/flow-editing-operations.md). Run `uip maestro flow validate` once after all edits are complete.
 
 **Read [references/flow-editing-operations.md](references/flow-editing-operations.md) first** — Direct JSON is the default for all edits; CLI is used only for connector, connector-trigger, and inline-agent nodes, or when you explicitly request it.
 
@@ -89,7 +89,7 @@ Verify with `uip --version`. Use `uip` directly in all subsequent commands.
 
 ### Step 1 — Check login status
 
-`uip flow debug` and process operations require authentication. `uip flow init`, `validate`, and `registry` commands work without login.
+`uip maestro flow debug` and process operations require authentication. `uip maestro flow init`, `validate`, and `registry` commands work without login.
 
 ```bash
 uip login status --output json
@@ -119,7 +119,7 @@ uip solution new "<SolutionName>" --output json
 #### 2b. Create the Flow project inside the solution folder
 
 ```bash
-cd <directory>/<SolutionName> && uip flow init <ProjectName>
+cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
 ```
 
 #### 2c. Add the project to the solution
@@ -135,7 +135,7 @@ This scaffolds a complete project inside a solution. See [references/flow-file-f
 ### Step 3 — Refresh the registry
 
 ```bash
-uip flow registry pull                          # refresh local cache (expires after 30 min)
+uip maestro flow registry pull                          # refresh local cache (expires after 30 min)
 ```
 
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available.
@@ -172,7 +172,7 @@ Present a **short summary in chat** (goal + key nodes + open questions). Tell th
 **Read [references/planning-impl.md](references/planning-impl.md)** for the implementation resolution process.
 
 Phase 2 takes the approved architectural plan and resolves all implementation details:
-- Validate all node types via `uip flow registry get` — read each plugin's `impl.md` for registry validation
+- Validate all node types via `uip maestro flow registry get` — read each plugin's `impl.md` for registry validation
 - Resolve connector and resource nodes using the relevant plugin's `impl.md` ([connector](references/plugins/connector/impl.md), [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md), etc.)
 - Validate required fields against user-provided values
 - Replace `<PLACEHOLDER>` values with resolved IDs
@@ -201,11 +201,11 @@ For each node type, follow the relevant plugin's `impl.md` for node-specific inp
 Run validation and fix errors iteratively until the flow is clean.
 
 ```bash
-uip flow validate <ProjectName>.flow --output json
+uip maestro flow validate <ProjectName>.flow --output json
 ```
 
 **Validation loop:**
-1. Run `uip flow validate`
+1. Run `uip maestro flow validate`
 2. If valid → done, move to Step 7 (push to Studio Web)
 3. If errors → read the error messages, fix the `.flow` file
 4. Go to 1
@@ -221,14 +221,14 @@ Common error categories:
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
 ```bash
-UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
+UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
 The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
 
-**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip flow debug](references/flow-commands.md#uip-flow-debug).
+**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip maestro flow debug](references/flow-commands.md#uip-flow-debug).
 
 ### Step 8 — Publish to Studio Web
 
@@ -239,11 +239,11 @@ The argument is the **project directory path** (the folder containing `project.u
 uip solution upload <SolutionDir> --output json
 ```
 
-`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip flow init`, it already lives inside a solution directory. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. If the project was created with `uip maestro flow init`, it already lives inside a solution directory. The `upload` command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser. Share the Studio Web URL with the user.
 
-**Do NOT run `uip flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
+**Do NOT run `uip maestro flow pack` + `uip solution publish` unless the user explicitly asks to deploy to Orchestrator.** That path puts the flow directly into Orchestrator as a process, bypassing Studio Web — the user cannot visualize or edit it there. If the user asks to "publish" without specifying where, always default to the Studio Web path (`uip solution upload <SolutionDir>`).
 
-For Orchestrator deployment when explicitly requested, see [references/flow-commands.md](references/flow-commands.md) for `uip flow pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
+For Orchestrator deployment when explicitly requested, see [references/flow-commands.md](references/flow-commands.md) for `uip maestro flow pack` and the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip solution publish`.
 
 #### Post-build choice prompt
 
@@ -252,8 +252,8 @@ When the build completes and it is time to offer next steps (see Completion Outp
 | Option | Action |
 |--------|--------|
 | **Publish to Studio Web** (default) | Run `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
-| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 7). Confirm consent first — debug executes the flow for real. |
-| **Deploy to Orchestrator** | Run `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
+| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir>` (see Step 7). Confirm consent first — debug executes the flow for real. |
+| **Deploy to Orchestrator** | Run `uip maestro flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
 Do not run any of these actions without an explicit user selection.
@@ -270,13 +270,13 @@ Do not run any of these actions without an explicit user selection.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
 - **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
 - **Never omit `outputs` on nodes that produce data** — action nodes need `output` + `error`, trigger nodes need `output`. The `outputDefinition` in `definitions` is for the registry schema, not for runtime binding — without `outputs` on the node instance, `$vars` references downstream will fail silently.
-- **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip flow validate` once after the full build is complete (Step 6).
+- **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip maestro flow validate` once after the full build is complete (Step 6).
 - **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
 - **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
 - **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.
 - **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
 - **Never use `core.action.http` (v1) for connector-authenticated requests** — the v1 node's `authenticationType: "connection"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) instead. See [http/planning.md](references/plugins/http/planning.md).
-- **Never hand-write `inputs.detail` for managed HTTP nodes** — run `uip flow node configure` to populate the `inputs.detail` structure, generate `bindings_v2.json`, and create the connection resource file. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
+- **Never hand-write `inputs.detail` for managed HTTP nodes** — run `uip maestro flow node configure` to populate the `inputs.detail` structure, generate `bindings_v2.json`, and create the connection resource file. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
 
 ## Task Navigation
 
@@ -290,7 +290,7 @@ Do not run any of these actions without an explicit user selection.
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
 | **Add a Script node** | [references/plugins/script/impl.md](references/plugins/script/impl.md) |
 | **Wire nodes with edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) + [references/flow-file-format.md — Standard ports](references/flow-file-format.md) |
-| **Find the right node type** | Run `uip flow registry search <keyword>` |
+| **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
 | **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
 | **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
@@ -310,8 +310,8 @@ Do not run any of these actions without an explicit user selection.
 
 | Command | What it does | Auth needed |
 |---------|-------------|-------------|
-| `uip flow validate` | Local JSON schema + cross-reference check | No |
-| `uip flow debug` | Converts to BPMN, uploads to Studio Web, runs in Orchestrator, streams results | Yes |
+| `uip maestro flow validate` | Local JSON schema + cross-reference check | No |
+| `uip maestro flow debug` | Converts to BPMN, uploads to Studio Web, runs in Orchestrator, streams results | Yes |
 
 Always `validate` locally before `debug`. Validation is instant; debug is a cloud round-trip.
 
@@ -336,8 +336,8 @@ When you finish building or editing a flow, report to the user:
 5. **Missing connections** — any connector nodes that need connections the user must create
 6. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
    - **Publish to Studio Web** — run `uip solution upload <SolutionDir>` and share the URL
-   - **Debug the solution** — run `uip flow debug <ProjectDir>` (requires explicit consent — side effects are real)
-   - **Deploy to Orchestrator** — hand off to the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip flow pack` + `uip solution publish`
+   - **Debug the solution** — run `uip maestro flow debug <ProjectDir>` (requires explicit consent — side effects are real)
+   - **Deploy to Orchestrator** — hand off to the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip maestro flow pack` + `uip solution publish`
    - **Something else** (last option) — accept free-form input and act on it
 
    Do not run any of these actions automatically. Wait for the user's selection.
@@ -346,11 +346,11 @@ When you finish building or editing a flow, report to the user:
 
 - **[Flow Editing Operations](references/flow-editing-operations.md)** — Strategy selection matrix; **Direct JSON is the default**. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
   - [Direct JSON Strategy](references/flow-editing-operations-json.md) — Default for all `.flow` edits: node/edge CRUD, variables, subflows, output mapping, in-place input updates.
-  - [CLI Strategy](references/flow-editing-operations-cli.md) — Carve-outs (connector, connector-trigger, inline-agent) and explicit user opt-in for `uip flow node` and `uip flow edge` commands.
+  - [CLI Strategy](references/flow-editing-operations-cli.md) — Carve-outs (connector, connector-trigger, inline-agent) and explicit user opt-in for `uip maestro flow node` and `uip maestro flow edge` commands.
 - **[Planning Phase 1: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery (`registry search`/`list`), plugin index for node selection, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
 - **[Planning Phase 2: Implementation Resolution](references/planning-impl.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), wiring rules, and flow patterns. **Read this after the architectural plan is approved.**
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
-- **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
+- **[CLI Command Reference](references/flow-commands.md)** — All `uip maestro flow` subcommands with flags and options
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
   - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`

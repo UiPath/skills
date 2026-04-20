@@ -1,6 +1,6 @@
 # RPA Node — Planning
 
-RPA nodes invoke published RPA processes (XAML or coded C# workflows) from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+RPA nodes invoke published RPA processes (XAML or coded C# workflows) from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## Node Type Pattern
 
@@ -33,8 +33,8 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.rpa-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
 Requires `uip login`. Only published processes from your tenant appear.

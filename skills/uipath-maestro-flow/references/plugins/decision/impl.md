@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.decision --output json
+uip maestro flow registry get core.logic.decision --output json
 ```
 
 Confirm: input port `input`, output ports `true` and `false`, required input `expression`.

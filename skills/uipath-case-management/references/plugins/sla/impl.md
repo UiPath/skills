@@ -17,17 +17,17 @@ Three CLI sub-operations cover SLA authoring: `set`, `escalation`, `rules`. Run 
 
 ```bash
 # Root-level
-uip case sla set <file> --count <n> --unit <h|d|w|m> --output json
+uip maestro case sla set <file> --count <n> --unit <h|d|w|m> --output json
 
 # Per-stage
-uip case sla set <file> --count <n> --unit <h|d|w|m> --stage-id <stage-id> --output json
+uip maestro case sla set <file> --count <n> --unit <h|d|w|m> --stage-id <stage-id> --output json
 ```
 
 ### Example
 
 ```bash
-uip case sla set caseplan.json --count 5 --unit d --output json
-uip case sla set caseplan.json --count 2 --unit w --stage-id stg00000001 --output json
+uip maestro case sla set caseplan.json --count 5 --unit d --output json
+uip maestro case sla set caseplan.json --count 2 --unit w --stage-id stg00000001 --output json
 ```
 
 ### Resulting JSON
@@ -40,7 +40,7 @@ Stage: `nodes[].data.sla = { count: 2, unit: "w" }` on the matching stage.
 ### CLI
 
 ```bash
-uip case sla rules add <file> \
+uip maestro case sla rules add <file> \
   --expression "<expr>" \
   --count <n> \
   --unit <h|d|w|m> \
@@ -50,7 +50,7 @@ uip case sla rules add <file> \
 ### Example
 
 ```bash
-uip case sla rules add caseplan.json \
+uip maestro case sla rules add caseplan.json \
   --expression "=js:vars.priority === 'Urgent'" \
   --count 30 \
   --unit m \
@@ -84,7 +84,7 @@ If the translation is not obvious, ask the user with **AskUserQuestion** includi
 ### CLI
 
 ```bash
-uip case sla escalation add <file> \
+uip maestro case sla escalation add <file> \
   --trigger-type <at-risk|sla-breached> \
   --at-risk-percentage <1-99> \
   --recipient-scope <User|UserGroup> \
@@ -100,7 +100,7 @@ uip case sla escalation add <file> \
 ### Example — Notify manager at 80% SLA risk
 
 ```bash
-uip case sla escalation add caseplan.json \
+uip maestro case sla escalation add caseplan.json \
   --trigger-type at-risk \
   --at-risk-percentage 80 \
   --recipient-scope User \
@@ -113,7 +113,7 @@ uip case sla escalation add caseplan.json \
 ### Example — Notify group on breach, stage-scoped
 
 ```bash
-uip case sla escalation add caseplan.json \
+uip maestro case sla escalation add caseplan.json \
   --trigger-type sla-breached \
   --recipient-scope UserGroup \
   --recipient-target "OrderMgmt" \
@@ -148,15 +148,15 @@ If the `tasks.md` entry lists multiple recipients, run `sla escalation add` **on
 
 ```bash
 # List
-uip case sla get <file>
-uip case sla get <file> --stage-id <id>
-uip case sla escalation list <file> [--stage-id <id>]
-uip case sla rules list <file>
+uip maestro case sla get <file>
+uip maestro case sla get <file> --stage-id <id>
+uip maestro case sla escalation list <file> [--stage-id <id>]
+uip maestro case sla rules list <file>
 
 # Remove
-uip case sla remove <file> [--stage-id <id>]
-uip case sla escalation remove <file> <escalation-id> [--stage-id <id>]
-uip case sla rules remove <file> <index>    # 0-based index
+uip maestro case sla remove <file> [--stage-id <id>]
+uip maestro case sla escalation remove <file> <escalation-id> [--stage-id <id>]
+uip maestro case sla rules remove <file> <index>    # 0-based index
 ```
 
 ## Post-Add Validation

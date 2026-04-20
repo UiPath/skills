@@ -10,10 +10,10 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.transform --output json
-uip flow registry get core.action.transform.filter --output json
-uip flow registry get core.action.transform.map --output json
-uip flow registry get core.action.transform.group-by --output json
+uip maestro flow registry get core.action.transform --output json
+uip maestro flow registry get core.action.transform.filter --output json
+uip maestro flow registry get core.action.transform.map --output json
+uip maestro flow registry get core.action.transform.group-by --output json
 ```
 
 Confirm: input port `input`, output ports `output` and `error`, required inputs `collection` and `operations`.

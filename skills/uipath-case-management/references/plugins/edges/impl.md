@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case edges add <file> \
+uip maestro case edges add <file> \
   --source "<source-id>" \
   --target "<target-id>" \
   --label "<label>" \
@@ -34,7 +34,7 @@ Edge type is inferred — do not pass a `--type` flag.
 ## Example — Trigger → first stage
 
 ```bash
-uip case edges add caseplan.json \
+uip maestro case edges add caseplan.json \
   --source "trig0000001" \
   --target "stg00000001" \
   --label "Start" \
@@ -44,7 +44,7 @@ uip case edges add caseplan.json \
 ## Example — Stage → next stage with label
 
 ```bash
-uip case edges add caseplan.json \
+uip maestro case edges add caseplan.json \
   --source "stg00000001" \
   --target "stg00000002" \
   --label "Approved" \
@@ -54,7 +54,7 @@ uip case edges add caseplan.json \
 ## Example — Stage → exception stage with custom handles
 
 ```bash
-uip case edges add caseplan.json \
+uip maestro case edges add caseplan.json \
   --source "stg00000001" \
   --target "stg_exception_id" \
   --label "Rejected" \
@@ -109,7 +109,7 @@ Confirm in `caseplan.json`:
 ## Editing Existing Edges
 
 ```bash
-uip case edges edit <file> <edge-id> \
+uip maestro case edges edit <file> <edge-id> \
   --label "<new-label>" \
   --source-handle <direction> \
   --target-handle <direction> \
@@ -121,7 +121,7 @@ At least one flag required. Source and target are immutable — to rewire, `remo
 ## Removing Edges
 
 ```bash
-uip case edges remove <file> <edge-id>
+uip maestro case edges remove <file> <edge-id>
 ```
 
 Note: removing a stage (via `stages remove`) automatically cascades to connected edges. Only `edges remove` directly when you need to change wiring without touching the stage.

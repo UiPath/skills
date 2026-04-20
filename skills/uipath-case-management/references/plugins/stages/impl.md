@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case stages add <file> \
+uip maestro case stages add <file> \
   --label "<label>" \
   --type <stage|exception> \
   --description "<description>" \
@@ -23,7 +23,7 @@ There is **no `--is-required` flag**. `isRequired` from `tasks.md` is consumed b
 ## Example — Regular Stage
 
 ```bash
-uip case stages add caseplan.json \
+uip maestro case stages add caseplan.json \
   --label "PO Receipt & Triage" \
   --type stage \
   --description "Receive incoming POs and classify for downstream processing" \
@@ -33,7 +33,7 @@ uip case stages add caseplan.json \
 ## Example — Exception / Secondary Stage
 
 ```bash
-uip case stages add caseplan.json \
+uip maestro case stages add caseplan.json \
   --label "Exception Handling" \
   --type exception \
   --description "Fallback handler for POs that fail classification" \
@@ -101,7 +101,7 @@ Confirm in `caseplan.json`:
 ## Editing Stage Labels
 
 ```bash
-uip case stages edit <file> <stage-id> --label "<new-label>" --output json
+uip maestro case stages edit <file> <stage-id> --label "<new-label>" --output json
 ```
 
 Only the `--label` is editable via `stages edit`. For other changes, `remove` + re-`add` (note: removing a stage also removes its connected edges — downstream wiring must be redone).
@@ -109,7 +109,7 @@ Only the `--label` is editable via `stages edit`. For other changes, `remove` + 
 ## Removing a Stage
 
 ```bash
-uip case stages remove <file> <stage-id>
+uip maestro case stages remove <file> <stage-id>
 ```
 
 Removes the stage and all its connected edges. Does **not** remove tasks from other stages that referenced this one via cross-task refs — re-validate all cross-task references after a stage removal.

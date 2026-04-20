@@ -197,13 +197,13 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
 # 6. Add the inline agent node to the flow
-uip flow node add <FlowName>.flow uipath.agent.autonomous \
+uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
   --source <projectId> \
   --label "Autonomous Agent" \
   --output json
 
 # 7. Wire edges to connect the agent node
-uip flow edge add <FlowName>.flow <sourceNodeId> <agentNodeId> \
+uip maestro flow edge add <FlowName>.flow <sourceNodeId> <agentNodeId> \
   --source-port success \
   --target-port input \
   --output json

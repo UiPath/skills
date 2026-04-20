@@ -5,14 +5,14 @@ API workflow nodes invoke published API functions. Pattern: `uipath.core.api-wor
 ## Discovery
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.api-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.api-workflow" --output json
 ```
 
 ## Registry Validation
 
 ```bash
-uip flow registry get "uipath.core.api-workflow.{key}" --output json
+uip maestro flow registry get "uipath.core.api-workflow.{key}" --output json
 ```
 
 Confirm:
@@ -73,5 +73,5 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |

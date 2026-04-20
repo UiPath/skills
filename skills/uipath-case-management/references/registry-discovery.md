@@ -10,11 +10,11 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 ## Prerequisites
 
-Run `uip case registry pull` before any lookups. This populates the local cache at `~/.uipcli/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
+Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uipcli/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
 
 ## CLI Search Gaps
 
-The `uip case registry search` command has known gaps. In particular, it fails to return results for certain resource types even when the resource is present in the cache (most commonly affecting **action-apps** / HITL tasks). When search returns an empty or incomplete result for a resource you know exists:
+The `uip maestro case registry search` command has known gaps. In particular, it fails to return results for certain resource types even when the resource is present in the cache (most commonly affecting **action-apps** / HITL tasks). When search returns an empty or incomplete result for a resource you know exists:
 
 1. Do **not** retry the same search with different keywords.
 2. Fall back to reading the cache files directly using the procedure in this document.
@@ -96,7 +96,7 @@ If no match is found across all relevant cache files:
 
 1. Force-refresh the cache and retry:
    ```bash
-   uip case registry pull --force
+   uip maestro case registry pull --force
    ```
 2. If still no match, mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]`
 
@@ -109,7 +109,7 @@ Collect all matching results for the `registry-resolved.json` debug output. Reco
 
 ## Type Mapping
 
-After finding a match, map the **cache file type** (not the sdd.md component type) to the CLI `--type` value for `uip case tasks add`:
+After finding a match, map the **cache file type** (not the sdd.md component type) to the CLI `--type` value for `uip maestro case tasks add`:
 
 | Cache file | `tasks add --type` | Identifier field |
 |---|---|---|
@@ -134,4 +134,4 @@ For entries in `typecache-activities-index.json` or `typecache-triggers-index.js
 
 ## Output Contract
 
-The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so the task.md can reference it. The implementation agent will use this identifier when calling `uip case tasks add --task-type-id`.
+The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so the task.md can reference it. The implementation agent will use this identifier when calling `uip maestro case tasks add --task-type-id`.

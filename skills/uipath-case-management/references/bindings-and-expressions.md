@@ -1,6 +1,6 @@
 # Bindings & Expressions Reference
 
-How to wire values into task inputs — expression prefixes, cross-task output references, and the `uip case var bind` CLI.
+How to wire values into task inputs — expression prefixes, cross-task output references, and the `uip maestro case var bind` CLI.
 
 ## Two Binding Modes
 
@@ -8,8 +8,8 @@ Every task input is wired using one of two modes. Pick based on the source of th
 
 | Mode | Tasks.md syntax | CLI form |
 |------|-----------------|---------|
-| **Literal or expression** | `input = "<value>"` | `uip case var bind <file> <stage-id> <task-id> <input-name> --value "<value>"` |
-| **Cross-task reference** | `input <- "Stage"."Task".output` | `uip case var bind <file> <stage-id> <task-id> <input-name> --source-stage <id> --source-task <id> --source-output <name>` |
+| **Literal or expression** | `input = "<value>"` | `uip maestro case var bind <file> <stage-id> <task-id> <input-name> --value "<value>"` |
+| **Cross-task reference** | `input <- "Stage"."Task".output` | `uip maestro case var bind <file> <stage-id> <task-id> <input-name> --source-stage <id> --source-task <id> --source-output <name>` |
 
 Exactly one of `--value` or all three `--source-*` options must be provided — not both.
 
@@ -34,7 +34,7 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 ## Cross-Task References
 
-Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase translates to **IDs** when executing `uip case var bind`.
+Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase translates to **IDs** when executing `uip maestro case var bind`.
 
 ### Planning syntax (in `tasks.md`)
 
@@ -51,7 +51,7 @@ input_name <- "Stage Name"."Task Name".output_name
 Run `tasks describe` during planning to list available outputs for a given task type:
 
 ```bash
-uip case tasks describe --type <type> --id "<taskTypeId>" --output json
+uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
 # for connectors: also pass --connection-id
 ```
 
@@ -75,7 +75,7 @@ The execution phase resolves names to IDs using the case JSON:
 src_stage_id = find_stage_id_by_display_name(case.json, "Stage Name")
 src_task_id  = find_task_id_by_display_name(case.json, src_stage_id, "Task Name")
 
-uip case var bind <file> <target-stage-id> <target-task-id> <input-name> \
+uip maestro case var bind <file> <target-stage-id> <target-task-id> <input-name> \
   --source-stage "$src_stage_id" \
   --source-task  "$src_task_id" \
   --source-output "output_name"

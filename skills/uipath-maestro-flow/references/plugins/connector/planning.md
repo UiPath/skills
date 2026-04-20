@@ -1,6 +1,6 @@
 # Connector Activity Nodes — Planning
 
-Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip flow registry pull`.
+Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## When to Use
 
@@ -21,7 +21,7 @@ Prefer higher tiers when connecting to external services:
 
 - `uip login` required — connector nodes only appear in the registry after authentication
 - A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
-- `uip flow registry pull` must be run to cache connector node types locally
+- `uip maestro flow registry pull` must be run to cache connector node types locally
 
 ### When NOT to Use
 
@@ -41,7 +41,7 @@ Examples:
 ## Discovery
 
 ```bash
-uip flow registry search <service> --output json
+uip maestro flow registry search <service> --output json
 ```
 
 Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
@@ -82,7 +82,7 @@ When a connector exists but lacks the specific curated activity, use `core.actio
 
 > **Do NOT use `core.action.http` (v1) with `authenticationType: "connection"` for this.** The v1 node does not pass IS credentials at runtime. Always use `core.action.http.v2`.
 
-See [http/planning.md](../http/planning.md) for full selection heuristics and [http/impl.md](../http/impl.md) for configuration via `uip flow node configure`.
+See [http/planning.md](../http/planning.md) for full selection heuristics and [http/impl.md](../http/impl.md) for configuration via `uip maestro flow node configure`.
 
 Note as `managed-http: <service> — <operation>` during planning.
 
