@@ -14,12 +14,17 @@ Execute the approved `tasks.md` plan by translating each declarative task specif
 > - Triggers → `plugins/triggers/<type>/impl.md`
 > - Conditions → `plugins/conditions/<scope>/impl.md`
 > - SLA → `plugins/sla/impl.md`
+> - Global variables & arguments → `plugins/variables/global-vars/impl.md`
 
 ---
 
 ## Step 6 — Create the Case project structure
 
 The case file must live inside a solution + project. Scaffolding commands (solution new → case init → project add) plus the `cases add` invocation that creates `caseplan.json` live in [`plugins/case/impl.md`](plugins/case/impl.md). Run them in order, then capture the initial Trigger node ID returned by `cases add` for use in Step 8.
+
+## Step 6.1 — Declare global variables and arguments
+
+For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl.md`](plugins/variables/global-vars/impl.md). This step populates `root.data.uipath.variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
 
 ## Step 7 — Add stages
 
