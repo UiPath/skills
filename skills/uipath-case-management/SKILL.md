@@ -153,6 +153,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + `impl.md` |
 | **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + `impl.md` |
 | **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + `impl.md` |
+| **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + `impl.md` |
 | **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl.md` |
 | **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl.md` |
 | **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl.md` |
@@ -167,6 +168,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | [stages](references/plugins/stages/planning.md) | Regular and exception (a.k.a. secondary) stages |
 | [edges](references/plugins/edges/planning.md) | Edges between Trigger/Stage nodes (type inferred) |
 | [sla](references/plugins/sla/planning.md) | Default SLA, conditional SLA rules, escalation rules |
+| [global-vars](references/plugins/variables/global-vars/planning.md) | Case variables and arguments (inputs/outputs/inputOutputs) |
 
 **Task plugins** (`references/plugins/tasks/`):
 
