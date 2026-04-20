@@ -50,12 +50,12 @@ Creates an IXP dataset, uploads all documents from a folder, suggests a taxonomy
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
-The `Owner` and `Name` values from the output are needed for subsequent commands.
+The `Name` value from the output is needed for subsequent commands.
 
 ### Get Taxonomy
 
 ```bash
-uip ixp project taxonomy <owner> <dataset-name> --output json
+uip ixp project taxonomy <project-name> --output json
 ```
 
 Returns `EntityDefs` (with `id`, `name`, `title`, `trainable`, `instructions`) and `LabelGroups`.
@@ -63,17 +63,17 @@ Returns `EntityDefs` (with `id`, `name`, `title`, `trainable`, `instructions`) a
 ### Get Metrics
 
 ```bash
-uip ixp project metrics <owner> <dataset-name> --output json
+uip ixp project metrics <project-name> --output json
 ```
 
-Returns `ProjectScore`, `ProjectScoreQuality`, and per-field-group `F1`, `Precision`, `Recall`, `ErrorRate`, `Documents`.
+Returns `ProjectScore`, `ProjectScoreQuality`, per-field-group metrics (`FieldGroups[]`), and per-field metrics (`Fields[]`). Each field entry has `FieldGroup`, `FieldId`, `F1`, `Precision`, `Recall`, `ErrorRate`, `Documents`, `Annotations`, and `Quality`.
 
 ### Update Prompts / Instructions
 
 Updates extraction instructions on entity_defs. The `--entity-defs` flag takes a JSON array of ALL entity_defs (not just changed ones — omitting one may delete it). Each entry must have `id`, `name`, `title`, `inherits_from`, `trainable`, and the new `instructions`.
 
 ```bash
-uip ixp project update-prompts <owner> <dataset-name> \
+uip ixp project update-prompts <project-name> \
   --entity-defs '<json array of all entity_defs>' \
   --label-instructions '<optional top-level instructions>' \
   --output json
@@ -87,7 +87,7 @@ Flags:
 ### List Documents
 
 ```bash
-uip ixp document list <owner> <dataset-name> --output json
+uip ixp document list <project-name> --output json
 ```
 
 Returns `[{ Uid, AttachmentRef }]` for each document.
@@ -95,7 +95,7 @@ Returns `[{ Uid, AttachmentRef }]` for each document.
 ### Get Document (download original file)
 
 ```bash
-uip ixp document get <owner> <comment-uid> -o /tmp/ixp_doc.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_doc.png --output json
 ```
 
 Downloads the original document file (image/PDF). Then use the **Read tool** to view it visually. This is the primary way to read a document for extraction.
@@ -105,7 +105,7 @@ Downloads the original document file (image/PDF). Then use the **Read tool** to 
 Fetches IXP-generated predictions and confirms them as-is for all documents.
 
 ```bash
-uip ixp labelling confirm <owner> <dataset-name> --output json
+uip ixp labelling confirm <project-name> --output json
 ```
 
 ### Label a Single Document (Claude extractions)
@@ -113,7 +113,7 @@ uip ixp labelling confirm <owner> <dataset-name> --output json
 Submit Claude-generated extractions for one document. This is the command the skill calls per document during the labelling workflow.
 
 ```bash
-uip ixp labelling label <owner> <dataset-name> <comment-uid> \
+uip ixp labelling label <project-name> <comment-uid> \
   --extractions '[{"label":"Invoice > Details","fields":[{"field_id":"abc123","formatted_value":"INV-001"}]}]' \
   --output json
 ```
@@ -131,7 +131,7 @@ The command handles parent label injection, sentiment, spans, and dismissed form
 ### Step 1 — Get All Documents
 
 ```bash
-uip ixp document list <owner> <dataset-name> --output json
+uip ixp document list <project-name> --output json
 ```
 
 Returns a list of `{ Uid, AttachmentRef }` for each document.
@@ -139,7 +139,7 @@ Returns a list of `{ Uid, AttachmentRef }` for each document.
 ### Step 2 — Get the Taxonomy
 
 ```bash
-uip ixp project taxonomy <owner> <dataset-name> --output json
+uip ixp project taxonomy <project-name> --output json
 ```
 
 Returns `EntityDefs` and `LabelGroups`. From these:
@@ -153,7 +153,7 @@ Download the original document image and its OCR text:
 
 ```bash
 # Download the document image
-uip ixp document get <owner> <comment-uid> -o /tmp/ixp_doc.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_doc.png --output json
 
 # Get the OCR text (uses the attachment ref from document list)
 uip ixp document text <attachment-ref> --output json
@@ -192,7 +192,7 @@ cat > /tmp/ixp_extractions.json << 'EXTRACTIONS_EOF'
 ]
 EXTRACTIONS_EOF
 
-uip ixp labelling label <owner> <dataset-name> <comment-uid> \
+uip ixp labelling label <project-name> <comment-uid> \
   --extractions "$(cat /tmp/ixp_extractions.json)" --output json
 ```
 
@@ -205,7 +205,7 @@ Process all documents by looping Steps 3-5. Track progress and errors. Do NOT st
 After all documents are labelled:
 
 ```bash
-uip ixp project metrics <owner> <dataset-name> --output json
+uip ixp project metrics <project-name> --output json
 ```
 
 Report project score, quality rating, and per-field-group F1/precision/recall. Highlight any fields with low F1 scores (< 0.5).
@@ -217,12 +217,14 @@ Report project score, quality rating, and per-field-group F1/precision/recall. H
 ### Step 1 — Get Current Metrics and Diagnose Fields
 
 ```bash
-uip ixp project metrics <owner> <dataset-name> --output json
+uip ixp project metrics <project-name> --output json
 ```
 
-Use the **actual F1 scores from the API** — do NOT calculate F1 manually. Identify field groups with F1 < 0.7 as targets for improvement.
+Use the **actual F1 scores from the API** — do NOT calculate F1 manually. The metrics response includes both `FieldGroups` (per-group) and `Fields` (per-field) metrics. **Use the per-field `Fields` array** for diagnosis — it gives you F1, Precision, Recall per individual field (e.g., "Invoice Number"), not just per group (e.g., "Invoice > Details").
 
-**Diagnose each low-scoring field** using the per-field Precision, Recall, and Documents values from the metrics:
+Identify individual fields with F1 < 0.7 as targets for improvement. Match each field's `FieldId` to the taxonomy's `moon_form[].field_id` to find the corresponding entity_def whose `instructions` need rewriting.
+
+**Diagnose each low-scoring field** using its per-field Precision, Recall, and Documents values:
 
 1. **Classify the action** for each field:
    - `Documents = 0` AND `F1 = 0` → **SKIP** (no predictions — nothing to learn from)
@@ -235,12 +237,12 @@ Use the **actual F1 scores from the API** — do NOT calculate F1 manually. Iden
    - `Precision < 0.5` AND `Recall < 0.5` → **BOTH** problem — model both misses fields and extracts wrong values
    - Otherwise → **MIXED** problem
 
-Print a diagnosis summary to the user showing each field's score, action, problem type, and precision/recall before proceeding. Only continue with fields marked REFINE.
+Print a diagnosis summary to the user showing each field's name, score, action, problem type, and precision/recall before proceeding. Only continue with fields marked REFINE.
 
 ### Step 2 — Get Current Taxonomy with Instructions
 
 ```bash
-uip ixp project taxonomy <owner> <dataset-name> --output json
+uip ixp project taxonomy <project-name> --output json
 ```
 
 From the response, find the `EntityDefs` with their current `instructions`. Note which entity_defs correspond to the low-scoring field groups (match via `moon_form[].kind` → entity_def `name`).
@@ -250,8 +252,8 @@ From the response, find the `EntityDefs` with their current `instructions`. Note
 Pick 2-3 documents and view them as images to understand document structure:
 
 ```bash
-uip ixp document list <owner> <dataset-name> --output json
-uip ixp document get <owner> <comment-uid> -o /tmp/ixp_sample.png --output json
+uip ixp document list <project-name> --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_sample.png --output json
 ```
 
 Then use the **Read tool** to view the image. This gives Claude visual context about where fields appear in the document, which is critical for writing location-aware instructions (especially for RECALL problems).
@@ -302,7 +304,7 @@ cat > /tmp/ixp_entity_defs.json << 'ENTITY_DEFS_EOF'
 ]
 ENTITY_DEFS_EOF
 
-uip ixp project update-prompts <owner> <dataset-name> \
+uip ixp project update-prompts <project-name> \
   --entity-defs "$(cat /tmp/ixp_entity_defs.json)" \
   --label-instructions "<new top-level instructions>" \
   --output json
@@ -319,7 +321,7 @@ uip ixp project update-prompts <owner> <dataset-name> \
 IXP retrains server-side after labellings are submitted. After re-labelling all documents, wait ~60 seconds before checking metrics:
 
 ```bash
-uip ixp project metrics <owner> <dataset-name> --output json
+uip ixp project metrics <project-name> --output json
 ```
 
 Compare the new `ModelVersion` against the previous one:
@@ -337,7 +339,7 @@ To create a fresh project, upload documents, and generate a taxonomy:
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
-Then follow "Label an Existing Project" above using the Owner and Name from the output.
+Then follow "Label an Existing Project" above using the Name from the output.
 
 ## Extractions JSON Format
 
@@ -365,15 +367,15 @@ The `--extractions` flag on `uip ixp labelling label` takes a JSON array:
 | `uip ixp project list` | List IXP projects |
 | `uip ixp project get <name>` | Get a project |
 | `uip ixp project create <name> <folder> -d <desc>` | Create project, upload docs, suggest+import taxonomy |
-| `uip ixp project taxonomy <owner> <dataset>` | Get taxonomy (entity_defs + label_groups) |
-| `uip ixp project metrics <owner> <dataset>` | Get validation metrics (F1, precision, recall) |
-| `uip ixp project update-prompts <owner> <dataset> --entity-defs <json>` | Update field instructions |
-| `uip ixp document list <owner> <dataset>` | List documents (UIDs + attachment refs) |
-| `uip ixp document get <owner> <comment-uid> -o <path>` | Download original document file for viewing |
+| `uip ixp project taxonomy <project-name>` | Get taxonomy (entity_defs + label_groups) |
+| `uip ixp project metrics <project-name>` | Get validation metrics (F1, precision, recall) |
+| `uip ixp project update-prompts <project-name> --entity-defs <json>` | Update field instructions |
+| `uip ixp document list <project-name>` | List documents (UIDs + attachment refs) |
+| `uip ixp document get <project-name> <comment-uid> -o <path>` | Download original document file for viewing |
 | `uip ixp document text <attachment-ref>` | Get OCR text for exact character values |
 | `uip ixp document image <attachment-ref> --page <n> -o <path>` | Download page image |
-| `uip ixp labelling confirm <owner> <dataset>` | Confirm IXP predictions as-is |
-| `uip ixp labelling label <owner> <dataset> <uid> --extractions <json>` | Submit Claude extractions |
+| `uip ixp labelling confirm <project-name>` | Confirm IXP predictions as-is |
+| `uip ixp labelling label <project-name> <uid> --extractions <json>` | Submit Claude extractions |
 
 ## Reference Navigation
 
