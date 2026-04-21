@@ -63,9 +63,7 @@ Then extract fields using this process:
 
 - Prefer OCR-verbatim values when they match the document
 - If OCR is garbled, use the clean value you read from the image
-- For **typed fields** (Date, Monetary Quantity), always use the canonical format regardless of how the value appears in OCR or the image:
-  - Date → `YYYY-MM-DD` (e.g., `2024-03-15`)
-  - Monetary Quantity → decimal number, no currency symbol or commas (e.g., `17000.00`)
+- For **typed fields** (Date, Monetary Quantity), submit the value **as-written in the document** — same rule as all other fields. If the document says `02/28/2018`, submit `02/28/2018`. If it says `$17,000.00`, submit `$17,000.00`. The model predicts in the document's own format.
 - If a field is not visible in the document, skip it (do NOT include it with empty value)
 
 **Label rules:**
@@ -133,6 +131,6 @@ Check that `ModelVersion` has advanced. If not, wait another 60 seconds and retr
 Report project score, quality rating, and per-field F1/precision/recall. Highlight:
 
 - Fields with F1 < 0.5 that need prompt improvement
-- Typed fields (Date, Monetary Quantity) at F1 = 0 — re-label with canonical formats: Date → `YYYY-MM-DD`, Monetary Quantity → `17000.00`
+- Typed fields (Date, Monetary Quantity) at F1 = 0 — likely a format mismatch. Re-label using the value as-written in the document.
 
 If the user wants to improve scores, follow the [Improve Prompts Guide](improve-prompts.md).
