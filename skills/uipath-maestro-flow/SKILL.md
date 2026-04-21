@@ -228,11 +228,14 @@ uip flow tidy <ProjectName>.flow --output json
 
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
+**Always refresh solution resources before debug** so that connection and process resource declarations are in sync with the project bindings:
+
 ```bash
+uip solution resource refresh <SolutionDir> --output json
 UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 ```
 
-The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
+The argument to `resource refresh` is the **solution directory** (containing the `.uipx` file). The argument to `debug` is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
 
@@ -240,9 +243,12 @@ The argument is the **project directory path** (the folder containing `project.u
 
 ### Step 9 — Publish to Studio Web
 
-**This is the default publish target.** After tidy (Step 7), when the user wants to publish, view, or share the flow, upload the solution directly to Studio Web:
+**This is the default publish target.** After tidy (Step 7), when the user wants to publish, view, or share the flow, **refresh solution resources first**, then upload:
 
 ```bash
+# Sync resource declarations from project bindings
+uip solution resource refresh <SolutionDir> --output json
+
 # Upload the solution folder (containing the .uipx) to Studio Web
 uip solution upload <SolutionDir> --output json
 ```
@@ -259,9 +265,9 @@ When the build completes and it is time to offer next steps (see Completion Outp
 
 | Option | Action |
 |--------|--------|
-| **Publish to Studio Web** (default) | Run `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
-| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 8). Confirm consent first — debug executes the flow for real. |
-| **Deploy to Orchestrator** | Run `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
+| **Publish to Studio Web** (default) | Run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
+| **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 8). Confirm consent first — debug executes the flow for real. |
+| **Deploy to Orchestrator** | Run `uip solution resource refresh <SolutionDir> --output json` then `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
 Do not run any of these actions without an explicit user selection.
