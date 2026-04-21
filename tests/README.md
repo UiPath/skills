@@ -4,18 +4,25 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
 
 ## Prerequisites
 
-1. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
+1. **UiPath private PyPI credentials** (optional) — only needed if `coder-eval` resolves to packages on the UiPath Azure DevOps `ml-packages` feed. Export these **before** running `make install` to enable the private feed:
+   ```bash
+   export UV_INDEX_UIPATH_USERNAME=<your-ado-username>
+   export UV_INDEX_UIPATH_PASSWORD=<your-ado-pat>
+   ```
+   The Makefile composes these into `UV_EXTRA_INDEX_URL` for `uv pip install`. If either variable is empty, install continues against public PyPI only and prints a notice.
+
+2. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
    ```bash
    cd tests
    make install
    ```
 
-2. **uip CLI** — the UiPath CLI must be available:
+3. **uip CLI** — the UiPath CLI must be available:
    ```bash
    npm install -g @uipath/cli
    ```
 
-3. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
+4. **Environment setup** — API keys and other environment variables are required. See the [coder_eval README](https://github.com/UiPath/coder_eval) for environment setup (`.env`, API keys, etc.).
 
 ## Running Tests
 
