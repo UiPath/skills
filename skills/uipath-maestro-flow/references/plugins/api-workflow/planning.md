@@ -23,7 +23,9 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `output` |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 
