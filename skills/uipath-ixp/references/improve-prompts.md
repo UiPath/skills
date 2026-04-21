@@ -50,7 +50,13 @@ uip ixp project metrics <project-name> --output json
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
 
-Flag any typed fields (Date, Monetary Quantity) at F1 = 0 — these are format issues, not prompt issues. Report them to the user and exclude from prompt iteration.
+**Check for format issues first.** If any typed fields (Date, Monetary Quantity) have F1 = 0, these are format mismatches — not prompt issues. Fix them BEFORE starting the optimization loop:
+1. Re-label all documents using Steps 2-5 of the [Project Setup Guide](project-setup.md), submitting typed field values as-written in the document
+2. Wait ~2 minutes for retrain
+3. Re-fetch metrics — the typed fields should now have F1 > 0
+4. Use these refreshed metrics as `baseline_metrics` for the loop
+
+This ensures the optimization loop only targets fields that actually need prompt improvement.
 
 ### 1b. Get taxonomy
 
@@ -89,10 +95,7 @@ Identify individual fields with F1 < 0.7 as targets. Diagnose each:
 1. **Classify the action:**
    - `Documents = 0` AND `F1 = 0` → **SKIP**
    - `Documents < 1` → **SKIP**
-   - Typed field (Date, Monetary Quantity) at F1 = 0 → **FIX FORMAT** (not a prompt issue — re-label using the value as-written in the document. The model predicts in the document's own format.)
    - Otherwise → **REFINE**
-
-Fields classified as FIX FORMAT do not need instruction changes — they need re-labelling with the correct value format. Include them in the re-label step (2d) but do NOT rewrite their instructions.
 
 2. **Diagnose the problem type** (use F1 as primary signal with few documents):
    - `Precision < Recall` significantly → **PRECISION** — model extracts wrong values

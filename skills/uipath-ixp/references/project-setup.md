@@ -9,7 +9,7 @@ mkdir -p /tmp/ixp
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
-Use the `ProjectName` from the output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `cezara_invoices4-f1afa9ef-ixp`), NOT the Title.
+Use the `ProjectName` from the output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
 ## Step 2 — Get All Documents, Images, and OCR Text
 
