@@ -1,0 +1,117 @@
+task_id: uipath-coded-jira-create-group
+description: >
+  Create a UiPath coded workflow (C#) that creates a new Jira group named
+  "CodedWorkflowTestGroup" using the Jira Integration Service connector.
+  Exercises coded workflow scaffolding and connector usage.
+tags: [rpa, coded, jira, default]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  setting_sources: ["user", "project"]
+  system_prompt: |
+    You are a UiPath automation coding agent. Complete tasks efficiently and directly.
+
+    ABSOLUTE RULES — these commands are banned, never run them under any circumstances,
+    even if a skill or reference guide suggests them:
+    - `uip rpa get-errors`
+    - `uip rpa build`
+    - `uip pack`
+    Your job is ONLY to scaffold the project, install required packages, and write the
+    source code. Stop as soon as the .cs file is written. Do not build, validate, or diagnose.
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath coded workflow project named "JiraCreateGroup" and generate
+  JiraCreateGroup.cs file that creates a new Jira group named "CodedWorkflowTestGroup".
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the project end-to-end in a single pass.
+
+  Your goal is to scaffold the project, install
+  required packages, and write the source code. Stop once the .cs file is written.
+
+success_criteria:
+  # ── Project scaffolding ────────────────────────────────────────────────
+  - type: command_executed
+    description: "Agent created a coded workflow project via uip CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+create-project'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "project.json exists for the coded workflow project"
+    path: "JiraCreateGroup/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent installed the IntegrationService Activities package"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+install-or-update-packages'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Coded workflow source ──────────────────────────────────────────────
+  - type: file_exists
+    description: "Coded workflow .cs file exists in the project"
+    path: "JiraCreateGroup/JiraCreateGroup.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Coded workflow contains group resource, group name, and IS wiring"
+    command: >-
+      python $TASK_DIR/validate_file_contains.py
+      "JiraCreateGroup/JiraCreateGroup.cs"
+      "objectName: \"group\""
+      "CodedWorkflowTestGroup"
+      "Operation.Create"
+      "ActivityType.Generic"
+      "ISConnections"
+      "ExecuteAsync"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Integration Service discovery ─────────────────────────────────────
+  - type: run_command
+    description: "Agent ran all required IS discovery commands"
+    command: >-
+      python $TASK_DIR/validate_commands_executed.py
+      "uip\\s+rpa\\s+create-project"
+      "uip\\s+rpa\\s+install-or-update-packages"
+      "uip\\s+is\\s+connectors\\s+list"
+      "uip\\s+is\\s+connections\\s+list"
+      "uip\\s+is\\s+activities\\s+list"
+      "uip\\s+is\\s+resources\\s+list"
+      "uip\\s+is\\s+resources\\s+describe"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Integration Service wiring ─────────────────────────────────────────
+  - type: file_exists
+    description: "IS connections wrapper .codedworkflows/ISConnections.cs exists"
+    path: "JiraCreateGroup/.codedworkflows/ISConnections.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "IS binding metadata .project/ISBindingMetadata.json exists"
+    path: "JiraCreateGroup/.project/ISBindingMetadata.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+llm_reviewer:
+  enabled: false

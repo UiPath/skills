@@ -155,6 +155,7 @@ Create (or update) `.codedworkflows/ISConnections.cs`. One class per connector, 
 
 ```csharp
 // .codedworkflows/ISConnections.cs — managed by coding agent — regenerate via uipath-rpa skill when connections change.
+using UiPath.CodedWorkflows;
 using UiPath.IntegrationService.Activities.Runtime.CodedWorkflows;
 
 // Determine the namespace from other .cs files in the project root:
