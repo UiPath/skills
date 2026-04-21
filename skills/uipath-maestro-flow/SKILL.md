@@ -72,36 +72,35 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 
 These steps are for **creating a new flow from scratch**. For existing projects, use the Common Edits section above or skip to the relevant step.
 
-### Step 0 — Resolve the `uip` binary
+### Step 0 — Resolve the `uip` binary and detect command prefix
 
-The `uip` CLI is installed via npm. Resolve the binary and verify it meets the minimum version required for `uip maestro flow` commands.
+The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments) and detect the command namespace:
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
-MIN_VERSION="0.3.4"
 ```
 
-**Check the installed version:**
+If `uip` is not found at all, install it: `npm install -g @uipath/cli@latest`. If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges — do not retry automatically.
 
-1. If `uip` is not found at all → install: `npm install -g @uipath/cli@latest`
-2. If the version is **below $MIN_VERSION** → upgrade: `npm install -g @uipath/cli@latest`
-3. If the version is **≥ $MIN_VERSION** → no action needed, proceed
+**Determine the command prefix based on installed version:**
+
+| Installed version | Command prefix | Example |
+|---|---|---|
+| **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
+| **< 0.3.4** | `uip flow` | `uip flow init MyProject` |
 
 ```bash
-if [ -z "$CURRENT" ]; then
-  echo "uip not found — installing..."
-  npm install -g @uipath/cli@latest
-elif [ "$(printf '%s\n%s\n' "$MIN_VERSION" "$CURRENT" | sort -V | head -n1)" != "$MIN_VERSION" ]; then
-  echo "uip $CURRENT is below minimum $MIN_VERSION — upgrading..."
-  npm install -g @uipath/cli@latest
+MIN_VERSION="0.3.4"
+if [ "$(printf '%s\n%s\n' "$MIN_VERSION" "$CURRENT" | sort -V | head -n1)" = "$MIN_VERSION" ]; then
+  FLOW_CMD="uip maestro flow"
+else
+  FLOW_CMD="uip flow"
 fi
-uip --version
+echo "Using: $FLOW_CMD (CLI version $CURRENT)"
 ```
 
-If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
-
-> **Why 0.3.4?** CLI 0.3.4 restructured commands: `uip flow` (top-level) was removed and replaced by `uip maestro flow`. All commands in this skill use the new namespace. See UiPath/cli#841.
+> **All commands in this skill are written as `uip maestro flow ...` (the ≥ 0.3.4 form).** If Step 0 detects a version below 0.3.4, replace `uip maestro flow` with `uip flow` when running any command. The arguments and flags are identical — only the prefix differs. See UiPath/cli#841 for background on the restructuring.
 
 ### Step 1 — Check login status
 
