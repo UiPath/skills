@@ -20,6 +20,9 @@ candidates+=("$PWD/.claude/settings.json")
 candidates+=("$HOME/.claude/settings.json")
 
 # If any candidate already mentions Bash(uip...) in its permissions, stay silent.
+# Intentional simplification: this matches `allow`, `ask`, AND `deny` blocks.
+# Any explicit `uip` rule means the user has made a decision about this CLI —
+# we don't second-guess by nudging them toward a permissive allowlist.
 for f in "${candidates[@]}"; do
   [ -f "$f" ] || continue
   if grep -q 'Bash(uip' "$f" 2>/dev/null; then

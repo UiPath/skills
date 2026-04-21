@@ -41,26 +41,33 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 {
   "permissions": {
     "allow": [
+      // binary + auth status (read-only)
       "Bash(uip --version)",
       "Bash(uip login status)",
       "Bash(uip login status *)",
       "Bash(which uip)",
 
+      // discovery — registry + Integration Service + Orchestrator list ops (all read-only)
       "Bash(uip flow registry *)",
-      "Bash(uip is *)",
-      "Bash(uip or folders *)",
+      "Bash(uip is *)",               // Integration Service (connections, connectors, resources, triggers)
+      "Bash(uip or folders *)",       // Orchestrator folders
 
+      // local-only flow / solution / agent scaffolding
       "Bash(uip flow init *)",
       "Bash(uip flow validate *)",
       "Bash(uip flow tidy *)",
       "Bash(uip flow node *)",
       "Bash(uip flow edge *)",
-
       "Bash(uip solution new *)",
       "Bash(uip solution project *)",
       "Bash(uip solution resource *)",
+      "Bash(uip agent init)",
+      "Bash(uip agent init *)",
+      "Bash(uip agent validate *)",
 
-      "Bash(uip agent validate *)"
+      // RPA skill — build, get-errors, find-activities, create-project, inspect-package, etc.
+      // All local; no cloud side effects (publish goes through `uip solution upload/publish`).
+      "Bash(uip rpa *)"
     ],
     "ask": [
       "Bash(uip login)",
@@ -72,9 +79,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(uip solution upload)",
       "Bash(uip solution upload *)",
       "Bash(uip solution publish)",
-      "Bash(uip solution publish *)",
-      "Bash(uip agent init)",
-      "Bash(uip agent init *)"
+      "Bash(uip solution publish *)"
     ]
   }
 }
@@ -87,4 +92,6 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 - Rule precedence in Claude Code is `deny > ask > allow`, and rules are evaluated **before** `defaultMode` / `--dangerously-skip-permissions`. So the `ask` list in the full variant still forces a prompt under YOLO mode — that is the point of it, and it is the difference between the two variants offered in step 1.
 - If the user has existing `permissions.deny` rules mentioning `uip`, do not remove them — respect explicit denials even if they conflict with the recommended allowlist. Surface the conflict in chat and ask.
 - Never modify `~/.claude/settings.json` without explicit consent — that file often contains secrets (tokens, env vars) and should not be edited casually. If the user picks the global option, re-confirm before writing.
-- The full variant's `ask` block intentionally guards `uip solution upload`, `uip flow debug`, `uip flow pack`, `uip solution publish`, `uip agent init`, and `uip login` — these produce real cloud or filesystem side effects. See the `uipath-maestro-flow` skill's Critical Rule 9.
+- The full variant's `ask` block intentionally guards `uip solution upload`, `uip flow debug`, `uip flow pack`, `uip solution publish`, and `uip login` — these produce real cloud side effects (publishing, executing flows, tenant auth). The `uipath-maestro-flow` skill's rules explicitly require user consent before cloud-executing a flow.
+- `uip agent init` is in `allow` (scaffolding — same as `uip flow init`). It does not publish to the cloud; it creates local agent project files.
+- `uip rpa *` covers the full RPA subcommand tree (`build`, `get-errors`, `create-project`, `find-activities`, `inspect-package`, `focus-activity`, etc.). None of these publish to the cloud — RPA deployment flows through `uip solution upload` / `publish` (already guarded in `ask`).
