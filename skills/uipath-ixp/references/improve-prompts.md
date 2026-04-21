@@ -14,7 +14,7 @@ Before starting, understand the limits of prompt iteration:
 
 **Prompts CANNOT fix (but re-labelling can):**
 
-- **Typed field format mismatches** — if Date or Monetary Quantity fields score F1 = 0, the issue is value format, not instructions. Fix by re-labelling with canonical formats: Date → `YYYY-MM-DD`, Monetary Quantity → `17000.00` (no currency symbol or commas). The optimization loop handles this automatically — fields are classified as FIX FORMAT and included in re-labelling.
+- **Typed field format mismatches** — if Date or Monetary Quantity fields score F1 = 0, the issue is value format, not instructions. Fix by re-labelling with the value **as-written in the document** (the model predicts in the document's own format). The optimization loop handles this automatically — fields are classified as FIX FORMAT and included in re-labelling.
 
 **Neither prompts nor re-labelling can fix:**
 
@@ -26,6 +26,8 @@ Before starting, understand the limits of prompt iteration:
 `update-prompts --fields` updates individual **field instructions** (moon_form fields like "Invoice Number", "Invoice Date"). Match by field name — the CLI fetches the taxonomy, finds which label_def contains each field, merges the instruction change, and sends all fields in that label_def back (preserving fields you didn't change).
 
 Omitting `--label-instructions` preserves the existing project-level prompt — it is NOT wiped.
+
+**Warning: label_def vs field instruction conflicts.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model also sees. `update-prompts --fields` does NOT touch this. If the label_def instructions say "Monetary fields: decimal format, no currency symbol" but your per-field instruction says "submit as-written with commas", the model gets contradictory signals. Before iterating, read each label_def's `instructions` in the taxonomy and ensure they don't contradict the per-field instructions you're writing.
 
 ## Before Starting
 
@@ -86,7 +88,7 @@ Identify individual fields with F1 < 0.7 as targets. Diagnose each:
 1. **Classify the action:**
    - `Documents = 0` AND `F1 = 0` → **SKIP**
    - `Documents < 1` → **SKIP**
-   - Typed field (Date, Monetary Quantity) at F1 = 0 → **FIX FORMAT** (not a prompt issue — the labellings used the wrong value format. Re-label using canonical formats: Date → `YYYY-MM-DD`, Monetary Quantity → decimal with no symbol/commas e.g. `17000.00`)
+   - Typed field (Date, Monetary Quantity) at F1 = 0 → **FIX FORMAT** (not a prompt issue — re-label using the value as-written in the document. The model predicts in the document's own format.)
    - Otherwise → **REFINE**
 
 Fields classified as FIX FORMAT do not need instruction changes — they need re-labelling with the correct value format. Include them in the re-label step (2d) but do NOT rewrite their instructions.
@@ -182,6 +184,8 @@ Compare the new per-field F1 scores against the **previous iteration** scores:
 
 3. Re-label all documents with the rolled-back instructions
 4. Try a **different approach** for the regressed fields on the next iteration
+
+**Rollback caveat:** Rollback is NOT atomic — the model has already retrained on the regressed labels, so re-submitting the previous iteration's values won't snap F1 back to exactly where it was. Expect only **partial recovery**. To minimize this risk: prefer small-scope iterations (few fields at a time), and keep the best-seen labellings around to re-submit if needed.
 
 **No regression:** Accept the iteration. Update `previous_metrics` and `previous_instructions` with the new values.
 
