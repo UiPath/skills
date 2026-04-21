@@ -50,7 +50,7 @@ Creates an IXP dataset, uploads all documents from a folder, suggests a taxonomy
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
-The `Name` value from the output is needed for subsequent commands.
+The `ProjectName` value from the output is needed for all subsequent commands.
 
 ### Get Taxonomy
 
@@ -70,17 +70,19 @@ Returns `ProjectScore`, `ProjectScoreQuality`, per-field-group metrics (`FieldGr
 
 ### Update Prompts / Instructions
 
-Updates extraction instructions on entity_defs. The `--entity-defs` flag takes a JSON array of ALL entity_defs (not just changed ones — omitting one may delete it). Each entry must have `id`, `name`, `title`, `inherits_from`, `trainable`, and the new `instructions`.
+Updates extraction instructions on entity_defs. This is a **safe merge** — the CLI fetches the current taxonomy, updates only the `instructions` field on matching entity_defs by name, and sends the complete set back. All other fields (`id`, `title`, `trainable`, `inherits_from`, `moon_form`) are preserved.
+
+The `--entity-defs` payload only needs `name` and `instructions` for each field to update:
 
 ```bash
 uip ixp project update-prompts <project-name> \
-  --entity-defs '<json array of all entity_defs>' \
+  --entity-defs '[{"name":"invoice_number","instructions":"New instructions here"}]' \
   --label-instructions '<optional top-level instructions>' \
   --output json
 ```
 
 Flags:
-- `-e, --entity-defs <json>` (required) — JSON array of entity_defs with updated instructions
+- `-e, --entity-defs <json>` (required) — JSON array of `{name, instructions}` updates. Only listed fields are changed; unlisted fields keep their current instructions.
 - `-i, --label-instructions <text>` (optional) — default label group instructions
 - `-t, --tenant <tenant-name>` (optional)
 
@@ -98,7 +100,15 @@ Returns `[{ Uid, AttachmentRef }]` for each document.
 uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_doc.png --output json
 ```
 
-Downloads the original document file (image/PDF). Then use the **Read tool** to view it visually. This is the primary way to read a document for extraction.
+Downloads the original document file (image/PDF). Then use the **Read tool** to view it visually.
+
+### Get Document OCR Text
+
+```bash
+uip ixp document text <project-name> <comment-uid> --output json
+```
+
+Returns the OCR text for the document (all pages concatenated). Use this as the source of exact character values when submitting extractions.
 
 ### Confirm IXP Predictions
 
@@ -149,14 +159,14 @@ Returns `EntityDefs` and `LabelGroups`. From these:
 
 ### Step 3 — For Each Document: Read the Document
 
-Download the original document image and its OCR text:
+For each document, download the original image and fetch the OCR text:
 
 ```bash
 # Download the document image
 uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_doc.png --output json
 
-# Get the OCR text (uses the attachment ref from document list)
-uip ixp document text <attachment-ref> --output json
+# Get the OCR text
+uip ixp document text <project-name> <comment-uid> --output json
 ```
 
 Then use the **Read tool** to view the image:
@@ -165,19 +175,27 @@ Then use the **Read tool** to view the image:
 Read /tmp/ixp_doc.png
 ```
 
-Use the **image** to understand the document layout and locate fields visually. Use the **OCR text** as the source of exact character values to submit — this ensures the `formatted_value` strings match exactly what IXP sees.
+You now have two representations of the same document:
+- **Image** — the visual layout (how the document actually looks)
+- **OCR text** — the exact character strings that IXP's extraction model sees
 
 ### Step 4 — Extract Field Values
 
-Using the document image and OCR text from Step 3, and the taxonomy from Step 2, extract values for every field:
-- Use the **image** to understand the document layout and identify which fields are present
-- Use the **OCR text** to get the exact character values — every `formatted_value` you submit MUST be a substring of the OCR text, character-for-character
-- Do NOT "fix" OCR characters (e.g., `Ó` → `O`, `l` → `1`) — use exactly what the OCR returned
-- If a field is not found in the document, skip it (do NOT include it with empty value)
+For each field in the taxonomy, follow this process:
+
+1. **Look at the image** to understand the document layout and identify where each field's value appears visually.
+2. **Find that same value in the OCR text.** Search the OCR text for the string you identified in step 1. The OCR text is a space-separated sequence of words — look for a contiguous substring that matches what you see in the image.
+3. **Copy the value from the OCR text, not from what you read in the image.** The OCR may have different characters than what you visually read (e.g., `Ó` instead of `O`, `l` instead of `1`). Always use the OCR version.
+
+Rules:
+- Every `formatted_value` you submit MUST be a contiguous substring of the OCR text, character-for-character
+- Do NOT type what you see in the image — always copy from the OCR text
+- If you cannot find the value in the OCR text, skip that field entirely
+- If a field is not visible in the document, skip it (do NOT include it with empty value)
 
 ### Step 5 — Submit the Labelling
 
-Write the extractions JSON to a temp file, then pass it to the CLI:
+Build the extractions JSON with **one entry per label** — group ALL fields that belong to the same label into a single entry's `fields` array. Do NOT create multiple entries with the same `label`.
 
 ```bash
 cat > /tmp/ixp_extractions.json << 'EXTRACTIONS_EOF'
@@ -198,7 +216,11 @@ uip ixp labelling label <project-name> <comment-uid> \
 
 ### Batch Loop Pattern
 
-Process all documents by looping Steps 3-5. Track progress and errors. Do NOT stop on the first error — continue with remaining documents and report the summary at the end.
+Process all documents by looping Steps 3-5. Track progress and errors:
+- Do NOT stop on the first error — continue with remaining documents
+- If `document get` or `document text` fails for a document, skip it and note the failure
+- If `labelling label` fails, log the error and the document UID, then continue with the next document
+- At the end, report a summary: how many succeeded, how many failed, and which UIDs failed
 
 ### Step 6 — Show Metrics
 
@@ -231,11 +253,11 @@ Identify individual fields with F1 < 0.7 as targets for improvement. Match each 
    - `Documents < 1` → **SKIP** (insufficient data for meaningful refinement)
    - Otherwise → **REFINE**
 
-2. **Diagnose the problem type** for fields marked REFINE:
-   - `Precision < 0.5` AND `Recall >= 0.8` → **PRECISION** problem — model finds the field but extracts wrong values
-   - `Recall < 0.5` AND `Precision >= 0.8` → **RECALL** problem — model misses the field entirely
-   - `Precision < 0.5` AND `Recall < 0.5` → **BOTH** problem — model both misses fields and extracts wrong values
-   - Otherwise → **MIXED** problem
+2. **Diagnose the problem type** for fields marked REFINE. With few documents (< 5), precision/recall values are coarse (0, 0.5, 1.0) — use F1 as the primary signal and check precision/recall directionally rather than relying on exact thresholds:
+   - `Precision < Recall` (significantly) → **PRECISION** problem — model finds the field but extracts wrong values
+   - `Recall < Precision` (significantly) → **RECALL** problem — model misses the field entirely
+   - Both `Precision` and `Recall` are low → **BOTH** problem — model both misses fields and extracts wrong values
+   - Otherwise → **MIXED** problem — improve the instruction generally
 
 Print a diagnosis summary to the user showing each field's name, score, action, problem type, and precision/recall before proceeding. Only continue with fields marked REFINE.
 
@@ -249,14 +271,17 @@ From the response, find the `EntityDefs` with their current `instructions`. Note
 
 ### Step 3 — Read Sample Documents
 
-Pick 2-3 documents and view them as images to understand document structure:
+Pick 2-3 documents and view them as images + OCR text to understand document structure:
 
 ```bash
 uip ixp document list <project-name> --output json
+
+# For each sample document:
 uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_sample.png --output json
+uip ixp document text <project-name> <comment-uid> --output json
 ```
 
-Then use the **Read tool** to view the image. This gives Claude visual context about where fields appear in the document, which is critical for writing location-aware instructions (especially for RECALL problems).
+Then use the **Read tool** to view the image. Also review the OCR text to understand what vocabulary the extraction model sees — this is important for writing instructions that reference labels and terms the model can actually match against.
 
 ### Step 4 — Write Improved Instructions (Diagnosis-Driven)
 
@@ -281,36 +306,32 @@ Note which quality gaps exist — the rewrite must fill them.
 1. **NEVER reference specific page numbers** (e.g., "page 28", "page 7"). Use section headings, labels, or content descriptions instead — page numbers vary between documents.
 2. Include **format guidance** (e.g., "Format: NNN-NN-NNNN") and a **realistic example** when possible.
 3. Keep instructions **2-4 sentences**. Be direct and specific.
-4. The instruction goes on the **field group label** (the parent that contains the sub-fields). Write it to guide extraction of ALL fields in that group, not just one.
+4. Each instruction targets a specific **entity_def** (matched via `FieldId` → `moon_form[].field_id` → `moon_form[].kind` → `entity_def.name`). Write the instruction to describe that specific field type, not the entire field group.
 5. Fill all identified quality gaps: add location hints if missing, add examples if missing, add format guidance if missing.
 
 Also update `_default_label_group_instructions` with general guidance about the document type.
 
-### Step 5 — Update the Dataset
+### Step 5 — Update Instructions
 
-Write the entity_defs JSON to a temp file and pass it to the CLI:
+The `update-prompts` command is a safe merge — it fetches the current taxonomy, updates only the `instructions` field on entity_defs that match by name, and sends the complete set back. All other fields are preserved.
+
+Only include the entity_defs whose instructions you want to change:
 
 ```bash
-cat > /tmp/ixp_entity_defs.json << 'ENTITY_DEFS_EOF'
+cat > /tmp/ixp_updates.json << 'ENTITY_DEFS_EOF'
 [
-  {
-    "id": "<existing_entity_def_id>",
-    "name": "<existing_name>",
-    "title": "<existing_title>",
-    "inherits_from": [],
-    "trainable": true,
-    "instructions": "<new improved instructions>"
-  }
+  {"name": "invoice_number", "instructions": "New improved instructions here"},
+  {"name": "company_name", "instructions": "Another improved instruction"}
 ]
 ENTITY_DEFS_EOF
 
 uip ixp project update-prompts <project-name> \
-  --entity-defs "$(cat /tmp/ixp_entity_defs.json)" \
+  --entity-defs "$(cat /tmp/ixp_updates.json)" \
   --label-instructions "<new top-level instructions>" \
   --output json
 ```
 
-> **Important:** Include ALL entity_defs in the update (not just changed ones), preserving existing `id`, `name`, `title`, `trainable`, and `inherits_from` values. Only change the `instructions` field. Omitting an entity_def from the array may delete it.
+The response reports how many entity_defs were updated and lists any unmatched names.
 
 ### Step 6 — Re-label All Documents
 
@@ -339,7 +360,7 @@ To create a fresh project, upload documents, and generate a taxonomy:
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
-Then follow "Label an Existing Project" above using the Name from the output.
+Then follow "Label an Existing Project" above using the `ProjectName` from the output.
 
 ## Extractions JSON Format
 
@@ -372,8 +393,7 @@ The `--extractions` flag on `uip ixp labelling label` takes a JSON array:
 | `uip ixp project update-prompts <project-name> --entity-defs <json>` | Update field instructions |
 | `uip ixp document list <project-name>` | List documents (UIDs + attachment refs) |
 | `uip ixp document get <project-name> <comment-uid> -o <path>` | Download original document file for viewing |
-| `uip ixp document text <attachment-ref>` | Get OCR text for exact character values |
-| `uip ixp document image <attachment-ref> --page <n> -o <path>` | Download page image |
+| `uip ixp document text <project-name> <comment-uid>` | Get OCR text for exact character values |
 | `uip ixp labelling confirm <project-name>` | Confirm IXP predictions as-is |
 | `uip ixp labelling label <project-name> <uid> --extractions <json>` | Submit Claude extractions |
 
