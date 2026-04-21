@@ -1,8 +1,10 @@
 # Agent Node — Implementation
 
-Agent nodes invoke published UiPath AI agents. They are tenant-specific resources with pattern `uipath.core.agent.{key}`.
+Agent nodes invoke UiPath AI agents. Pattern: `uipath.core.agent.{key}`.
 
 ## Discovery
+
+**Published (tenant registry):**
 
 ```bash
 uip flow registry pull --force
@@ -11,10 +13,20 @@ uip flow registry search "uipath.core.agent" --output json
 
 Requires `uip login`. Only published agents from your tenant appear.
 
+**In-solution (local, no login required):**
+
+```bash
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
+
 ## Registry Validation
 
 ```bash
 uip flow registry get "uipath.core.agent.{key}" --output json
+uip flow registry get "uipath.core.agent.{key}" --local --output json
 ```
 
 Confirm:
@@ -127,15 +139,19 @@ return { classification: response };
 - `$vars.{nodeId}.output.content` — the agent's text response
 - `$vars.{nodeId}.error` — error details if the agent fails
 
-## If the Agent Does Not Exist Yet
+## In-Solution Reference (Preferred Over Mock)
 
-Add a `core.logic.mock` placeholder and tell the user to create and publish the agent using `uipath-agents`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
+If the agent exists in a sibling project within the same `.uipx` solution but is not yet published, use `--local` discovery instead of a mock. Run `uip flow registry list --local --output json` to find the agent, then use `uip flow registry get "<nodeType>" --local --output json` to get its full definition. Wire it into the flow the same way as a published agent.
+
+## Mock Placeholder (If Not in Solution)
+
+If the agent is not in the same solution and not yet published, add a `core.logic.mock` placeholder and tell the user to create and publish the agent using `uipath-agents`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Agent not published, or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | Agent not published, or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip flow registry pull --force` |
 | Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details |
 | Empty `output.content` | Agent returned no response | Verify agent is configured correctly in Orchestrator |
 | `inputDefinition` is empty | Expected — agents typically accept input via flow wiring, not typed fields | Wire upstream data to the agent via `$vars` expressions |

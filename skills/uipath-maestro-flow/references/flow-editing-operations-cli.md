@@ -222,10 +222,14 @@ Instead, edit the node's `inputs` (and optionally `display.label`) directly in t
 
 ### Replace a mock with a real resource node
 
-After the resource (RPA process, agent, etc.) has been published:
+After the resource (RPA process, agent, etc.) has been published or added to the solution:
 
-1. Refresh the registry:
+1. Discover the resource — check in-solution first, then tenant registry:
    ```bash
+   # In-solution (preferred — no login required):
+   uip flow registry list --local --output json
+
+   # Tenant registry (if not in solution):
    uip flow registry pull --force
    uip flow registry search "<RESOURCE_NAME>" --output json
    ```

@@ -1,18 +1,31 @@
 # API Workflow Node — Implementation
 
-API workflow nodes invoke published API functions. Pattern: `uipath.core.api-workflow.{key}`.
+API workflow nodes invoke API functions. Pattern: `uipath.core.api-workflow.{key}`.
 
 ## Discovery
+
+### Published (tenant registry)
 
 ```bash
 uip flow registry pull --force
 uip flow registry search "uipath.core.api-workflow" --output json
 ```
 
+### In-solution (sibling projects)
+
+```bash
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
+```
+
 ## Registry Validation
 
 ```bash
+# Published
 uip flow registry get "uipath.core.api-workflow.{key}" --output json
+
+# In-solution
+uip flow registry get "uipath.core.api-workflow.{key}" --local --output json
 ```
 
 Confirm:
@@ -116,5 +129,5 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip flow registry pull --force`; for in-solution API workflows use `--local` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |

@@ -255,7 +255,14 @@ Only `inout` variables can be updated. `in` variables are read-only.
 
 ### Replace a mock with a real resource node
 
-1. Run `uip flow registry get "<RESOURCE_NODE_TYPE>" --output json`
+1. Get the resource node manifest — check in-solution first, then tenant registry:
+   ```bash
+   # In-solution (preferred — no login required):
+   uip flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
+
+   # Tenant registry (if not in solution):
+   uip flow registry get "<RESOURCE_NODE_TYPE>" --output json
+   ```
 2. Record the mock node's connected edges
 3. Remove the mock node from `nodes`
 4. Remove all edges referencing the mock
