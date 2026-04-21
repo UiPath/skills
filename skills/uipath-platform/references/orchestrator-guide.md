@@ -95,12 +95,15 @@ A job is a single execution of a process. Jobs have states:
 | `uip or folders delete <key>` | Delete a folder |
 | `uip or folders runtimes <key>` | List available runtimes in folder |
 
-> **`folders list` vs `folders list --all`:** By default, `list` returns only folders the current user is assigned to. Use `--all` to see all folders in the tenant (requires appropriate permissions). `--all` enables filtering: `--type standard|solution`, `--name`, `--path`, `--top-level`, `--order-by`.
+> **`folders list` vs `folders list --all`:** By default, `list` returns only folders the current user is assigned to. Use `--all` to see all folders in the tenant (requires appropriate permissions). `--all` enables filtering: `--type standard|solution|personal`, `--name`, `--path`, `--top-level`, `--order-by`.
+>
+> **Personal Workspaces:** Use `--type personal` to list personal workspaces. This returns a different shape (Key, Name, OwnerName, OwnerKey, LastLogin). `--path` and `--top-level` are not supported with `--type personal` (workspaces are flat).
 
 ```bash
 uip or folders list --output json
 uip or folders list --all --output json
 uip or folders list --all --type standard --top-level --output json
+uip or folders list --all --type personal --output json
 uip or folders create "Finance" --output json
 uip or folders create "Invoicing" --parent "Finance" -d "Invoice processing" --output json
 ```
