@@ -459,7 +459,7 @@ Correct — C# expression node, pre-compiled, runs:
 - `TimeSpan` literals (`Duration="00:00:02"`)
 - `{x:Null}`
 
-See [csharp-activity-binding-cheatsheet.md](csharp-activity-binding-cheatsheet.md) for the canonical binding form per common activity property.
+See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the canonical binding form per common activity property.
 
 **Rule of thumb:** if the value would need an expression evaluator to produce (concatenation, variable reference, method call), use the child-element form. If it's a literal value with an obvious type converter, attribute form is safe.
 

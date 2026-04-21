@@ -152,6 +152,28 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 ---
 
+### build
+
+Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses (see [validation-guide.md § Standalone Compile Verification](validation-guide.md#standalone-compile-verification-optional)). Runs independently of Studio IPC; takes the project directory as a positional argument.
+
+```bash
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<projectDir>` | Yes | Path to the project directory (positional — not `--project-dir`) |
+| `--log-level` | No | `Debug` / `Info` / `Warn` / `Error`. Default `Warn`. |
+| `--skip-analyze` | No | Skip the static analysis step (faster, less thorough) |
+| `--exclude-configured-sources` | No | Exclude user/machine-configured NuGet sources |
+| `--nuget-sources-config-path` | No | Path to a custom NuGet sources config file |
+| `--governance-file-path` | No | Path to a governance/policy rules file |
+| `--governance-file-type` | No | Type of the governance file |
+| `--detailed-log-path` | No | Path to write a detailed log file |
+
+**Not a prerequisite for `run-file`** — `run-file` compiles internally. Use `build` when you want compile verification without execution, or want to surface attribute-form-expression failures (`JIT compilation is disabled for non-Legacy projects`) before runtime.
+
+---
+
 ## Commands -- Package Management
 
 ### install-or-update-packages

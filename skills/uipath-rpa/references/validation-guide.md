@@ -41,7 +41,7 @@ See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` co
 Between `get-errors` and `run-file`, `uip rpa build` offers a middle checkpoint: it compiles the whole project (XAML expression evaluation included) without actually running any workflow. Useful when `run-file` would have side effects you want to avoid, or when you want to catch expression-compilation failures earlier than runtime.
 
 ```bash
-uip rpa build "<PROJECT_DIR>" --log-level Warn --format json
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
 This catches errors like `JIT compilation is disabled for non-Legacy projects` (attribute-form expressions parsed as VB on C# projects) that pass static `get-errors` validation but only surface at `CacheMetadata` time. See [xaml/common-pitfalls.md § C# Attribute-Form Expressions Are Parsed as VB](xaml/common-pitfalls.md#c-attribute-form-expressions-are-parsed-as-vb--jit-failure-at-runtime).

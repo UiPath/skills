@@ -1,4 +1,4 @@
-# C# Activity Binding Cheatsheet
+# C# Activity Binding Guide
 
 Canonical binding forms for common activity properties when `expressionLanguage` is `CSharp`. Use this as a quick lookup before writing C# XAML.
 
