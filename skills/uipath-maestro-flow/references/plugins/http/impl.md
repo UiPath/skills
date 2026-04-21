@@ -12,7 +12,7 @@
 uip flow registry get core.action.http.v2 --output json
 ```
 
-Confirm: input port `input`, output port `default`, model serviceType `Intsvc.UnifiedHttpRequest`.
+Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Model serviceType is `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
@@ -75,16 +75,48 @@ uip flow node configure <ProjectName>.flow <nodeId> \
 - For connector mode: generates `bindings_v2.json` and creates a connection resource file under `resources/solution_folder/connection/`
 - For manual mode: uses `ImplicitConnection` (no bindings needed)
 
-### Step 4 — Wire edges
+### Step 4 — (Optional) Configure response branches
 
-The managed HTTP node uses port `default`:
+Skip this step if the flow has only one downstream path. Add branches when you need to route on response conditions (non-2xx status, missing fields, etc.) — for example, to hand 404s off to an "Article not found" end while 2xx continues the happy path.
+
+Each branch entry creates a `branch-{id}` source port. `$self` refers to the current HTTP node's output inside the condition.
 
 ```bash
+uip flow node configure <ProjectName>.flow <nodeId> \
+  --detail '{
+    "branches": [
+      { "id": "ok",       "name": "OK",        "conditionExpression": "$self.output.statusCode >= 200 && $self.output.statusCode < 300" },
+      { "id": "notFound", "name": "Not Found", "conditionExpression": "$self.output.statusCode == 404" }
+    ]
+  }'
+```
+
+> **Do not prefix `conditionExpression` with `=js:`** — HTTP branch conditions are auto-evaluated as JS (same rule as decision/switch expressions).
+
+With branches configured, a matching non-2xx response routes through the matching branch instead of faulting the flow. Without branches, non-2xx responses fault.
+
+### Step 5 — Wire edges
+
+The managed HTTP node's target port is `input`. Its source ports are:
+
+- `default` — fires when no configured branch matches (or when no branches are configured at all)
+- `branch-{id}` — one per entry in `inputs.branches` (Step 4); use the exact `id` you set
+
+```bash
+# Edge into the HTTP node
 uip flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
   --source-port <port> --target-port input --output json
 
+# Unbranched: single outgoing edge on "default"
 uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
   --source-port default --target-port input --output json
+
+# Branched: one edge per configured branch, plus (optionally) a default
+uip flow edge add <ProjectName>.flow <nodeId> <okDownstream> \
+  --source-port branch-ok --target-port input --output json
+
+uip flow edge add <ProjectName>.flow <nodeId> <errDownstream> \
+  --source-port branch-notFound --target-port input --output json
 ```
 
 ## Debug
@@ -96,3 +128,5 @@ uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
 | `ImplicitConnection` errors | Manual mode misconfigured | Verify `authentication: "manual"` and `url` is a full URL |
+| Flow faults on 4xx/5xx response | No branches configured — default behavior is to fault on non-2xx | Configure `inputs.branches` with a `conditionExpression` matching the status(es) you want to handle (Step 4), then wire the resulting `branch-{id}` port |
+| Edge `source-port` rejected | Referencing `output` or `error` as a port name | HTTP uses `default` / `branch-{id}`, not `output`. The `error` name is a variable namespace (`$vars.{nodeId}.error`), not a port |

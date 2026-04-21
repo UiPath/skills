@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-"""WikiPageviews: success path returns exact view-count diff; error path returns a fixed string.
+"""WikiPageviews: success path filters pageview range via Transform; error path returns a fixed string.
 
 Usage: check_wiki_pageviews_flow.py {uipath_success|invalid_error}
 
-Expected diff for the success case is derived from the Wikimedia pageviews
-API for the UiPath article — historical daily pageview counts don't change,
-so the numbers are stable:
-  2024-01-01 views = 239
-  2024-01-15 views = 658
-  658 - 239 = 419
+Success path — one HTTP call returns all daily view counts in the range,
+a Transform filter keeps days whose views exceed `min_views`, and the flow
+returns the count. UiPath article, 2024-01-01..2024-01-15, min_views=500
+has exactly 6 days above the threshold (historical pageviews don't change):
+  Jan  8 = 520  ✓
+  Jan  9 = 806  ✓
+  Jan 10 = 736  ✓
+  Jan 11 = 747  ✓
+  Jan 12 = 663  ✓
+  Jan 15 = 658  ✓
 
-The error case passes a bogus article title — the API returns 404 with no
-items, and the flow must return the literal string 'Article not found'.
+Error path — a bogus article makes the Wikimedia API return 404, which
+faults the HTTP node by default. The flow must configure an HTTP response
+branch (via `inputs.branches` with a `conditionExpression` matching 404)
+and wire that `branch-{id}` source port to an End node that returns the
+literal string 'Article not found'. Without a matching branch the flow
+Faults and the debug call exits 1.
 """
 
-import glob
-import json
 import os
 import sys
 
@@ -23,26 +29,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
     assert_output_value,
-    find_project_dir,
     run_debug,
 )
 
 CASES = {
-    # case: (article, date1, date2, expected_output_leaf)
-    "uipath_success": ("UiPath", "20240101", "20240115", 419),
-    "invalid_error": ("ThisArticleDefinitelyDoesNotExist999", "20240101", "20240115", "Article not found"),
+    # case: (article, date1, date2, min_views, expected_output_leaf)
+    "uipath_success": ("UiPath", "20240101", "20240115", 500, 6),
+    "invalid_error": ("ThisArticleDefinitelyDoesNotExist999", "20240101", "20240115", 500, "Article not found"),
 }
-
-
-def count_http_v2_nodes(project_dir: str) -> int:
-    n = 0
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
-        with open(path) as f:
-            flow = json.load(f)
-        for node in flow.get("nodes") or []:
-            if node.get("type") == "core.action.http.v2":
-                n += 1
-    return n
 
 
 def main():
@@ -50,21 +44,13 @@ def main():
     if case not in CASES:
         sys.exit(f"FAIL: Unknown case {case!r}; expected one of {list(CASES)}")
 
-    # Force the agent to actually make two HTTP calls — one per date. A
-    # single call spanning /daily/{date1}/{date2} would also work in
-    # principle, but we want this test to exercise a flow that explicitly
-    # calls the API twice.
-    assert_flow_has_node_type(["core.action.http.v2"])
-    project_dir = find_project_dir()
-    http_count = count_http_v2_nodes(project_dir)
-    if http_count < 2:
-        sys.exit(
-            f"FAIL: Expected >= 2 core.action.http.v2 nodes (one per date), "
-            f"got {http_count}"
-        )
+    # Require both node types — HTTP for the API call and a Transform
+    # variant (generic/filter/map/group-by all share the `core.action.transform`
+    # prefix) for the filter step.
+    assert_flow_has_node_type(["core.action.http.v2", "core.action.transform"])
 
-    article, date1, date2, expected = CASES[case]
-    inputs = {"article": article, "date1": date1, "date2": date2}
+    article, date1, date2, min_views, expected = CASES[case]
+    inputs = {"article": article, "date1": date1, "date2": date2, "min_views": min_views}
     print(f"[{case}] Injecting inputs: {inputs} (expect {expected!r})")
     payload = run_debug(inputs=inputs, timeout=300)
     assert_output_value(payload, expected)

@@ -31,11 +31,35 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `output` |
+| `input` | `branch-{id}` (dynamic, one per `inputs.branches` entry), `default` |
+
+The HTTP node has **no dedicated `error` source port**. To branch on specific response conditions (non-2xx status, missing fields, etc.), configure `inputs.branches` — each entry creates a `branch-{id}` port; `default` is the fallback. See [Conditional Branches](#conditional-branches) below.
 
 ## Output Variables
 
-- `$vars.{nodeId}.output` — `{ body, code, method, rawStringBody, request }`
+- `$vars.{nodeId}.output` — `{ body, code, method, rawStringBody, request }` on success
+- `$vars.{nodeId}.error` — `{ code, message, detail, category, status }` on failure
+
+## Conditional Branches
+
+Use `inputs.branches` to route to different downstream paths based on the response. Each branch's `conditionExpression` is a JS expression with `$self` bound to the current HTTP node's output:
+
+```json
+{
+  "inputs": {
+    "branches": [
+      { "id": "ok",       "name": "OK",       "conditionExpression": "$self.output.statusCode >= 200 && $self.output.statusCode < 300" },
+      { "id": "notFound", "name": "Not Found", "conditionExpression": "$self.output.statusCode == 404" }
+    ]
+  }
+}
+```
+
+Wire `branch-ok` and `branch-notFound` as source ports on outgoing edges. `default` fires when no branch condition matches.
+
+> **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
+
+Configuring branches also changes fault behavior: when a branch matches a non-2xx response, the node routes through that branch instead of faulting. Without any branches, non-2xx responses fault the whole flow.
 
 ## Key Inputs (`--detail` for `node configure`)
 
