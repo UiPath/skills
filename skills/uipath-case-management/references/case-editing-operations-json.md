@@ -21,7 +21,8 @@ When editing `caseplan.json` directly, you are responsible for everything the CL
 | Edge cleanup on stage removal | Cascaded automatically | Find and remove every edge where `source` or `target` equals the removed stage's ID |
 | Root-level bindings cleanup | Auto-managed when a connector task is removed | Prune `root.data.uipath.bindings` entries no longer referenced by any task |
 | Lane array expansion | Auto-expanded when `--lane <n>` references an index past the current length | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
-| `id-map.json` sidecar | Not maintained by CLI | Write T-entry → generated ID mappings after the skill run |
+| `id-map.json` sidecar | Not maintained by CLI | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
+| `caseplan.json` file creation | Auto-created by `cases add` | T01 (case plugin) writes the file from scratch; downstream plugins mutate in place |
 
 ---
 
@@ -29,7 +30,9 @@ When editing `caseplan.json` directly, you are responsible for everything the CL
 
 Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
 
-1. **Canonical `caseplan.json` exists and is located.** Direct-JSON-write operates on a file that must already exist — the `case` plugin (scaffolding + `cases add`) stays on the CLI strategy and is the only path that creates `caseplan.json`. The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory. If the file doesn't exist yet, run the `case` plugin first; do not attempt to synthesize a fresh `caseplan.json` by direct-JSON-write.
+1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
+   - **For the `case` plugin (T01)**: the file does NOT exist before the plugin runs. Scaffolding (`uip solution new` + `uip maestro case init` + `uip solution project add`) produces the project directory but not `caseplan.json`. The migrated `case` plugin writes `caseplan.json` from scratch per [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-write check: `project.uiproj` + `package-descriptor.json` must exist in the target directory — confirms scaffolding ran.
+   - **For every other plugin**: `caseplan.json` must already exist (the `case` plugin always runs first as T01). If absent, run the `case` plugin first; do not attempt to synthesize a different JSON shape.
 
 2. **IDs match CLI format.** Generate IDs using the `prefixedId` algorithm (see "ID Generation" below). The frontend's `generateNextId(prefix, count)` expects this exact format — deviation risks Studio Web rejection.
 
@@ -65,7 +68,9 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 12. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-13. **Validate after every plugin's batch.** Run `uip maestro case validate <file> --output json` after each plugin completes its mutations. Fixing errors early is cheaper than chasing a cascade.
+13. **Validate after every plugin's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each plugin completes its mutations. Fixing errors early is cheaper than chasing a cascade.
+    - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes + trigger has no outgoing edges). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
+    - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no incoming edges yet). The plugin's validation parity is captured in the fixture instead.
 
 ---
 
@@ -101,7 +106,13 @@ Every skill run generates fresh random IDs — no determinism.
 
 ### Sidecar `id-map.json`
 
-After the skill run produces `caseplan.json`, write a sidecar `id-map.json` adjacent to it, mapping T-entries from `tasks.md` to generated IDs:
+`id-map.json` is built up incrementally during the run, flushed adjacent to `caseplan.json`. Lifecycle:
+
+1. **T01 (case plugin)** creates the file with the literal T01 entries: `{ "T01": { "kind": "case", "id": "root" }, "T01.trigger": { "kind": "trigger", "id": "trigger_1" } }`.
+2. **Downstream plugins** read the file, append entries for generated IDs (stage, edge, task, condition, etc.), write back. Each plugin writes the map before handing off to the next so cross-plugin references can resolve via the on-disk file.
+3. **End of run:** the file is complete and lives alongside `caseplan.json`.
+
+Mapping T-entries from `tasks.md` to generated IDs:
 
 ```json
 {
