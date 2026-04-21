@@ -1,6 +1,6 @@
 ---
 name: uipath-tasks
-description: "Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, manage assignments, or user mentions 'Action Center'/'tasks'/'uip tasks'. Skip for Orchestrator queues, Document Understanding, or codedapp."
+description: "[PREVIEW] Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, manage assignments, or user mentions 'Action Center'/'tasks'/'uip tasks'. For Orchestrator-> uipath-platform, skip for Document Understanding, or codedapp."
 user-invokable: true
 ---
 
