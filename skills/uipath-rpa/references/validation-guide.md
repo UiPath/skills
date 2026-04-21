@@ -44,7 +44,7 @@ Between `get-errors` and `run-file`, `uip rpa build` offers a middle checkpoint:
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-This catches errors like `JIT compilation is disabled for non-Legacy projects` (attribute-form expressions parsed as VB on C# projects) that pass static `get-errors` validation but only surface at `CacheMetadata` time. See [xaml/common-pitfalls.md § C# Attribute-Form Expressions Are Parsed as VB](xaml/common-pitfalls.md#c-attribute-form-expressions-are-parsed-as-vb--jit-failure-at-runtime).
+This catches errors like `JIT compilation is disabled for non-Legacy projects` (attribute-form expressions parsed as VB on C# projects) that pass static `get-errors` validation but only surface at `CacheMetadata` time. See [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md).
 
 **Not a prerequisite for `run-file`** — `run-file` performs its own compilation. Use `build` when you want compile verification without execution.
 

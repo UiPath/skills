@@ -330,22 +330,17 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 
 Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
 
-### `Delay` Lives in the Default `netfx` Activities Namespace — No Prefix
+### `Delay` — no namespace prefix
 
-`Delay` is `System.Activities.Statements.Delay`, reached via the root `<Activity>` default namespace `http://schemas.microsoft.com/netfx/2009/xaml/activities`. Write it without a prefix:
+`Delay` is a Microsoft Workflow Foundation primitive (`System.Activities.Statements.Delay`), reached via the root `<Activity>` default xmlns and written unprefixed:
 
-**Correct:**
 ```xml
 <Delay Duration="00:00:02" DisplayName="Wait for server" />
 ```
 
-**Wrong — `ui:` is `http://schemas.uipath.com/workflow/activities` (UiPath.Core.Activities) and does not contain `Delay`:**
-```xml
-<ui:Delay Duration="00:00:02" />
-<!-- Validation error: Cannot create unknown type '{...uipath...}Delay' -->
-```
+`<ui:Delay .../>` fails with `Cannot create unknown type '{...uipath...}Delay'`. The `ui:` prefix maps to `UiPath.Core.Activities`, which has no `Delay` override.
 
-Same rule applies to other netfx built-ins (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `Parallel`, `TryCatch`, `Switch`) — all no-prefix on the default `Activity` root.
+**For other primitives** (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `TryCatch`, `Switch`, …) UiPath provides `ui:`-prefixed overrides for many — which one to use depends on the behavior you want. Check with `uip rpa find-activities --query "<name>"` before assuming MWF or UiPath; don't generalize from `Delay`.
 
 ## Portable vs Windows Framework Limitations
 
@@ -409,59 +404,9 @@ Every XAML file must use the same expression language as the project (`expressio
 
 **Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
 
-### C# Attribute-Form Expressions Are Parsed as VB — JIT Failure at Runtime
+### C# expression pitfalls — separate file
 
-**Error at runtime (not caught by `get-errors`):**
-```
-System.InvalidOperationException: JIT compilation is disabled for non-Legacy projects.
-ExpressionToCompile { Code = "logMessage", ... LambdaReturnType = System.Object }
-should have been compiled by the Studio Compiler.
-  at Microsoft.VisualBasic.Activities.VisualBasicHelper.Compile[T]
-  at Microsoft.VisualBasic.Activities.VisualBasicValue`1.CacheMetadata
-```
-
-**Root cause:** In C# projects on `Windows` / `Portable` target framework, any non-literal **attribute-form** binding on an `InArgument<T>` / `OutArgument<T>` activity property is deserialized as a `VisualBasicValue<T>` (brackets or no brackets — the XAML attribute parser defaults to VB). The workflow runtime then needs the VB JIT to compile it, but VB JIT is disabled for non-Legacy projects. `get-errors` does not catch this — it passes static validation and fails only when the activity's `CacheMetadata` runs (i.e., when `run-file` or `build` touches the expression).
-
-**Why `Text="Book trip"` on `NTypeInto` works but `Message="logMessage"` on `LogMessage` doesn't:** The former is `InArgument<String>` — a string literal has a direct type converter that bypasses the expression parser. The latter is `InArgument<Object>` — no shortcut, falls through to VB expression parsing.
-
-**Fix — use `<CSharpValue>` / `<CSharpReference>` child-element form for anything non-literal:**
-
-Wrong — parses as VB, fails at runtime:
-```xml
-<ui:LogMessage Message="logMessage" />
-<ui:LogMessage Message="&quot;Total: &quot; + count" />
-<uix:NGetText TextString="statusText" />
-```
-
-Correct — C# expression node, pre-compiled, runs:
-```xml
-<ui:LogMessage>
-  <ui:LogMessage.Message>
-    <InArgument x:TypeArguments="x:Object">
-      <CSharpValue x:TypeArguments="x:Object">"Total: " + count</CSharpValue>
-    </InArgument>
-  </ui:LogMessage.Message>
-</ui:LogMessage>
-
-<uix:NGetText>
-  <uix:NGetText.TextString>
-    <OutArgument x:TypeArguments="x:String">
-      <CSharpReference x:TypeArguments="x:String">statusText</CSharpReference>
-    </OutArgument>
-  </uix:NGetText.TextString>
-</uix:NGetText>
-```
-
-**Exceptions — attribute form is safe for:**
-- Literal strings on `InArgument<String>` properties (`Text="hello"`, `DisplayName="..."`)
-- Enums (`Level="Info"`, `ClickType="Single"`)
-- Numbers, booleans
-- `TimeSpan` literals (`Duration="00:00:02"`)
-- `{x:Null}`
-
-See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the canonical binding form per common activity property.
-
-**Rule of thumb:** if the value would need an expression evaluator to produce (concatenation, variable reference, method call), use the child-element form. If it's a literal value with an obvious type converter, attribute form is safe.
+Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have C#-project-specific root causes. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 ## Missing Assembly References
 
@@ -561,54 +506,6 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 4. Activity output variable removed when the activity was deleted, but expressions still reference it
 
 **In XAML terms:** Variables defined inside `<Sequence.Variables>` are only visible within that `<Sequence>` and its children. Moving an activity that references a variable to a different scope breaks the reference.
-
-## `ThrowIfNotInTree` — Out-Argument Not Attached at Runtime
-
-**Error at runtime:**
-```
-System.InvalidOperationException: The argument of type 'System.String' cannot be used.
-Make sure that it is declared on an activity.
-  at System.Activities.Argument.ThrowIfNotInTree()
-  at System.Activities.Argument.Set(ActivityContext context, Object value)
-```
-
-**Triggers:** an `OutArgument<T>` bound via `<CSharpReference>` to a variable declared **outside** the innermost `ActivityAction` body the activity sits inside. The variable is visible to the C# compiler (scope-wise) but the `Argument` object is not attached to the activity tree that runs — hence "not in tree".
-
-**Typical case:** a UI activity inside `<uix:NApplicationCard.Body><ActivityAction>` writes an output to a variable declared on the *outer* `Sequence` rather than the *inner* one.
-
-**Fix:** declare the output-receiving variable on the `Sequence` immediately inside the `ActivityAction`, not on a parent `Sequence` outside the ActivityAction:
-
-```xml
-<uix:NApplicationCard>
-  <uix:NApplicationCard.Body>
-    <ActivityAction x:TypeArguments="x:Object">
-      <ActivityAction.Argument>
-        <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
-      </ActivityAction.Argument>
-      <Sequence DisplayName="Do">
-        <Sequence.Variables>
-          <!-- Declare HERE, inside the ActivityAction body -->
-          <Variable x:TypeArguments="x:String" Name="statusText" />
-        </Sequence.Variables>
-        <uix:NGetText ...>
-          <uix:NGetText.TextString>
-            <OutArgument x:TypeArguments="x:String">
-              <CSharpReference x:TypeArguments="x:String">statusText</CSharpReference>
-            </OutArgument>
-          </uix:NGetText.TextString>
-        </uix:NGetText>
-      </Sequence>
-    </ActivityAction>
-  </uix:NApplicationCard.Body>
-</uix:NApplicationCard>
-```
-
-**Secondary trap — attribute-form fails with a different error on complex-typed output properties:**
-```xml
-<uix:NGetText TextString="statusText" />
-<!-- Validation error: Failed to create a 'TextString' from the text 'statusText'. -->
-```
-`TextString` is typed `OutArgument<String>`, not a plain string property. Attribute-form assignment fails at XAML parse time. Always use the child-element `<OutArgument>` + `<CSharpReference>` form for output bindings.
 
 ## "Value cannot be null. Parameter name: expression"
 
