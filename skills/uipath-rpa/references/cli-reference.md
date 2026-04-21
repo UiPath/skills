@@ -154,7 +154,7 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 ### build
 
-Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses (see [validation-guide.md § Standalone Compile Verification](validation-guide.md#standalone-compile-verification-optional)). Runs independently of Studio IPC; takes the project directory as a positional argument.
+Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses. Required before returning a project to the user (see [validation-guide.md § Project Build Verification](validation-guide.md#project-build-verification-required-before-returning-a-project)). Runs independently of Studio IPC; takes the project directory as a positional argument.
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
@@ -170,7 +170,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
 | `--governance-file-type` | No | Type of the governance file |
 | `--detailed-log-path` | No | Path to write a detailed log file |
 
-**Not a prerequisite for `run-file`** — `run-file` compiles internally. Use `build` when you want compile verification without execution, or want to surface attribute-form-expression failures (`JIT compilation is disabled for non-Legacy projects`) before runtime.
+**Relationship to `run-file`:** `run-file` compiles internally, so a successful smoke test implies `build` would pass. When no smoke test is run (side effects, interactive workflow, no test input), `build` is the required end-goal check for compilability — including attribute-form expression failures (`JIT compilation is disabled for non-Legacy projects`) in XAML projects with `expressionLanguage: CSharp` that don't surface during static `get-errors`.
 
 ---
 

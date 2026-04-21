@@ -406,7 +406,7 @@ Every XAML file must use the same expression language as the project (`expressio
 
 ### C# expression pitfalls — separate file
 
-Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have C#-project-specific root causes. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+Applies only to XAML projects with `expressionLanguage: CSharp` — not to VB XAML, and not to coded workflows (`.cs` files). Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have root causes specific to that configuration. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 ## Missing Assembly References
 

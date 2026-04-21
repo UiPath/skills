@@ -305,7 +305,10 @@ Add `<AssemblyReference>` entries:
 
 ### Expressions
 
-#### C# Projects (default)
+#### C# Expressions (`expressionLanguage: CSharp`)
+
+Applies to XAML workflow files in projects whose `project.json` has `expressionLanguage: CSharp`. These rules govern expressions inside XAML — they are unrelated to coded workflows (`.cs` files), which are plain C# and do not use `CSharpValue` / `CSharpReference` elements.
+
 Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReference>` (for write/lvalue) elements inside `<InArgument>` / `<OutArgument>`:
 ```xml
 <Assign DisplayName="Set Name">
@@ -324,7 +327,7 @@ Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReferenc
 
 **Important**: Do NOT use `[bracket]` shorthand for expressions. Brackets create `VisualBasicValue` nodes at deserialization time, causing validation failures for C#-only syntax (`null`, `?.`, `??`, `typeof()`, etc.).
 
-**Stronger rule for attribute-form bindings on `InArgument<T>` / `OutArgument<T>`:** in C# projects, any **non-literal** attribute value (`Message="variableName"`, `Text="&quot;Hello &quot; + name"`) is also deserialized as a `VisualBasicValue<T>` and fails at runtime with `JIT compilation is disabled for non-Legacy projects`. The attribute parser defaults to VB regardless of project language. Use `<CSharpValue>` / `<CSharpReference>` child elements for anything that isn't a plain literal. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+**Stronger rule for attribute-form bindings on `InArgument<T>` / `OutArgument<T>`:** in XAML projects with `expressionLanguage: CSharp`, any **non-literal** attribute value (`Message="variableName"`, `Text="&quot;Hello &quot; + name"`) is also deserialized as a `VisualBasicValue<T>` and fails at runtime with `JIT compilation is disabled for non-Legacy projects`. The attribute parser defaults to VB regardless of the project's expression language. Use `<CSharpValue>` / `<CSharpReference>` child elements for anything that isn't a plain literal. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 **Safe attribute-form values** (no expression evaluator involved, type converter handles them directly):
 - Literal strings on `InArgument<String>`: `Text="Book trip"`, `DisplayName="Open file"`
@@ -334,7 +337,7 @@ Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReferenc
 
 **For activity-specific recipes** (`LogMessage.Message` as `InArgument<Object>`, `NGetText.TextString` as `OutArgument<String>`, `StartProcess.FileName` with composed paths, `Assign`, `If.Condition`, etc.), see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md). That file is the canonical lookup for the binding form per common activity property.
 
-#### VB Projects
+#### VB Expressions (`expressionLanguage: VisualBasic`)
 Expressions use VB syntax with `[bracket]` shorthand (VB is the default deserialization target for brackets):
 ```xml
 <InArgument x:TypeArguments="x:String">[firstName & " " & lastName]</InArgument>

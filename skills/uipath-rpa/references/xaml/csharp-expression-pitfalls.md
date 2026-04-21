@@ -1,12 +1,14 @@
 # C# Expression Pitfalls
 
-Failure modes specific to XAML expressions in C# projects (`expressionLanguage: CSharp`). Both pass static `get-errors` validation — they only fail at `CacheMetadata` time under `build` or `run-file`.
+**Scope:** XAML workflow files in projects whose `project.json` has `expressionLanguage: CSharp`. These rules govern how XAML expressions are authored — they do **not** apply to VB XAML projects, and they do **not** apply to coded workflows (`.cs` files with `[Workflow]` / `[TestCase]`). Coded workflows are plain C# — none of the `CSharpValue` / `CSharpReference` / attribute-form rules below are relevant there.
+
+Failure modes in scope: all pass static `get-errors` validation — they only surface at `CacheMetadata` time under `uip rpa build` or `uip rpa run-file`.
 
 For the canonical binding form per property, see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 ## Attribute-form expressions fail at runtime
 
-Any non-literal attribute value on an `InArgument<T>` / `OutArgument<T>` property (e.g. `Message="logMessage"`, `TextString="statusText"`) is deserialized as `VisualBasicValue<T>` by the XAML attribute parser — regardless of the project's expression language. On non-Legacy projects the VB JIT is disabled, so these fail at runtime:
+Any non-literal attribute value on an `InArgument<T>` / `OutArgument<T>` property (e.g. `Message="logMessage"`, `TextString="statusText"`) is deserialized as `VisualBasicValue<T>` by the XAML attribute parser — regardless of the project's `expressionLanguage`. On non-Legacy projects the VB JIT is disabled, so these fail at runtime:
 
 ```
 System.InvalidOperationException: JIT compilation is disabled for non-Legacy projects.

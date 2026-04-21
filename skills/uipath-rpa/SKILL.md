@@ -88,7 +88,11 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
 2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
-3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
+3. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Two-phase validation:
+   - **Per-file** (after every create or edit): `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts.
+   - **Project-level end-goal** (before reporting done): `uip rpa build "<PROJECT_DIR>" --output json`. Projects returned to the user must compile. `get-errors` is static analysis and misses compile-time failures — notably attribute-form XAML expressions in projects with `expressionLanguage: CSharp`. A successful `uip rpa run-file` smoke test covers this; if no smoke test runs, `uip rpa build` is mandatory.
+
+   See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
@@ -300,7 +304,7 @@ Additional UIA procedures and guides:
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
-2. **Validation status** — whether all files passed validation (or remaining errors)
+2. **Validation status** — per-file `get-errors` result (all files passed, or remaining errors) **and** project-level `uip rpa build` result. If neither `build` nor a successful `run-file` smoke test has run, the project is not verified — say so explicitly rather than claiming success.
 3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
 4. **How to run** — the `uip rpa run-file` command (if applicable)
 5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)

@@ -36,17 +36,19 @@ REPEAT:
 
 See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` command documentation.
 
-## Standalone Compile Verification (Optional)
+## Project Build Verification (Required Before Returning a Project)
 
-Between `get-errors` and `run-file`, `uip rpa build` offers a middle checkpoint: it compiles the whole project (XAML expression evaluation included) without actually running any workflow. Useful when `run-file` would have side effects you want to avoid, or when you want to catch expression-compilation failures earlier than runtime.
+`uip rpa build` is the **end-goal compile check**. Every project returned to the user must compile — a project that passes per-file `get-errors` but fails `build` is not shippable. Run it after all files are clean, before reporting "done":
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-This catches errors like `JIT compilation is disabled for non-Legacy projects` (attribute-form expressions parsed as VB on C# projects) that pass static `get-errors` validation but only surface at `CacheMetadata` time. See [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md).
+**Why it matters:** `get-errors` is static analysis; `build` compiles the whole project (XAML expression evaluation included). It is the only way to catch errors like `JIT compilation is disabled for non-Legacy projects` — attribute-form expressions parsed as VB in XAML projects with `expressionLanguage: CSharp`, which pass static `get-errors` but only surface at `CacheMetadata` time. See [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md).
 
-**Not a prerequisite for `run-file`** — `run-file` performs its own compilation. Use `build` when you want compile verification without execution.
+**Failure handling:** if `build` reports errors, treat them like `get-errors` errors — apply the fix-one-thing rule, re-run `build`, cap at 5 attempts, and defer remaining errors to the user. Do not report the task complete while `build` is failing.
+
+**Relationship to `run-file`:** `run-file` performs its own compilation, so a successful `run-file` implies `build` passes. If a smoke test ran and succeeded, a separate `build` call is redundant. If smoke test was skipped (side effects, interactive workflow, no test input), `build` is mandatory.
 
 ## Smoke Test
 

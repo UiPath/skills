@@ -1,6 +1,8 @@
 # C# Activity Binding Guide
 
-Canonical binding forms for common activity properties when `expressionLanguage` is `CSharp`. Use this as a quick lookup before writing C# XAML.
+**Scope:** XAML workflow files in projects whose `project.json` has `expressionLanguage: CSharp`. The canonical binding forms below describe how to write XAML expressions — they do **not** apply to VB XAML projects (use `[bracket]` shorthand there) and they do **not** apply to coded workflows (`.cs` files), which are plain C# and do not involve `CSharpValue` / `CSharpReference` elements at all.
+
+Use this as a quick lookup before writing or editing XAML in a C#-expression project.
 
 ## Rule of thumb
 
