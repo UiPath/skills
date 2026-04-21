@@ -324,6 +324,52 @@ Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReferenc
 
 **Important**: Do NOT use `[bracket]` shorthand for expressions. Brackets create `VisualBasicValue` nodes at deserialization time, causing validation failures for C#-only syntax (`null`, `?.`, `??`, `typeof()`, etc.).
 
+**Stronger rule for attribute-form bindings on `InArgument<T>` / `OutArgument<T>`:** in C# projects, any **non-literal** attribute value (`Message="variableName"`, `Text="&quot;Hello &quot; + name"`) is also deserialized as a `VisualBasicValue<T>` and fails at runtime with `JIT compilation is disabled for non-Legacy projects`. The attribute parser defaults to VB regardless of project language. Use `<CSharpValue>` / `<CSharpReference>` child elements for anything that isn't a plain literal. See [common-pitfalls.md § C# Attribute-Form Expressions Are Parsed as VB](common-pitfalls.md#c-attribute-form-expressions-are-parsed-as-vb--jit-failure-at-runtime) and [csharp-activity-binding-cheatsheet.md](csharp-activity-binding-cheatsheet.md).
+
+**Safe attribute-form values** (no expression evaluator involved, type converter handles them directly):
+- Literal strings on `InArgument<String>`: `Text="Book trip"`, `DisplayName="Open file"`
+- Enums: `Level="Info"`, `ClickType="Single"`, `MouseButton="Left"`
+- Numbers, booleans, `{x:Null}`
+- `TimeSpan` literals: `Duration="00:00:02"`
+
+**C# activity-binding recipes for common properties:**
+
+`LogMessage.Message` is typed `InArgument<Object>` — child form required for anything but trivial cases:
+```xml
+<ui:LogMessage Level="Info">
+  <ui:LogMessage.Message>
+    <InArgument x:TypeArguments="x:Object">
+      <CSharpValue x:TypeArguments="x:Object">"Todo count: " + count</CSharpValue>
+    </InArgument>
+  </ui:LogMessage.Message>
+</ui:LogMessage>
+```
+
+`NGetText.TextString` is typed `OutArgument<String>` — attribute form fails with `Failed to create a 'TextString' from the text '…'`:
+```xml
+<uix:NGetText>
+  <uix:NGetText.Target>
+    <uix:TargetAnchorable .../>
+  </uix:NGetText.Target>
+  <uix:NGetText.TextString>
+    <OutArgument x:TypeArguments="x:String">
+      <CSharpReference x:TypeArguments="x:String">statusText</CSharpReference>
+    </OutArgument>
+  </uix:NGetText.TextString>
+</uix:NGetText>
+```
+
+`StartProcess.FileName` with a C# expression (env var path):
+```xml
+<ui:StartProcess DisplayName="Start local server">
+  <ui:StartProcess.FileName>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">System.Environment.GetEnvironmentVariable("LOCALAPPDATA") + @"\MyApp\start.cmd"</CSharpValue>
+    </InArgument>
+  </ui:StartProcess.FileName>
+</ui:StartProcess>
+```
+
 #### VB Projects
 Expressions use VB syntax with `[bracket]` shorthand (VB is the default deserialization target for brackets):
 ```xml

@@ -67,13 +67,15 @@ uip rpa uia object-repository get-screen-xaml \
   --project-dir "<PROJECT_DIR>"
 ```
 
-Returns a `<TargetApp>` element. Embed it inside the ApplicationCard:
+Returns a `<TargetApp>` element with an `xmlns="http://schemas.uipath.com/workflow/activities/uix"` attribute. Embed it inside the ApplicationCard, **prefixing the element with `uix:` and removing the `xmlns` attribute**:
 
 ```xml
 <uix:NApplicationCard.TargetApp>
-  <!-- paste the returned <TargetApp ... /> here -->
+  <uix:TargetApp Area="..." BrowserType="..." ContentHash="..." Reference="..." Selector="..." Url="..." Version="V2" />
 </uix:NApplicationCard.TargetApp>
 ```
+
+> **Why the rewrite.** The pasted element sits inside a parent whose default xmlns is the netfx activities schema (`http://schemas.microsoft.com/netfx/2009/xaml/activities`), not `uix`. Pasting the raw `<TargetApp xmlns="...uix" />` emits `Cannot create unknown type '{http://schemas.microsoft.com/netfx/2009/xaml/activities}TargetApp'` — the attribute parser does not always re-root the type lookup on the child's xmlns. Explicitly prefixing with `uix:` (already declared on the root `<Activity>`) uses the same namespace without relying on xmlns-override behavior.
 
 ### 2. Get element XAML for UI activities
 
@@ -83,24 +85,24 @@ uip rpa uia object-repository get-elements-xaml \
   --project-dir "<PROJECT_DIR>"
 ```
 
-Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property (or the nested property named on the activity, e.g., `SearchedElement.Target`):
+Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property (or the nested property named on the activity, e.g., `SearchedElement.Target`), **prefixing with `uix:` and removing the `xmlns` attribute** (same reasoning as for `TargetApp` above):
 
 ```xml
 <uix:NClick ...>
   <uix:NClick.Target>
-    <!-- paste the returned <TargetAnchorable ... /> here -->
+    <uix:TargetAnchorable ContentHash="..." FullSelectorArgument="..." Reference="..." ScopeSelectorArgument="..." SearchSteps="Selector" Version="V6" />
   </uix:NClick.Target>
 </uix:NClick>
 
 <uix:NTypeInto ...>
   <uix:NTypeInto.Target>
-    <!-- paste the returned <TargetAnchorable ... /> here -->
+    <uix:TargetAnchorable .../>
   </uix:NTypeInto.Target>
 </uix:NTypeInto>
 
 <uix:NGetText ...>
   <uix:NGetText.Target>
-    <!-- paste the returned <TargetAnchorable ... /> here -->
+    <uix:TargetAnchorable .../>
   </uix:NGetText.Target>
 </uix:NGetText>
 ```
