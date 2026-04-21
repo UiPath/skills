@@ -24,7 +24,9 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `output` |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 

@@ -161,16 +161,17 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
 
 def assert_output_value(payload: dict, expected: Any) -> None:
     """Assert that some declared output equals ``expected``. For numerics this
-    is equality; for strings it is substring (case-insensitive)."""
+    is strict equality against a numeric leaf; for strings it is case-insensitive
+    substring. Deliberately does NOT regex-search for integers inside string
+    leaves — error dumps (e.g., HTTP response bodies with ETag hashes like
+    ``W/"20-da39a3ee5e6b4b0d..."``) embed isolated digits between non-digit
+    characters and would spuriously match small expected ints like 6 or 3."""
     outs = collect_outputs(payload)
     for v in outs:
         if v == expected:
             return
         if isinstance(expected, str) and isinstance(v, str):
             if expected.lower() in v.lower():
-                return
-        if isinstance(expected, (int, float)) and isinstance(v, str):
-            if re.search(rf"(?<!\d){expected}(?!\d)", v):
                 return
     _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
 
