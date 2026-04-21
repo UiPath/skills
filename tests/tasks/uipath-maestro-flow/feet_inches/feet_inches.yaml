@@ -11,20 +11,10 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath Flow project named "FeetInches" that converts a number
-  between feet and inches.
-
-  Inputs:
-    - `value` (number) — the quantity to convert
-    - `direction` (string) — "f2i" (feet to inches, multiply by 12) or
-      "i2f" (inches to feet, divide by 12)
-
-  Output:
-    - `result` (number) — the converted value
-
-  Use a Switch node on `direction` to pick the conversion; each case runs a
-  Script node that produces `result`. Both cases must converge on an End node
-  that maps `result` (do not use a merge node — only one switch case executes).
+  Create a UiPath Flow project named "FeetInches" that takes `value` (number)
+  and `direction` (string: "f2i" or "i2f") as inputs, converts feet to inches
+  (× 12) or inches to feet (÷ 12) accordingly, and returns the converted
+  number.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
@@ -39,10 +29,18 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # ── Execution checks ──────────────────────────────────────────────────
+  # ── Execution checks — one debug call per direction ───────────────────
   - type: run_command
-    description: "Flow has a switch node; f2i and i2f inputs produce the correct converted value"
-    command: "python3 $TASK_DIR/check_feet_inches_flow.py"
+    description: "Debug with (23, \"f2i\") returns 276 via a Switch node"
+    command: "python3 $TASK_DIR/check_feet_inches_flow.py f2i"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Debug with (276, \"i2f\") returns 23 via a Switch node"
+    command: "python3 $TASK_DIR/check_feet_inches_flow.py i2f"
     timeout: 300
     expected_exit_code: 0
     weight: 5.0

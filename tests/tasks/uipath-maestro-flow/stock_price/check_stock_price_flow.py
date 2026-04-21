@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""StockPrice: http.v2 + decision/switch route success and error paths.
+"""StockPrice: one debug run per date pair, asserting the exact cents diff.
 
-Runs debug twice:
-  - symbol="AAPL"               -> outputs must contain a numeric price
-                                   (AAPL has traded well above $10 for years).
-  - symbol="NOTAREALTICKER999"  -> outputs must contain an error indicator
-                                   (e.g. "error", "not found", "invalid").
+Usage: check_stock_price_flow.py {jan3_jun30|jun30_dec29}
 
-Both runs must reach finalStatus="Completed" — a flow that terminates on the
-error case isn't handling it gracefully.
+Expected values are derived from Yahoo Finance's historical closes for PATH:
+  2023-01-03 -> 12.289999961853027
+  2023-06-30 -> 16.56999969482422
+  2023-12-29 -> 24.84000015258789
+
+For each case, expected cents = round((end - start) * 100). Historical closes
+don't change, so these numbers are stable.
 """
 
 import glob
@@ -19,68 +20,57 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
-    assert_output_int_in_range,
-    assert_outputs_contain,
+    assert_output_value,
     find_project_dir,
     run_debug,
 )
 
+# Unix timestamps (UTC midnight) for NYSE trading days used below.
+JAN_3_2023 = 1672704000
+JUN_30_2023 = 1688083200
+DEC_29_2023 = 1703808000
 
-def find_string_input_var(project_dir: str) -> str:
-    """Return the first in/inout string variable ID from the flow file."""
-    flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
-    if not flows:
-        sys.exit(f"FAIL: No .flow file found under {project_dir}")
-    with open(flows[0]) as f:
-        flow = json.load(f)
-    for v in (flow.get("variables") or {}).get("globals") or []:
-        if v.get("direction") in ("in", "inout") and v.get("type") == "string":
-            return v["id"]
-    sys.exit("FAIL: No string input variable found in flow")
+CASES = {
+    # case: (date1, date2, expected_cents_diff)
+    "jan3_jun30": (JAN_3_2023, JUN_30_2023, 428),
+    "jun30_dec29": (JUN_30_2023, DEC_29_2023, 827),
+}
+
+
+def count_http_v2_nodes(project_dir: str) -> int:
+    n = 0
+    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+        with open(path) as f:
+            flow = json.load(f)
+        for node in flow.get("nodes") or []:
+            if node.get("type") == "core.action.http.v2":
+                n += 1
+    return n
 
 
 def main():
-    # Must use the managed HTTP v2 node AND a branching node — this is what
-    # makes the task a real integration rather than a hardcoded stub.
-    assert_flow_has_node_type(["core.action.http.v2"])
-    # Either decision or switch is acceptable for the success/error split.
-    from _shared.flow_check import _find_project  # noqa: E402
+    case = sys.argv[1] if len(sys.argv) > 1 else ""
+    if case not in CASES:
+        sys.exit(f"FAIL: Unknown case {case!r}; expected one of {list(CASES)}")
 
-    project_dir = _find_project("**/project.uiproj")
-    types_seen: set[str] = set()
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
-        with open(path) as f:
-            types_seen.update(n.get("type", "") for n in (json.load(f).get("nodes") or []))
-    if "core.logic.decision" not in types_seen and "core.logic.switch" not in types_seen:
+    # Force the agent to actually make two HTTP calls — a single call with
+    # a wider period1/period2 range would also work in principle, but we
+    # want this test to exercise a flow that explicitly calls the API twice.
+    assert_flow_has_node_type(["core.action.http.v2"])
+    project_dir = find_project_dir()
+    http_count = count_http_v2_nodes(project_dir)
+    if http_count < 2:
         sys.exit(
-            f"FAIL: Flow needs a decision or switch node to branch on the HTTP "
-            f"response. Node types seen: {sorted(types_seen)}"
+            f"FAIL: Expected >= 2 core.action.http.v2 nodes (one per date), "
+            f"got {http_count}"
         )
 
-    symbol_id = find_string_input_var(project_dir)
-    print(f"Symbol input variable: {symbol_id!r}")
-
-    # ── Success case ──────────────────────────────────────────────────────
-    print("\n[1/2] Running with valid symbol AAPL")
-    payload = run_debug(inputs={symbol_id: "AAPL"}, timeout=300)
-    # AAPL trades between ~$10 and ~$10000; any integer in that range in the
-    # output means a real price made it through the success path.
-    price = assert_output_int_in_range(payload, 10, 10000)
-    print(f"OK: success path produced a price in range: {price}")
-
-    # ── Failure case ──────────────────────────────────────────────────────
-    print("\n[2/2] Running with invalid symbol NOTAREALTICKER999")
-    payload = run_debug(inputs={symbol_id: "NOTAREALTICKER999"}, timeout=300)
-    # Graceful error handling: flow must Complete and outputs must signal
-    # the error — not swallow it or return a fake price.
-    assert_outputs_contain(
-        payload,
-        ["error", "not found", "invalid", "fail", "unknown"],
-        require_all=False,
-    )
-    print("OK: failure path completed with an error indicator in output")
-
-    print("\nOK: Both success and error paths handled correctly")
+    date1, date2, expected = CASES[case]
+    inputs = {"symbol": "PATH", "date1": date1, "date2": date2}
+    print(f"[{case}] Injecting inputs: {inputs} (expect {expected} cents)")
+    payload = run_debug(inputs=inputs, timeout=300)
+    assert_output_value(payload, expected)
+    print(f"OK: [{case}] diff = {expected} cents")
 
 
 if __name__ == "__main__":

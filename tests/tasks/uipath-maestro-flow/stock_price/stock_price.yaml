@@ -1,9 +1,9 @@
 task_id: skill-flow-stock-price
 description: >
-  Create a UiPath Flow that fetches a stock quote from a public finance API
-  using a managed HTTP node in manual auth mode, then branches on the response
-  to populate either a success or error result. Exercises http.v2 manual
-  auth, decision branching, and graceful error handling.
+  Create a UiPath Flow that takes a ticker and two dates, fetches the closing
+  price from Yahoo Finance for each, and returns the difference in cents.
+  Exercises managed HTTP (manual auth) called twice in the same flow and
+  deterministic scoring via historical prices.
 tags: [uipath-maestro-flow, e2e, generate, ootb, http]
 max_iterations: 1
 
@@ -12,30 +12,12 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath Flow project named "StockPrice" that fetches a stock quote
-  from a public finance API and handles both the success and error cases,
-  so that the same flow works whether the caller passes a valid ticker
-  symbol or an invalid one.
-
-  Inputs:
-    - `symbol` (string) — e.g. "AAPL" (expected success) or "NOTAREALTICKER999"
-      (expected failure)
-
-  Output:
-    - `result` (object) — populated by whichever branch ran, containing at
-      least the symbol and either a numeric price on success or an error
-      message on failure
-
-  Use a managed HTTP node (`core.action.http.v2`) in manual auth mode — do
-  NOT require an IS connection. Yahoo Finance's public chart endpoint works:
-    https://query1.finance.yahoo.com/v8/finance/chart/{symbol}
-  (interpolate `symbol` from the flow input.)
-
-  Branch downstream on the response (status code or body contents — the v2
-  HTTP node emits everything on a single `default` output port, so use a
-  Decision or Switch node to split success vs error paths). Each branch runs
-  a Script node that produces `result`, and both converge on End so the flow
-  reaches `finalStatus: "Completed"` in both scenarios.
+  Create a UiPath Flow project named "StockPrice" that takes `symbol`
+  (string), `date1`, and `date2` (numbers, unix timestamps in seconds) as
+  inputs. Use Yahoo Finance's chart API
+  (`https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?period1={date}&period2={date+86400}&interval=1d`)
+  to fetch the closing price for each date, then return the difference
+  (date2 − date1, rounded to the nearest integer number of cents).
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
@@ -50,10 +32,18 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # ── Execution checks ──────────────────────────────────────────────────
+  # ── Execution checks — one debug call per date pair ───────────────────
   - type: run_command
-    description: "Flow has http.v2 + branching; valid symbol returns a price, invalid symbol returns an error"
-    command: "python3 $TASK_DIR/check_stock_price_flow.py"
+    description: "PATH 2023-01-03 -> 2023-06-30: debug returns 428 (cents)"
+    command: "python3 $TASK_DIR/check_stock_price_flow.py jan3_jun30"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PATH 2023-06-30 -> 2023-12-29: debug returns 827 (cents)"
+    command: "python3 $TASK_DIR/check_stock_price_flow.py jun30_dec29"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
