@@ -1,0 +1,140 @@
+task_id: skill-datafabric-integration-bulk-pagination
+description: >
+  Integration test: agent imports 100 records from a CSV into a live entity,
+  traverses all pages using cursor-based pagination (limit=10), verifies no
+  gap or duplicate record IDs across pages, then applies a filterGroup query
+  with pagination to verify that a filtered subset returns the expected count.
+  Covers B-01 (100-record import + full paginated traversal) and B-02
+  (filter + paginated subset count).
+tags: [uipath-data-fabric, integration, bulk-pagination]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login.
+
+  2. Create entity "BulkPaginationTest" with fields:
+       - Name (STRING)
+       - Score (INTEGER)
+       - Active (BOOLEAN)
+
+  3. Use Python to generate bulk_100.csv:
+       - Header row: Name,Score,Active
+       - 100 data rows:
+           rows 1-60:  Name=Record-001..Record-060, Score=1..60, Active=true
+           rows 61-100: Name=Record-061..Record-100, Score=61..100, Active=false
+
+  4. Import the CSV:
+       uip df records import <entity-id> --file bulk_100.csv --output json
+
+  5. Traverse ALL records using cursor-based pagination (limit=10):
+       - First call: uip df records list <entity-id> --limit 10 --output json
+       - Each response includes a cursor; pass it to the next call with --cursor
+       - Stop when no cursor is returned
+     Use Python to collect all record IDs across pages.
+
+  6. Use Python to verify:
+       - total unique record IDs collected == 100
+       - no duplicate IDs across pages
+
+  7. Query all Active=true records using records query with filterGroup:
+       {
+         "filterGroup": {
+           "logicalOperator": 0,
+           "queryFilters": [{"fieldName": "Active", "operator": "=", "value": true}]
+         }
+       }
+     Paginate with limit=10 using cursor until all pages are consumed.
+     Collect all matching record IDs.
+
+  8. Use Python to verify:
+       - every collected record has Active=true
+       - total count == 60
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<BulkPaginationTest entity ID>",
+    "import_count": <number of records returned in import response, or 100 if not in response>,
+    "pagination_pages_fetched": <number of list calls made>,
+    "pagination_total_unique_ids": <count of unique record IDs across all pages>,
+    "pagination_no_duplicates": <true if no duplicate IDs>,
+    "filtered_pages_fetched": <number of query calls made for Active=true filter>,
+    "filtered_active_count": <count of records returned by Active=true filter>,
+    "filtered_all_active": <true if every filtered record has Active=true>
+  }
+
+  Do NOT delete the entity — the test harness handles cleanup.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent imported 100 records from CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paginated through records with records list --limit"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    min_count: 5
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried Active=true records with filterGroup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "bulk_100.csv was generated"
+    path: "bulk_100.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "100 records paginated without duplicates; 60 Active=true records confirmed"
+    path: "report.json"
+    assertions:
+      - expression: "pagination_total_unique_ids"
+        operator: equals
+        expected: 100
+      - expression: "pagination_no_duplicates"
+        operator: equals
+        expected: true
+      - expression: "filtered_active_count"
+        operator: equals
+        expected: 60
+      - expression: "filtered_all_active"
+        operator: equals
+        expected: true
+    weight: 5.0
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

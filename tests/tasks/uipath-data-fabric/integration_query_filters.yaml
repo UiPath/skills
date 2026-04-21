@@ -1,0 +1,133 @@
+task_id: skill-datafabric-integration-query-filters
+description: >
+  Integration test: agent constructs advanced records queries against a live
+  tenant — nested filterGroups with OR logic, sortOptions with isDescending,
+  selectedFields projection, and cursor-based pagination (checking HasNextPage
+  and passing NextCursor to --cursor). Creates test records first, runs queries,
+  then deletes the test records. Tests the full query body schema and pagination
+  workflow end-to-end.
+tags: [uipath-data-fabric, integration, records]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login — use
+     whatever tenant is currently active.
+
+  2. List native-only entities. Use an entity named "IntegrationOrders" if it
+     exists. If not, create it with fields:
+       - CustomerName (STRING)
+       - Amount (DECIMAL)
+       - Status (STRING)
+       - Region (STRING)
+
+  3. Insert 4 test records (batch insert):
+       - { "CustomerName": "Alice",   "Amount": 150, "Status": "shipped",  "Region": "west" }
+       - { "CustomerName": "Bob",     "Amount": 50,  "Status": "pending",  "Region": "east" }
+       - { "CustomerName": "Carol",   "Amount": 200, "Status": "shipped",  "Region": "east" }
+       - { "CustomerName": "Dave",    "Amount": 80,  "Status": "pending",  "Region": "west" }
+     Save the record IDs from the response.
+
+  4. Simple query: find all records where Status = "pending".
+
+  5. Complex query: find records where (Status = "shipped" AND Amount >= 100)
+     OR (Region = "west"). Use nested filterGroups with OR as the outer
+     logicalOperator. Sort by Amount descending. Return only CustomerName and
+     Amount fields using selectedFields.
+
+  6. Paginated list: list all records with --limit 2. If HasNextPage = true in
+     the response, make a follow-up call with --cursor <NextCursor>.
+
+  7. Delete only the 4 records you inserted in step 3.
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<entity ID used>",
+    "records_inserted": ["<id1>", "<id2>", "<id3>", "<id4>"],
+    "simple_query_result_count": <number of records returned>,
+    "complex_query_outer_operator": <0 or 1>,
+    "complex_query_used_sort": true,
+    "complex_query_used_selected_fields": true,
+    "pagination_followed_cursor": <true if a second --cursor call was made>,
+    "records_deleted": ["<ids deleted>"]
+  }
+
+  Use --output json on every uip df command.
+  Pagination must use --limit and --cursor flags — never body keys.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted test records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran records query at least twice (simple + complex)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query\s+'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed records with --limit for cursor pagination"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the test records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Complex query used OR operator, sort, projection; records cleaned up"
+    path: "report.json"
+    assertions:
+      - expression: "complex_query_outer_operator"
+        operator: equals
+        expected: 1
+      - expression: "complex_query_used_sort"
+        operator: equals
+        expected: true
+      - expression: "complex_query_used_selected_fields"
+        operator: equals
+        expected: true
+      - expression: "length(records_inserted)"
+        operator: gte
+        expected: 4
+      - expression: "length(records_deleted)"
+        operator: gte
+        expected: 4
+    weight: 3.5
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60
