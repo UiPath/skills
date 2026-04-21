@@ -38,17 +38,13 @@ See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` co
 
 ## Project Build Verification (Required Before Returning a Project)
 
-`uip rpa build` is the **end-goal compile check**. Every project returned to the user must compile — a project that passes per-file `get-errors` but fails `build` is not shippable. Run it after all files are clean, before reporting "done":
+Every project returned to the user must compile. After all files pass `get-errors`, run:
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-**Why it matters:** `get-errors` is static analysis; `build` compiles the whole project (XAML expression evaluation included). It is the only way to catch errors like `JIT compilation is disabled for non-Legacy projects` — attribute-form expressions parsed as VB in XAML projects with `expressionLanguage: CSharp`, which pass static `get-errors` but only surface at `CacheMetadata` time. See [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md).
-
-**Failure handling:** if `build` reports errors, treat them like `get-errors` errors — apply the fix-one-thing rule, re-run `build`, cap at 5 attempts, and defer remaining errors to the user. Do not report the task complete while `build` is failing.
-
-**Relationship to `run-file`:** `run-file` performs its own compilation, so a successful `run-file` implies `build` passes. If a smoke test ran and succeeded, a separate `build` call is redundant. If smoke test was skipped (side effects, interactive workflow, no test input), `build` is mandatory.
+`get-errors` is static analysis and misses compile-time failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md). If `build` fails, apply the same fix loop as above (fix one thing, re-run, cap at 5). Skip `build` only if a `run-file` smoke test already succeeded — `run-file` compiles internally.
 
 ## Smoke Test
 
