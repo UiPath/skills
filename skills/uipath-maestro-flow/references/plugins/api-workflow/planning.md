@@ -18,7 +18,7 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 | Call an external REST API | No — use [HTTP](../http/planning.md) or [Connector](../connector/planning.md) |
 | Invoke a published RPA process | No — use [RPA Workflow](../rpa/planning.md) |
 | API workflow not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
-| API workflow not in solution and not published | No — use `core.logic.mock` placeholder |
+| API workflow does not exist yet | Create it in the same solution, then use `--local` discovery |
 
 ## Ports
 

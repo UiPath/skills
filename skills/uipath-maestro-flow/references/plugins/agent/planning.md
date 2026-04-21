@@ -34,7 +34,7 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 ### When NOT to Use
 
 - **Agent in the same solution but not yet published** — use `--local` discovery (see below)
-- **Agent not in the solution and not yet published** — use `core.logic.mock` placeholder and tell the user to create the agent with `uipath-agents`
+- **Agent does not exist yet** — tell the user to create it in the same solution with `uipath-agents`, then use `--local` discovery
 - **Task is deterministic** — use [Script](../script/planning.md) or [Decision](../decision/planning.md)
 - **Need to call an external service API** — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md)
 

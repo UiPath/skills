@@ -18,7 +18,7 @@ Use a Flow node when you need to call another published flow as a subprocess.
 | Group related steps with isolated scope (within same project) | No — use [Subflow](../subflow/planning.md) |
 | Invoke a published orchestration process | No — use [Agentic Process](../agentic-process/planning.md) |
 | Flow not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
-| Flow not in solution and not published | No — use `core.logic.mock` placeholder, create with `uipath-maestro-flow` |
+| Flow does not exist yet | Create it in the same solution with `uipath-maestro-flow`, then use `--local` discovery |
 
 ## Ports
 

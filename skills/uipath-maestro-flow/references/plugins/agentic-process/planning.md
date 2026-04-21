@@ -19,7 +19,7 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 | Call another published flow | No — use [Flow](../flow/planning.md) |
 | Need desktop/browser automation | No — use [RPA Workflow](../rpa/planning.md) |
 | Process not yet published but in the same solution | Yes — discover with `--local` (no login or publish needed) |
-| Process not in solution and not published | No — use `core.logic.mock` placeholder |
+| Process does not exist yet | Create it in the same solution, then use `--local` discovery |
 
 ## Ports
 

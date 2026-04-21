@@ -17,7 +17,7 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 | Desktop/browser automation via a published RPA process | Yes |
 | Target system has a REST API | No — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md) |
 | RPA process in the same solution but not yet published | Yes — use `--local` discovery (see below) |
-| RPA process not in the solution and not yet published | No — use `core.logic.mock` placeholder, tell user to create with `uipath-rpa` |
+| RPA process does not exist yet | Create it in the same solution with `uipath-rpa`, then use `--local` discovery |
 | Need AI reasoning, not desktop automation | No — use [Agent](../agent/planning.md) |
 
 ## Ports

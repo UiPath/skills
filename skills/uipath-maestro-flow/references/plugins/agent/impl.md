@@ -139,13 +139,9 @@ return { classification: response };
 - `$vars.{nodeId}.output.content` — the agent's text response
 - `$vars.{nodeId}.error` — error details if the agent fails
 
-## In-Solution Reference (Preferred Over Mock)
+## If the Agent Does Not Exist Yet
 
-If the agent exists in a sibling project within the same `.uipx` solution but is not yet published, use `--local` discovery instead of a mock. Run `uip flow registry list --local --output json` to find the agent, then use `uip flow registry get "<nodeType>" --local --output json` to get its full definition. Wire it into the flow the same way as a published agent.
-
-## Mock Placeholder (If Not in Solution)
-
-If the agent is not in the same solution and not yet published, add a `core.logic.mock` placeholder and tell the user to create and publish the agent using `uipath-agents`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
+Tell the user to create the agent project inside the same solution using `uipath-agents`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish required.
 
 ## Debug
 

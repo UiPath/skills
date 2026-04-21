@@ -19,7 +19,7 @@ Use a HITL node when the flow needs to pause for human input, approval, or revie
 | Human resolves items the automation cannot handle | Yes |
 | Fully automated processing with no human involvement | No |
 | App in same solution but not yet published | Yes — use `--local` discovery (see below) |
-| App not in the solution and not yet published | No — use `core.logic.mock` placeholder, tell user to create with `uipath-coded-apps` |
+| App does not exist yet | Create it in the same solution with `uipath-coded-apps`, then use `--local` discovery |
 
 ## Ports
 

@@ -128,13 +128,9 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 > **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
-## In-Solution Reference (Preferred Over Mock)
+## If the RPA Process Does Not Exist Yet
 
-If the RPA process exists in a sibling project within the same `.uipx` solution but is not yet published, use `--local` discovery instead of a mock. Run `uip flow registry list --local --output json` to find the process, then use `uip flow registry get "<nodeType>" --local --output json` to get its full definition. Wire it into the flow the same way as a published process.
-
-## Mock Placeholder (If Not in Solution)
-
-If the RPA process is not in the same solution and not yet published, add a `core.logic.mock` placeholder and tell the user to create it with `uipath-rpa`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
+Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish required.
 
 ## Debug
 
