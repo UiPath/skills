@@ -1,0 +1,99 @@
+task_id: skill-datafabric-smoke-bulk-import
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to bulk-import records
+  from a CSV file. Tests that the skill teaches correct CSV format: header row
+  must match exact entity field names (case-sensitive), system fields must be
+  excluded, and records import --file is the correct command (not records insert).
+tags: [uipath-data-fabric, smoke, records, import]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  There is a "Products" entity with entity ID "prod-002-ent".
+  Its fields are: ProductName (STRING), UnitPrice (DECIMAL), InStock (BOOLEAN).
+
+  Bulk-import 3 products from a CSV file:
+  - Product A, price 9.99, in stock
+  - Product B, price 24.50, not in stock
+  - Product C, price 4.99, in stock
+
+  Steps:
+  1. Get the entity schema to confirm exact field names (case-sensitive).
+  2. Create the CSV file at products.csv with correct headers and 3 data rows.
+  3. Run the bulk import command.
+
+  Save a summary to report.json:
+  {
+    "commands_used": ["<list of uip df commands you ran>"],
+    "csv_headers": ["<headers used in the CSV, in order>"],
+    "csv_includes_system_fields": false
+  }
+
+  Important:
+  - The uip CLI is available but is NOT connected to a live Data Fabric tenant.
+    Commands will fail with auth errors — that is expected.
+    Run each command once, record the result, and move on.
+  - Use --output json on every uip df command.
+  - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)
+    in the CSV headers.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent retrieved entity schema with entities get before creating CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran records import with --file flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import\s+.*--file'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "products.csv was created"
+    path: "products.csv"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "CSV uses correct case-sensitive field names as headers"
+    path: "products.csv"
+    includes:
+      - "ProductName"
+      - "UnitPrice"
+      - "InStock"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "CSV does not include system fields"
+    path: "report.json"
+    assertions:
+      - expression: "csv_includes_system_fields"
+        operator: equals
+        expected: false
+    weight: 2.0
+    pass_threshold: 1.0

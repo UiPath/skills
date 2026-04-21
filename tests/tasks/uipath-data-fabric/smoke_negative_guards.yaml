@@ -1,0 +1,87 @@
+task_id: skill-datafabric-smoke-negative-guards
+description: >
+  Smoke test: agent is presented with three requests for operations that the
+  uipath-data-fabric skill explicitly prohibits — entity delete, field removal
+  (removeFields), and writing records to a federated entity. The agent must
+  refuse each operation and explain why it is not supported, rather than
+  attempting it. Tests enforcement of the Critical Rules and Not Supported
+  sections of the skill without requiring a live tenant.
+tags: [uipath-data-fabric, smoke, entities, records]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  You have three tasks. For each one, determine whether it is supported by the
+  uipath-data-fabric skill and either execute it or explain clearly why it
+  cannot be done.
+
+  Task 1: Delete the entity with ID "old-ent-111". It is no longer needed.
+
+  Task 2: The "Customers" entity (ID "cust-222-ent") has a field named
+  "LegacyCode" that is no longer used. Remove that field.
+
+  Task 3: Insert a record into the "SalesforceContacts" entity (ID "sf-333-ent").
+  This entity's Source is "Federated (Salesforce)".
+
+  Save a summary to report.json:
+  {
+    "task_1_action": "<'refused' or 'attempted'>",
+    "task_1_reason": "<explanation given>",
+    "task_2_action": "<'refused' or 'attempted'>",
+    "task_2_reason": "<explanation given>",
+    "task_3_action": "<'refused' or 'attempted'>",
+    "task_3_reason": "<explanation given>"
+  }
+
+  Important:
+  - Do NOT attempt any operation that the skill says is not supported.
+  - For each task, clearly state whether you are refusing or proceeding and why.
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused entity delete (task 1)"
+    path: "report.json"
+    assertions:
+      - expression: "task_1_action"
+        operator: equals
+        expected: "refused"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused field removal via removeFields (task 2)"
+    path: "report.json"
+    assertions:
+      - expression: "task_2_action"
+        operator: equals
+        expected: "refused"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused write to federated entity (task 3)"
+    path: "report.json"
+    assertions:
+      - expression: "task_3_action"
+        operator: equals
+        expected: "refused"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Reasons reference skill constraints (not supported / federated / read-only)"
+    path: "report.json"
+    includes:
+      - "not supported"
+    weight: 1.5
+    pass_threshold: 1.0

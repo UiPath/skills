@@ -1,0 +1,122 @@
+task_id: skill-datafabric-smoke-entities
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to manage entity schemas
+  offline — list native entities, create a new entity with typed fields (fieldName
+  key, EntityFieldDataType strings), retrieve a schema and identify field IDs from
+  Fields[].ID, add new fields (addFields), and update an existing field's metadata
+  (updateFields with id key). Tests all entity command syntax in a single pass.
+tags: [uipath-data-fabric, smoke, entities]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  There is an existing entity "Employees" with entity ID "ent-456-xyz".
+  Fields: FirstName (STRING), LastName (STRING), HireDate (DATE).
+
+  Do the following in order:
+  1. List native-only entities to discover what already exists.
+  2. Create a new entity "Departments" with two fields:
+       - DeptName (STRING, required)
+       - HeadCount (INTEGER)
+  3. Get the full schema for Employees using entities get.
+     Note which property in the Fields array contains each field's ID.
+  4. Add one new field to Employees: Salary (DECIMAL).
+  5. Update the HireDate field on Employees: set displayName to "Date Hired"
+     and isRequired to true. Use placeholder field ID "field-hire-id" (which
+     would come from Fields[].ID in the entities get response) in the
+     updateFields body. The payload key is "id" (lowercase), not "ID".
+
+  Save a summary to report.json:
+  {
+    "commands_used": ["<list of uip df commands you ran in order>"],
+    "create_body": { "fields": [ ... ] },
+    "addFields_body": { "addFields": [ ... ] },
+    "updateFields_body": { "updateFields": [ ... ] },
+    "field_id_source": "entities get"
+  }
+
+  Important:
+  - The uip CLI is available but is NOT connected to a live Data Fabric tenant.
+    Commands will fail with auth errors — that is expected.
+    Run each command once, record the result in report.json, and move on.
+    Do NOT retry or attempt to login.
+  - Use --output json on every uip df command.
+  - Do NOT use removeFields. Do NOT delete any entity.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed native-only entities (--native-only required)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created entity using entities create --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+.*--body'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved entity schema with entities get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran entities update at least twice (addFields + updateFields)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Entity create and addFields bodies use fieldName key (not name)"
+    path: "report.json"
+    includes:
+      - "fieldName"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report includes both addFields and updateFields operations"
+    path: "report.json"
+    includes:
+      - "addFields"
+      - "updateFields"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Field IDs sourced from entities get"
+    path: "report.json"
+    assertions:
+      - expression: "field_id_source"
+        operator: equals
+        expected: "entities get"
+    weight: 1.5
+    pass_threshold: 1.0

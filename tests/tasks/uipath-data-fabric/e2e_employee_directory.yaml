@@ -1,0 +1,137 @@
+task_id: skill-datafabric-e2e-employee-directory
+description: >
+  E2E scenario: agent builds an employee directory in Data Fabric from
+  scratch — designs the entity schema, bulk-imports 20 employees from a
+  generated CSV (4 departments, 5 each), evolves the schema by adding a
+  PerformanceScore field post-import, updates 6 employees with scores,
+  queries top performers and paginated department listings, and produces a
+  workforce summary. Tests entity schema evolution with live data, CSV
+  bulk import, addFields after insert, batch updates, and filter+sort
+  queries in a single end-to-end run.
+tags: [uipath-data-fabric, e2e, employee-directory]
+
+agent:
+  type: claude-code
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  HR needs a digital employee directory in UiPath Data Fabric.
+  Load the uipath-data-fabric skill before starting.
+
+  The initial schema needs: full name, department (Engineering / Sales /
+  Finance / HR), job title, hire date, and salary (decimal).
+
+  Generate employees.csv with 20 employees — 5 per department — with
+  realistic names, job titles (e.g. "Software Engineer", "Account Executive"),
+  hire dates spread across 2020–2024, and salaries between $45,000 and
+  $120,000. Import it.
+
+  After import, evolve the schema by adding a PerformanceScore (INTEGER)
+  field. Update 6 employees across different departments with performance
+  scores between 70 and 98.
+
+  Then answer two business questions using queries:
+  1. Who are the top performers? Query employees with PerformanceScore > 85
+     sorted by PerformanceScore descending.
+  2. How many employees are in each department? Use one filterGroup query
+     per department to get the count.
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<EmployeeDirectory entity ID>",
+    "total_employees": 20,
+    "schema_evolved": true,
+    "performance_scores_set": 6,
+    "top_performers": [
+      {"name": "<name>", "score": <score>, "department": "<dept>"}
+    ],
+    "department_counts": {
+      "Engineering": <count>,
+      "Sales": <count>,
+      "Finance": <count>,
+      "HR": <count>
+    }
+  }
+
+  Do NOT delete the entity.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent imported employees from CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added PerformanceScore field after initial import"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated employee records with performance scores"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried employees with filterGroup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "employees.csv was generated"
+    path: "employees.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "20 employees imported, schema evolved, 6 scores set, all 4 depts counted"
+    path: "report.json"
+    assertions:
+      - expression: "total_employees"
+        operator: equals
+        expected: 20
+      - expression: "schema_evolved"
+        operator: equals
+        expected: true
+      - expression: "performance_scores_set"
+        operator: equals
+        expected: 6
+      - expression: "length(top_performers)"
+        operator: gte
+        expected: 1
+    weight: 5.0
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60
