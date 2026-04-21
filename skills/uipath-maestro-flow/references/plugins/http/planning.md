@@ -31,35 +31,37 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `branch-{id}` (dynamic, one per `inputs.branches` entry), `default` |
+| `input` | `default`, `error`, `branch-{id}` (dynamic, one per `inputs.branches` entry) |
 
-The HTTP node has **no dedicated `error` source port**. To branch on specific response conditions (non-2xx status, missing fields, etc.), configure `inputs.branches` — each entry creates a `branch-{id}` port; `default` is the fallback. See [Conditional Branches](#conditional-branches) below.
+- `default` — primary success output, or fallback when configured branches don't match.
+- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+- `branch-{id}` — HTTP-specific, configured via `inputs.branches` (response-content routing). See [Conditional Branches](#conditional-branches) below.
 
 ## Output Variables
 
 - `$vars.{nodeId}.output` — `{ body, code, method, rawStringBody, request }` on success
-- `$vars.{nodeId}.error` — `{ code, message, detail, category, status }` on failure
+- `$vars.{nodeId}.error` — `{ code, message, detail, category, status }` when the error port fires
 
 ## Conditional Branches
 
-Use `inputs.branches` to route to different downstream paths based on the response. Each branch's `conditionExpression` is a JS expression with `$self` bound to the current HTTP node's output:
+Use `inputs.branches` when you need to route downstream paths based on response content (e.g., empty vs non-empty results). For generic call-failure handling, prefer the shared `error` port instead — don't enumerate every bad status code as a branch.
+
+Each branch's `conditionExpression` is a JS expression with `$self` bound to the current HTTP node's output:
 
 ```json
 {
   "inputs": {
     "branches": [
-      { "id": "ok",       "name": "OK",       "conditionExpression": "$self.output.statusCode >= 200 && $self.output.statusCode < 300" },
-      { "id": "notFound", "name": "Not Found", "conditionExpression": "$self.output.statusCode == 404" }
+      { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
+      { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
     ]
   }
 }
 ```
 
-Wire `branch-ok` and `branch-notFound` as source ports on outgoing edges. `default` fires when no branch condition matches.
+Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `default` fires when no branch condition matches.
 
 > **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
-
-Configuring branches also changes fault behavior: when a branch matches a non-2xx response, the node routes through that branch instead of faulting. Without any branches, non-2xx responses fault the whole flow.
 
 ## Key Inputs (`--detail` for `node configure`)
 

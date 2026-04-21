@@ -15,11 +15,11 @@ has exactly 6 days above the threshold (historical pageviews don't change):
   Jan 15 = 658  ✓
 
 Error path — a bogus article makes the Wikimedia API return 404, which
-faults the HTTP node by default. The flow must configure an HTTP response
-branch (via `inputs.branches` with a `conditionExpression` matching 404)
-and wire that `branch-{id}` source port to an End node that returns the
-literal string 'Article not found'. Without a matching branch the flow
-Faults and the debug call exits 1.
+fails the HTTP node. The flow must wire the HTTP node's `error` output
+port (an implicit port created because `supportsErrorHandling: true` on
+the v2 node) to an End node that returns the literal string 'Article not
+found'. Without the error-port edge the flow Faults and the debug call
+exits 1.
 """
 
 import os

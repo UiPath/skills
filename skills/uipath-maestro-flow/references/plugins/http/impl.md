@@ -12,7 +12,7 @@
 uip flow registry get core.action.http.v2 --output json
 ```
 
-Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Model serviceType is `Intsvc.UnifiedHttpRequest`.
+Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the shared implicit `error` port pattern used by all action nodes. See [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes). Model serviceType is `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
@@ -75,9 +75,9 @@ uip flow node configure <ProjectName>.flow <nodeId> \
 - For connector mode: generates `bindings_v2.json` and creates a connection resource file under `resources/solution_folder/connection/`
 - For manual mode: uses `ImplicitConnection` (no bindings needed)
 
-### Step 4 — (Optional) Configure response branches
+### Step 4 — (Optional) Configure response branches for content-based routing
 
-Skip this step if the flow has only one downstream path. Add branches when you need to route on response conditions (non-2xx status, missing fields, etc.) — for example, to hand 404s off to an "Article not found" end while 2xx continues the happy path.
+Skip this step unless you need to route downstream paths based on the *response content* (e.g., `items.length > 0` vs empty). Do **not** use `branches` just to handle call failures — for that, use the `error` port (Step 5).
 
 Each branch entry creates a `branch-{id}` source port. `$self` refers to the current HTTP node's output inside the condition.
 
@@ -85,21 +85,20 @@ Each branch entry creates a `branch-{id}` source port. `$self` refers to the cur
 uip flow node configure <ProjectName>.flow <nodeId> \
   --detail '{
     "branches": [
-      { "id": "ok",       "name": "OK",        "conditionExpression": "$self.output.statusCode >= 200 && $self.output.statusCode < 300" },
-      { "id": "notFound", "name": "Not Found", "conditionExpression": "$self.output.statusCode == 404" }
+      { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
+      { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
     ]
   }'
 ```
 
 > **Do not prefix `conditionExpression` with `=js:`** — HTTP branch conditions are auto-evaluated as JS (same rule as decision/switch expressions).
 
-With branches configured, a matching non-2xx response routes through the matching branch instead of faulting the flow. Without branches, non-2xx responses fault.
-
 ### Step 5 — Wire edges
 
 The managed HTTP node's target port is `input`. Its source ports are:
 
-- `default` — fires when no configured branch matches (or when no branches are configured at all)
+- `default` — primary success output (or fallback when configured branches don't match)
+- `error` — fires when the HTTP call fails (network error, timeout, non-2xx not caught by a branch); wire this to an error handler to keep the flow from faulting
 - `branch-{id}` — one per entry in `inputs.branches` (Step 4); use the exact `id` you set
 
 ```bash
@@ -107,16 +106,17 @@ The managed HTTP node's target port is `input`. Its source ports are:
 uip flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
   --source-port <port> --target-port input --output json
 
-# Unbranched: single outgoing edge on "default"
+# Simple: single outgoing edge on "default"
 uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
   --source-port default --target-port input --output json
 
-# Branched: one edge per configured branch, plus (optionally) a default
-uip flow edge add <ProjectName>.flow <nodeId> <okDownstream> \
-  --source-port branch-ok --target-port input --output json
+# With error handler: wire the implicit "error" port
+uip flow edge add <ProjectName>.flow <nodeId> <errorHandlerId> \
+  --source-port error --target-port input --output json
 
-uip flow edge add <ProjectName>.flow <nodeId> <errDownstream> \
-  --source-port branch-notFound --target-port input --output json
+# With conditional branches: one edge per configured branch (default/error still apply)
+uip flow edge add <ProjectName>.flow <nodeId> <hasItemsDownstream> \
+  --source-port branch-hasItems --target-port input --output json
 ```
 
 ## Debug
@@ -128,5 +128,5 @@ uip flow edge add <ProjectName>.flow <nodeId> <errDownstream> \
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
 | `ImplicitConnection` errors | Manual mode misconfigured | Verify `authentication: "manual"` and `url` is a full URL |
-| Flow faults on 4xx/5xx response | No branches configured — default behavior is to fault on non-2xx | Configure `inputs.branches` with a `conditionExpression` matching the status(es) you want to handle (Step 4), then wire the resulting `branch-{id}` port |
-| Edge `source-port` rejected | Referencing `output` or `error` as a port name | HTTP uses `default` / `branch-{id}`, not `output`. The `error` name is a variable namespace (`$vars.{nodeId}.error`), not a port |
+| Flow faults on 4xx/5xx response | No `error` edge wired from the HTTP node | Add an edge with `sourcePort: "error"` to an error-handler node. See [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes) — same mechanism applies to all action nodes |
+| Edge `source-port output` rejected | Referencing the variable namespace as a port name | HTTP source ports are `default`, `error`, and `branch-{id}` — not `output`. The `output` name is only a variable namespace (`$vars.{nodeId}.output`) |

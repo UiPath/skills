@@ -29,6 +29,8 @@ All transform variants share the same port layout:
 | --- | --- |
 | `input` | `output`, `error` |
 
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
 ## Output Variables
 
 - `$vars.{nodeId}.output` — the transformed collection
