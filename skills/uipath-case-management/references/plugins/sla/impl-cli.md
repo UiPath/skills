@@ -6,6 +6,7 @@ Three CLI sub-operations cover SLA authoring: `set`, `escalation`, `rules`. Run 
 
 | Unit | Meaning |
 |------|---------|
+| `min` | minutes |
 | `h` | hours |
 | `d` | days |
 | `w` | weeks |
@@ -17,10 +18,10 @@ Three CLI sub-operations cover SLA authoring: `set`, `escalation`, `rules`. Run 
 
 ```bash
 # Root-level
-uip maestro case sla set <file> --count <n> --unit <h|d|w|m> --output json
+uip maestro case sla set <file> --count <n> --unit <min|h|d|w|m> --output json
 
 # Per-stage
-uip maestro case sla set <file> --count <n> --unit <h|d|w|m> --stage-id <stage-id> --output json
+uip maestro case sla set <file> --count <n> --unit <min|h|d|w|m> --stage-id <stage-id> --output json
 ```
 
 ### Example
@@ -43,7 +44,7 @@ Stage: `nodes[].data.sla = { count: 2, unit: "w" }` on the matching stage.
 uip maestro case sla rules add <file> \
   --expression "<expr>" \
   --count <n> \
-  --unit <h|d|w|m> \
+  --unit <min|h|d|w|m> \
   --output json
 ```
 
@@ -53,7 +54,7 @@ uip maestro case sla rules add <file> \
 uip maestro case sla rules add caseplan.json \
   --expression "=js:vars.priority === 'Urgent'" \
   --count 30 \
-  --unit m \
+  --unit min \
   --output json
 ```
 
@@ -62,7 +63,7 @@ uip maestro case sla rules add caseplan.json \
 Root: `root.data.slaRules[]` gains an entry:
 
 ```json
-{ "expression": "=js:vars.priority === 'Urgent'", "count": 30, "unit": "m" }
+{ "expression": "=js:vars.priority === 'Urgent'", "count": 30, "unit": "min" }
 ```
 
 Rules are evaluated in array order — first truthy expression wins. The default SLA (from `sla set`) acts as the fallback.

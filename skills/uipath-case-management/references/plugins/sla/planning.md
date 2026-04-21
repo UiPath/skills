@@ -35,7 +35,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | Field | Source | Notes |
 |-------|--------|-------|
 | `count` | sdd.md duration number | Positive integer |
-| `unit` | sdd.md duration unit | `h` \| `d` \| `w` \| `m` |
+| `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
 | `stage-id` | sdd.md target (root vs stage) | Omit for root |
 
 ### Conditional SLA rule (`sla rules add`)
@@ -86,7 +86,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ## T<n>: Add conditional SLA rule for root case — <condition summary>
 - condition: "<natural-language condition from sdd.md>"
 - count: 30
-- unit: m
+- unit: min
 - order: after T<m>
 - verify: Confirm Result: Success
 ```
