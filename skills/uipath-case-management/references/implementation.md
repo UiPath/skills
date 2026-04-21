@@ -16,7 +16,7 @@ Before executing each plugin's T-entries, consult the strategy matrix in [case-e
 Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
-> - Root case → `plugins/case/impl-cli.md`
+> - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
 > - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
 > - Edges → `plugins/edges/impl-json.md` (JSON strategy) — `plugins/edges/impl-cli.md` is the fallback
 > - Tasks → `plugins/tasks/<type>/impl-cli.md`
@@ -39,7 +39,9 @@ issues = []  # shared across all steps — passed to each plugin
 
 ## Step 6 — Create the Case project structure
 
-The case file must live inside a solution + project. Scaffolding commands (solution new → case init → project add) plus the `cases add` invocation that creates `caseplan.json` live in [`plugins/case/impl-cli.md`](plugins/case/impl-cli.md). Run them in order, then capture the initial Trigger node ID returned by `cases add` for use in Step 8.
+The case file must live inside a solution + project. Scaffolding commands (solution new → case init → project add) stay on the CLI path — see [`plugins/case/impl-cli.md`](plugins/case/impl-cli.md) § Prerequisites. After scaffolding, write `caseplan.json` per the migrated JSON recipe in [`plugins/case/impl-json.md`](plugins/case/impl-json.md). Strategy per the matrix in [case-editing-operations.md](case-editing-operations.md) — `case` is on the **JSON** strategy; [`plugins/case/impl-cli.md`](plugins/case/impl-cli.md) `cases add` is the fallback.
+
+The initial Trigger node ID is the literal string `"trigger_1"` (hard-coded — not a generated shortId). Record `T01.trigger → trigger_1` in `id-map.json` for use as an edge source in Step 8.
 
 ## Step 6.1 — Declare global variables and arguments
 

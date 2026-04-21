@@ -153,7 +153,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Wire inputs/outputs and cross-task refs** | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | **Configure a connector activity / trigger / event** | [references/connector-integration.md](references/connector-integration.md) |
 | **Handle unresolved resources (skeleton tasks)** | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
-| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-cli.md`](references/plugins/case/impl-cli.md) |
+| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-json.md`](references/plugins/case/impl-json.md) (migrated) / [`impl-cli.md`](references/plugins/case/impl-cli.md) (fallback) |
 | **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + [`impl-json.md`](references/plugins/stages/impl-json.md) (pilot) / [`impl-cli.md`](references/plugins/stages/impl-cli.md) (fallback) |
 | **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-json.md`](references/plugins/edges/impl-json.md) (JSON strategy) / [`impl-cli.md`](references/plugins/edges/impl-cli.md) (fallback) |
 | **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-json.md`](references/plugins/sla/impl-json.md) (primary) / [`impl-cli.md`](references/plugins/sla/impl-cli.md) (fallback) |

@@ -1,0 +1,36 @@
+{
+    "root": {
+        "id": "root",
+        "name": "MinimalProbe",
+        "type": "case-management:root",
+        "caseIdentifier": "MinimalProbe",
+        "caseAppEnabled": false,
+        "caseIdentifierType": "constant",
+        "version": "v17",
+        "publishVersion": 2,
+        "data": {
+            "intsvcActivityConfig": "v2",
+            "uipath": {
+                "variables": {
+                    "inputOutputs": []
+                },
+                "bindings": []
+            }
+        },
+        "description": ""
+    },
+    "nodes": [
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Trigger 1"
+            }
+        }
+    ],
+    "edges": []
+}
