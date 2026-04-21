@@ -74,7 +74,7 @@ After the command runs, `caseplan.json` contains:
         "variables": {},
         "bindings": []
       }
-    }
+    },
     "description": "End-to-end loan application processing..."
   },
   "nodes": [
