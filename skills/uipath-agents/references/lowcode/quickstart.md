@@ -127,16 +127,18 @@ Read [agent-json-format.md](agent-json-format.md) for the full schema.
 
 ### Step 5 — Publish to Studio Web or deploy to Orchestrator
 
-Ask the user before proceeding.
+Ask the user before proceeding. There are two separate paths:
 
-**Always bundle first, then upload the `.uis` file.** Do NOT pass a directory path directly to `uip solution upload` — always go through `uip solution bundle` first to produce a `.uis` artifact, then upload that file.
-
+**Studio Web** (default — for visual editing and sharing):
 ```bash
-# Step 1: Bundle to .uis
-uip solution bundle . -d ./dist --output json
+uip solution upload . --output json
+```
 
-# Step 2: Upload the .uis file to Studio Web
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+**Orchestrator** (for production deployment — only when explicitly requested):
+```bash
+uip solution pack . ./dist -v "1.0.0" --output json
+uip solution publish ./dist/<SOLUTION_NAME>.1.0.0.zip --output json
+uip solution deploy run --name "<NAME>" --package-name "<SOLUTION_NAME>" --package-version "1.0.0" --output json
 ```
 
 ---
