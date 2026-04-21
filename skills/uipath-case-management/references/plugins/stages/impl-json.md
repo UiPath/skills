@@ -113,7 +113,7 @@ After writing, confirm:
 - For ExceptionStage: `data.entryConditions: []` and `data.exitConditions: []` are present (CLI initializes both as empty arrays at creation time)
 - For regular Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
 
-Run `uip case validate <file> --output json` after all stages for this plugin's batch are added.
+Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 
 ## Known CLI divergences
 
@@ -127,7 +127,7 @@ Direct-JSON-write is a superset of the CLI's `stages add`. The divergences below
 Captured against CLI version `0.1.21`. See [`docs/uipath-case-management/migration-fixtures/stages/`](../../../../../docs/uipath-case-management/migration-fixtures/stages/) for fixtures.
 
 - [x] **Golden diff:** normalized `json-write-output.json` matches `cli-output.json` after ID normalization — `docs/uipath-case-management/migration-fixtures/stages/diff.sh` passes
-- [x] **Validation parity:** both outputs produce the same set of 3 errors + 3 warnings from `uip case validate` (the expected failure profile for a stages-only fragment with no edges/tasks)
-- [ ] **Downstream CLI mutation append:** `uip case edges add --source <json-written-stage-id>` and `uip case tasks add <file> <json-written-stage-id>` both succeed — not yet exercised (edges plugin not migrated)
-- [ ] **Round-trip:** CLI-written stage → direct-JSON-write adds a second stage → `uip case validate` passes with only the expected failures — not yet exercised
+- [x] **Validation parity:** both outputs produce the same set of 3 errors + 3 warnings from `uip maestro case validate` (the expected failure profile for a stages-only fragment with no edges/tasks)
+- [ ] **Downstream CLI mutation append:** `uip maestro case edges add --source <json-written-stage-id>` and `uip maestro case tasks add <file> <json-written-stage-id>` both succeed — not yet exercised (edges plugin not migrated)
+- [ ] **Round-trip:** CLI-written stage → direct-JSON-write adds a second stage → `uip maestro case validate` passes with only the expected failures — not yet exercised
 - [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised

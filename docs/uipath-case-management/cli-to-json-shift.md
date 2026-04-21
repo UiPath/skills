@@ -1,6 +1,6 @@
 # Design: CLI → Direct JSON Shift
 
-Decision record for shifting `uipath-case-management` mutation operations from `uip case` CLI calls to direct reads/writes of `caseplan.json`. Captures the shared understanding from the design session on 2026-04-20.
+Decision record for shifting `uipath-case-management` mutation operations from `uip maestro case` CLI calls to direct reads/writes of `caseplan.json`. Captures the shared understanding from the design session on 2026-04-20.
 
 > **Scope of this document.** This is the design for the CLI → JSON mechanism shift only. The separate "one-shot build → 3-gate skeleton/enrich flow" discussion was explicitly parked and is not covered here.
 
@@ -8,13 +8,13 @@ Decision record for shifting `uipath-case-management` mutation operations from `
 
 ## 1. Motivation
 
-The current skill executes Phase 2 (`tasks.md → caseplan.json`) as a sequence of `uip case` CLI calls. The CLI is:
+The current skill executes Phase 2 (`tasks.md → caseplan.json`) as a sequence of `uip maestro case` CLI calls. The CLI is:
 
 - The only path today to a valid `caseplan.json`
 - Sequential and slow — each mutation is an independent process invocation
 - A changing external surface — the skill has already worked around CLI gaps (e.g., registry search)
 
-Long-term, the `uip case` CLI should keep only **operational** surface area (anything that talks HTTP to dependencies, or performs a filesystem lifecycle operation) — `registry pull`, `tasks describe`, `tasks enrich`, `get-connector`, `get-connection`, `validate`, `solution upload`, `debug`, `login`, scaffolding. Every mutation command should eventually be removed.
+Long-term, the `uip maestro case` CLI should keep only **operational** surface area (anything that talks HTTP to dependencies, or performs a filesystem lifecycle operation) — `registry pull`, `tasks describe`, `tasks enrich`, `get-connector`, `get-connection`, `validate`, `solution upload`, `debug`, `login`, scaffolding. Every mutation command should eventually be removed.
 
 The skill becomes the authoritative mutation path.
 
@@ -40,7 +40,7 @@ The skill becomes the authoritative mutation path.
 
 CLI mutation commands do NOT touch `content/*.bpmn`. The file is regenerated only by:
 
-- `uip case validate`
+- `uip maestro case validate`
 - `uip solution upload`
 
 **Implication:** direct JSON writes between `validate`/`upload` checkpoints are safe — no bpmn staleness concern during mutations.
@@ -50,7 +50,7 @@ CLI mutation commands do NOT touch `content/*.bpmn`. The file is regenerated onl
 Two-part bar:
 
 1. **Structurally equivalent to CLI output.** Same schema, same fields, same relationships. Matches what the per-plugin `impl-json.md` specifies.
-2. **Validator-and-renderer-accepted.** Passes `uip case validate` and renders correctly in Studio Web.
+2. **Validator-and-renderer-accepted.** Passes `uip maestro case validate` and renders correctly in Studio Web.
 
 Byte equality is not required (random IDs, field ordering).
 
@@ -289,9 +289,9 @@ These are follow-up fixes, not blockers for the stages pilot.
 
 The earlier spike list was dropped — we find these in the pilot instead. For reference:
 
-1. Does `uip case validate` tolerate an `adhoc` rule with no `conditionExpression`? (Matters for the parked 3-gate flow.)
-2. Does `uip case tasks enrich` operate statelessly against any valid `caseplan.json`, or does it maintain internal state about which tasks it created?
-3. Does `uip case var bind` work against a hand-written + enriched task?
+1. Does `uip maestro case validate` tolerate an `adhoc` rule with no `conditionExpression`? (Matters for the parked 3-gate flow.)
+2. Does `uip maestro case tasks enrich` operate statelessly against any valid `caseplan.json`, or does it maintain internal state about which tasks it created?
+3. Does `uip maestro case var bind` work against a hand-written + enriched task?
 4. Does Studio Web accept IDs in the exact CLI format when produced by our direct-JSON-write? (Very likely yes since we match CLI's algorithm — but unverified.)
 
 ## 14. Deferred: one-shot → 3-gate flow

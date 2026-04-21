@@ -26,7 +26,7 @@ Inputs are auto-populated with empty `value` after `tasks add --task-type-id`. I
   "elementId": "Stage_verify-tKYC001" }
 ```
 
-Output IDs are name-based camelCase per [uniqueness rule](../global-vars/impl.md#uniqueness-rule). `source` reads from the task response — never changes even when `var` is counter-suffixed.
+Output IDs are name-based camelCase per [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule). `source` reads from the task response — never changes even when `var` is counter-suffixed.
 
 ## Binding Procedure
 
@@ -58,7 +58,7 @@ Connector inputs are set at creation time via `--input-values`, not post-creatio
 --input-values '{"body":{"email":"=vars.employeeEmail","caseRef":"=metadata.ExternalId"}}'
 ```
 
-Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl.md](../../../plugins/tasks/connector-activity/impl.md).
+Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-cli.md](../../../plugins/tasks/connector-activity/impl-cli.md).
 
 ## End-to-End: Task A Output → Task B Input
 
@@ -84,7 +84,7 @@ All three must exist: output on Task A, inputOutputs entry on root, bound input 
 
 ## Error Handling
 
-All issues go to the shared issue list per [logging/impl.md](../../logging/impl.md). No fuzzy matching, no auto-creation, no retries.
+All issues go to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md). No fuzzy matching, no auto-creation, no retries.
 
 | Check | Severity | Action |
 |---|---|---|

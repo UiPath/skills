@@ -27,9 +27,9 @@ uip maestro case triggers add-manual caseplan.json \
 
 > **Secondary triggers are NOT the same shape as the initial trigger.**
 >
-> The initial trigger (created by `uip case cases add` with fixed id `trigger_1`, position `{x: 0, y: 0}`, minimal `data`) has NO `style`, `measured`, or `parentElement`.
+> The initial trigger (created by `uip maestro case cases add` with fixed id `trigger_1`, position `{x: 0, y: 0}`, minimal `data`) has NO `style`, `measured`, or `parentElement`.
 >
-> **Secondary triggers** (added via `uip case triggers add-manual` — this plugin) DO have `style`, `measured`, and `parentElement`. They also use a randomly generated `trigger_` + 6-char ID.
+> **Secondary triggers** (added via `uip maestro case triggers add-manual` — this plugin) DO have `style`, `measured`, and `parentElement`. They also use a randomly generated `trigger_` + 6-char ID.
 
 > **ID format.** `trigger_` + 6 random chars from `[A-Za-z0-9]` (e.g. `trigger_xY2mNp`).
 >

@@ -25,12 +25,12 @@ Minimal sdd fragment that exercises only the `stages` plugin. Used to generate b
 ## Equivalent CLI invocation
 
 ```bash
-uip case cases add --name "StagesProbe" --file caseplan.json --output json
-uip case stages add caseplan.json \
+uip maestro case cases add --name "StagesProbe" --file caseplan.json --output json
+uip maestro case stages add caseplan.json \
   --label "Submission Review" \
   --description "Initial submission review" \
   --output json
-uip case stages add caseplan.json \
+uip maestro case stages add caseplan.json \
   --label "Exception Handling" \
   --type exception \
   --description "Fallback for failed submissions" \

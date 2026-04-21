@@ -1,6 +1,6 @@
 # Case Editing Operations — Direct JSON Strategy
 
-All mutations to `caseplan.json` performed via direct read/write/edit of the file, bypassing `uip case` mutation commands. This document covers the cross-cutting mechanics; per-node JSON shapes live in each plugin's `impl-json.md`.
+All mutations to `caseplan.json` performed via direct read/write/edit of the file, bypassing `uip maestro case` mutation commands. This document covers the cross-cutting mechanics; per-node JSON shapes live in each plugin's `impl-json.md`.
 
 > **When to use this strategy:** Only for plugins marked `Strategy = JSON` in [case-editing-operations.md](case-editing-operations.md). Default is still CLI — see [case-editing-operations-cli.md](case-editing-operations-cli.md).
 
@@ -65,7 +65,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 12. **Cross-task bindings reference existing IDs.** Before writing a `var bind` entry, confirm the source stage ID and source task ID both exist in `caseplan.json`.
 
-13. **Validate after every plugin's batch.** Run `uip case validate <file> --output json` after each plugin completes its mutations. Fixing errors early is cheaper than chasing a cascade.
+13. **Validate after every plugin's batch.** Run `uip maestro case validate <file> --output json` after each plugin completes its mutations. Fixing errors early is cheaper than chasing a cascade.
 
 ---
 
@@ -205,7 +205,7 @@ Edges are immutable on source/target at the CLI level (`edges edit` only allows 
 
 ## Validation Cadence
 
-Run `uip case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); the CLI handles this tolerably well but validate is authoritative at the plugin boundary.
+Run `uip maestro case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); the CLI handles this tolerably well but validate is authoritative at the plugin boundary.
 
 On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion per the skill's Critical Rule #20.
 

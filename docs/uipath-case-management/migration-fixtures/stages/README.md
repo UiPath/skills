@@ -1,6 +1,6 @@
 # Stages Golden Fixtures
 
-Compatibility fixture for the `stages` plugin direct-JSON-write migration. Asserts that JSON emitted by the direct-write path is structurally equivalent to JSON produced by `uip case stages add`.
+Compatibility fixture for the `stages` plugin direct-JSON-write migration. Asserts that JSON emitted by the direct-write path is structurally equivalent to JSON produced by `uip maestro case stages add`.
 
 > **Temporary — developer verification only.** These fixtures live outside the skill on purpose: they exist to verify migration correctness during the CLI → JSON shift, and will be removed once every plugin has migrated. Runtime agents do not load them.
 
@@ -9,7 +9,7 @@ Compatibility fixture for the `stages` plugin direct-JSON-write migration. Asser
 | File | Purpose |
 |---|---|
 | `input.sdd-fragment.md` | Minimal sdd fragment exercising only the stages plugin |
-| `cli-output.json` | Captured from `uip case cases add` + two `stages add` runs (CLI version used: 0.1.21) |
+| `cli-output.json` | Captured from `uip maestro case cases add` + two `stages add` runs (CLI version used: 0.1.21) |
 | `json-write-output.json` | Hand-written to match the direct-JSON-write spec in [`plugins/stages/impl-json.md`](../../../skills/uipath-case-management/references/plugins/stages/impl-json.md) |
 | `diff.sh` | Normalizes stage IDs by `data.label`, then diffs; passes if structurally equivalent |
 
@@ -23,7 +23,7 @@ Exit 0 on equivalence; non-zero with a unified diff otherwise. Requires `jq` and
 
 ## Validation parity
 
-Both `cli-output.json` and `json-write-output.json` must produce the **same set of errors/warnings** from `uip case validate`:
+Both `cli-output.json` and `json-write-output.json` must produce the **same set of errors/warnings** from `uip maestro case validate`:
 
 ```
 Found 3 error(s) and 3 warning(s):
@@ -44,12 +44,12 @@ When the CLI version bumps:
 ```bash
 WORK=$(mktemp -d)
 cd "$WORK"
-uip case cases add --name "StagesProbe" --file caseplan.json --output json
-uip case stages add caseplan.json \
+uip maestro case cases add --name "StagesProbe" --file caseplan.json --output json
+uip maestro case stages add caseplan.json \
   --label "Submission Review" \
   --description "Initial submission review" \
   --output json
-uip case stages add caseplan.json \
+uip maestro case stages add caseplan.json \
   --label "Exception Handling" \
   --type exception \
   --description "Fallback for failed submissions" \
