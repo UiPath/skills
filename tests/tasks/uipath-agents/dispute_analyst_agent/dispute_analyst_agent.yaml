@@ -1,0 +1,115 @@
+task_id: skill-agent-dispute-analyst
+description: >
+  End-to-end test: scaffold a standalone low-code agent that analyzes a
+  billing dispute. The agent must declare a 5-field inputSchema
+  (invoice, erpInvoice, customerContext, discrepancies, dispute) and an
+  outputSchema exposing validity, rootCause, rootCauseDetail,
+  recommendedResolution, recommendedCreditAmount, confidenceScore,
+  rationale, customerFacingExplanation, and flags. Validates schema
+  sync, field presence, contentTokens for every input, and a
+  domain-specific system prompt.
+tags: [uipath-agents, e2e, low-code, schema, prompt]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "DisputeSol" containing a single low-code
+  agent "DisputeAnalystAgent".
+
+  The agent analyzes a billing dispute by synthesizing data from four
+  systems and producing a structured analysis.
+
+  Inputs (all required objects):
+    - invoice           — extracted invoice fields
+    - erpInvoice        — ERP contract, pricing, and payment history
+    - customerContext   — CRM tier, health score, prior disputes
+    - discrepancies     — computed discrepancy report
+    - dispute           — customer-submitted dispute (description, etc.)
+
+  Output: a single object disputeAnalysis with these fields:
+    - validity                  — enum: "invalid", "valid_low", "valid_high"
+    - rootCause                 — enum: "pricing_mismatch", "tax_rate_error",
+                                  "tax_type_error", "duplicate_charge",
+                                  "missing_discount", "quantity_mismatch",
+                                  "no_discrepancy_found", "multiple"
+    - rootCauseDetail           — string
+    - recommendedResolution     — enum: "full_credit", "partial_credit",
+                                  "revised_invoice",
+                                  "credit_and_revised_invoice",
+                                  "reject_with_explanation"
+    - recommendedCreditAmount   — number
+    - confidenceScore           — number (0.0 to 1.0)
+    - rationale                 — string
+    - customerFacingExplanation — string
+    - flags                     — array of strings
+
+  The system prompt must explicitly cover: the meaning of each validity
+  value, the confidence threshold convention (below 0.80 never
+  auto-approves), and how the agent chooses a root cause and
+  recommended resolution.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked the project to the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "DisputeAnalystAgent/agent.json was created"
+    path: "DisputeSol/DisputeAnalystAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "DisputeAnalystAgent/entry-points.json was created"
+    path: "DisputeSol/DisputeAnalystAgent/entry-points.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema sync, input/output field presence, contentTokens for all 5 inputs, and domain-specific system prompt"
+    command: "python3 $TASK_DIR/check_dispute_analyst_agent.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
