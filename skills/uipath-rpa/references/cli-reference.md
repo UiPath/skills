@@ -152,6 +152,28 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 ---
 
+### build
+
+Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses. Required before returning a project to the user (see [validation-guide.md § Project Build Verification](validation-guide.md#project-build-verification-required-before-returning-a-project)). Runs independently of Studio IPC; takes the project directory as a positional argument.
+
+```bash
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<projectDir>` | Yes | Path to the project directory (positional — not `--project-dir`) |
+| `--log-level` | No | `Debug` / `Info` / `Warn` / `Error`. Default `Warn`. |
+| `--skip-analyze` | No | Skip the static analysis step (faster, less thorough) |
+| `--exclude-configured-sources` | No | Exclude user/machine-configured NuGet sources |
+| `--nuget-sources-config-path` | No | Path to a custom NuGet sources config file |
+| `--governance-file-path` | No | Path to a governance/policy rules file |
+| `--governance-file-type` | No | Type of the governance file |
+| `--detailed-log-path` | No | Path to write a detailed log file |
+
+**Relationship to `run-file`:** `run-file` compiles internally, so a successful smoke test implies `build` would pass. When no smoke test is run (side effects, interactive workflow, no test input), `build` is the required end-goal check for compilability — including attribute-form expression failures (`JIT compilation is disabled for non-Legacy projects`) in XAML projects with `expressionLanguage: CSharp` that don't surface during static `get-errors`.
+
+---
+
 ## Commands -- Package Management
 
 ### install-or-update-packages

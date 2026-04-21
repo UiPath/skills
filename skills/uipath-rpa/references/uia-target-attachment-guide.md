@@ -67,11 +67,11 @@ uip rpa uia object-repository get-screen-xaml \
   --project-dir "<PROJECT_DIR>"
 ```
 
-Returns a `<TargetApp>` element. Embed it inside the ApplicationCard:
+Returns a `<TargetApp>` element. Embed it inside the ApplicationCard using the `uix:` prefix (drop any `xmlns` attribute on the pasted element):
 
 ```xml
 <uix:NApplicationCard.TargetApp>
-  <!-- paste the returned <TargetApp ... /> here -->
+  <uix:TargetApp Area="..." BrowserType="..." ContentHash="..." Reference="..." Selector="..." Url="..." Version="V2" />
 </uix:NApplicationCard.TargetApp>
 ```
 
@@ -83,24 +83,24 @@ uip rpa uia object-repository get-elements-xaml \
   --project-dir "<PROJECT_DIR>"
 ```
 
-Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property (or the nested property named on the activity, e.g., `SearchedElement.Target`):
+Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property (or the nested property named on the activity, e.g., `SearchedElement.Target`) using the `uix:` prefix (drop any `xmlns` attribute on the pasted element):
 
 ```xml
 <uix:NClick ...>
   <uix:NClick.Target>
-    <!-- paste the returned <TargetAnchorable ... /> here -->
+    <uix:TargetAnchorable .../>
   </uix:NClick.Target>
 </uix:NClick>
 
 <uix:NTypeInto ...>
   <uix:NTypeInto.Target>
-    <!-- paste the returned <TargetAnchorable ... /> here -->
+    <uix:TargetAnchorable .../>
   </uix:NTypeInto.Target>
 </uix:NTypeInto>
 
 <uix:NGetText ...>
   <uix:NGetText.Target>
-    <!-- paste the returned <TargetAnchorable ... /> here -->
+    <uix:TargetAnchorable .../>
   </uix:NGetText.Target>
 </uix:NGetText>
 ```

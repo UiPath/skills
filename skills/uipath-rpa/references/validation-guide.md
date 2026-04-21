@@ -36,6 +36,16 @@ REPEAT:
 
 See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` command documentation.
 
+## Project Build Verification (Required Before Returning a Project)
+
+Every project returned to the user must compile. After all files pass `get-errors`, run:
+
+```bash
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+```
+
+`get-errors` is static analysis and misses compile-time failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-expression-pitfalls.md](xaml/csharp-expression-pitfalls.md). If `build` fails, apply the same fix loop as above (fix one thing, re-run, cap at 5). Skip `build` only if a `run-file` smoke test already succeeded — `run-file` compiles internally.
+
 ## Smoke Test
 
 `get-errors` (static analysis) and `run-file` (runtime compilation) use different validation paths. Some errors -- such as invalid enum values on activity properties -- pass static validation but fail at runtime. Always treat the smoke test as a critical validation step, not just an optional extra.
