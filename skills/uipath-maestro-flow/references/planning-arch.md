@@ -125,6 +125,17 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 
+### Patterns (LLM-Powered Building Blocks)
+
+Patterns nodes wrap LLM-driven operations as single service tasks. They appear in the registry only when the tenant's `canvas.nodes.patterns` platform feature flag is enabled — the uip CLI always requests them in its manifest fetch, so they will surface as soon as the server rolls the flag out.
+
+| Node Type | Plugin | When to Select |
+| --- | --- | --- |
+| `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns (category, summary, extracted entities) to every row of an attached CSV. Supports optional web-search grounding |
+| `uipath.pattern.deep-rag` | [deep-rag](plugins/deep-rag/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations back to the source |
+
+**When NOT to use Patterns:** For simple in-memory transforms use [transform](plugins/transform/planning.md); for multi-step reasoning with tools use an [agent](plugins/agent/planning.md); for per-row side effects use a [loop](plugins/loop/planning.md).
+
 ### Resource Nodes (External Automations)
 
 Resource nodes invoke published UiPath automations. They are tenant-specific and appear in the registry after `uip login` + `uip flow registry pull`.
@@ -179,6 +190,8 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.logic.mock` | `input` | `output` |
 | `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
 | `uipath.core.agent.*` | `input` | `output` |
+| `uipath.pattern.batch-transform` | `input` | `output`, `error` |
+| `uipath.pattern.deep-rag` | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
 
@@ -463,6 +476,13 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 - Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
 - Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+
+### "I need an LLM to process rows of a CSV or summarize a document"
+
+- Add LLM-generated columns to every row of a CSV (classify, summarize, extract) -> [batch-transform](plugins/batch-transform/planning.md) (`uipath.pattern.batch-transform`)
+- Synthesize or answer questions over one attached document, with optional citations -> [deep-rag](plugins/deep-rag/planning.md) (`uipath.pattern.deep-rag`)
+- Small ad-hoc reshaping (map/filter/groupBy) without an LLM -> [transform](plugins/transform/planning.md)
+- Multi-step reasoning with tool use -> [inline-agent](plugins/inline-agent/planning.md) or [agent](plugins/agent/planning.md)
 
 ### "The flow needs something outside flow capabilities"
 
