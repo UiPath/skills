@@ -110,19 +110,20 @@ If typed fields score F1 = 0 at baseline, the issue is likely a **format mismatc
 
 - **Prefer OCR-verbatim** — copy values directly from the OCR text when they match the document
 - **If OCR is clearly garbled** (e.g., `INGRAM NTCRO INC` instead of `INGRAM MICRO INC`), use the clean value from the image — the API does not enforce verbatim OCR
-- For **typed fields** (Date, Monetary Quantity), always use the canonical format from the table above, regardless of how it appears in OCR
+- For **typed fields** (Date, Monetary Quantity), submit the value **as-written in the document** — same rule as all other fields. If the document says `02/28/2018`, submit `02/28/2018`. If it says `$17,000.00`, submit `$17,000.00`.
 
 ## Common Pitfalls
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `400 No moon fields defined for label "Invoice > Details"` | Used parent-prefixed label name | Use flat `label_def.name` from taxonomy (e.g., `"Invoice Details"`) |
-| Date/Monetary fields always F1 = 0 | Wrong value format in labellings | Re-label with canonical formats: Date → `YYYY-MM-DD`, Monetary Quantity → `17000.00` (no currency symbol or commas). Prompt changes alone will NOT fix this. |
+| Date/Monetary fields always F1 = 0 | Value format doesn't match what the model predicts | Re-label using the value **as-written in the document** (e.g., `02/28/2018`, `$17,000.00`). The model predicts in the document's own format. |
 | `404 No such project` | Used project Title instead of Name | Use `Name` from `project list` (lowercase slug with `-ixp` suffix) |
 | `400 Moon forms for label present multiple times` | Duplicate label entries in extractions | Group all fields for same non-repeating label into one entry |
 | Metrics don't change after update-prompts | Didn't re-label documents | Re-label all documents after updating instructions |
 | ModelVersion doesn't advance after re-label | Submitted identical labellings, or retrain still in progress | Wait ~2 min then retry. Identical re-submissions do NOT trigger retrain. |
 | Fields/moon_form disappeared after update | Used `--entity-defs` flag or raw dataset update with `entity_defs` payload | **NEVER use `--entity-defs`** — it is a destructive full-replacement that deletes fields. Always use `--fields` which only updates field instructions safely. |
+| Field instructions conflict with label_def instructions | `update-prompts --fields` only edits moon_form per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. If the label_def says "decimal format, no commas" but your field says "as-written with commas", the model gets conflicting signals. |
 
 ## Guides
 
