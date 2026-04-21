@@ -291,6 +291,66 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
 - If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user they must configure the connection in Studio
 
+## IS `ConnectorActivity` Gotchas
+
+Full authoring flow: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md).
+
+### JIT `OutArgument` from Studio Designer Breaks Fresh Loads
+
+When Studio's designer touches an IS `ConnectorActivity`, it can inject a JIT-typed `OutArgument` on the `Jit_<operation>` `FieldObject`:
+
+```xml
+<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument">
+  <isactr:FieldObject.Value>
+    <OutArgument x:TypeArguments="uiascb:send_message_to_channel_v2_Create" />
+  </isactr:FieldObject.Value>
+</isactr:FieldObject>
+```
+
+The `uiascb:` namespace points at a Studio-session-local dynamically-compiled assembly (e.g. `C35283077FA_send_mes.<hash>`). On any **fresh load** (new Studio session, Helm, CI), that assembly doesn't exist, compile fails with:
+
+```
+[Error] Unable to create activity builder for <workflow>.xaml.
+Reason was 'Cannot create unknown type '{...}OutArgument({...}<op>_Create)'.'
+```
+
+**Fix** — strip the injected `OutArgument` back to bare form:
+
+```xml
+<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument" />
+```
+
+Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` element if no other reference uses it. Tracked as PILOT-4812.
+
+### Field Names Come From the Schema, Not Memory
+
+`FieldObject Name` values are connector-specific and schema-driven. Never guess. Always read:
+
+```bash
+uip is resources describe <connector-key> <operation-name> --operation Create --output json
+cat ~/.uipath/cache/integrationservice/<connector-key>/_static/<operation>.Create.json
+```
+
+Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually expects connector-specific names) trigger a `Configuration contains a breaking change` runtime error.
+
+### `Configuration` Attribute Is Opaque
+
+The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa get-default-activity-xaml --activity-type-id <GUID> --connection-id <GUID>`.
+
+### `FieldObject.Value` Attribute Does Nothing
+
+Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" Value="hello" />` — is silently ignored. The runtime only reads the element form:
+
+```xml
+<isactr:FieldObject Name="channel" Type="FieldArgument">
+  <isactr:FieldObject.Value>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">"hello"</CSharpValue>
+    </InArgument>
+  </isactr:FieldObject.Value>
+</isactr:FieldObject>
+```
+
 ## Deprecated Activities (Do Not Use)
 
 | Deprecated | Replacement | Notes |
