@@ -67,7 +67,14 @@ After the command runs, `caseplan.json` contains:
     "caseIdentifierType": "constant",
     "caseAppEnabled": true,
     "version": "v12",
-    "data": {},
+    "publishVersion": 2,
+    "data": {
+      "intsvcActivityConfig": "v2",
+      "uipath": {
+        "variables": {},
+        "bindings": []
+      }
+    }
     "description": "End-to-end loan application processing..."
   },
   "nodes": [

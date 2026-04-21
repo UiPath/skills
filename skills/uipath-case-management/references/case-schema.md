@@ -360,7 +360,13 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
     "caseIdentifierType": "constant",
     "version": "v17",
     "publishVersion": 2,
-    "data": {}
+    "data": {
+      "intsvcActivityConfig": "v2",
+      "uipath": {
+        "variables": {},
+        "bindings": []
+      }
+    }
   },
   "nodes": [
     {
