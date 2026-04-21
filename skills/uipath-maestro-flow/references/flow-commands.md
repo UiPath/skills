@@ -68,6 +68,16 @@ Requires `content/package-descriptor.json` and `content/operate.json` in the pro
 
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
 
+## uip solution resource refresh
+
+Re-scan all projects in the solution and sync resource declarations (connections, processes, queues, etc.) from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. **Always run this before `uip solution upload` or `uip flow debug`.**
+
+```bash
+uip solution resource refresh <SolutionDir> --output json
+```
+
+The argument is the solution directory (containing the `.uipx` file). Defaults to the current directory if omitted.
+
 ## uip solution upload
 
 Upload a solution directly to Studio Web. **Requires `uip login`.**

@@ -44,17 +44,17 @@ Respond that the operation is not supported. Do not try to work around it.
 
 3. **Always resolve entity ID first.** Use `entities list` before any operation. Never assume an entity ID.
 
-4. **Field names are technical identifiers** (lowercase, no spaces). Use `fieldName` in field definitions.
+4. **Entity and field names must pass validation**: start with a letter, contain only letters/digits/underscores (`[a-zA-Z0-9_]`), 3–100 characters. No hyphens or spaces. Reserved field names that will error: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`.
 
-5. **Records need `Id` for update.** Use `records list` or `records query` to retrieve the record ID before updating.
+5. **All updates require `Id` in the body.** The CLI routes single vs batch by whether the body is a JSON object (1 record) or array (multiple). Both require `"Id"` in the record. Use `records list` or `records query` to retrieve record IDs before updating.
 
-6. **File fields are separate from record data.** Use `files upload`/`download`, not `records insert`. Field must be type `file`.
+6. **File fields are separate from record data.** Use `files upload`/`download`, not `records insert`. Field must be type `FILE`.
 
 7. **CSV headers must match exact field names** (case-sensitive). Use `entities get` to discover field names before importing.
 
 8. **Never create duplicate entities.** Always `entities list` first; reuse if it already exists.
 
-9. **Only work with native entities.** Use `--native-only` before any write operation. Never write to federated entities.
+9. **Only work with native entities.** When listing entities before a write, use `entities list --native-only` to filter out federated entities. Never write to federated entities.
 
 10. **Never attempt entity delete.** No command exists. Respond: *"Deleting entities is not supported via the CLI."*
 
@@ -75,11 +75,11 @@ uip df entities get <entity-id> --output json
 uip df records list <entity-id> --limit 50 --output json
 
 # Insert one record
-uip df records insert <entity-id> --body '{"fieldName":"value"}' --output json
+uip df records insert <entity-id> --body '{"Name":"Alice","Score":95}' --output json
 
 # Query with a filter
 uip df records query <entity-id> \
-  --body '{"filterGroup":{"queryFilters":[{"fieldName":"status","operator":"=","value":"active"}]}}' \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Status","operator":"=","value":"active"}]}}' \
   --output json
 ```
 
@@ -91,14 +91,16 @@ uip df records query <entity-id> \
 |------|----------------|
 | Explore what entities exist | `entities list` → `entities get <id>` |
 | Explore only native entities | `entities list --native-only` |
-| Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"title","type":"text"}]}'` |
-| Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"newField","type":"text"}]}'` |
+| Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` |
+| Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
 | Get one record | `records get <entity-id> <record-id>` |
-| Insert records | `records insert <entity-id> --body '{...}'` (or `--file`) |
-| Update records | `records update <entity-id> --body '{"Id":"...","field":"val"}'` |
+| Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`) |
+| Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
+| Update one record | `records update <entity-id> --body '{"Id":"<record-id>","field":"val"}'` |
+| Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
 | Delete records | `records delete <entity-id> <id1> <id2>` |
 | Filter/search records | `records query <entity-id> --body '{...}'` |
 | Bulk import from CSV | `records import <entity-id> --file data.csv` |
@@ -110,16 +112,7 @@ uip df records query <entity-id> \
 
 ## Field Types
 
-| User type | SQL type | Notes |
-|-----------|----------|-------|
-| `text` | NVARCHAR(200) | Short strings |
-| `longtext` | NVARCHAR(4000) | Long strings |
-| `number` | INT | Integer |
-| `decimal` | DECIMAL | Floating point |
-| `boolean` | BIT | true/false |
-| `datetime` | DATETIME2 | Date + time |
-| `date` | DATE | Date only |
-| `file` | NVARCHAR(200) | File attachment (use `files upload/download` to manage) |
+Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`. For the full type table with SQL backing types, see [`references/entity-schema.md`](references/entity-schema.md).
 
 ---
 
@@ -132,7 +125,7 @@ uip df records query <entity-id> \
 ```bash
 uip df entities list --native-only --output json
 uip df entities get <entity-id> --output json
-uip df records insert <entity-id> --body '{"name":"Alice","score":95}' --output json
+uip df records insert <entity-id> --body '{"Name":"Alice","Score":95}' --output json
 uip df records list <entity-id> --limit 50 --output json
 # Use HasNextPage + NextCursor to page through results
 uip df records list <entity-id> --cursor <NextCursor> --output json
@@ -149,17 +142,18 @@ Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagina
   "filterGroup": {
     "logicalOperator": 0,
     "queryFilters": [
-      { "fieldName": "status", "operator": "=", "value": "active" },
-      { "fieldName": "score", "operator": ">=", "value": "80" }
+      { "fieldName": "Status", "operator": "=", "value": "active" },
+      { "fieldName": "Score", "operator": ">=", "value": "80" }
     ]
   },
-  "sortOptions": [{ "fieldName": "score", "isDescending": true }],
-  "selectedFields": ["title", "score", "status"]
+  "sortOptions": [{ "fieldName": "Score", "isDescending": true }],
+  "selectedFields": ["Title", "Score", "Status"]
 }
 ```
 
 - `logicalOperator`: `0` = AND, `1` = OR
 - Operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `not contains`, `startswith`, `endswith`, `in`, `not in`
+- For `in` / `not in` use `"valueList": ["a","b","c"]` — **not** a comma-separated `value` string
 - Response includes `HasNextPage` and `NextCursor` — pass `NextCursor` to `--cursor` for the next page
 
 ---
@@ -173,7 +167,7 @@ Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagina
 | `HTTP 401` | Invalid token | Re-login; ensure `DataServiceApiUserAccess` scope is present |
 | `HTTP 403` | Permission denied | Ensure account has Data Fabric permissions |
 | `Entity not found` | Wrong entity ID | Run `entities list` to get correct ID |
-| `Record must include 'Id'` | Update missing Id | Add `"Id": "<record-id>"` to the body |
+| `Record must include 'Id'` | Update body missing Id | Every record passed to `records update` must include `"Id": "<record-id>"` — both single and batch |
 | `Each field must include a 'fieldName' string` | Invalid field in `entities create` | Use `{"fieldName":"myfield"}` not `{"name":"myfield"}` |
 | `Entity name resolution failed` | Query/import with bad ID | Verify entity exists with `entities list` |
 | Import errors in CSV | Header mismatch | Run `entities get` and check exact field names (case-sensitive) |

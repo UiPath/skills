@@ -36,7 +36,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Flow integration | Not supported | 5 patterns (inline, solution, external, tool variants) |
 | Solution support | Standalone projects | Full solution lifecycle |
 | Custom code | Full Python | None |
-| Sync | `uip codedagent push/pull` | `uip solution bundle/upload` |
+| Sync | `uip codedagent push/pull` | `uip solution upload` |
 
 ## Solution-Level Mixing
 

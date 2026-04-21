@@ -15,6 +15,7 @@ Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`)
 > - Conditions → `plugins/conditions/<scope>/planning.md`
 > - SLA → `plugins/sla/planning.md`
 > - Global variables & arguments → `plugins/variables/global-vars/planning.md`
+> - Task I/O binding → `plugins/variables/io-binding/planning.md`
 
 ---
 

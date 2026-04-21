@@ -1,18 +1,30 @@
 # RPA Node — Implementation
 
-RPA nodes invoke published RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
+RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
 
 ## Discovery
+
+**Published (tenant registry):**
 
 ```bash
 uip flow registry pull --force
 uip flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
+**In-solution (local, no login required):**
+
+```bash
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.
+
 ## Registry Validation
 
 ```bash
 uip flow registry get "uipath.core.rpa-workflow.{key}" --output json
+uip flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
 ```
 
 Confirm:
@@ -30,6 +42,8 @@ Confirm:
 For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
+
+### Node instance (inside `nodes[]`)
 
 ```json
 {
@@ -59,29 +73,70 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartJob",
     "version": "v2",
+    "section": "Published",
     "bindings": {
       "resource": "process",
       "resourceSubType": "Process",
-      "resourceKey": "invoice-process-abc123",
+      "resourceKey": "Finance/Automation.Invoice Processor",
       "orchestratorType": "process",
       "values": {
         "name": "Invoice Processor",
         "folderPath": "Finance/Automation"
       }
-    }
+    },
+    "context": [
+      { "name": "name",       "type": "string", "value": "=bindings.bProcessInvoicesName",       "default": "Invoice Processor" },
+      { "name": "folderPath", "type": "string", "value": "=bindings.bProcessInvoicesFolderPath", "default": "Finance/Automation" },
+      { "name": "_label",     "type": "string", "value": "Invoice Processor" }
+    ]
   }
 }
 ```
 
-## Mock Placeholder (If Not Yet Published)
+> `resourceKey` takes the form `<FolderPath>.<ResourceName>` — confirm the exact value from `uip flow registry get` output (it already has the correct key format).
 
-If the RPA process is not yet published, add a `core.logic.mock` placeholder and tell the user to create it with `uipath-rpa`. After publishing, follow the [mock replacement procedure](../../flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) to swap the mock for the real resource node.
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same RPA process — do NOT create duplicates.
+
+```json
+"bindings": [
+  {
+    "id": "bProcessInvoicesName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Finance/Automation.Invoice Processor",
+    "default": "Invoice Processor",
+    "propertyAttribute": "name",
+    "resourceSubType": "Process"
+  },
+  {
+    "id": "bProcessInvoicesFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Finance/Automation.Invoice Processor",
+    "default": "Finance/Automation",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "Process"
+  }
+]
+```
+
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
+
+## If the RPA Process Does Not Exist Yet
+
+Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish required.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | Process not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip flow registry pull --force` |
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |

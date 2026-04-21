@@ -16,18 +16,18 @@ Response: `{ Code: "RecordsImported", Data: { InsertedRecords, TotalRecords, Err
 
 - **Header row is required** and must exactly match entity field names (case-sensitive)
 - Use `uip df entities get <entity-id> --output json` to discover exact field names before importing
-- System fields (`Id`, `CreatedOn`, `CreatedBy`, `UpdatedOn`, `UpdatedBy`) must NOT appear in the CSV
+- System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`) must NOT appear in the CSV
 
 ### Example CSV
 
 ```csv
-name,score,active,createdDate
+Name,Score,Active,CreatedDate
 Alice,95,true,2024-01-15
 Bob,82,true,2024-02-20
 Charlie,74,false,2024-03-05
 ```
 
-For the entity with fields: `name` (text), `score` (number), `active` (boolean), `createdDate` (date).
+For an entity with fields: `Name` (STRING), `Score` (INTEGER), `Active` (BOOLEAN), `CreatedDate` (DATE).
 
 ## Full Workflow
 
@@ -38,7 +38,7 @@ uip df entities get <entity-id> --output json   # note exact field names
 
 # 2. Create CSV with matching headers
 cat > /tmp/data.csv <<EOF
-name,score,active
+Name,Score,Active
 Alice,95,true
 Bob,82,true
 EOF

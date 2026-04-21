@@ -78,6 +78,12 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
    - Paste the `Data.Node` object from the registry response
    - One definition per unique `type` — not one per node instance
 
+> **Resource nodes — extra step.** If the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`:
+> 1. Add `model.context[]` on the node instance with `=bindings.<id>` refs for `name` and `folderPath` (plus a static `_label`)
+> 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`)
+>
+> Without these, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
+
 4. Add node output variables to `variables.nodes` (optional — the CLI regenerates these, but direct builds should include them for completeness):
 
 ```json
@@ -249,7 +255,14 @@ Only `inout` variables can be updated. `in` variables are read-only.
 
 ### Replace a mock with a real resource node
 
-1. Run `uip flow registry get "<RESOURCE_NODE_TYPE>" --output json`
+1. Get the resource node manifest — check in-solution first, then tenant registry:
+   ```bash
+   # In-solution (preferred — no login required):
+   uip flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
+
+   # Tenant registry (if not in solution):
+   uip flow registry get "<RESOURCE_NODE_TYPE>" --output json
+   ```
 2. Record the mock node's connected edges
 3. Remove the mock node from `nodes`
 4. Remove all edges referencing the mock

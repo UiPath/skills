@@ -39,7 +39,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 11. **Manage variables by editing `.flow` JSON directly** — there are no CLI commands for variable management. Add/remove/update variables in the `variables` section of the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 12. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 13. **`=js:` prefix rules** — Use `=js:` on value expressions (end node output `source`, variable updates, HTTP input fields). Do NOT use `=js:` on condition expressions (decision `expression`, switch case `expression`, HTTP branch `conditionExpression`) — those are always evaluated as JS automatically. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
-14. **For resources not yet published, use mock placeholders** — add a `core.logic.mock` node, tell the user which skill to use for creation, then replace the mock after publishing. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md)).
+14. **Prefer in-solution `--local` discovery over mock placeholders.** If a resource (RPA, agent, flow, API workflow, etc.) exists as a sibling project in the same `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish or login required. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md)).
 15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 16. **Always use horizontal layout** — Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` values and the same `y` baseline (e.g., `y: 144`). Never stack nodes vertically.
 17. **Node positioning goes in top-level `layout`, NOT on nodes** — Do not put a `ui` block on node instances. Store position/size in the `layout.nodes` object at the top level of the `.flow` file, keyed by node `id`. See [flow-file-format.md — Layout](references/flow-file-format.md#layout).
@@ -64,7 +64,7 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 | **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (JSON only). | [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) + [subflow/impl.md](references/plugins/subflow/impl.md) |
 | **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [JSON: Replace trigger](references/flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) + [scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) |
 | **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](references/flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md) |
-| **Add a resource node** | Discover via registry, add via JSON (default) or CLI (opt-in), wire edges. Use `core.logic.mock` if unpublished. | [JSON: Replace a mock](references/flow-editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) + relevant plugin's `impl.md` |
+| **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via JSON (default) or CLI (opt-in), wire edges. | Relevant plugin's `impl.md` + [JSON editing](references/flow-editing-operations-json.md) (default) or [CLI editing](references/flow-editing-operations-cli.md) (opt-in) |
 | **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
 
 
@@ -138,9 +138,16 @@ This scaffolds a complete project inside a solution. See [references/flow-file-f
 uip flow registry pull                          # refresh local cache (expires after 30 min)
 ```
 
-> **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available.
+> **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. **In-solution sibling projects** are always available via `--local` without login — see below.
 
 Discovery (`registry search`/`list`) and connector resolution (`registry get`, connection binding) happen during planning — see Step 4 below.
+
+**In-solution discovery (no login required):**
+```bash
+uip flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip flow registry get "<nodeType>" --local --output json  # get full manifest for a local node
+```
+Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first.
 
 ### Step 4 — Plan the flow (two phases)
 
@@ -228,11 +235,14 @@ uip flow tidy <ProjectName>.flow --output json
 
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
+**Always refresh solution resources before debug** so that connection and process resource declarations are in sync with the project bindings:
+
 ```bash
+uip solution resource refresh <SolutionDir> --output json
 UIPCLI_LOG_LEVEL=info uip flow debug <path-to-project-dir> --output json
 ```
 
-The argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
+The argument to `resource refresh` is the **solution directory** (containing the `.uipx` file). The argument to `debug` is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
 
@@ -240,9 +250,12 @@ The argument is the **project directory path** (the folder containing `project.u
 
 ### Step 9 — Publish to Studio Web
 
-**This is the default publish target.** After tidy (Step 7), when the user wants to publish, view, or share the flow, upload the solution directly to Studio Web:
+**This is the default publish target.** After tidy (Step 7), when the user wants to publish, view, or share the flow, **refresh solution resources first**, then upload:
 
 ```bash
+# Sync resource declarations from project bindings
+uip solution resource refresh <SolutionDir> --output json
+
 # Upload the solution folder (containing the .uipx) to Studio Web
 uip solution upload <SolutionDir> --output json
 ```
@@ -259,9 +272,9 @@ When the build completes and it is time to offer next steps (see Completion Outp
 
 | Option | Action |
 |--------|--------|
-| **Publish to Studio Web** (default) | Run `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
-| **Debug the solution** | Run `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 8). Confirm consent first — debug executes the flow for real. |
-| **Deploy to Orchestrator** | Run `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
+| **Publish to Studio Web** (default) | Run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
+| **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip flow debug <ProjectDir>` (see Step 8). Confirm consent first — debug executes the flow for real. |
+| **Deploy to Orchestrator** | Run `uip solution resource refresh <SolutionDir> --output json` then `uip flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
 Do not run any of these actions without an explicit user selection.
@@ -274,8 +287,10 @@ Do not run any of these actions without an explicit user selection.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.
 - **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
-- **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, insert a `core.logic.mock` placeholder and tell the user which skill to use. Do not invoke other skills.
+- **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, identify the gap and tell the user which skill to use. Do not invoke other skills.
+- **Never use `core.logic.mock` when the resource is in the same solution** — use `--local` discovery instead. Mock placeholders are only for resources that are not in the current solution and not yet published.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
+- **Never leave `<bindings.name>` / `<bindings.folderPath>` template placeholders on resource-node instances** — these are registry templates for `model.context[]`, not runtime values. For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl): add `model.context[]` with `=bindings.<id>` refs on the node instance AND add matching entries to the top-level `bindings[]` array. The `definitions` entry stays verbatim from the registry (Critical Rule #7 still applies). Without both pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder." See the resource plugin's `impl.md`.
 - **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
 - **Never omit `outputs` on nodes that produce data** — action nodes need `output` + `error`, trigger nodes need `output`. The `outputDefinition` in `definitions` is for the registry schema, not for runtime binding — without `outputs` on the node instance, `$vars` references downstream will fail silently.
 - **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip flow validate` once after the full build is complete (Step 6).

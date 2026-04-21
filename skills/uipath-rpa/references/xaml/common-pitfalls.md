@@ -330,6 +330,18 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 
 Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
 
+### `Delay` — no namespace prefix
+
+`Delay` is a Microsoft Workflow Foundation primitive (`System.Activities.Statements.Delay`), reached via the root `<Activity>` default xmlns and written unprefixed:
+
+```xml
+<Delay Duration="00:00:02" DisplayName="Wait for server" />
+```
+
+`<ui:Delay .../>` fails with `Cannot create unknown type '{...uipath...}Delay'`. The `ui:` prefix maps to `UiPath.Core.Activities`, which has no `Delay` override.
+
+**For other primitives** (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `TryCatch`, `Switch`, …) UiPath provides `ui:`-prefixed overrides for many — which one to use depends on the behavior you want. Check with `uip rpa find-activities --query "<name>"` before assuming MWF or UiPath; don't generalize from `Delay`.
+
 ## Portable vs Windows Framework Limitations
 
 - Activities in `/Windows/` or `/NetFramework/` source folders are **Windows-only** and won't work in Portable projects
@@ -391,6 +403,10 @@ Every XAML file must use the same expression language as the project (`expressio
 - String interpolation (`$"..."`) is NOT supported in XAML expressions — use string concatenation
 
 **Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
+
+### C# expression pitfalls — separate file
+
+Applies only to XAML projects with `expressionLanguage: CSharp` — not to VB XAML, and not to coded workflows (`.cs` files). Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have root causes specific to that configuration. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
 
 ## Missing Assembly References
 

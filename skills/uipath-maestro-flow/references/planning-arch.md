@@ -39,6 +39,12 @@ uip flow registry list --output json                 # list all available node t
 
 > **Auth note:** Without `uip login`, the registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. If the flow requires connectors or resources, verify login status first: `uip login status --output json`.
 
+**In-solution discovery (no login required):**
+```bash
+uip flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+```
+Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders.
+
 ### Check Connector Connections
 
 For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/planning.md](plugins/connector/planning.md) for the full connection check workflow.
@@ -54,8 +60,8 @@ uip is connections list "<connector-key>" --output json
 
 **What to record from discovery:**
 - **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
-- **Resources:** Whether a published node exists for each RPA process, agent, or flow referenced in the requirements (e.g., `uipath.core.rpa.invoice-abc123`). Input/output schemas require `registry get` in Phase 2 (no connection needed for resources).
-- **Gaps:** Services with no connector -> fall back to `core.action.http`. Resources not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag in Open Questions for the user to create.
+- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
+- **Gaps:** Services with no connector -> fall back to `core.action.http`. Resources in the same solution but unpublished -> use `--local` discovery (no mock needed). Resources not in the solution and not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag in Open Questions for the user to create.
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http` or note it as a gap in Open Questions.
 

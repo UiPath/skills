@@ -1,0 +1,58 @@
+task_id: skill-agent-schema-update
+description: >
+  Skill-guided evaluation: after scaffolding a low-code agent, the
+  agent updates inputSchema / outputSchema and rebuilds the user
+  message template with a {{input.<field>}} placeholder. Tests schema
+  sync between agent.json and entry-points.json, the {{input.X}}
+  syntax, and contentTokens construction. A check script verifies
+  deep equivalence of the two schema files.
+tags: [uipath-agents, smoke, schema]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a low-code UiPath agent called "QueryAgent" inside a
+  solution "QuerySolution". The agent accepts a required `userQuery`
+  (string) and returns a `reply` (string).
+
+  Validate the agent. Save a summary to report.json:
+    {
+      "project_name": "QueryAgent",
+      "input_field": "userQuery",
+      "output_field": "reply",
+      "validation_passed": true
+    }
+
+  Do NOT publish, upload, or deploy. Local only.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema sync, prompt-matching schemas, and user message inlines {{input.userQuery}}"
+    command: "python3 $TASK_DIR/check_schema_update.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json shows validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "QueryAgent"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 1.5
+    pass_threshold: 1.0

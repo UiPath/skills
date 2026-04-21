@@ -1,18 +1,31 @@
 # Agentic Process Node — Implementation
 
-Agentic process nodes invoke published orchestration processes. Pattern: `uipath.core.agentic-process.{key}`.
+Agentic process nodes invoke orchestration processes. Pattern: `uipath.core.agentic-process.{key}`.
 
 ## Discovery
+
+### Published (tenant registry)
 
 ```bash
 uip flow registry pull --force
 uip flow registry search "uipath.core.agentic-process" --output json
 ```
 
+### In-solution (sibling projects)
+
+```bash
+uip flow registry list --local --output json
+uip flow registry get "<nodeType>" --local --output json
+```
+
 ## Registry Validation
 
 ```bash
+# Published
 uip flow registry get "uipath.core.agentic-process.{key}" --output json
+
+# In-solution
+uip flow registry get "uipath.core.agentic-process.{key}" --local --output json
 ```
 
 Confirm:
@@ -29,6 +42,8 @@ Confirm:
 For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
+
+### Node instance (inside `nodes[]`)
 
 ```json
 {
@@ -55,6 +70,7 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
     "type": "bpmn:ServiceTask",
     "serviceType": "Orchestrator.StartAgenticProcess",
     "version": "v2",
+    "section": "Published",
     "bindings": {
       "resource": "process",
       "resourceSubType": "ProcessOrchestration",
@@ -64,14 +80,54 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
         "name": "My Orchestration",
         "folderPath": "Shared"
       }
-    }
+    },
+    "context": [
+      { "name": "name",       "type": "string", "value": "=bindings.bRunOrchestrationName",       "default": "My Orchestration" },
+      { "name": "folderPath", "type": "string", "value": "=bindings.bRunOrchestrationFolderPath", "default": "Shared" },
+      { "name": "_label",     "type": "string", "value": "My Orchestration" }
+    ]
   }
 }
 ```
+
+> `resourceKey` takes the form `<FolderPath>.<ProcessName>` — confirm the exact value from `uip flow registry get` output.
+
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same agentic process — do NOT create duplicates.
+
+```json
+"bindings": [
+  {
+    "id": "bRunOrchestrationName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.My Orchestration",
+    "default": "My Orchestration",
+    "propertyAttribute": "name",
+    "resourceSubType": "ProcessOrchestration"
+  },
+  {
+    "id": "bRunOrchestrationFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.My Orchestration",
+    "default": "Shared",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "ProcessOrchestration"
+  }
+]
+```
+
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | Process not published or registry stale | Run `uip login` then `uip flow registry pull --force`; for in-solution processes use `--local` |
 | Process execution failed | Underlying orchestration errored | Check `$vars.{nodeId}.error` for details |

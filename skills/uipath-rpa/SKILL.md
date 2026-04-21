@@ -88,7 +88,11 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
 2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
-3. **ALWAYS validate after every file create or edit.** Run `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts. See [references/validation-guide.md](references/validation-guide.md).
+3. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Two-phase validation:
+   - **Per-file** (after every create or edit): `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts.
+   - **Project-level end-goal** (before reporting done): `uip rpa build "<PROJECT_DIR>" --output json`. Projects returned to the user must compile. `get-errors` is static analysis and misses compile-time failures — notably attribute-form XAML expressions in projects with `expressionLanguage: CSharp`. A successful `uip rpa run-file` smoke test covers this; if no smoke test runs, `uip rpa build` is mandatory.
+
+   See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
@@ -123,6 +127,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 20. **[XAML] ViewState handling depends on the operation.** When editing existing files, do NOT modify ViewState on nodes you are not changing. When generating new Flowchart/StateMachine/ProcessDiagram workflows, generate ViewState for each node (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). For Sequences, ViewState is optional.
 21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
+23. **[XAML] NEVER change `expressionLanguage` or `targetFramework` on an existing project.** Both fields in `project.json` are fixed at creation time and apply to every XAML file in the project — flipping `expressionLanguage` (VisualBasic ↔ CSharp) invalidates every expression, and flipping `targetFramework` (Windows ↔ Portable/cross-platform, or Legacy) invalidates package references and activity compatibility. **Do not attempt in-place conversion.** If the user wants to convert an existing project, confirm with them, delete the entire project directory, and recreate it via `uip rpa new --expression-language <VisualBasic|CSharp> --target-framework <Windows|Portable|Legacy>`.
 
 ## Task Navigation
 
@@ -245,6 +250,8 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 - [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) — XAML anatomy, safety rules, editing operations (read before any XAML work)
 - [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) — Activity gotchas, scope requirements, property conflicts
+- [xaml/csharp-activity-binding-guide.md](references/xaml/csharp-activity-binding-guide.md) — Canonical C# binding forms per common activity property (LogMessage, GetText, StartProcess, …) — flat lookup table + recipes
+- [xaml/csharp-expression-pitfalls.md](references/xaml/csharp-expression-pitfalls.md) — C#-specific expression failures (attribute-form VB JIT, ThrowIfNotInTree, OutArgument parse errors)
 - [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 
@@ -297,7 +304,7 @@ Additional UIA procedures and guides:
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
-2. **Validation status** — whether all files passed validation (or remaining errors)
+2. **Validation status** — per-file `get-errors` result (all files passed, or remaining errors) **and** project-level `uip rpa build` result. If neither `build` nor a successful `run-file` smoke test has run, the project is not verified — say so explicitly rather than claiming success.
 3. **Plan completion** — which task checkboxes in `docs/plans/*.md` are now `[x]`; list any still `[ ]` and, for each, the Stop-condition item that interrupted it (or "not reached" if execution was cut short another way)
 4. **How to run** — the `uip rpa run-file` command (if applicable)
 5. **Next steps** — follow-up actions (configure connections, add OR elements, fill placeholders)

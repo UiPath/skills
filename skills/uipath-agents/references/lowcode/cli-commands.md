@@ -87,16 +87,13 @@ uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
 
-### Bundle and Upload to Studio Web
+### Upload to Studio Web
 
-Bundle packages the solution directory into a `.uis` file; upload sends it to Studio Web.
+Upload sends the solution to Studio Web. Accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file.
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
-
-Note: `upload` accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file as its positional argument. Uploading the directory directly skips the separate bundle step.
 
 ### Pack Solution for Orchestrator
 
@@ -162,9 +159,8 @@ uip solution project add "MyAgent" --output json
 # 3. Edit agent.json, then validate
 uip agent validate MyAgent --output json
 
-# 4. Bundle + upload to Studio Web (for visual development)
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/MySolution.uis --output json
+# 4. Upload to Studio Web (for visual development)
+uip solution upload . --output json
 
 # 5. Pack + publish + deploy to Orchestrator
 uip solution pack . ./dist -v "1.0.0" --output json
@@ -187,8 +183,7 @@ uip solution deploy run \
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory |
 | Register project | `uip solution project add "<PATH>" --output json` | Solution directory |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any directory with path |
-| Bundle for Studio Web | `uip solution bundle . -d ./dist --output json` | Solution directory |
-| Upload to Studio Web | `uip solution upload ./dist/<NAME>.uis --output json` | Any directory |
+| Upload to Studio Web | `uip solution upload . --output json` | Solution directory |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory |
 | Deploy | `uip solution deploy run --name ... --output json` | Any directory |
