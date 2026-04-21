@@ -19,7 +19,7 @@ Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalP
 
 ```bash
 uip df records query <entity-id> \
-  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"status","operator":"=","value":"active"}]}}' \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Status","operator":"=","value":"active"}]}}' \
   --output json
 ```
 
@@ -28,7 +28,7 @@ Pagination for query also uses `--limit` and `--cursor` flags — not body keys.
 ```bash
 # Query with pagination
 uip df records query <entity-id> \
-  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"score","operator":">=","value":"80"}]}}' \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Score","operator":">=","value":"80"}]}}' \
   --limit 100 \
   --cursor <NextCursor> \
   --output json
@@ -38,16 +38,16 @@ uip df records query <entity-id> \
 
 ```json
 {
-  "selectedFields": ["fieldA", "fieldB"],
+  "selectedFields": ["FieldA", "FieldB"],
   "filterGroup": {
     "logicalOperator": 0,
     "queryFilters": [
-      { "fieldName": "score", "operator": ">=", "value": "80" }
+      { "fieldName": "Score", "operator": ">=", "value": "80" }
     ],
     "filterGroups": []
   },
   "sortOptions": [
-    { "fieldName": "score", "isDescending": true }
+    { "fieldName": "Score", "isDescending": true }
   ]
 }
 ```
@@ -65,8 +65,10 @@ uip df records query <entity-id> \
 | `not contains` | Text | |
 | `startswith` | Text | |
 | `endswith` | Text | |
-| `in` | All | `"value":"a,b,c"` |
-| `not in` | All | |
+| `in` | All | `"valueList":["a","b","c"]` |
+| `not in` | All | `"valueList":["x","y"]` |
+
+> `in` and `not in` use `valueList` (string array), **not** `value`. Using `value` for these operators will be ignored.
 
 ### logicalOperator
 
@@ -83,14 +85,14 @@ uip df records query <entity-id> \
       {
         "logicalOperator": 0,
         "queryFilters": [
-          { "fieldName": "status", "operator": "=", "value": "active" },
-          { "fieldName": "score", "operator": ">", "value": "50" }
+          { "fieldName": "Status", "operator": "=", "value": "active" },
+          { "fieldName": "Score", "operator": ">", "value": "50" }
         ]
       },
       {
         "logicalOperator": 0,
         "queryFilters": [
-          { "fieldName": "priority", "operator": "=", "value": "high" }
+          { "fieldName": "Priority", "operator": "=", "value": "high" }
         ]
       }
     ]
@@ -100,36 +102,40 @@ uip df records query <entity-id> \
 
 ## Insert Records
 
-```bash
-# Single record
-uip df records insert <entity-id> --body '{"name":"Alice","score":95}' --output json
+The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint.
 
-# Multiple records (array)
-uip df records insert <entity-id> --body '[{"name":"Alice","score":95},{"name":"Bob","score":82}]' --output json
+```bash
+# Single record — JSON object
+uip df records insert <entity-id> --body '{"Name":"Alice","Score":95}' --output json
+
+# Batch insert — JSON array with 2+ records
+uip df records insert <entity-id> \
+  --body '[{"Name":"Alice","Score":95},{"Name":"Bob","Score":82}]' \
+  --output json
 
 # From JSON file
 uip df records insert <entity-id> --file records.json --output json
 ```
 
-Single insert response: `{ Code: "RecordInserted", Data: { ...record } }`
+Single insert response: `{ Code: "RecordInserted", Data: { ...record with Id } }`
 
 Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
 
 ## Update Records
 
-Records must include the `Id` field:
+The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint. Both require `Id` in the body.
 
 ```bash
-# Single record update
-uip df records update <entity-id> --body '{"Id":"<record-id>","score":100}' --output json
+# Single record — JSON object with Id
+uip df records update <entity-id> --body '{"Id":"<record-id>","Score":100}' --output json
 
-# Batch update (array, each must include Id)
+# Batch update — JSON array, each element must include Id
 uip df records update <entity-id> \
-  --body '[{"Id":"<id1>","score":100},{"Id":"<id2>","score":90}]' \
+  --body '[{"Id":"<id1>","Score":100},{"Id":"<id2>","Score":90}]' \
   --output json
 ```
 
-Single update response: `{ Code: "RecordUpdated", Data: { ...record } }`
+Single update response: `{ Code: "RecordUpdated", Data: { ...updated record } }`
 
 Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
 
