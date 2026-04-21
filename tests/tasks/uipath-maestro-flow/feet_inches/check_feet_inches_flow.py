@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """FeetInches: one debug run per direction, asserting the exact converted value.
 
-Usage: check_feet_inches_flow.py {f2i|i2f}
+Usage: check_feet_inches_flow.py {f2i|i2f|y2f}
 """
 
 import os
@@ -18,6 +18,7 @@ CASES = {
     # case: (value, direction, expected_result)
     "f2i": (23, "f2i", 276),
     "i2f": (276, "i2f", 23),
+    "y2f": (15, "y2f", 45),
 }
 
 

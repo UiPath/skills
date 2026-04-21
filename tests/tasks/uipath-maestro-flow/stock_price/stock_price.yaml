@@ -7,6 +7,10 @@ description: >
 tags: [uipath-maestro-flow, e2e, generate, ootb, http]
 max_iterations: 1
 
+agent:
+  type: claude-code
+  turn_timeout: 1200
+
 sandbox:
   driver: tempdir
   python: {}
