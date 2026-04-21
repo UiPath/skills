@@ -18,7 +18,7 @@ Use a connector trigger node when the flow should **start automatically in respo
 
 - `uip login` required — trigger nodes only appear in the registry after authentication
 - A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
-- `uip flow registry pull` must be run to cache trigger node types locally
+- `uip maestro flow registry pull` must be run to cache trigger node types locally
 
 ### When NOT to Use
 
@@ -51,10 +51,10 @@ Examples:
 
 ```bash
 # Search for trigger nodes in the registry
-uip flow registry search trigger --output json
+uip maestro flow registry search trigger --output json
 
 # Or search by service name
-uip flow registry search outlook trigger --output json
+uip maestro flow registry search outlook trigger --output json
 ```
 
 Confirm `tags` includes both `"connector"` and `"trigger"` in the results.
@@ -63,7 +63,7 @@ If the trigger doesn't appear, re-pull the registry (triggers require authentica
 
 ```bash
 uip login status --output json
-uip flow registry pull --force
+uip maestro flow registry pull --force
 ```
 
 ## Ports
@@ -88,7 +88,7 @@ Triggers operate in one of two modes (returned in `eventMode` from `registry get
 
 The agent does not need to configure the mode — it is determined by the connector. Note it in the plan for the user's awareness.
 
-> **Debug impact:** Only `polling` triggers can be debugged in Studio Web. `webhooks` triggers cannot be tested via `uip flow debug` — they require deployment to Orchestrator. Flag this in the plan if the trigger uses webhook mode.
+> **Debug impact:** Only `polling` triggers can be debugged in Studio Web. `webhooks` triggers cannot be tested via `uip maestro flow debug` — they require deployment to Orchestrator. Flag this in the plan if the trigger uses webhook mode.
 
 ## Planning Annotation
 

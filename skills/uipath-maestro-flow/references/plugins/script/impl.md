@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.script --output json
+uip maestro flow registry get core.action.script --output json
 ```
 
 Confirm: input port `input`, output port `success`, required input `script` (string, non-empty).

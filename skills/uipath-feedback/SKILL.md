@@ -68,7 +68,7 @@ From tools list, extract tool `name` and `version` from each row.
 
 | Skill context | What to capture | Limits |
 |---|---|---|
-| **Flow** | `uip flow validate <file> --output json`, `.flow` file content, directory listing | `.flow`: first 150 lines; directory: max 30 entries |
+| **Flow** | `uip maestro flow validate <file> --output json`, `.flow` file content, directory listing | `.flow`: first 150 lines; directory: max 30 entries |
 | **RPA** (`.cs` or `.xaml`) | `project.json` dependencies, `uip rpa get-errors --output json --use-studio`, list of workflow files (`.cs` and/or `.xaml`) | File list: max 20 files; `project.json`: dependencies section only; failing workflow: first 150 lines |
 | **Agents** | `pyproject.toml`, `bindings.json` (redact connection values), directory listing | `bindings.json`: redact all values; directory: max 30 entries |
 | **Apps** | `package.json` (name, version, dependencies only), `.uipath/` listing | `package.json`: name + version + dependencies only |
@@ -195,7 +195,7 @@ Build the `--description` content:
 
 ```
 ## What happened
-When running `uip flow validate` on a flow with nested loops, the CLI returned a generic "expression error" with no line number or variable name, making it impossible to locate the issue.
+When running `uip maestro flow validate` on a flow with nested loops, the CLI returned a generic "expression error" with no line number or variable name, making it impossible to locate the issue.
 
 ## Error
 ExpressionError: Invalid expression at unknown location — currentItem is not defined
@@ -210,12 +210,12 @@ ExpressionError: Invalid expression at unknown location — currentItem is not d
 ## Diagnostics
 - Project type: Flow (.flow)
 - Key files: MyProcess.flow
-- Last failed command: uip flow validate MyProcess.flow --output json
+- Last failed command: uip maestro flow validate MyProcess.flow --output json
 
 ## Session retrospective
 - **Intent**: Build a flow that iterates over invoice line items and flags duplicates
 - **Outcome**: Partial — flow runs but the nested loop variable reference fails at runtime
-- **Tool & Skill Gaps**: (1) uip flow validate gave no location info for expression errors. (2) No way to inspect available variables inside a loop scope.
+- **Tool & Skill Gaps**: (1) uip maestro flow validate gave no location info for expression errors. (2) No way to inspect available variables inside a loop scope.
 - **Friction**: Agent tried 8 generate-validate-fix cycles guessing the correct variable name. The error message never identified which expression failed.
 - **Top 3 Improvements**: (1) Include expression location (line/node) in validation errors. (2) Add a CLI command to list variables in scope at a given point. (3) Document loop variable naming conventions in the Flow skill.
 ```

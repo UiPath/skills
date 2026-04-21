@@ -1,6 +1,6 @@
 # HITL Node — Planning
 
-HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. Published apps appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) apps in sibling projects are discovered via `--local` — no login or publish required.
+HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. Published apps appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) apps in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -37,8 +37,8 @@ Use a HITL node when the flow needs to pause for human input, approval, or revie
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.human-task" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
 Requires `uip login`. Only published apps from your tenant appear.
@@ -46,8 +46,8 @@ Requires `uip login`. Only published apps from your tenant appear.
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.

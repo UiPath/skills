@@ -1,6 +1,6 @@
 # API Workflow Node — Planning
 
-API workflow nodes invoke API functions from within a flow. Published API workflows appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) API workflows in sibling projects are discovered via `--local` — no login or publish required.
+API workflow nodes invoke API functions from within a flow. Published API workflows appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) API workflows in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -35,8 +35,8 @@ Use an API Workflow node when the flow needs to call a published UiPath API func
 ### Published (tenant registry)
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.api-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.api-workflow" --output json
 ```
 
 Requires `uip login`. Only published API workflows from your tenant appear.
@@ -44,8 +44,8 @@ Requires `uip login`. Only published API workflows from your tenant appear.
 ### In-solution (sibling projects)
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished API workflows in sibling projects within the same solution.

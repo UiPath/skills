@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Delete Studio Web solutions uploaded by ``uip flow debug`` during a task.
+"""Delete Studio Web solutions uploaded by ``uip maestro flow debug`` during a task.
 
 Wired in via ``post_run`` in flow e2e task YAMLs. Runs from the sandbox CWD
 after evaluation completes; finds every ``.uipx`` file under it, reads

@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-flow e2e checks.
 
-Runs ``uip flow debug --output json`` and asserts:
+Runs ``uip maestro flow debug --output json`` and asserts:
 
 1. ``finalStatus == "Completed"``.
 2. For each required node-type hint, at least one ``elementExecution`` with
@@ -35,7 +35,7 @@ def run_debug(
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
 ) -> dict:
-    """Locate the project, run ``uip flow debug --output json``, and return the
+    """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing."""
     project_dir = _find_project(project_glob)
     cmd = ["uip", "flow", "debug", project_dir, "--output", "json"]

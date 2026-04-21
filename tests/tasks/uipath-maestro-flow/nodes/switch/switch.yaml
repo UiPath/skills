@@ -33,8 +33,8 @@ initial_prompt: |
 success_criteria:
   # -- Flow file validity --
   - type: run_command
-    description: "uip flow validate passes on the flow file"
-    command: "uip flow validate SeasonLookup/SeasonLookup/SeasonLookup.flow"
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate SeasonLookup/SeasonLookup/SeasonLookup.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.control.end --output json
+uip maestro flow registry get core.control.end --output json
 ```
 
 Confirm: input port `input`, no output ports.

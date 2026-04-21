@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Canary: standalone infra-health check for the Maestro Flow debug path.
 
-Runs ``uip flow debug`` on Canary/Canary/ and asserts the fan-out/merge
+Runs ``uip maestro flow debug`` on Canary/Canary/ and asserts the fan-out/merge
 flow's five plugin legs (coded agent, lowcode agent, RPA, API workflow,
 Slack) each completed with the expected output. A failing leg pinpoints
 whether the regression is infra (this task fails) or skill (this task
@@ -175,7 +175,7 @@ def run_debug() -> tuple[dict, str | None]:
     """Returns (payload, solution_id). Raises CanaryError on failure, with
     solution_id populated whenever the CLI got far enough to return one."""
     print(
-        f"$ uip flow debug {PROJECT_DIR} --output json  (timeout={DEBUG_TIMEOUT}s)",
+        f"$ uip maestro flow debug {PROJECT_DIR} --output json  (timeout={DEBUG_TIMEOUT}s)",
         flush=True,
     )
     t0 = time.monotonic()
@@ -197,7 +197,7 @@ def run_debug() -> tuple[dict, str | None]:
 
     if r.returncode != 0:
         raise CanaryError(
-            f"uip flow debug exit {r.returncode} in {dt:.1f}s\n"
+            f"uip maestro flow debug exit {r.returncode} in {dt:.1f}s\n"
             f"--- stderr ---\n{r.stderr}"
             f"--- stdout ---\n{r.stdout}",
             solution_id=solution_id,

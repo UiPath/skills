@@ -9,21 +9,21 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.http.v2 --output json
+uip maestro flow registry get core.action.http.v2 --output json
 ```
 
 Confirm: input port `input`, output port `default`, model serviceType `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
-> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
+> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
 
 ## Configuration Workflow
 
 ### Step 1 — Add the node
 
 ```bash
-uip flow node add <ProjectName>.flow core.action.http.v2 \
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
   --label "<Label>" --output json
 ```
 
@@ -46,7 +46,7 @@ Record the `Id` and `FolderKey` from the connection.
 **Connector mode** (IS connection auth):
 
 ```bash
-uip flow node configure <ProjectName>.flow <nodeId> \
+uip maestro flow node configure <ProjectName>.flow <nodeId> \
   --detail '{
     "authentication": "connector",
     "targetConnector": "<target-connector-key>",
@@ -61,7 +61,7 @@ uip flow node configure <ProjectName>.flow <nodeId> \
 **Manual mode** (no connector auth):
 
 ```bash
-uip flow node configure <ProjectName>.flow <nodeId> \
+uip maestro flow node configure <ProjectName>.flow <nodeId> \
   --detail '{
     "authentication": "manual",
     "method": "GET",
@@ -80,10 +80,10 @@ uip flow node configure <ProjectName>.flow <nodeId> \
 The managed HTTP node uses port `default`:
 
 ```bash
-uip flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
+uip maestro flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
   --source-port <port> --target-port input --output json
 
-uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
+uip maestro flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
   --source-port default --target-port input --output json
 ```
 
@@ -92,7 +92,7 @@ uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `not_authed` or 401/403 | Wrong node type (v1 instead of v2), missing bindings, or expired connection | Verify node type is `core.action.http.v2`, check `bindings_v2.json` exists, ping the connection |
-| `configuration` field missing | Node not configured via CLI | Run `uip flow node configure` — do not hand-write `inputs.detail` |
+| `configuration` field missing | Node not configured via CLI | Run `uip maestro flow node configure` — do not hand-write `inputs.detail` |
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
 | `ImplicitConnection` errors | Manual mode misconfigured | Verify `authentication: "manual"` and `url` is a full URL |
