@@ -5,7 +5,7 @@ Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.js
 ## Discovering Input/Output Names
 
 1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
-2. **`uip case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). When SDD names differ from `tasks describe`, note the mapping:
+2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). When SDD names differ from `tasks describe`, note the mapping:
    ```markdown
    - inputs:
      - in_Amount = "=vars.amount"   # SDD calls this "amount", process arg is "in_Amount"
