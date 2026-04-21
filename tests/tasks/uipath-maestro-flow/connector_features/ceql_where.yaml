@@ -1,0 +1,44 @@
+task_id: skill-flow-ipe-ceql_where
+description: >
+  Tests the CEQL where query IS feature — configures a connector node with a
+  CEQL filter expression
+tags: [uipath-maestro-flow, integration, connector, ceql-where]
+
+task_timeout: 1500
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli@0.1.21"
+initial_prompt: |
+  Create a flow called "CeqlWhereTest" with a manual trigger that lists all sharepoint sites that were created in the last 7 days.
+  Add a Decision node to check whether the call succeeded.
+  Route failure to a Terminate node with error message "CeqlWhere test failed".
+  Route success to a final action that logs "CeqlWhere test passed".
+  Validate the final flow file.
+
+success_criteria:
+  - type: run_command
+    description: "Flow references uipath-microsoft-onedrive and has Decision + Terminate nodes"
+    command: "python3 $TASK_DIR/check_ceql_where_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "uip\\s+flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+max_iterations: 1

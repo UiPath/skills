@@ -34,6 +34,11 @@ make integration
 # Run all e2e tests
 make e2e
 
+# Run tests matching a combination of tags (AND semantics — tasks must carry all listed tags) (defaults to experiments/default.yaml):
+make tags TAGS="integration connector-feature"
+# Optionally override the experiment config 
+make tags TAGS="integration connector-feature" EXPERIMENT=experiments/integration.yaml
+
 # Run all tests for a specific skill
 make test-uipath-maestro-flow
 

@@ -1,0 +1,64 @@
+task_id: skill-flow-ipe-complex_array
+description: >
+  Tests the complex array IS feature — configures a connector node with a
+  complex array field on the Act! 365 connector.
+tags: [uipath-maestro-flow, integration, connector, complex-array]
+
+task_timeout: 1500
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli@0.1.21"
+initial_prompt: |
+  Create a new Flow project called "ComplexArrayTest" with a manual trigger.
+  You need a flow that records a sales interaction in Act! 365 and associates it
+  with several contacts in one call. Discover the right Act! 365 add-activity
+  operation and populate the contacts field (a complex array of contact IDs).
+  Add a Decision node to check whether the call succeeded.
+  Route failure to a Terminate node with error message "ComplexArray test failed".
+  Route success to a final action that logs "ComplexArray test passed".
+  Validate the final flow file.
+
+success_criteria:
+  - type: run_command
+    description: "Flow file exists and is valid JSON"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has a connector node referencing uipath-act-act365"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-act-act365' in content, 'Connector key not found'; print('OK: connector key present')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has Decision and Terminate nodes"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/ComplexArrayTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "uip\\s+flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+max_iterations: 1
