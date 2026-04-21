@@ -44,6 +44,7 @@ Do NOT re-read the taxonomy or sample documents between iterations — use what 
 ### 1a. Get baseline metrics
 
 ```bash
+mkdir -p /tmp/ixp
 uip ixp project metrics <project-name> --output json
 ```
 
@@ -67,7 +68,7 @@ The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what
 uip ixp document list <project-name> --output json
 
 # For each sample document:
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_sample.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/sample.png --output json
 uip ixp document text <project-name> <comment-uid> --output json
 ```
 
@@ -127,7 +128,7 @@ Save the current field instructions before updating (for rollback).
 Use the **field name** (e.g., "Invoice Number", "Invoice Date"), not the label_def name:
 
 ```bash
-cat > /tmp/ixp_updates.json << 'FIELDS_EOF'
+cat > /tmp/ixp/updates.json << 'FIELDS_EOF'
 [
   {"name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
   {"name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
@@ -135,7 +136,7 @@ cat > /tmp/ixp_updates.json << 'FIELDS_EOF'
 FIELDS_EOF
 
 uip ixp project update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp_updates.json)" \
+  --fields "$(cat /tmp/ixp/updates.json)" \
   --output json
 ```
 
@@ -173,12 +174,12 @@ Compare the new per-field F1 scores against the **previous iteration** scores:
 2. **Roll back** — restore the previous iteration's instructions:
 
    ```bash
-   cat > /tmp/ixp_rollback.json << 'FIELDS_EOF'
+   cat > /tmp/ixp/rollback.json << 'FIELDS_EOF'
    [{"name": "...", "instructions": "previous instruction"}, ...]
    FIELDS_EOF
 
    uip ixp project update-prompts <project-name> \
-     --fields "$(cat /tmp/ixp_rollback.json)" \
+     --fields "$(cat /tmp/ixp/rollback.json)" \
      --output json
    ```
 

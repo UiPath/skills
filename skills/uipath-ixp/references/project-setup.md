@@ -5,6 +5,7 @@ Complete workflow for creating a new IXP project, labelling all documents, and g
 ## Step 1 — Create the Project
 
 ```bash
+mkdir -p /tmp/ixp
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
@@ -25,7 +26,7 @@ Then, for **every document** in the list, get the image and OCR text:
 - **Otherwise, always download** each document image:
 
 ```bash
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp_doc_1.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/doc_1.png --output json
 ```
 
 Do NOT search the filesystem for document files. Either you already have the paths from project creation in this session, or you download them.
@@ -50,7 +51,7 @@ From the taxonomy:
 For each document, use the **Read tool** to view the image:
 
 ```
-Read /tmp/ixp_doc_1.png
+Read /tmp/ixp/doc_1.png
 ```
 
 Then extract fields using this process:
@@ -75,7 +76,7 @@ Then extract fields using this process:
 ## Step 4 — Submit the Labelling
 
 ```bash
-cat > /tmp/ixp_extractions.json << 'EXTRACTIONS_EOF'
+cat > /tmp/ixp/extractions.json << 'EXTRACTIONS_EOF'
 [
   {
     "label": "Invoice Details",
@@ -102,7 +103,7 @@ cat > /tmp/ixp_extractions.json << 'EXTRACTIONS_EOF'
 EXTRACTIONS_EOF
 
 uip ixp labelling label <project-name> <comment-uid> \
-  --extractions "$(cat /tmp/ixp_extractions.json)" --output json
+  --extractions "$(cat /tmp/ixp/extractions.json)" --output json
 ```
 
 Submit labellings in **serial** — do not parallelize.
