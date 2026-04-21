@@ -174,7 +174,7 @@ success_criteria:
   - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+init'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -182,7 +182,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
