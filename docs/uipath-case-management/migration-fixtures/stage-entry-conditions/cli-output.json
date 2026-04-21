@@ -1,0 +1,160 @@
+{
+    "root": {
+        "id": "root",
+        "name": "StageEntryProbe",
+        "type": "case-management:root",
+        "caseIdentifier": "StageEntryProbe",
+        "caseAppEnabled": false,
+        "caseIdentifierType": "constant",
+        "version": "v17",
+        "publishVersion": 2,
+        "data": {
+            "intsvcActivityConfig": "v2",
+            "uipath": {
+                "variables": {
+                    "inputOutputs": []
+                },
+                "bindings": []
+            }
+        }
+    },
+    "nodes": [
+        {
+            "id": "Stage_eQtgaj",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 600,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Target",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": [],
+                "description": "Target stage",
+                "entryConditions": [
+                    {
+                        "id": "Condition_DwYP14",
+                        "displayName": "From case start",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "case-entered",
+                                    "id": "Rule_VJRSuI"
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "id": "Condition_pVuqVs",
+                        "displayName": "After Upstream completes",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "selected-stage-completed",
+                                    "id": "Rule_lmVjvp",
+                                    "selectedStageId": "Stage_U3uo8Q"
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "id": "Condition_SczBZt",
+                        "displayName": "After Upstream exits",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "selected-stage-exited",
+                                    "id": "Rule_9Yaekr",
+                                    "selectedStageId": "Stage_U3uo8Q"
+                                }
+                            ]
+                        ],
+                        "isInterrupting": true
+                    },
+                    {
+                        "id": "Condition_G4YUhK",
+                        "displayName": "User-routed",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "user-selected-stage",
+                                    "id": "Rule_D3lMHN"
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "id": "Condition_6RErA8",
+                        "displayName": "Fraud detected",
+                        "rules": [
+                            [
+                                {
+                                    "rule": "wait-for-connector",
+                                    "id": "Rule_V5Hn8G",
+                                    "conditionExpression": "event.fraudScore > 0.8"
+                                }
+                            ]
+                        ],
+                        "isInterrupting": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": "Stage_U3uo8Q",
+            "type": "case-management:Stage",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Upstream",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": [],
+                "description": "Upstream stage"
+            }
+        },
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Trigger 1"
+            }
+        }
+    ],
+    "edges": []
+}

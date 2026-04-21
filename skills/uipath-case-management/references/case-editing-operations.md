@@ -26,7 +26,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `tasks/connector-activity` | CLI | Migration queued. Auto-injected default entry condition complicates the recipe. |
 | `tasks/connector-trigger` | CLI | Migration queued. Same as connector-activity. |
 | `tasks/wait-for-timer` | CLI | Migration queued. |
-| `conditions/stage-entry-conditions` | CLI | Migration queued. |
+| `conditions/stage-entry-conditions` | **JSON** | Migrated. See [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md). |
 | `conditions/stage-exit-conditions` | CLI | Migration queued. |
 | `conditions/task-entry-conditions` | CLI | Migration queued. |
 | `conditions/case-exit-conditions` | CLI | Migration queued. |

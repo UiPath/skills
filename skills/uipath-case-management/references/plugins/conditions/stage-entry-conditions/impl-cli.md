@@ -55,18 +55,23 @@ The stage node's `data.entryConditions` array gains:
 
 ```json
 {
-  "id": "cond00000001",
+  "id": "Condition_xxxxxx",
   "displayName": "After Triage",
-  "isInterrupting": false,
   "rules": [
     [
-      { "rule": "selected-stage-exited", "id": "...", "selectedStageId": "stg_triage_id" }
+      { "rule": "selected-stage-exited", "id": "Rule_xxxxxx", "selectedStageId": "Stage_xxxxxx" }
     ]
   ]
 }
 ```
 
-Rules use DNF — outer array is OR, inner array is AND. Adding rules via `edit --rule-type` appends new rules (see `case-commands.md`).
+IDs follow the CLI's `prefixedId` scheme: `Condition_` + 6 random chars, `Rule_` + 6 random chars. See [`../../../case-editing-operations-json.md § ID Generation`](../../../case-editing-operations-json.md#id-generation).
+
+`isInterrupting` is emitted **only** when `--is-interrupting` is passed — the key is absent otherwise. When present it trails after `rules`.
+
+Rules use DNF — outer array is OR, inner array is AND. Adding rules via `edit --rule-type` appends a new outer-group (new OR-clause), not a new inner AND-term. See `case-commands.md`.
+
+For the full per-rule-type JSON shape (all five rule-types) and the direct-JSON-write recipe, see [`impl-json.md`](impl-json.md).
 
 ## Post-Add Validation
 
