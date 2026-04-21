@@ -74,25 +74,34 @@ These steps are for **creating a new flow from scratch**. For existing projects,
 
 ### Step 0 — Resolve the `uip` binary
 
-The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone:
+The `uip` CLI is installed via npm. Resolve the binary and verify it meets the minimum version required for `uip maestro flow` commands.
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
-LATEST=$(npm view @uipath/cli version 2>/dev/null)
-OLDEST=$(printf '%s\n%s\n' "$LATEST" "$CURRENT" | sort -V | head -n1)
-if [ -z "$CURRENT" ] || { [ "$CURRENT" != "$LATEST" ] && [ "$OLDEST" = "$CURRENT" ]; }; then
-  npm install -g @uipath/cli@latest
-  UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
-fi
-$UIP --version
+MIN_VERSION="0.3.4"
 ```
 
-Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
+**Check the installed version:**
 
-If `npm install -g` fails with a permission error, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
+1. If `uip` is not found at all → install: `npm install -g @uipath/cli@latest`
+2. If the version is **below $MIN_VERSION** → upgrade: `npm install -g @uipath/cli@latest`
+3. If the version is **≥ $MIN_VERSION** → no action needed, proceed
 
-> **Minimum version:** `uip maestro flow` commands require CLI **≥ 0.3.4**. Older versions used `uip flow` (top-level), which was removed in 0.3.4. The upgrade script above handles this automatically.
+```bash
+if [ -z "$CURRENT" ]; then
+  echo "uip not found — installing..."
+  npm install -g @uipath/cli@latest
+elif [ "$(printf '%s\n%s\n' "$MIN_VERSION" "$CURRENT" | sort -V | head -n1)" != "$MIN_VERSION" ]; then
+  echo "uip $CURRENT is below minimum $MIN_VERSION — upgrading..."
+  npm install -g @uipath/cli@latest
+fi
+uip --version
+```
+
+If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
+
+> **Why 0.3.4?** CLI 0.3.4 restructured commands: `uip flow` (top-level) was removed and replaced by `uip maestro flow`. All commands in this skill use the new namespace. See UiPath/cli#841.
 
 ### Step 1 — Check login status
 
