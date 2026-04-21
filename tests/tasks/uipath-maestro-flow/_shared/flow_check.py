@@ -38,7 +38,7 @@ def run_debug(
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "flow", "debug", project_dir, "--output", "json"]
+    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)

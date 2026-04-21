@@ -180,7 +180,7 @@ def run_debug() -> tuple[dict, str | None]:
     )
     t0 = time.monotonic()
     r = subprocess.run(
-        ["uip", "flow", "debug", PROJECT_DIR, "--output", "json"],
+        ["uip", "maestro", "flow", "debug", PROJECT_DIR, "--output", "json"],
         capture_output=True,
         text=True,
         timeout=DEBUG_TIMEOUT,

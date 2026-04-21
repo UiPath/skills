@@ -261,7 +261,7 @@ The argument to `resource refresh` is the **solution directory** (containing the
 
 > **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
 
-**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip maestro flow debug](references/flow-commands.md#uip-flow-debug).
+**Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip maestro flow debug](references/flow-commands.md#uip-maestro-flow-debug).
 
 ### Step 9 — Publish to Studio Web
 
