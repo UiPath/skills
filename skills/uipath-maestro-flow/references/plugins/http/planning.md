@@ -63,6 +63,10 @@ Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `defa
 
 > **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
 
+## Dynamic values
+
+IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Step 3b — Dynamic values](impl.md#step-3b--dynamic-values-in-url--headers--body--query) for the full rationale and examples.
+
 ## Key Inputs (`--detail` for `node configure`)
 
 Run `uip flow node configure` with a `--detail` JSON. The CLI builds the full `inputs.detail` payload, `bindings_v2.json`, and connection resource files automatically. **Do not hand-write `inputs.detail`.**

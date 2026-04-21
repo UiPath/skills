@@ -75,6 +75,38 @@ uip flow node configure <ProjectName>.flow <nodeId> \
 - For connector mode: generates `bindings_v2.json` and creates a connection resource file under `resources/solution_folder/connection/`
 - For manual mode: uses `ImplicitConnection` (no bindings needed)
 
+### Step 3b — Dynamic values in URL / headers / body / query
+
+**IS activity input fields do not resolve `{$vars.x}` brace-templates.** The flow runtime's `{...}` template interpolation only applies to native flow fields (end-node output `source`, variable updates, decision `expression`, script body, etc.) — **not** to fields under `inputs.detail.bodyParameters` on HTTP v2 or on any `uipath.connector.*` activity. Evidence: `"url": "https://.../user/{$vars.article}/..."` ships to the service as literal `{vars.article}` (the `$` is stripped, braces remain), producing a 400 Bad Request.
+
+**Use `=js:` expressions for any dynamic value in IS activity inputs.** The runtime evaluates `=js:` before handing the value to the connector:
+
+```json
+"bodyParameters": {
+  "url": "=js:`https://api.example.com/users/${$vars.userId}/orders`",
+  "headers": {
+    "Authorization": "=js:'Bearer ' + $vars.apiToken",
+    "X-Request-ID": "=js:$metadata.instanceId"
+  },
+  "query": {
+    "since": "=js:$vars.startDate"
+  }
+}
+```
+
+Template literals with `${...}` interpolation work because the whole expression is evaluated as JavaScript — `$vars` is a global in the `=js:` context. Plain string concatenation (`'Bearer ' + $vars.token`) works the same way.
+
+When calling `uip flow node configure --detail`, pass the `=js:` string verbatim — the CLI stores it in `inputs.detail.bodyParameters` unchanged:
+
+```bash
+uip flow node configure <Project>.flow <nodeId> \
+  --detail '{
+    "authentication": "manual",
+    "method": "GET",
+    "url": "=js:`https://api.example.com/users/${$vars.userId}`"
+  }'
+```
+
 ### Step 4 — (Optional) Configure response branches for content-based routing
 
 Skip this step unless you need to route downstream paths based on the *response content* (e.g., `items.length > 0` vs empty). Do **not** use `branches` just to handle call failures — for that, use the `error` port (Step 5).

@@ -43,3 +43,5 @@ The `error` port is the implicit error port shared with all action nodes — see
 | `operations` | Yes | Array of operation objects (filter, map, or groupBy) |
 
 > The `collection` input accepts `$vars` references directly. Unlike condition expressions, the `=js:` prefix is optional — both `$vars.x` and `=js:$vars.x` work.
+
+> **Filter `value` is literal-only.** `core.action.transform.filter`'s per-filter `value` field does NOT resolve `$vars.x`, `=js:`, or brace-template expressions — any such expression ships as a string literal and the filter silently returns an empty array. Only literal scalars work (`500`, `"active"`, `true`). If the threshold must be dynamic, move the filter into a [Script](../script/planning.md) node; keep Transform for static-threshold filters, maps, and group-by. See [transform/impl.md](impl.md#filter-coreactiontransformfilter) for details.
