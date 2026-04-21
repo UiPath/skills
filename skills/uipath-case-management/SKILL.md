@@ -29,7 +29,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 2. **Always run `uip maestro case registry pull` before planning** — caches the registry at `~/.uipcli/case-resources/` so all subsequent discovery is local.
 3. **Registry discovery is direct cache-file inspection, not CLI search.** `uip maestro case registry search` has known gaps (especially for action-apps). Read the `<type>-index.json` files directly. See [references/registry-discovery.md](references/registry-discovery.md).
 4. **Always use `--output json`** on every `uip maestro case` read command whose output is parsed programmatically.
-5. **Follow the plugin for every node type.** Every task, trigger, and condition variant has its own plugin under `references/plugins/`. Open the matching `planning.md` during planning and `impl.md` during execution. Do not guess CLI flags or JSON shapes from memory.
+5. **Follow the plugin for every node type.** Every task, trigger, and condition variant has its own plugin under `references/plugins/`. Open the matching `planning.md` during planning and the appropriate execution doc — `impl-cli.md` for CLI-strategy plugins, `impl-json.md` for JSON-strategy plugins (check the matrix in [`references/case-editing-operations.md`](references/case-editing-operations.md)). Do not guess CLI flags or JSON shapes from memory.
 6. **`tasks.md` entries are declarative.** No `uip` CLI commands inside `tasks.md`. Each entry is parameters, IDs, and metadata only. The execution phase translates specs into CLI calls.
 7. **One T-entry per sdd.md declaration — no omissions.** Every stage, edge, task, trigger, condition, and SLA rule declared in `sdd.md` gets its own T-numbered entry, even when the declared value looks like a "default" (e.g., condition rule-type `current-stage-entered` / `case-entered`, stage-exit type `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`). Never group multiple items under one T-number. Never skip a declaration on the grounds that "the default behavior would already cover it" — if `sdd.md` wrote it down, `tasks.md` must emit a T-task for it.
 8. **Always regenerate `tasks.md` from scratch** — never do incremental updates. Avoids stale state from previous runs.
@@ -37,7 +37,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 10. **After approval, re-read `tasks.md` before executing.** `tasks.md` is the complete handoff artifact — all IDs, inputs, outputs, and references are captured there.
 11. **Unresolved task resources produce skeleton tasks — never mock, never fabricate.** Keep the `<UNRESOLVED: ...>` marker on the `taskTypeId` / `type-id` / `connection-id` slot in `tasks.md`, and omit `inputs:` / `outputs:` from that task entry. At execution time, the task is created in `caseplan.json` with `--type` + `--display-name` only (skeleton task) — no task-type-id, no connection-id, no variable bindings. Task-entry conditions and `selected-tasks-completed` rules still reference the skeleton's `TaskId`, so the workflow structure stays reviewable. The user attaches the real resource + bindings externally before runtime. See [references/skeleton-tasks.md](references/skeleton-tasks.md). Never fabricate a task-type-id or connection-id to "fill the gap".
 12. **Persist every registry resolution to `registry-resolved.json`** with full detail: search query, all matched results, selected result, rationale. This is the debug audit trail.
-13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `=vars.<outputVarId>` at execution time by reading the source output's `var` field from caseplan.json. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip maestro case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [references/plugins/variables/io-binding/impl.md](references/plugins/variables/io-binding/impl.md).
+13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `=vars.<outputVarId>` at execution time by reading the source output's `var` field from caseplan.json. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip maestro case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [references/plugins/variables/io-binding/impl-json.md](references/plugins/variables/io-binding/impl-json.md).
 14. **Expression prefixes are fixed:** `=metadata.`, `=js:`, `=vars.`, `=datafabric.`, `=bindings.`, `=orchestrator.JobAttachments`, `=response`, `=result`, `=Error`, `=jsonString:`. Plain strings without a prefix are literals, not expressions.
 15. **Connector integration uses the 3-step pipeline**: `get-connector` → `get-connection` → (optional) `tasks describe --connection-id`. One plugin (`connector-activity` / `connector-trigger` / event-`trigger`) per integration pattern — schema is data-driven. See [references/connector-integration.md](references/connector-integration.md).
 16. **Enrichable non-connector task types** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`) pass `--task-type-id` on `tasks add` to auto-populate inputs/outputs. Connector variants use `tasks add-connector` with `--type-id` + `--connection-id` instead.
@@ -48,6 +48,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 21. **Never run `uip maestro case debug` automatically** — it executes the case for real (sends emails, posts messages, calls APIs). Only run on explicit user consent.
 22. **Edit `content/*.json` only** — `content/*.bpmn` is auto-generated and will be overwritten.
 23. **Execute CLI commands sequentially.** No parallel execution — each command may depend on IDs returned by the previous one.
+24. **Check the plugin migration matrix before every plugin's execution.** [`references/case-editing-operations.md`](references/case-editing-operations.md) declares per plugin whether to use the `uip maestro case` CLI or direct JSON edits. Default is CLI; migrated plugins opt in to JSON. When a plugin is on the JSON strategy, follow its `impl-json.md` + [`references/case-editing-operations-json.md`](references/case-editing-operations-json.md) instead of the CLI command. Mixing strategies in the same run is expected during the migration.
 
 ## Workflow
 
@@ -69,8 +70,8 @@ Present `tasks.md` to the user for approval. **Do NOT proceed until the user exp
 1. Create the solution + project + case file (Step 6)
 2. Add stages (Step 7)
 3. Add edges (Step 8)
-4. Add tasks and bind inputs/outputs (Step 9) — per-task-type detail in `plugins/tasks/<type>/impl.md`
-5. Add conditions (Step 10) — per-scope detail in `plugins/conditions/<scope>/impl.md`
+4. Add tasks and bind inputs/outputs (Step 9) — per-task-type detail in `plugins/tasks/<type>/impl-cli.md` (or `impl-json.md` once migrated)
+5. Add conditions (Step 10) — per-scope detail in `plugins/conditions/<scope>/impl-cli.md` (or `impl-json.md` once migrated)
 6. Configure SLA and escalation (Step 11)
 7. Validate (Step 12)
 8. Post-build loop (Step 13) — AskUserQuestion dropdown for next steps; loop until user selects `Done`
@@ -123,7 +124,7 @@ Order: stages → edges → tasks → conditions → SLA. One T-numbered entry p
 
 ### Step 6 — Re-read tasks.md and execute
 
-Re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute each T-entry in order. Open the matching plugin's `impl.md` for each task/trigger/condition.
+Re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute each T-entry in order. Open the matching plugin's `impl-cli.md` (or `impl-json.md`, per the strategy matrix) for each task/trigger/condition.
 
 ### Step 7 — Validate
 
@@ -143,21 +144,24 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 |---|---|
 | **Plan tasks from sdd.md** | [references/planning.md](references/planning.md) |
 | **Execute tasks.md into a case** | [references/implementation.md](references/implementation.md) |
+| **Know which strategy (CLI vs JSON) per plugin** | [references/case-editing-operations.md](references/case-editing-operations.md) |
+| **Edit caseplan.json directly (JSON strategy)** | [references/case-editing-operations-json.md](references/case-editing-operations-json.md) |
+| **Run mutations via CLI (CLI strategy)** | [references/case-editing-operations-cli.md](references/case-editing-operations-cli.md) |
 | **Understand the case JSON schema** | [references/case-schema.md](references/case-schema.md) |
 | **Know all CLI flags** | [references/case-commands.md](references/case-commands.md) |
 | **Resolve task types from registry** | [references/registry-discovery.md](references/registry-discovery.md) |
 | **Wire inputs/outputs and cross-task refs** | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | **Configure a connector activity / trigger / event** | [references/connector-integration.md](references/connector-integration.md) |
 | **Handle unresolved resources (skeleton tasks)** | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
-| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + `impl.md` |
-| **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + `impl.md` |
-| **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + `impl.md` |
-| **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + `impl.md` |
-| **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + `impl.md` |
-| **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + `impl.md` |
-| **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl.md` |
-| **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl.md` |
-| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl.md` |
+| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-cli.md`](references/plugins/case/impl-cli.md) |
+| **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + [`impl-json.md`](references/plugins/stages/impl-json.md) (pilot) / [`impl-cli.md`](references/plugins/stages/impl-cli.md) (fallback) |
+| **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-cli.md`](references/plugins/edges/impl-cli.md) |
+| **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-cli.md`](references/plugins/sla/impl-cli.md) |
+| **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + [`impl-json.md`](references/plugins/variables/global-vars/impl-json.md) |
+| **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + [`impl-json.md`](references/plugins/variables/io-binding/impl-json.md) |
+| **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-cli.md` |
+| **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl-cli.md` |
+| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` |
 
 ### Plugin Index
 
@@ -171,7 +175,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | [sla](references/plugins/sla/planning.md) | Default SLA, conditional SLA rules, escalation rules |
 | [global-vars](references/plugins/variables/global-vars/planning.md) | Case variables and arguments (inputs/outputs/inputOutputs) |
 | [io-binding](references/plugins/variables/io-binding/planning.md) | Task input/output wiring, cross-task references, JSON shapes |
-| [logging](references/plugins/logging/impl.md) | Shared issue log — format, severity levels, file dump |
+| [logging](references/plugins/logging/impl-json.md) | Shared issue log — format, severity levels, file dump |
 
 **Task plugins** (`references/plugins/tasks/`):
 

@@ -27,8 +27,8 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [orche
 
 | Command | Description |
 |---|---|
-| `uip or folders list` | List all folders (Standard + Solution) |
-| `uip or folders list-current-user` | List all folders for current user — **includes Personal Workspaces** |
+| `uip or folders list` | List folders the current user has access to |
+| `uip or folders list --all` | List all folders in tenant (Standard + Solution). Supports `--type`, `--name`, `--path`, `--top-level`, `--order-by` |
 | `uip or folders create <name>` | Create a folder |
 | `uip or processes list` | List processes in folder (`--folder-path`) |
 | `uip or processes create <name>` | Create process binding |

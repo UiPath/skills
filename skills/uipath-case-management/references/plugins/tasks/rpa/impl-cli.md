@@ -31,10 +31,12 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Resulting JSON Shape
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
+
 ```json
 {
-  "id": "tsk00000003",
-  "elementId": "el_0003",
+  "id": "tQ2pVx7Lm",
+  "elementId": "Stage_aB3kL9-tQ2pVx7Lm",
   "type": "rpa",
   "displayName": "Extract Invoice Data",
   "data": {
@@ -50,7 +52,7 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Binding Inputs
 
-Use `uip maestro case var bind` — identical pattern to [process/impl.md](../process/impl.md#binding-inputs-and-outputs).
+Use `uip maestro case var bind` — identical pattern to [process/impl-cli.md](../process/impl-cli.md#binding-inputs-and-outputs).
 
 ## Post-Add Validation
 

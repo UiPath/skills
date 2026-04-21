@@ -45,4 +45,4 @@ Task-output variables are wired automatically during task creation (§4.6) — n
 
 ## Naming
 
-camelCase IDs (`=vars.claimId`). See [impl.md](impl.md) for uniqueness rules and ID generation.
+camelCase IDs (`=vars.claimId`). See [impl-json.md](impl-json.md) for uniqueness rules and ID generation.

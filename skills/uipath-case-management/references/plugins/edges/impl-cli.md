@@ -35,8 +35,8 @@ Edge type is inferred — do not pass a `--type` flag.
 
 ```bash
 uip maestro case edges add caseplan.json \
-  --source "trig0000001" \
-  --target "stg00000001" \
+  --source "trigger_xY2mNp" \
+  --target "Stage_aB3kL9" \
   --label "Start" \
   --output json
 ```
@@ -45,8 +45,8 @@ uip maestro case edges add caseplan.json \
 
 ```bash
 uip maestro case edges add caseplan.json \
-  --source "stg00000001" \
-  --target "stg00000002" \
+  --source "Stage_aB3kL9" \
+  --target "Stage_cD4mNt" \
   --label "Approved" \
   --output json
 ```
@@ -55,8 +55,8 @@ uip maestro case edges add caseplan.json \
 
 ```bash
 uip maestro case edges add caseplan.json \
-  --source "stg00000001" \
-  --target "stg_exception_id" \
+  --source "Stage_aB3kL9" \
+  --target "Stage_eF5pRk" \
   --label "Rejected" \
   --source-handle bottom \
   --target-handle top \
@@ -65,16 +65,22 @@ uip maestro case edges add caseplan.json \
 
 ## Resulting JSON Shape
 
+> **ID format.** Edge `id` is `edge_` + 6 random chars (e.g. `edge_Qz7hVr`). See [case-schema.md](../../case-schema.md) for the full ID table.
+>
+> **Handle format.** Exactly **four underscores** on each side of `source` / `target`: `${nodeId}____source____${direction}` / `${nodeId}____target____${direction}`. Directions: `right`, `left`, `top`, `bottom`. Defaults: source=`right`, target=`left`.
+>
+> **`zIndex`** is omitted unless explicitly set via `--z-index`.
+
 ### TriggerEdge (Trigger → Stage)
 
 ```json
 {
-  "id": "edg00000001",
+  "id": "edge_Qz7hVr",
   "type": "case-management:TriggerEdge",
-  "source": "trig0000001",
-  "target": "stg00000001",
-  "sourceHandle": "trig0000001____source____right",
-  "targetHandle": "stg00000001____target____left",
+  "source": "trigger_xY2mNp",
+  "target": "Stage_aB3kL9",
+  "sourceHandle": "trigger_xY2mNp____source____right",
+  "targetHandle": "Stage_aB3kL9____target____left",
   "data": { "label": "Start" }
 }
 ```
@@ -83,17 +89,17 @@ uip maestro case edges add caseplan.json \
 
 ```json
 {
-  "id": "edg00000002",
+  "id": "edge_pK2mLq",
   "type": "case-management:Edge",
-  "source": "stg00000001",
-  "target": "stg00000002",
-  "sourceHandle": "stg00000001____source____right",
-  "targetHandle": "stg00000002____target____left",
+  "source": "Stage_aB3kL9",
+  "target": "Stage_cD4mNt",
+  "sourceHandle": "Stage_aB3kL9____source____right",
+  "targetHandle": "Stage_cD4mNt____target____left",
   "data": { "label": "Approved" }
 }
 ```
 
-Handle values are formatted automatically as `<nodeId>____source____<direction>` (source) or `<nodeId>____target____<direction>` (target).
+Edge type is inferred from the source node: Trigger source → `TriggerEdge`; Stage source → `Edge`.
 
 ## Post-Add Validation
 

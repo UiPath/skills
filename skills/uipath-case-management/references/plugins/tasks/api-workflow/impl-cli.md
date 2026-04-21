@@ -32,10 +32,12 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Resulting JSON Shape
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
+
 ```json
 {
-  "id": "tsk00000005",
-  "elementId": "el_0005",
+  "id": "tK7nRs3Wp",
+  "elementId": "Stage_aB3kL9-tK7nRs3Wp",
   "type": "api-workflow",
   "displayName": "Monitor Order Inbox",
   "data": {

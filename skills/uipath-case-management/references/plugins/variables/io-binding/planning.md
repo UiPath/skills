@@ -1,6 +1,6 @@
 # I/O Binding — Planning
 
-Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.json` yet — all validation happens during [implementation](impl.md).
+Trust the SDD. Emit inputs/outputs exactly as declared. There is no `caseplan.json` yet — all validation happens during [implementation](impl-json.md).
 
 ## Discovering Input/Output Names
 

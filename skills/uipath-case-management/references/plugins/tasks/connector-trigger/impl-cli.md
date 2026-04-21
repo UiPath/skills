@@ -38,10 +38,14 @@ uip maestro case tasks add-connector caseplan.json stg000abc123 \
 
 ## Resulting JSON Shape
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
+>
+> **Default entry condition auto-injected.** `tasks add-connector` automatically attaches a default entry condition (`rule: "current-stage-entered"`) to every connector task. Direct-JSON-write must emit this too.
+
 ```json
 {
-  "id": "tsk00000008",
-  "elementId": "el_0008",
+  "id": "tF8hPq2Wr",
+  "elementId": "Stage_aB3kL9-tF8hPq2Wr",
   "type": "wait-for-connector",
   "displayName": "Wait for Jira Issue Update",
   "data": {
@@ -65,6 +69,15 @@ uip maestro case tasks add-connector caseplan.json stg000abc123 \
       "objectName": "issue"
     }
   },
+  "entryConditions": [
+    {
+      "id": "c7mLpV4Kj",
+      "displayName": "Entry rule 1",
+      "rules": [
+        [{ "id": "rN3tGx8Qb", "rule": "current-stage-entered" }]
+      ]
+    }
+  ],
   "isRequired": true
 }
 ```

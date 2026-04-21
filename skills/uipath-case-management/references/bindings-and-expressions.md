@@ -11,9 +11,9 @@ Every task input is wired using one of two modes. Pick based on the source of th
 | **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
 | **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve source output's `var` → write `"=vars.<var>"` to target input's `value` |
 
-For the full JSON shapes and binding procedure, see [plugins/variables/io-binding/impl.md](plugins/variables/io-binding/impl.md).
+For the full JSON shapes and binding procedure, see [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md).
 
-For connector tasks, pass expressions inline in `--input-values` at creation time — see [plugins/tasks/connector-activity/impl.md](plugins/tasks/connector-activity/impl.md).
+For connector tasks, pass expressions inline in `--input-values` at creation time — see [plugins/tasks/connector-activity/impl-cli.md](plugins/tasks/connector-activity/impl-cli.md).
 
 ## Expression Prefixes
 
@@ -81,7 +81,7 @@ target_input.value = f"=vars.{src_output['var']}"
 # Write updated caseplan.json back to disk
 ```
 
-See [plugins/variables/io-binding/impl.md](plugins/variables/io-binding/impl.md) for the full procedure.
+See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md) for the full procedure.
 
 ## Examples
 

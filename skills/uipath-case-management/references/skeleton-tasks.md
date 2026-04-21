@@ -24,7 +24,7 @@ The user reviews structure first, then attaches real resources once they exist.
 | `--task-type-id` / `--type-id` | real ID | **omitted** | fake ID |
 | `--connection-id` (connectors) | real UUID | **omitted** | fake UUID |
 | `--input-values` (connectors) | real JSON | **omitted** | `{}` |
-| Input / output variable bindings | real `var bind` calls | **skipped entirely** | `var bind` to nonexistent names |
+| Input / output variable bindings | real JSON edits via `io-binding` plugin | **skipped entirely** (no `data.inputs[]` to edit) | edits targeting nonexistent input names |
 | Task-entry conditions | ✓ | ✓ | ✓ |
 | Referenced by stage-exit `selected-tasks-completed` | ✓ | ✓ | ✓ |
 
@@ -36,7 +36,7 @@ During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskType
 
 1. Skip the enrichment command (`tasks add --task-type-id …`).
 2. Run the bare `tasks add` / `tasks add-connector` command with structural flags only.
-3. Skip every `uip maestro case var bind` call for that task.
+3. Skip the `io-binding` plugin entirely for that task (see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — skeleton tasks log a `SKIPPED` severity entry and move on, because there is no `data.inputs[]` schema to write into).
 4. Capture the returned `TaskId` normally — task-entry conditions and stage-exit rules still reference it.
 
 ## CLI Shape
@@ -69,7 +69,7 @@ uip maestro case tasks add-connector <file> <stage-id> \
 
 ### In-stage timer
 
-Timers are a built-in type — they are never skeletons because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl.md`](plugins/tasks/wait-for-timer/impl.md).
+Timers are a built-in type — they are never skeletons because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl-cli.md`](plugins/tasks/wait-for-timer/impl-cli.md).
 
 ## Resulting JSON Shape
 
@@ -158,21 +158,16 @@ There is no single `tasks edit --task-type-id` flag today. The upgrade path depe
 
 ### 4. Bind inputs and outputs
 
-Use the fenced `wiring notes` code block from `tasks.md` as the reference. For each input:
+The re-added task now has a fully enriched `data.inputs[]` / `data.outputs[]` in `caseplan.json` (populated by `--task-type-id`). Wire each input per the `io-binding` plugin — see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). In short:
 
-```bash
-# Literal / expression
-uip maestro case var bind <file> <stage-id> <task-id> <input-name> --value "=metadata.lob" --output json
+1. Read `caseplan.json`; locate the task's `data.inputs[]` by input `name`.
+2. For literals/expressions from the `wiring notes` code block (`foo = =metadata.x`) — write the RHS string to `input.value`.
+3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source task's output `var` from `caseplan.json`, then write `=vars.<var>` to the target input's `value`.
+4. Write `caseplan.json` back.
 
-# Cross-task
-uip maestro case var bind <file> <stage-id> <task-id> <input-name> \
-  --source-stage <source-stage-id> \
-  --source-task <source-task-id> \
-  --source-output <output-name> \
-  --output json
-```
+For **connector tasks**, connector inputs are set at creation time via `--input-values` on `tasks add-connector` — not post-creation. When upgrading a connector skeleton, rebuild the `--input-values` JSON from the wiring notes (resolving any cross-task `=vars.` references before constructing the JSON) and pass it on the re-add command.
 
-Run `uip maestro case tasks describe --id <entityKey>` first to confirm the exact input/output names — do not guess.
+Run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` first to confirm the exact input/output names — do not guess.
 
 ### 5. Re-validate
 
@@ -208,7 +203,7 @@ The user uses this list to drive external resource creation, then runs the upgra
 ## Anti-Patterns
 
 - **Do NOT fabricate a task-type-id to silence the warning.** Validation will pass but runtime will fail with binding errors.
-- **Do NOT partially bind inputs on a skeleton.** `var bind` either binds a full resolved input or nothing — half-bound skeletons are harder to upgrade than bare ones.
+- **Do NOT partially bind inputs on a skeleton.** A skeleton has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound skeletons are harder to upgrade than bare ones.
 - **Do NOT skip task-entry conditions on skeletons.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
-- **Do NOT manually edit `caseplan.json` to add task-type-ids.** Use `tasks remove` + re-`add` so the JSON shape matches what the CLI would produce (including `elementId` generation and other internals).
+- **Do NOT manually edit `caseplan.json` to add task-type-ids.** Use `tasks remove` + re-`add` so the enriched task shape matches what the CLI would produce (including `elementId` generation and auto-populated `data.inputs[]`/`data.outputs[]`). Input `value` writes via the io-binding plugin come *after* the enriched re-add.
 - **Do NOT create skeletons for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.

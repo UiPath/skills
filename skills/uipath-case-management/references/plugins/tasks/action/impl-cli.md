@@ -41,10 +41,12 @@ uip maestro case tasks add caseplan.json stg000abc123 \
 
 ## Resulting JSON Shape
 
+> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
+
 ```json
 {
-  "id": "tsk00000004",
-  "elementId": "el_0004",
+  "id": "ty5UcykfU",
+  "elementId": "Stage_aB3kL9-ty5UcykfU",
   "type": "action",
   "displayName": "Review Purchase Order",
   "data": {
