@@ -1,0 +1,66 @@
+{
+    "root": {
+        "id": "root",
+        "name": "SlaGapConditionalEsc",
+        "type": "case-management:root",
+        "caseIdentifier": "SlaGapConditionalEsc",
+        "caseAppEnabled": false,
+        "caseIdentifierType": "constant",
+        "version": "v17",
+        "publishVersion": 2,
+        "data": {
+            "intsvcActivityConfig": "v2",
+            "uipath": {
+                "variables": {
+                    "inputOutputs": []
+                },
+                "bindings": []
+            },
+            "slaRules": [
+                {
+                    "expression": "=js:vars.priority === 'Urgent'",
+                    "count": 30,
+                    "unit": "min",
+                    "escalationRule": [
+                        {
+                            "id": "esc_gapCn1",
+                            "displayName": "Escalate urgent breach",
+                            "action": {
+                                "type": "notification",
+                                "recipients": [
+                                    {
+                                        "scope": "User",
+                                        "target": "79570334-ed71-439e-b172-d9fc780fd61b",
+                                        "value": "manager@corp.com"
+                                    }
+                                ]
+                            },
+                            "triggerInfo": {
+                                "type": "sla-breached"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "expression": "=js:true",
+                    "count": 5,
+                    "unit": "d"
+                }
+            ]
+        }
+    },
+    "nodes": [
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Trigger 1"
+            }
+        }
+    ],
+    "edges": []
+}

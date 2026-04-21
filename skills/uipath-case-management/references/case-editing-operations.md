@@ -31,7 +31,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `conditions/stage-exit-conditions` | **JSON** | Write directly to the target stage's `data.exitConditions[]`. See [plugins/conditions/stage-exit-conditions/impl-json.md](plugins/conditions/stage-exit-conditions/impl-json.md). |
 | `conditions/task-entry-conditions` | **JSON** | Write directly to the target task's `entryConditions[]`. See [plugins/conditions/task-entry-conditions/impl-json.md](plugins/conditions/task-entry-conditions/impl-json.md). |
 | `conditions/case-exit-conditions` | **JSON** | Write directly to `root.caseExitConditions[]`. See [plugins/conditions/case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md). |
-| `sla` | CLI | Migration queued. |
+| `sla` | **JSON** | Migrated. Per-target `slaRules[]` compose-and-write. Fills CLI gaps: per-conditional-rule escalations, ExceptionStage SLA, multi-recipient single rule. See [plugins/sla/impl-json.md](plugins/sla/impl-json.md). |
 
 ## How agents consume this matrix
 

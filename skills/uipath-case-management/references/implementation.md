@@ -22,7 +22,7 @@ Mixing strategies within a single skill run is expected during the migration. Bo
 > - Tasks → `plugins/tasks/<type>/impl-cli.md`
 > - Triggers → `plugins/triggers/<type>/impl-cli.md`
 > - Conditions → `plugins/conditions/<scope>/impl-cli.md`
-> - SLA → `plugins/sla/impl-cli.md`
+> - SLA → `plugins/sla/impl-json.md` (primary) — `plugins/sla/impl-cli.md` is the fallback
 > - Global variables & arguments → `plugins/variables/global-vars/impl-json.md`
 > - Task I/O binding → `plugins/variables/io-binding/impl-json.md`
 > - Logging → `plugins/logging/impl-json.md`
@@ -116,7 +116,7 @@ For each condition in `tasks.md §4.7`, open the matching plugin (`impl-cli.md` 
 
 ## Step 11 — SLA and escalation
 
-For each entry in `tasks.md §4.8`, run the matching sub-operation per [`plugins/sla/impl-cli.md`](plugins/sla/impl-cli.md): `sla set` for defaults, `sla rules add` for conditional overrides (root only), `sla escalation add` for notification rules.
+SLA is on the **JSON** strategy per the matrix in [case-editing-operations.md](case-editing-operations.md). Group `tasks.md §4.8` entries by target (root or stage), then compose and write the full `slaRules[]` array per target in a single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). The JSON path supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules — all gap-fills over the CLI's capabilities. Fallback to [`plugins/sla/impl-cli.md`](plugins/sla/impl-cli.md) only if the JSON strategy fails empirically.
 
 ## Step 12 — Validate
 

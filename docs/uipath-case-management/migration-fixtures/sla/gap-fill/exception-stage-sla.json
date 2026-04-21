@@ -1,0 +1,92 @@
+{
+    "root": {
+        "id": "root",
+        "name": "SlaGapExceptionStage",
+        "type": "case-management:root",
+        "caseIdentifier": "SlaGapExceptionStage",
+        "caseAppEnabled": false,
+        "caseIdentifierType": "constant",
+        "version": "v17",
+        "publishVersion": 2,
+        "data": {
+            "intsvcActivityConfig": "v2",
+            "uipath": {
+                "variables": {
+                    "inputOutputs": []
+                },
+                "bindings": []
+            }
+        }
+    },
+    "nodes": [
+        {
+            "id": "Stage_excPt1",
+            "type": "case-management:ExceptionStage",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "style": {
+                "width": 304,
+                "opacity": 0.8
+            },
+            "measured": {
+                "width": 304,
+                "height": 128
+            },
+            "width": 304,
+            "zIndex": 1001,
+            "data": {
+                "label": "Exception Handling",
+                "parentElement": {
+                    "id": "root",
+                    "type": "case-management:root"
+                },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "tasks": [],
+                "entryConditions": [],
+                "exitConditions": [],
+                "description": "Fallback exception stage with its own SLA",
+                "slaRules": [
+                    {
+                        "expression": "=js:true",
+                        "count": 1,
+                        "unit": "d",
+                        "escalationRule": [
+                            {
+                                "id": "esc_excSt1",
+                                "action": {
+                                    "type": "notification",
+                                    "recipients": [
+                                        {
+                                            "scope": "User",
+                                            "target": "79570334-ed71-439e-b172-d9fc780fd61b",
+                                            "value": "manager@corp.com"
+                                        }
+                                    ]
+                                },
+                                "triggerInfo": {
+                                    "type": "at-risk",
+                                    "atRiskPercentage": 50
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Trigger 1"
+            }
+        }
+    ],
+    "edges": []
+}
