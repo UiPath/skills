@@ -1,0 +1,102 @@
+task_id: skill-flow-trigger-with-filter
+description: >
+  Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree.
+  Without this, UI drops the filter silently on first open.
+tags: [uipath-maestro-flow, smoke, connector-trigger, filter]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  You are authoring a UiPath Flow that is triggered by an Outlook email with subject containing "good day" and sent from
+  abc@xyz.com.
+  Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
+  or any command that requires a live connection — this sandbox has no UiPath
+  tenant. Instead, plan the exact `--detail` JSON you would pass to
+  `uip flow node configure` for the trigger.
+  Write the planned trigger `--detail` JSON to `trigger_detail.json`. It must
+  contain, at minimum:
+    - connectionId, folderKey, eventMode (placeholder values are fine)
+    - a `filter` object (the structured filter tree)
+
+  Also save a short summary to report.json:
+    {
+      "scenario": "outlook-subject-and-from-filter",
+      "uses_filter_tree": true,
+      "used_filter_expression_string": false,
+      "notes": "<one sentence explaining why the tree is the correct input>"
+    }
+
+success_criteria:
+  - type: file_exists
+    description: "trigger_detail.json exists"
+    path: "trigger_detail.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "trigger_detail.json is valid JSON"
+    command: "python3 -c \"import json; json.load(open('trigger_detail.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "trigger detail uses the structured filter tree, not filterExpression"
+    path: "trigger_detail.json"
+    assertions:
+      # Must include the filter tree — SW reads this to render the filter UI.
+      - expression: "type(filter)"
+        operator: equals
+        expected: "object"
+      # Numeric group operator (0 = And, 1 = Or). Matches Studio Web's persisted shape.
+      - expression: "filter.groupOperator"
+        operator: type
+        expected: "number"
+      - expression: "type(filter.filters)"
+        operator: equals
+        expected: "array"
+      - expression: "length(filter.filters)"
+        operator: gte
+        expected: 1
+      # MST-8802 regression guard: the CLI now rejects filterExpression as an
+      # input field. The agent must NOT emit it at the top level.
+      - expression: "type(filterExpression)"
+        operator: equals
+        expected: "null"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "filter tree references the subject field"
+    path: "trigger_detail.json"
+    includes:
+      - "subject"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "filter tree uses PascalCase operator names (Studio Web contract)"
+    path: "trigger_detail.json"
+    includes:
+      # At least one of the expected operators for this scenario. The Contains
+      # operator on the subject leaf is the essential piece — the from leaf
+      # typically uses Equals but we don't force that here.
+      - "Contains"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms the agent chose the filter tree path"
+    path: "report.json"
+    assertions:
+      - expression: "uses_filter_tree"
+        operator: equals
+        expected: true
+      - expression: "used_filter_expression_string"
+        operator: equals
+        expected: false
+    weight: 1.5
+    pass_threshold: 1.0

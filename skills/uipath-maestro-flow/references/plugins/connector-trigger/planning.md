@@ -44,7 +44,7 @@ Examples:
 | Position in flow | Anywhere (action node) | Start node only (replaces manual trigger) |
 | `--connection-id` on `registry get` | Optional (enriches metadata) | **Required** (fails without it) |
 | Metadata returned | `inputDefinition`, `outputResponseDefinition`, `connectorMethodInfo` | `eventParameters`, `filterFields`, `outputResponseDefinition`, `eventMode` |
-| Configuration | `node configure --detail` (method, endpoint, bodyParameters) | `node configure --detail` (eventMode, eventParameters, filterExpression) |
+| Configuration | `node configure --detail` (method, endpoint, bodyParameters) | `node configure --detail` (eventMode, eventParameters, filter tree) |
 | Bindings | `Connection` resource | `Connection` + `EventTrigger` + `Property` resources (auto-generated) |
 
 ## Discovery
