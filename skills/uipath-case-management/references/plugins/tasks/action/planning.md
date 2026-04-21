@@ -12,12 +12,20 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 |-------|--------|-------|
 | `display-name` | sdd.md task name | CLI flag `--display-name` |
 | `task-type-id` | Registry resolution (below) | CLI flag `--task-type-id` — the action-app ID |
-| `task-title` | sdd.md task title or question | CLI flag `--task-title`. Required for `action` type. |
+| `task-title` | sdd.md task title or description (see fallback below) | CLI flag `--task-title`. Required for `action` type. |
 | `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`. CLI flag `--priority`. |
 | `recipient` | sdd.md assignee email; **prompt the user if silent** | CLI flag `--recipient`. See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | Decision, comments, structured form fields |
 | `isRequired` | sdd.md (default `true`) | CLI flag `--is-required` |
+
+## Task Title Fallback
+
+`task-title` is what the user sees in the Actions app. Always emit it — the validator requires it even on skeletons. Derive in this order:
+
+1. SDD has an explicit title or question field → use it
+2. SDD has a Description → summarize into a short, concise title
+3. Neither → use the `display-name`
 
 ## Registry Resolution
 
@@ -32,7 +40,7 @@ See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for 
 
 ## Unresolved Fallback
 
-Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:` and the `task-title:` line; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). Execution creates a skeleton action task (no `--task-type-id`, no `--task-title`) — see [skeleton-tasks.md](../../../skeleton-tasks.md).
+Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found in action-apps-index.json>`. Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1). **Keep `task-title:`** — the validator requires it even on skeleton action tasks. Derive via the fallback above. See [skeleton-tasks.md](../../../skeleton-tasks.md).
 
 ## Recipient Handling
 
@@ -57,6 +65,7 @@ This follows Critical Rule #19 — for open-ended inputs like an email address, 
 - priority: Medium
 - recipient: user@company.com   # omit when group-assigned or when user chose Skip
 - assignment-note: "<free-form note if group-assigned>"   # optional
+- runOnlyOnce: false   # from sdd.md "Run Only Once" column
 - inputs:
   - <input_name> <- "<Stage>"."<Task>".<output>
   - <input_name> = "<literal-or-expression>"
