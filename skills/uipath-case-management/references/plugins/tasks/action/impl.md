@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add <file> <stage-id> \
+uip maestro case tasks add <file> <stage-id> \
   --type action \
   --display-name "<display-name>" \
   --task-title "<title>" \
@@ -28,7 +28,7 @@ uip case tasks add <file> <stage-id> \
 ## Example
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type action \
   --display-name "Review Purchase Order" \
   --task-title "Please review this PO and approve or reject" \
@@ -59,11 +59,11 @@ uip case tasks add caseplan.json stg000abc123 \
 }
 ```
 
-> The `data` shape for `action` differs from process/agent — no `inputs`/`outputs` arrays at the top of `data`. Form field bindings still use `uip case var bind` in the standard way.
+> The `data` shape for `action` differs from process/agent — no `inputs`/`outputs` arrays at the top of `data`. Form field bindings still use `uip maestro case var bind` in the standard way.
 
 ## Binding Inputs and Outputs
 
-Use `uip case var bind` per [bindings-and-expressions.md](../../../bindings-and-expressions.md). Input names for an action task map to fields on the Actions app form — discover them via `tasks describe --type action --id <action-app-id>`.
+Use `uip maestro case var bind` per [bindings-and-expressions.md](../../../bindings-and-expressions.md). Input names for an action task map to fields on the Actions app form — discover them via `tasks describe --type action --id <action-app-id>`.
 
 ## Post-Add Validation
 

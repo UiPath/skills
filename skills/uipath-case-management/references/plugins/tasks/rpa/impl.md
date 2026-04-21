@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add <file> <stage-id> \
+uip maestro case tasks add <file> <stage-id> \
   --type rpa \
   --display-name "<display-name>" \
   --name "<process-name>" \
@@ -19,7 +19,7 @@ Enrichment is the same as `process` — passing `--task-type-id` auto-populates 
 ## Example
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type rpa \
   --display-name "Extract Invoice Data" \
   --name "InvoiceExtractor" \
@@ -50,7 +50,7 @@ uip case tasks add caseplan.json stg000abc123 \
 
 ## Binding Inputs
 
-Use `uip case var bind` — identical pattern to [process/impl.md](../process/impl.md#binding-inputs-and-outputs).
+Use `uip maestro case var bind` — identical pattern to [process/impl.md](../process/impl.md#binding-inputs-and-outputs).
 
 ## Post-Add Validation
 

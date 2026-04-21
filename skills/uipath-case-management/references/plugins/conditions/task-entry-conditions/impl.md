@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case task-entry-conditions add <file> <stage-id> <task-id> \
+uip maestro case task-entry-conditions add <file> <stage-id> <task-id> \
   --display-name "<name>" \
   --rule-type <rule-type> \
   --selected-tasks-ids "<id1>,<id2>" \
@@ -28,7 +28,7 @@ uip case task-entry-conditions add <file> <stage-id> <task-id> \
 ## Example — Run only after a sibling task completes
 
 ```bash
-uip case task-entry-conditions add caseplan.json stg_review_id tsk_notify_id \
+uip maestro case task-entry-conditions add caseplan.json stg_review_id tsk_notify_id \
   --display-name "After Approval" \
   --rule-type selected-tasks-completed \
   --selected-tasks-ids "tsk_approval_id" \
@@ -38,7 +38,7 @@ uip case task-entry-conditions add caseplan.json stg_review_id tsk_notify_id \
 ## Example — Ad-hoc expression gate
 
 ```bash
-uip case task-entry-conditions add caseplan.json stg_triage_id tsk_escalate_id \
+uip maestro case task-entry-conditions add caseplan.json stg_triage_id tsk_escalate_id \
   --display-name "High-risk only" \
   --rule-type adhoc \
   --condition-expression "in.riskScore > 700" \
@@ -48,7 +48,7 @@ uip case task-entry-conditions add caseplan.json stg_triage_id tsk_escalate_id \
 ## Example — Wait for connector event before starting
 
 ```bash
-uip case task-entry-conditions add caseplan.json stg_triage_id tsk_process_id \
+uip maestro case task-entry-conditions add caseplan.json stg_triage_id tsk_process_id \
   --display-name "Wait for inbound" \
   --rule-type wait-for-connector \
   --condition-expression "event.type = 'order_received'" \
@@ -80,7 +80,7 @@ Capture `ConditionId`. Confirm:
 ## Editing Existing Conditions
 
 ```bash
-uip case task-entry-conditions edit <file> <stage-id> <task-id> <condition-id> \
+uip maestro case task-entry-conditions edit <file> <stage-id> <task-id> <condition-id> \
   --display-name "<new-name>" \
   --rule-type <additional> \
   --condition-expression "<expr>" \

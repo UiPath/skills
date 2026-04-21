@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case triggers add-event <file> \
+uip maestro case triggers add-event <file> \
   --type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
   --event-params '<json>' \
@@ -24,7 +24,7 @@ uip case triggers add-event <file> \
 ## Example
 
 ```bash
-uip case triggers add-event caseplan.json \
+uip maestro case triggers add-event caseplan.json \
   --type-id "829ef147-84b9-4718-9715-eefa06cc0a78" \
   --connection-id "7622a703-5d85-4b55-849b-6c02315b9e6e" \
   --event-params '{"project":"PROJ"}' \

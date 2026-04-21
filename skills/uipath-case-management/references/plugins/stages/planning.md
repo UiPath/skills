@@ -10,7 +10,7 @@ A stage node inside the case. Stages contain tasks and connect via edges. Two CL
 | Exception stage | `--type exception` |
 | Secondary stage | Alias for exception stage. Sometimes used in sdd.md. |
 
-At the CLI level the only difference between `stage` and `exception` is the `--type` flag. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. Schema-wise, `ExceptionStage` can carry `slaRules` (expression-driven SLA), but `uip case sla rules add` is root-level only — this schema extension is not reachable via CLI at the stage level today.
+At the CLI level the only difference between `stage` and `exception` is the `--type` flag. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. Schema-wise, `ExceptionStage` can carry `slaRules` (expression-driven SLA), but `uip maestro case sla rules add` is root-level only — this schema extension is not reachable via CLI at the stage level today.
 
 ## When to Pick `exception` vs `stage`
 
@@ -53,7 +53,7 @@ This constraint is also documented in the [edges plugin](../edges/planning.md).
 
 ### Note on `isRequired`
 
-`isRequired` is **not a CLI flag** on `uip case stages add`. It is a planning-phase attribute used downstream by case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages flagged `isRequired: true` have completed.
+`isRequired` is **not a CLI flag** on `uip maestro case stages add`. It is a planning-phase attribute used downstream by case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages flagged `isRequired: true` have completed.
 
 Record `isRequired` in `tasks.md` for each stage. Use:
 - `true` — **Default for regular stages.** Stage is on the main flow path and must complete for case completion.

@@ -13,7 +13,7 @@ Always. Every `tasks.md` has one edge entry per transition in the sdd.md flow gr
 | Trigger | Stage | `case-management:TriggerEdge` |
 | Stage | Stage | `case-management:Edge` |
 
-You do not specify the edge type — `uip case edges add` figures it out from the `--source` node's type.
+You do not specify the edge type — `uip maestro case edges add` figures it out from the `--source` node's type.
 
 ## Wiring Constraints
 

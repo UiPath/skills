@@ -78,7 +78,7 @@ Rule structure uses DNF — see §4.
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
-Entry point. Created automatically by `uip case cases add`. Exactly one per case.
+Entry point. Created automatically by `uip maestro case cases add`. Exactly one per case.
 
 ```json
 {
@@ -358,7 +358,8 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
     "caseIdentifier": "Simple Case",
     "caseAppEnabled": false,
     "caseIdentifierType": "constant",
-    "version": "v12",
+    "version": "v17",
+    "publishVersion": 2,
     "data": {}
   },
   "nodes": [

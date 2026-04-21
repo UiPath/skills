@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add-connector <file> <stage-id> \
+uip maestro case tasks add-connector <file> <stage-id> \
   --type activity \
   --type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
@@ -25,7 +25,7 @@ uip case tasks add-connector <file> <stage-id> \
 ## Example
 
 ```bash
-uip case tasks add-connector caseplan.json stg000abc123 \
+uip maestro case tasks add-connector caseplan.json stg000abc123 \
   --type activity \
   --type-id "718fdc36-73a8-3607-8604-ddef95bb9967" \
   --connection-id "7622a703-5d85-4b55-849b-6c02315b9e6e" \
@@ -35,7 +35,7 @@ uip case tasks add-connector caseplan.json stg000abc123 \
 ```
 
 > **Shell quoting tip** — for complex JSON, write to a temp file and read it back:
-> `uip case tasks add-connector caseplan.json <stage-id> --type activity ... --input-values "$(cat /tmp/inputs.json)" --output json`
+> `uip maestro case tasks add-connector caseplan.json <stage-id> --type activity ... --input-values "$(cat /tmp/inputs.json)" --output json`
 
 ## Resulting JSON Shape
 
@@ -77,7 +77,7 @@ Fields inside `--input-values` can reference cross-task outputs or expressions, 
 {"body":{"summary":"=result.some_field","description":"=metadata.description"}}
 ```
 
-For complex cross-task references, after `tasks add-connector`, run `uip case var bind` on the individual input as with other task types. See [bindings-and-expressions.md](../../../bindings-and-expressions.md).
+For complex cross-task references, after `tasks add-connector`, run `uip maestro case var bind` on the individual input as with other task types. See [bindings-and-expressions.md](../../../bindings-and-expressions.md).
 
 ## Filter Expression (if needed)
 

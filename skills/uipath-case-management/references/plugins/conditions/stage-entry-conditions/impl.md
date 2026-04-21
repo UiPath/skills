@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case stage-entry-conditions add <file> <stage-id> \
+uip maestro case stage-entry-conditions add <file> <stage-id> \
   --display-name "<name>" \
   --is-interrupting <true|false> \
   --rule-type <rule-type> \
@@ -31,7 +31,7 @@ The planning phase records stage names; the implementation phase looks up the ca
 ## Example — Enter "Resolution" after "Triage" exits
 
 ```bash
-uip case stage-entry-conditions add caseplan.json stg_resolution_id \
+uip maestro case stage-entry-conditions add caseplan.json stg_resolution_id \
   --display-name "After Triage" \
   --rule-type selected-stage-exited \
   --selected-stage-id stg_triage_id \
@@ -41,7 +41,7 @@ uip case stage-entry-conditions add caseplan.json stg_resolution_id \
 ## Example — Interrupt when a connector event arrives
 
 ```bash
-uip case stage-entry-conditions add caseplan.json stg_exception_id \
+uip maestro case stage-entry-conditions add caseplan.json stg_exception_id \
   --display-name "Fraud detected" \
   --is-interrupting true \
   --rule-type wait-for-connector \
@@ -79,7 +79,7 @@ Capture `ConditionId`. Confirm in `caseplan.json`:
 ## Editing Existing Conditions
 
 ```bash
-uip case stage-entry-conditions edit <file> <stage-id> <condition-id> \
+uip maestro case stage-entry-conditions edit <file> <stage-id> <condition-id> \
   --display-name "<new-name>" \
   --rule-type <additional-rule-type> \
   --condition-expression "<expr>"

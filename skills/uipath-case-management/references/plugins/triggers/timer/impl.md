@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case triggers add-timer <file> \
+uip maestro case triggers add-timer <file> \
   --every "<duration>" \
   --at "<iso-datetime>" \
   --repeat <count> \
@@ -14,7 +14,7 @@ uip case triggers add-timer <file> \
 Or use a raw ISO 8601 repeating interval:
 
 ```bash
-uip case triggers add-timer <file> \
+uip maestro case triggers add-timer <file> \
   --time-cycle "<R/PT...>" \
   --display-name "<display-name>" \
   --output json
@@ -32,7 +32,7 @@ uip case triggers add-timer <file> \
 ## Example — Every hour, forever
 
 ```bash
-uip case triggers add-timer caseplan.json \
+uip maestro case triggers add-timer caseplan.json \
   --every 1h \
   --display-name "Hourly Poll" \
   --output json
@@ -41,7 +41,7 @@ uip case triggers add-timer caseplan.json \
 ## Example — Every day at 9 AM UTC, for 30 days
 
 ```bash
-uip case triggers add-timer caseplan.json \
+uip maestro case triggers add-timer caseplan.json \
   --every 1d \
   --at 2026-04-26T09:00:00.000Z \
   --repeat 30 \
@@ -52,7 +52,7 @@ uip case triggers add-timer caseplan.json \
 ## Example — Raw ISO 8601
 
 ```bash
-uip case triggers add-timer caseplan.json \
+uip maestro case triggers add-timer caseplan.json \
   --time-cycle "R/PT1H" \
   --display-name "Raw Hourly" \
   --output json

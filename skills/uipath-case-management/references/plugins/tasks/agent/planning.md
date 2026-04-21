@@ -26,7 +26,7 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 2. **Identifier field:** `entityKey`.
 3. **Cross-type fallback.** Agents are occasionally registered in `processOrchestration-index.json` when wrapped in an agentic process — search both if the primary yields no match.
 4. **Match priority:** exact name + exact folder > exact name only.
-5. **Discover inputs/outputs** via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). For agents with multiple elements, also pass `--element-id` when invoking describe (see [case-commands.md § uip case tasks](../../../case-commands.md)).
+5. **Discover inputs/outputs** via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md). For agents with multiple elements, also pass `--element-id` when invoking describe (see [case-commands.md § uip maestro case tasks](../../../case-commands.md)).
 
 ## Unresolved Fallback
 

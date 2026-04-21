@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case case-exit-conditions add <file> \
+uip maestro case case-exit-conditions add <file> \
   --display-name "<name>" \
   --marks-case-complete <true|false> \
   --rule-type <rule-type> \
@@ -31,7 +31,7 @@ uip case case-exit-conditions add <file> \
 ## Example — Preferred completion pattern
 
 ```bash
-uip case case-exit-conditions add caseplan.json \
+uip maestro case case-exit-conditions add caseplan.json \
   --display-name "Case resolved" \
   --marks-case-complete true \
   --rule-type required-stages-completed \
@@ -43,7 +43,7 @@ Completes the case when every stage flagged `isRequired: true` (in the planning 
 ## Example — Non-completing exit when a specific stage completes
 
 ```bash
-uip case case-exit-conditions add caseplan.json \
+uip maestro case case-exit-conditions add caseplan.json \
   --display-name "Early exit via Escalation" \
   --marks-case-complete false \
   --rule-type selected-stage-completed \
@@ -54,7 +54,7 @@ uip case case-exit-conditions add caseplan.json \
 ## Example — Wait for connector event to close
 
 ```bash
-uip case case-exit-conditions add caseplan.json \
+uip maestro case case-exit-conditions add caseplan.json \
   --display-name "Closed by downstream system" \
   --marks-case-complete true \
   --rule-type wait-for-connector \
@@ -91,14 +91,14 @@ Capture `ConditionId` from `--output json`. Confirm in `caseplan.json`:
 ## Editing / Removing
 
 ```bash
-uip case case-exit-conditions edit <file> <condition-id> \
+uip maestro case case-exit-conditions edit <file> <condition-id> \
   --display-name "<new-name>" \
   --marks-case-complete <bool> \
   --rule-type <additional> \
   --condition-expression "<expr>" \
   --selected-stage-id "<id>"
 
-uip case case-exit-conditions remove <file> <condition-id>
+uip maestro case case-exit-conditions remove <file> <condition-id>
 ```
 
 `edit --rule-type` appends a new rule (OR group). Use `remove` + re-`add` to replace.

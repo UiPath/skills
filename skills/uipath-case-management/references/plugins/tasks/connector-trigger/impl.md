@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add-connector <file> <stage-id> \
+uip maestro case tasks add-connector <file> <stage-id> \
   --type trigger \
   --type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
@@ -26,7 +26,7 @@ uip case tasks add-connector <file> <stage-id> \
 ## Example
 
 ```bash
-uip case tasks add-connector caseplan.json stg000abc123 \
+uip maestro case tasks add-connector caseplan.json stg000abc123 \
   --type trigger \
   --type-id "829ef147-84b9-4718-9715-eefa06cc0a78" \
   --connection-id "7622a703-5d85-4b55-849b-6c02315b9e6e" \

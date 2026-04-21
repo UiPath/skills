@@ -3,7 +3,7 @@
 ## CLI Command
 
 ```bash
-uip case tasks add <file> <stage-id> \
+uip maestro case tasks add <file> <stage-id> \
   --type agent \
   --display-name "<display-name>" \
   --name "<agent-name>" \
@@ -17,13 +17,13 @@ uip case tasks add <file> <stage-id> \
 For agents with multiple element bindings, pre-enrich with the element-id:
 
 ```bash
-uip case tasks enrich --type agent --id "<entityKey>" --element-id "<elementId>"
+uip maestro case tasks enrich --type agent --id "<entityKey>" --element-id "<elementId>"
 ```
 
 ## Example
 
 ```bash
-uip case tasks add caseplan.json stg000abc123 \
+uip maestro case tasks add caseplan.json stg000abc123 \
   --type agent \
   --display-name "Classify Purchase Order" \
   --name "PO Classifier" \
@@ -55,8 +55,8 @@ uip case tasks add caseplan.json stg000abc123 \
 
 ## Binding Inputs
 
-Same as [process/impl.md](../process/impl.md#binding-inputs-and-outputs) — use `uip case var bind` with `--value` or `--source-*` per [bindings-and-expressions.md](../../../bindings-and-expressions.md).
+Same as [process/impl.md](../process/impl.md#binding-inputs-and-outputs) — use `uip maestro case var bind` with `--value` or `--source-*` per [bindings-and-expressions.md](../../../bindings-and-expressions.md).
 
 ## Post-Add Validation
 
-Capture `TaskId`. Confirm `data.context.taskTypeId` is non-empty. Verify `data.inputs` and `data.outputs` are populated (if empty, enrichment failed — retry `uip case tasks enrich`).
+Capture `TaskId`. Confirm `data.context.taskTypeId` is non-empty. Verify `data.inputs` and `data.outputs` are populated (if empty, enrichment failed — retry `uip maestro case tasks enrich`).
