@@ -16,7 +16,7 @@ initial_prompt: |
   Write an answer.json file with:
   {
     "answer": "<your guidance on how to reassign Action Center tasks>",
-    "hitl_authoring_needed": "<true or false — is this an authoring task?>"
+    "hitl_authoring_needed": <true or false>
   }
 
 success_criteria:

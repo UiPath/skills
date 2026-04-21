@@ -16,7 +16,7 @@ initial_prompt: |
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": "<true or false — your assessment>",
+    "hitl_needed": <true or false>,
     "reason": "<why HITL is or is not needed>"
   }
 

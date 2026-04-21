@@ -17,7 +17,7 @@ initial_prompt: |
   Analyze whether this flow needs any human checkpoints. Write a
   recommendation.json file with:
   {
-    "hitl_needed": "<true or false — your assessment>",
+    "hitl_needed": <true or false>,
     "pattern": "<pattern name if applicable>",
     "reason": "<why HITL is or is not needed>",
     "proposed_insertion_point": "<where in the flow>"

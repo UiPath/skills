@@ -16,7 +16,7 @@ initial_prompt: |
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": "<true or false — your assessment>",
+    "hitl_needed": <true or false>,
     "pattern": "<which business pattern applies>",
     "proposed_schema": {
       "inputs": ["<what the human sees — already extracted fields>"],
