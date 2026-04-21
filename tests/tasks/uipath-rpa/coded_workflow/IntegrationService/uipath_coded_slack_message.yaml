@@ -1,15 +1,12 @@
-task_id: uipath-coded-slack-message
+task_id: skill-rpa-coded-slack-message
 description: >
   Create a UiPath coded workflow (C#) that sends a message to the
-  Slack channel #test-ojal-channel using the Slack Integration Service
+  Slack channel #test-channel using the Slack Integration Service
   connector. Exercises coded workflow scaffolding and connector usage.
-tags: [rpa, coded, slack, default]
+tags: [uipath-rpa, coded, slack, e2e]
 max_iterations: 1
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   setting_sources: ["user", "project"]
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.
@@ -29,7 +26,7 @@ sandbox:
 initial_prompt: |
   Create a UiPath coded workflow project named "SlackChannelMessage" and generate
   SlackChannelMessage.cs file that sends the message "Hello from coded workflow" 
-  to the Slack channel #test-ojal-channel.
+  to the Slack channel #test-channel.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Complete the project end-to-end in a single pass.
@@ -74,7 +71,7 @@ success_criteria:
       python $TASK_DIR/validate_file_contains.py
       "SlackChannelMessage/SlackChannelMessage.cs"
       "send_message_to_channel_v2"
-      "#test-ojal-channel"
+      "#test-channel"
       "Hello from coded workflow"
       "ISConnections"
       "Operation.Create"

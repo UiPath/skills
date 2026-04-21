@@ -1,15 +1,12 @@
-task_id: uipath-coded-netsuite-create-job-status
+task_id: skill-rpa-coded-netsuite-create-job-status
 description: >
   Create a UiPath coded workflow (C#) that adds a new job status named
   "CodedWorkflowTest" in Oracle NetSuite using the NetSuite Integration Service
   connector. Exercises coded workflow scaffolding and connector usage.
-tags: [rpa, coded, netsuite, integration]
+tags: [uipath-rpa, coded, netsuite, integration]
 max_iterations: 1
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   setting_sources: ["user", "project"]
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.

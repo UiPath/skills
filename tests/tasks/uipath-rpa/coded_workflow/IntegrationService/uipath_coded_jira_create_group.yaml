@@ -1,15 +1,12 @@
-task_id: uipath-coded-jira-create-group
+task_id: skill-rpa-coded-jira-create-group
 description: >
   Create a UiPath coded workflow (C#) that creates a new Jira group named
   "CodedWorkflowTestGroup" using the Jira Integration Service connector.
   Exercises coded workflow scaffolding and connector usage.
-tags: [rpa, coded, jira, default]
+tags: [uipath-rpa, coded, jira, smoke]
 max_iterations: 1
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   setting_sources: ["user", "project"]
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.

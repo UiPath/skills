@@ -1,15 +1,12 @@
-task_id: uipath-coded-jira-add-comment
+task_id: skill-rpa-coded-jira-add-comment
 description: >
   Create a UiPath coded workflow (C#) that adds a comment on Jira ticket JTD-10
   using the Jira Integration Service connector. Exercises coded workflow
   scaffolding and connector usage.
-tags: [rpa, coded, jira, integration]
+tags: [uipath-rpa, coded, jira, integration]
 max_iterations: 1
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   setting_sources: ["user", "project"]
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.

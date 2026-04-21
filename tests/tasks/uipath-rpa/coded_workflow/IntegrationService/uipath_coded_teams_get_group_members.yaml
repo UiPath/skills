@@ -1,15 +1,12 @@
-task_id: uipath-coded-teams-get-group-members
+task_id: skill-rpa-coded-teams-get-group-members
 description: >
   Create a UiPath coded workflow (C#) that fetches all members from the
   Microsoft Teams team "Test Integration Service" using the Microsoft Teams
   Integration Service connector. Exercises coded workflow scaffolding and connector usage.
-tags: [rpa, coded, teams, integration]
+tags: [uipath-rpa, coded, teams, integration]
 max_iterations: 1
 
 agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   setting_sources: ["user", "project"]
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.
