@@ -17,15 +17,23 @@ Help the user add a curated allowlist of safe `uip` subcommands to their Claude 
    - **Just print it** — output the JSON only, do not write anything.
    - **Something else** — accept a custom path string.
 
-2. **Read the target file.** If it exists, parse the JSON strictly. If it already contains `permissions.allow` or `permissions.ask`, preserve existing entries and add only the missing ones (deduplicate by exact string). If there is no `permissions` block, add one. If the file parses as invalid JSON, abort with a clear message and ask the user to fix it manually — do not attempt to rewrite.
+2. **Ask whether to include the safety-rail `ask` rules** using a second `AskUserQuestion`:
+   - **Yes — include safety rails** (default, recommended) — `debug` / `upload` / `publish` / `pack` / `login` still prompt, even under `defaultMode: bypassPermissions` or `--dangerously-skip-permissions`. Prevents accidental prod publishes in YOLO mode.
+   - **No — allow-only, no safety rails** — write only the `allow` block. Power users who explicitly want zero prompts under `--dangerously-skip-permissions` pick this. Accept that a stray `uip solution publish` will execute without confirmation.
 
-3. **Show the proposed diff** — print the delta (new entries being added to `allow` and `ask`) before writing. Do not print the full file.
+   If the user picked **Just print it** in step 1, still ask this question — it decides which JSON variant to print.
 
-4. **Ask for explicit confirmation** to write. Do not write without a yes.
+3. **Read the target file.** If it exists, parse the JSON strictly. If it already contains `permissions.allow` or `permissions.ask`, preserve existing entries and add only the missing ones (deduplicate by exact string). If there is no `permissions` block, add one. If the file parses as invalid JSON, abort with a clear message and ask the user to fix it manually — do not attempt to rewrite.
 
-5. **Write the file** with the merged JSON. Preserve existing formatting (indentation, key order) as much as reasonably possible.
+   - If the user chose **allow-only** in step 2 and the target file already has relevant `ask` entries from a prior run, **do not remove them** — leave existing `ask` rules intact. Only the `write` side is skipped; pre-existing safety rails the user already opted into stay put.
 
-6. **Report** the path written and tell the user the new rules take effect on the next tool call — no restart required.
+4. **Show the proposed diff** — print the delta (new entries being added to `allow`, and to `ask` if included) before writing. Do not print the full file.
+
+5. **Ask for explicit confirmation** to write. Do not write without a yes.
+
+6. **Write the file** with the merged JSON. Preserve existing formatting (indentation, key order) as much as reasonably possible.
+
+7. **Report** the path written, which variant was installed (full vs allow-only), and tell the user the new rules take effect on the next tool call — no restart required.
 
 ## Recommended allowlist
 
@@ -78,6 +86,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 
 - Pattern syntax is literal-prefix + `*` wildcard with a space before `*` — see the [Claude Code settings docs](https://code.claude.com/docs/en/settings.md#permissions-configuration).
 - `Bash(uip login status *)` matches `uip login status --output json`; `Bash(uip login)` (exact, no wildcard) matches only the bare interactive login so it keeps its prompt.
+- Rule precedence in Claude Code is `deny > ask > allow`, and rules are evaluated **before** `defaultMode` / `--dangerously-skip-permissions`. So the `ask` list in the full variant still forces a prompt under YOLO mode — that is the point of it, and it is the difference between the two variants offered in step 2.
 - If the user has existing `permissions.deny` rules mentioning `uip`, do not remove them — respect explicit denials even if they conflict with the recommended allowlist. Surface the conflict in chat and ask.
 - Never modify `~/.claude/settings.json` without explicit consent — that file often contains secrets (tokens, env vars) and should not be edited casually. If the user picks the global option, re-confirm before writing.
-- This allowlist intentionally excludes `uip solution upload`, `uip flow debug`, and `uip flow pack / publish` — these produce real cloud side effects (publishing, executing flows) and should keep their prompt per the `uipath-maestro-flow` skill's Critical Rule 9.
+- The full variant's `ask` block intentionally guards `uip solution upload`, `uip flow debug`, `uip flow pack`, `uip solution publish`, `uip agent init`, and `uip login` — these produce real cloud or filesystem side effects. See the `uipath-maestro-flow` skill's Critical Rule 9.
