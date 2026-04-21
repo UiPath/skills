@@ -202,13 +202,22 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | Field | Value |
 |-------|-------|
 | `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
-| `name` (connection binding) | `"<CONNECTOR_KEY> connection"` — must match the string inside the node's `model.context[].connection` placeholder (without `<bindings.` prefix and `>` suffix). |
+| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip flow node configure` fetches this from IS automatically. When adding bindings by hand, use `"<CONNECTOR_KEY> connection"` as a placeholder — it must match the `model.context[].connection` placeholder (without `<bindings.` prefix and `>` suffix). |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
 | `resourceKey` | The connection UUID from `uip is connections list`. **Same UUID on both bindings.** |
 | `default` | Connection binding → connection UUID. Folder binding → folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
+
+`uip flow node configure` also sets `model.bindings.resourceKey` on the node (the connection UUID). This enables `flow-schema` to correlate the node with its Connection binding when generating `bindings_v2.json`. When adding bindings by hand, set this field on the node too:
+
+```json
+"model": {
+  "bindings": { "resourceKey": "<CONNECTION_UUID>" },
+  "context": [ ... ]
+}
+```
 
 **Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two entries — do not add duplicates. Matching is by `name`, so as long as the node's `connectorKey` matches the binding's `name` prefix, both nodes resolve the same connection.
 
@@ -268,13 +277,13 @@ At debug/pack time, the CLI derives `content/bindings_v2.json` from the top-leve
         "ConnectionId": {
           "defaultValue": "7622a703-5d85-4b55-849b-6c02315b9e6e",
           "isExpression": false,
-          "displayName": "uipath-atlassian-jira connection"
+          "displayName": "my-jira-connection"
         }
       },
       "metadata": {
         "ActivityName": "Create Issue",
         "BindingsVersion": "2.2",
-        "DisplayLabel": "uipath-atlassian-jira connection",
+        "DisplayLabel": "my-jira-connection",
         "UseConnectionService": "true",
         "Connector": "uipath-atlassian-jira"
       }
