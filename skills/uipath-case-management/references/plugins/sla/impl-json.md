@@ -108,17 +108,15 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 JSON is a superset of the CLI path. Each divergence is deliberate:
 
-- **Per-conditional-rule escalations.** CLI's `escalation add` always attaches to the default `=js:true` rule. JSON attaches to any `slaRules[]` entry via the T-entry's `attach-to` field. Studio Web-authored caseplan.json files already use this pattern (see `docs/uipath-case-management/migration-fixtures/sla/gap-fill/conditional-escalation.json`).
+- **Per-conditional-rule escalations.** CLI's `escalation add` always attaches to the default `=js:true` rule. JSON attaches to any `slaRules[]` entry via the T-entry's `attach-to` field. Studio Web-authored caseplan.json files already use this pattern.
 - **ExceptionStage SLA.** CLI's `requireStageForSla` rejects `case-management:ExceptionStage`. JSON writes SLA to both `Stage` and `ExceptionStage`. Runtime accepts both.
 - **Multi-recipient single rule.** CLI emits one `EscalationRule` per recipient. JSON emits one rule with `recipients: [r1, r2, …]` when sdd declares multiple recipients on the same escalation. Matches sdd intent; the `EscalationRuleRecipient[]` type supports it.
 - **Co-authorship is asymmetric.** CLI can append escalations to our default rule (`getOrCreateDefaultRule` finds the `=js:true` entry). CLI cannot edit per-conditional-rule escalations — those are JSON-only territory.
 
 ## Compatibility
 
-Captured against CLI version `0.1.21`. See [`docs/uipath-case-management/migration-fixtures/sla/`](../../../../../docs/uipath-case-management/migration-fixtures/sla/) for fixtures.
-
-- [ ] **Golden diff:** normalized `json-write-output.json` matches `cli-output.json` for the CLI-comparable fragment
-- [ ] **Validation parity:** both outputs produce the same validate result
-- [ ] **Gap-fill probes:** `conditional-escalation.json`, `exception-stage-sla.json`, `multi-recipient.json` each pass `uip maestro case validate`
+- [ ] **CLI-parity:** structural equivalence between CLI output (`sla set` + `rules add` + `escalation add`) and direct-JSON-write, modulo random `esc_xxxxxx` IDs
+- [ ] **Validation parity:** both outputs produce the same `uip maestro case validate` result
+- [ ] **Gap-fill:** per-conditional-rule escalations, ExceptionStage `slaRules[]`, and multi-recipient single-rule variants each pass `uip maestro case validate`
 - [ ] **Studio Web render:** per-conditional-rule escalations display correctly
 - [ ] **Co-authorship forward:** CLI `sla escalation add` against JSON-written default rule appends successfully
