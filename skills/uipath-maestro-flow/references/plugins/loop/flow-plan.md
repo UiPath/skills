@@ -1,8 +1,47 @@
-# Loop Node — Implementation
+# Loop Node
 
 ## Node Type
 
 `core.logic.loop`
+
+## When to Use
+
+Use a Loop node to iterate over a collection of items. Supports sequential and parallel execution.
+
+### Selection Heuristics
+
+| Situation | Use Loop? |
+| --- | --- |
+| Process each item in an array | Yes |
+| Run the same operation on multiple inputs concurrently | Yes (with `parallel: true`) |
+| Simple data transformation on a collection | No — use [Transform](../transform/flow-plan.md) |
+| Distribute work items to robots | No — use [Queue](../queue/flow-plan.md) |
+
+## Ports
+
+| Input Port(s) | Output Port(s) |
+| --- | --- |
+| `input`, `loopBack` | `success`, `output`, `error` |
+
+- `loopBack` — receives the edge returning from the last node inside the loop body
+- `success` — fires after all iterations complete
+- `output` — carries aggregated results from all iterations
+- `error` — implicit error port shared with all action nodes; fires when the loop or an iteration throws. See [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
+## Key Inputs
+
+| Input | Required | Description |
+| --- | --- | --- |
+| `collection` | Yes | Expression pointing to an array (e.g., `$vars.fetchData.output.body.items`) |
+| `parallel` | No | `true` to execute all iterations concurrently (default: sequential) |
+
+## Wiring Rules
+
+- The loop body starts from the `output` port of the loop node
+- The last node in the loop body connects back to the loop's `loopBack` port
+- After all iterations, execution continues from the `success` port
+- Do not create cycles except through the `loopBack` mechanism
+- **Every node inside the loop body must have `"parentId": "<loopId>"`** — without this, variableUpdates will not fire per-iteration and loop variables will be inaccessible
 
 ## Registry Validation
 
@@ -11,6 +50,10 @@ uip flow registry get core.logic.loop --output json
 ```
 
 Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`.
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -52,22 +95,9 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 
 > **Critical:** If you omit `parentId`, the node executes outside the loop context. State variables will not update across iterations and loop outputs like `currentItem` will be inaccessible.
 
-## Adding / Editing
+## Accessing Output
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
-
-## Wiring
-
-Loop nodes have a specific wiring pattern:
-
-- `input` — entry from upstream
-- `output` — into the loop body (first body node)
-- `loopBack` — return from last body node back to loop
-- `success` — exit after loop completes (to next downstream node)
-
-See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
-
-## Accessing Loop Variables Inside Body
+### Loop Variables Inside Body
 
 Inside the loop body, access the current item via `$vars.<loopId>.currentItem`:
 

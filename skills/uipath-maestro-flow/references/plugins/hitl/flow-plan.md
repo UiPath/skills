@@ -1,6 +1,38 @@
-# HITL Node — Implementation
+# HITL Node
 
-HITL nodes pause the flow for human input via a UiPath App. Pattern: `uipath.core.human-task.{key}`.
+HITL nodes pause the flow and present a UiPath App to a human user for input. The flow resumes when the user submits the form. Published apps appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) apps in sibling projects are discovered via `--local` — no login or publish required.
+
+## Node Type Pattern
+
+`uipath.core.human-task.{key}`
+
+## When to Use
+
+Use a HITL node when the flow needs to pause for human input, approval, or review.
+
+### Selection Heuristics
+
+| Situation | Use HITL? |
+| --- | --- |
+| Manager approval before processing | Yes |
+| Human reviews extracted data before submission | Yes |
+| Human resolves items the automation cannot handle | Yes |
+| Fully automated processing with no human involvement | No |
+| App in same solution but not yet published | Yes — use `--local` discovery (see below) |
+| App does not exist yet | Create it in the same solution with `uipath-coded-apps`, then use `--local` discovery |
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
+## Output Variables
+
+- `$vars.{nodeId}.output` — the form data submitted by the user
+- `$vars.{nodeId}.error` — error details if execution fails (`code`, `message`, `detail`, `category`, `status`)
 
 ## Discovery
 
@@ -10,6 +42,8 @@ HITL nodes pause the flow for human input via a UiPath App. Pattern: `uipath.cor
 uip flow registry pull --force
 uip flow registry search "uipath.core.human-task" --output json
 ```
+
+Requires `uip login`. Only published apps from your tenant appear.
 
 **In-solution (local, no login required):**
 
@@ -127,13 +161,18 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 > **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
-## Use Cases
+## Accessing Output
+
+- `$vars.{nodeId}.output` — the form data submitted by the user
+- `$vars.{nodeId}.error` — error details if execution fails
+
+### Use Cases
 
 - **Approval workflows** — manager approval before processing
 - **Data validation** — human reviews extracted data before submission
 - **Exception handling** — human resolves items the automation cannot handle
 
-## Common Pattern — Human-in-the-Loop
+### Common Pattern — Human-in-the-Loop
 
 ```text
 Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?) ->

@@ -22,7 +22,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip flow init` and packaging. Do not add them manually.
 
-> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](plugins/connector/impl.md) for the connector-binding shape.
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](plugins/connector/flow-plan.md) for the connector-binding shape.
 
 ## Project structure (from `uip flow init`)
 
@@ -112,7 +112,7 @@ Trigger nodes (manual, scheduled, connector triggers) have a single output — n
 }
 ```
 
-End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](plugins/end/impl.md)).
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/flow-plan.md](plugins/end/flow-plan.md)).
 
 ## Layout
 
@@ -429,7 +429,7 @@ Each entry gives a node instance's `model.context[]` a resolvable target for the
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
-See each resource plugin's `impl.md` for the full JSON per node type: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [flow](plugins/flow/impl.md), [agentic-process](plugins/agentic-process/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md).
+See each resource plugin's `flow-plan.md` for the full JSON per node type: [rpa](plugins/rpa/flow-plan.md), [agent](plugins/agent/flow-plan.md), [flow](plugins/flow/flow-plan.md), [agentic-process](plugins/agentic-process/flow-plan.md), [api-workflow](plugins/api-workflow/flow-plan.md), [hitl](plugins/hitl/flow-plan.md).
 
 **Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 

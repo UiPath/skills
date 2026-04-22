@@ -1,8 +1,37 @@
-# Subflow Node — Implementation
+# Subflow Node
 
 ## Node Type
 
 `core.subflow`
+
+## When to Use
+
+Use a Subflow node to group related steps into a reusable, drillable container with isolated variable scope.
+
+### Selection Heuristics
+
+| Situation | Use Subflow? |
+| --- | --- |
+| Group related steps into a reusable container | Yes |
+| Encapsulate logic with its own variable scope | Yes |
+| Simple sequential steps that don't need isolation | No — wire nodes directly |
+| Call a published flow as a subprocess | No — use [Flow](../flow/flow-plan.md) |
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
+## Key Properties
+
+- Subflows have their own `nodes`, `edges`, and `variables` stored in `subflows.{nodeId}`
+- Parent-scope `$vars` are **not** visible inside the subflow — pass values explicitly via inputs
+- Subflow inputs map to `direction: "in"` variables; outputs map to `direction: "out"` variables
+- Nesting supported up to 3 levels deep
+- Every subflow must have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
 
 ## Registry Validation
 
@@ -12,7 +41,15 @@ uip flow registry get core.subflow --output json
 
 Confirm: input port `input`, output ports `output` and `error`.
 
-## Parent Node JSON
+## Adding / Editing
+
+### Creating a Subflow
+
+For the step-by-step procedure, see [JSON: Create a subflow](../../flow-editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures below for the node-specific fields.
+
+## JSON Structure
+
+### Parent Node
 
 ```json
 {
@@ -42,7 +79,7 @@ Confirm: input port `input`, output ports `output` and `error`.
 }
 ```
 
-## Subflow Definition
+### Subflow Definition
 
 Subflow contents are stored in a top-level `subflows` object keyed by the parent node's ID:
 
@@ -186,10 +223,6 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 6. Subflow nodes must have inline `outputs` defined on them (Start node needs `outputs.output`, Script nodes need `outputs.output` and `outputs.error`)
 7. Subflows can be nested (subflow inside subflow), up to 3 levels
 8. Each subflow has its own `nodes`, `edges`, and `variables` sections
-
-## Creating a Subflow
-
-For the step-by-step procedure, see [JSON: Create a subflow](../../flow-editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
 
 ## Debug
 

@@ -1,11 +1,47 @@
-# Queue Node — Implementation
+# Queue Node
 
 ## Node Types
 
 | Node Type | Description |
 | --- | --- |
-| `core.action.queue.create` | Fire-and-forget queue item creation |
-| `core.action.queue.create-and-wait` | Create queue item and wait for result |
+| `core.action.queue.create` | Create a queue item and continue immediately (fire-and-forget) |
+| `core.action.queue.create-and-wait` | Create a queue item and wait for processing to complete |
+
+## When to Use
+
+Use Queue nodes to distribute work items to robots via Orchestrator queues.
+
+### Selection Heuristics
+
+| Situation | Use Queue? |
+| --- | --- |
+| Distribute work to robots — fire-and-forget | Yes (`create`) |
+| Distribute work and need the result before continuing | Yes (`create-and-wait`) |
+| Direct process invocation with known inputs | No — use [RPA Workflow](../rpa/flow-plan.md) |
+| Iterate over items sequentially in the flow | No — use [Loop](../loop/flow-plan.md) |
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `success` |
+
+## Key Inputs
+
+| Input | Required | Description |
+| --- | --- | --- |
+| `queue` | Yes | Orchestrator queue name |
+| `itemData` | No | JSON payload for the queue item |
+| `priority` | No | `Low`, `Normal` (default), `High` |
+| `reference` | No | Tracking reference string |
+| `deferDate` | No | ISO 8601 — earliest time to process |
+| `dueDate` | No | ISO 8601 — deadline for processing |
+
+## Common Pattern — Fan-Out to Queue
+
+```text
+Manual Trigger -> Script (split batch) -> Loop -> Queue Create (per item) -> End Loop -> End
+```
 
 ## Registry Validation
 
@@ -15,6 +51,10 @@ uip flow registry get core.action.queue.create-and-wait --output json
 ```
 
 Confirm: input port `input`, output port `success`.
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -49,10 +89,6 @@ Confirm: input port `input`, output port `success`.
   "model": { "type": "bpmn:ServiceTask" }
 }
 ```
-
-## Adding / Editing
-
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Wait Variant
 

@@ -1,6 +1,37 @@
-# RPA Node — Implementation
+# RPA Node
 
-RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
+RPA nodes invoke RPA processes (XAML or coded C# workflows) from within a flow. Published processes appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
+
+## Node Type Pattern
+
+`uipath.core.rpa-workflow.{key}`
+
+## When to Use
+
+Use an RPA node when the flow needs desktop/browser automation via a published RPA process.
+
+### Selection Heuristics
+
+| Situation | Use RPA? |
+| --- | --- |
+| Desktop/browser automation via a published RPA process | Yes |
+| Target system has a REST API | No — use [Connector](../connector/flow-plan.md) or [HTTP](../http/flow-plan.md) |
+| RPA process in the same solution but not yet published | Yes — use `--local` discovery (see below) |
+| RPA process does not exist yet | Create it in the same solution with `uipath-rpa`, then use `--local` discovery |
+| Need AI reasoning, not desktop automation | No — use [Agent](../agent/flow-plan.md) |
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
+## Output Variables
+
+- `$vars.{nodeId}.output` — the RPA process return value (structure depends on the process)
+- `$vars.{nodeId}.error` — error details if execution fails (`code`, `message`, `detail`, `category`, `status`)
 
 ## Discovery
 
@@ -10,6 +41,8 @@ RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
 uip flow registry pull --force
 uip flow registry search "uipath.core.rpa-workflow" --output json
 ```
+
+Requires `uip login`. Only published processes from your tenant appear.
 
 **In-solution (local, no login required):**
 
@@ -128,7 +161,9 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 > **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
-## If the RPA Process Does Not Exist Yet
+## Configuration
+
+### If the RPA Process Does Not Exist Yet
 
 Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish required.
 

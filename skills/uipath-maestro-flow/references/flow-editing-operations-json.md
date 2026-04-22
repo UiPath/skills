@@ -411,4 +411,4 @@ The `method` and `endpoint` come from `connectorMethodInfo` in the `registry get
 }
 ```
 
-See [connector/impl.md](plugins/connector/impl.md) for the full schema and multi-connector examples.
+See [connector/flow-plan.md](plugins/connector/flow-plan.md) for the full schema and multi-connector examples.

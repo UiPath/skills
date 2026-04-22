@@ -107,7 +107,7 @@ uip flow node configure <ProjectName>.flow <NODE_ID> \
 - Creates connection binding entries in `bindings_v2.json`
 - Creates connection resource files under `resources/solution_folder/connection/`
 
-The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/impl.md](plugins/connector/impl.md), [connector-trigger/impl.md](plugins/connector-trigger/impl.md), and [http/impl.md](plugins/http/impl.md) for the exact fields.
+The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/flow-plan.md](plugins/connector/flow-plan.md), [connector-trigger/flow-plan.md](plugins/connector-trigger/flow-plan.md), and [http/flow-plan.md](plugins/http/flow-plan.md) for the exact fields.
 
 **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file:
 
@@ -137,7 +137,7 @@ uip flow node configure <ProjectName>.flow <NODE_ID> \
 - Generates `bindings_v2.json` with the target connector's connection
 - Creates a connection resource file under `resources/solution_folder/connection/`
 
-See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and JSON structure.
+See [http/flow-plan.md](plugins/http/flow-plan.md) for the full configuration workflow and JSON structure.
 
 ### Validate
 
@@ -270,7 +270,7 @@ After the resource (RPA process, agent, etc.) has been published or added to the
    uip flow node configure <ProjectName>.flow <NEW_TRIGGER_ID> --detail '<TRIGGER_DETAIL_JSON>'
    ```
 
-See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full `--detail` schema.
+See [connector-trigger/flow-plan.md](plugins/connector-trigger/flow-plan.md) for the full `--detail` schema.
 
 ### Replace manual trigger with scheduled trigger
 
