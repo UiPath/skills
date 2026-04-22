@@ -11,25 +11,30 @@ Write the hypothesis in one sentence before touching any YAML. Examples:
 
 If you can't state it in one sentence, the experiment will not produce a clear answer. Split it.
 
-## 2. Set up variants as branches in one repo
+## 2. Set up variants as refs in one repo
 
 **Do not** use two separate clones. Diverging clones drift on unrelated files, so you can no longer claim the only difference is the change you're testing.
 
-Instead, one repo, one branch per variant, all checked out in parallel via `git worktree`:
+Instead, one repo, one ref per variant, all checked out in parallel via `git worktree`. A variant ref can be either a **branch** (what you'll normally use — the change lives on a branch) or a **commit SHA** (when you want to pin a specific historical point, e.g. a tagged release or a reproducibility check against a past run):
 
 ```bash
 # From the skills repo root
-git worktree add ../skills-main     main                          # baseline
-git worktree add ../skills-variantb   feat/my-change     # variant under test
+
+# Branch variants (the common case)
+git worktree add ../skills-main     main                     # baseline branch
+git worktree add ../skills-variantb feat/my-change           # variant under test
+
+# SHA variants (when you need an exact historical point)
+git worktree add --detach ../skills-a1b2c3d a1b2c3d          # detached HEAD at that commit
 ```
 
-Each worktree is a full working copy on its own branch. They share the `.git` dir, so there's no duplication of history and branches stay in sync. When the experiment is done, delete the worktrees with `git worktree remove`.
+Each worktree is a full working copy. Branch worktrees track their branch and move if you `pull`; SHA worktrees are detached HEADs that won't move unless you explicitly check out a different ref. All worktrees share the `.git` dir, so there's no duplication of history. When the experiment is done, delete the worktrees with `git worktree remove`.
 
-For three-way comparisons (baseline vs A vs B) add a third worktree on a third branch.
+For three-way comparisons (baseline vs A vs B) add a third worktree on a third ref.
 
 ## 3. Pin each variant to a commit SHA
 
-Record the SHA of each branch in the experiment YAML as a comment. This is the single most important reproducibility step. Paths drift; SHAs don't.
+Record the SHA of each ref in the experiment YAML as a comment. This is the single most important reproducibility step. Paths drift; branches move; SHAs don't. (If the ref was already a SHA, this is a no-op — it's already pinned.)
 
 ```yaml
   - variant_id: variantb

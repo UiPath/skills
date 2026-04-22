@@ -1,24 +1,27 @@
 # Skill Comparison Experiment
 
-Run an apples-to-apples A/B comparison between two branches of the skills repo and produce a decision-ready report. Automates the workflow described in [`tests/experiments/skill-comparison-playbook.md`](../../tests/experiments/skill-comparison-playbook.md).
+Run an apples-to-apples A/B comparison between two refs of the skills repo — each ref is either a branch or a commit SHA — and produce a decision-ready report. Automates the workflow described in [`tests/experiments/skill-comparison-playbook.md`](../../tests/experiments/skill-comparison-playbook.md).
 
 **Input:** `$ARGUMENTS`
-- `<branch_a> <branch_b>` — required, the two branches to compare. Must both exist locally or on a remote.
+- `<ref_a> <ref_b>` — required, the two refs to compare. Each ref is either a **branch name** (local or remote-tracking) or a **commit SHA** (short or full, must already be in the local object database). The two refs can be any mix of the two kinds.
 - `<skill_name>` — optional third argument. Restricts the task set to `tests/tasks/<skill_name>/`. Defaults to all tasks (warn the user: this can be slow and expensive).
 - `<n_reps>` — optional fourth argument. Reps per variant. Defaults to `3`. Accept integers 1–5.
 
 **Examples:**
-- `/skill-compare main feat/my-change uipath-maestro-flow`
-- `/skill-compare main feat/my-change uipath-maestro-flow 5`
-- `/skill-compare main feat/my-change` (all skills, N=3)
+- `/skill-compare main feat/my-change uipath-maestro-flow` — two branches, scoped to one skill.
+- `/skill-compare main a1b2c3d uipath-maestro-flow` — branch vs. commit SHA (e.g. regression-check a specific commit).
+- `/skill-compare a1b2c3d e4f5g6h uipath-maestro-flow` — two SHAs (compare two historical points on the same or different branches).
+- `/skill-compare main feat/my-change` — two branches, all skills, N=3.
+
+**Ref slugs** (used in filenames and worktree paths):
+- Branch: replace `/` with `-` and strip any leading `origin/`. Example: `feat/my-change` → `feat-my-change`.
+- SHA: resolve to the 7-char short form via `git rev-parse --short`. Example: `a1b2c3defabc` → `a1b2c3d`. Short SHAs are already filename-safe; no further transformation.
 
 **Output:**
-- A new experiment YAML at `tests/experiments/compare-<branch_a_slug>-vs-<branch_b_slug>.yaml`
-- Worktrees at `../skills-<branch_a_slug>` and `../skills-<branch_b_slug>` relative to the repo root
-- Run results under `tests/runs/compare-<branch_a_slug>-vs-<branch_b_slug>-<timestamp>/`
-- Comparison report at `tests/runs/compare-<branch_a_slug>-vs-<branch_b_slug>-<timestamp>/comparison-report.md`
-
-Branch name slugs: replace `/` with `-` and strip any leading `origin/`. Example: `feat/my-change` → `feat-my-change`.
+- A new experiment YAML at `tests/experiments/compare-<ref_a_slug>-vs-<ref_b_slug>.yaml`
+- Worktrees at `../skills-<ref_a_slug>` and `../skills-<ref_b_slug>` relative to the repo root
+- Run results under `tests/runs/compare-<ref_a_slug>-vs-<ref_b_slug>-<timestamp>/`
+- Comparison report at `tests/runs/compare-<ref_a_slug>-vs-<ref_b_slug>-<timestamp>/comparison-report.md`
 
 **Working directory.** Every phase runs from `tests/`. All git operations use `git -C ..` to target the repo root. Worktree paths like `../skills-<slug>` resolve alongside the repo, one level above `tests/`.
 
@@ -27,22 +30,28 @@ Branch name slugs: replace `/` with `-` and strip any leading `origin/`. Example
 ## Phase 1 — Parse & validate
 
 1. Parse `$ARGUMENTS`: require at least two non-empty tokens. If fewer than 2, print usage and stop.
-2. Normalize each branch name:
-   - Strip leading `origin/` if present.
-   - Reject branch names that start with `-` — they can be misread as git flags. Stop with a usage message.
-   - Record the original (e.g. `feat/foo`) and the slug (e.g. `feat-foo`) separately.
-3. Reject the call if `<branch_a> == <branch_b>` — comparing a branch to itself produces no signal.
-4. Reject the call if `<n_reps>` is outside `1..5`. N=1 is allowed for a fast signal check but warn it's underpowered for decisions.
-5. For each branch, verify it exists. Use `--` to terminate flag parsing so branch names can never be misread as options:
+2. For each ref, reject inputs that start with `-` — they can be misread as git flags. Stop with a usage message.
+3. **Classify each ref as branch or SHA.** Use `--` to terminate flag parsing throughout:
    ```bash
-   git -C .. rev-parse --verify -- "<branch>" >/dev/null 2>&1
+   # Is it a branch (local or remote-tracking)?
+   git -C .. show-ref --verify --quiet "refs/heads/<ref>"         && kind=branch     # local branch
+   git -C .. show-ref --verify --quiet "refs/remotes/origin/<ref>" && kind=branch-remote  # remote-only
+   # Otherwise, does it resolve to a commit in the local object database?
+   [ "$(git -C .. cat-file -t "<ref>" 2>/dev/null)" = "commit" ]  && kind=sha
    ```
-   If the local ref fails, retry with `origin/<branch>` and record that the branch is remote-only (will need a tracking branch during worktree setup). If still not found, stop and tell the user which branch is missing.
+   - If `kind=branch`: strip leading `origin/` from the recorded ref if present. Slug = branch name with `/` → `-`.
+   - If `kind=branch-remote`: record the remote-only flag — Phase 3 will need `-b <branch> origin/<branch>` to create a tracking branch. Slug = branch name with `/` → `-`.
+   - If `kind=sha`: resolve to the 7-char short form with `git -C .. rev-parse --short --verify -- "<ref>"`. Slug = the short SHA. Record the pinned SHA as the short form.
+   - If none match: stop and report the ref as not found. For SHAs that might be unfetched, hint at `git fetch origin` or `git fetch origin <sha>` (git supports fetching by SHA on most remotes).
+4. Reject the call if the two refs resolve to the **same commit SHA** — comparing identical content produces no signal. Treat `main` and `a1b2c3d` as identical if `main` currently points at `a1b2c3d`; warn the user and stop.
+5. Reject the call if `<n_reps>` is outside `1..5`. N=1 is allowed for a fast signal check but warn it's underpowered for decisions.
 6. If `<skill_name>` is provided, verify `tasks/<skill_name>/` exists (relative to `tests/`). If not, list available skills under `tasks/*/` and stop.
-7. For each branch, decide whether to create or reuse a worktree at `../skills-<slug>`:
+7. For each ref, decide whether to create or reuse a worktree at `../skills-<slug>`:
    - If the path does not exist → create it in Phase 3.
-   - If it exists, check `git -C .. worktree list --porcelain`. If it's a registered worktree already on the target branch, **reuse it** (skip Phase 3's `worktree add` for this branch and go straight to SHA capture).
-   - If it exists but is not a worktree, or is a worktree on a different branch, **stop** and tell the user to remove it (`git worktree remove`) or point the command at different worktree paths. Do not overwrite.
+   - If it exists, check `git -C .. worktree list --porcelain`:
+     - Branch kind: reuse if the worktree is already on that branch.
+     - SHA kind: reuse if the worktree has a detached HEAD at the pinned short SHA (compare `git -C <path> rev-parse --short HEAD`).
+   - If it exists but isn't a worktree, or is at the wrong branch/SHA, **stop** and tell the user to remove it (`git worktree remove`) or point the command at a different worktree path. Do not overwrite.
 
 ## Phase 2 — Ask for the hypothesis
 
@@ -52,19 +61,24 @@ Save the answer — it goes into the comparison report and the experiment YAML d
 
 ## Phase 3 — Create worktrees
 
-For each branch, skip if Phase 1 flagged it for reuse. Otherwise run, from `tests/`:
+For each ref, skip if Phase 1 flagged it for reuse. Otherwise, from `tests/`, run the command that matches the ref's kind:
 
+**Branch (local):**
 ```bash
 git -C .. worktree add ../skills-<slug> -- <branch>
 ```
 
-If the branch is remote-only (from Phase 1), first create a tracking branch:
-
+**Branch (remote-only):** create a tracking branch at the same time:
 ```bash
 git -C .. worktree add -b <branch> ../skills-<slug> -- origin/<branch>
 ```
 
-The `--` terminator prevents branch names starting with `-` from being parsed as flags.
+**SHA:** create a detached-HEAD worktree pinned at that commit. No local branch is created, so a SHA input never pollutes your branch list:
+```bash
+git -C .. worktree add --detach ../skills-<slug> <sha>
+```
+
+The `--` terminator prevents branch names starting with `-` from being parsed as flags; it's not required with `--detach` since the SHA form is unambiguous.
 
 Record each worktree's absolute path. Capture the commit SHA (short form):
 
@@ -72,42 +86,44 @@ Record each worktree's absolute path. Capture the commit SHA (short form):
 git -C ../skills-<slug> rev-parse --short HEAD
 ```
 
-Keep these SHAs in context — they're re-checked in Phase 6 and reported in Phase 8.
+For SHA-kind refs, this should equal the pinned SHA from Phase 1 step 3 — if it doesn't, stop (the worktree is at the wrong commit). Keep these SHAs in context; they're re-checked in Phase 6 and reported in Phase 8.
 
 If any worktree add fails, stop and report. Do not attempt to clean up partial state — the user should inspect.
 
 ## Phase 4 — Generate the experiment YAML
 
-Start from [`tests/experiments/skill-comparison-template.yaml`](../../tests/experiments/skill-comparison-template.yaml). Write the generated file to `tests/experiments/compare-<branch_a_slug>-vs-<branch_b_slug>.yaml`.
+Start from [`tests/experiments/skill-comparison-template.yaml`](../../tests/experiments/skill-comparison-template.yaml). Write the generated file to `tests/experiments/compare-<ref_a_slug>-vs-<ref_b_slug>.yaml`.
 
 Fill in:
-- `experiment_id`: `compare-<branch_a_slug>-vs-<branch_b_slug>`
+- `experiment_id`: `compare-<ref_a_slug>-vs-<ref_b_slug>`
 - `description`: the hypothesis from Phase 2
-- One variant per branch. Variant IDs must be the slugs.
+- One variant per ref. Variant IDs must be the slugs.
 - Absolute worktree paths in each variant's `plugins[].path`.
-- A pinned-SHA comment on the line above each variant, e.g. `# pinned: feat/my-change @ a1b2c3d`.
+- A pinned-SHA comment on the line above each variant. Format depends on ref kind:
+  - Branch ref: `# pinned: <branch> @ <sha>` — e.g. `# pinned: feat/my-change @ a1b2c3d`.
+  - SHA ref: `# pinned: <sha>` — e.g. `# pinned: a1b2c3d` (no branch; the input was the SHA itself).
 
 Suffix rule for rep variants:
-- **N=1** → one variant per branch, `variant_id` is the bare slug (e.g. `variant_id: main`). No `-rN` suffix.
+- **N=1** → one variant per ref, `variant_id` is the bare slug (e.g. `variant_id: main` or `variant_id: a1b2c3d`). No `-rN` suffix.
 - **N>1** → duplicate each variant N times with `-r1`, `-r2`, ... `-rN` suffixes on the `variant_id`, starting at `-r1`. All reps of a variant share the same path.
 
 Example for N=3:
 
 ```yaml
   - variant_id: <slug>-r1
-    # pinned: <branch> @ <sha>
+    # pinned: <ref> (@ <sha> if branch, or just <sha> if SHA)
     agent:
       plugins:
         - type: "local"
           path: "<abs-worktree-path>"
   - variant_id: <slug>-r2
-    # pinned: <branch> @ <sha>
+    # pinned: <ref> (@ <sha> if branch, or just <sha> if SHA)
     agent:
       plugins:
         - type: "local"
           path: "<abs-worktree-path>"
   - variant_id: <slug>-r3
-    # pinned: <branch> @ <sha>
+    # pinned: <ref> (@ <sha> if branch, or just <sha> if SHA)
     agent:
       plugins:
         - type: "local"
@@ -141,10 +157,10 @@ git -C ../skills-<slug> rev-parse --short HEAD    # for each worktree — must m
 Pick a deterministic run directory so concurrent runs can't be confused with ours. Use a slug + timestamp:
 
 ```bash
-RUN_DIR="runs/compare-<branch_a_slug>-vs-<branch_b_slug>-$(date +%Y%m%d-%H%M%S)"
+RUN_DIR="runs/compare-<ref_a_slug>-vs-<ref_b_slug>-$(date +%Y%m%d-%H%M%S)"
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run <resolved-task-files> \
-  -e experiments/compare-<branch_a_slug>-vs-<branch_b_slug>.yaml \
+  -e experiments/compare-<ref_a_slug>-vs-<ref_b_slug>.yaml \
   --run-dir "$RUN_DIR" \
   -j 1 -v
 ```
@@ -161,8 +177,8 @@ Stream output. If the run fails mid-way, capture the partial results and continu
 
    | variant | success rate | avg score | avg duration | total tokens |
    |---|---|---|---|---|
-   | <branch_a> | ... | ... | ... | ... |
-   | <branch_b> | ... | ... | ... | ... |
+   | <ref_a> | ... | ... | ... | ... |
+   | <ref_b> | ... | ... | ... | ... |
 
    If N>1, aggregate across `-r1`/`-r2`/`-rN`: use mean for score/duration/tokens, and `passed_runs / total_runs` for success rate per task.
 
@@ -189,7 +205,7 @@ Stream output. If the run fails mid-way, capture the partial results and continu
 Write `<RUN_DIR>/comparison-report.md` with this structure:
 
 ```markdown
-# Skill Comparison: <branch_a> vs <branch_b>
+# Skill Comparison: <ref_a> vs <ref_b>
 
 **Hypothesis:** <from Phase 2>
 **Run:** `<RUN_DIR basename>`
@@ -198,15 +214,15 @@ Write `<RUN_DIR>/comparison-report.md` with this structure:
 **N:** <n_reps> rep(s) per variant
 
 ## Variants
-- `<branch_a>` @ `<sha_a>`
-- `<branch_b>` @ `<sha_b>`
+- `<ref_a>` @ `<sha_a>`
+- `<ref_b>` @ `<sha_b>`
 
 ## Results
 <results table from Phase 7 step 1>
 
 ## Head-to-head
-- <branch_a> wins: <count>
-- <branch_b> wins: <count>
+- <ref_a> wins: <count>
+- <ref_b> wins: <count>
 - Ties: <count>
 
 ## Divergent tasks
@@ -243,26 +259,31 @@ Do **not** run `git worktree remove` or `git branch -d` yourself. Print cleanup 
 **If the run completed (Phase 7 produced a report):**
 ```bash
 # Once the user has acted on the recommendation:
-git worktree remove ../skills-<branch_a_slug>
-git worktree remove ../skills-<branch_b_slug>
+git worktree remove ../skills-<ref_a_slug>
+git worktree remove ../skills-<ref_b_slug>
+```
 
+If the losing ref was a **branch** (not a SHA), also consider:
+```bash
 # Optional — delete the losing branch (only if it was merged or you're sure you don't want it):
 git branch -d <losing_branch>
 ```
 
+SHA-kind refs create no local branch, so nothing to delete there.
+
 **If the user cancelled at Phase 5 (no run happened):**
 ```bash
 # Nothing ran — clean up the worktrees and generated YAML:
-git worktree remove ../skills-<branch_a_slug>
-git worktree remove ../skills-<branch_b_slug>
-rm tests/experiments/compare-<branch_a_slug>-vs-<branch_b_slug>.yaml
+git worktree remove ../skills-<ref_a_slug>
+git worktree remove ../skills-<ref_b_slug>
+rm tests/experiments/compare-<ref_a_slug>-vs-<ref_b_slug>.yaml
 ```
 
 Leave the generated experiment YAML in place after a completed run unless the user asks to delete it — it's a record of what was tested and is safe to commit or discard later.
 
 ## Error handling
 
-- **Branch not found:** stop, print which branch is missing and how to fetch (`git fetch origin <branch>`).
+- **Ref not found:** stop, print which ref is missing. For branches, suggest `git fetch origin <branch>`. For SHAs, suggest `git fetch origin` (or `git fetch origin <sha>` if the SHA isn't reachable from any known remote ref).
 - **Worktree path exists at a non-worktree directory, or on a different branch:** stop, print `git worktree remove` instructions. Don't overwrite. (If the path is already a valid worktree on the target branch, reuse it — see Phase 1 step 7.)
 - **SHA drift before run (Phase 6):** stop and ask the user whether to regenerate the YAML with new SHAs or reset the worktree to the pinned commit.
 - **`coder-eval` not installed:** print the `make install` command from `tests/README.md` and stop.
