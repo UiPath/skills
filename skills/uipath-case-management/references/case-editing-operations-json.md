@@ -108,7 +108,7 @@ Every skill run generates fresh random IDs — no determinism.
 
 `id-map.json` is built up incrementally during the run, flushed adjacent to `caseplan.json`. Lifecycle:
 
-1. **T01 (case plugin)** creates the file with the literal T01 entries: `{ "T01": { "kind": "case", "id": "root" }, "T01.trigger": { "kind": "trigger", "id": "trigger_1" } }`.
+1. **T01 (case plugin)** creates the file with the literal root entry: `{ "T01": { "kind": "case", "id": "root" } }`. No trigger is emitted at T01 — the triggers plugin records its entry at T02.
 2. **Downstream plugins** read the file, append entries for generated IDs (stage, edge, task, condition, etc.), write back. Each plugin writes the map before handing off to the next so cross-plugin references can resolve via the on-disk file.
 3. **End of run:** the file is complete and lives alongside `caseplan.json`.
 

@@ -2,17 +2,21 @@
 #
 # Case (root) golden diff — asserts the direct-JSON-write output is
 # structurally equivalent to the CLI output for both the minimal and
-# full-flags variants.
+# full-flags variants, after normalizing the deliberate divergences.
 #
-# Normalizer strategy:
-#   - Root `id` is a literal ("root") in CLI — no remap needed.
-#   - Initial Trigger `id` is literal ("trigger_1") — no remap needed.
-#   - `root.description: ""` is stripped from both sides — the CLI's
+# Divergences normalized away:
+#   - `root.description: ""` is stripped from both sides. The CLI's
 #     `cases add` omits the key entirely when `--description` is not
-#     passed, while direct-JSON-write always emits `description: <value>`
-#     (empty string when sdd.md has no description). See Known CLI
-#     divergences in plugins/case/impl-json.md. Non-empty descriptions
+#     passed; direct-JSON-write always emits `description: <value>`
+#     (empty string when sdd.md has no description). See "Known CLI
+#     divergences" in plugins/case/impl-json.md. Non-empty descriptions
 #     are NOT stripped so real structural differences still surface.
+#   - The CLI emits a hard-coded initial Trigger node
+#     `{ id: "trigger_1", type: "case-management:Trigger", position: {x:0,y:0}, data: { label: "Trigger 1" } }`.
+#     Direct-JSON-write emits `nodes: []` — primary-trigger creation is
+#     the triggers plugin's responsibility at T02. The normalizer
+#     removes the `trigger_1` node from the CLI side so both become
+#     `nodes: []` for a clean skeleton comparison.
 #
 # Usage:
 #   ./diff.sh
@@ -35,10 +39,12 @@ normalize() {
   jq -c '
     # Strip `root.description: ""` only — non-empty descriptions are
     # preserved so genuine divergences surface.
-    if (.root.description // null) == "" then
-      .root |= del(.description)
-    else .
-    end
+    (if (.root.description // null) == "" then
+       .root |= del(.description)
+     else . end)
+    # Strip the CLI-emitted default trigger_1 node from nodes[] so the
+    # skeleton comparison is apples-to-apples.
+    | .nodes |= map(select(.id != "trigger_1"))
   ' "$input" | jq -S .
 }
 

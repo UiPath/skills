@@ -8,7 +8,9 @@ Authoritative when the matrix in [`case-editing-operations.md`](../../case-editi
 
 ## Purpose
 
-Create `caseplan.json` from scratch with the root case definition and the hard-coded initial Trigger node. Runs exactly once per project as T01 in every `tasks.md`. Solution and project scaffolding (`uip solution new`, `uip maestro case init`, `uip solution project add`) remain CLI — see [`impl-cli.md`](impl-cli.md) § Prerequisites.
+Create `caseplan.json` from scratch as a pure skeleton — `root` definition plus empty `nodes: []` and `edges: []` arrays. Runs exactly once per project as T01 in every `tasks.md`. Solution and project scaffolding (`uip solution new`, `uip maestro case init`, `uip solution project add`) remain CLI — see [`impl-cli.md`](impl-cli.md) § Prerequisites.
+
+**No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 — either via direct JSON write (when migrated) or `uip maestro case triggers add-<manual|timer|event>` (current CLI path). This is a deliberate divergence from CLI `cases add`, which always emits a default `trigger_1` node.
 
 ## Scope
 
@@ -30,25 +32,26 @@ See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
 ## Pre-write checks
 
 1. **Scaffolding complete.** The target directory must already contain `project.uiproj` + `package-descriptor.json` from a successful `uip maestro case init` run. If not, halt and run [`impl-cli.md`](impl-cli.md) § Prerequisites first.
-2. **`caseplan.json` does not exist.** If the file exists, overwrite is permitted (direct-JSON-write collision behavior; see Known CLI divergences) — but only after the user has re-approved `tasks.md`. Runtime code path: re-runs regenerate `tasks.md` from scratch per SKILL.md Rule #8, so a collision here means a genuine re-run and overwriting is correct.
+2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When the file is absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule #8, so a collision here means a genuine re-run and overwriting is correct. This diverges from CLI `cases add`, which refuses when the file exists — see Known CLI divergences.
 
 ## ID generation
 
 - `root.id` is the literal string `"root"` — **not** a generated shortId. Divergent from every other plugin.
-- Initial Trigger `id` is the literal string `"trigger_1"`.
+- **No trigger ID emitted at T01.** The triggers plugin owns primary-trigger creation at T02.
 
 Record in `id-map.json` for downstream cross-reference:
 
 ```json
 {
-  "T01": "root",
-  "T01.trigger": "trigger_1"
+  "T01": { "kind": "case", "id": "root" }
 }
 ```
 
-Edges plugin resolves `"Trigger"` / `"Trigger 1"` / the sdd.md's trigger label to `trigger_1` via this map.
+## Recipe — Skeleton (no trigger)
 
-## Recipe — Minimal variant
+Pure skeleton: `root` definition, empty `nodes: []`, empty `edges: []`. The primary trigger is the triggers plugin's responsibility at T02.
+
+### Minimal variant (no description)
 
 When `description` is absent in the T01 input, emit `description: ""` (always-emit; see Known CLI divergences).
 
@@ -74,24 +77,12 @@ When `description` is absent in the T01 input, emit `description: ""` (always-em
         },
         "description": ""
     },
-    "nodes": [
-        {
-            "id": "trigger_1",
-            "type": "case-management:Trigger",
-            "position": {
-                "x": 0,
-                "y": 0
-            },
-            "data": {
-                "label": "Trigger 1"
-            }
-        }
-    ],
+    "nodes": [],
     "edges": []
 }
 ```
 
-## Recipe — With description
+### With description
 
 Same as above with `description` value populated from sdd.md:
 
@@ -117,19 +108,7 @@ Same as above with `description` value populated from sdd.md:
         },
         "description": "<description>"
     },
-    "nodes": [
-        {
-            "id": "trigger_1",
-            "type": "case-management:Trigger",
-            "position": {
-                "x": 0,
-                "y": 0
-            },
-            "data": {
-                "label": "Trigger 1"
-            }
-        }
-    ],
+    "nodes": [],
     "edges": []
 }
 ```
@@ -138,7 +117,6 @@ Same as above with `description` value populated from sdd.md:
 
 - Indent: 4 spaces.
 - Key order (root): `id, name, type, caseIdentifier, caseAppEnabled, caseIdentifierType, version, publishVersion, data, description`.
-- Key order (nodes[0]): `id, type, position, data`.
 - Trailing newline: single `\n` at end of file.
 
 Use the Write tool. File did not exist before — Edit does not apply.
@@ -156,9 +134,9 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
    - `root.data.intsvcActivityConfig === "v2"`
    - `root.data.uipath.variables.inputOutputs` is an array (empty at T01)
    - `root.data.uipath.bindings` is an array (empty at T01)
-3. **Initial trigger present.**
-   - `nodes[0].id === "trigger_1"`
-   - `nodes[0].type === "case-management:Trigger"`
+3. **Empty node/edge arrays.**
+   - `nodes` is an array of length 0
+   - `edges` is an array of length 0
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 
@@ -168,8 +146,10 @@ If any check fails, halt and report — do not proceed to downstream plugins.
 
 Direct-JSON-write is a superset of the CLI's `cases add`. The divergences below are deliberate.
 
-- **`root.description` is always emitted.** `cases add` omits the `description` key entirely when `--description` is not passed, and emits it at the root level (sibling of `data`) when passed. The JSON recipe always writes `"description": "<value>"` (empty string when sdd.md has no description) so downstream consumers read a consistent shape. The golden-diff normalizer in [`docs/uipath-case-management/migration-fixtures/case/diff.sh`](../../../../../docs/uipath-case-management/migration-fixtures/case/diff.sh) strips `description: ""` from both sides so equivalence still holds.
-- **Collision behavior.** CLI `cases add` fails with `"File already exists: <file>. Use 'cases edit' to modify it."` when `caseplan.json` already exists. Direct-JSON-write overwrites unconditionally. This is intentional — Phase 2 re-runs regenerate the full file from scratch after re-approval of `tasks.md` (SKILL.md Rule #8). The CLI's refuse-on-exist behavior assumed a `cases edit` follow-up that direct-JSON-write does not need.
+- **No trigger at T01.** CLI `cases add` emits a hard-coded initial Trigger node `{ id: "trigger_1", ..., data: { label: "Trigger 1" } }`. The JSON recipe emits `nodes: []`. Primary-trigger creation is the triggers plugin's responsibility at T02 (via `uip maestro case triggers add-<type>` today; direct-JSON-write once the triggers plugin migrates). The golden-diff normalizer in [`diff.sh`](../../../../../docs/uipath-case-management/migration-fixtures/case/diff.sh) strips `trigger_1` from the CLI side so structural equivalence still holds.
+   - **Side effect on `entry-points.json`.** The scaffold file `<ProjectName>/entry-points.json` written by `uip maestro case init` hard-codes `filePath: "/content/caseplan.json.bpmn#trigger_1"` — that stale reference persists until the triggers plugin writes a primary trigger whose ID is `trigger_1`, or until a future milestone reconciles `entry-points.json` management. Single-trigger cases using the current CLI triggers plugin produce a random `trigger_<6>` ID that does NOT match the scaffold reference — accept the dangling entry until the triggers plugin migration addresses it.
+- **`root.description` is always emitted.** `cases add` omits the `description` key entirely when `--description` is not passed, and emits it at the root level (sibling of `data`) when passed. The JSON recipe always writes `"description": "<value>"` (empty string when sdd.md has no description) so downstream consumers read a consistent shape. The golden-diff normalizer strips `description: ""` from both sides so equivalence still holds.
+- **Collision behavior.** CLI `cases add` fails with `"File already exists: <file>. Use 'cases edit' to modify it."` when `caseplan.json` already exists. Direct-JSON-write overwrites unconditionally — and creates the file if absent. This is intentional — Phase 2 re-runs regenerate the full file from scratch after re-approval of `tasks.md` (SKILL.md Rule #8). The CLI's refuse-on-exist behavior assumed a `cases edit` follow-up that direct-JSON-write does not need.
 - **`description` placement.** Both CLI and JSON place `root.description` at the root level (sibling of `data`), NOT inside `root.data`. The JSON recipe matches CLI placement exactly — only the always-emit behavior differs.
 - **Pre-populated `root.data`.** CLI 0.3.4 emits `root.data.intsvcActivityConfig: "v2"` and `root.data.uipath.variables.inputOutputs: [] / bindings: []` on a fresh `cases add`. The JSON recipe matches this shape. Downstream plugins (notably `variables/global-vars`) append to those structures — do not overwrite them at T01.
 
@@ -177,9 +157,10 @@ Direct-JSON-write is a superset of the CLI's `cases add`. The divergences below 
 
 Captured against CLI version `0.3.4`. See [`docs/uipath-case-management/migration-fixtures/case/`](../../../../../docs/uipath-case-management/migration-fixtures/case/) for fixtures.
 
-- [x] **Golden diff (minimal):** normalized `json-write-output-minimal.json` matches `cli-output-minimal.json` after stripping `description: ""` — `diff.sh` passes
+- [x] **Golden diff (minimal):** normalized `json-write-output-minimal.json` matches `cli-output-minimal.json` after stripping `description: ""` and the CLI-side `trigger_1` node — `diff.sh` passes
 - [x] **Golden diff (full flags):** normalized `json-write-output-full.json` matches `cli-output-full.json` — `diff.sh` passes
-- [x] **Validation parity:** both outputs produce the same 2 errors + 0 warnings from `uip maestro case validate` (expected failure profile for a case-only caseplan: no stage nodes + trigger has no outgoing edges)
-- [ ] **Downstream CLI mutation append:** `uip maestro case stages add` on a direct-JSON-written caseplan succeeds — not yet exercised (requires stages plugin run; already covered by stages pilot against CLI output, equivalence holds by fixture)
-- [ ] **Round-trip:** direct-JSON-write → `uip maestro case cases edit` accepts the file → subsequent mutations succeed — not yet exercised
-- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised
+- [x] **Validation:** JSON-write output produces a known-invalid failure profile (`no trigger node` + `no stage nodes`). Different from CLI's profile (`no stage nodes` + `trigger has no outgoing edges`) because CLI emits `trigger_1` and JSON does not. Both are expected-invalid for a case-only caseplan; validation at this boundary is skipped per SKILL.md Rule #20.
+- [ ] **Downstream CLI trigger append:** `uip maestro case triggers add-manual` on a direct-JSON-written skeleton succeeds — exercised separately; verified in the `entry-points.json` coupling note above.
+- [ ] **Downstream CLI mutation append:** `uip maestro case stages add` on a direct-JSON-written skeleton caseplan succeeds — not yet exercised.
+- [ ] **Round-trip:** direct-JSON-write → `uip maestro case cases edit` accepts the file → subsequent mutations succeed — not yet exercised.
+- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

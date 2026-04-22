@@ -19,18 +19,6 @@
         },
         "description": ""
     },
-    "nodes": [
-        {
-            "id": "trigger_1",
-            "type": "case-management:Trigger",
-            "position": {
-                "x": 0,
-                "y": 0
-            },
-            "data": {
-                "label": "Trigger 1"
-            }
-        }
-    ],
+    "nodes": [],
     "edges": []
 }
