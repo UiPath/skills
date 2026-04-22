@@ -26,16 +26,16 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Critical Rules
 
-1. **Phase 1 registry rules: `search`/`list` YES, `get` NO.** Use `registry search` and `registry list` during Phase 1 to discover what connectors and resources exist — this informs node selection. Do NOT run `registry get` in Phase 1 — detailed metadata, connection binding, and reference resolution belong to Phase 2. The planning guide documents all OOTB node types with ports and inputs — sufficient for topology design without registry calls. **Phase 2 REQUIRES `registry get` validation of all node types**, even OOTB nodes, to confirm the current product state. **Exception:** When building the flow (Step 5), you also need `registry get` for any node type to populate the `definitions` array — definitions must be copied from registry output, never hand-written.
-2. **ALWAYS follow the relevant plugin in `references/plugins/` for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required during Phase 2. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
-3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. Phase 1 discovery checks connection availability to surface gaps early; Phase 2 pings and binds the connection via [connector/impl.md](references/plugins/connector/impl.md).
+1. **Always validate node types against the registry before building.** Use `registry search`/`list` for discovery and `registry get` for detailed metadata and definitions.
+2. **ALWAYS follow the relevant plugin in `references/plugins/` for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
+3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. See [connector/impl.md](references/plugins/connector/impl.md) for connection binding details.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 5. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/flow-file-format.md](references/flow-file-format.md)).
 6. **`targetPort` is required on every edge** — `validate` rejects edges without it.
 7. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <nodeType>` output. Never hand-write definitions.
 8. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
 9. **Do NOT run `flow debug` without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs).
-10. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete (Step 6). Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
+10. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete (Step 5). Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
 11. **Manage variables by editing `.flow` JSON directly** — there are no CLI commands for variable management. Add/remove/update variables in the `variables` section of the `.flow` file. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 12. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
 13. **`=js:` prefix rules** — Use `=js:` on value expressions (end node output `source`, variable updates, HTTP input fields). Do NOT use `=js:` on condition expressions (decision `expression`, switch case `expression`, HTTP branch `conditionExpression`) — those are always evaluated as JS automatically. See [references/variables-and-expressions.md](references/variables-and-expressions.md).
@@ -67,6 +67,33 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 | **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via JSON (default) or CLI (opt-in), wire edges. | Relevant plugin's `impl.md` + [JSON editing](references/flow-editing-operations-json.md) (default) or [CLI editing](references/flow-editing-operations-cli.md) (opt-in) |
 | **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
 
+## Planning (optional)
+
+For complex flows, consider producing a plan before building. Reference [references/planning-arch.md](references/planning-arch.md) and [references/planning-impl.md](references/planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+
+Planning is useful when:
+- The flow has 5+ nodes with branching or parallel paths
+- The flow uses connectors or resources that need discovery
+- The user's requirements are ambiguous and you need to confirm the approach
+
+Planning is NOT needed when:
+- Adding/editing a single node in an existing flow
+- The flow is a straightforward linear pipeline (trigger → action → action → end)
+- The user has already described the exact topology they want
+
+### Examples
+
+**Plan:** "Build a flow that receives a Jira ticket, classifies it with an AI agent, routes urgent tickets to Slack and non-urgent to a queue, and logs everything to a Google Sheet."
+→ Multiple services, branching logic, connector discovery needed. Plan first.
+
+**Don't plan:** "Add a script node after the HTTP call that extracts the email field from the response."
+→ Single targeted edit. Just do it.
+
+**Don't plan:** "Create a flow that calls an API and sends the result to Slack."
+→ Linear pipeline, user knows what they want. Build directly, ask questions inline if needed.
+
+**Judgment call:** "Build me a flow that processes invoices."
+→ Ambiguous requirements. But the right move is to ask clarifying questions, not produce a plan document. Plan if the answers reveal complexity.
 
 ## Quick Start
 
@@ -155,8 +182,6 @@ uip maestro flow registry pull                          # refresh local cache (e
 
 > **Auth note**: Without `uip login`, registry shows OOTB nodes only. After login, tenant-specific connector and resource nodes are also available. **In-solution sibling projects** are always available via `--local` without login — see below.
 
-Discovery (`registry search`/`list`) and connector resolution (`registry get`, connection binding) happen during planning — see Step 4 below.
-
 **In-solution discovery (no login required):**
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
@@ -164,53 +189,9 @@ uip maestro flow registry get "<nodeType>" --local --output json  # get full man
 ```
 Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first.
 
-### Step 4 — Plan the flow (two phases)
+### Step 4 — Build the flow
 
-**Required when creating a new flow or adding multiple nodes.** Only skip this step for small targeted edits to an *existing* flow (e.g., changing a script body, renaming a node, tweaking one connection). When in doubt, plan.
-
-Planning is split into two phases:
-- **Phase 1 — Discovery & Architectural Design:** Discover available capabilities and check connector connection availability, then design the flow topology (nodes, edges, inputs/outputs) and produce a mermaid diagram. No `registry get` or connection binding — only existence checks.
-- **Phase 2 — Implementation Resolution:** Resolve connector details via `registry get`, bind connections, resolve reference fields, and finalize the plan with implementation-ready details.
-
-#### 4a. Discovery & Architectural Design (Phase 1)
-
-**Read [references/planning-arch.md](references/planning-arch.md)** for capability discovery, the node type catalog, selection heuristics, wiring rules, topology patterns, mermaid validation rules, and the full output format.
-
-Follow the process in that guide to produce a `<SolutionName>.arch.plan.md` in the **solution directory** (the folder containing the `.uipx` file) containing:
-1. Summary
-2. Mermaid flow diagram (validated against the mermaid syntax rules in the guide)
-3. Node table with suspected inputs/outputs
-4. Edge table with source/target ports
-5. Inputs & Outputs (workflow-level variables)
-6. Connector summary (if applicable)
-7. Open questions (if any)
-
-Present a **short summary in chat** (goal + key nodes + open questions). Tell the user to review the full plan in `<SolutionName>.arch.plan.md`.
-
-**Do NOT proceed to Phase 2 until the user explicitly approves the architectural plan.**
-
-#### 4b. Implementation Resolution (Phase 2)
-
-**Read [references/planning-impl.md](references/planning-impl.md)** for the implementation resolution process.
-
-Phase 2 takes the approved architectural plan and resolves all implementation details:
-- Validate all node types via `uip maestro flow registry get` — read each plugin's `impl.md` for registry validation
-- Resolve connector and resource nodes using the relevant plugin's `impl.md` ([connector](references/plugins/connector/impl.md), [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md), etc.)
-- Validate required fields against user-provided values
-- Replace `<PLACEHOLDER>` values with resolved IDs
-- Replace `core.logic.mock` nodes with real resource nodes (if published)
-- Write `<SolutionName>.impl.plan.md` with resolved details and mermaid diagram
-
-#### 4c. Iterate until approved
-
-**Do NOT proceed to Step 5 until the user explicitly approves the plan.** The iteration loop:
-
-1. User reviews the plan and gives feedback in chat (e.g., "move the Slack notification before the filter", "add an error handler after the API call", "use Salesforce instead of HubSpot")
-2. Update `<SolutionName>.impl.plan.md` with the changes
-3. Summarize what changed in chat
-4. Repeat until the user says the plan is approved
-
-### Step 5 — Build the flow
+For complex flows with multiple services or ambiguous requirements, consider planning first — see the Planning section above.
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
@@ -218,7 +199,7 @@ Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` f
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
-### Step 6 — Validate loop
+### Step 5 — Validate loop
 
 Run validation and fix errors iteratively until the flow is clean.
 
@@ -228,7 +209,7 @@ uip maestro flow validate <ProjectName>.flow --output json
 
 **Validation loop:**
 1. Run `uip maestro flow validate`
-2. If valid → done, move to Step 7 (tidy layout)
+2. If valid → done, move to Step 6 (tidy layout)
 3. If errors → read the error messages, fix the `.flow` file
 4. Go to 1
 
@@ -238,7 +219,7 @@ Common error categories:
 - **Invalid node/edge references** — `sourceNodeId`/`targetNodeId` must reference existing node `id`s
 - **Duplicate IDs** — node and edge `id`s must be unique
 
-### Step 7 — Tidy node layout
+### Step 6 — Tidy node layout
 
 After validation passes, auto-layout nodes before publishing or debugging:
 
@@ -246,7 +227,7 @@ After validation passes, auto-layout nodes before publishing or debugging:
 uip maestro flow tidy <ProjectName>.flow --output json
 ```
 
-### Step 8 — Debug (cloud) — only when explicitly requested
+### Step 7 — Debug (cloud) — only when explicitly requested
 
 After validation passes, the user may want to test the flow end-to-end. **Do not run this without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs). See Critical Rule #9.
 
@@ -259,13 +240,13 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 
 The argument to `resource refresh` is the **solution directory** (containing the `.uipx` file). The argument to `debug` is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. This uploads the project to Studio Web, triggers a debug session in Orchestrator, and streams results.
 
-> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 9 instead.
+> **Note:** Requires `uip login`. Debug is for **testing that the flow runs correctly** — not for publishing or viewing. To publish, use Step 8 instead.
 
 **Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip maestro flow debug](references/flow-commands.md#uip-maestro-flow-debug).
 
-### Step 9 — Publish to Studio Web
+### Step 8 — Publish to Studio Web
 
-**This is the default publish target.** After tidy (Step 7), when the user wants to publish, view, or share the flow, **refresh solution resources first**, then upload:
+**This is the default publish target.** After tidy (Step 6), when the user wants to publish, view, or share the flow, **refresh solution resources first**, then upload:
 
 ```bash
 # Sync resource declarations from project bindings
@@ -287,19 +268,17 @@ When the build completes, present the next-step dropdown described in the [Compl
 
 ## Anti-Patterns
 
-- **Never guess node schemas** — use the planning guide for OOTB nodes, `registry get` for connector/unknown nodes. Guessed port names or input fields cause silent wiring failures.
-- **Never `registry get` during Phase 1 planning** — use `registry search`/`list` for discovery, but save `registry get` for Phase 2. The planning guide documents all OOTB node types with ports and inputs. Phase 2 **requires** `registry get` validation of all node types to confirm the current product state before building.
-- **Never skip capability discovery for connector nodes** — run `registry search` during Phase 1 to confirm the connector exists and what operations it supports. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
+- **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
+- **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.
-- **Never skip the planning step for multi-node flows** — jumping straight to building produces flows that need major rework.
 - **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, identify the gap and tell the user which skill to use. Do not invoke other skills.
 - **Never use `core.logic.mock` when the resource is in the same solution** — use `--local` discovery instead. Mock placeholders are only for resources that are not in the current solution and not yet published.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
 - **Never leave `<bindings.name>` / `<bindings.folderPath>` template placeholders on resource-node instances** — these are registry templates for `model.context[]`, not runtime values. For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl): add `model.context[]` with `=bindings.<id>` refs on the node instance AND add matching entries to the top-level `bindings[]` array. The `definitions` entry stays verbatim from the registry (Critical Rule #7 still applies). Without both pieces, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." See the resource plugin's `impl.md`.
 - **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
 - **Never omit `outputs` on nodes that produce data** — action nodes need `output` + `error`, trigger nodes need `output`. The `outputDefinition` in `definitions` is for the registry schema, not for runtime binding — without `outputs` on the node instance, `$vars` references downstream will fail silently.
-- **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip maestro flow validate` once after the full build is complete (Step 6).
+- **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip maestro flow validate` once after the full build is complete (Step 5).
 - **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
 - **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
 - **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.
@@ -313,7 +292,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 | --- | --- |
 | **Edit an existing flow** | Common Edits section + [references/flow-editing-operations.md](references/flow-editing-operations.md) |
 | **Add/delete/wire nodes and edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
-| **Generate a flow plan** | [references/planning-arch.md](references/planning-arch.md) + [references/planning-impl.md](references/planning-impl.md) + Step 4 |
+| **Generate a flow plan** | [references/planning-arch.md](references/planning-arch.md) + [references/planning-impl.md](references/planning-impl.md) + Planning section above |
 | **Choose the right node type** | [references/planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [references/flow-file-format.md](references/flow-file-format.md) |
 | **Know all CLI commands** | [references/flow-commands.md](references/flow-commands.md) |
@@ -321,7 +300,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Wire nodes with edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) + [references/flow-file-format.md — Standard ports](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
 | **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Publish to Studio Web** | Step 9 (`uip solution upload <SolutionDir>`) |
+| **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) + [JSON: Variable Operations](references/flow-editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
@@ -369,7 +348,7 @@ When you finish building or editing a flow, report to the user:
    | Option | Action |
    |--------|--------|
    | **Publish to Studio Web** (default) | Run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
-   | **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir> --output json` (see Step 8). Confirm consent first — debug executes the flow for real. |
+   | **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir> --output json` (see Step 7). Confirm consent first — debug executes the flow for real. |
    | **Deploy to Orchestrator** | Run `uip solution resource refresh <SolutionDir> --output json` then `uip maestro flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
    | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
@@ -380,8 +359,8 @@ When you finish building or editing a flow, report to the user:
 - **[Flow Editing Operations](references/flow-editing-operations.md)** — Strategy selection matrix; **Direct JSON is the default**. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
   - [Direct JSON Strategy](references/flow-editing-operations-json.md) — Default for all `.flow` edits: node/edge CRUD, variables, subflows, output mapping, in-place input updates.
   - [CLI Strategy](references/flow-editing-operations-cli.md) — Carve-outs (connector, connector-trigger, inline-agent) and explicit user opt-in for `uip maestro flow node` and `uip maestro flow edge` commands.
-- **[Planning Phase 1: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery (`registry search`/`list`), plugin index for node selection, topology design, mermaid diagram generation, wiring rules, and common patterns. **Read this first when planning a new flow.**
-- **[Planning Phase 2: Implementation Resolution](references/planning-impl.md)** — Implementation resolution process (registry lookups, connection binding, reference field resolution), wiring rules, and flow patterns. **Read this after the architectural plan is approved.**
+- **[Planning: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery, plugin index, topology design, wiring rules, and common patterns.
+- **[Planning: Implementation Resolution](references/planning-impl.md)** — Registry lookups, connection binding, reference field resolution, wiring rules, and flow patterns.
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
@@ -407,6 +386,6 @@ When you finish building or editing a flow, report to the user:
   - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
   - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
-- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 9).
+- **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
