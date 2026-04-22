@@ -1,0 +1,57 @@
+task_id: skill-hitl-smoke-explicit
+description: >
+  Smoke test: agent should trigger the uipath-human-in-the-loop skill
+  when explicitly asked to add a HITL node. Verifies the skill fires for
+  direct HITL language and that the agent identifies the correct pattern.
+tags: [uipath-human-in-the-loop, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath Flow. Add a Human-in-the-Loop node before the final data
+  write step so a manager can review and approve the data before it is posted.
+
+  Write a recommendation.json file with:
+  {
+    "hitl_needed": <true or false>,
+    "pattern": "<which business pattern applies>",
+    "proposed_schema": {
+      "inputs": ["<field names the human will see>"],
+      "outputs": ["<field names the human fills in>"],
+      "outcomes": ["<action button names>"]
+    }
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified HITL is needed"
+    path: "recommendation.json"
+    includes:
+      - '"hitl_needed": true'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent named a specific pattern (non-empty pattern field)"
+    path: "recommendation.json"
+    includes:
+      - "approval"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent proposed a schema with outcomes"
+    path: "recommendation.json"
+    includes:
+      - "outcomes"
+      - "inputs"
+    weight: 1.5
+    pass_threshold: 1.0

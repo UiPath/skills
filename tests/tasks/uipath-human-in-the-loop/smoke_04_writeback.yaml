@@ -1,6 +1,6 @@
-task_id: skill-hitl-activation-writeback
+task_id: skill-hitl-smoke-writeback
 description: >
-  Activation test: agent should proactively detect a write-back validation
+  Smoke test: agent should proactively detect a write-back validation
   pattern when the user describes an AI agent writing to a system of record
   WITHOUT explicitly asking for HITL. Verifies proactive recommendation.
 tags: [uipath-human-in-the-loop, smoke]
@@ -17,7 +17,7 @@ initial_prompt: |
   Analyze whether this flow needs any human checkpoints. Write a
   recommendation.json file with:
   {
-    "hitl_needed": true or false,
+    "hitl_needed": <true or false>,
     "pattern": "<pattern name if applicable>",
     "reason": "<why HITL is or is not needed>",
     "proposed_insertion_point": "<where in the flow>"
@@ -39,7 +39,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Agent cited write-back or validation as the reason"
+    description: "Agent named a write-back or validation pattern"
     path: "recommendation.json"
     includes:
       - "write"

@@ -24,7 +24,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 ## Critical Rules
 
 1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
-2. **Always wire at least the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow. Wire `cancelled` and `timeout` to end nodes or handlers unless the user explicitly defers them.
+2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 4. **Validate after every change.** Run `uip flow validate <file> --format json` after writing the node and edges.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
@@ -86,7 +86,7 @@ Read the existing `.flow` file to understand current nodes and edges. Use the Re
 2. **What the human needs to see** — data produced by upstream nodes
 3. **What the human must provide back** — data needed by downstream nodes
 4. **What actions they can take** — the named outcome buttons
-5. **Form type**: QuickForm (inline schema) or AppTask (deployed coded app)?
+5. **Form type**: QuickForm (`inputs.type = "quick"`, inline schema) or AppTask (`inputs.type = "custom"`, deployed coded app)?
 
 ---
 
@@ -119,11 +119,11 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 Present the user with three options. Do not choose on their behalf or perform any registry search.
 
-| # | Option | Description |
-|---|---|---|
-| 1 | **QuickForm** | Inline typed form — fields rendered by Action Center from the schema you design here |
-| 2 | **New Coded Action App** | Scaffold a new React + TypeScript app inside the solution — full UI control |
-| 3 | **Existing Deployed App** | Reference an app already deployed to Orchestrator |
+| # | Option | `inputs.type` value | Description |
+|---|---|---|---|
+| 1 | **QuickForm** | `"quick"` | Inline typed form — fields rendered by Action Center from the schema you design here |
+| 2 | **New Coded Action App** | `"custom"` | Scaffold a new React + TypeScript app inside the solution — full UI control |
+| 3 | **Existing Deployed App** | `"custom"` | Reference an app already deployed to Orchestrator |
 
 | User selects | Next step |
 |---|---|
@@ -136,7 +136,7 @@ Present the user with three options. Do not choose on their behalf or perform an
 ## Step 4 — Common configuration
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
-| Priority | "Is this normal priority, or high/critical?" |
+| Priority | "What priority should this task have? Options: Low, Medium, High (default: Medium)" |
 
 ---
 
@@ -221,9 +221,9 @@ The Maestro HITL CLI is not yet available. Guide the user to add the HITL node m
 After completing the wiring:
 
 1. **What was inserted** — node ID, label, insertion point
-2. **Schema summary** — what the human will see (`inputs`), fill in (`outputs`/`inOuts`), and click (`outcomes`). For deployed action app show the actionSchema from the retrieve-configuration api response here.
+2. **Schema summary** — what the human will see (input-direction fields), fill in (output/inOut-direction fields), and click (outcomes). For deployed action app show the actionSchema from the retrieve-configuration api response here.
 3. **Edges wired** — which handles were connected and to which nodes; any handles left unwired
-4. **Runtime variables** — `<NodeId>.result` and `<NodeId>.status` and how to reference them
+4. **Runtime variables** — `$vars.<nodeId>.result` (object) and `$vars.<nodeId>.status` (string) and how to reference them downstream
 5. **Validation result** — pass or errors to fix
 6. **Next step** — pack and publish when ready via `uipath-development` skill
 

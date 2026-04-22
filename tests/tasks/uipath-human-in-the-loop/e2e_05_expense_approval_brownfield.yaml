@@ -1,8 +1,12 @@
 task_id: skill-hitl-e2e-expense-approval-brownfield
+# NOTE: "e2e" here means authoring end-to-end (brownfield JSON flow editing).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to insert a HITL node into a minimal flow.
 description: >
-  E2E test (brown field): agent adds a HITL node between two existing nodes
-  in a minimal flow, wires the completed handle, and validates the result.
-  Tests C2 (brown field insert), C5 (completed handle), F1 and F2 (validate).
+  Authoring E2E test (brown field): agent adds a HITL node between two existing
+  nodes in a minimal flow, wires the completed handle, and validates the authored
+  .flow file. Tests C2 (brown field insert), C5 (completed handle), F1 and F2
+  (validate). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, brown-field]
 
 agent:

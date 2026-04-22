@@ -1,8 +1,8 @@
-task_id: skill-hitl-quality-all-handles
+task_id: skill-hitl-quality-completed-handle-and-result
 description: >
-  Quality test: agent must wire all 3 HITL handles (completed, cancelled,
-  timeout) to distinct downstream nodes and validate. Tests C5, C6, C7,
-  C8, F2.
+  Quality test: agent must wire the completed handle to a downstream node
+  and demonstrate how to read the human's decision using $vars.<nodeId>.result
+  in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
 sandbox:
@@ -13,19 +13,18 @@ initial_prompt: |
   Create a flow called "PurchaseOrderApproval" with the following structure:
   - A manual trigger
   - A HITL node for purchase order approval (label: "PO Approval")
-  - A script node for approved orders (id: "processApproved", label: "Process PO")
-  - A script node for cancellations (id: "handleCancelled", label: "Handle Cancellation")
-  - A script node for timeouts (id: "escalateTimeout", label: "Escalate Timeout")
+  - A script node that reads the human's decision after the HITL step
+    (id: "processResult", label: "Process Result")
 
-  Wire ALL three HITL handles:
-  - completed -> processApproved
-  - cancelled -> handleCancelled
-  - timeout -> escalateTimeout
+  Wire the completed handle from the HITL node to processResult. In the
+  processResult script node body, show how to read the human's decision using
+  $vars.<hitl-node-id>.result.
 
   Validate after adding and wiring. Save results to report.json:
   {
     "hitl_node_id": "<id>",
-    "handles_wired": ["completed", "cancelled", "timeout"],
+    "handles_wired": ["completed"],
+    "result_variable_expression": "$vars.<hitl-node-id>.result",
     "commands_used": ["<list>"],
     "validation_passed": true
   }
@@ -40,12 +39,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "All three handles are wired in the flow file"
+    description: "completed handle is wired in the flow file"
     path: "PurchaseOrderApproval/flow_files/PurchaseOrderApproval.flow"
     includes:
       - '"completed"'
-      - '"cancelled"'
-      - '"timeout"'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -58,12 +55,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "report.json shows all 3 handles wired and validation passed"
+    description: "report.json shows completed handle wired and validation passed"
     path: "report.json"
     assertions:
       - expression: "length(handles_wired)"
         operator: gte
-        expected: 3
+        expected: 1
       - expression: "validation_passed"
         operator: equals
         expected: true
@@ -71,11 +68,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "All 3 handle names present in report"
+    description: "report.json references $vars result expression"
     path: "report.json"
     includes:
-      - "completed"
-      - "cancelled"
-      - "timeout"
+      - "$vars"
+      - ".result"
     weight: 2.0
     pass_threshold: 1.0

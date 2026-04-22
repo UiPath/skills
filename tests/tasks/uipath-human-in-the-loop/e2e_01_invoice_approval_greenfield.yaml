@@ -1,9 +1,12 @@
 task_id: skill-hitl-e2e-invoice-approval-greenfield
+# NOTE: "e2e" here means authoring end-to-end (greenfield JSON flow authoring).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to design and wire HITL nodes.
 description: >
-  E2E golden scenario (green field): agent builds a complete invoice approval
-  flow from scratch — detecting write-back + approval gate signals,
-  designing schema, adding HITL node, wiring all handles, and validating.
-  Real business use case. Full Discover -> Plan -> Build -> Verify loop.
+  Authoring E2E golden scenario (green field): agent builds a complete invoice
+  approval flow from scratch — detecting write-back + approval gate signals,
+  designing schema, adding HITL node, wiring all handles, and validating the
+  authored .flow file. Real business use case. Full Discover -> Plan -> Build -> Verify loop.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
 
 agent:
