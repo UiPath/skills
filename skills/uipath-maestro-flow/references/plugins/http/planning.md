@@ -2,23 +2,27 @@
 
 ## Node Type
 
-`core.action.http.v2` (Managed HTTP Request)
+Two HTTP node types are available. Pick by authentication needs, not by recency:
 
-> **Always use `core.action.http.v2`** for all HTTP requests — both connector-authenticated and manual. The older `core.action.http` (v1) is deprecated and does not pass IS credentials at runtime.
+- **`core.action.http`** (v1, standalone) — use for **public APIs / no-auth or simple manual auth** (API key in header, bearer token you already have). No `bindings_v2.json`, no connection resource, no `node configure` step. Smaller flow files, simpler debug.
+- **`core.action.http.v2`** (Managed HTTP Request) — use when the request needs **Integration Service connector-managed authentication** (OAuth handled by an IS connection). Requires `uip maestro flow node configure` to populate `inputs.detail` + generate `bindings_v2.json`.
+
+> **Never use v1 with `authenticationType: "connection"`** — the v1 node does not pass IS credentials at runtime. If you need IS-managed auth, use v2.
 
 ## When to Use
 
-Use a managed HTTP node to call a REST API — either with IS connector-managed authentication or with manual auth (raw URL).
+Use an HTTP node to call a REST API — either with IS connector-managed authentication (v2) or without auth / simple manual auth (v1 or v2 manual mode).
 
 ### Selection Heuristics
 
-| Situation | Use Managed HTTP? |
+| Situation | Node |
 | --- | --- |
-| Connector exists but lacks the specific curated activity | Yes — connector mode with target connector's connection |
-| No connector exists, but service has a REST API | Yes — manual mode with full URL |
-| Quick prototyping against any REST API | Yes — manual mode |
-| Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
-| Target system has no API (desktop app) | No — use [RPA Workflow](../rpa/planning.md) |
+| Public API, no auth (e.g., open-meteo, weather, public data) | **v1** — simplest; no connection resource needed |
+| Simple manual auth (static API key / bearer token) | **v1** — pass the header directly |
+| IS connector exists and needs OAuth/managed auth | **v2** — connector mode with connection binding |
+| Connector exists but lacks the specific curated activity, and you need its auth | **v2** — connector mode |
+| Connector exists and covers the use case end-to-end | Neither — use [Connector Activity](../connector/planning.md) |
+| Target system has no API (desktop app) | Neither — use [RPA Workflow](../rpa/planning.md) |
 
 ### Two Authentication Modes
 

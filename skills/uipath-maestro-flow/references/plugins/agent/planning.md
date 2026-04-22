@@ -4,6 +4,8 @@ Agent nodes invoke UiPath AI agents from within a flow. Published agents appear 
 
 > **Published vs Inline:** This plugin covers the published/tenant-resource case. For agents defined inside the flow project itself (scaffolded via `uip agent init --inline-in-flow`), see [inline-agent/planning.md](../inline-agent/planning.md). Pick the published path when the agent is reused across flows or needs independent versioning; pick inline when the agent is tightly coupled to one flow.
 
+> **If the user names an existing agent, it is a published agent — not inline.** When a prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to an agent that already exists in the tenant (or in-solution). ALWAYS run `uip maestro flow registry search "<name>" --output json` BEFORE deciding to scaffold an inline agent. The words "coded" and "low-code" describe the *implementation style* of a published agent — they do NOT mean "inline". Inline (`uipath.agent.autonomous`) is only correct when the user explicitly asks to embed, inline, or create a new agent from scratch inside this flow.
+
 ## Node Type Pattern
 
 `uipath.core.agent.{key}`
