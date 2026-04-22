@@ -128,9 +128,9 @@ None functional. JSON recipe mirrors CLI output exactly for the secondary-trigge
 
 ## Compatibility
 
-Captured against CLI version `0.1.21`. See [`docs/uipath-case-management/migration-fixtures/timer/`](../../../../../../docs/uipath-case-management/migration-fixtures/timer/) for fixtures.
+Captured against CLI version `0.1.21`.
 
-- [x] **Golden diff:** normalized `json-write-output/` matches `cli-output/` after trigger-ID + UUID normalization — `docs/uipath-case-management/migration-fixtures/timer/diff.sh` passes
+- [x] **Golden parity (ad-hoc):** manual side-by-side comparison of `uip maestro case triggers add-timer` output against direct-JSON-write output passed for both `caseplan.json` (trigger node appended with `Intsvc.TimerTrigger` + `timeCycle`) and `entry-points.json` (matching entry appended) after ID + UUID normalization at the time this plugin was migrated.
 - [x] **Validation parity:** both outputs produce the same set of errors/warnings from `uip maestro case validate` (expected failure profile for a triggers-only fragment with no stages/edges)
 - [ ] **Downstream CLI mutation append:** `uip maestro case edges add --source <json-written-trigger-id>` and friends accept the JSON-written node — not yet exercised
 - [ ] **Round-trip:** CLI-written timer → direct-JSON-write adds a second timer → validate passes with only expected failures — not yet exercised

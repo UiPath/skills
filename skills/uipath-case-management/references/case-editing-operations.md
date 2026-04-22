@@ -13,7 +13,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `case` (root + initial trigger) | CLI | `uip maestro case cases add` creates the file scaffolding and is out of scope for the JSON shift. |
 | `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
-| `triggers/manual` | CLI | Migration queued. |
+| `triggers/manual` | **JSON** | Migrated. See [plugins/triggers/manual/impl-json.md](plugins/triggers/manual/impl-json.md). Also mutates sibling `entry-points.json` — see that file for the 2-file sync contract. |
 | `triggers/timer` | **JSON** | Writes secondary Trigger node with `Intsvc.TimerTrigger` service type + `timeCycle` ISO 8601 string; adapts shape to initial (`trigger_1`) or secondary based on existing trigger count. See [plugins/triggers/timer/impl-json.md](plugins/triggers/timer/impl-json.md). |
 | `triggers/event` | CLI | Migration queued. |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
@@ -66,5 +66,5 @@ When a plugin's migration PR lands:
 1. Update its row here from `CLI` to `JSON`.
 2. Add `impl-json.md` to the plugin's folder with the `direct-json: supported` frontmatter.
 3. Ensure `impl-json.md` has a complete JSON Recipe.
-4. Ensure a compatibility fixture lives at `docs/uipath-case-management/migration-fixtures/<plugin>/` (input fragment, CLI-output, JSON-write-output, diff script). These fixtures are verification-only and live outside the skill; they will be removed once every plugin has migrated.
+4. Manually validate the migrated plugin against a real CLI run — regenerate `caseplan.json` (and any sibling files the plugin mutates) via `uip maestro case ...` commands, then compare against the direct-JSON-write output. Document the comparison in the PR description.
 5. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed.
