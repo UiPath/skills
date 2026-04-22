@@ -19,7 +19,7 @@ Mixing strategies within a single skill run is expected during the migration. Bo
 > - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
 > - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
 > - Edges → `plugins/edges/impl-json.md` (JSON strategy) — `plugins/edges/impl-cli.md` is the fallback
-> - Tasks → `plugins/tasks/<type>/impl-cli.md`
+> - Tasks → `plugins/tasks/<type>/impl-cli.md` (or `impl-json.md` for connector-activity and connector-trigger)
 > - Triggers → `plugins/triggers/<type>/impl-cli.md`
 > - Conditions → `plugins/conditions/<scope>/impl-cli.md`
 > - SLA → `plugins/sla/impl-json.md` (primary) — `plugins/sla/impl-cli.md` is the fallback
@@ -64,7 +64,7 @@ For multi-trigger cases, add the additional triggers first via the appropriate t
 
 ## Step 9 — Add tasks and bind inputs/outputs
 
-For each task entry in `tasks.md §4.6`, open the matching plugin's `impl-cli.md` (`plugins/tasks/<type>/impl-cli.md`) and run its command. **Capture the `TaskId` returned in `--output json`** — cross-task references and conditions need it.
+For each task entry in `tasks.md §4.6`, open the matching plugin's implementation doc per the strategy matrix in [case-editing-operations.md](case-editing-operations.md). For `connector-activity` and `connector-trigger`, use `impl-json.md` (direct JSON write). For all other task types, use `impl-cli.md`. **Capture the `TaskId`** — cross-task references and conditions need it.
 
 After adding a task, bind its inputs by editing `caseplan.json` directly per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 

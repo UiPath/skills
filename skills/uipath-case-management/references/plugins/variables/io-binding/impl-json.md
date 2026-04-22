@@ -59,7 +59,7 @@ Connector inputs are set at creation time via `--input-values`, not post-creatio
 --input-values '{"body":{"email":"=vars.employeeEmail","caseRef":"=metadata.ExternalId"}}'
 ```
 
-Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-cli.md](../../../plugins/tasks/connector-activity/impl-cli.md).
+Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-json.md](../../../plugins/tasks/connector-activity/impl-json.md).
 
 ## End-to-End: Task A Output → Task B Input
 

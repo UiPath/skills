@@ -24,8 +24,8 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `tasks/action` | CLI | Migration queued. |
 | `tasks/api-workflow` | CLI | Migration queued. |
 | `tasks/case-management` | CLI | Migration queued. |
-| `tasks/connector-activity` | CLI | Migration queued. Auto-injected default entry condition complicates the recipe. |
-| `tasks/connector-trigger` | CLI | Migration queued. Same as connector-activity. |
+| `tasks/connector-activity` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md). |
+| `tasks/connector-trigger` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-trigger/impl-json.md](plugins/tasks/connector-trigger/impl-json.md). |
 | `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
 | `conditions/stage-entry-conditions` | CLI | Migration queued. |
 | `conditions/stage-exit-conditions` | CLI | Migration queued. |
