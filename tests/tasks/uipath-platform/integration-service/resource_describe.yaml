@@ -39,7 +39,8 @@ initial_prompt: |
     Run each command once, record the result (success or error) in report.json,
     and move on. Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
-  - Always pass `--connection-id` when you have one.
+  - Always pass `--connection-id` on resource commands — use a placeholder
+    value like "placeholder-connection-id" if you cannot obtain a real one.
   - Use `--operation` on describe to get field-level detail.
 
 success_criteria:
