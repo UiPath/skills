@@ -10,7 +10,7 @@ This matches Studio's own naming convention, so files remain clean when re-opene
 
 ## Fast Path: Linking OR Entries to Activities
 
-Write plain activities (no `.Target` child element) with unique IdRefs, then attach targets post-write using `link-screen` and `link-element`.
+Write plain activities (no `.Target` child element — or nested variants like `.SearchedElement.Target` for anchor-based activities) with unique IdRefs, then attach targets post-write using `link-screen` and `link-element`.
 
 > **Do not run `link-screen` or `link-element` calls in parallel.** These commands mutate the same `.xaml` file and will corrupt each other when invoked as parallel Bash tool calls. Run them sequentially — either as separate Bash calls one after another, or batched in a single Bash call chained with `&&` (stop on first failure) or `;` (continue on failure). Link the screen first, then link each element.
 
@@ -19,7 +19,7 @@ Write plain activities (no `.Target` child element) with unique IdRefs, then att
 ```bash
 uip rpa uia object-repository link-screen \
   --workflow-file-path "<RELATIVE_XAML_PATH>" \
-  --activity-ref-id "<ACTIVITY_REF_ID>" \
+  --activity-id "<ACTIVITY_REF_ID>" \
   --reference-id "<SCREEN_REFERENCE_ID>" \
   --project-dir "<PROJECT_DIR>" \
   --output json
@@ -28,7 +28,7 @@ uip rpa uia object-repository link-screen \
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--workflow-file-path` | Yes | Path to the `.xaml` file, relative to the project directory (e.g., `Workflows/Main.xaml`). |
-| `--activity-ref-id` | Yes | The `sap2010:WorkflowViewState.IdRef` on the target activity — typically `NApplicationCard_1`. |
+| `--activity-id` | Yes | The `sap2010:WorkflowViewState.IdRef` on the target activity — typically `NApplicationCard_1`. |
 | `--reference-id` | Yes | OR screen reference returned by `uia-configure-target` or `indicate-application`. |
 
 ### 2. Link elements to UI activities
@@ -38,7 +38,7 @@ One call per (activity, element) pair. The CLI does not batch.
 ```bash
 uip rpa uia object-repository link-element \
   --workflow-file-path "<RELATIVE_XAML_PATH>" \
-  --activity-ref-id "<ACTIVITY_REF_ID>" \
+  --activity-id "<ACTIVITY_REF_ID>" \
   --reference-id "<ELEMENT_REFERENCE_ID>" \
   --project-dir "<PROJECT_DIR>" \
   --output json
@@ -47,13 +47,13 @@ uip rpa uia object-repository link-element \
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--workflow-file-path` | Yes | Path to the `.xaml` file, relative to the project directory. |
-| `--activity-ref-id` | Yes | The `sap2010:WorkflowViewState.IdRef` on the target activity (e.g., `NClick_3`). |
+| `--activity-id` | Yes | The `sap2010:WorkflowViewState.IdRef` on the target activity (e.g., `NClick_3`). |
 | `--reference-id` | Yes | OR element reference returned by `uia-configure-target` or `indicate-element`. |
 | `--target-property` | No | Activity property to attach the target to. Supports dotted paths for nested properties (e.g., `SearchedElement.Target`). Defaults to `Target`. |
 
 **When to use `--target-property`:** most UI activities (`NClick`, `NTypeInto`, `NGetText`) attach the target at `.Target`, so the default is correct. Some activities expose the target at a nested property (e.g., anchor-based activities use `SearchedElement.Target`). When the target sits anywhere other than `.Target`, pass `--target-property` explicitly.
 
-**Element reuse:** when the same element is referenced by multiple activities (e.g., the same field clicked and then typed into), call `link-element` once per activity with each activity's own `--activity-ref-id`.
+**Element reuse:** when the same element is referenced by multiple activities (e.g., the same field clicked and then typed into), call `link-element` once per activity with each activity's own `--activity-id`.
 
 ## Fallback: Embedding OR Entries When Linking Fails
 
