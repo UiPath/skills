@@ -336,6 +336,7 @@ Do not run any of these actions without an explicit user selection.
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [references/plugins/inline-agent/](references/plugins/inline-agent/) — scaffolded via `uip agent init --inline-in-flow`, node type `uipath.agent.autonomous` |
+| **Add a Human-in-the-Loop (HITL) node** | [references/plugins/hitl/](references/plugins/hitl/) + [references/flow-hitl.md](references/flow-hitl.md) + [/uipath:uipath-human-in-the-loop](/uipath:uipath-human-in-the-loop) |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [references/plugins/transform/impl.md](references/plugins/transform/impl.md) |
 | **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) |
@@ -409,10 +410,11 @@ When you finish building or editing a flow, report to the user:
   - [agentic-process](references/plugins/agentic-process/) — Published orchestration processes (`uipath.core.agentic-process.{key}`)
   - [flow](references/plugins/flow/) — Published flows as subprocesses (`uipath.core.flow.{key}`)
   - [api-workflow](references/plugins/api-workflow/) — Published API functions (`uipath.core.api-workflow.{key}`)
-  - [hitl](references/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
+  - [hitl](references/plugins/hitl/) — App-based human tasks via UiPath Apps (`uipath.core.hitl.{key}`); for inline HITL see [flow-hitl.md](references/flow-hitl.md)
   - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
   - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
+- **[HITL Node Reference](references/flow-hitl.md)** — Inline Human-in-the-Loop node (`uipath.human-in-the-loop`): schema design, CLI command, edge wiring, runtime variables, and approval/escalation patterns. For the full HITL authoring workflow, use the [uipath-human-in-the-loop](/uipath:uipath-human-in-the-loop) skill.
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 9).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
