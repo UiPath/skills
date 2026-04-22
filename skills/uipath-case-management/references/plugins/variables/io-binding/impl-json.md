@@ -43,7 +43,8 @@ For each task input in `tasks.md`:
 2. Find output by `name` in `task.data.outputs[]`, read its `var` field
 3. Write `=vars.<var>` to target input's `value`
 
-```python
+```text
+# pseudocode — not executed. Realize via Read → reason → Write/Edit.
 src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
@@ -94,9 +95,10 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | `=vars.X` not in `inputs[]`/`outputs[]`/`inputOutputs[]` | `ERROR` | Skip binding |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
-Example log entry:
+Example log entry (pseudocode — record in-reasoning, not via subprocess):
 
-```python
+```text
+# pseudocode — not executed
 issues.append({"severity": "ERROR", "step": "9", "plugin": "io-binding",
     "message": f'input "{name}" not found on task "{task}" — available: {available}',
     "context": {"task": task, "stage": stage, "input": name, "available": available}})
