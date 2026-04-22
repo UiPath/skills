@@ -35,7 +35,7 @@ success_criteria:
   - type: command_executed
     description: "Agent pulled registry data"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+registry\s+pull'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+pull'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed or searched registry nodes"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+registry\s+(list|search)'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+(list|search)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on registry commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+registry\s+.*--output\s+json'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

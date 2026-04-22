@@ -1,6 +1,6 @@
 # Flow Node — Planning
 
-Flow nodes invoke other flows as subprocesses from within a flow. Published flows appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) flows in sibling projects are discovered via `--local` — no login or publish required.
+Flow nodes invoke other flows as subprocesses from within a flow. Published flows appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) flows in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -35,8 +35,8 @@ Use a Flow node when you need to call another published flow as a subprocess.
 ### Published (tenant registry)
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.flow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.flow" --output json
 ```
 
 Requires `uip login`. Only published flows from your tenant appear.
@@ -44,8 +44,8 @@ Requires `uip login`. Only published flows from your tenant appear.
 ### In-solution (sibling projects)
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished flows in sibling projects within the same solution.

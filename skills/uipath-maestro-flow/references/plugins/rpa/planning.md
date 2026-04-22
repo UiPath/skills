@@ -1,6 +1,6 @@
 # RPA Node — Planning
 
-RPA nodes invoke RPA processes (XAML or coded C# workflows) from within a flow. Published processes appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
+RPA nodes invoke RPA processes (XAML or coded C# workflows) from within a flow. Published processes appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -38,8 +38,8 @@ The `error` port is the implicit error port shared with all action nodes — see
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.rpa-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
 Requires `uip login`. Only published processes from your tenant appear.
@@ -47,8 +47,8 @@ Requires `uip login`. Only published processes from your tenant appear.
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.

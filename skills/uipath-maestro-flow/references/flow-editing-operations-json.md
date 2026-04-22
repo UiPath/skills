@@ -12,7 +12,7 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 
 | Concern | CLI handles | Direct JSON — you must |
 |---------|------------|------------------------|
-| Definitions | Auto-copied from registry cache | Copy `Data.Node` from `uip flow registry get` into `definitions` array |
+| Definitions | Auto-copied from registry cache | Copy `Data.Node` from `uip maestro flow registry get` into `definitions` array |
 | Node variables | Auto-added to `variables.nodes` | Add output variable entries manually (or accept that `variables.nodes` may need regeneration) |
 | Edge cleanup on delete | Auto-removes connected edges | Find and remove all edges referencing the deleted node |
 | Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
@@ -25,8 +25,8 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 
 Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Direct JSON default, **you** are responsible for them.
 
-1. **Locate the canonical `.flow` file.** Before any Write/Edit, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution new <Name>` + `uip flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `.flow` Write/Edit to the sibling file. `uip flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
-2. **Definitions.** For every new node type, run `uip flow registry get <type> --output json`. Copy the `Data.Node` object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Never hand-write or paraphrase (Critical Rule #7).
+1. **Locate the canonical `.flow` file.** Before any Write/Edit, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution new <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `.flow` Write/Edit to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
+2. **Definitions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the `Data.Node` object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Never hand-write or paraphrase (Critical Rule #7).
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
 4. **`targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (Critical Rule #6). Look up ports in the relevant plugin's `planning.md` or in [flow-file-format.md — Standard ports](flow-file-format.md).
 5. **Node outputs block.** Every data-producing node needs an `outputs` block on the node instance (not just in `definitions`). Action nodes: `output` + `error`. Trigger nodes: `output`. End/terminate: none. (Critical Rule #18.)
@@ -34,7 +34,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
 
 > **Anti-pattern: editing a `.flow` that is not colocated with `project.uiproj`.**
-> A `.flow` file outside the flow project directory is invisible to `uip flow debug`, to the Studio solution, and to any checker that discovers the project via `**/project.uiproj`. It will still pass `uip flow validate <PATH>.flow` because that command only checks JSON-schema correctness of the file you hand it — it does not verify the file is the project's canonical flow. Always edit the `.flow` that sits next to `project.uiproj`.
+> A `.flow` file outside the flow project directory is invisible to `uip maestro flow debug`, to the Studio solution, and to any checker that discovers the project via `**/project.uiproj`. It will still pass `uip maestro flow validate <PATH>.flow` because that command only checks JSON-schema correctness of the file you hand it — it does not verify the file is the project's canonical flow. Always edit the `.flow` that sits next to `project.uiproj`.
 
 ---
 
@@ -42,7 +42,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 ### Add a node
 
-1. Run `uip flow registry get <NODE_TYPE> --output json` and copy the `Data.Node` object
+1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the `Data.Node` object
 2. Add a node entry to the `nodes` array:
 
 ```json
@@ -82,7 +82,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 > 1. Add `model.context[]` on the node instance with `=bindings.<id>` refs for `name` and `folderPath` (plus a static `_label`)
 > 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`)
 >
-> Without these, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
+> Without these, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
 
 4. Add node output variables to `variables.nodes` (optional — the CLI regenerates these, but direct builds should include them for completeness):
 
@@ -258,10 +258,10 @@ Only `inout` variables can be updated. `in` variables are read-only.
 1. Get the resource node manifest — check in-solution first, then tenant registry:
    ```bash
    # In-solution (preferred — no login required):
-   uip flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
+   uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
 
    # Tenant registry (if not in solution):
-   uip flow registry get "<RESOURCE_NODE_TYPE>" --output json
+   uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --output json
    ```
 2. Record the mock node's connected edges
 3. Remove the mock node from `nodes`
@@ -273,7 +273,7 @@ Only `inout` variables can be updated. `in` variables are read-only.
 6. Copy the definition from registry into `definitions`
 7. Re-create all edges using the new node's `id`
 8. Add node variables to `variables.nodes`
-9. Validate: `uip flow validate <ProjectName>.flow --output json`
+9. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Replace manual trigger with scheduled trigger
 
@@ -296,8 +296,8 @@ Edit the start node in-place (no delete/re-add needed):
    ```
 4. Update the definition in `definitions`:
    - Remove the `core.trigger.manual` definition
-   - Add the `core.trigger.scheduled` definition from `uip flow registry get core.trigger.scheduled --output json`
-5. Validate: `uip flow validate <ProjectName>.flow --output json`
+   - Add the `core.trigger.scheduled` definition from `uip maestro flow registry get core.trigger.scheduled --output json`
+5. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Create a subflow
 
@@ -361,7 +361,7 @@ See [subflow/impl.md](plugins/subflow/impl.md) for the full JSON structure and r
 
 ## Connector Node Configuration (Direct JSON)
 
-When not using `uip flow node configure`, you must manually set up:
+When not using `uip maestro flow node configure`, you must manually set up:
 
 ### 1. `inputs.detail` on the node
 

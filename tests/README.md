@@ -172,7 +172,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Do not run `uip flow debug` — just validate locally.
+  - Do not run `uip maestro flow debug` — just validate locally.
 
 success_criteria:
   - type: command_executed
@@ -184,9 +184,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent initialized a Flow project with uip flow init"
+    description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+init'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -194,7 +194,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -341,7 +341,7 @@ Execute an arbitrary shell command and check the exit code. From `registry_disco
 | `1.0` | Supporting checks | `--output json` flag used, file is valid JSON |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
 | `2.0` | Critical validation | `report.json` has correct structure and values |
-| `3.0` | Primary artifact validity | `uip flow validate` passes on the generated flow file |
+| `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |
 | `5.0–6.0` | End-to-end execution | Check script runs flow debug and verifies output correctness |
 
 **`pass_threshold`** is the fraction of the criterion that must pass. For `json_check` with multiple assertions, `0.75` means 75% of assertions must pass. For most criteria, use `1.0` (all-or-nothing).

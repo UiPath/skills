@@ -147,7 +147,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 
 Node variables represent outputs produced by nodes during execution. They are read-only and referenced via `$vars.{nodeId}.{outputId}`.
 
-When you add a node via `uip flow node add`, node variables are created automatically. When editing JSON directly, add them manually.
+When you add a node via `uip maestro flow node add`, node variables are created automatically. When editing JSON directly, add them manually.
 
 ### Schema
 
@@ -509,7 +509,7 @@ There are **no CLI commands** for adding or removing variables. Manage variables
 
 1. Open `<ProjectName>.flow`
 2. Add the variable object to `variables.globals`
-3. Run `uip flow validate` to check for errors
+3. Run `uip maestro flow validate` to check for errors
 
 ### Adding node variables after manual node insertion
 
@@ -528,7 +528,7 @@ When adding nodes via direct JSON edit (not CLI), you must also add correspondin
 }
 ```
 
-> **When using `uip flow node add`**, node variables are handled automatically. Only add them manually when editing JSON directly.
+> **When using `uip maestro flow node add`**, node variables are handled automatically. Only add them manually when editing JSON directly.
 
 ### Mapping outputs on End nodes
 

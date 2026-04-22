@@ -165,7 +165,7 @@ Replace steps 2–3 with `uipath-agents` if the missing resource is an agent.
 ### Flow deploy to Orchestrator
 
 ```
-1. uipath-maestro-flow → validate, `uip flow pack`
+1. uipath-maestro-flow → validate, `uip maestro flow pack`
 2. uipath-platform     → publish and deploy to Orchestrator
 ```
 

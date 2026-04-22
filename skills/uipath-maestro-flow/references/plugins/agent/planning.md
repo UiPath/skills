@@ -1,6 +1,6 @@
 # Agent Node — Planning
 
-Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required.
+Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required.
 
 > **Published vs Inline:** This plugin covers the published/tenant-resource case. For agents defined inside the flow project itself (scaffolded via `uip agent init --inline-in-flow`), see [inline-agent/planning.md](../inline-agent/planning.md). Pick the published path when the agent is reused across flows or needs independent versioning; pick inline when the agent is tightly coupled to one flow.
 
@@ -56,8 +56,8 @@ The `error` port is the implicit error port shared with all action nodes — see
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.agent" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
 Requires `uip login`. Only published agents from your tenant appear.
@@ -65,8 +65,8 @@ Requires `uip login`. Only published agents from your tenant appear.
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.

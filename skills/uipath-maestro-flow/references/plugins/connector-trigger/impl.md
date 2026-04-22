@@ -27,7 +27,7 @@ uip is connections ping "<connection-id>" --output json
 `--connection-id` is **required** for trigger nodes. Without it, the command fails.
 
 ```bash
-uip flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
 ```
 
 The response contains three trigger-specific sections:
@@ -123,7 +123,7 @@ Follow the [CLI: Replace manual trigger with connector trigger](../../flow-editi
 Use `node configure` with trigger-specific `--detail` fields:
 
 ```bash
-uip flow node configure <PROJECT>.flow <triggerId> --detail '{
+uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '{
   "connectionId": "<CONNECTION_ID>",
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
@@ -144,7 +144,7 @@ uip flow node configure <PROJECT>.flow <triggerId> --detail '{
 
 The command populates `inputs.detail` (including the internal `configuration` blob) and creates workflow-level connection bindings.
 
-> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
+> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
 ---
 
@@ -230,16 +230,16 @@ You do **not** need to manually create or edit `bindings_v2.json` for trigger no
 
 ```bash
 # Discovery
-uip flow registry search trigger --output json               # find trigger node types
-uip flow registry pull --force                                # refresh registry (requires login)
+uip maestro flow registry search trigger --output json               # find trigger node types
+uip maestro flow registry pull --force                                # refresh registry (requires login)
 
 # Enriched trigger metadata (--connection-id REQUIRED)
-uip flow registry get <triggerNodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <triggerNodeType> --connection-id <connection-id> --output json
 
 # Node lifecycle
-uip flow node delete <PROJECT>.flow start --output json       # remove manual trigger
-uip flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
-uip flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
+uip maestro flow node delete <PROJECT>.flow start --output json       # remove manual trigger
+uip maestro flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
+uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
 # Trigger object metadata
 uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json
@@ -258,7 +258,7 @@ uip is resources execute list "<connector-key>" "<resource>" \
 
 ## Testing Trigger Flows
 
-`uip flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
+`uip maestro flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.
 
 ### How debug works for triggers
 
@@ -269,7 +269,7 @@ uip is resources execute list "<connector-key>" "<resource>" \
 5. If **no matching events** exist in the lookback window, debug fails with error code `3005` (TriggerNoMatches)
 
 ```bash
-uip flow debug . --output json
+uip maestro flow debug . --output json
 # → Fetches most recent matching event from the past ~1 hour
 # → Flow executes immediately with that event data
 ```
@@ -306,7 +306,7 @@ uip flow debug . --output json
 | Error | Cause | Fix |
 |---|---|---|
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
-| No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip flow registry pull --force` |
+| No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip maestro flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
 | Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `(field == 'value')` or `(contains(field, 'value'))` — see [JMESPath Filter Expressions](#jmespath-filter-expressions) |
@@ -320,6 +320,6 @@ uip flow debug . --output json
 3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields
 4. **Filter expressions are optional** — omit `filterExpression` from `--detail` if the user wants all events to trigger the flow
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
-6. **Use `uip flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
+6. **Use `uip maestro flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
 7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
 8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid in filter expressions. Using a field name not in that list produces a silent no-match at runtime

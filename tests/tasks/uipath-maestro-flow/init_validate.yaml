@@ -22,7 +22,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Do not run `uip flow debug` — just validate locally.
+  - Do not run `uip maestro flow debug` — just validate locally.
 
 success_criteria:
   - type: command_executed
@@ -34,9 +34,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent initialized a Flow project with uip flow init"
+    description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+init'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -44,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate'
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

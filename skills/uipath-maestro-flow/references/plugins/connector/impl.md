@@ -8,7 +8,7 @@ For generic node/edge add, delete, and wiring procedures, see [flow-editing-oper
 
 1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow's top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
 2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
-3. **`inputs.detail` object** — connector nodes store operation-specific configuration in `inputs.detail`, populated by `uip flow node configure`:
+3. **`inputs.detail` object** — connector nodes store operation-specific configuration in `inputs.detail`, populated by `uip maestro flow node configure`:
    - `connectionId` — the bound IS connection UUID
    - `folderKey` — the Orchestrator folder key
    - `method` — HTTP method from `connectorMethodInfo` (e.g., `POST`)
@@ -20,7 +20,7 @@ For generic node/edge add, delete, and wiring procedures, see [flow-editing-oper
 
 ## Critical: Connector Definition Must Include `form`
 
-> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
+> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip maestro flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip maestro flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
 
 ## Configuration Workflow
 
@@ -51,7 +51,7 @@ uip is connections ping "<connection-id>" --output json
 Call `registry get` with `--connection-id` to fetch connection-aware metadata including custom fields:
 
 ```bash
-uip flow registry get <nodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <nodeType> --connection-id <connection-id> --output json
 ```
 
 This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
@@ -110,16 +110,16 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 **Run `is resources describe` (Step 3) before this step.** The full metadata tells you which fields are required, what types they expect, and which need reference resolution. Do not guess field names or skip the metadata check — required fields missing from `--detail` cause runtime errors that `flow validate` does not catch.
 
-After adding the node with `uip flow node add`, configure it with the resolved connection and field values:
+After adding the node with `uip maestro flow node add`, configure it with the resolved connection and field values:
 
 ```bash
-uip flow node configure <file> <nodeId> \
+uip maestro flow node configure <file> <nodeId> \
   --detail '{"connectionId": "<id>", "folderKey": "<key>", "method": "POST", "endpoint": "/issues", "bodyParameters": {"fields.project.key": "ENGCE", "fields.issuetype.id": "10004"}}'
 ```
 
 The `method` and `endpoint` values come from `connectorMethodInfo` in the `registry get` response (Step 2). The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names.
 
-> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
+> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
 
 ---
 
@@ -132,7 +132,7 @@ uip is connections ping "<connection-id>" --output json      # verify connection
 uip is connections create "<connector-key>"                  # create new connection (interactive)
 
 # Enriched node metadata (pass connection for custom fields)
-uip flow registry get <nodeType> --connection-id <connection-id> --output json
+uip maestro flow registry get <nodeType> --connection-id <connection-id> --output json
 
 # Resource description and metadata
 uip is resources describe "<connector-key>" "<objectName>" \
@@ -158,7 +158,7 @@ When a flow uses connector nodes, the runtime needs to know **which authenticate
 
 ### How connector nodes reference bindings
 
-A connector node's `model.context[]` (returned by `uip flow registry get`) contains two placeholder entries. **Leave them as the registry returns them** — do not rewrite to `=bindings.<id>`:
+A connector node's `model.context[]` (returned by `uip maestro flow registry get`) contains two placeholder entries. **Leave them as the registry returns them** — do not rewrite to `=bindings.<id>`:
 
 ```json
 "context": [
@@ -202,7 +202,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | Field | Value |
 |-------|-------|
 | `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
-| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip flow node configure` fetches this from IS automatically. When adding bindings by hand, use `"<CONNECTOR_KEY> connection"` as a placeholder — it must match the `model.context[].connection` placeholder (without `<bindings.` prefix and `>` suffix). |
+| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically. When adding bindings by hand, use `"<CONNECTOR_KEY> connection"` as a placeholder — it must match the `model.context[].connection` placeholder (without `<bindings.` prefix and `>` suffix). |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
@@ -210,7 +210,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | `default` | Connection binding → connection UUID. Folder binding → folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
-`uip flow node configure` also sets `model.bindings.resourceKey` on the node (the connection UUID). This enables `flow-schema` to correlate the node with its Connection binding when generating `bindings_v2.json`. When adding bindings by hand, set this field on the node too:
+`uip maestro flow node configure` also sets `model.bindings.resourceKey` on the node (the connection UUID). This enables `flow-schema` to correlate the node with its Connection binding when generating `bindings_v2.json`. When adding bindings by hand, set this field on the node too:
 
 ```json
 "model": {
@@ -319,7 +319,7 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | --- | --- | --- |
 | No connection found | Connection not bound — top-level `bindings[]` missing or `resourceKey` doesn't match the node | Run Step 1 above to bind a connection; verify both entries (`ConnectionId` + `FolderKey`) are in the top-level `bindings[]` |
 | Connection ping failed | Connection expired or misconfigured | Re-authenticate the connection in the IS portal |
-| Missing `inputs.detail` | Node added but not configured | Run `uip flow node configure` with the detail JSON (Step 6) |
+| Missing `inputs.detail` | Node added but not configured | Run `uip maestro flow node configure` with the detail JSON (Step 6) |
 | Reference field has display name instead of ID | `uip is resources execute list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
 | Required field missing at runtime | Required input field not provided | Check metadataFile for all `required: true` fields in both `requestFields` and `parameters` |
 | `$vars` expression unresolvable | Node outputs block missing or node not connected | Verify the node has edges and upstream outputs are correctly referenced |

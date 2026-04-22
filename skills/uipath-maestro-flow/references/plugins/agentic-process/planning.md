@@ -1,6 +1,6 @@
 # Agentic Process Node — Planning
 
-Agentic process nodes invoke orchestration processes from within a flow. Published processes appear in the registry after `uip login` + `uip flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
+Agentic process nodes invoke orchestration processes from within a flow. Published processes appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -38,8 +38,8 @@ The `error` port is the implicit error port shared with all action nodes — see
 ### Published (tenant registry)
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.agentic-process" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.agentic-process" --output json
 ```
 
 Requires `uip login`. Only published agentic processes from your tenant appear.
@@ -47,8 +47,8 @@ Requires `uip login`. Only published agentic processes from your tenant appear.
 ### In-solution (sibling projects)
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 No login or publish required. Discovers unpublished agentic processes in sibling projects within the same solution.
