@@ -200,7 +200,9 @@ uip rpa add-test-data-queue --test-case-path "TestLoanApproval.cs" --queue-name 
 
 #### `add-test-data-entity` — Data Service Entity
 
-> **Prerequisite:** Use the **uipath-platform** skill to discover available Data Service entities (name, type) before calling this command.
+> **Prerequisites:**
+> 1. **Discover / verify entities** — run `uip rpa list-data-fabric-entities --project-dir "<PROJECT_DIR>" --output json` to see what is installed and what is available in the connected tenant. (Alternatively, the `uipath-platform` skill can discover entities directly in Orchestrator.)
+> 2. **Install the target entity into the project** if not already installed — `uip rpa install-data-fabric-entities --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `add-test-data-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
 
 ```bash
 uip rpa add-test-data-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
