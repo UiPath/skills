@@ -1,0 +1,34 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "/content/caseplan.json.bpmn#trigger_1",
+            "uniqueId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            "type": "CaseManagement",
+            "input": {
+                "type": "object",
+                "properties": {}
+            },
+            "output": {
+                "type": "object",
+                "properties": {}
+            },
+            "displayName": "Trigger 1"
+        },
+        {
+            "filePath": "/content/caseplan.json.bpmn#trigger_K8fLr2",
+            "uniqueId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "type": "CaseManagement",
+            "input": {
+                "type": "object",
+                "properties": {}
+            },
+            "output": {
+                "type": "object",
+                "properties": {}
+            },
+            "displayName": "10-min Poll"
+        }
+    ]
+}

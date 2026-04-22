@@ -25,10 +25,19 @@ The skill becomes the authoritative mutation path.
 - `cases add`, `stages add`, `stages edit`, `stages remove`
 - `edges add`, `edges edit`, `edges remove`
 - `tasks add`, `tasks add-connector`, `tasks edit`, `tasks remove`
+- `triggers add-manual`, `triggers add-timer`, `triggers add-event`
 - `var bind`, `var unbind`
 - `stage-entry-conditions add/remove`, `stage-exit-conditions add/remove`, `task-entry-conditions add/remove`, `case-exit-conditions add/remove`
 - `sla set`, `sla rules add/remove`, `sla escalation add/remove`
 - `sticky-notes add/edit/remove`
+
+**Sidecar files adjacent to `caseplan.json` are in scope when a plugin's CLI command touches them.** The project directory (`<SolutionDir>/<ProjectName>/`) contains several files beyond `caseplan.json`:
+
+- `entry-points.json` — enumerated by `uip case init` with one entry per initial trigger; appended by every `triggers add-*` command. JSON recipes that add triggers must append the matching entry.
+- `bindings.json` — seeded by `uip case init`; mutated by connector task plugins (future migration work).
+- `operate.json`, `project.uiproj`, `content/*.bpmn` — stay CLI- or build-managed.
+
+Direct-JSON-write plugins that need these sidecar files emit them per their `impl-json.md` Recipe.
 
 **Out of scope — stay CLI:**
 
@@ -134,19 +143,55 @@ Generation: every skill run uses fresh random IDs (no determinism). A sidecar `i
 }
 ```
 
-### Trigger (minimal — no render fields beyond position)
+### Trigger — initial vs secondary have different shapes
+
+Two distinct shapes exist. Which one to emit depends on whether any Trigger node already lives in `schema.nodes` at the moment of the write.
+
+**Initial trigger** — emitted by `uip maestro case cases add` today (see `cli/packages/case-tool/src/commands/cases.ts` `buildMinimalSchema`). Fixed literal `trigger_1` ID, fixed position, minimal render fields. Studio Web hydrates missing render fields on load.
 
 ```jsonc
 {
-  "id": "trigger_xxxxxx",
+  "id": "trigger_1",
   "type": "case-management:Trigger",
-  "position": { "x": 200, "y": 0 },
+  "position": { "x": 0, "y": 0 },
   "data": {
-    "label": "<label>",
-    "description": "<optional>"
+    "label": "Trigger 1"
+    // for timer: "uipath": { "serviceType": "Intsvc.TimerTrigger", "timerType": "timeCycle", "timeCycle": "<iso>" }
+    // for event: "uipath": { "serviceType": "Intsvc.<ConnectorTriggerType>", ... }
   }
 }
 ```
+
+No `style`, `measured`, `width`, `height`, or `data.parentElement`.
+
+**Secondary trigger** — emitted by `triggers add-manual` / `add-timer` / `add-event`. Random `trigger_` + 6-char ID, stateful position, full render fields. See `cli/packages/case-tool/src/commands/triggers.ts` `buildBaseTriggerNode`.
+
+```jsonc
+{
+  "id": "trigger_<6-rand>",
+  "type": "case-management:Trigger",
+  "position": { "x": -100, "y": <computed> },
+  "style": { "width": 96, "height": 96 },
+  "measured": { "width": 96, "height": 96 },
+  "data": {
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "label": "<label>"
+    // subtype-specific "uipath" block appended by the subtype plugin
+  }
+}
+```
+
+**Secondary position computation (stateful):**
+
+```text
+existingTriggers = schema.nodes.filter(n => n.type === "case-management:Trigger")
+y = existingTriggers.length === 0 ? 200 : max(existingTriggers[i].position.y) + 140
+x = -100
+```
+
+Constants from `triggers.ts`: `TRIGGER_X = -100`, `TRIGGER_START_Y = 200`, `TRIGGER_Y_STEP = 140`, `TRIGGER_SIZE = 96`.
+
+With the CLI-seeded `trigger_1` already at `y = 0`, the first secondary trigger lands at `y = 140` (not `200`).
 
 ### Edge
 
@@ -232,7 +277,9 @@ Two redundant views of per-plugin migration status:
 
 ## 9. Execution mechanism
 
-The LLM performs direct read/write/edit of `caseplan.json` using the standard Read/Write/Edit tools. No helper scripts. Rationale: this repo has no build system; adding a helper would mean bash+jq tooling to maintain. The Read/Write/Edit flow is what skill agents already use for every other file.
+The LLM performs direct read/write/edit of `caseplan.json` (and any in-scope sidecar files — see §2) using the standard Read/Write/Edit tools. No helper scripts. Rationale: this repo has no build system; adding a helper would mean bash+jq tooling to maintain. The Read/Write/Edit flow is what skill agents already use for every other file.
+
+**Multi-file recipes are supported.** Plugins that touch more than one file (e.g., the triggers plugins, which update both `caseplan.json` and `entry-points.json`) declare the full set of file writes in their `impl-json.md` Recipe, with an explicit write order. If an intermediate write fails, surface the inconsistency to the user rather than attempt rollback — the skill runs in a user-reviewable working directory, not a transactional system.
 
 ## 10. Migration strategy
 
@@ -268,7 +315,8 @@ The `case-schema.md` examples and several plugin `impl.md` files show placeholde
 | `references/plugins/stages/impl.md` | Lines 49, 66: wrong IDs; position shown without formula; missing render fields; regular Stage creation example wrongly includes empty `entryConditions`/`exitConditions` at `stages add` time | Replace Resulting JSON Shape with CLI-accurate shapes; document stateful position formula |
 | `references/plugins/edges/impl.md` | Verify handle format uses exactly 4 underscores each side | Document default directions |
 | `references/plugins/tasks/*/impl.md` | `elementId: "el_0001"` placeholder | Replace with `${stageId}-${taskId}` composite |
-| `references/plugins/triggers/manual/impl.md` | Verify fixed `{x: 200, y: 0}` | Confirm no other render fields |
+| `references/plugins/triggers/manual/impl-cli.md` | Wrong position `{x: 200, y: 0}`; fabricates `data.uipath.serviceType: "None"` that CLI `add-manual` never emits (see `triggers.ts` `buildBaseTriggerNode` — no `uipath` block for manual) | Replace position with stateful secondary formula (§6); drop the spurious `serviceType: "None"`. Deferred to the manual plugin migration PR. |
+| `references/plugins/triggers/timer/impl-cli.md` | Previously used fictional `trig0000002` ID, one-off `{x: -100, y: 480}` position, missing `timerType: "timeCycle"` field | Rewritten in the timer migration PR to match CLI output exactly (random `trigger_` + 6-char ID, stateful position, `timerType` present) |
 | `references/plugins/tasks/connector-activity/impl.md` + `connector-trigger/impl.md` | Missing auto-injected default entry condition | Add note; direct-JSON-write must emit `current-stage-entered` default |
 | `references/skeleton-tasks.md` | IDs already correct | No changes needed |
 

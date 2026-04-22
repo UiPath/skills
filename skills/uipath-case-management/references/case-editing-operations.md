@@ -14,7 +14,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
 | `triggers/manual` | CLI | Migration queued. |
-| `triggers/timer` | CLI | Migration queued. |
+| `triggers/timer` | **JSON** | Writes secondary Trigger node with `Intsvc.TimerTrigger` service type + `timeCycle` ISO 8601 string; adapts shape to initial (`trigger_1`) or secondary based on existing trigger count. See [plugins/triggers/timer/impl-json.md](plugins/triggers/timer/impl-json.md). |
 | `triggers/event` | CLI | Migration queued. |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
 | `variables/io-binding` | **JSON** | Direct write to `task.data.inputs[i].value`. No CLI needed. See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md). |

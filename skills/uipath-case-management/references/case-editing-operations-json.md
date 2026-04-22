@@ -76,8 +76,8 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | Entity | Prefix | Suffix length | Example |
 |---|---|---|---|
 | Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` |
-| Trigger (secondary, added via `triggers add-manual`) | `trigger_` | 6 | `trigger_xY2mNp` |
-| Initial trigger (created by `cases add`) | fixed literal `trigger_1` | — | `trigger_1` |
+| Trigger (secondary — any subtype: manual / timer / event) | `trigger_` | 6 | `trigger_xY2mNp` |
+| Initial trigger (first trigger in the case) | fixed literal `trigger_1` | — | `trigger_1` |
 | Edge | `edge_` | 6 | `edge_Qz7hVr` |
 | Task | `t` | 8 | `t8GQTYo8O` |
 | Task entry condition | `c` | 8 | `c4fGhJ2Mn` |
