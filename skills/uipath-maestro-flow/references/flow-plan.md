@@ -1,24 +1,6 @@
-# Planning Phase 1: Discovery & Architectural Design
+# Flow Planning Reference
 
-Discover available capabilities, then design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
-
-> **Registry rules for this phase:**
-> - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
-> - **`registry get` is NOT allowed** — detailed metadata, connection binding, and reference field resolution are handled in [Planning Phase 2: Implementation](planning-impl.md).
-
----
-
-## Process
-
-1. Analyze the user's requirements
-2. **Discover capabilities** — if the flow uses connector or resource nodes, run `registry search` / `registry list` to confirm they exist and identify available operations (see [Capability Discovery](#capability-discovery))
-3. Select node types from the [Plugin Index](#plugin-index) below — read each relevant plugin's `planning.md` for selection heuristics, ports, and key inputs
-4. Define edges (how nodes connect) — see [Wiring Rules](#wiring-rules) and each plugin's port documentation
-5. Identify suspected inputs and outputs for each node
-6. Generate a mermaid diagram
-7. Validate the mermaid syntax (see [Mermaid Validation Rules](#mermaid-validation-rules))
-8. Present the plan for user review
-9. Iterate until approved, then hand off to [Planning Phase 2: Implementation](planning-impl.md)
+This is an optional reference for complex flows. It consolidates capability discovery, node selection heuristics, wiring rules, topology patterns, and implementation details into a single document.
 
 ---
 
@@ -53,19 +35,15 @@ For each connector found in registry search, verify a healthy connection exists.
 uip is connections list "<connector-key>" --output json
 ```
 
-- If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for Phase 2.
-- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2.
-
-> This is a lightweight existence check, not full connection binding. Phase 2 will ping the connection, fetch enriched metadata, and resolve reference fields.
+- If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID.
+- **If no connection exists**, surface it so the user can create it. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking implementation.
 
 **What to record from discovery:**
-- **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
-- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
-- **Gaps:** Services with no connector -> fall back to `core.action.http`. Resources in the same solution but unpublished -> use `--local` discovery (no mock needed). Resources not in the solution and not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag in Open Questions for the user to create.
+- **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists.
+- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`), then the tenant registry.
+- **Gaps:** Services with no connector -> fall back to `core.action.http`. Resources in the same solution but unpublished -> use `--local` discovery (no mock needed). Resources not in the solution and not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag for the user to create.
 
-Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http` or note it as a gap in Open Questions.
-
-> **Do NOT run `registry get` during discovery.** Search results give you node type names — enough to know what connectors and operations exist. `is connections list` confirms connection availability. Detailed field metadata (required fields, types, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2.
+Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http` or note it as a gap.
 
 ---
 
@@ -118,7 +96,7 @@ Connector nodes call external services via Integration Service. They are **not**
 | --- | --- |
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
 
-**In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
+Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. During implementation, resolve the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
 
 ### Agent Nodes
 
@@ -215,6 +193,39 @@ Apply these when defining edges in the topology:
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
 12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes).
 
+### Port Compatibility
+
+- Source handles have `type: "source"`, target handles have `type: "target"`
+- You cannot wire two source ports together or two target ports together
+
+### Connection Constraints
+
+Some nodes enforce connection rules via `constraints` in their handle configuration:
+
+| Constraint                               | Meaning                                                         |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| `minConnections: N`                      | Handle must have at least N edges (validation error if not met) |
+| `maxConnections: N`                      | Handle accepts at most N edges                                  |
+| `forbiddenSourceCategories: ["trigger"]` | Cannot receive connections from trigger nodes                   |
+| `forbiddenTargetCategories: ["trigger"]` | Cannot connect output to trigger nodes                          |
+
+**Key rules:**
+
+- Trigger nodes can only have outgoing connections (no input port)
+- End/Terminate nodes can only have incoming connections (no output port)
+- Control flow outputs generally cannot loop back to triggers
+- Decision and Switch nodes cannot receive connections from agent resource nodes
+
+### Dynamic Ports
+
+Some nodes create ports based on their configuration:
+
+- **HTTP Request** — One port per `branches` entry: `branch-{id}`. See [http/impl.md](plugins/http/impl.md).
+- **Switch** — One port per `cases` entry: `case-{id}`. See [switch/impl.md](plugins/switch/impl.md).
+- **Loop** — `success` port fires after completion, `output` port carries aggregated results. See [loop/impl.md](plugins/loop/impl.md).
+
+When wiring to dynamic ports, the port ID must match the configured item's `id`.
+
 ---
 
 ## Common Topology Patterns
@@ -264,7 +275,7 @@ Trigger -> HTTP Request
 
 Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length > 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
 
-**Plan the error edge in Phase 1.** If the requirements mention "if the call fails", "invalid input", "article not found", or any failure fallback, add an edge from the action node's `error` port to a handler in the edge table — don't leave it to the build step.
+**Plan the error edge during planning.** If the requirements mention "if the call fails", "invalid input", "article not found", or any failure fallback, add an edge from the action node's `error` port to a handler in the edge table — don't leave it to the build step.
 
 ### Orchestration (Mixed Resources)
 
@@ -281,173 +292,6 @@ Scheduled Trigger -> HTTP (fetch batch) -> Loop
   |-- Queue Create (per item) -> (loopBack)
   |-- success -> Script (summary) -> End
 ```
-
----
-
-## Output Format
-
-Generate a `<SolutionName>.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
-
-### 1. Summary
-
-2-3 sentences describing what the flow does end-to-end.
-
-### 2. Flow Diagram (Mermaid)
-
-A mermaid flowchart showing all nodes, edges, and branching logic.
-
-**Requirements:**
-
-- Use `graph LR` (left-right) for all flows — Flow uses a horizontal canvas. Do NOT use `graph TD` (top-down) — it produces vertical diagrams that conflict with the horizontal node layout. Do NOT use `flowchart` — it is not supported by all mermaid renderers.
-- Use `subgraph` blocks to group related sections — required for flows with 10+ nodes
-- Label every edge with the port name (e.g., `-->|success|`, `-->|true|`, `-->|false|`)
-- **Labels must be plain text only** — no special characters inside shape delimiters. The following break mermaid parsing:
-  - `>` and `<` (interpreted as shape operators or HTML) — replace with words like "over" or "under"
-  - `(`, `)`, `[`, `]`, `{`, `}` (conflict with shape delimiters)
-  - `:`, `;`, `?`, `&`, `"` (unreliable across renderers)
-  - Use plain alphanumeric text and spaces only
-- Do NOT put node types in diagram labels — node types belong in the Node Table only
-- Do NOT use quotes inside shape delimiters — use `[Text]` not `["Text"]`
-- Use only these universally supported node shapes:
-  - Triggers: rounded rectangle `(Trigger Name)`
-  - Actions: rectangle `[Action Name]`
-  - Control flow: diamond `{Decision Name}` for Decision/Switch
-  - End/Terminate: rounded rectangle `(Done)`
-  - Connectors: rectangle `[Connector Service Operation]`
-  - Placeholders: rectangle `[Mock Description]`
-
-**Example:**
-
-````markdown
-```mermaid
-graph LR
-    trigger(Manual Trigger)
-    fetchOrders[Fetch Orders]
-    checkHasOrders{Any Orders}
-    processOrder[Process Order]
-    notifySlack[Slack Send Message]
-    logSkip[Log Skip]
-    logError[Log Error]
-    doneSuccess(Done)
-    doneSkip(Done)
-    doneError(Done Error)
-    trigger -->|output| fetchOrders
-    fetchOrders -->|default| checkHasOrders
-    fetchOrders -->|error| logError
-    checkHasOrders -->|true| processOrder
-    checkHasOrders -->|false| logSkip
-    processOrder -->|success| notifySlack
-    notifySlack -->|success| doneSuccess
-    logSkip -->|success| doneSkip
-    logError -->|success| doneError
-```
-````
-
-### 3. Node Table
-
-| # | Node ID | Name | Category | Node Type | Inputs | Outputs | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | trigger | Manual Trigger | trigger | `core.trigger.manual` | — | Trigger event | — |
-| 2 | fetchOrders | Fetch Orders | action | `core.action.http.v2` | `method: GET`, `url: <ORDERS_API_URL>` | `output.body` (order list), `error` (on HTTP failure) | Phase 2: confirm URL and auth |
-| 3 | checkHasOrders | Any Orders | control | `core.logic.decision` | `expression: $vars.fetchOrders.output.body.length > 0` | Routes to `true` or `false` | — |
-| 4 | logError | Log Error | action | `core.action.script` | `script: return { message: $vars.fetchOrders.error.message };` | `output.message` | Handles failed HTTP call |
-
-**Column definitions:**
-
-- **Node ID**: Short camelCase identifier used in the mermaid diagram and edge table
-- **Inputs**: Best-guess input values based on user requirements. Use `<PLACEHOLDER>` for values Phase 2 must resolve (URLs, IDs, connection details)
-- **Outputs**: What downstream nodes are expected to consume via `$vars.{nodeId}.*`
-- **Notes**: Implementation concerns for Phase 2 (e.g., "Phase 2: resolve Jira project ID", "Phase 2: bind Slack connection")
-
-### 4. Edge Table
-
-| # | Source Node | Source Port | Target Node | Target Port | Condition/Label |
-| --- | --- | --- | --- | --- | --- |
-| 1 | trigger | output | fetchOrders | input | — |
-| 2 | fetchOrders | default | checkHasOrders | input | Call succeeded |
-| 3 | fetchOrders | error | logError | input | HTTP failure fallback |
-| 4 | checkHasOrders | true | processOrder | input | Has orders |
-| 5 | checkHasOrders | false | logSkip | input | No orders |
-
-> **Always include an `error`-port edge in the edge table whenever the requirements describe a failure fallback** (e.g., "return X if the API fails", "route to Y if the article doesn't exist", "handle timeouts gracefully"). Without the edge, the flow faults on failure instead of routing to the handler. See [Error Handling (implicit `error` port)](#error-handling-implicit-error-port).
-
-**Rules:**
-
-- Source/target ports must match the [Standard Port Reference](#standard-port-reference)
-- Every node (except the trigger) must appear as a target at least once
-- Every node (except End/Terminate) must appear as a source at least once
-
-### 5. Inputs & Outputs
-
-| Direction | Name | Type | Description |
-| --- | --- | --- | --- |
-| `in` | ordersApiUrl | `string` | Base URL for the orders API |
-| `out` | processedCount | `number` | Number of orders successfully processed |
-| `inout` | errorLog | `array` | Accumulates error messages across the flow |
-
-### 6. Connector Summary (omit if no connectors)
-
-| Node ID | Service | Intended Operation | Phase 2 Action |
-| --- | --- | --- | --- |
-| notifySlack | Slack | Send message to channel | Resolve connector key, bind connection, resolve channel ID |
-| createTicket | Jira | Create issue | Resolve connector key, bind connection, resolve project/issue type IDs |
-
-### 7. Open Questions (omit if none)
-
-Prefix each with `**[REQUIRED]**` or `**[OPTIONAL]**`:
-
-- **[REQUIRED]** Which Slack channel should notifications go to?
-- **[OPTIONAL]** Should the error handler retry before terminating?
-
----
-
-## Mermaid Validation Rules
-
-LLM-generated mermaid frequently contains syntax errors. After generating the diagram, **check every rule below** before presenting it to the user. Fix violations before outputting.
-
-### Syntax Rules
-
-1. **First line must be `graph LR`** (horizontal — matches the Flow canvas) — use `graph` not `flowchart` (the `flowchart` keyword is not supported by all renderers).
-2. **Node IDs must be alphanumeric + underscores only** — no hyphens, dots, or spaces in IDs. Use `fetchData` not `fetch-data` or `fetch.data`
-3. **Node IDs must not start with or equal a reserved word** — mermaid reserves these as keywords: `end`, `subgraph`, `graph`, `flowchart`, `direction`, `click`, `style`, `classDef`, `class`, `linkStyle`, `callback`, `default`. IDs that start with these (e.g., `endWarm`, `defaultPath`, `styleNode`) break the parser. Use alternatives like `warmEnd`, `pathDefault`, `nodeStyle` — or use a prefix like `done_warm`, `finish_warm`.
-4. **Node labels must be plain text** — no quotes inside shape delimiters. Use `A[Fetch Data]` not `A["Fetch Data"]`.
-5. **No special characters in labels** — these break mermaid parsing even when quoted:
-   - `>` and `<` (interpreted as shape operators or HTML) — replace with words like "over" or "under"
-   - `(`, `)`, `[`, `]`, `{`, `}` (conflict with shape delimiters)
-   - `:`, `;`, `?`, `&`, `"` (unreliable across renderers)
-   - Use plain alphanumeric text and spaces only
-6. **Use only universally supported shapes** — `(text)` for rounded rectangle, `[text]` for rectangle, `{text}` for diamond. Do NOT use `([text])` (stadium), `{{text}}` (hexagon), or other extended shapes — they are not supported by all renderers.
-7. **Edge labels use `|label|` between arrow and target** — `A -->|success| B` not `A -->success B` or `A --success--> B`
-8. **No empty labels** — `A --> B` is fine, but `A -->|| B` is invalid
-9. **Subgraph IDs must be unique** and not collide with node IDs
-10. **Subgraph blocks must be closed** — every `subgraph` needs a matching `end`
-11. **No semicolons** — mermaid uses newlines, not semicolons, to separate statements
-12. **No blank lines inside the mermaid block** — blank lines between node definitions and edges can prevent rendering in some mermaid implementations. Keep all lines contiguous.
-
-### Structural Rules
-
-1. **Every node defined must be connected** — no orphan nodes floating in the diagram
-2. **Edge directions must match the flow** — trigger at the top, End at the bottom (for TB layouts)
-3. **Decision nodes must show both branches** — `true` and `false` edges, each labeled
-4. **Switch nodes must show all case edges** — one per case plus optional default
-5. **Loop structures**: show the loop body and the loopBack edge returning to the loop node
-6. **Parallel branches** must visually fork from one node and converge at a Merge node
-
-### Validation Procedure
-
-After generating the mermaid block:
-
-1. First line is `graph LR` — not `flowchart`
-2. Check each node ID contains only `[a-zA-Z0-9_]`
-3. Check no node ID starts with or equals a reserved word (`end`, `subgraph`, `graph`, `flowchart`, `direction`, `click`, `style`, `classDef`, `class`, `linkStyle`, `callback`, `default`)
-4. Check no labels contain `>`, `<`, `:`, `;`, `?`, `&`, `(`, `)`, or quotes — replace with plain words
-5. Only `(text)`, `[text]`, and `{text}` shapes are used — no `([text])`, `{{text}}`, or other extended shapes
-6. Check each edge has valid `-->`, `-->|label|` syntax
-7. Check all subgraphs are closed
-8. Verify every node in the node table appears in the diagram
-9. Verify every edge in the edge table appears in the diagram
-10. Check for blank lines inside the mermaid block — remove any empty lines between statements
-11. If any rule is violated, fix it before outputting
 
 ---
 
@@ -499,20 +343,54 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 2. Note what needs to be created and which skill handles it:
    - Desktop/browser automation or coded workflow (C#) -> `uipath-rpa`
    - Agent -> `uipath-agents`
-3. Phase 2 will check whether the resource has been published and replace the mock
+3. Check whether the resource has been published and replace the mock
 
 ---
 
-## Handoff to Phase 2
+## Product Heuristics
 
-When the architectural plan is approved, Phase 2 ([Planning Phase 2: Implementation](planning-impl.md)) takes over to:
+These are org-wide "when to use what" rules that can't be encoded in individual node descriptions. They reflect how UiPath's products fit together and which approach to prefer for a given task.
 
-1. Validate all node types via `uip flow registry get` — read each plugin's `impl.md` for registry validation steps
-2. Resolve connector and resource nodes — see the relevant plugin's `impl.md` ([connector](plugins/connector/impl.md), [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), etc.)
-3. Resolve resource nodes (confirm published, get definitions)
-4. Validate required fields against user-provided values
-5. Replace `<PLACEHOLDER>` values in the node table with resolved IDs
-6. Replace `core.logic.mock` nodes with real resource nodes (if now published)
-7. Finalize the plan with implementation-ready details
+### Connecting to External Services
 
-**Do not proceed to Phase 2 until the user explicitly approves the architectural plan.**
+See [Selecting External Service Nodes](#selecting-external-service-nodes) for the 3-tier decision order (connector -> HTTP -> RPA).
+
+### Agent Nodes vs Workflow Logic
+
+See [agent/planning.md](plugins/agent/planning.md) for the full decision table. Summary:
+
+- **Agent nodes** for ambiguous input, reasoning, judgment, NLG
+- **Script/Decision/Switch** for structured input, deterministic logic, data transformation
+
+**Anti-pattern:** Don't use an agent node for tasks that can be done with a Decision + Script. Agents are slower, more expensive (LLM tokens), and less predictable.
+
+**Hybrid pattern:** Use workflow nodes for the deterministic parts (fetch data, transform, route) and agent nodes for the ambiguous parts (classify intent, draft response, extract entities). The flow orchestrates; the agent reasons.
+
+---
+
+## Expressions and Variables
+
+For the **complete reference** on variables (declaration, types, scoping, variable updates) and expressions (`=js:`, templates, Jint constraints), see [variables-and-expressions.md](variables-and-expressions.md).
+
+### Quick Reference
+
+Nodes communicate data through `$vars`. Every node's output is accessible downstream via `$vars.{nodeId}.{outputProperty}`.
+
+```javascript
+$vars.rollDice.output.roll              // Script return value
+$vars.fetchData.output.body             // HTTP response body
+$vars.fetchData.output.statusCode       // HTTP status code
+$vars.someNode.error.message            // Error information
+iterator.currentItem                     // Loop item (inside loop body)
+```
+
+**Expression prefixes:**
+
+- `=js:` — Full JavaScript expression evaluated by Jint: `=js:$vars.count > 10`
+- `{ }` — Template interpolation for string fields: `Order {$vars.orderId} is {$vars.status}`
+
+**Variable directions** (`variables.globals`):
+
+- `in` — External input (read-only after start)
+- `out` — Workflow output (must be mapped on End nodes)
+- `inout` — State variable (updated via `variableUpdates`)
