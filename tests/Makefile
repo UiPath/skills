@@ -1,4 +1,4 @@
-.PHONY: help install all smoke integration e2e
+.PHONY: help install all smoke integration e2e tags
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
@@ -34,6 +34,18 @@ integration:  ## Run all integration tests
 
 e2e:  ## Run all end-to-end tests
 	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml --tags e2e -j 1 -v
+
+tags:  ## Run tests matching one or more tags: make tags TAGS="integration connector-feature" [EXPERIMENT=experiments/integration.yaml]
+	@if [ -z "$(TAGS)" ]; then echo "Usage: make tags TAGS=\"tag1 tag2\" [EXPERIMENT=experiments/<file>.yaml]"; exit 2; fi
+	@TAGS="$(TAGS)" python3 -c 'import os,re,sys,glob; \
+wanted=set(os.environ["TAGS"].split()); \
+files=sorted(glob.glob("tasks/**/*.yaml", recursive=True)); \
+matches=[]; \
+[matches.append(f) for f in files if (lambda m: m and wanted.issubset({t.strip() for t in m.group(1).split(",")}))(re.search(r"^tags:\s*\[([^\]]+)\]", open(f).read(), re.M))]; \
+print(f"Matched {len(matches)} task(s) for tags: {sorted(wanted)}"); \
+[print(f"  - {m}") for m in matches]; \
+sys.exit(0 if matches else 3)'
+	$(CODER_EVAL) run $(TASKS) -e $(or $(EXPERIMENT),experiments/default.yaml) $(foreach t,$(TAGS),--tags $(t)) -j 1 -v
 
 # Run all tests for a specific skill: make test-uipath-maestro-flow
 test-%:  ## Run all tests for a specific skill
