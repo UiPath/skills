@@ -62,7 +62,7 @@ Outcomes are the action buttons (e.g., Approve/Reject). First outcome is primary
 inputs:   [invoiceId (string), amount (number)]
 outputs:  [decision (string, required)]
 outcomes: [Approve, Reject]
-priority: normal
+priority: Low
 ```
 
 Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill](../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md).
