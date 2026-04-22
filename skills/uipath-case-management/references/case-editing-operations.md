@@ -27,10 +27,10 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `tasks/connector-activity` | CLI | Migration queued. Auto-injected default entry condition complicates the recipe. |
 | `tasks/connector-trigger` | CLI | Migration queued. Same as connector-activity. |
 | `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
-| `conditions/stage-entry-conditions` | CLI | Migration queued. Draft recipe in [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md). |
-| `conditions/stage-exit-conditions` | CLI | Migration queued. Draft recipe in [plugins/conditions/stage-exit-conditions/impl-json.md](plugins/conditions/stage-exit-conditions/impl-json.md). |
-| `conditions/task-entry-conditions` | CLI | Migration queued. Draft recipe in [plugins/conditions/task-entry-conditions/impl-json.md](plugins/conditions/task-entry-conditions/impl-json.md). |
-| `conditions/case-exit-conditions` | CLI | Migration queued. Draft recipe in [plugins/conditions/case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md). |
+| `conditions/stage-entry-conditions` | **JSON** | Write directly to the target stage's `data.entryConditions[]`. See [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md). |
+| `conditions/stage-exit-conditions` | **JSON** | Write directly to the target stage's `data.exitConditions[]`. See [plugins/conditions/stage-exit-conditions/impl-json.md](plugins/conditions/stage-exit-conditions/impl-json.md). |
+| `conditions/task-entry-conditions` | **JSON** | Write directly to the target task's `entryConditions[]`. See [plugins/conditions/task-entry-conditions/impl-json.md](plugins/conditions/task-entry-conditions/impl-json.md). |
+| `conditions/case-exit-conditions` | **JSON** | Write directly to `root.caseExitConditions[]`. See [plugins/conditions/case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md). |
 | `sla` | CLI | Migration queued. |
 
 ## How agents consume this matrix
