@@ -23,11 +23,16 @@ Before starting, understand the limits of prompt iteration:
 
 ## How update-prompts Works
 
-`update-prompts --fields` updates individual **field instructions** (moon_form fields like "Invoice Number", "Invoice Date"). Match by field name — the CLI fetches the taxonomy, finds which label_def contains each field, merges the instruction change, and sends all fields in that label_def back (preserving fields you didn't change).
+`update-prompts` supports two levels of instruction updates:
+
+- **`--fields`** (required): per-field instructions (moon_form fields like "Invoice Number", "Invoice Date"). Match by field name.
+- **`--groups`** (optional): field group instructions (label_defs like "Invoice", "Line Items"). Match by label_def name.
+
+Both can be used together in a single call. The CLI fetches the taxonomy, merges changes, and sends updates per label_def — preserving all fields and definitions you didn't change.
 
 Omitting `--label-instructions` preserves the existing project-level prompt — it is NOT wiped.
 
-**Warning: label_def vs field instruction conflicts.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model also sees. `update-prompts --fields` does NOT touch this. If the label_def instructions say "Monetary fields: decimal format, no currency symbol" but your per-field instruction says "submit as-written with commas", the model gets contradictory signals. Before iterating, read each label_def's `instructions` in the taxonomy and ensure they don't contradict the per-field instructions you're writing.
+**Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model also sees alongside per-field instructions. If the group instruction says "Monetary fields: decimal format, no currency symbol" but a per-field instruction says "submit as-written with commas", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `--groups` if it contradicts.
 
 ## Before Starting
 
@@ -35,7 +40,7 @@ The user may specify a max number of iterations (default: 3). Track:
 
 - **Baseline metrics** — the per-field F1 scores before any changes
 - **Previous iteration metrics** — the per-field F1 scores from the last successful iteration
-- **Previous instructions** — the label_def instructions from the last successful iteration (for rollback)
+- **Previous instructions** — the per-field (moon_form) instructions from the last successful iteration (for rollback)
 
 Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle.
 
@@ -64,9 +69,23 @@ Build this mapping once and reuse it throughout the loop.
 3. Re-fetch metrics — the typed fields should now have F1 > 0
 4. Use these refreshed metrics as `baseline_metrics` for the loop
 
-After this one-time fix, the optimization loop only updates instructions — no more re-labelling.
+After this one-time format fix, use the refreshed metrics as `baseline_metrics` for the loop.
 
-### 1b. Get taxonomy
+### 1b. Check model configuration
+
+If many fields have low scores across the board, the model configuration may be wrong (e.g., no table pre-processing for table-heavy documents). View sample documents and check if the current config matches the document type. If not, reconfigure:
+
+```bash
+uip ixp project configure-model <project-name> \
+  --model gemini_2_5_flash \
+  --preprocessing <none|table_mini|table> \
+  --attribution model \
+  --output json
+```
+
+See the [Project Setup Guide](project-setup.md) Step 2 for the decision table.
+
+### 1c. Get taxonomy
 
 ```bash
 uip ixp project taxonomy <project-name> --output json
@@ -76,7 +95,7 @@ Save the full taxonomy including `label_defs` → `moon_form` fields with their 
 
 The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `update-prompts --fields`.
 
-### 1c. Read sample documents (2-3 documents)
+### 1d. Read sample documents (2-3 documents)
 
 ```bash
 uip ixp document list <project-name> --output json
@@ -88,7 +107,7 @@ uip ixp document text <project-name> <comment-uid> --output json
 
 View the images with the **Read tool** and review the OCR text. This gives you visual and textual context for writing instructions. You will NOT re-read these in subsequent iterations.
 
-### 1d. Check for unlabelled documents
+### 1e. Check for unlabelled documents
 
 Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Label them first using the [Label Documents Guide](label-documents.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
 
@@ -123,7 +142,7 @@ If no fields need REFINE, stop — the project is already at target quality.
 
 For each REFINE field with **Recall < 0.5**, check whether the problem is a bad prompt or a missing/wrong labelling:
 
-1. Look at the sample document images you already have from Step 1c
+1. Look at the sample document images you already have from Step 1d
 2. For each low-recall field, check: **can you see this field's value in the document?**
    - If yes, and you didn't submit it (or submitted a wrong value) during the initial labelling → this is a **labelling gap**, not a prompt problem
    - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
@@ -136,7 +155,7 @@ After targeted re-labelling, wait ~2 minutes for retrain and re-fetch metrics be
 
 ### 2b. Write improved instructions
 
-For each field marked REFINE, rewrite its label_def `instructions`:
+For each field marked REFINE, rewrite its moon_form field `instructions`:
 
 - **PRECISION** → Be more specific about WHAT to extract and what NOT to extract
 - **RECALL** → Better describe WHERE to find the field
@@ -156,20 +175,29 @@ Save the current field instructions before updating (for rollback).
 
 ### 2c. Update instructions
 
-Use the **field name** (e.g., "Invoice Number", "Invoice Date"), not the label_def name:
+Use **field names** for `--fields` and **label_def names** for `--groups`:
 
 ```bash
-cat > /tmp/ixp/updates.json << 'FIELDS_EOF'
+cat > /tmp/ixp/field_updates.json << 'FIELDS_EOF'
 [
   {"name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
   {"name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
 ]
 FIELDS_EOF
 
+cat > /tmp/ixp/group_updates.json << 'GROUPS_EOF'
+[
+  {"name": "Invoice", "instructions": "General invoice header fields including number, dates, payment terms, and totals."}
+]
+GROUPS_EOF
+
 uip ixp project update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/updates.json)" \
+  --fields "$(cat /tmp/ixp/field_updates.json)" \
+  --groups "$(cat /tmp/ixp/group_updates.json)" \
   --output json
 ```
+
+`--groups` is optional — omit it if the group instructions don't need changing.
 
 **Post-update verification:** After `update-prompts`, re-fetch the taxonomy and verify that `moon_form` field counts per label_def are unchanged:
 
@@ -177,7 +205,7 @@ uip ixp project update-prompts <project-name> \
 uip ixp project taxonomy <project-name> --output json
 ```
 
-Compare the number of `moon_form` entries in each updated label_def against what you saved in Step 1b. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration.
+Compare the number of `moon_form` entries in each updated label_def against what you saved in Step 1c. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration.
 
 ### 2d. Re-label all documents
 
@@ -240,16 +268,15 @@ Optimization complete after N iterations.
 
 Field               | Baseline F1 | Final F1 | Change
 --------------------|-------------|----------|-------
-Invoice Details     | 0.450       | 0.820    | +0.370
-Line Items          | 0.300       | 0.650    | +0.350
-Bill-To-Party       | 0.900       | 0.900    | (unchanged)
-Invoice Date        | 0.000       | 0.000    | (format issue — skipped)
+Invoice Number      | 0.450       | 0.820    | +0.370
+Description         | 0.300       | 0.650    | +0.350
+Bill-To Name        | 0.900       | 0.900    | (unchanged)
+Vendor Address      | 0.600       | 0.400    | -0.200 (rolled back)
 
 Overall project score: X.XX → Y.YY
-Rollbacks: N iterations were rolled back due to regression
-Fields still below target: [list any with F1 < 0.7]
-Format issues (not fixable by prompts): [list typed fields at F1 = 0]
+Iterations: N total, M with rollbacks
+Fields still below target (F1 < 0.7): [list]
+Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 ```
 
 If fields still need work, suggest the user run another round with more iterations.
-If typed fields are at F1 = 0, advise fixing the labelling format and re-labelling.
