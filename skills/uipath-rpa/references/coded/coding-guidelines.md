@@ -163,7 +163,7 @@ C) <user-driven approach>
 
 - Never hardcode UI selectors — use Object Repository descriptors
 - Never write UI code referencing descriptors without first reading `ObjectRepository.cs`
-- Never manually craft UI selectors by calling low-level `uip rpa uia` CLI commands (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) outside of the `uia-configure-target` skill flow — this skips selector improvement and OR registration
+- Never manually craft UI selectors by calling low-level `uip rpa uia` CLI commands (`snapshot capture`, `snapshot filter`, `selector-intelligence resolve-default-selector`) outside of the `uia-configure-target` skill flow — this skips selector improvement and OR registration
 - Never skip the target configuration step when a descriptor is missing — use the `uia-configure-target` skill flow (fallback: `indicate-application` / `indicate-element`)
 - Never use UITask (ScreenPlay) as the primary approach — resolve descriptors via Finding Descriptors hierarchy first (Critical Rule #15)
 - Never skip configuring targets because it "seems tedious" — configure ALL missing elements
