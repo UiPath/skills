@@ -82,6 +82,8 @@ The full metadata contains:
 
 Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
 
+> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../SKILL.md).
+
 ```bash
 # Example: resolve Slack channel "#test-slack" to its ID
 uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
@@ -89,7 +91,7 @@ uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=
 # -> { "id": "C1234567890", "name": "test-slack" }
 ```
 
-Use the resolved IDs (not display names) in the flow's node `inputs`. Present options to the user when multiple matches exist.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `execute list` call — in the flow's node `inputs`. Present options to the user when multiple matches exist.
 
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
@@ -322,6 +324,7 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Connection ping failed | Connection expired or misconfigured | Re-authenticate the connection in the IS portal |
 | Missing `inputs.detail` | Node added but not configured | Run `uip maestro flow node configure` with the detail JSON (Step 6) |
 | Reference field has display name instead of ID | `uip is resources execute list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
+| Node faults at runtime with "resource not found" or similar after a clean build and validate | Reference field uses an ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a Slack channel ID from workspace A pasted into a node bound to workspace B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `bodyParameters` / `queryParameters` in `--detail`, re-run `node configure`, re-debug. See Step 4 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../SKILL.md). |
 | Required field missing at runtime | Required input field not provided | Check metadataFile for all `required: true` fields in both `requestFields` and `parameters` |
 | `$vars` expression unresolvable | Node outputs block missing or node not connected | Verify the node has edges and upstream outputs are correctly referenced |
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |

@@ -85,13 +85,15 @@ The response also includes `model.context` with:
 
 Check `eventParameters.fields` for fields with a `reference` object — these require ID lookup, same as IS activity nodes.
 
+> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../SKILL.md).
+
 ```bash
 # Example: resolve Outlook mail folder "Inbox" to its ID
 uip is resources execute list "<connector-key>" "<reference.objectName>" \
   --connection-id "<id>" --output json
 ```
 
-Use the resolved IDs in the trigger's event parameter configuration.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs — from this very `execute list` call — in the trigger's event parameter configuration.
 
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
@@ -311,6 +313,7 @@ uip maestro flow debug . --output json
 | Event parameter missing at runtime | Required event parameter not configured | Check `eventParameters.fields` for `required: true` fields and include them in `--detail` `eventParameters` |
 | Filter expression syntax error | Wrong filter format | Use JMESPath syntax: `(field == 'value')` or `(contains(field, 'value'))` — see [JMESPath Filter Expressions](#jmespath-filter-expressions) |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
+| Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../SKILL.md). |
 | `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
 
 ### Debug Tips
