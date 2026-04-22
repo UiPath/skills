@@ -40,10 +40,14 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
-    environment. Commands may fail with auth errors — that is expected.
-    Run each command once, record the result (success or error) in report.json,
-    and move on. Do NOT retry or attempt to login.
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run every command listed above (list and ping), record
+    each result (success or error) in report.json, and move on.
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
+  - If connections list returns no connections, use a placeholder like
+    "placeholder-conn-id" to still run the ping command with correct syntax.
   - Do NOT run connections create or connections edit — they open a browser.
     Just document the correct commands in report.json.
 

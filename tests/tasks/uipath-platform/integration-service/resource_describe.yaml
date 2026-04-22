@@ -19,10 +19,10 @@ initial_prompt: |
   I want to create a Contact record in Salesforce through UiPath Integration
   Service. Before executing anything, I need to understand the resource schema.
 
-  1. List available resources for the "uipath-salesforce-sfdc" connector that
-     support the Create operation
+  1. List available resources for the "uipath-salesforce-sfdc" connector
+     that support the Create operation (use --operation Create)
   2. Describe the "Contact" resource to get field details for the Create
-     operation
+     operation (use --operation Create)
 
   Save your findings to report.json:
   {
@@ -35,13 +35,15 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
-    environment. Commands may fail with auth errors — that is expected.
-    Run each command once, record the result (success or error) in report.json,
-    and move on. Do NOT retry or attempt to login.
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run every command listed above (resources list and
+    resources describe), record each result in report.json, and move on.
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
   - Always pass `--connection-id` on resource commands — use a placeholder
     value like "placeholder-connection-id" if you cannot obtain a real one.
-  - Use `--operation` on describe to get field-level detail.
+  - Always pass `--operation` on both resources list and resources describe.
 
 success_criteria:
   - type: command_executed
