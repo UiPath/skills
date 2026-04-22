@@ -37,7 +37,7 @@ The user may specify a max number of iterations (default: 3). Track:
 - **Previous iteration metrics** — the per-field F1 scores from the last successful iteration
 - **Previous instructions** — the label_def instructions from the last successful iteration (for rollback)
 
-Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each re-label cycle.
+Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle.
 
 ## Step 1 — Setup (once, before the loop)
 
@@ -50,13 +50,21 @@ uip ixp project metrics <project-name> --output json
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
 
-**Check for format issues first.** If any typed fields (Date, Monetary Quantity) have F1 = 0, these are format mismatches — not prompt issues. Fix them BEFORE starting the optimization loop:
-1. Re-label all documents using Steps 2-5 of the [Project Setup Guide](project-setup.md), submitting typed field values as-written in the document
+**Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `moon_form` entries:
+
+- For each metric entry: `FieldGroup` = label_def name, `FieldId` = moon_form `field_id`
+- Find the matching `moon_form` entry in the taxonomy where `field_id == FieldId` — its `name` is the human-readable field name
+
+Build this mapping once and reuse it throughout the loop.
+
+**Check for format issues first.** If any typed fields (Date, Monetary Quantity) have F1 = 0, these are format mismatches — not prompt issues. This is the **only case** where re-labelling is needed during improvement (because the original labellings used the wrong format):
+
+1. Re-label all documents using the [Label Documents Guide](label-documents.md), submitting typed field values as-written in the document
 2. Wait ~2 minutes for retrain
 3. Re-fetch metrics — the typed fields should now have F1 > 0
 4. Use these refreshed metrics as `baseline_metrics` for the loop
 
-This ensures the optimization loop only targets fields that actually need prompt improvement.
+After this one-time fix, the optimization loop only updates instructions — no more re-labelling.
 
 ### 1b. Get taxonomy
 
@@ -79,6 +87,10 @@ uip ixp document text <project-name> <comment-uid> --output json
 ```
 
 View the images with the **Read tool** and review the OCR text. This gives you visual and textual context for writing instructions. You will NOT re-read these in subsequent iterations.
+
+### 1d. Check for unlabelled documents
+
+Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Label them first using the [Label Documents Guide](label-documents.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
 
 ---
 
@@ -107,6 +119,21 @@ Print a diagnosis summary showing each field's name, F1, precision/recall, and d
 
 If no fields need REFINE, stop — the project is already at target quality.
 
+### 2a-check. Check for labelling gaps (before writing instructions)
+
+For each REFINE field with **Recall < 0.5**, check whether the problem is a bad prompt or a missing/wrong labelling:
+
+1. Look at the sample document images you already have from Step 1c
+2. For each low-recall field, check: **can you see this field's value in the document?**
+   - If yes, and you didn't submit it (or submitted a wrong value) during the initial labelling → this is a **labelling gap**, not a prompt problem
+   - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
+
+**If you find labelling gaps**, re-label ONLY the specific documents where the field was missed or wrong — do NOT re-label all documents. Use the [Label Documents Guide](label-documents.md) for those specific documents only, submitting corrections for the gapped fields.
+
+After targeted re-labelling, wait ~2 minutes for retrain and re-fetch metrics before continuing. Remove fixed fields from the REFINE list.
+
+**If no labelling gaps are found**, proceed directly to writing instructions.
+
 ### 2b. Write improved instructions
 
 For each field marked REFINE, rewrite its label_def `instructions`:
@@ -116,13 +143,14 @@ For each field marked REFINE, rewrite its label_def `instructions`:
 - **BOTH** → Full rewrite — what, where, format, what to avoid
 - **MIXED** → Fill quality gaps (location hints, examples, format guidance)
 
-**Rules:**
+**Rules** (see also "Instruction Quality Standards" in the main skill):
 
 1. NEVER reference specific page numbers — use section headings or labels
-2. Include format guidance and a realistic example when possible
-3. Keep instructions 2-4 sentences per field
-4. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date") — write it to describe that exact field
-5. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, add negative examples)
+2. Each instruction must be **120+ characters** with location hint, format pattern, and real example from the documents
+3. For fields visible in the sample documents, use the real data you observed (location, label on page, format, example value)
+4. For fields NOT visible in the sample documents, use a generic instruction with no example
+5. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")
+6. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, add negative examples)
 
 Save the current field instructions before updating (for rollback).
 
@@ -153,9 +181,9 @@ Compare the number of `moon_form` entries in each updated label_def against what
 
 ### 2d. Re-label all documents
 
-Follow Steps 2-5 of the [Project Setup Guide](project-setup.md) to re-label all documents.
+After updating instructions, re-label all documents using the [Label Documents Guide](label-documents.md). This gives the model fresh ground-truth labellings that reflect Claude's current best extraction under the new prompts.
 
-**CRITICAL: Do NOT change labelling values to match IXP's predictions.** Extract what you see in the document — the same way you did in the initial labelling. The goal of re-labelling is for IXP to retrain against your (correct) extractions with the new prompts. If a field's F1 is low, the fix is better prompts, not changing your labels to match the model. Only modify a labelling if you genuinely made an error the first time (missed a field, extracted the wrong value, used the wrong format).
+**CRITICAL: Claude is the source of truth.** Extract what you see in the document — do NOT change values to match IXP's predictions. The goal is for IXP to learn from your (correct) extractions.
 
 ### 2e. Wait and get new metrics
 
@@ -165,31 +193,33 @@ Wait ~2 minutes for server-side retraining, then:
 uip ixp project metrics <project-name> --output json
 ```
 
-If `ModelVersion` hasn't advanced, wait another 60 seconds and retry. **Important:** ModelVersion does NOT advance on identical re-submissions. If labellings didn't actually change (same values submitted), no retrain will occur. On changed labellings, retrain typically takes ~2 minutes. If no advance after 5 minutes, stop polling.
+If `ModelVersion` hasn't advanced, wait another 60 seconds and retry. **What triggers retrain:** Any change to model inputs — labellings OR instructions — triggers a full model retrain. Even changing 1 field's instruction retrains the whole model. Retrain typically takes ~2 minutes. If no advance after 5 minutes, stop polling.
 
 ### 2f. Compare and decide
 
-Compare the new per-field F1 scores against the **previous iteration** scores:
+Compare the new per-field F1 scores against the **previous iteration** scores.
 
-**Regression check:** If ANY field's F1 dropped by more than 0.1 compared to the previous iteration:
+**Selective regression check:** For each field you updated this iteration, check if F1 dropped by more than 0.1:
 
-1. Report the regression to the user (which fields, old vs new scores)
-2. **Roll back** — restore the previous iteration's instructions:
+- **Regressed fields** (F1 dropped >0.1): roll back ONLY those fields' instructions to the previous iteration's version. Keep the improved instructions for fields that gained or held steady.
+- **Improved/unchanged fields**: keep their new instructions.
 
-   ```bash
-   cat > /tmp/ixp/rollback.json << 'FIELDS_EOF'
-   [{"name": "...", "instructions": "previous instruction"}, ...]
-   FIELDS_EOF
+If any fields regressed, do a selective rollback:
 
-   uip ixp project update-prompts <project-name> \
-     --fields "$(cat /tmp/ixp/rollback.json)" \
-     --output json
-   ```
+```bash
+# Only include the regressed fields, not the whole iteration
+cat > /tmp/ixp/rollback.json << 'FIELDS_EOF'
+[{"name": "Vendor Address", "instructions": "previous instruction for this field only"}]
+FIELDS_EOF
 
-3. Re-label all documents with the rolled-back instructions
-4. Try a **different approach** for the regressed fields on the next iteration
+uip ixp project update-prompts <project-name> \
+  --fields "$(cat /tmp/ixp/rollback.json)" \
+  --output json
+```
 
-**Rollback caveat:** Rollback is NOT atomic — the model has already retrained on the regressed labels, so re-submitting the previous iteration's values won't snap F1 back to exactly where it was. Expect only **partial recovery**. To minimize this risk: prefer small-scope iterations (few fields at a time), and keep the best-seen labellings around to re-submit if needed.
+Wait ~2 minutes for retrain. On the next iteration, try a **different approach** for the regressed fields only (different wording, shorter instruction, fewer examples).
+
+**Rollback caveat:** Rollback restores the previous instructions but the model needs to retrain. Expect only **partial recovery** — prefer small-scope iterations (few fields at a time).
 
 **No regression:** Accept the iteration. Update `previous_metrics` and `previous_instructions` with the new values.
 
