@@ -55,7 +55,7 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
     "method": "GET",
     "url": "/api/endpoint",
     "query": {"param1": "value1"}
-  }'
+  }' --output json
 ```
 
 **Manual mode** (no connector auth):
@@ -67,7 +67,7 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
     "method": "GET",
     "url": "https://api.example.com/endpoint",
     "query": {"param1": "value1"}
-  }'
+  }' --output json
 ```
 
 **What the CLI handles automatically:**
@@ -104,7 +104,7 @@ uip maestro flow node configure <Project>.flow <nodeId> \
     "authentication": "manual",
     "method": "GET",
     "url": "=js:`https://api.example.com/users/${$vars.userId}`"
-  }'
+  }' --output json
 ```
 
 ### Step 4 — (Optional) Configure response branches for content-based routing
@@ -120,7 +120,7 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
       { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
       { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
     ]
-  }'
+  }' --output json
 ```
 
 > **Do not prefix `conditionExpression` with `=js:`** — HTTP branch conditions are auto-evaluated as JS (same rule as decision/switch expressions).

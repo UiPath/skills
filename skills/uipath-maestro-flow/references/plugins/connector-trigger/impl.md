@@ -123,7 +123,7 @@ Follow the [CLI: Replace manual trigger with connector trigger](../../flow-editi
 Use `node configure` with trigger-specific `--detail` fields:
 
 ```bash
-uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '{
+uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '{
   "connectionId": "<CONNECTION_ID>",
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
@@ -144,7 +144,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '{
 
 The command populates `inputs.detail` (including the internal `configuration` blob) and creates workflow-level connection bindings.
 
-> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"`
+> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
 ---
 

@@ -283,16 +283,7 @@ For Orchestrator deployment when explicitly requested, see [references/flow-comm
 
 #### Post-build choice prompt
 
-When the build completes and it is time to offer next steps (see Completion Output → "Next step"), use `AskUserQuestion` to present a dropdown with these options (per Critical Rule #19):
-
-| Option | Action |
-|--------|--------|
-| **Publish to Studio Web** (default) | Run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
-| **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir>` (see Step 8). Confirm consent first — debug executes the flow for real. |
-| **Deploy to Orchestrator** | Run `uip solution resource refresh <SolutionDir> --output json` then `uip maestro flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
-| **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
-
-Do not run any of these actions without an explicit user selection.
+When the build completes, present the next-step dropdown described in the [Completion Output](#completion-output) section. See the detailed action table there for what each option runs.
 
 ## Anti-Patterns
 
@@ -374,12 +365,15 @@ When you finish building or editing a flow, report to the user:
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
 7. **Next step** — use `AskUserQuestion` to present a dropdown with these options (Critical Rule #19):
-   - **Publish to Studio Web** — run `uip solution upload <SolutionDir>` and share the URL
-   - **Debug the solution** — run `uip maestro flow debug <ProjectDir>` (requires explicit consent — side effects are real)
-   - **Deploy to Orchestrator** — hand off to the [/uipath:uipath-platform](/uipath:uipath-platform) skill for `uip maestro flow pack` + `uip solution publish`
-   - **Something else** (last option) — accept free-form input and act on it
 
-   Do not run any of these actions automatically. Wait for the user's selection.
+   | Option | Action |
+   |--------|--------|
+   | **Publish to Studio Web** (default) | Run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL. |
+   | **Debug the solution** | Run `uip solution resource refresh <SolutionDir> --output json` then `UIPCLI_LOG_LEVEL=info uip maestro flow debug <ProjectDir> --output json` (see Step 8). Confirm consent first — debug executes the flow for real. |
+   | **Deploy to Orchestrator** | Run `uip solution resource refresh <SolutionDir> --output json` then `uip maestro flow pack` + `uip solution publish` via the [/uipath:uipath-platform](/uipath:uipath-platform) skill. Only use when the user explicitly chooses this. |
+   | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
+
+   Do not run any of these actions without an explicit user selection.
 
 ## References
 

@@ -112,7 +112,7 @@ The `--detail` JSON schema differs between connector activity nodes, connector t
 **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file:
 
 ```bash
-uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)"
+uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json
 ```
 
 ### Configure a managed HTTP node

@@ -32,7 +32,7 @@ Confirm:
 
 - Input port: `input`
 - Output port: `output`
-- `model.serviceType` — `Orchestrator.StartAgenticProcess`
+- `model.serviceType` — `Orchestrator.StartAgenticProcess` (shared with agentic-process nodes; `resourceSubType: "Flow"` differentiates)
 - `model.bindings.resourceSubType` — `Flow`
 - `inputDefinition` — typically empty
 - `outputDefinition.error` — error schema
