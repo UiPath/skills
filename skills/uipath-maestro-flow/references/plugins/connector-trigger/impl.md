@@ -85,7 +85,7 @@ The response also includes `model.context` with:
 
 Check `eventParameters.fields` for fields with a `reference` object — these require ID lookup, same as IS activity nodes.
 
-> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6).** Do this even if you think you already know the ID from a previous flow in this session or a prior task. Reference IDs are **connection-scoped** — a `parentFolderId` from another Outlook mailbox, a Slack channel ID from another workspace, or a Jira project ID from another site will pass `node configure` and `flow validate` cleanly, then fault silently at runtime with no resolvable error back to Studio Web. See the top-level **Anti-Patterns** in [SKILL.md](../../../SKILL.md) and [/uipath:uipath-platform — Reference IDs Are Connection-Scoped](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../SKILL.md).
 
 ```bash
 # Example: resolve Outlook mail folder "Inbox" to its ID

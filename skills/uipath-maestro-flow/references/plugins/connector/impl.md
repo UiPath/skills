@@ -82,7 +82,7 @@ The full metadata contains:
 
 Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
 
-> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6).** Do this even if you think you already know the ID from a previous flow in this session or a prior task. Reference IDs are **connection-scoped** — a Slack channel ID from another workspace, a Jira project ID from another Atlassian site, or a Google Sheet ID from another Drive will pass `node configure` and `flow validate` cleanly, then fail silently at runtime. See the top-level **Anti-Patterns** in [SKILL.md](../../../SKILL.md) and [/uipath:uipath-platform — Reference IDs Are Connection-Scoped](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../SKILL.md).
 
 ```bash
 # Example: resolve Slack channel "#test-slack" to its ID
@@ -323,6 +323,7 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Connection ping failed | Connection expired or misconfigured | Re-authenticate the connection in the IS portal |
 | Missing `inputs.detail` | Node added but not configured | Run `uip maestro flow node configure` with the detail JSON (Step 6) |
 | Reference field has display name instead of ID | `uip is resources execute list` was skipped | Resolve the reference field to get the actual ID (Step 4) |
+| Node faults at runtime with "resource not found" or similar after a clean build and validate | Reference field uses an ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a Slack channel ID from workspace A pasted into a node bound to workspace B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `bodyParameters` / `queryParameters` in `--detail`, re-run `node configure`, re-debug. See Step 4 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../SKILL.md). |
 | Required field missing at runtime | Required input field not provided | Check metadataFile for all `required: true` fields in both `requestFields` and `parameters` |
 | `$vars` expression unresolvable | Node outputs block missing or node not connected | Verify the node has edges and upstream outputs are correctly referenced |
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |
