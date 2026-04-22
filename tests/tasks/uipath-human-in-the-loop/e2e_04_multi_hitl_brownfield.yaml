@@ -1,9 +1,12 @@
 task_id: skill-hitl-e2e-multi-hitl-brownfield
+# NOTE: "e2e" here means authoring end-to-end (brownfield JSON flow editing).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to insert multiple HITL nodes.
 description: >
-  E2E golden scenario (brown field, complex): agent reads an existing HR
-  onboarding flow and inserts TWO separate HITL checkpoints — before
-  document validation and before IT provisioning. Tests multi-node
-  insertion and full validation of the combined flow.
+  Authoring E2E golden scenario (brown field, complex): agent reads an existing
+  HR onboarding flow and inserts TWO separate HITL checkpoints — before document
+  validation and before IT provisioning. Tests multi-node insertion and full
+  validation of the authored .flow file. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, brown-field, multi-hitl, hr-onboarding]
 
 agent:

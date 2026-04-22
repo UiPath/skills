@@ -934,14 +934,14 @@ uip maestro case sla rules list <file>
 uip maestro case sla rules remove <file> <index>
 ```
 
-SLA units: `h` (hours), `d` (days), `w` (weeks), `m` (months).
+SLA units: `min` (minutes), `h` (hours), `d` (days), `w` (weeks), `m` (months).
 
 Options for `sla set`:
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
 | `--count <count>` | **(required)** SLA duration count (positive integer) |
-| `--unit <unit>` | **(required)** SLA duration unit: `h`, `d`, `w`, `m` |
+| `--unit <unit>` | **(required)** SLA duration unit: `min`, `h`, `d`, `w`, `m` |
 | `--stage-id <id>` | Stage ID to set the SLA on (omit for root-level) |
 
 Options for `sla get` / `sla remove`:
@@ -968,7 +968,7 @@ Options for `sla rules add`:
 | `<file>` | **(required)** Path to the case management JSON file |
 | `--expression <expr>` | **(required)** Condition expression for the SLA rule |
 | `--count <count>` | **(required)** SLA duration count (positive integer) |
-| `--unit <unit>` | **(required)** SLA duration unit: `h`, `d`, `w`, `m` |
+| `--unit <unit>` | **(required)** SLA duration unit: `min`, `h`, `d`, `w`, `m` |
 
 Condition rules are prepended before the default rule (`=js:true`) so they are evaluated first. Output codes: `SlaSet`, `SlaFound`, `SlaRemoved`, `EscalationRuleAdded`, `EscalationRulesList`, `EscalationRuleRemoved`, `SlaRuleAdded`, `SlaRulesList`, `SlaRuleRemoved`.
 

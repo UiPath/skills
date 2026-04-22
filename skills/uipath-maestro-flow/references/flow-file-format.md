@@ -200,9 +200,9 @@ uip maestro flow registry search <keyword>
 | Node type | Source ports (outgoing) | Target ports (incoming) |
 |-----------|------------------------|------------------------|
 | `core.trigger.manual` | `output` | — |
-| `core.action.script` | `success` | `input` |
-| `core.action.http` | `branch-{id}` (dynamic), `default` | `input` |
-| `core.action.transform` | `output` | `input` |
+| `core.action.script` | `success`, `error` | `input` |
+| `core.action.http` | `default`, `error`, `branch-{id}` (dynamic) | `input` |
+| `core.action.transform` | `output`, `error` | `input` |
 | `core.logic.decision` | `true`, `false` | `input` |
 | `core.logic.switch` | `case-{id}` (dynamic), `default` | `input` |
 | `core.logic.loop` | `success`, `output` | `input`, `loopBack` |
@@ -210,11 +210,54 @@ uip maestro flow registry search <keyword>
 | `core.control.end` | — | `input` |
 | `core.logic.terminate` | — | `input` |
 
+Connector activities, agent nodes, and RPA nodes follow the same pattern as the generic action nodes above: a primary source port plus an implicit `error` port.
+
 Verify exact ports for any node type:
 ```bash
 uip maestro flow registry get <nodeType> --output json
 # Look at Data.Node.handleConfiguration[].handles[].id
+# Also check Data.Node.supportsErrorHandling — see "Implicit error port" below
 ```
+
+## Implicit error port on action nodes
+
+Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — essentially every action node.
+
+The port is **not** listed in the registry's `handleConfiguration`. It's only visible at serialization time: when the flow contains an outgoing edge with `sourcePort: "error"` from the node, the serializer emits a BPMN boundary error event attached to the node.
+
+### When the error port fires
+
+- Network failures, DNS errors, TLS errors
+- Request timeouts
+- Non-2xx HTTP responses (unless caught by a configured `inputs.branches` entry)
+- Script exceptions (`throw`, undefined reference, etc.)
+- Transform operation failures (invalid collection, missing field)
+- Any unhandled runtime exception inside the node
+
+Without a wired error edge, any of these fails the whole flow with `finalStatus: "Faulted"`.
+
+### Wiring the error port
+
+```bash
+# Confirm the node supports error handling
+uip flow registry get <nodeType> --output json \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Data']['Node'].get('supportsErrorHandling'))"
+
+# Add an outgoing edge with sourcePort: "error"
+uip flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
+  --source-port error --target-port input --output json
+```
+
+Inside the error handler, `$vars.{actionNodeId}.error` resolves to the error object. For HTTP it's `{ code, message, detail, category, status }`; other nodes have similar shapes — check the node's `outputDefinition.error.schema` in the registry.
+
+### Error port vs other branching
+
+| Mechanism | When to use |
+| --- | --- |
+| **`error` source port** (any action node) | The node failed (exception, timeout, non-2xx not caught by a branch). Generic "something went wrong" handler. |
+| **`branch-{id}` ports** (HTTP only, `inputs.branches`) | The call succeeded and you want to route on response *content* — different paths for e.g. empty vs non-empty results. |
+| **`core.logic.decision` downstream** | Simple yes/no routing on the node's successful output. Doesn't help if the node itself fails. |
+| **`core.logic.switch` downstream** | Multi-way routing on the node's successful output. Same — doesn't catch failures. |
 
 ## Minimal working example — dice roller
 

@@ -67,7 +67,9 @@ uip is connections list "<connector-key>" --output json
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `success` |
+| `input` | `success`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 

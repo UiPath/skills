@@ -1,6 +1,6 @@
-task_id: skill-hitl-activation-neg-automated
+task_id: skill-hitl-smoke-neg-automated
 description: >
-  Negative activation test: agent must NOT recommend HITL when the user
+  Negative smoke test: agent must NOT recommend HITL when the user
   explicitly requests a fully automated flow with no human review. Verifies
   the skill does not produce false positives.
 tags: [uipath-human-in-the-loop, smoke]
@@ -10,14 +10,15 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Process all invoices under $500 automatically — extract the data, validate
-  the amounts, and post them directly to SAP with no manual review whatsoever.
-  This should be fully automated end-to-end.
-
-  Write a recommendation.json file with:
+  Our automated invoice pipeline handles all invoices from a single verified
+  supplier (AcmeCorp) with fixed pricing and pre-approved budgets. Every
+  invoice follows the same template: extract 5 fixed fields, validate against
+  PO numbers, post to SAP. There are no exceptions and no edge cases — the
+  business has signed off on full automation with no human review steps for
+  this supplier. Create a recommendation.json with:
   {
-    "hitl_needed": true or false,
-    "reason": "<why HITL is or is not needed>"
+    "hitl_needed": <true or false>,
+    "reason": "<why>"
   }
 
 success_criteria:
@@ -34,4 +35,3 @@ success_criteria:
       - '"hitl_needed": false'
     weight: 3.0
     pass_threshold: 1.0
-

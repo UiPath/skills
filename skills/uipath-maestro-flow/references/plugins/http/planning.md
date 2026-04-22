@@ -31,11 +31,41 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `output` |
+| `input` | `default`, `error`, `branch-{id}` (dynamic, one per `inputs.branches` entry) |
+
+- `default` — primary success output, or fallback when configured branches don't match.
+- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+- `branch-{id}` — HTTP-specific, configured via `inputs.branches` (response-content routing). See [Conditional Branches](#conditional-branches) below.
 
 ## Output Variables
 
-- `$vars.{nodeId}.output` — `{ body, code, method, rawStringBody, request }`
+- `$vars.{nodeId}.output` — `{ body, code, method, rawStringBody, request }` on success
+- `$vars.{nodeId}.error` — `{ code, message, detail, category, status }` when the error port fires
+
+## Conditional Branches
+
+Use `inputs.branches` when you need to route downstream paths based on response content (e.g., empty vs non-empty results). For generic call-failure handling, prefer the shared `error` port instead — don't enumerate every bad status code as a branch.
+
+Each branch's `conditionExpression` is a JS expression with `$self` bound to the current HTTP node's output:
+
+```json
+{
+  "inputs": {
+    "branches": [
+      { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
+      { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
+    ]
+  }
+}
+```
+
+Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `default` fires when no branch condition matches.
+
+> **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
+
+## Dynamic values
+
+IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Step 3b — Dynamic values](impl.md#step-3b--dynamic-values-in-url--headers--body--query) for the full rationale and examples.
 
 ## Key Inputs (`--detail` for `node configure`)
 

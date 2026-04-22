@@ -310,18 +310,21 @@ Used for conditions, input values, variable updates, and output mappings. The `=
 
 ### Template Expressions (`{ }`)
 
-Used for string interpolation in text fields. Expressions inside single braces are evaluated and converted to strings.
+Used for string interpolation in **native flow string fields** only. Expressions inside single braces are evaluated and converted to strings.
 
 ```
 Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 ```
+
+> **Brace-templates do NOT work in Integration Service activity inputs.** The flow-layer template runner only processes native flow fields (decision expressions, variable updates, end-node output `source`, script bodies, agent prompt text). Fields inside `inputs.detail.bodyParameters` on `core.action.http.v2` or `uipath.connector.*` activity nodes — `url`, `headers`, `body`, `query` — are passed through to the IS runtime unchanged, so `{$vars.article}` ships literally. Observed behavior: the `$` is stripped and the braces survive (`user/{vars.article}` reaches the service). **For any dynamic value in an IS activity input, use `=js:` instead** — e.g., `` "url": "=js:`https://.../user/${$vars.article}`" `` or `"headers": { "Authorization": "=js:'Bearer ' + $vars.token" }`.
 
 ### Comparison
 
 | Feature | `=js:` | `{ }` template |
 | --- | --- | --- |
 | Return type | Any (boolean, number, object, array) | Always string |
-| Use case | Conditions, inputs, mappings | Text/prompt fields |
+| Use case | Conditions, inputs, mappings | Native flow text/prompt fields only |
+| Works in IS activity inputs (HTTP URL/headers/body, connector `bodyParameters`) | Yes | **No — use `=js:`** |
 | Full JS | Yes | Expression-only (no statements) |
 | Prefix | `=js:` required | No prefix, braces inline |
 

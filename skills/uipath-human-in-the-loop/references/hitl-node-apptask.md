@@ -302,10 +302,8 @@ Merge rules:
       "appVersionRef": { "key": "<APP_VERSION_REF.key>", "name": "Invoice Approval" }
     },
     "schema": {
-      "inputs": [],
-      "outputs": [],
-      "inOuts": [],
-      "outcomes": [{ "name": "Submit", "type": "string" }]
+      "fields": [],
+      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
     }
   },
   "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }

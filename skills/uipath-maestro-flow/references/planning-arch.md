@@ -171,22 +171,30 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.trigger.manual` | — | `output` |
 | `core.trigger.scheduled` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
-| `core.action.script` | `input` | `success` |
-| `core.action.http.v2` | `input` | `output` |
-| `core.action.transform` | `input` | `output` |
+| `core.action.script` | `input` | `success`, `error` |
+| `core.action.http.v2` | `input` | `default`, `error`, `branch-{id}` (dynamic per `inputs.branches` entry) |
+| `core.action.transform` | `input` | `output`, `error` |
 | `core.logic.delay` | `input` | `output` |
 | `core.logic.decision` | `input` | `true`, `false` |
 | `core.logic.switch` | `input` | `case-{id}` (dynamic per case), `default` |
-| `core.logic.loop` | `input`, `loopBack` | `success`, `output` |
+| `core.logic.loop` | `input`, `loopBack` | `success`, `output`, `error` |
 | `core.logic.merge` | `input` (multiple) | `output` |
 | `core.control.end` | `input` | — |
 | `core.logic.terminate` | `input` | — |
 | `core.subflow` | `input` | `output`, `error` |
 | `core.logic.mock` | `input` | `output` |
 | `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
-| `uipath.core.agent.*` | `input` | `output` |
+| `uipath.core.agent.*` | `input` | `output`, `error` |
+| `uipath.core.rpa.*` | `input` | `output`, `error` |
+| `uipath.core.hitl.*` | `input` | `output`, `error` |
+| `uipath.core.flow.*` | `input` | `output`, `error` |
+| `uipath.core.agentic-process.*` | `input` | `output`, `error` |
+| `uipath.core.api-workflow.*` | `input` | `output`, `error` |
+| `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
+
+> **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.
 
 ---
 
@@ -205,6 +213,7 @@ Apply these when defining edges in the topology:
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
 10. Do not create cycles except through Loop's `loopBack` mechanism
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
+12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ---
 
@@ -243,13 +252,19 @@ Trigger -> Fetch List -> Loop
   |-- success -> Summarize -> End
 ```
 
-### Error Handling
+### Error Handling (implicit `error` port)
+
+Wire the action node's implicit `error` source port directly to a handler — this catches node-level failures (network errors, timeouts, non-2xx HTTP responses, script exceptions, transform faults). Do NOT put a Decision downstream to check for errors — by the time execution reaches the Decision, a failing node has already faulted the flow.
 
 ```
-Trigger -> HTTP Request -> Decision (error?)
-  |-- true -> Log Error -> Terminate
-  |-- false -> Process -> End
+Trigger -> HTTP Request
+  |-- default -> Process -> End (success)
+  |-- error   -> Log Error -> End (error path with descriptive output)
 ```
+
+Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length > 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
+
+**Plan the error edge in Phase 1.** If the requirements mention "if the call fails", "invalid input", "article not found", or any failure fallback, add an edge from the action node's `error` port to a handler in the edge table — don't leave it to the build step.
 
 ### Orchestration (Mixed Resources)
 
@@ -308,19 +323,23 @@ A mermaid flowchart showing all nodes, edges, and branching logic.
 graph LR
     trigger(Manual Trigger)
     fetchOrders[Fetch Orders]
-    checkStatus{Check Status}
+    checkHasOrders{Any Orders}
     processOrder[Process Order]
     notifySlack[Slack Send Message]
     logSkip[Log Skip]
+    logError[Log Error]
     doneSuccess(Done)
     doneSkip(Done)
+    doneError(Done Error)
     trigger -->|output| fetchOrders
-    fetchOrders -->|default| checkStatus
-    checkStatus -->|true| processOrder
-    checkStatus -->|false| logSkip
+    fetchOrders -->|default| checkHasOrders
+    fetchOrders -->|error| logError
+    checkHasOrders -->|true| processOrder
+    checkHasOrders -->|false| logSkip
     processOrder -->|success| notifySlack
     notifySlack -->|success| doneSuccess
     logSkip -->|success| doneSkip
+    logError -->|success| doneError
 ```
 ````
 
@@ -329,8 +348,9 @@ graph LR
 | # | Node ID | Name | Category | Node Type | Inputs | Outputs | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | trigger | Manual Trigger | trigger | `core.trigger.manual` | — | Trigger event | — |
-| 2 | fetchOrders | Fetch Orders | action | `core.action.http` | `method: GET`, `url: <ORDERS_API_URL>` | `output.body` (order list), `output.statusCode` | Phase 2: confirm URL and auth |
-| 3 | checkStatus | Check Status | control | `core.logic.decision` | `expression: $vars.fetchOrders.output.statusCode === 200` | Routes to `true` or `false` | — |
+| 2 | fetchOrders | Fetch Orders | action | `core.action.http.v2` | `method: GET`, `url: <ORDERS_API_URL>` | `output.body` (order list), `error` (on HTTP failure) | Phase 2: confirm URL and auth |
+| 3 | checkHasOrders | Any Orders | control | `core.logic.decision` | `expression: $vars.fetchOrders.output.body.length > 0` | Routes to `true` or `false` | — |
+| 4 | logError | Log Error | action | `core.action.script` | `script: return { message: $vars.fetchOrders.error.message };` | `output.message` | Handles failed HTTP call |
 
 **Column definitions:**
 
@@ -344,9 +364,12 @@ graph LR
 | # | Source Node | Source Port | Target Node | Target Port | Condition/Label |
 | --- | --- | --- | --- | --- | --- |
 | 1 | trigger | output | fetchOrders | input | — |
-| 2 | fetchOrders | default | checkStatus | input | — |
-| 3 | checkStatus | true | processOrder | input | Status is 200 |
-| 4 | checkStatus | false | logSkip | input | Status is not 200 |
+| 2 | fetchOrders | default | checkHasOrders | input | Call succeeded |
+| 3 | fetchOrders | error | logError | input | HTTP failure fallback |
+| 4 | checkHasOrders | true | processOrder | input | Has orders |
+| 5 | checkHasOrders | false | logSkip | input | No orders |
+
+> **Always include an `error`-port edge in the edge table whenever the requirements describe a failure fallback** (e.g., "return X if the API fails", "route to Y if the article doesn't exist", "handle timeouts gracefully"). Without the edge, the flow faults on failure instead of routing to the handler. See [Error Handling (implicit `error` port)](#error-handling-implicit-error-port).
 
 **Rules:**
 

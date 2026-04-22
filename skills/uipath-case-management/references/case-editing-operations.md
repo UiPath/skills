@@ -17,6 +17,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `triggers/timer` | CLI | Migration queued. |
 | `triggers/event` | CLI | Migration queued. |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
+| `variables/io-binding` | **JSON** | Direct write to `task.data.inputs[i].value`. No CLI needed. See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md). |
 | `tasks/process` | CLI | Migration queued. |
 | `tasks/agent` | CLI | Migration queued. |
 | `tasks/rpa` | CLI | Migration queued. |
@@ -25,7 +26,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `tasks/case-management` | CLI | Migration queued. |
 | `tasks/connector-activity` | CLI | Migration queued. Auto-injected default entry condition complicates the recipe. |
 | `tasks/connector-trigger` | CLI | Migration queued. Same as connector-activity. |
-| `tasks/wait-for-timer` | CLI | Migration queued. |
+| `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
 | `conditions/stage-entry-conditions` | CLI | Migration queued. |
 | `conditions/stage-exit-conditions` | CLI | Migration queued. |
 | `conditions/task-entry-conditions` | CLI | Migration queued. |

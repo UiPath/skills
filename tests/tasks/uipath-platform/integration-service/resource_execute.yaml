@@ -1,0 +1,105 @@
+task_id: skill-platform-is-resource-execute
+description: >
+  Smoke test: agent uses the uipath-platform skill to walk through the full
+  Integration Service workflow — connector, connection, ping, discover,
+  describe, and execute a create operation. Tests that the skill teaches the
+  complete 6-step workflow and correct execute syntax with --body.
+tags: [uipath-platform, smoke, integration-service, resources, execute]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Walk me through creating a Contact in Salesforce via UiPath Integration
+  Service. Follow the full Integration Service workflow.
+
+  Save a step-by-step log to report.json:
+  {
+    "workflow_steps": [
+      {"step": 1, "action": "find_connector", "command": "<uip command>", "result": "<success or error>"},
+      {"step": 2, "action": "find_connection", "command": "<uip command>", "result": "<success or error>"},
+      {"step": 3, "action": "ping_connection", "command": "<uip command>", "result": "<success or error>"},
+      {"step": 4, "action": "discover_resources", "command": "<uip command>", "result": "<success or error>"},
+      {"step": 5, "action": "describe_resource", "command": "<uip command>", "result": "<success or error>"},
+      {"step": 6, "action": "execute_create", "command": "<uip command>", "result": "<success or error>"}
+    ],
+    "commands_used": ["<all uip commands run in order>"]
+  }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands will fail with auth errors — that is expected.
+    Run each command once, record the result (success or error) in report.json,
+    and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - For the execute step, construct a realistic --body with at least
+    LastName (required) and FirstName fields.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent searched for the Salesforce connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+list.*--filter'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed connections for the connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinged a connection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+ping'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent described resources with --operation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+describe.*--operation'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed a create operation with --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+execute\s+create.*--body'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json consistently"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json logs all 6 workflow steps with correct structure"
+    command: "python3 $TASK_DIR/_shared/is_check.py check_resource_execute"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

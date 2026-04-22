@@ -1,0 +1,93 @@
+task_id: skill-platform-is-resource-describe
+description: >
+  Smoke test: agent uses the uipath-platform skill to list and describe
+  resources for a connector. Tests that the skill teaches the correct resource
+  discovery workflow — listing with --operation, describing with --operation
+  for field-level detail, and always passing --connection-id.
+tags: [uipath-platform, smoke, integration-service, resources, describe]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  I want to create a Contact record in Salesforce through UiPath Integration
+  Service. Before executing anything, I need to understand the resource schema.
+
+  1. List available resources for the "uipath-salesforce-sfdc" connector
+     that support the Create operation (use --operation Create)
+  2. Describe the "Contact" resource to get field details for the Create
+     operation (use --operation Create)
+
+  Save your findings to report.json:
+  {
+    "connector_key": "uipath-salesforce-sfdc",
+    "resources_found": <number of resources supporting Create, or 0 if auth error>,
+    "contact_fields": ["<list of field names from describe, or empty if auth error>"],
+    "required_fields": ["<list of required field names, or empty>"],
+    "commands_used": ["<list of uip is commands you ran>"]
+  }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run every command listed above (resources list and
+    resources describe), record each result in report.json, and move on.
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - Always pass `--connection-id` on resource commands — use a placeholder
+    value like "placeholder-connection-id" if you cannot obtain a real one.
+  - Always pass `--operation` on both resources list and resources describe.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed resources with --operation flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+list.*--operation'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent described a resource with --operation flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+describe.*--operation'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --connection-id on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+(list|describe).*--connection-id'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json has correct structure with fields and required_fields"
+    command: "python3 $TASK_DIR/_shared/is_check.py check_resource_describe"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

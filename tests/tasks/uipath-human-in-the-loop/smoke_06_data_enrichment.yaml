@@ -1,8 +1,7 @@
-task_id: skill-hitl-activation-approval-gate
+task_id: skill-hitl-smoke-data-enrichment
 description: >
-  Activation test: agent should detect an approval gate pattern and recommend
-  HITL even though the user said "approve" rather than "HITL". Verifies
-  proactive business-language-based triggering.
+  Smoke test: agent should detect a data enrichment pattern where a
+  human must fill in incomplete extracted data before the flow continues.
 tags: [uipath-human-in-the-loop, smoke]
 
 sandbox:
@@ -10,17 +9,18 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow that extracts expense report data and emails it to
-  finance — but a manager must approve each expense report before the email
-  is sent.
+  OCR extracted invoice data from a PDF but several fields are blank —
+  vendor code, cost center, and PO number are missing. Route incomplete
+  records to a human to fill in the missing data before the invoice is
+  posted to the accounting system.
 
   Write a recommendation.json file with:
   {
-    "hitl_needed": true,
+    "hitl_needed": <true or false>,
     "pattern": "<which business pattern applies>",
     "proposed_schema": {
-      "inputs": ["<field names>"],
-      "outputs": ["<field names>"],
+      "inputs": ["<what the human sees — already extracted fields>"],
+      "inOuts": ["<fields the human fills in and returns>"],
       "outcomes": ["<button names>"]
     }
   }
@@ -41,9 +41,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Agent identified an approval gate pattern"
+    description: "Agent used inOuts (not just outputs) for the fill-in fields"
     path: "recommendation.json"
     includes:
-      - "approval"
+      - "inOut"
     weight: 1.5
     pass_threshold: 1.0

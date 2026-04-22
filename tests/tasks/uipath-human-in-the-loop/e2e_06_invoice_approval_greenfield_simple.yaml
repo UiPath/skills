@@ -1,8 +1,11 @@
 task_id: skill-hitl-e2e-invoice-approval-greenfield-simple
+# NOTE: "e2e" here means authoring end-to-end (greenfield flow project creation).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to scaffold and wire a new project.
 description: >
-  E2E test (green field): agent creates a new Flow project with a HITL
+  Authoring E2E test (green field): agent creates a new Flow project with a HITL
   checkpoint from scratch. Tests C1 (green field), B1-B3 (schema design),
-  C5 (completed handle), F1 (validate after add).
+  C5 (completed handle), F1 (validate after add). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field]
 
 agent:

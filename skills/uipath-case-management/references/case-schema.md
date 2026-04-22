@@ -343,7 +343,7 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 }
 ```
 
-Time units: `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
+Time units: `"min"` (minutes), `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
 Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`.
 Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`.
 

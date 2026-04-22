@@ -1,9 +1,13 @@
 task_id: skill-hitl-e2e-gdpr-compliance-greenfield
+# NOTE: "e2e" here means authoring end-to-end (greenfield JSON flow authoring).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to author compliance-pattern HITL nodes.
 description: >
-  E2E golden scenario (green field): agent builds a GDPR deletion request
-  flow with a privacy officer sign-off checkpoint. Tests proactive compliance
-  pattern detection, schema design with Reject path, timeout wiring.
+  Authoring E2E golden scenario (green field): agent builds a GDPR deletion
+  request flow with a privacy officer sign-off checkpoint. Tests proactive
+  compliance pattern detection, schema design with Reject path, timeout wiring.
   Real business use case. Full Discover -> Plan -> Build -> Verify loop.
+  Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 agent:
