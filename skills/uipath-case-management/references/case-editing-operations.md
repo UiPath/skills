@@ -67,4 +67,4 @@ When a plugin's migration PR lands:
 2. Add `impl-json.md` to the plugin's folder with the `direct-json: supported` frontmatter.
 3. Ensure `impl-json.md` has a complete JSON Recipe.
 4. Manually validate the migrated plugin against a real CLI run — regenerate `caseplan.json` (and any sibling files the plugin mutates) via `uip maestro case ...` commands, then compare against the direct-JSON-write output. Document the comparison in the PR description.
-5. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed.
+5. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed (CLI-parity diff, validator parity, downstream append, Studio Web render).
