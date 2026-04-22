@@ -97,6 +97,8 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 | `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
 | `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
 
+For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <branch_a> <branch_b> [skill] [n_reps]` slash command.
+
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 
 ```yaml

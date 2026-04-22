@@ -1,0 +1,84 @@
+# Skill Comparison Experiment — Template
+#
+# Copy this file, rename it (e.g. experiments/my-comparison.yaml), fill in the
+# variant paths + SHAs, and run:
+#
+#   SKILLS_REPO_PATH=$(cd .. && pwd) \
+#     .venv/bin/coder-eval run tasks/<skill>/*.yaml \
+#     -e experiments/my-comparison.yaml -j 1 -v
+#
+# Read experiments/skill-comparison-playbook.md first. The playbook covers
+# worktree setup, SHA pinning, prompt hygiene, and how to get N>1.
+
+experiment_id: skill-comparison-<short-name>     # TODO: rename, e.g. "main-vs-variantb"
+description: "One-sentence hypothesis under test"
+
+# ---------------------------------------------------------------------------
+# Defaults — apply to every variant unless overridden.
+# Use bypassPermissions for unattended comparison runs (no prompts).
+# Lock the model so variants don't pick up different defaults.
+# ---------------------------------------------------------------------------
+defaults:
+  max_iterations: 1
+  task_timeout: 600
+  turn_timeout: 300
+  agent:
+    type: claude-code
+    permission_mode: bypassPermissions
+    model: claude-sonnet-4-6
+    max_turns: 20
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+# ---------------------------------------------------------------------------
+# Variants — one entry per condition you're comparing.
+#
+# Setup (see playbook step 2):
+#   git worktree add ../skills-main    main
+#   git worktree add ../skills-variant feat/my-change
+#
+# Record the commit SHA of each worktree in the comment above the variant.
+# The path is what the runner uses; the SHA is what makes the run reproducible.
+# ---------------------------------------------------------------------------
+variants:
+  # Current main — the version you'd keep if the change loses.
+  # pinned: main @ <fill-in-sha>
+  - variant_id: main
+    agent:
+      plugins:
+        - type: "local"
+          path: "/ABSOLUTE/PATH/TO/skills-main"        # TODO: worktree path
+
+  # Variant under test.
+  # pinned: feat/my-change @ <fill-in-sha>
+  - variant_id: variant
+    agent:
+      plugins:
+        - type: "local"
+          path: "/ABSOLUTE/PATH/TO/skills-variant"     # TODO: worktree path
+
+# ---------------------------------------------------------------------------
+# For N>1: duplicate each variant with suffixed IDs (see playbook step 6).
+# Uncomment and edit the block below if you want 3 reps per condition in
+# one run instead of scripting a loop.
+# ---------------------------------------------------------------------------
+#
+#  - variant_id: main-r2
+#    agent:
+#      plugins:
+#        - type: "local"
+#          path: "/ABSOLUTE/PATH/TO/skills-main"
+#  - variant_id: main-r3
+#    agent:
+#      plugins:
+#        - type: "local"
+#          path: "/ABSOLUTE/PATH/TO/skills-main"
+#  - variant_id: variant-r2
+#    agent:
+#      plugins:
+#        - type: "local"
+#          path: "/ABSOLUTE/PATH/TO/skills-variant"
+#  - variant_id: variant-r3
+#    agent:
+#      plugins:
+#        - type: "local"
+#          path: "/ABSOLUTE/PATH/TO/skills-variant"
