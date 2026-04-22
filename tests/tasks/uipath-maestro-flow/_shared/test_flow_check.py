@@ -1,6 +1,6 @@
 """Unit tests for flow_check helpers. Run with ``pytest`` from any directory.
 
-These exercise the assertion helpers against hand-crafted ``uip flow debug``
+These exercise the assertion helpers against hand-crafted ``uip maestro flow debug``
 payload shapes so regressions in the eval logic are caught without burning a
 real tenant run (as happened with the nested-output flattening bug).
 """

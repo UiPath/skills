@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.switch --output json
+uip maestro flow registry get core.logic.switch --output json
 ```
 
 Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, required input `cases`.

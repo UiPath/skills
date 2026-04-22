@@ -12,7 +12,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 |---|---|---|
 | `case` (root + initial trigger) | CLI | `uip maestro case cases add` creates the file scaffolding and is out of scope for the JSON shift. |
 | `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
-| `edges` | CLI | Migration queued (next after stages). |
+| `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
 | `triggers/manual` | CLI | Migration queued. |
 | `triggers/timer` | CLI | Migration queued. |
 | `triggers/event` | CLI | Migration queued. |

@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-flow e2e checks.
 
-Runs ``uip flow debug --output json`` and asserts:
+Runs ``uip maestro flow debug --output json`` and asserts:
 
 1. ``finalStatus == "Completed"``.
 2. For each required node-type hint, at least one ``elementExecution`` with
@@ -35,10 +35,10 @@ def run_debug(
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
 ) -> dict:
-    """Locate the project, run ``uip flow debug --output json``, and return the
+    """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "flow", "debug", project_dir, "--output", "json"]
+    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -213,9 +213,14 @@ def _parse_json(stdout: str) -> dict | None:
 
 
 def _find_project(pattern: str) -> str:
-    projects = glob.glob(pattern, recursive=True)
+    projects = sorted(glob.glob(pattern, recursive=True))
     if not projects:
         _fail(f"No project.uiproj found matching {pattern}")
+    if len(projects) > 1:
+        joined = "\n  - ".join(projects)
+        _fail(
+            f"Multiple projects match {pattern!r} — refusing to guess:\n  - {joined}"
+        )
     return os.path.dirname(projects[0])
 
 

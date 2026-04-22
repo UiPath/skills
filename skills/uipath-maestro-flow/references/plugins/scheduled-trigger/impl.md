@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.trigger.scheduled --output json
+uip maestro flow registry get core.trigger.scheduled --output json
 ```
 
 Confirm: no input port, output port `output`, required inputs `timerType` and `timerPreset`.

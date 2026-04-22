@@ -7,15 +7,15 @@ RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.rpa-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.
@@ -23,8 +23,8 @@ Run from inside the flow project directory. Discovers sibling RPA projects in th
 ## Registry Validation
 
 ```bash
-uip flow registry get "uipath.core.rpa-workflow.{key}" --output json
-uip flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
+uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json
+uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
 ```
 
 Confirm:
@@ -93,7 +93,7 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 }
 ```
 
-> `resourceKey` takes the form `<FolderPath>.<ResourceName>` — confirm the exact value from `uip flow registry get` output (it already has the correct key format).
+> `resourceKey` takes the form `<FolderPath>.<ResourceName>` — confirm the exact value from `uip maestro flow registry get` output (it already has the correct key format).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -124,19 +124,19 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder."
 
 > **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 ## If the RPA Process Does Not Exist Yet
 
-Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip flow registry list --local --output json` and wire it directly — no publish required.
+Tell the user to create the RPA project inside the same solution using `uipath-rpa`. Once the project exists as a sibling in the `.uipx` solution, discover it with `uip maestro flow registry list --local --output json` and wire it directly — no publish required.
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Process not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | Process not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force` |
 | Input schema mismatch | Inputs don't match `inputDefinition` | Run `registry get` and check required inputs in `inputDefinition.properties` |
 | Process execution failed | Underlying RPA process errored | Check `$vars.{nodeId}.error` for details |
 | Mock placeholder still in flow | Process not yet replaced | Follow the mock replacement workflow above |

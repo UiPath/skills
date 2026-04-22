@@ -28,8 +28,8 @@ Scan the approved `.arch.plan.md` node table and connector summary. Validate eac
 Even built-in nodes can change. For each node type in your plan, read the relevant plugin's `impl.md` for the registry validation command and expected ports/inputs:
 
 ```bash
-uip flow registry pull --force
-uip flow registry get <nodeType> --output json
+uip maestro flow registry pull --force
+uip maestro flow registry get <nodeType> --output json
 ```
 
 **Plugin impl.md files for registry validation:**
@@ -79,7 +79,7 @@ Record the connection ID and resolved field values for the build step.
 For each resource node (RPA process, agent, flow, API workflow, human task), follow the discovery and validation steps in the relevant resource plugin's `impl.md`.
 
 ```bash
-uip flow registry get "<node-type>" --output json
+uip maestro flow registry get "<node-type>" --output json
 ```
 
 Record `inputDefinition` and `outputDefinition` for the node table.
@@ -88,14 +88,14 @@ If Phase 1 flagged a resource as not found, check two sources:
 
 **1. In-solution discovery (preferred — no login required):**
 ```bash
-uip flow registry list --local --output json
+uip maestro flow registry list --local --output json
 ```
 Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<nodeType>" --local --output json` to get the full manifest.
 
 **2. Tenant registry (if not in solution):**
 ```bash
-uip flow registry pull --force
-uip flow registry search "<resource-name>" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "<resource-name>" --output json
 ```
 
 If found in neither, keep the `core.logic.mock` placeholder and note the gap.
@@ -104,9 +104,9 @@ If found in neither, keep the `core.logic.mock` placeholder and note the gap.
 
 For each `core.logic.mock` node in the architectural plan:
 
-1. Check in-solution discovery first: `uip flow registry list --local --output json`
+1. Check in-solution discovery first: `uip maestro flow registry list --local --output json`
 2. If found locally: replace the mock with the in-solution resource node type, update inputs/outputs
-3. If not found locally, check tenant registry: `uip flow registry search "<name>" --output json`
+3. If not found locally, check tenant registry: `uip maestro flow registry search "<name>" --output json`
 4. If published: replace the mock with the real resource node type, update inputs/outputs
 5. If not found in either: keep the mock and note it in the "Open Questions" section for user resolution
 

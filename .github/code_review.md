@@ -32,6 +32,21 @@ This repo uses [coder_eval](https://github.com/UiPath/coder_eval) to verify that
 - Check whether existing tasks in `tests/tasks/<skill-name>/` still cover the updated behavior
 - Flag new capabilities that lack a test task as **Medium**
 
+### Reference Pointer Discipline
+
+When a skill doc (SKILL.md or any file under `skills/<skill>/references/`) contains a section that links to another skill doc via `See [X.md]`, the linking section must contain **only bridge content** — the sentence(s) tying this file's context to the referenced material, plus any routing decision unique to this file. Content the linked file already explains must NOT be restated or summarized.
+
+Applies in both directions:
+- Reference → reference
+- Higher-level doc → deeper reference (including `SKILL.md` → any reference)
+
+**How to check:**
+1. For each section in a changed skill doc that contains `See [...](another-doc.md)` (or similar link), open the linked file
+2. Compare the overlap — do both files describe the same mechanism, step list, spawn semantics, handoff contract, or rules?
+3. Flag any overlap beyond a single bridging sentence plus unique routing — the duplicate copy drifts from the authoritative one over time
+
+**Severity:** Medium by default. High when the duplication is substantial (multi-paragraph overlap, step lists, or mechanism descriptions) or touches Critical Rules — silent drift between copies can mislead agents.
+
 ### Repository Hygiene
 
 - `CODEOWNERS` has an entry for any new or moved skill path (e.g., `/skills/uipath-<name>/`)

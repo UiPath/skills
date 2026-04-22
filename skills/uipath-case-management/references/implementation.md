@@ -18,9 +18,8 @@ Mixing strategies within a single skill run is expected during the migration. Bo
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
 > - Root case → `plugins/case/impl-cli.md`
 > - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
-> - Edges → `plugins/edges/impl-cli.md`
-> - Tasks (`process` / `agent` / `rpa` / `action` / `api-workflow` / `case-management` / `wait-for-timer`) → `plugins/tasks/<type>/impl-json.md`
-> - Tasks (`connector-activity` / `connector-trigger`) → `plugins/tasks/<type>/impl-cli.md`
+> - Edges → `plugins/edges/impl-json.md` (JSON strategy) — `plugins/edges/impl-cli.md` is the fallback
+> - Tasks → `plugins/tasks/<type>/impl-cli.md`
 > - Triggers → `plugins/triggers/<type>/impl-cli.md`
 > - Conditions → `plugins/conditions/<scope>/impl-cli.md`
 > - SLA → `plugins/sla/impl-cli.md`
@@ -54,7 +53,7 @@ For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](
 
 ## Step 8 — Connect stages with edges
 
-For each edge in `tasks.md §4.5`, run the CLI per [`plugins/edges/impl-cli.md`](plugins/edges/impl-cli.md). Edge type is inferred automatically from the `--source` node.
+For each edge in `tasks.md §4.5`, execute per [`plugins/edges/impl-json.md`](plugins/edges/impl-json.md). Strategy per the matrix in [case-editing-operations.md](case-editing-operations.md) — currently `edges` is on the **JSON** strategy; [`plugins/edges/impl-cli.md`](plugins/edges/impl-cli.md) is the fallback. Edge type is inferred automatically from the source node's `type` in `schema.nodes`.
 
 For multi-trigger cases, add the additional triggers first via the appropriate trigger plugin, then wire their IDs as edge sources.
 

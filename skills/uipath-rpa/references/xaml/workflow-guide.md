@@ -145,7 +145,15 @@ Bash: uip is connections list --output json
 
 ### Step 1.9: Discover Connector Capabilities (For IS/Connector Workflows)
 
-See [../connector-capabilities.md](../connector-capabilities.md) for the full procedure.
+For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Configuration blob + FieldObjects), see **[../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)** — worked example included. For the discovery commands only (list connectors, describe operation, manage connections), see [../connector-capabilities.md](../connector-capabilities.md).
+
+**Path selection for calling connectors from XAML:**
+
+| Option | When to use |
+|--------|-------------|
+| **IS generic `ConnectorActivity`** with a typed operation typeId (e.g. `37a305b2-...` for Slack "Send Message to Channel") | **Default choice** — schema-driven, hand-authorable with the CLI flow below. Works via `UiPath.IntegrationService.Activities`. |
+| **IS generic `ConnectorActivity`** with `ConnectorHttpActivity` typeId (e.g. `...httpRequest...`) | Fallback for endpoints the connector hasn't modeled as a first-class operation. Field names are still connector-defined — not `method`/`path`/`body`. Read the schema. |
+| **Per-product BAF activity package** (`UiPath.Slack.Activities`, `UiPath.Salesforce.Activities`, etc.) | Avoid for headless authoring. These wrap IS internally but use a more complex BAF XAML shape (`ScopeActivity` + dynamic child activity with `BusinessEntity`, `SelectedFields`, `PopulatedAPIParameters`). Same complexity, less mechanical. Skill users should default to the generic `ConnectorActivity` path unless the project already uses the BAF package. |
 
 ---
 

@@ -10,8 +10,8 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.queue.create --output json
-uip flow registry get core.action.queue.create-and-wait --output json
+uip maestro flow registry get core.action.queue.create --output json
+uip maestro flow registry get core.action.queue.create-and-wait --output json
 ```
 
 Confirm: input port `input`, output port `success`.

@@ -9,21 +9,21 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.http.v2 --output json
+uip maestro flow registry get core.action.http.v2 --output json
 ```
 
 Confirm in `Data.Node.handleConfiguration`: target port `input`, source ports `branch-{item.id}` (dynamic, `repeat: inputs.branches`) and `default`. Also confirm `Data.Node.supportsErrorHandling: true` — HTTP v2 participates in the shared implicit `error` port pattern used by all action nodes. See [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes). Model serviceType is `Intsvc.UnifiedHttpRequest`.
 
 ## Critical: Use `node configure`
 
-> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
+> **Do not hand-write `inputs.detail`, `bindings_v2.json`, or connection resource files.** Run `uip maestro flow node configure` — it builds everything from a simple `--detail` JSON. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
 
 ## Configuration Workflow
 
 ### Step 1 — Add the node
 
 ```bash
-uip flow node add <ProjectName>.flow core.action.http.v2 \
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
   --label "<Label>" --output json
 ```
 
@@ -46,7 +46,7 @@ Record the `Id` and `FolderKey` from the connection.
 **Connector mode** (IS connection auth):
 
 ```bash
-uip flow node configure <ProjectName>.flow <nodeId> \
+uip maestro flow node configure <ProjectName>.flow <nodeId> \
   --detail '{
     "authentication": "connector",
     "targetConnector": "<target-connector-key>",
@@ -55,19 +55,19 @@ uip flow node configure <ProjectName>.flow <nodeId> \
     "method": "GET",
     "url": "/api/endpoint",
     "query": {"param1": "value1"}
-  }'
+  }' --output json
 ```
 
 **Manual mode** (no connector auth):
 
 ```bash
-uip flow node configure <ProjectName>.flow <nodeId> \
+uip maestro flow node configure <ProjectName>.flow <nodeId> \
   --detail '{
     "authentication": "manual",
     "method": "GET",
     "url": "https://api.example.com/endpoint",
     "query": {"param1": "value1"}
-  }'
+  }' --output json
 ```
 
 **What the CLI handles automatically:**
@@ -99,12 +99,12 @@ Template literals with `${...}` interpolation work because the whole expression 
 When calling `uip flow node configure --detail`, pass the `=js:` string verbatim — the CLI stores it in `inputs.detail.bodyParameters` unchanged:
 
 ```bash
-uip flow node configure <Project>.flow <nodeId> \
+uip maestro flow node configure <Project>.flow <nodeId> \
   --detail '{
     "authentication": "manual",
     "method": "GET",
     "url": "=js:`https://api.example.com/users/${$vars.userId}`"
-  }'
+  }' --output json
 ```
 
 ### Step 4 — (Optional) Configure response branches for content-based routing
@@ -114,13 +114,13 @@ Skip this step unless you need to route downstream paths based on the *response 
 Each branch entry creates a `branch-{id}` source port. `$self` refers to the current HTTP node's output inside the condition.
 
 ```bash
-uip flow node configure <ProjectName>.flow <nodeId> \
+uip maestro flow node configure <ProjectName>.flow <nodeId> \
   --detail '{
     "branches": [
       { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
       { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
     ]
-  }'
+  }' --output json
 ```
 
 > **Do not prefix `conditionExpression` with `=js:`** — HTTP branch conditions are auto-evaluated as JS (same rule as decision/switch expressions).
@@ -135,19 +135,19 @@ The managed HTTP node's target port is `input`. Its source ports are:
 
 ```bash
 # Edge into the HTTP node
-uip flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
+uip maestro flow edge add <ProjectName>.flow <upstreamNodeId> <nodeId> \
   --source-port <port> --target-port input --output json
 
 # Simple: single outgoing edge on "default"
-uip flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
+uip maestro flow edge add <ProjectName>.flow <nodeId> <downstreamNodeId> \
   --source-port default --target-port input --output json
 
 # With error handler: wire the implicit "error" port
-uip flow edge add <ProjectName>.flow <nodeId> <errorHandlerId> \
+uip maestro flow edge add <ProjectName>.flow <nodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
 
 # With conditional branches: one edge per configured branch (default/error still apply)
-uip flow edge add <ProjectName>.flow <nodeId> <hasItemsDownstream> \
+uip maestro flow edge add <ProjectName>.flow <nodeId> <hasItemsDownstream> \
   --source-port branch-hasItems --target-port input --output json
 ```
 
@@ -156,7 +156,7 @@ uip flow edge add <ProjectName>.flow <nodeId> <hasItemsDownstream> \
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `not_authed` or 401/403 | Wrong node type (v1 instead of v2), missing bindings, or expired connection | Verify node type is `core.action.http.v2`, check `bindings_v2.json` exists, ping the connection |
-| `configuration` field missing | Node not configured via CLI | Run `uip flow node configure` — do not hand-write `inputs.detail` |
+| `configuration` field missing | Node not configured via CLI | Run `uip maestro flow node configure` — do not hand-write `inputs.detail` |
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
 | `ImplicitConnection` errors | Manual mode misconfigured | Verify `authentication: "manual"` and `url` is a full URL |

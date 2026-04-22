@@ -1,0 +1,65 @@
+task_id: skill-flow-ipe-searchable_joins
+description: >
+  Tests the searchable joins IS feature — configures a connector node with
+  a join on a related object on the Salesforce connector.
+tags: [uipath-maestro-flow, integration, connector-feature, searchable-joins]
+
+task_timeout: 1500
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    # Pin shared across all connector_features tasks — bump in lockstep.
+    env_packages:
+      - "@uipath/cli@0.1.21"
+initial_prompt: |
+  Create a new Flow project called "SearchableJoinsTest" with a manual trigger.
+  You need a flow that queries Salesforce accounts and returns each account
+  together with its related opportunities. Discover the Salesforce account
+  operation and configure a searchable join against the related object.
+  Add a Decision node to check whether the call succeeded.
+  Route failure to a Terminate node with error message "SearchableJoins test failed".
+  Route success to a final action that logs "SearchableJoins test passed".
+  Validate the final flow file.
+
+success_criteria:
+  - type: run_command
+    description: "Flow file exists and is valid JSON"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has a connector node referencing uipath-salesforce-sfdc"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-salesforce-sfdc' in content, 'Connector key not found'; print('OK: connector key present')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has Decision and Terminate nodes"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "uip\\s+flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+max_iterations: 1

@@ -26,7 +26,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
 2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
-4. **Validate after every change.** Run `uip flow validate <file> --format json` after writing the node and edges.
+4. **Validate after every change.** Run `uip maestro flow validate <file> --format json` after writing the node and edges.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
 6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
 
@@ -71,7 +71,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 **If no `.flow` file exists and surface is Flow**, create one first:
 
 ```bash
-uip flow init <ProjectName>
+uip maestro flow init <ProjectName>
 # Creates: <ProjectName>/flow_files/<ProjectName>.flow
 ```
 
@@ -151,7 +151,7 @@ Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quick
 After writing, validate:
 
 ```bash
-uip flow validate <file> --format json
+uip maestro flow validate <file> --format json
 ```
 
 ### Surface: Flow — Coded Action App (new inline)
@@ -165,7 +165,7 @@ Full reference: **[references/hitl-node-coded-action-app.md](references/hitl-nod
 After writing, validate:
 
 ```bash
-uip flow validate <file> --output json
+uip maestro flow validate <file> --output json
 ```
 
 ### Surface: Flow — AppTask (deployed action app only)
@@ -179,7 +179,7 @@ Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask
 After writing, validate:
 
 ```bash
-uip flow validate <file> --format json
+uip maestro flow validate <file> --format json
 ```
 
 ### Surface: Coded Agent

@@ -118,10 +118,10 @@ resources/
 
 After creating the inline agent, add a `uipath.agent.autonomous` node to the flow that references it via `model.source = projectId`.
 
-Use the `uip flow node add` command with the `--source` parameter:
+Use the `uip maestro flow node add` command with the `--source` parameter:
 
 ```bash
-uip flow node add <FlowName>.flow uipath.agent.autonomous \
+uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
   --source <projectId-uuid> \
   --label "Autonomous Agent" \
   --output json
@@ -130,7 +130,7 @@ uip flow node add <FlowName>.flow uipath.agent.autonomous \
 Then wire edges using:
 
 ```bash
-uip flow edge add <FlowName>.flow <sourceNodeId> <agentNodeId> \
+uip maestro flow edge add <FlowName>.flow <sourceNodeId> <agentNodeId> \
   --source-port success \
   --target-port input \
   --output json
