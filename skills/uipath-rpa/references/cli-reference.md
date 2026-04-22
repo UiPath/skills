@@ -241,15 +241,15 @@ Use this before `install-data-fabric-entities` to pick names from the tenant, or
 Install, update, or remove Data Fabric entity bindings by applying an add/remove delta to the project's currently installed set. Dependency expansion is automatic -- adding `E1` pulls in any entity `E1` references.
 
 ```bash
-uip rpa install-data-fabric-entities --add "Invoice,Customer" --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-data-fabric-entities --add "Invoice" --add "Customer" --project-dir "<PROJECT_DIR>" --output json
 uip rpa install-data-fabric-entities --remove "LegacyOrder" --project-dir "<PROJECT_DIR>" --output json
 uip rpa install-data-fabric-entities --add "Invoice" --remove "LegacyOrder" --namespace "My.App.Entities" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--add` | One of `--add`/`--remove` | Entity names to add. Comma-separated, or pass the flag multiple times. |
-| `--remove` | One of `--add`/`--remove` | Entity names to remove. Comma-separated, or pass the flag multiple times. |
+| `--add` | One of `--add`/`--remove` | Entity name to add. Pass the flag multiple times for multiple entities (e.g. `--add Invoice --add Customer`). |
+| `--remove` | One of `--add`/`--remove` | Entity name to remove. Pass the flag multiple times for multiple entities (e.g. `--remove LegacyOrder --remove StaleCustomer`). |
 | `--service-document` | No | Project-relative manifest path. Omit to use the project's default. |
 | `--namespace` | No | .NET namespace for the generated entity types. Omit to keep the previously-used namespace, or derive one from the project name on a first install. |
 
