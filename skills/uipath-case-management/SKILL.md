@@ -155,7 +155,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Handle unresolved resources (skeleton tasks)** | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
 | **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-cli.md`](references/plugins/case/impl-cli.md) |
 | **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + [`impl-json.md`](references/plugins/stages/impl-json.md) (pilot) / [`impl-cli.md`](references/plugins/stages/impl-cli.md) (fallback) |
-| **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-cli.md`](references/plugins/edges/impl-cli.md) |
+| **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-json.md`](references/plugins/edges/impl-json.md) (JSON strategy) / [`impl-cli.md`](references/plugins/edges/impl-cli.md) (fallback) |
 | **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-cli.md`](references/plugins/sla/impl-cli.md) |
 | **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + [`impl-json.md`](references/plugins/variables/global-vars/impl-json.md) |
 | **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + [`impl-json.md`](references/plugins/variables/io-binding/impl-json.md) |
