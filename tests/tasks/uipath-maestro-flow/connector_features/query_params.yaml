@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-query_params
 description: >
   Tests the query parameters IS feature — configures a connector node with a
   query parameter on the Google Tasks connector.
-tags: [uipath-maestro-flow, integration, connector, query-params]
+tags: [uipath-maestro-flow, integration, connector-feature, query-params]
 
 task_timeout: 1500
 agent:

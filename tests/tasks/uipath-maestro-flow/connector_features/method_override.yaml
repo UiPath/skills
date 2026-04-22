@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-method_override
 description: >
   Tests the method override display name IS feature — configures a connector
   node with method-level overrides on the Azure connector.
-tags: [uipath-maestro-flow, integration, connector, method-override]
+tags: [uipath-maestro-flow, integration, connector-feature, method-override]
 
 task_timeout: 1500
 agent:

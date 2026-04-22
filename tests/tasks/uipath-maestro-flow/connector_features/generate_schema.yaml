@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-generate_schema
 description: >
   Tests the GenerateSchema IS feature — configures a connector node with
   schema generation on the Azure Application Insights connector.
-tags: [uipath-maestro-flow, integration, connector, generate-schema]
+tags: [uipath-maestro-flow, integration, connector-feature, generate-schema]
 
 task_timeout: 1500
 agent:

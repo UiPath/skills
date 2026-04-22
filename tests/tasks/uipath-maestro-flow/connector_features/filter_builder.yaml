@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-filter_builder
 description: >
   Tests the FilterBuilder IS feature — configures a connector node with a
   filter builder on the SAP S/4HANA Cloud connector's where parameter.
-tags: [uipath-maestro-flow, integration, connector, filter-builder]
+tags: [uipath-maestro-flow, integration, connector-feature, filter-builder]
 
 task_timeout: 1500
 agent:

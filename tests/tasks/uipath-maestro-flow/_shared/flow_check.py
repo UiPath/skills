@@ -212,9 +212,14 @@ def _parse_json(stdout: str) -> dict | None:
 
 
 def _find_project(pattern: str) -> str:
-    projects = glob.glob(pattern, recursive=True)
+    projects = sorted(glob.glob(pattern, recursive=True))
     if not projects:
         _fail(f"No project.uiproj found matching {pattern}")
+    if len(projects) > 1:
+        joined = "\n  - ".join(projects)
+        _fail(
+            f"Multiple projects match {pattern!r} — refusing to guess:\n  - {joined}"
+        )
     return os.path.dirname(projects[0])
 
 
