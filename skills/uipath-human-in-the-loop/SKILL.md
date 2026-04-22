@@ -24,7 +24,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 ## Critical Rules
 
 1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
-2. **Always wire at least the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow. Wire `cancelled` and `timeout` to end nodes or handlers unless the user explicitly defers them.
+2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
 4. **Validate after every change.** Run `uip flow validate <file> --format json` after writing the node and edges.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
@@ -136,7 +136,7 @@ Present the user with three options. Do not choose on their behalf or perform an
 ## Step 4 — Common configuration
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
-| Priority | "Is this normal priority, or high/critical?" |
+| Priority | "What priority should this task have? Options: Low, Medium, High (default: Medium)" |
 
 ---
 

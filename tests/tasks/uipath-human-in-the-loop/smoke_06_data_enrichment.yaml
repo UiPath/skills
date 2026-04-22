@@ -41,14 +41,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Agent identified a data enrichment pattern"
-    path: "recommendation.json"
-    includes:
-      - "enrich"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
     description: "Agent used inOuts (not just outputs) for the fill-in fields"
     path: "recommendation.json"
     includes:

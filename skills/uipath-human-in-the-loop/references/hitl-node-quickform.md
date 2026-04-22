@@ -65,7 +65,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
       "connections": {},
       "assignee": { "type": "group" }
     },
-    "priority": "normal",
+    "priority": "Normal",
     "timeout": "PT24H",
     "schema": {
       "id": "a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c",
@@ -153,9 +153,7 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
     {
       "position": "right",
       "handles": [
-        { "id": "completed", "label": "Completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } },
-        { "id": "cancelled", "label": "Cancelled", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } },
-        { "id": "timeout",   "label": "Timeout",   "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
+        { "id": "completed", "label": "Completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
       ],
       "visible": true
     }
@@ -173,11 +171,11 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
       "assignee": { "type": "group" }
     },
     "timeout": "PT24H",
-    "priority": "normal"
+    "priority": "Normal"
   },
   "outputDefinition": {
     "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
-    "status": { "type": "string", "description": "Task completion status (completed, cancelled, timeout)", "source": "=status", "var": "status" }
+    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
   }
 }
 ```
@@ -186,15 +184,13 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
 
 ## Edge Wiring
 
-Wire all three output handles. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
+Wire the `completed` output handle to the downstream node. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
 
 ```json
-{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" },
-{ "id": "invoiceReview1-cancelled-end1-input",             "sourceNodeId": "invoiceReview1", "sourcePort": "cancelled", "targetNodeId": "end1",             "targetPort": "input" },
-{ "id": "invoiceReview1-timeout-end2-input",               "sourceNodeId": "invoiceReview1", "sourcePort": "timeout",   "targetNodeId": "end2",             "targetPort": "input" }
+{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" }
 ```
 
-**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever. Wire `cancelled` and `timeout` to end nodes if no specific handler exists.
+**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever.
 
 ---
 
@@ -315,7 +311,7 @@ After the HITL node, downstream nodes can reference:
 |---|---|---|
 | `$vars.<nodeId>.result` | object | All `output` and `inOut` fields the human filled in |
 | `$vars.<nodeId>.result.<fieldVariable>` | varies | Individual field value (e.g. `$vars.invoiceReview1.result.decision`) |
-| `$vars.<nodeId>.status` | string | `"completed"`, `"cancelled"`, or `"timeout"` |
+| `$vars.<nodeId>.status` | string | `"completed"` when the human submits the task |
 
 **In a downstream script node:**
 ```javascript
