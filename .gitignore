@@ -82,3 +82,6 @@ tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
 
 # macOS Finder metadata
 **/.DS_Store
+
+# UiPath session logs
+**/.uipath-logs/
