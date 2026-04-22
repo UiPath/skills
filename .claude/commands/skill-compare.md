@@ -4,14 +4,20 @@ Run an apples-to-apples A/B comparison between two refs of the skills repo — e
 
 **Input:** `$ARGUMENTS`
 - `<ref_a> <ref_b>` — required, the two refs to compare. Each ref is either a **branch name** (local or remote-tracking) or a **commit SHA** (short or full, must already be in the local object database). The two refs can be any mix of the two kinds.
-- `<skill_name>` — optional third argument. Restricts the task set to `tests/tasks/<skill_name>/`. Defaults to all tasks (warn the user: this can be slow and expensive).
+- `<task_selector>` — optional third argument. Restricts which tasks run. Defaults to **all tasks** (warn the user: this can be slow and expensive). Accepts three forms; pick the most specific one that fits the question:
+  - **Skill name** (bare word): `uipath-maestro-flow` → all task files under `tests/tasks/uipath-maestro-flow/`. Use this when the comparison is scoped to one skill.
+  - **Tag filter** with `tags:` prefix: `tags:smoke` or `tags:smoke,init` → comma-separated tags, OR semantics (any task carrying any of these tags). Forwarded to `coder-eval run --tags`. Use this for cross-skill slices like "only smoke tests" or "only e2e + connector tests".
+  - **Path glob** with `paths:` prefix: `paths:tasks/uipath-maestro-flow/init_validate.yaml` or `paths:tasks/*/smoke_*.yaml` (comma-separated globs allowed). Use this when you want a hand-picked subset.
 - `<n_reps>` — optional fourth argument. Reps per variant. Defaults to `3`. Accept integers 1–5.
 
 **Examples:**
 - `/skill-compare main feat/my-change uipath-maestro-flow` — two branches, scoped to one skill.
-- `/skill-compare main a1b2c3d uipath-maestro-flow` — branch vs. commit SHA (e.g. regression-check a specific commit).
-- `/skill-compare a1b2c3d e4f5g6h uipath-maestro-flow` — two SHAs (compare two historical points on the same or different branches).
-- `/skill-compare main feat/my-change` — two branches, all skills, N=3.
+- `/skill-compare main a1b2c3d uipath-maestro-flow` — branch vs. commit SHA, scoped to one skill.
+- `/skill-compare a1b2c3d e4f5g6h uipath-maestro-flow` — two SHAs (compare two historical points).
+- `/skill-compare main feat/my-change tags:smoke` — two branches, only smoke tests across all skills.
+- `/skill-compare main feat/my-change tags:smoke,init 5` — smoke OR init tasks, N=5.
+- `/skill-compare main feat/my-change paths:tasks/uipath-maestro-flow/init_validate.yaml,tasks/uipath-maestro-flow/registry_discovery.yaml` — two specific files.
+- `/skill-compare main feat/my-change` — all tasks across all skills, N=3 (slow + expensive; expect to be re-prompted at Phase 5).
 
 **Ref slugs** (used in filenames and worktree paths):
 - Branch: replace `/` with `-` and strip any leading `origin/`. Example: `feat/my-change` → `feat-my-change`.
@@ -45,7 +51,11 @@ Run an apples-to-apples A/B comparison between two refs of the skills repo — e
    - If none match: stop and report the ref as not found. For SHAs that might be unfetched, hint at `git fetch origin` or `git fetch origin <sha>` (git supports fetching by SHA on most remotes).
 4. Reject the call if the two refs resolve to the **same commit SHA** — comparing identical content produces no signal. Treat `main` and `a1b2c3d` as identical if `main` currently points at `a1b2c3d`; warn the user and stop.
 5. Reject the call if `<n_reps>` is outside `1..5`. N=1 is allowed for a fast signal check but warn it's underpowered for decisions.
-6. If `<skill_name>` is provided, verify `tasks/<skill_name>/` exists (relative to `tests/`). If not, list available skills under `tasks/*/` and stop.
+6. If `<task_selector>` is provided, classify and validate it:
+   - **`tags:` prefix** → split the rest on `,` and record as a tag list. No filesystem check at this stage; Phase 5 will warn if the tag list matches zero task files.
+   - **`paths:` prefix** → split the rest on `,` and record as a glob list (paths relative to `tests/`). For each glob, check it expands to at least one existing `.yaml` file under `tests/tasks/`. If any glob expands to zero files, stop and list which one was empty.
+   - **Bare word** (no prefix) → treat as a skill name. Verify `tasks/<word>/` exists (relative to `tests/`). If not, list available skills under `tasks/*/` and stop.
+   - **Anything else** (e.g. `tags:` with no list, `paths:` outside `tests/tasks/`) → stop with a usage message showing the three accepted forms.
 7. For each ref, decide whether to create or reuse a worktree at `../skills-<slug>`:
    - If the path does not exist → create it in Phase 3.
    - If it exists, check `git -C .. worktree list --porcelain`:
@@ -134,9 +144,12 @@ Do not include a `bare` variant. This command compares two skill configurations 
 
 ## Phase 5 — Resolve the task set and confirm
 
-1. Resolve the task list. **Sort the output** so ordering is deterministic across runs (filesystem traversal order is not guaranteed, and an unsorted list can produce run-to-run permutation noise):
-   - If `<skill_name>` was provided: `find tasks/<skill_name> -name '*.yaml' -type f | sort`
-   - Otherwise: `find tasks -name '*.yaml' -type f | sort`
+1. Resolve the task list and the extra `coder-eval` flags from the `<task_selector>` classification recorded in Phase 1 step 6. **Sort the output** so ordering is deterministic across runs (filesystem traversal order is not guaranteed, and an unsorted list can produce run-to-run permutation noise):
+   - **Skill name** (or no selector): expand to `find tasks/<skill_name> -name '*.yaml' -type f | sort` (or `find tasks -name '*.yaml' -type f | sort` for no selector). No extra flags.
+   - **Tags**: expand to `find tasks -name '*.yaml' -type f | sort` (the full set), and add `--tags <tag1>,<tag2>,...` to the `coder-eval run` invocation. `coder-eval` does the tag filtering at runtime; passing the full file list keeps the resolution logic uniform.
+   - **Paths**: expand each glob in order with `ls <glob> 2>/dev/null` (relative to `tests/`), concatenate, then `| sort -u` to dedupe. Stop if the final list is empty.
+
+   After resolution, if the final task count is zero (e.g. tags matched no files), stop and report which selector matched nothing.
 2. Estimate cost and time as a rough planning aid only — actuals depend on model pricing and task complexity. A task at the experiment defaults (`max_turns: 20`, `task_timeout: 600`) usually completes in a few minutes and spends a nontrivial amount in API tokens. Multiply the per-task estimate by `num_tasks × num_variants × n_reps` for the total.
 3. Present a confirmation prompt via `AskUserQuestion` with these options:
    - **Run now** — proceeds to Phase 6.
@@ -162,6 +175,7 @@ SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run <resolved-task-files> \
   -e experiments/compare-<ref_a_slug>-vs-<ref_b_slug>.yaml \
   --run-dir "$RUN_DIR" \
+  [--tags <tag1>,<tag2>,...]   # only when <task_selector> was tags:...
   -j 1 -v
 ```
 
@@ -210,7 +224,7 @@ Write `<RUN_DIR>/comparison-report.md` with this structure:
 **Hypothesis:** <from Phase 2>
 **Run:** `<RUN_DIR basename>`
 **Model:** <from experiment defaults>
-**Tasks:** <count> (skill filter: <skill_name or "all">)
+**Tasks:** <count> (selector: <verbatim task_selector or "all">)
 **N:** <n_reps> rep(s) per variant
 
 ## Variants
@@ -287,7 +301,7 @@ Leave the generated experiment YAML in place after a completed run unless the us
 - **Worktree path exists at a non-worktree directory, or on a different branch:** stop, print `git worktree remove` instructions. Don't overwrite. (If the path is already a valid worktree on the target branch, reuse it — see Phase 1 step 7.)
 - **SHA drift before run (Phase 6):** stop and ask the user whether to regenerate the YAML with new SHAs or reset the worktree to the pinned commit.
 - **`coder-eval` not installed:** print the `make install` command from `tests/README.md` and stop.
-- **Task set empty:** stop. Either the skill filter matched nothing, or there are no task YAMLs.
+- **Task set empty:** stop and report which selector matched zero files. Possible causes: skill folder doesn't exist, tag list matches nothing, path globs don't expand to any `.yaml` files.
 - **Partial run (interrupted):** report on whatever data exists, mark incomplete variants in the results table, skip the recommendation and say "incomplete run — rerun to decide".
 
 ## Anti-patterns
