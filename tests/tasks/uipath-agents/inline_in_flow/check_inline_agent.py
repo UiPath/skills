@@ -77,6 +77,7 @@ def main():
     incoming_input = [
         e for e in edges
         if e.get("targetNodeId") == agent_id and e.get("targetPort") == "input"
+    ]
     outgoing_success = [
         e for e in edges
         if e.get("sourceNodeId") == agent_id and e.get("sourcePort") == "success"
