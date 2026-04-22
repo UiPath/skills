@@ -91,20 +91,6 @@ When no App exists in `.objects/`, omit `--parent-id` and `--parent-name` — th
 
 ## Interacting with a Registered Target
 
-After TARGET-8 returns an OR reference ID, you can drive that target directly from the main conversation using `uia interact` — no servo snapshot, no second ref system. This is the preferred way to advance the application state to the next screen when building multi-step flows.
-
-```bash
-# Click using the OR reference ID returned by create-screen / create-elements
-uip rpa uia interact click --reference-id "<OR_REFERENCE_ID>"
-
-# Type into a target using the OR reference ID
-uip rpa uia interact type --reference-id "<OR_REFERENCE_ID>" --text "hello"
-```
-
-Alternate input forms:
-- `--definition-file-path "<WORK_FOLDER>/Target_N_Definition.json"` — use the definition file (useful before OR registration)
-- `--window-selector "<html ... />" --partial-selector "<webctrl ... />"` — raw selectors (ad-hoc, no OR entry)
-
 See [uia-multi-step-flows.md](uia-multi-step-flows.md) for when to use `uia interact` vs servo and the full capture loop.
 
 ## Attaching Targets to Workflow Activities
