@@ -1,0 +1,110 @@
+task_id: skill-agent-inline-is-connector-tool
+description: >
+  Integration Service (IS) tools for flow inline agents. End-to-end
+  test: scaffold a flow project containing an inline low-code agent
+  that exposes an IS connector activity as a tool. The agent under
+  test must discover the connector via `uip is`, author a
+  `type: "integration"` resource.json inside the inline agent's UUID
+  subdirectory, create a `bindings_v2.json`, run
+  `uip solution resource refresh`, and wire a
+  `uipath.agent.resource.tool.connector` flow node to the
+  `uipath.agent.autonomous` node's `tool` handle. Verifies design-time
+  artifacts only (no runtime connector invocation). Cloud auth
+  required — depends on the staging tenant having the
+  `uipath-uipath-airdk` (GenAI Activities) connector available.
+tags: [uipath-agents, e2e, low-code, inline, tool, integration, cloud-auth, flow-integration]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "ResearchFlowSol" containing a flow project
+  "ResearchFlow". The flow should use an inline low-code agent that
+  searches the web using the "WebSearch" activity from the UiPath
+  GenAI Activities Integration Service connector (connector key
+  `uipath-uipath-airdk`). Wire the Integration Service activity as a
+  tool on the inline agent via the flow canvas, update the agent
+  bindings, and refresh the solution so the connection resource is
+  provisioned. Validate the inline agent.
+
+  Do NOT publish, upload, or deploy. Do NOT invoke the connector at
+  runtime. Do NOT ask for approval, confirmation, or feedback. Do NOT
+  pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent discovered connectors via `uip is`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a flow node (expected: uipath.agent.resource.tool.connector)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "ResearchFlowSol/ResearchFlow/ResearchFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow project descriptor was created"
+    path: "ResearchFlowSol/ResearchFlow/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline agent IS tool resource, bindings_v2.json, connection resource, and flow wiring (tool.connector node + edge to agent's tool handle)"
+    command: "python3 $TASK_DIR/check_inline_is_connector_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
