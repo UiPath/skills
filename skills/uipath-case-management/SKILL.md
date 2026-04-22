@@ -161,7 +161,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + [`impl-json.md`](references/plugins/variables/io-binding/impl-json.md) |
 | **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-cli.md` |
 | **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl-cli.md` |
-| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` |
+| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` / `impl-json.md` |
 
 ### Plugin Index
 

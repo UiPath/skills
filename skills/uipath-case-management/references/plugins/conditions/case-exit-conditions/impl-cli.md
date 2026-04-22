@@ -1,4 +1,6 @@
-# case-exit-conditions — Implementation
+# case-exit-conditions — Implementation (CLI)
+
+> Direct-JSON alternative: [`impl-json.md`](impl-json.md).
 
 ## CLI Command
 

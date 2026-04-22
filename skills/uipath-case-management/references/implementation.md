@@ -107,12 +107,12 @@ Skeleton tasks integrate with the rest of the graph:
 
 ## Step 10 — Add conditions
 
-For each condition in `tasks.md §4.7`, open the matching plugin:
+For each condition in `tasks.md §4.7`, open the matching plugin (`impl-cli.md` when the strategy matrix lists the scope as `CLI`; `impl-json.md` when `JSON`):
 
-- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-cli.md`](plugins/conditions/stage-entry-conditions/impl-cli.md)
-- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-cli.md`](plugins/conditions/stage-exit-conditions/impl-cli.md)
-- Task entry → [`plugins/conditions/task-entry-conditions/impl-cli.md`](plugins/conditions/task-entry-conditions/impl-cli.md)
-- Case exit → [`plugins/conditions/case-exit-conditions/impl-cli.md`](plugins/conditions/case-exit-conditions/impl-cli.md)
+- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-cli.md`](plugins/conditions/stage-entry-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/stage-entry-conditions/impl-json.md)
+- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-cli.md`](plugins/conditions/stage-exit-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
+- Task entry → [`plugins/conditions/task-entry-conditions/impl-cli.md`](plugins/conditions/task-entry-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
+- Case exit → [`plugins/conditions/case-exit-conditions/impl-cli.md`](plugins/conditions/case-exit-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
 
 ## Step 11 — SLA and escalation
 
