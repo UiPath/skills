@@ -82,6 +82,8 @@ The full metadata contains:
 
 Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources execute list` to resolve them:
 
+> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6).** Do this even if you think you already know the ID from a previous flow in this session or a prior task. Reference IDs are **connection-scoped** — a Slack channel ID from another workspace, a Jira project ID from another Atlassian site, or a Google Sheet ID from another Drive will pass `node configure` and `flow validate` cleanly, then fail silently at runtime. See the top-level **Anti-Patterns** in [SKILL.md](../../../SKILL.md) and [/uipath:uipath-platform — Reference IDs Are Connection-Scoped](../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+
 ```bash
 # Example: resolve Slack channel "#test-slack" to its ID
 uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=public_channel,private_channel" \
@@ -89,7 +91,7 @@ uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=
 # -> { "id": "C1234567890", "name": "test-slack" }
 ```
 
-Use the resolved IDs (not display names) in the flow's node `inputs`. Present options to the user when multiple matches exist.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `execute list` call — in the flow's node `inputs`. Present options to the user when multiple matches exist.
 
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
