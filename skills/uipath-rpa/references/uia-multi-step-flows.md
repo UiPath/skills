@@ -21,6 +21,8 @@ uip rpa uia interact type <uia-element-ref> "hello"
 
 Use this when the UIA snapshot is already loaded (for example, immediately after a `uia-configure-target` capture of the current screen), so the `eN` refs are still valid.
 
+> **Do NOT pass `--folder-path` to `uip rpa uia interact`.** It is not a valid argument for this command — `uia interact` operates against the latest snapshot.
+
 ### Fallback: `servo`
 
 Use `servo` when you don't have a current UIA snapshot, or when interacting with elements outside the UIA tree (native Windows chrome, OS dialogs, etc.).

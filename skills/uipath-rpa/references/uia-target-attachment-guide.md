@@ -18,7 +18,7 @@ Write plain activities (no `.Target` child element) with unique IdRefs, then att
 
 ```bash
 uip rpa uia object-repository link-screen \
-  --workflow-relative-path "<RELATIVE_XAML_PATH>" \
+  --workflow-file-path "<RELATIVE_XAML_PATH>" \
   --activity-ref-id "<ACTIVITY_REF_ID>" \
   --reference-id "<SCREEN_REFERENCE_ID>" \
   --project-dir "<PROJECT_DIR>" \
@@ -27,7 +27,7 @@ uip rpa uia object-repository link-screen \
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--workflow-relative-path` | Yes | Path to the `.xaml` file, relative to the project directory (e.g., `Workflows/Main.xaml`). |
+| `--workflow-file-path` | Yes | Path to the `.xaml` file, relative to the project directory (e.g., `Workflows/Main.xaml`). |
 | `--activity-ref-id` | Yes | The `sap2010:WorkflowViewState.IdRef` on the target activity — typically `NApplicationCard_1`. |
 | `--reference-id` | Yes | OR screen reference returned by `uia-configure-target` or `indicate-application`. |
 
@@ -37,7 +37,7 @@ One call per (activity, element) pair. The CLI does not batch.
 
 ```bash
 uip rpa uia object-repository link-element \
-  --workflow-relative-path "<RELATIVE_XAML_PATH>" \
+  --workflow-file-path "<RELATIVE_XAML_PATH>" \
   --activity-ref-id "<ACTIVITY_REF_ID>" \
   --reference-id "<ELEMENT_REFERENCE_ID>" \
   --project-dir "<PROJECT_DIR>" \
@@ -46,7 +46,7 @@ uip rpa uia object-repository link-element \
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--workflow-relative-path` | Yes | Path to the `.xaml` file, relative to the project directory. |
+| `--workflow-file-path` | Yes | Path to the `.xaml` file, relative to the project directory. |
 | `--activity-ref-id` | Yes | The `sap2010:WorkflowViewState.IdRef` on the target activity (e.g., `NClick_3`). |
 | `--reference-id` | Yes | OR element reference returned by `uia-configure-target` or `indicate-element`. |
 | `--target-property` | No | Activity property to attach the target to. Supports dotted paths for nested properties (e.g., `SearchedElement.Target`). Defaults to `Target`. |
