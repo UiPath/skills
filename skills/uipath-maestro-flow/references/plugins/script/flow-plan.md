@@ -1,8 +1,45 @@
-# Script Node — Implementation
+# Script Node
 
 ## Node Type
 
 `core.action.script`
+
+## When to Use
+
+Use a Script node for custom logic, data transformation, computation, or formatting that does not require an external call.
+
+### Selection Heuristics
+
+| Situation | Use Script? |
+| --- | --- |
+| Custom logic, string manipulation, computation | Yes |
+| Standard map/filter/group-by on a collection | No — use [Transform](../transform/flow-plan.md) |
+| Ambiguous input that needs reasoning or judgment | No — use [Agent](../agent/flow-plan.md) |
+| Calling an external API | No — use [HTTP](../http/flow-plan.md) or [Connector Activity](../connector/flow-plan.md) |
+| Natural language generation | No — use [Agent](../agent/flow-plan.md) |
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `success`, `error` |
+
+- `success` — primary output; fires when the script returns normally.
+- `error` — implicit error port shared with all action nodes. Fires on uncaught script exceptions, returned non-object values, or timeout. See [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
+## Output Variables
+
+- `$vars.{nodeId}.output` — the return value (must be an object)
+- `$vars.{nodeId}.error` — error object if the script fails
+
+## Key Constraints
+
+- JavaScript only (ES2020 via Jint) — not TypeScript, not Python
+- Must `return` an object: `return { key: value }` (not a bare scalar)
+- No browser/DOM APIs (`fetch`, `document`, `window`, `setTimeout` are unavailable)
+- Cannot make HTTP calls or access external systems
+- 30-second execution timeout
+- `$vars` is available as a global
 
 ## Registry Validation
 
@@ -11,6 +48,10 @@ uip maestro flow registry get core.action.script --output json
 ```
 
 Confirm: input port `input`, output port `success`, required input `script` (string, non-empty).
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 ## JSON Structure
 
@@ -40,10 +81,6 @@ Confirm: input port `input`, output port `success`, required input `script` (str
   "model": { "type": "bpmn:ScriptTask" }
 }
 ```
-
-## Adding / Editing
-
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
 
 ## Script Rules
 

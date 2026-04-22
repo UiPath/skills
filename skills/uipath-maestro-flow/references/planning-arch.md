@@ -12,7 +12,7 @@ Discover available capabilities, then design the flow topology — select node t
 
 1. Analyze the user's requirements
 2. **Discover capabilities** — if the flow uses connector or resource nodes, run `registry search` / `registry list` to confirm they exist and identify available operations (see [Capability Discovery](#capability-discovery))
-3. Select node types from the [Plugin Index](#plugin-index) below — read each relevant plugin's `planning.md` for selection heuristics, ports, and key inputs
+3. Select node types from the [Plugin Index](#plugin-index) below — read each relevant plugin's `flow-plan.md` for selection heuristics, ports, and key inputs
 4. Define edges (how nodes connect) — see [Wiring Rules](#wiring-rules) and each plugin's port documentation
 5. Identify suspected inputs and outputs for each node
 6. Generate a mermaid diagram
@@ -47,7 +47,7 @@ Run from inside the flow project directory. If the resource (RPA, agent, flow, A
 
 ### Check Connector Connections
 
-For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/planning.md](plugins/connector/planning.md) for the full connection check workflow.
+For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/flow-plan.md](plugins/connector/flow-plan.md) for the full connection check workflow.
 
 ```bash
 uip is connections list "<connector-key>" --output json
@@ -71,15 +71,15 @@ Use these findings to select the right node types from the [Plugin Index](#plugi
 
 ## Plugin Index
 
-Each plugin has a `planning.md` with full selection heuristics, ports, key inputs, and wiring rules. **Read the relevant plugin's planning.md** when selecting that node type for your flow.
+Each plugin has a `flow-plan.md` with full selection heuristics, ports, key inputs, and wiring rules. **Read the relevant plugin's flow-plan.md** when selecting that node type for your flow.
 
 ### Triggers
 
 | Node Type | Plugin | When to Select |
 | --- | --- | --- |
 | `core.trigger.manual` | _(inline — no plugin)_ | Flow is started on demand by a user or API call |
-| `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/planning.md) | Flow runs on a recurring schedule |
-| IS connector trigger | [connector-trigger](plugins/connector-trigger/planning.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
+| `core.trigger.scheduled` | [scheduled-trigger](plugins/scheduled-trigger/flow-plan.md) | Flow runs on a recurring schedule |
+| IS connector trigger | [connector-trigger](plugins/connector-trigger/flow-plan.md) | Flow starts when an external event fires (e.g., email received, issue created). Node type: `uipath.connector.trigger.<key>.<trigger>` |
 
 **Rules:**
 - Every flow must have exactly one trigger node
@@ -91,24 +91,24 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 
 | Node Type | Plugin | When to Select |
 | --- | --- | --- |
-| `core.action.script` | [script](plugins/script/planning.md) | Custom logic, data transformation, computation, formatting |
-| `core.action.http.v2` | [http](plugins/http/planning.md) | Call a REST API — connector mode (IS auth) or manual mode (raw URL). Replaces deprecated `core.action.http` |
-| `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by on a collection |
-| `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
-| `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
-| `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
+| `core.action.script` | [script](plugins/script/flow-plan.md) | Custom logic, data transformation, computation, formatting |
+| `core.action.http.v2` | [http](plugins/http/flow-plan.md) | Call a REST API — connector mode (IS auth) or manual mode (raw URL). Replaces deprecated `core.action.http` |
+| `core.action.transform` | [transform](plugins/transform/flow-plan.md) | Declarative map, filter, or group-by on a collection |
+| `core.logic.delay` | [delay](plugins/delay/flow-plan.md) | Pause execution for a duration or until a specific date |
+| `core.action.queue.create` | [queue](plugins/queue/flow-plan.md) | Distribute work to robots — fire-and-forget |
+| `core.action.queue.create-and-wait` | [queue](plugins/queue/flow-plan.md) | Distribute work to robots — wait for result |
 
 ### Control Flow
 
 | Node Type | Plugin | When to Select |
 | --- | --- | --- |
-| `core.logic.decision` | [decision](plugins/decision/planning.md) | Binary branching (if/else) based on a boolean condition |
-| `core.logic.switch` | [switch](plugins/switch/planning.md) | Multi-way branching (3+ paths) based on ordered case expressions |
-| `core.logic.loop` | [loop](plugins/loop/planning.md) | Iterate over a collection of items |
-| `core.logic.merge` | [merge](plugins/merge/planning.md) | Synchronize parallel branches before continuing |
-| `core.control.end` | [end](plugins/end/planning.md) | Graceful flow completion (one per terminal path) |
-| `core.logic.terminate` | [terminate](plugins/terminate/planning.md) | Abort entire flow immediately on fatal error |
-| `core.subflow` | [subflow](plugins/subflow/planning.md) | Group related steps into a reusable container with isolated scope |
+| `core.logic.decision` | [decision](plugins/decision/flow-plan.md) | Binary branching (if/else) based on a boolean condition |
+| `core.logic.switch` | [switch](plugins/switch/flow-plan.md) | Multi-way branching (3+ paths) based on ordered case expressions |
+| `core.logic.loop` | [loop](plugins/loop/flow-plan.md) | Iterate over a collection of items |
+| `core.logic.merge` | [merge](plugins/merge/flow-plan.md) | Synchronize parallel branches before continuing |
+| `core.control.end` | [end](plugins/end/flow-plan.md) | Graceful flow completion (one per terminal path) |
+| `core.logic.terminate` | [terminate](plugins/terminate/flow-plan.md) | Abort entire flow immediately on fatal error |
+| `core.subflow` | [subflow](plugins/subflow/flow-plan.md) | Group related steps into a reusable container with isolated scope |
 
 ### Connector Nodes
 
@@ -116,9 +116,9 @@ Connector nodes call external services via Integration Service. They are **not**
 
 | When to Select | Plugin |
 | --- | --- |
-| A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
+| A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/flow-plan.md) |
 
-**In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
+**In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/flow-plan.md](plugins/connector/flow-plan.md).
 
 ### Agent Nodes
 
@@ -126,10 +126,10 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
-| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
-| `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent is a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
+| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/flow-plan.md) | Agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
+| `uipath.core.agent.{key}` | [agent](plugins/agent/flow-plan.md) | Agent is a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
 
-See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
+See [inline-agent/flow-plan.md — Inline vs Published Agent Decision Table](plugins/inline-agent/flow-plan.md#inline-vs-published-agent-decision-table) for the full decision matrix.
 
 ### Resource Nodes (External Automations)
 
@@ -137,12 +137,12 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 
 | Category | Node Type Pattern | Plugin |
 | --- | --- | --- |
-| RPA Process | `uipath.core.rpa.{key}` | [rpa](plugins/rpa/planning.md) |
-| Agent | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) |
-| Agentic Process | `uipath.core.agentic-process.{key}` | [agentic-process](plugins/agentic-process/planning.md) |
-| Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/planning.md) |
-| API Workflow | `uipath.core.api-workflow.{key}` | [api-workflow](plugins/api-workflow/planning.md) |
-| Human Task | `uipath.core.hitl.{key}` | [hitl](plugins/hitl/planning.md) |
+| RPA Process | `uipath.core.rpa.{key}` | [rpa](plugins/rpa/flow-plan.md) |
+| Agent | `uipath.core.agent.{key}` | [agent](plugins/agent/flow-plan.md) |
+| Agentic Process | `uipath.core.agentic-process.{key}` | [agentic-process](plugins/agentic-process/flow-plan.md) |
+| Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/flow-plan.md) |
+| API Workflow | `uipath.core.api-workflow.{key}` | [api-workflow](plugins/api-workflow/flow-plan.md) |
+| Human Task | `uipath.core.hitl.{key}` | [hitl](plugins/hitl/flow-plan.md) |
 
 ### Placeholders
 
@@ -156,9 +156,9 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 
 When the flow needs to call an external service, use this decision order — prefer higher tiers:
 
-1. **Pre-built Integration Service connector** — Use when a connector exists and covers the use case. See [connector](plugins/connector/planning.md).
-2. **Managed HTTP Request** (`core.action.http.v2`) — connector mode: use when a connector exists but lacks the specific curated activity. Manual mode: use for one-off API calls to services without connectors. See [http](plugins/http/planning.md).
-3. **RPA workflow node** — Use only when the target system has no API (legacy desktop apps, terminals). See [rpa](plugins/rpa/planning.md).
+1. **Pre-built Integration Service connector** — Use when a connector exists and covers the use case. See [connector](plugins/connector/flow-plan.md).
+2. **Managed HTTP Request** (`core.action.http.v2`) — connector mode: use when a connector exists but lacks the specific curated activity. Manual mode: use for one-off API calls to services without connectors. See [http](plugins/http/flow-plan.md).
+3. **RPA workflow node** — Use only when the target system has no API (legacy desktop apps, terminals). See [rpa](plugins/rpa/flow-plan.md).
 
 ---
 
@@ -453,45 +453,45 @@ After generating the mermaid block:
 
 ## Node Selection Heuristics
 
-Quick decision guide. For full details, read the linked plugin's `planning.md`.
+Quick decision guide. For full details, read the linked plugin's `flow-plan.md`.
 
 ### "I need to call an external service"
 
-1. Is there a connector with a curated activity? Run `uip maestro flow registry list --output json` and check for typed nodes matching `uipath.connector.<key>.<operation>`. If the desired operation appears as a node type, it is a curated activity -> [connector](plugins/connector/planning.md)
-2. Connector exists but the operation is not listed as a curated node type? -> `core.action.http.v2` connector mode — see [http](plugins/http/planning.md)
-3. No connector exists, but has a REST API? -> `core.action.http.v2` manual mode — see [http](plugins/http/planning.md)
-4. No API at all (desktop app, terminal)? -> [rpa](plugins/rpa/planning.md) or `core.logic.mock` if unpublished
+1. Is there a connector with a curated activity? Run `uip maestro flow registry list --output json` and check for typed nodes matching `uipath.connector.<key>.<operation>`. If the desired operation appears as a node type, it is a curated activity -> [connector](plugins/connector/flow-plan.md)
+2. Connector exists but the operation is not listed as a curated node type? -> `core.action.http.v2` connector mode — see [http](plugins/http/flow-plan.md)
+3. No connector exists, but has a REST API? -> `core.action.http.v2` manual mode — see [http](plugins/http/flow-plan.md)
+4. No API at all (desktop app, terminal)? -> [rpa](plugins/rpa/flow-plan.md) or `core.logic.mock` if unpublished
 
 ### "I need to branch"
 
-- Two paths -> [decision](plugins/decision/planning.md)
-- Three or more paths -> [switch](plugins/switch/planning.md)
-- Branch on HTTP response status -> [http](plugins/http/planning.md) built-in branches
+- Two paths -> [decision](plugins/decision/flow-plan.md)
+- Three or more paths -> [switch](plugins/switch/flow-plan.md)
+- Branch on HTTP response status -> [http](plugins/http/flow-plan.md) built-in branches
 
 ### "I need to transform data"
 
-- Standard map/filter/group-by -> [transform](plugins/transform/planning.md)
-- Custom logic, string manipulation, computation -> [script](plugins/script/planning.md)
+- Standard map/filter/group-by -> [transform](plugins/transform/flow-plan.md)
+- Custom logic, string manipulation, computation -> [script](plugins/script/flow-plan.md)
 
 ### "I need to end the flow"
 
-- Normal completion -> [end](plugins/end/planning.md) (one per terminal path)
-- Fatal error, abort everything -> [terminate](plugins/terminate/planning.md)
+- Normal completion -> [end](plugins/end/flow-plan.md) (one per terminal path)
+- Fatal error, abort everything -> [terminate](plugins/terminate/flow-plan.md)
 
 ### "I need to wait"
 
-- Fixed duration -> [delay](plugins/delay/planning.md)
-- Wait until a specific time -> [delay](plugins/delay/planning.md)
-- Wait for external work to complete -> [queue](plugins/queue/planning.md) (`create-and-wait`)
+- Fixed duration -> [delay](plugins/delay/flow-plan.md)
+- Wait until a specific time -> [delay](plugins/delay/flow-plan.md)
+- Wait for external work to complete -> [queue](plugins/queue/flow-plan.md) (`create-and-wait`)
 
 ### "I need human involvement"
 
-- Human approval or data entry -> [hitl](plugins/hitl/planning.md) or `core.logic.mock` if the app doesn't exist
+- Human approval or data entry -> [hitl](plugins/hitl/flow-plan.md) or `core.logic.mock` if the app doesn't exist
 
 ### "I need an AI agent"
 
-- Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
-- Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+- Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/flow-plan.md) (`uipath.agent.autonomous`)
+- Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/flow-plan.md) (`uipath.core.agent.{key}`)
 
 ### "The flow needs something outside flow capabilities"
 
@@ -507,8 +507,8 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 When the architectural plan is approved, Phase 2 ([Planning Phase 2: Implementation](planning-impl.md)) takes over to:
 
-1. Validate all node types via `uip maestro flow registry get` — read each plugin's `impl.md` for registry validation steps
-2. Resolve connector and resource nodes — see the relevant plugin's `impl.md` ([connector](plugins/connector/impl.md), [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), etc.)
+1. Validate all node types via `uip maestro flow registry get` — read each plugin's `flow-plan.md` for registry validation steps
+2. Resolve connector and resource nodes — see the relevant plugin's `flow-plan.md` ([connector](plugins/connector/flow-plan.md), [rpa](plugins/rpa/flow-plan.md), [agent](plugins/agent/flow-plan.md), etc.)
 3. Resolve resource nodes (confirm published, get definitions)
 4. Validate required fields against user-provided values
 5. Replace `<PLACEHOLDER>` values in the node table with resolved IDs

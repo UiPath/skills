@@ -1,8 +1,90 @@
-# Connector Activity Nodes — Implementation
+# Connector Activity Node
 
-How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are authored in the flow's top-level `bindings[]` — `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
-For generic node/edge add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+## When to Use
+
+Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, pagination, and error formatting automatically.
+
+### Decision Order
+
+Prefer higher tiers when connecting to external services:
+
+| Tier | Approach | When to Use |
+| --- | --- | --- |
+| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector's IS connection for auth |
+| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
+| 4 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
+
+### Prerequisites
+
+- `uip login` required — connector nodes only appear in the registry after authentication
+- A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
+- `uip maestro flow registry pull` must be run to cache connector node types locally
+
+### When NOT to Use
+
+- **No connector exists for the service** — use `core.action.http.v2` manual mode instead
+- **Simple GET request with no auth** — `core.action.http` is simpler and faster to configure
+- **The operation needs desktop/browser interaction** — use an RPA resource node
+- **The task requires reasoning or judgment** — use an agent node
+
+## Node Type Pattern
+
+`uipath.connector.<connector-key>.<activity>`
+
+Examples:
+- `uipath.connector.uipath-salesforce-slack.send-message`
+- `uipath.connector.uipath-atlassian-jira.create-issue`
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `success`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
+## Output Variables
+
+- `$vars.{nodeId}.output` — the connector response (structure depends on the operation)
+- `$vars.{nodeId}.error` — error details if the call fails
+
+## HTTP Fallback (Managed HTTP Request)
+
+When a connector exists but lacks the specific curated activity, use `core.action.http.v2` (Managed HTTP Request). This node proxies through the `uipath-uipath-http` connector and uses the **target connector's** IS connection for authentication — you supply the API URL and payload.
+
+> **Do NOT use individual connector HTTP request nodes** (e.g., `uipath.connector.<key>.http-request`). Always use the unified `core.action.http.v2` Managed HTTP Request node for non-curated API calls.
+
+> **Do NOT use `core.action.http` (v1) with `authenticationType: "connection"` for this.** The v1 node does not pass IS credentials at runtime. Always use `core.action.http.v2`.
+
+See [http/flow-plan.md](../http/flow-plan.md) for full selection heuristics and configuration via `uip maestro flow node configure`.
+
+## Discovery
+
+```bash
+uip maestro flow registry search <service> --output json
+```
+
+Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
+
+```bash
+uip is connectors list --output json
+```
+
+Keys are often prefixed — e.g., `uipath-salesforce-slack` not `slack`.
+
+### Check Connector Connections
+
+For each connector found in registry search, verify a healthy connection exists. Extract the connector key from the node type name (e.g., `uipath.connector.uipath-microsoft-outlook365.get-newest-email` -> key is `uipath-microsoft-outlook365`).
+
+```bash
+uip is connections list "<connector-key>" --output json
+```
+
+- If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for implementation planning.
+- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing.
 
 ## How Connector Nodes Differ from OOTB
 
@@ -20,7 +102,7 @@ For generic node/edge add, delete, and wiring procedures, see [flow-editing-oper
 
 ## Critical: Connector Definition Must Include `form`
 
-> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip maestro flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip maestro flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
+> When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip maestro flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip maestro flow registry get <nodeType> --output json` -> `Data.Node.form` into your definition.
 
 ## Configuration Workflow
 
@@ -208,7 +290,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
 | `resourceKey` | The connection UUID from `uip is connections list`. **Same UUID on both bindings.** |
-| `default` | Connection binding → connection UUID. Folder binding → folder key. |
+| `default` | Connection binding -> connection UUID. Folder binding -> folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
 `uip maestro flow node configure` also sets `model.bindings.resourceKey` on the node (the connection UUID). This enables `flow-schema` to correlate the node with its Connection binding when generating `bindings_v2.json`. When adding bindings by hand, set this field on the node too:
@@ -249,7 +331,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 
 ### Multi-connector example (Jira + Slack)
 
-Two unique connections → four entries in `bindings[]` (two per connection):
+Two unique connections -> four entries in `bindings[]` (two per connection):
 
 ```json
 "bindings": [
@@ -299,7 +381,7 @@ At debug/pack time, the CLI derives `content/bindings_v2.json` from the top-leve
 
 ### Other binding resource types (triggers, queues, scheduled)
 
-For connector-trigger flows, the same pattern applies — top-level `bindings[]` entries with additional metadata; the CLI derives `EventTrigger` and `Property` resources for `bindings_v2.json`. See [connector-trigger/impl.md](../connector-trigger/impl.md) for the trigger-specific shape.
+For connector-trigger flows, the same pattern applies — top-level `bindings[]` entries with additional metadata; the CLI derives `EventTrigger` and `Property` resources for `bindings_v2.json`. See [connector-trigger/flow-plan.md](../connector-trigger/flow-plan.md) for the trigger-specific shape.
 
 | Generated `bindings_v2.json` resource | Authored via | Key source fields |
 |---------------------------------------|--------------|-------------------|

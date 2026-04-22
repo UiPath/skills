@@ -1,6 +1,6 @@
 # Planning Phase 2: Implementation Resolution
 
-Resolve all implementation details for the approved architectural plan. This phase takes the `.arch.plan.md` and produces an `.impl.plan.md` with concrete, build-ready values. The plugin `impl.md` files, wiring rules, and flow patterns below are also used during the build step.
+Resolve all implementation details for the approved architectural plan. This phase takes the `.arch.plan.md` and produces an `.impl.plan.md` with concrete, build-ready values. The plugin `flow-plan.md` files, wiring rules, and flow patterns below are also used during the build step.
 
 > **Prerequisite:** The user must have explicitly approved the architectural plan (`.arch.plan.md`) before starting this phase.
 >
@@ -16,16 +16,16 @@ Scan the approved `.arch.plan.md` node table and connector summary. Validate eac
 
 | Category          | How to identify                                                      | Action                                                                                                                                                                                                                                                                     |
 | ----------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connector nodes   | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow [connector/impl.md](plugins/connector/impl.md))                                                                                                                                                                                                         |
-| Resource nodes    | Node type starts with `uipath.core.*` or Notes say "resource:"       | Run Step 3 (follow the relevant resource plugin: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [agentic-process](plugins/agentic-process/impl.md), [flow](plugins/flow/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md)) |
+| Connector nodes   | Node type starts with `uipath.connector.*` or Notes say "connector:" | Run Step 2 (follow [connector/flow-plan.md](plugins/connector/flow-plan.md))                                                                                                                                                                                                         |
+| Resource nodes    | Node type starts with `uipath.core.*` or Notes say "resource:"       | Run Step 3 (follow the relevant resource plugin: [rpa](plugins/rpa/flow-plan.md), [agent](plugins/agent/flow-plan.md), [agentic-process](plugins/agentic-process/flow-plan.md), [flow](plugins/flow/flow-plan.md), [api-workflow](plugins/api-workflow/flow-plan.md), [hitl](plugins/hitl/flow-plan.md)) |
 | Mock placeholders | Node type is `core.logic.mock`                                       | Run Step 4 (check if published, replace if available)                                                                                                                                                                                                                      |
-| OOTB nodes        | Everything else (Script, HTTP, Decision, Loop, etc.)                 | Run Step 1a below (validate with registry using the relevant plugin's `impl.md`)                                                                                                                                                                                           |
+| OOTB nodes        | Everything else (Script, HTTP, Decision, Loop, etc.)                 | Run Step 1a below (validate with registry using the relevant plugin's `flow-plan.md`)                                                                                                                                                                                           |
 
 **All nodes, including OOTB, must be validated via registry in Step 1a before proceeding.**
 
 #### Step 1a — Validate All Node Types with Registry
 
-Even built-in nodes can change. For each node type in your plan, read the relevant plugin's `impl.md` for the registry validation command and expected ports/inputs:
+Even built-in nodes can change. For each node type in your plan, read the relevant plugin's `flow-plan.md` for the registry validation command and expected ports/inputs:
 
 ```bash
 uip maestro flow registry pull --force
@@ -36,28 +36,28 @@ uip maestro flow registry get <nodeType> --output json
 
 | Node Type                       | Plugin impl.md                                                 |
 | ------------------------------- | -------------------------------------------------------------- |
-| `core.action.script`            | [script/impl.md](plugins/script/impl.md)                       |
-| `core.action.http`              | [http/impl.md](plugins/http/impl.md)                           |
-| `core.action.transform`         | [transform/impl.md](plugins/transform/impl.md)                 |
-| `core.logic.delay`              | [delay/impl.md](plugins/delay/impl.md)                         |
-| `core.logic.decision`           | [decision/impl.md](plugins/decision/impl.md)                   |
-| `core.logic.switch`             | [switch/impl.md](plugins/switch/impl.md)                       |
-| `core.logic.loop`               | [loop/impl.md](plugins/loop/impl.md)                           |
-| `core.logic.merge`              | [merge/impl.md](plugins/merge/impl.md)                         |
-| `core.control.end`              | [end/impl.md](plugins/end/impl.md)                             |
-| `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/impl.md)                 |
-| `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
-| `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
-| `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
-| `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |
-| `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
-| `uipath.core.rpa.*`             | [rpa/impl.md](plugins/rpa/impl.md)                             |
-| `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md)     |
-| `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
-| `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
-| `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
-| `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
-| `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
+| `core.action.script`            | [script/impl.md](plugins/script/flow-plan.md)                       |
+| `core.action.http`              | [http/flow-plan.md](plugins/http/flow-plan.md)                           |
+| `core.action.transform`         | [transform/impl.md](plugins/transform/flow-plan.md)                 |
+| `core.logic.delay`              | [delay/flow-plan.md](plugins/delay/flow-plan.md)                         |
+| `core.logic.decision`           | [decision/flow-plan.md](plugins/decision/flow-plan.md)                   |
+| `core.logic.switch`             | [switch/impl.md](plugins/switch/flow-plan.md)                       |
+| `core.logic.loop`               | [loop/impl.md](plugins/loop/flow-plan.md)                           |
+| `core.logic.merge`              | [merge/impl.md](plugins/merge/flow-plan.md)                         |
+| `core.control.end`              | [end/flow-plan.md](plugins/end/flow-plan.md)                             |
+| `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/flow-plan.md)                 |
+| `core.subflow`                  | [subflow/flow-plan.md](plugins/subflow/flow-plan.md)                     |
+| `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/flow-plan.md) |
+| `core.action.queue.*`           | [queue/impl.md](plugins/queue/flow-plan.md)                         |
+| `uipath.agent.autonomous`       | [inline-agent/flow-plan.md](plugins/inline-agent/flow-plan.md)           |
+| `uipath.core.agent.*`           | [agent/flow-plan.md](plugins/agent/flow-plan.md)                         |
+| `uipath.core.rpa.*`             | [rpa/impl.md](plugins/rpa/flow-plan.md)                             |
+| `uipath.core.agentic-process.*` | [agentic-process/flow-plan.md](plugins/agentic-process/flow-plan.md)     |
+| `uipath.core.flow.*`            | [flow/flow-plan.md](plugins/flow/flow-plan.md)                           |
+| `uipath.core.api-workflow.*`    | [api-workflow/flow-plan.md](plugins/api-workflow/flow-plan.md)           |
+| `uipath.core.hitl.*`            | [hitl/flow-plan.md](plugins/hitl/flow-plan.md)                           |
+| `uipath.connector.*`            | [connector/flow-plan.md](plugins/connector/flow-plan.md)                 |
+| `uipath.connector.trigger.*`    | [connector-trigger/flow-plan.md](plugins/connector-trigger/flow-plan.md) |
 
 For each node type, record:
 
@@ -70,13 +70,13 @@ Update your node table if any ports or required fields differ from the planning 
 
 ### Step 2 — Resolve Connector Nodes
 
-For each connector node, follow the Configuration Workflow in [connector/impl.md](plugins/connector/impl.md). The guide covers connection binding, metadata retrieval, field resolution, and validation.
+For each connector node, follow the Configuration Workflow in [connector/flow-plan.md](plugins/connector/flow-plan.md). The guide covers connection binding, metadata retrieval, field resolution, and validation.
 
 Record the connection ID and resolved field values for the build step.
 
 ### Step 3 — Resolve Resource Nodes
 
-For each resource node (RPA process, agent, flow, API workflow, human task), follow the discovery and validation steps in the relevant resource plugin's `impl.md`.
+For each resource node (RPA process, agent, flow, API workflow, human task), follow the discovery and validation steps in the relevant resource plugin's `flow-plan.md`.
 
 ```bash
 uip maestro flow registry get "<node-type>" --output json
@@ -214,7 +214,7 @@ See [planning-arch.md — Selecting External Service Nodes](planning-arch.md#sel
 
 ### Agent Nodes vs Workflow Logic
 
-See [agent/planning.md](plugins/agent/planning.md) for the full decision table. Summary:
+See [agent/flow-plan.md](plugins/agent/flow-plan.md) for the full decision table. Summary:
 
 - **Agent nodes** for ambiguous input, reasoning, judgment, NLG
 - **Script/Decision/Switch** for structured input, deterministic logic, data transformation
@@ -284,8 +284,8 @@ Some nodes enforce connection rules via `constraints` in their handle configurat
 
 Some nodes create ports based on their configuration:
 
-- **HTTP Request** — One port per `branches` entry: `branch-{id}`. See [http/impl.md](plugins/http/impl.md).
-- **Switch** — One port per `cases` entry: `case-{id}`. See [switch/impl.md](plugins/switch/impl.md).
-- **Loop** — `success` port fires after completion, `output` port carries aggregated results. See [loop/impl.md](plugins/loop/impl.md).
+- **HTTP Request** — One port per `branches` entry: `branch-{id}`. See [http/flow-plan.md](plugins/http/flow-plan.md).
+- **Switch** — One port per `cases` entry: `case-{id}`. See [switch/impl.md](plugins/switch/flow-plan.md).
+- **Loop** — `success` port fires after completion, `output` port carries aggregated results. See [loop/impl.md](plugins/loop/flow-plan.md).
 
 When wiring to dynamic ports, the port ID must match the configured item's `id`.

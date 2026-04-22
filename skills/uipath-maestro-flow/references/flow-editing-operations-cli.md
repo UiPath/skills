@@ -76,7 +76,7 @@ uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> -
 - Inserts edge into `edges` array with a generated `id`
 - Sets `targetPort` (required — validate rejects edges without it)
 
-See each plugin's `planning.md` or [flow-file-format.md — Standard ports](flow-file-format.md) for port names by node type.
+See each plugin's `flow-plan.md` or [flow-file-format.md — Standard ports](flow-file-format.md) for port names by node type.
 
 ### Delete an edge
 
@@ -107,7 +107,7 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
 - Creates connection binding entries in `bindings_v2.json`
 - Creates connection resource files under `resources/solution_folder/connection/`
 
-The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/impl.md](plugins/connector/impl.md), [connector-trigger/impl.md](plugins/connector-trigger/impl.md), and [http/impl.md](plugins/http/impl.md) for the exact fields.
+The `--detail` JSON schema differs between connector activity nodes, connector trigger nodes, and managed HTTP nodes — see [connector/flow-plan.md](plugins/connector/flow-plan.md), [connector-trigger/flow-plan.md](plugins/connector-trigger/flow-plan.md), and [http/flow-plan.md](plugins/http/flow-plan.md) for the exact fields.
 
 **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file:
 
@@ -137,7 +137,7 @@ uip maestro flow node configure <ProjectName>.flow <NODE_ID> \
 - Generates `bindings_v2.json` with the target connector's connection
 - Creates a connection resource file under `resources/solution_folder/connection/`
 
-See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and JSON structure.
+See [http/flow-plan.md](plugins/http/flow-plan.md) for the full configuration workflow and JSON structure.
 
 ### Validate
 
@@ -270,7 +270,7 @@ After the resource (RPA process, agent, etc.) has been published or added to the
    uip maestro flow node configure <ProjectName>.flow <NEW_TRIGGER_ID> --detail '<TRIGGER_DETAIL_JSON>'
    ```
 
-See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full `--detail` schema.
+See [connector-trigger/flow-plan.md](plugins/connector-trigger/flow-plan.md) for the full `--detail` schema.
 
 ### Replace manual trigger with scheduled trigger
 
@@ -294,7 +294,7 @@ See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full 
      --source-port output --target-port input --output json
    ```
 
-See [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) for timer presets and custom frequency options.
+See [scheduled-trigger/flow-plan.md](plugins/scheduled-trigger/flow-plan.md) for timer presets and custom frequency options.
 
 ---
 

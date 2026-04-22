@@ -1,28 +1,96 @@
-# Connector Trigger Nodes — Implementation
+# Connector Trigger Node
 
-How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
+Connector trigger nodes start a flow when an external event fires (e.g., "email received in Outlook", "issue created in Jira"). They use UiPath Integration Service connectors — the same ecosystem as IS activity nodes — but replace the manual/scheduled start node with an event-driven one.
 
-## Configuration Workflow
+## When to Use
 
-Follow these steps for every IS trigger node.
+Use a connector trigger node when the flow should **start automatically in response to an external event** from a service with a pre-built UiPath connector.
 
-### Step 1 — Fetch and bind a connection
+### Decision Order
 
-Same as IS activity nodes. Extract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and fetch a connection.
+| Tier | Trigger Type | When to Use |
+|---|---|---|
+| 1 | **IS connector trigger** (this node type) | A connector exists and supports the event you need (e.g., "new email", "issue created") |
+| 2 | **Scheduled trigger** (`core.trigger.scheduled`) | No event trigger exists, but you can poll on a schedule + filter for changes |
+| 3 | **Manual trigger** (`core.trigger.manual`) | Flow is started on demand by a user or API call |
+
+### Prerequisites
+
+- `uip login` required — trigger nodes only appear in the registry after authentication
+- A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
+- `uip maestro flow registry pull` must be run to cache trigger node types locally
+
+### When NOT to Use
+
+- **No connector exists for the service** — use a scheduled trigger with `core.action.http` polling instead
+- **The event is time-based, not data-driven** — use `core.trigger.scheduled`
+- **The flow should be started manually** — use `core.trigger.manual`
+- **You need to react to UiPath Orchestrator queue items** — use a queue trigger (separate mechanism)
+
+## Node Type Pattern
+
+`uipath.connector.trigger.<connector-key>.<trigger-name>`
+
+Examples:
+- `uipath.connector.trigger.uipath-microsoft-outlook365.email-received`
+- `uipath.connector.trigger.uipath-atlassian-jira.issue-created`
+- `uipath.connector.trigger.uipath-salesforce-slack.new-message`
+
+## Key Differences from IS Activity Nodes
+
+| Aspect | IS Activity | IS Trigger |
+|---|---|---|
+| Type pattern | `uipath.connector.<key>.<activity>` | `uipath.connector.trigger.<key>.<trigger>` |
+| Position in flow | Anywhere (action node) | Start node only (replaces manual trigger) |
+| `--connection-id` on `registry get` | Optional (enriches metadata) | **Required** (fails without it) |
+| Metadata returned | `inputDefinition`, `outputResponseDefinition`, `connectorMethodInfo` | `eventParameters`, `filterFields`, `outputResponseDefinition`, `eventMode` |
+| Configuration | `node configure --detail` (method, endpoint, bodyParameters) | `node configure --detail` (eventMode, eventParameters, filterExpression) |
+| Bindings | `Connection` resource | `Connection` + `EventTrigger` + `Property` resources (auto-generated) |
+
+## Ports
+
+| Input Port | Output Port(s) |
+|---|---|
+| — (start node) | `output` |
+
+## Output Variables
+
+- `$vars.{nodeId}.output` — the event payload (structure depends on the trigger — see `outputResponseDefinition` from enrichment)
+- `$vars.{nodeId}.error` — error details if the trigger encounters an issue
+
+## Event Mode
+
+Triggers operate in one of two modes (returned in `eventMode` from `registry get`):
+
+| Mode | Behavior |
+|---|---|
+| `webhooks` | The connector registers a webhook — events fire in near-real-time |
+| `polling` | The runtime polls the service on an interval — slight delay between event and trigger |
+
+The agent does not need to configure the mode — it is determined by the connector. Note it in the plan for the user's awareness.
+
+> **Debug impact:** Only `polling` triggers can be debugged in Studio Web. `webhooks` triggers cannot be tested via `uip maestro flow debug` — they require deployment to Orchestrator. Flag this in the plan if the trigger uses webhook mode.
+
+## Discovery
 
 ```bash
-# 1. List available connections
-uip is connections list "<connector-key>" --output json
+# Search for trigger nodes in the registry
+uip maestro flow registry search trigger --output json
 
-# 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
-
-# 3. Verify the connection is healthy
-uip is connections ping "<connection-id>" --output json
+# Or search by service name
+uip maestro flow registry search outlook trigger --output json
 ```
 
-**If `connections list` returns empty**, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
+Confirm `tags` includes both `"connector"` and `"trigger"` in the results.
 
-### Step 2 — Get enriched trigger metadata
+If the trigger doesn't appear, re-pull the registry (triggers require authentication):
+
+```bash
+uip login status --output json
+uip maestro flow registry pull --force
+```
+
+## Registry Validation
 
 `--connection-id` is **required** for trigger nodes. Without it, the command fails.
 
@@ -81,7 +149,33 @@ The response also includes `model.context` with:
 - `operation` — the event operation name (e.g., `"EMAIL_RECEIVED"`, `"ISSUE_CREATED"`)
 - `objectName` — the IS object (e.g., `"Message"`, `"Issue"`)
 
-### Step 3 — Resolve reference fields in event parameters
+## Adding / Editing
+
+### Configuration Workflow
+
+Follow these steps for every IS trigger node.
+
+#### Step 1 — Fetch and bind a connection
+
+Same as IS activity nodes. Extract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and fetch a connection.
+
+```bash
+# 1. List available connections
+uip is connections list "<connector-key>" --output json
+
+# 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
+
+# 3. Verify the connection is healthy
+uip is connections ping "<connection-id>" --output json
+```
+
+**If `connections list` returns empty**, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
+
+#### Step 2 — Get enriched trigger metadata
+
+See [Registry Validation](#registry-validation) above for the full response shape.
+
+#### Step 3 — Resolve reference fields in event parameters
 
 Check `eventParameters.fields` for fields with a `reference` object — these require ID lookup, same as IS activity nodes.
 
@@ -97,7 +191,7 @@ Use the resolved IDs in the trigger's event parameter configuration.
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../uipath-platform/references/integration-service/resources.md) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
 
-### Step 4 — Validate required event parameters
+#### Step 4 — Validate required event parameters
 
 Check every field in `eventParameters.fields` where `required: true`. All required event parameters must have values before building the flow.
 
@@ -106,17 +200,17 @@ Check every field in `eventParameters.fields` where `required: true`. All requir
 3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`
 4. Only proceed after all required event parameters are resolved
 
-### Step 4b — Map trigger output fields for downstream nodes
+#### Step 4b — Map trigger output fields for downstream nodes
 
 Before wiring downstream nodes, check `outputResponseDefinition` from Step 2 to know the exact field names available in `$vars.{triggerId}.output`. Do NOT guess field names — different triggers output different schemas.
 
 Each trigger type has a different output schema — field names like `.text`, `.subject`, or `.body.content` vary by connector. Use the actual field names from `outputResponseDefinition` when writing expressions in downstream nodes.
 
-### Step 5 — Replace the manual trigger with the connector trigger node
+#### Step 5 — Replace the manual trigger with the connector trigger node
 
 Follow the [CLI: Replace manual trigger with connector trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.
 
-### Step 6 — Configure the trigger node
+#### Step 6 — Configure the trigger node
 
 **Read the `--detail` field table below before calling `node configure`.** The fields and types are strict — unknown keys or wrong types cause validation errors. Do not guess field names from other node types (e.g., activity nodes use `method`/`endpoint`/`bodyParameters`; triggers use `eventMode`/`eventParameters`/`filterExpression`).
 
@@ -150,7 +244,7 @@ The command populates `inputs.detail` (including the internal `configuration` bl
 
 ## JMESPath Filter Expressions
 
-Filter expressions use JMESPath syntax to narrow which events fire the trigger. They are passed as a string in the `filterExpression` field of `--detail` (Step 6). Field names come from `filterFields` returned by `registry get` (Step 2).
+Filter expressions use JMESPath syntax to narrow which events fire the trigger. They are passed as a string in the `filterExpression` field of `--detail` (Step 6). Field names come from `filterFields` returned by `registry get`.
 
 ### Syntax Rules
 
@@ -192,13 +286,13 @@ Filter expressions use JMESPath syntax to narrow which events fire the trigger. 
 
 ### How to Build a Filter Expression from `filterFields`
 
-1. Run `registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array
+1. Run `registry get` with `--connection-id` and read the `filterFields.fields` array
 2. Each field object has a `name` (e.g., `fromAddress`, `subject`) — use these as the field argument
 3. Choose the syntax based on the user's intent:
-   - Exact match → `fieldName == 'value'`
-   - Exclusion → `fieldName != 'value'`
-   - Substring match → `contains(fieldName, 'value')`
-   - Prefix match → `starts_with(fieldName, 'value')`
+   - Exact match -> `fieldName == 'value'`
+   - Exclusion -> `fieldName != 'value'`
+   - Substring match -> `contains(fieldName, 'value')`
+   - Prefix match -> `starts_with(fieldName, 'value')`
 4. Combine multiple conditions with `&&` (AND) or `||` (OR)
 5. Wrap the full expression in parentheses
 6. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filterExpression` entirely
@@ -270,8 +364,8 @@ uip is resources execute list "<connector-key>" "<resource>" \
 
 ```bash
 uip maestro flow debug . --output json
-# → Fetches most recent matching event from the past ~1 hour
-# → Flow executes immediately with that event data
+# -> Fetches most recent matching event from the past ~1 hour
+# -> Flow executes immediately with that event data
 ```
 
 ### Polling vs webhook triggers in debug
@@ -321,5 +415,5 @@ uip maestro flow debug . --output json
 4. **Filter expressions are optional** — omit `filterExpression` from `--detail` if the user wants all events to trigger the flow
 5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them
 6. **Use `uip maestro flow node delete` to remove the manual trigger** — do NOT manually edit the JSON to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Direct JSON editing skips these cleanup steps and can leave orphaned references.
-7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)
+7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response
 8. **Validate filter field names against `filterFields`** — only field names returned in `filterFields.fields[].name` are valid in filter expressions. Using a field name not in that list produces a silent no-match at runtime
