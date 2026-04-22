@@ -99,7 +99,7 @@ The case pauses after the rule fires; the user picks the next stage from candida
 ```json
 "type": "return-to-origin",
 "exitToStageId": null,
-"marksStageComplete": false,
+"marksStageComplete": true,
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-tasks-completed" } ]]
 ```
 
