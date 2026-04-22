@@ -14,6 +14,8 @@ sandbox:
       - "@uipath/cli"
 
 initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
   I want to create a Contact record in Salesforce through UiPath Integration
   Service. Before executing anything, I need to understand the resource schema.
 

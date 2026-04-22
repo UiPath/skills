@@ -14,9 +14,10 @@ sandbox:
       - "@uipath/cli"
 
 initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
   Walk me through creating a Contact in Salesforce via UiPath Integration
-  Service. Follow the full Integration Service workflow from the
-  uipath-platform skill.
+  Service. Follow the full Integration Service workflow.
 
   Save a step-by-step log to report.json:
   {

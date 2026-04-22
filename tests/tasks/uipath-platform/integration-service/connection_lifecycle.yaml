@@ -15,6 +15,8 @@ sandbox:
       - "@uipath/cli"
 
 initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
   I want to use the Salesforce connector through UiPath Integration Service.
   Help me find and verify a connection for the "uipath-salesforce-sfdc"
   connector.
