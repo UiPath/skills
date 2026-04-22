@@ -44,7 +44,7 @@ uip is connections ping "<connection-id>" --output json
 
 **If `connections list` returns empty**, the CLI scoped to Personal Workspace by default — check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
-**Read [/uipath:uipath-platform — Integration Service — connections.md](/uipath:uipath-platform) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
+**Read [/uipath:uipath-platform — Integration Service — connections.md](../../../../uipath-platform/references/integration-service/connections.md) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
 
 ### Step 2 — Get enriched node definitions with connection
 
@@ -93,7 +93,7 @@ Use the resolved IDs (not display names) in the flow's node `inputs`. Present op
 
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
-**Read [/uipath:uipath-platform — Integration Service — resources.md](/uipath:uipath-platform) for the full reference resolution workflow**, including: identifying reference fields, dependency chains (resolve parent fields before children), pagination, describe failures, and fallback strategies.
+**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../uipath-platform/references/integration-service/resources.md) for the full reference resolution workflow**, including: identifying reference fields, dependency chains (resolve parent fields before children), pagination, describe failures, and fallback strategies.
 
 ### Step 5 — Validate required fields
 
