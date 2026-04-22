@@ -130,18 +130,36 @@ Used for: debugging, downstream cross-task reference resolution within the same 
 
 ## Primitive Operations
 
+### Tool usage — mandatory
+
+All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `id-map.json`) MUST go through Claude's built-in tools only:
+
+- **Read** to load the file.
+- **Write** to rewrite the whole file.
+- **Edit** for narrowly-scoped, unambiguous in-place replacements.
+
+**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`. The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
+
+This is a hard constraint — it keeps every mutation reviewable in the tool-call transcript and prevents silent state changes the user cannot audit.
+
+Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
+
+**Bash is still used for**: ID randomness (`node -e "..."` one-liners that print to stdout only — see "Generate a fresh ID" below), CLI mutations on non-migrated plugins, `uip maestro case validate`, and `uip maestro case registry` discovery. Never for file mutation.
+
 ### Read → modify → write
 
-Always read `caseplan.json` fully, modify the in-memory object, and write the whole file back. Don't try to patch individual fields with Edit tool regex — nested JSON structures are too fragile. Use Read → Write as the workflow. Re-read before the next mutation; do not hold the parsed object across tool calls.
+Always read `caseplan.json` fully with the Read tool, modify the in-memory object in reasoning, and write the whole file back with the Write tool. For narrowly-scoped, unambiguous single-field updates, the Edit tool is also acceptable. Re-read before the next mutation; do not hold the parsed object across tool calls.
 
 ### Generate a fresh ID
 
-Per the algorithm above. Use Bash + node/python inline when you need true randomness, or compute in-head for single-run needs:
+Per the algorithm above. Use a Bash + `node -e` one-liner that **only prints the ID to stdout** — the agent consumes the printed value and embeds it via Write/Edit. No file I/O inside the subprocess.
 
 ```bash
-# Bash + node one-liner for Stage_ prefix, 6 chars
+# Bash + node one-liner for Stage_ prefix, 6 chars — stdout only, no file access
 node -e "const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';let s='Stage_';for(let i=0;i<6;i++)s+=c[Math.floor(Math.random()*62)];console.log(s)"
 ```
+
+If the Bash tool is unavailable for any reason, fall back to a pseudo-random ID composed in reasoning from the algorithm above — still no subprocess touching the file.
 
 ### Add a node (Trigger / Stage / ExceptionStage)
 
@@ -224,9 +242,11 @@ On failure: fix the reported issue (usually a missing field, malformed handle, o
 
 ## Anti-Patterns
 
+- **Do NOT shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other subprocess to mutate `caseplan.json` or its siblings.** Use Read + Write/Edit only. Subprocess scripts bypass the tool-call audit trail and make the mutation invisible in the transcript. See "Tool usage — mandatory" above.
+- **Do NOT write helper scripts (`.py`, `.js`, `.sh`) that open / parse / modify / save JSON files.** Even one-shot scripts are forbidden — the agent is the processor, Read/Write/Edit are the only I/O primitives.
 - **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
 - **Do NOT forget `style`/`measured`/`width`/`zIndex` on stages.** Validate passes, but Studio Web renders broken.
 - **Do NOT put `entryConditions`/`exitConditions` on regular Stages.** Only ExceptionStage has them.
 - **Do NOT skip the default entry condition on connector tasks.** The frontend expects it.
-- **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → parse → modify → Write.
+- **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Write (or Edit for narrowly-scoped unambiguous replacements).
 - **Do NOT run validation after every single write.** Validate at plugin boundaries, not per-field.

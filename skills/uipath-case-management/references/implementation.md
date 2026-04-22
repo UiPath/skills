@@ -31,10 +31,11 @@ Mixing strategies within a single skill run is expected during the migration. Bo
 
 ## Issue Log — Initialize Before Step 6
 
-Before any build step, initialize an empty issue list. All plugins append to this shared list during execution. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, and file schema.
+Before any build step, initialize an empty issue list **in the agent's reasoning** (not as a file, not via subprocess). All plugins append to this shared list during execution. Dump to `tasks/build-issues.md` via the Write tool after Step 12. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, and file schema.
 
-```python
-issues = []  # shared across all steps — passed to each plugin
+```text
+# pseudocode — kept in the agent's reasoning, not on disk
+issues = []  # shared across all steps
 ```
 
 ## Step 6 — Create the Case project structure
