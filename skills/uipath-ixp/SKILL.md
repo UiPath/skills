@@ -22,7 +22,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
 4. **Use `/tmp/ixp/` as the working directory** — at the start of any workflow, create it: `mkdir -p /tmp/ixp`. Store ALL downloaded images (`/tmp/ixp/doc_1.png`, `/tmp/ixp/doc_2.png`), JSON payloads (`/tmp/ixp/extractions.json`, `/tmp/ixp/updates.json`), and taxonomy snapshots (`/tmp/ixp/taxonomy.json`) in this directory. This keeps everything in one predictable location.
-5. **Always use bash heredocs for JSON payloads** — when passing JSON to `--extractions` or `--fields`, write via heredoc (`cat > /tmp/ixp/extractions.json << 'EOF' ... EOF`) then use `"$(cat /tmp/ixp/extractions.json)"`. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows, the Write tool resolves `/tmp/` to a different location than bash, causing "file not found" errors.
+5. **Pass `--extractions` inline, use heredocs for `--fields`/`--groups`** — for labelling, pass the JSON directly: `--extractions '[...]'` (single-quoted, no temp file). For `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/updates.json)"`. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows it resolves to a different location than bash.
 6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
 7. **Always use the project `Name`, never the `Title`** — the `project list` output has both `Name` (e.g., `my_invoices-f1afa9ef-ixp`) and `Title` (e.g., `My_Invoices`). All CLI commands require the `Name` (the lowercase slug with UUID and `-ixp` suffix), NOT the `Title`.
 8. **Use the flat `label_def.name` from taxonomy as the label** — NEVER prefix with parent names. If the taxonomy has a label_def named `"Line Items"`, use `"Line Items"` — NOT `"Invoice > Line Items"`. Using a prefixed name causes `400 No moon fields defined for label`.
@@ -40,9 +40,11 @@ When the user asks to improve scores/prompts for an existing project, follow the
 | `uip ixp project list --output json` | List all IXP projects |
 | `uip ixp project get <project-name> --output json` | Get a project |
 | `uip ixp project create "<name>" <folder-path> -d "<description>" --output json` | Create project, upload docs, suggest+import taxonomy. Use `ProjectName` from output for all subsequent commands. |
+| `uip ixp project rename <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp project taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
 | `uip ixp project metrics <project-name> --output json` | Get validation metrics — `FieldGroups[]` (per-group) and `Fields[]` (per-field F1/Precision/Recall) |
-| `uip ixp project update-prompts <project-name> --fields <json> --output json` | Update individual field instructions (moon_form fields). `--fields '[{"name":"Invoice Number","instructions":"..."}]'` — match by field name. Fetches taxonomy, merges changes, preserves all field definitions. Omitting `--label-instructions` preserves the existing project-level prompt. |
+| `uip ixp project configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13), `--preprocessing` (none/table_mini/table), `--attribution` (model/rules), `--temperature`, `--top-p`, `--seed`, `--frequency-penalty` |
+| `uip ixp project update-prompts <project-name> --fields <json> [--groups <json>] --output json` | Update field and/or field group instructions. `--fields` (required): per-field updates `[{"name":"Invoice Number","instructions":"..."}]`. `--groups` (optional): label_def updates `[{"name":"Invoice","instructions":"..."}]`. `--label-instructions` (optional): project-level prompt. |
 
 ### Documents
 
@@ -56,8 +58,8 @@ When the user asks to improve scores/prompts for an existing project, follow the
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp labelling label <project-name> <comment-uid> --extractions <json> --output json` | Submit Claude extractions for one document (serial only — do not parallelize) |
-| `uip ixp labelling confirm <project-name> --output json` | Confirm IXP-generated predictions as-is for all documents |
+| `uip ixp labelling label <project-name> <comment-uid> --extractions '<json>'` | Submit Claude extractions for one document (serial only — do not parallelize). Pass JSON inline with single quotes, no temp file needed. |
+| `uip ixp labelling confirm <project-name> --output json` | Confirm IXP's own predictions as ground truth (use ONLY if you trust IXP's predictions without review — skips Claude extraction entirely) |
 
 ### Extractions JSON Format
 
@@ -125,7 +127,7 @@ IXP entity_defs use these field types, identified by `inherits_from` ID:
 | Date/Monetary fields always F1 = 0 | Value format doesn't match what the model predicts | Re-label using the value **as-written in the document** (e.g., `02/28/2018`, `$17,000.00`). The model predicts in the document's own format. |
 | `404 No such project` | Used project Title instead of Name | Use `Name` from `project list` (lowercase slug with `-ixp` suffix) |
 | `400 Moon forms for label present multiple times` | Duplicate label entries in extractions | Group all fields for same non-repeating label into one entry |
-| Metrics don't change after update-prompts | Didn't re-label documents | Re-label all documents after updating instructions |
+| Metrics don't change after update-prompts | Re-evaluation hasn't completed | Wait ~2 minutes. The optimization loop re-labels automatically after each instruction update. |
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Even changing 1 field instruction or 1 document labelling retrains the entire model. Wait ~2 min then retry. |
 | Fields/moon_form disappeared after update | Used `--entity-defs` flag or raw dataset update with `entity_defs` payload | **NEVER use `--entity-defs`** — it is a destructive full-replacement that deletes fields. Always use `--fields` which only updates field instructions safely. |
 | Field instructions conflict with label_def instructions | `update-prompts --fields` only edits moon_form per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. If the label_def says "decimal format, no commas" but your field says "as-written with commas", the model gets conflicting signals. |
