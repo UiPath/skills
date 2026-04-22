@@ -70,7 +70,7 @@ Present `tasks.md` to the user for approval. **Do NOT proceed until the user exp
 1. Create the solution + project + case file (Step 6)
 2. Add stages (Step 7)
 3. Add edges (Step 8)
-4. Add tasks and bind inputs/outputs (Step 9) — per-task-type detail in `plugins/tasks/<type>/impl-cli.md` (or `impl-json.md` once migrated)
+4. Add tasks and bind inputs/outputs (Step 9) — per-task-type detail in `plugins/tasks/<type>/impl-json.md` (JSON strategy for `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`; `impl-cli.md` for `connector-activity` / `connector-trigger`)
 5. Add conditions (Step 10) — per-scope detail in `plugins/conditions/<scope>/impl-cli.md` (or `impl-json.md` once migrated)
 6. Configure SLA and escalation (Step 11)
 7. Validate (Step 12)
@@ -159,7 +159,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-cli.md`](references/plugins/sla/impl-cli.md) |
 | **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + [`impl-json.md`](references/plugins/variables/global-vars/impl-json.md) |
 | **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + [`impl-json.md`](references/plugins/variables/io-binding/impl-json.md) |
-| **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-cli.md` |
+| **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-json.md` (JSON strategy — `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) / `impl-cli.md` (CLI strategy — `connector-activity`, `connector-trigger`) |
 | **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl-cli.md` |
 | **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` |
 
