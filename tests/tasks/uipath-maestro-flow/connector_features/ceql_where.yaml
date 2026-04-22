@@ -4,10 +4,19 @@ description: >
   CEQL filter expression
 tags: [uipath-maestro-flow, integration, connector-feature, ceql-where]
 
+task_timeout: 1500
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 50
+  turn_timeout: 1200
+
 sandbox:
   driver: tempdir
   python: {}
   node:
+    # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
       - "@uipath/cli@0.1.21"
 initial_prompt: |
@@ -35,3 +44,4 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+max_iterations: 1

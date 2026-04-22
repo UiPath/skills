@@ -94,11 +94,11 @@ def assert_where_configured(node: dict) -> None:
 def main():
     flow_path = _find_flow()
     with open(flow_path) as f:
-        flow = json.load(f)
+        raw = f.read()
+    flow = json.loads(raw)
     if "nodes" not in flow or "edges" not in flow:
         sys.exit("FAIL: Flow missing 'nodes' or 'edges'")
 
-    raw = open(flow_path).read()
     if CONNECTOR_KEY not in raw:
         sys.exit(f"FAIL: Connector key {CONNECTOR_KEY!r} not found in {flow_path}")
 

@@ -16,6 +16,7 @@ sandbox:
   driver: tempdir
   python: {}
   node:
+    # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
       - "@uipath/cli@0.1.21"
 initial_prompt: |
