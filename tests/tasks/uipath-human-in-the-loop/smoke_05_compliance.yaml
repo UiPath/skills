@@ -43,6 +43,6 @@ success_criteria:
     description: "Agent identified compliance/audit pattern"
     path: "recommendation.json"
     includes:
-      - "complian"
+      - "audit"
     weight: 1.5
     pass_threshold: 1.0
