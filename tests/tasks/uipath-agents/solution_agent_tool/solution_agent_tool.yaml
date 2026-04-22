@@ -1,11 +1,13 @@
-task_id: skill-agent-multi-agent-solution
+task_id: skill-agent-solution-agent-tool
 description: >
-  End-to-end test: create a UiPath solution with two low-code agents where
-  ParentAgent calls ToolAgent as a solution-internal agent tool. Validates
-  both agents, bundles and packs the solution. Exercises the resource.json
-  tool format, location/folderPath conventions, referenceKey resolution,
-  and packaging.
-tags: [uipath-agents, e2e, multi-agent, resource]
+  Add agent tool (solution resource). End-to-end test: scaffold a
+  standalone low-code agent that calls another agent living inside
+  the same solution as a separate project. Verifies the tool
+  resource.json uses `type: "agent"`, `location: "solution"`, and
+  `folderPath: "solution_folder"`. Exercises the resource.json tool
+  format, location/folderPath conventions, referenceKey resolution,
+  and distinct projectId UUIDs across agents.
+tags: [uipath-agents, e2e, low-code, tool, solution, agent]
 max_iterations: 1
 
 agent:
@@ -86,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: "resource.json wires ToolAgent correctly (type, location, properties, schemas) and UUIDs are distinct"
-    command: "python3 $TASK_DIR/check_multi_agent_solution.py"
+    command: "python3 $TASK_DIR/check_solution_agent_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

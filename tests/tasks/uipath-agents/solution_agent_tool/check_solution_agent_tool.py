@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Multi-agent solution check.
+"""Solution agent-as-tool resource check.
 
 Validates:
   1. ParentAgent and ToolAgent have distinct, well-formed projectId
-     UUIDs (guards Anti-pattern 8 — do not copy-paste UUIDs).
+     UUIDs (guards against copy-pasted UUIDs across agents).
   2. ParentAgent/resources/ToolAgent/resource.json declares ToolAgent
      as a solution-internal agent tool:
        - $resourceType == "tool"
