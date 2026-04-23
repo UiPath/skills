@@ -105,7 +105,7 @@ MyProject/
 2. **Do not edit `.local/` or `.objects/`**: These are cache directories managed by the build system.
 3. **`main` entry point**: The default entrypoint that gets run if not specified otherwise. `entryPoints` array is only populated for **Process** projects — Tests and Library projects leave it empty (`[]`).
 4. **`--project-dir` awareness**: All `uip rpa` commands default to the current working directory. If the CWD is not the project root, pass `--project-dir "{projectRoot}"` explicitly.
-5. **Creating new projects**: Use `uip rpa create-project` or `uip rpa new`. See [environment-setup.md](environment-setup.md).
+5. **Creating new projects**: Use `uip rpa create-project`. See [environment-setup.md](environment-setup.md).
 
 ## Common Activity Packages
 
