@@ -1,40 +1,49 @@
 task_id: skill-uipath-platform-audit-log-coverage
 description: >
-  Skill-guided evaluation: `uipath-platform` should steer the agent away from
-  unsupported unified platform audit-log work and explicitly reject
-  `uip or audit-logs` as a substitute.
+  `uipath-platform` should steer the agent away from unsupported unified
+  platform audit-log work and explicitly reject `uip or audit-logs` as a
+  substitute.
 tags: [uipath-platform, integration, audit]
+
+max_iterations: 1
 
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
-  Using the `uipath-platform` skill, determine whether the UiPath CLI supports
-  unified platform audit logs.
+  Using the `uipath-platform` skill, inspect the skill docs and the CLI help
+  surface to determine whether the UiPath CLI supports unified platform audit
+  logs.
 
-  Do not authenticate. Do not use REST APIs. Do not substitute
-  `uip or audit-logs`.
+  Constraints:
+  - do not authenticate
+  - do not use REST APIs
+  - do not substitute `uip or audit-logs`
+  - do not run any non-help `uip` command
+  - inspect help text only (`uip ... --help`) plus the `uipath-platform`
+    skill content itself
 
   Save your findings to audit_report.json with at minimum:
     {
       "supported_by_cli": false,
       "commands_checked": ["<list of uip commands you inspected>"],
+      "skill_guardrail_present": true,
       "unsafe_substitutions_rejected": ["uip or audit-logs"],
       "recommended_action": "<what the agent should tell the user>"
     }
 
 success_criteria:
   - type: command_executed
-    description: "Agent inspected the CLI help surface"
-    tool_name: "Bash"
+    description: Agent inspected the CLI command surface
+    tool_name: Bash
     command_pattern: 'uip(\s+or)?\s+.*--help'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "audit_report.json captures the no-coverage guardrail"
+    description: audit_report.json captures the no-coverage decision and explicit guardrail
     command: |
       python3 - <<'PY'
       import json
@@ -42,11 +51,47 @@ success_criteria:
 
       report = json.loads(Path("audit_report.json").read_text())
       supported = report.get("supported_by_cli") is False
+      skill_guardrail = report.get("skill_guardrail_present") is True
       checked = isinstance(report.get("commands_checked"), list) and len(report["commands_checked"]) >= 1
       rejected = "uip or audit-logs" in report.get("unsafe_substitutions_rejected", [])
       action = str(report.get("recommended_action", "")).lower()
-      ok = supported and checked and rejected and ("not covered" in action or "unsupported" in action or "stop" in action)
+      ok = (
+          supported and skill_guardrail and checked and rejected
+          and ("not covered" in action or "unsupported" in action or "stop" in action)
+      )
       print("OK" if ok else "FAIL")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: uipath-platform skill text contains the explicit audit no-coverage guardrail
+    command: |
+      python3 - <<'PY'
+      import os
+      from pathlib import Path
+
+      candidates = []
+      skills_repo = os.environ.get("SKILLS_REPO_PATH")
+      if skills_repo:
+          candidates.append(Path(skills_repo) / "skills" / "uipath-platform" / "SKILL.md")
+      candidates.append(Path("skills/uipath-platform/SKILL.md"))
+      candidates.append(Path(".agents/skills/uipath-platform/SKILL.md"))
+
+      skill_path = next((path for path in candidates if path.exists()), None)
+      if skill_path is None:
+          print("MISSING")
+          raise SystemExit(0)
+
+      text = skill_path.read_text().lower()
+      has_guardrail = (
+          "audit" in text
+          and "uip or audit-logs" in text
+          and ("do not substitute" in text or "not covered" in text or "unsupported" in text)
+      )
+      print("OK" if has_guardrail else "FAIL")
       PY
     expected_stdout: "OK"
     stdout_match: contains
