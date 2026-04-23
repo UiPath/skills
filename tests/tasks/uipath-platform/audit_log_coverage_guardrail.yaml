@@ -83,7 +83,7 @@ success_criteria:
       skill_path = next((path for path in candidates if path.exists()), None)
       if skill_path is None:
           print("MISSING")
-          raise SystemExit(0)
+          raise SystemExit(1)
 
       text = skill_path.read_text().lower()
       has_guardrail = (
