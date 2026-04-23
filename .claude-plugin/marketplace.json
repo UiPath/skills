@@ -5,13 +5,13 @@
     "email": "support@uipath.com"
   },
   "metadata": {
-    "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
+    "description": "UiPath plugin for Claude Code — skills for building RPA (C#, XAML, legacy), agents (coded + low-code), Maestro flows, coded apps, Data Fabric entities, case management, and tests; plus Orchestrator ops, live desktop/browser UI automation, human-in-the-loop, solution design, and diagnostics",
     "version": "0.0.19"
   },
   "plugins": [
     {
       "name": "uipath",
-      "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
+      "description": "UiPath plugin for Claude Code — skills for building RPA (C#, XAML, legacy), agents (coded + low-code), Maestro flows, coded apps, Data Fabric entities, case management, and tests; plus Orchestrator ops, live desktop/browser UI automation, human-in-the-loop, solution design, and diagnostics",
       "source": "./",
       "strict": false,
       "version": "0.0.19",
