@@ -12,6 +12,22 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ---
 
+## Terminology — what "screen" means
+
+"Screen" appears across UIA docs in three distinct senses. Know which one a passage uses before acting on it.
+
+| Sense | Used in | What it is | Boundary / identity |
+|-------|---------|------------|---------------------|
+| **Pipeline screen** | XAML Multi-Screen Gate (below), [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md), [uia-multi-step-flows.md](uia-multi-step-flows.md) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (servo / `uia interact`) between captures. | Bounded by app advancement — everything captured before the next advance is one pipeline screen. |
+| **OR screen** | Object Repository CLI, `.objects/` layout, `Descriptors.<App>.<Screen>.<Element>`, [uia-configure-target-workflows.md](uia-configure-target-workflows.md) | A data-model entity in the Object Repository, registered via `create-screen` / matched via `get-screens`. | Identified by its window selector. |
+| **Screen handle** (coded only) | "Screen Handle Affinity" under § For Coded Workflows | A runtime `UiTargetApp` returned by `uiAutomation.Open` / `Attach`, bound to one OR screen. | Element descriptors are valid only on the handle for their own OR screen. |
+
+**These senses are independent.** Multiple pipeline screens can map to one OR screen when they share a window selector (e.g., several URLs under the same browser tab if the window selector is URL-neutral). Conversely, one OR screen can produce many screen handles at runtime (one per `Open`/`Attach` call).
+
+**The Multi-Screen Gate (§ For XAML Workflows) uses the pipeline-screen sense.** "2 or more distinct screens" there means 2 or more distinct UI states requiring separate captures — regardless of how many OR screen entries end up getting created.
+
+---
+
 ## Mandatory: Generate Targets Before Writing Any UI Code
 
 Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors.App.Screen.Element`) or XAML (`<uix:TargetApp>`, `<uix:TargetAnchorable>`):
@@ -74,7 +90,9 @@ For coded-specific API: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 ### Screen Handle Affinity (Critical)
 
-**Each `UiTargetApp` handle is bound to a specific screen.** Element descriptors can ONLY be used with the handle for the screen they belong to. Using a descriptor from Screen A on a handle attached to Screen B will fail with `"Target name 'X' is not part of the current screen."`.
+> "Screen" in this section means the **OR screen** sense (see § Terminology) — the Object Repository entity addressed as `Descriptors.<App>.<Screen>.<Element>`. It is NOT the pipeline-screen sense used by the Multi-Screen Gate below.
+
+**Each `UiTargetApp` handle is bound to a specific OR screen.** Element descriptors can ONLY be used with the handle for the OR screen they belong to. Using a descriptor from OR Screen A on a handle attached to OR Screen B will fail with `"Target name 'X' is not part of the current screen."`.
 
 ```csharp
 // CORRECT — use Home elements on the homeScreen handle
@@ -143,6 +161,12 @@ ScreenPlay (`UITask`) is an AI-powered agent that performs UI interactions witho
 ## For XAML Workflows
 
 For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
+
+### Multi-Screen Gate (MANDATORY)
+
+> "Screen" in this section means the **pipeline-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what triggers the gate is the number of capture passes separated by servo / `uia interact` advances, not the number of `.objects/` screen entries that get created.
+
+If this workflow requires **2 or more distinct capture passes** (i.e., 2 or more pipeline screens) via `uia-configure-target`, you **MUST** use the parallel authoring pipeline in [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md). Do NOT fall through to the single-pass patterns below. Single pipeline screen only → skip the pipeline and author in one pass.
 
 ### Key Concepts
 
