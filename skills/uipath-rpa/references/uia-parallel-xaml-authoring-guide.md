@@ -10,9 +10,9 @@
 
 All OR target attachment (linking screens to ApplicationCards and elements to UI activities) is performed **by the write agents**, not the orchestrator. The orchestrator passes reference IDs and activity IdRefs; the agent executes the CLI calls.
 
-See [uia-target-attachment-guide.md](uia-target-attachment-guide.md) for:
+See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` for:
 - The IdRef contract (`<ClassName>_<N>` convention, used whenever this guide mentions assigning IdRefs)
-- Fast Path (`link-screen` / `link-element`) — the default mechanism
+- Fast Path — the default attachment mechanism (link commands in the OR CLI)
 - Fallback (embedded `<TargetApp>` / `<TargetAnchorable>` snippets) — used only when a link call fails
 
 ## Phase 0: Plan the Workflow
@@ -51,7 +51,7 @@ See [uia-target-attachment-guide.md](uia-target-attachment-guide.md) for:
 
 ## Phase 1: Scaffolding Agent
 
-1. **When to spawn:** Immediately after the first screen is registered in the Object Repository (TARGET-8 screen creation), before element configuration for that screen begins. The scaffolding agent depends only on the first screen reference being registered — not on any element targets.
+1. **When to spawn:** Immediately after the first screen is registered in the Object Repository, before element configuration for that screen begins. The scaffolding agent depends only on the first screen reference being registered — not on any element targets.
 
 2. **Run mode:** Spawn the scaffolding agent with `run_in_background: true`. Foreground mode blocks the main conversation and defeats the purpose of the parallel pipeline — while the scaffolding agent works, the main conversation must advance the application to the next screen and configure its targets. The scaffolding agent creates a new file with no concurrent access risk, so background mode is safe.
 
@@ -107,7 +107,7 @@ A "screen" equals everything configured before advancing the application to the 
 All `uia-configure-target` calls for the current workflow state must complete before spawning the write agent for that screen AND before using servo to advance to the next state.
 
 See also: [uia-multi-step-flows.md](uia-multi-step-flows.md) for the Complete-then-advance rule.
-See also: [uia-target-attachment-guide.md](uia-target-attachment-guide.md) and [uia-configure-target-workflows.md](uia-configure-target-workflows.md).
+See also: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` and [uia-configure-target-workflows.md](uia-configure-target-workflows.md).
 
 ### Chained Dependency Model
 
@@ -167,7 +167,7 @@ These three rules govern what the orchestrator may and may not do while a `Write
 
 ## Prompt Construction Rules
 
-1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or `<TargetAnchorable>` snippets into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates itself via `get-default-activity-xaml` and attaches targets per [uia-target-attachment-guide.md](uia-target-attachment-guide.md) (Fast Path for linking, with a snippet-embed fallback).
+1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or `<TargetAnchorable>` snippets into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates itself via `get-default-activity-xaml` and attaches targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` (Fast Path for linking, with a snippet-embed fallback).
 2. Describe actions as a structured list with exact data values (`display_name`, `type`, `reference_id`, optional `text`/`duration_seconds`/`target_property`) — see [Action List Format](#action-list-format). Each action carries enough detail for the agent to construct the activity from the template it retrieves and then attach the target.
 3. Specify interaction patterns **explicitly** for each non-trivial interaction: dropdown selection (Click then TypeInto with `[k(enter)]`), wait durations between actions, checkbox toggling, element reuse across repeated form instances. These go in a per-screen notes block in the prompt.
 4. Specify **expression-language-specific syntax** for inline expressions. CSharp: `<Delay>` uses an `<InArgument x:TypeArguments="x:TimeSpan">` with a `<CSharpValue>` containing `TimeSpan.FromSeconds(N)`. VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" />`. Always match the `expressionLanguage` value passed in the prompt.
@@ -287,7 +287,7 @@ If it returns errors, fix and re-validate. Max 3 fix attempts. If the CLI times 
 | <X_CLASS_VALUE> | <fill in> |
 | <PROJECT_DIR> | <fill in> |
 | <SCREEN_REFERENCE_ID> | <fill in> |
-| <ATTACHMENT_GUIDE_CONTENT> | Verbatim contents of `uia-target-attachment-guide.md` — orchestrator reads the file and pastes the body here |
+| <ATTACHMENT_GUIDE_CONTENT> | Verbatim contents of `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` — orchestrator reads the file and pastes the body here |
 """
 )
 ```
@@ -356,7 +356,7 @@ Fix on error, max 3 attempts. If CLI times out, report the timeout explicitly �
 | <EXPRESSION_LANGUAGE> | CSharp or VB |
 | <ACTIVITY_CLASS_LIST> | comma-separated fully-qualified activity class names |
 | <ACTION_LIST> | JSON or YAML list — see [Action List Format](#action-list-format) |
-| <ATTACHMENT_GUIDE_CONTENT> | Verbatim contents of `uia-target-attachment-guide.md` — orchestrator reads the file and pastes the body here |
+| <ATTACHMENT_GUIDE_CONTENT> | Verbatim contents of `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` — orchestrator reads the file and pastes the body here |
 """
 )
 ```
@@ -400,7 +400,7 @@ TaskUpdate(write_task.id, addBlockedBy: [configure_task.id, previous_write_task.
 
 # Main conv: do configure work
 TaskUpdate(configure_task.id, status: "in_progress")
-# ...run uia-configure-target, create-elements, etc.
+# ...run uia-configure-target, register elements, etc.
 TaskUpdate(configure_task.id, status: "completed")
 
 # Before spawning write agent: verify predecessor (Waiting for Background Agents, rule 1)
