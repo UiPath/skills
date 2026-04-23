@@ -1,6 +1,6 @@
 task_id: skill-flow-hitl-smoke-node-placed
 description: >
-  Smoke test: agent builds a simple invoice approval flow containing an inline
+  Integration test: agent builds a simple invoice approval flow containing an inline
   HITL node (uipath.human-in-the-loop). Verifies the node is written directly
   into the .flow file as JSON and the flow validates.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]

@@ -1,4 +1,4 @@
-task_id: skill-uipath-maestro-flow-command-prefix-detection
+task_id: skill-flow-command-prefix-detection
 description: >
   Skill-guided evaluation: `uipath-maestro-flow` should help the agent
   determine the correct Flow command prefix for the installed CLI and then
