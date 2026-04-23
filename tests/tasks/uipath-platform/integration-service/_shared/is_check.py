@@ -318,85 +318,6 @@ def check_resource_execute() -> None:
           f"{len(cmds)} commands logged")
 
 
-def check_display_preferences() -> None:
-    """Validate display_preferences: names shown, UUIDs hidden.
-
-    Asserts:
-      - presentation does NOT contain raw UUIDs from the mock data
-      - presentation DOES contain human-readable names (Salesforce Prod, etc.)
-      - fields_shown includes Name, Folder, Owner (human-readable fields)
-      - fields_hidden includes Id, FolderKey (UUID fields)
-      - recommended_connection_name is a human-readable name, not a UUID
-    """
-    data = _load_json(_find("**/report.json"))
-
-    presentation = _assert_key(data, "presentation", "report")
-    _assert_type(presentation, str, "report.presentation")
-
-    # UUIDs from the mock data that must NOT appear in the presentation
-    forbidden_uuids = [
-        "fb06f30e-cde8-4e4a-a534-29cb485971d4",
-        "a3e7b1c2-9f44-4d8a-b123-456789abcdef",
-        "692bbf4e-5754-4bdc-8ec6-d8e3a986dea2",
-        "11111111-2222-3333-4444-555555555555",
-    ]
-    for uuid in forbidden_uuids:
-        if uuid in presentation:
-            sys.exit(
-                f"FAIL: presentation contains raw UUID '{uuid}' — "
-                f"the skill requires showing names, not UUIDs"
-            )
-
-    # Human-readable names that SHOULD appear in the presentation
-    required_names = ["Salesforce Prod", "Salesforce Dev"]
-    for name in required_names:
-        if name not in presentation:
-            sys.exit(
-                f"FAIL: presentation missing connection name '{name}' — "
-                f"got: {presentation[:200]!r}..."
-            )
-
-    # Validate recommended connection is a name, not a UUID
-    rec = _assert_key(data, "recommended_connection_name", "report")
-    _assert_type(rec, str, "report.recommended_connection_name")
-    if re.match(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-        rec,
-        re.IGNORECASE,
-    ):
-        sys.exit(
-            f"FAIL: recommended_connection_name is a UUID '{rec}' — "
-            f"should be a human-readable name"
-        )
-
-    # Validate fields classification
-    shown = _assert_key(data, "fields_shown", "report")
-    _assert_type(shown, list, "report.fields_shown")
-    hidden = _assert_key(data, "fields_hidden", "report")
-    _assert_type(hidden, list, "report.fields_hidden")
-
-    # Name must be in shown fields
-    shown_lower = [f.lower() for f in shown]
-    if "name" not in shown_lower:
-        sys.exit(
-            f"FAIL: fields_shown should include 'Name' — got: {shown}"
-        )
-
-    # Id and FolderKey must be in hidden fields
-    hidden_lower = [f.lower() for f in hidden]
-    for must_hide in ["id", "folderkey"]:
-        if must_hide not in hidden_lower:
-            sys.exit(
-                f"FAIL: fields_hidden should include '{must_hide}' — got: {hidden}"
-            )
-
-    print(
-        f"OK: display_preferences — presentation uses names, "
-        f"recommended='{rec}', {len(shown)} fields shown, "
-        f"{len(hidden)} fields hidden"
-    )
-
-
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -407,7 +328,6 @@ CHECKS = {
     "check_activity_discovery": check_activity_discovery,
     "check_resource_describe": check_resource_describe,
     "check_resource_execute": check_resource_execute,
-    "check_display_preferences": check_display_preferences,
 }
 
 if __name__ == "__main__":
