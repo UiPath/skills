@@ -17,6 +17,8 @@ initial_prompt: |
   - do not authenticate
   - do not create remote resources
   - do not run the actual registry pull
+  - if you parse any structured `uip` output, use `--output json`
+  - plain `--help` output is sufficient for this task
 
   Save a summary to case_registry_report.json with at minimum:
     {
