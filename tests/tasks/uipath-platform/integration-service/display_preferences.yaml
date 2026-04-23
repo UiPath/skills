@@ -1,0 +1,90 @@
+task_id: skill-platform-is-display-preferences
+description: >
+  Smoke test: agent uses the uipath-platform skill to present Integration
+  Service connection data using human-readable names instead of raw UUIDs.
+  Tests that the skill teaches the agent to prefer Name, Folder, Owner, and
+  ConnectorName over Id, FolderKey, and ConnectorKey when presenting to users.
+tags: [uipath-platform, smoke, integration-service, connections, display]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and read its Integration
+  Service documentation (especially the Display Preferences and connections
+  reference).
+
+  Below is a mock JSON response from `uip is connections list` for the
+  Salesforce connector. Imagine you are presenting these results to a user
+  who asked: "Which Salesforce connection should I use?"
+
+  ```json
+  {
+    "Result": "Success",
+    "Code": "ConnectionList",
+    "Data": [
+      {
+        "Id": "fb06f30e-cde8-4e4a-a534-29cb485971d4",
+        "Name": "Salesforce Prod",
+        "ConnectorKey": "uipath-salesforce-sfdc",
+        "ConnectorName": "Salesforce",
+        "State": "Enabled",
+        "Owner": "guy.vanwert@uipath.com",
+        "IsDefault": "Yes",
+        "Folder": "Shared",
+        "FolderKey": "692bbf4e-5754-4bdc-8ec6-d8e3a986dea2",
+        "Created": "2026-04-14T05:24:32.630Z",
+        "Updated": ""
+      },
+      {
+        "Id": "a3e7b1c2-9f44-4d8a-b123-456789abcdef",
+        "Name": "Salesforce Dev",
+        "ConnectorKey": "uipath-salesforce-sfdc",
+        "ConnectorName": "Salesforce",
+        "State": "Enabled",
+        "Owner": "admin@uipath.com",
+        "IsDefault": "No",
+        "Folder": "Personal",
+        "FolderKey": "11111111-2222-3333-4444-555555555555",
+        "Created": "2026-03-01T10:00:00.000Z",
+        "Updated": ""
+      }
+    ]
+  }
+  ```
+
+  1. Present the connections to me as you would in a real conversation,
+     following the IS skill's display rules
+  2. Recommend one and explain why
+
+  Save the following to report.json:
+  {
+    "presentation": "<your full presentation text as you would show it to the user>",
+    "recommended_connection_name": "<name of the recommended connection>",
+    "fields_shown": ["<list of field names you included in the presentation>"],
+    "fields_hidden": ["<list of field names you intentionally did NOT show>"]
+  }
+
+  Important:
+  - Follow the IS skill's Display Preferences rules exactly
+  - Your presentation should use human-readable names, NOT UUIDs
+  - Save the report.json and nothing else
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Presentation uses names not UUIDs, and fields are correctly categorized"
+    command: "python3 $TASK_DIR/_shared/is_check.py check_display_preferences"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
