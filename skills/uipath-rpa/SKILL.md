@@ -1,6 +1,6 @@
 ---
 name: uipath-rpa
-description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, hybrid projects. Create, edit, build, run, debug. Deploy→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
+description: "UiPath automations (root dir contains project.uiproj) — coded workflows (.cs), XAML workflows (.xaml), hybrid projects. Create, edit, build, run, debug. Deploy→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
 ---
 
 # UiPath RPA Assistant
