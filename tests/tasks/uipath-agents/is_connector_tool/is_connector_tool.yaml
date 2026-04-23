@@ -52,7 +52,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+new'
     min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -60,7 +60,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init'
     min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed

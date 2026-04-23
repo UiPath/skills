@@ -80,7 +80,7 @@ success_criteria:
     command: "python3 $TASK_DIR/check_inline_agent.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 4.0
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: json_check
