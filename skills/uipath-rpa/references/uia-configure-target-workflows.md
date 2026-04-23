@@ -34,6 +34,20 @@ To configure multiple elements on the same screen in a single invocation, separa
 
 The skill will search the Object Repository for existing matches before creating new entries, generate selectors from the live application tree, and register everything in the OR. After completion, retrieve the target references for your workflow.
 
+### Mixed activity types
+
+`--activity <type>` applies to the **entire batch** — every element in `--elements` is configured for that one activity type (the default is `Click`). When a single screen mixes activity types (e.g., a `TypeInto` target for a text input plus a `Click` target for a button), split into one `uia-configure-target` call per type:
+
+```
+# TypeInto targets
+uia-configure-target --window "Todo App" --elements "new todo input" --activity TypeInto
+
+# Click targets (separate call, same window)
+uia-configure-target --window "Todo App" --elements "Add button" --activity Click
+```
+
+The skill's screen-lookup step is cheap, so the second call reuses the registered screen rather than recreating it. Do **not** use a single `--activity` value (such as the default `Click`) for mixed targets and expect to fix the activity type later — the `ActivityType` baked into each target's definition file feeds selector generation and OR registration, and retrofitting it requires re-running `get-default-selector` per target.
+
 ## Rules
 
 **Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't registered in the Object Repository.
