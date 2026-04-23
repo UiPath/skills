@@ -1,0 +1,107 @@
+task_id: skill-test-report-generation-qa
+description: >
+  Integration test: agent uses the uipath-test skill to generate a QA Engineer
+  test report from Test Manager execution data. Validates the full analysis
+  chain taught in references/test-result-report-guide.md (executions →
+  testcaselogs) and the `test-report-<persona>-<YYYY-MM-DD>.md` filename
+  convention.
+tags: [uipath-test, integration, report, qa]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Generate a **QA Engineer** test report for UiPath Test Manager test set
+  "INV:10" in project "INV". Save the report file in the current working
+  directory using the default filename convention from the skill.
+
+  Also save a summary of what you did to report_meta.json:
+  {
+    "persona": "qa",
+    "project_key": "INV",
+    "test_set_key": "INV:10",
+    "report_filename": "<the filename you wrote the report to>",
+    "commands_used": ["<list of uip tm commands you ran, verbatim>"]
+  }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    Still run the analysis chain the skill prescribes (execution list,
+    execution list-testcaselogs) and record each command you ran.
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - Persona is "qa" and output directory is the current directory — do NOT
+    ask the user for these, they are specified above.
+  - Follow the skill's filename convention: `test-report-qa-<YYYY-MM-DD>.md`.
+  - Do NOT fabricate test results. If the API returns no data, write the
+    report file noting that no execution data was available, but still produce
+    the file with the required sections.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed executions for the test set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+execution\s+list.*(--test-set-id|--project-key)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed testcase logs for an execution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+execution\s+list-testcaselogs'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on tm commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report file exists with the QA persona filename convention (test-report-qa-YYYY-MM-DD.md)"
+    command: "ls test-report-qa-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md >/dev/null 2>&1"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report_meta.json was created"
+    path: "report_meta.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report_meta.json has correct persona, project/testset keys, and filename"
+    path: "report_meta.json"
+    assertions:
+      - expression: "persona"
+        operator: equals
+        expected: "qa"
+      - expression: "project_key"
+        operator: equals
+        expected: "INV"
+      - expression: "test_set_key"
+        operator: equals
+        expected: "INV:10"
+      - expression: "contains(report_filename, 'test-report-qa')"
+        operator: equals
+        expected: true
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 3
+    weight: 2.0
+    pass_threshold: 0.8
