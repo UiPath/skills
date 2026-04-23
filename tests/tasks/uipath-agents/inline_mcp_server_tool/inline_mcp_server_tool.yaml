@@ -7,7 +7,7 @@ description: >
   `$resourceType: "mcp"` (distinct from `$resourceType: "tool"`) with
   the documented sparse shape, and that a `uipath.agent.resource.mcp.*`
   flow node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline, mcp, flow-integration]
+tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
 agent:

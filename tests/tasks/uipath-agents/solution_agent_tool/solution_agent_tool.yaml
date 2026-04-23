@@ -7,7 +7,7 @@ description: >
   `folderPath: "solution_folder"`. Exercises the resource.json tool
   format, location/folderPath conventions, referenceKey resolution,
   and distinct projectId UUIDs across agents.
-tags: [uipath-agents, e2e, low-code, tool, solution, agent]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

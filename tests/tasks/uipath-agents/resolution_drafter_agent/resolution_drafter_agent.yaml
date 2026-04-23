@@ -7,7 +7,7 @@ description: >
   (credit memo, revised invoice, both). Verifies schema sync,
   input/output field presence, contentTokens for every input, and
   domain coverage in the system prompt.
-tags: [uipath-agents, e2e, low-code, schema, prompt]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

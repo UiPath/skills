@@ -7,7 +7,7 @@ description: >
   validate --inline-in-flow`, and produces the expected UUID-named
   subdirectory layout (no entry-points.json, no project.uiproj,
   empty flow-layout.json).
-tags: [uipath-agents, e2e, inline, flow-integration]
+tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
 agent:
@@ -25,18 +25,9 @@ initial_prompt: |
   "WeatherFlow". The flow project should use a low-code agent to
   summarize weather data.
 
-  Do NOT publish or deploy.
-
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause
-  between planning and implementation. Complete the entire task
-  end-to-end in a single pass.
-
-  Save a summary to report.json:
-    {
-      "flow_project": "WeatherFlow",
-      "agent_project_id": "<generated UUID>",
-      "validation_passed": true
-    }
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
@@ -97,20 +88,4 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json records the inline agent metadata"
-    path: "report.json"
-    assertions:
-      - expression: "flow_project"
-        operator: equals
-        expected: "WeatherFlow"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "agent_project_id"
-        operator: contains
-        expected: "-"
-    weight: 1.5
     pass_threshold: 1.0

@@ -7,7 +7,7 @@ description: >
   resource.json shape and the ActionCenter channel wiring. Distinct
   from `solution_escalation` which targets a solution-internal
   ActionCenter app.
-tags: [uipath-agents, e2e, low-code, escalation, external, hitl]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

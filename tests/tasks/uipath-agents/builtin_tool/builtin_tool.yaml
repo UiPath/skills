@@ -7,7 +7,7 @@ description: >
   `properties.toolType` set to one of the four documented built-in
   tool keys (analyze-attachments, load-attachments, deep-rag,
   batch-transform).
-tags: [uipath-agents, e2e, low-code, tool, builtin]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

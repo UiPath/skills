@@ -5,7 +5,7 @@ description: >
   as a resource. Verifies the resource.json uses `$resourceType:
   "mcp"` (distinct from `$resourceType: "tool"`) and the documented
   MCP shape (id, name, description, isEnabled, tools).
-tags: [uipath-agents, e2e, low-code, mcp]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

@@ -7,7 +7,7 @@ description: >
   "external"`, a real `folderPath` (not "solution_folder"), and leaves
   `referenceKey` empty pre-validate. Distinct from `solution_rpa_tool`
   which uses `location: "solution"`.
-tags: [uipath-agents, e2e, low-code, tool, external]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

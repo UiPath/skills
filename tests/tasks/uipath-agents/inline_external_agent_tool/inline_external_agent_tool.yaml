@@ -8,7 +8,7 @@ description: >
   `folderPath`, and that a
   `uipath.agent.resource.tool.agent.<process-key>` flow node is wired
   to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline, tool, external, agent, flow-integration]
+tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
 agent:

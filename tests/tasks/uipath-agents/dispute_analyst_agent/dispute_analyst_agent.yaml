@@ -8,7 +8,7 @@ description: >
   rationale, customerFacingExplanation, and flags. Validates schema
   sync, field presence, contentTokens for every input, and a
   domain-specific system prompt.
-tags: [uipath-agents, e2e, low-code, schema, prompt]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

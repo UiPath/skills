@@ -7,7 +7,7 @@ description: >
   Verifies the escalation resource.json under the inline agent's UUID
   subdirectory + a `uipath.agent.resource.escalation` flow node wired
   to the autonomous agent node's `escalation` handle.
-tags: [uipath-agents, e2e, low-code, inline, escalation, external, hitl, flow-integration]
+tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
 agent:

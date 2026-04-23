@@ -10,7 +10,7 @@ description: >
   runtime connector invocation). Cloud auth required — depends on
   the staging tenant having the `uipath-uipath-airdk` (GenAI
   Activities) connector available.
-tags: [uipath-agents, e2e, low-code, tool, integration, cloud-auth]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

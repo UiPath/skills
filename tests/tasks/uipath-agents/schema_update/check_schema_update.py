@@ -20,8 +20,8 @@ import os
 import sys
 from pathlib import Path
 
-AGENT = Path(os.getcwd()) / "QuerySolution" / "QueryAgent" / "agent.json"
-ENTRY = Path(os.getcwd()) / "QuerySolution" / "QueryAgent" / "entry-points.json"
+AGENT = Path(os.getcwd()) / "QuerySol" / "QueryAgent" / "agent.json"
+ENTRY = Path(os.getcwd()) / "QuerySol" / "QueryAgent" / "entry-points.json"
 
 
 def load(path: Path) -> dict:

@@ -7,7 +7,7 @@ description: >
   agent's UUID subdirectory uses `type: "api"`, `location: "external"`,
   real `folderPath`, and that a `uipath.agent.resource.tool.*` flow
   node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline, tool, external, flow-integration]
+tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
 agent:

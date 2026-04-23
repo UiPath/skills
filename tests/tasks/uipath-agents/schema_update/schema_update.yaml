@@ -6,7 +6,7 @@ description: >
   sync between agent.json and entry-points.json, the {{input.X}}
   syntax, and contentTokens construction. A check script verifies
   deep equivalence of the two schema files.
-tags: [uipath-agents, smoke, schema]
+tags: [uipath-agents, smoke, low-code]
 max_iterations: 1
 
 agent:
@@ -20,19 +20,13 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a low-code UiPath agent called "QueryAgent" inside a
-  solution "QuerySolution". The agent accepts a required `userQuery`
-  (string) and returns a `reply` (string).
+  Create a UiPath solution "QuerySol" containing a low-code agent
+  "QueryAgent". The agent accepts a required `userQuery` (string) and
+  returns a `reply` (string). Validate the agent.
 
-  Validate the agent. Save a summary to report.json:
-    {
-      "project_name": "QueryAgent",
-      "input_field": "userQuery",
-      "output_field": "reply",
-      "validation_passed": true
-    }
-
-  Do NOT publish, upload, or deploy. Local only.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
@@ -57,17 +51,4 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json shows validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "QueryAgent"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 1.5
     pass_threshold: 1.0

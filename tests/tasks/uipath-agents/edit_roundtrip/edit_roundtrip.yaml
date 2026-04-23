@@ -7,7 +7,7 @@ description: >
   (schema sync), 5 (`{{input.X}}` syntax), and 6 (contentTokens in
   sync), plus `.agent-builder/` regeneration on incremental edits —
   none of which are covered by create-from-scratch tests.
-tags: [uipath-agents, smoke, edit, schema]
+tags: [uipath-agents, smoke, low-code]
 max_iterations: 1
 
 agent:
@@ -27,7 +27,9 @@ initial_prompt: |
   accept a required `language` (string) input and make the user
   message template include both inputs. Validate again.
 
-  Do NOT publish, upload, or deploy. Local only.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed

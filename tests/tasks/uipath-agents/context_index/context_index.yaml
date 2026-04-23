@@ -6,7 +6,7 @@ description: >
   format is authored correctly, that `settings.retrievalMode` is a
   valid value, and that `uip agent validate` accepts the resource and
   regenerates `.agent-builder/`.
-tags: [uipath-agents, e2e, low-code, context, rag]
+tags: [uipath-agents, e2e, low-code]
 max_iterations: 1
 
 agent:

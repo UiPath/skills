@@ -7,7 +7,7 @@ description: >
   `type: "api"`, `location: "solution"`, `folderPath:
   "solution_folder"`, and that a `uipath.agent.resource.tool.*` flow
   node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline, tool, solution, flow-integration]
+tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
 agent:
