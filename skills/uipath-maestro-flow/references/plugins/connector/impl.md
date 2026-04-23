@@ -159,7 +159,7 @@ When a flow uses connector nodes, the runtime needs to know **which authenticate
 
 ### How connector nodes reference bindings
 
-A connector node's `model.context[]` (returned by `uip maestro flow registry get`) contains two placeholder entries. **Leave them as the registry returns them** — do not rewrite to `=bindings.<id>`:
+The connector node's **definition** (the manifest copied from `uip maestro flow registry get` into `definitions[]`) carries a `model.context[]` template like this. **Leave the definition exactly as the registry returns it** — do NOT rewrite `<bindings.*>` placeholders inside the definition, and do NOT author `model.context[]` on the instance:
 
 ```json
 "context": [
@@ -169,9 +169,9 @@ A connector node's `model.context[]` (returned by `uip maestro flow registry get
 ]
 ```
 
-At runtime, the engine matches each placeholder to a top-level `bindings[]` entry whose `name` equals the string inside `<bindings.…>`.
+At BPMN emit time, the runtime rewrites each `<bindings.{name}>` placeholder to `=bindings.{id}` by finding a top-level `bindings[]` entry whose `name` matches the placeholder. For connectors the definition's `model.bindings.resourceKey` is typically unset, so matching is **name-only** within the `resource: "Connection"` candidate set.
 
-> **Matching differs from resource nodes.** For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl), `model.context[].value` is rewritten to `=bindings.<id>` — match-by-ID. For connector nodes, `model.context[].value` keeps its registry template form and matches by `name` instead. Don't confuse the two patterns.
+> **Matching differs from resource nodes.** For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl), the definition's `model.bindings.resourceKey` is set to `<FolderPath>.<ResourceName>`, so placeholder matching is scoped by `(name, resourceKey)`. For connector nodes, `resourceKey` on the definition is typically unset, so matching is name-only — the `<CONNECTOR_KEY> connection` placeholder must be unique per connector in the flow. Don't confuse the two patterns.
 
 ### Authoring top-level `bindings[]`
 
@@ -203,7 +203,7 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | Field | Value |
 |-------|-------|
 | `id` | Unique string within the file. Descriptive (e.g. `bJiraConn`) or short random (e.g. `bKEFLMRB2`). |
-| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically. When adding bindings by hand, use `"<CONNECTOR_KEY> connection"` as a placeholder — it must match the `model.context[].connection` placeholder (without `<bindings.` prefix and `>` suffix). |
+| `name` (connection binding) | The IS connection name (e.g. `"chandu.lella@uipath.com #3"`). `uip maestro flow node configure` fetches this from IS automatically. When adding bindings by hand, use `"<CONNECTOR_KEY> connection"` as a placeholder — it must match the definition's `model.context[].connection` placeholder (without the `<bindings.` prefix and `>` suffix). |
 | `name` (folder binding) | Literal `"FolderKey"` — matches `<bindings.FolderKey>`. |
 | `type` | Always `"string"`. |
 | `resource` | Always `"Connection"` — capital C, case-sensitive. |
@@ -211,16 +211,9 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | `default` | Connection binding → connection UUID. Folder binding → folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
-`uip maestro flow node configure` also sets `model.bindings.resourceKey` on the node (the connection UUID). This enables `flow-schema` to correlate the node with its Connection binding when generating `bindings_v2.json`. When adding bindings by hand, set this field on the node too:
+The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and appends the two top-level `bindings[]` entries. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
 
-```json
-"model": {
-  "bindings": { "resourceKey": "<CONNECTION_UUID>" },
-  "context": [ ... ]
-}
-```
-
-**Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two entries — do not add duplicates. Matching is by `name`, so as long as the node's `connectorKey` matches the binding's `name` prefix, both nodes resolve the same connection.
+**Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two binding entries — do not add duplicates. Matching is by `name` only (the `<CONNECTOR_KEY> connection` placeholder is unique per connector), so any node whose definition resolves against `<bindings.<CONNECTOR_KEY> connection>` picks up the shared binding pair.
 
 ### Single-connector example (Jira)
 
@@ -294,7 +287,7 @@ At debug/pack time, the CLI derives `content/bindings_v2.json` from the top-leve
 ```
 
 - `id` is always `"Connection" + <resourceKey>` (concatenated, no separator) — generated, not authored.
-- `metadata.Connector` is derived from the node's `model.context[].connectorKey`.
+- `metadata.Connector` is derived from the definition's `model.context[].connectorKey`.
 - `metadata.ActivityName` comes from the matched node's `display.label`.
 
 ### Other binding resource types (triggers, queues, scheduled)

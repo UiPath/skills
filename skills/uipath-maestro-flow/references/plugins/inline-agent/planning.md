@@ -6,7 +6,7 @@ Inline agent nodes embed an autonomous AI agent **inside** the flow project. The
 
 `uipath.agent.autonomous`
 
-This is a fixed, OOTB node type (no `{key}` suffix). Inline agents do not appear in `registry search` — the single node type accepts any inline agent via its `model.source` field.
+This is a fixed, OOTB node type (no `{key}` suffix). Inline agents do not appear in `registry search` — the single node type accepts any inline agent via its `inputs.source` field.
 
 ## When to Use
 
@@ -58,7 +58,7 @@ Unlike published agents, inline agents are **not** discovered through the regist
 uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 ```
 
-This creates a `<FlowProjectDir>/<projectId-uuid>/` directory containing `agent.json`, `flow-layout.json`, and empty `evals/`, `features/`, `resources/` subdirectories. Record the returned `ProjectId` — the flow node's `model.source` must match it exactly.
+This creates a `<FlowProjectDir>/<projectId-uuid>/` directory containing `agent.json`, `flow-layout.json`, and empty `evals/`, `features/`, `resources/` subdirectories. Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
 
 No `uip login` or registry refresh is required for this workflow.
 

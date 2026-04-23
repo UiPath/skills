@@ -60,14 +60,42 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
 **Required fields**: `id`, `type`, `typeVersion`
 
+> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). Putting a `model` block on an instance is legacy format; older files are auto-migrated by the workbench on first save.
+>
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
+
+### Instance-specific fields that live in `inputs`
+
+A few fields that were historically authored under `model` are per-instance identity data, so they live in `inputs` now:
+
+| Field | Used by | Purpose |
+|-------|---------|---------|
+| `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
+| `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
+| `inputs.source` | Inline agent nodes (`uipath.agent.autonomous`) | The inline agent's `projectId` (must match the subdirectory name and `agent.json.projectId`) |
+| `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
+
+Example — manual start trigger:
+
+```json
+{
+  "id": "start",
+  "type": "core.trigger.manual",
+  "typeVersion": "1.0.0",
+  "inputs": {
+    "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
+  },
+  "outputs": {
+    "output": { "type": "object", "description": "The return value of the trigger.", "source": "=result.response", "var": "output" }
+  }
+}
+```
 
 ### Node outputs
 
@@ -176,18 +204,21 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 
 ## Common node types
 
-| Type | Purpose | `model.type` | Key inputs |
-|------|---------|--------------|------------|
-| `core.trigger.manual` | Entry point | `bpmn:StartEvent` | — |
-| `core.action.script` | Run JavaScript | `bpmn:ScriptTask` | `script` |
-| `core.action.http` | HTTP request | `bpmn:ServiceTask` | `method`, `url`, `headers`, `body` |
-| `core.action.transform` | Map/filter/group data | `bpmn:ScriptTask` | `collection`, `operations` |
-| `core.logic.decision` | If/else branch | `bpmn:InclusiveGateway` | `expression` |
-| `core.logic.switch` | Multi-way branch | `bpmn:ExclusiveGateway` | `cases` |
-| `core.logic.loop` | Iterate collection | `bpmn:SubProcess` | `collection`, `parallel` |
-| `core.logic.merge` | Sync parallel paths | `bpmn:ParallelGateway` | — |
-| `core.control.end` | Graceful end | `bpmn:EndEvent` | — |
-| `core.logic.terminate` | Abort workflow | `bpmn:EndEvent` | — |
+| Type | Purpose | Key inputs |
+|------|---------|------------|
+| `core.trigger.manual` | Entry point | `entryPointId` |
+| `core.trigger.scheduled` | Recurring schedule trigger | `entryPointId`, `timerType`, `timerPreset` |
+| `core.action.script` | Run JavaScript | `script` |
+| `core.action.http` | HTTP request | `method`, `url`, `headers`, `body` |
+| `core.action.transform` | Map/filter/group data | `collection`, `operations` |
+| `core.logic.decision` | If/else branch | `expression` |
+| `core.logic.switch` | Multi-way branch | `cases` |
+| `core.logic.loop` | Iterate collection | `collection`, `parallel` |
+| `core.logic.merge` | Sync parallel paths | — |
+| `core.control.end` | Graceful end | — |
+| `core.logic.terminate` | Abort workflow | — |
+
+> The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
 
 For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](planning-impl.md).
 
@@ -279,7 +310,9 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
-      "inputs": {},
+      "inputs": {
+        "entryPointId": "<uuid>"
+      },
       "outputs": {
         "output": {
           "type": "object",
@@ -287,8 +320,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
           "source": "=result.response",
           "var": "output"
         }
-      },
-      "model": { "type": "bpmn:StartEvent", "entryPointId": "<uuid>" }
+      }
     },
     {
       "id": "rollDice",
@@ -311,15 +343,13 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
           "source": "=result.Error",
           "var": "error"
         }
-      },
-      "model": { "type": "bpmn:ScriptTask" }
+      }
     },
     {
       "id": "end",
       "type": "core.logic.terminate",
       "typeVersion": "1.0.0",
-      "inputs": {},
-      "model": { "type": "bpmn:EndEvent", "eventDefinition": "bpmn:TerminateEventDefinition" }
+      "inputs": {}
     }
   ],
   "edges": [
@@ -392,7 +422,7 @@ The packaging/debug step derives `entry-points.json` from these variable declara
 
 The top-level `bindings` array (a sibling of `nodes`, `edges`, `definitions`, `variables`, `layout`) holds resource-reference indirections for **Orchestrator resource nodes** — RPA workflows, agents, flows, agentic processes, API workflows, and HITL apps.
 
-Each entry gives a node instance's `model.context[]` a resolvable target for the `name` and `folderPath` attributes it passes to Orchestrator:
+Each resource node needs two binding entries (one for `name`, one for `folderPath`). The node instance itself has no binding or context data — just `inputs`. The definition (copied verbatim from the registry) carries `model.context[]` templates like `<bindings.name>` and `<bindings.folderPath>`. At BPMN emit time the runtime rewrites those placeholders to `=bindings.<id>` by matching the placeholder name against a workflow-level binding, scoped by the definition's `model.bindings.resourceKey`.
 
 ```json
 "bindings": [
@@ -422,14 +452,15 @@ Each entry gives a node instance's `model.context[]` a resolvable target for the
 **Rules:**
 
 - Add **two entries** per resource node (one for `name`, one for `folderPath`).
-- **Share** entries across node instances that reference the same resource — do not duplicate.
+- **Share** entries across node instances that reference the same resource — do not duplicate. Matching is by `(resourceKey, name)`, so any node whose definition has the same `resourceKey` resolves to the same binding pair.
 - Entry IDs are unique strings within the file. Descriptive IDs (e.g. `bDepositRpaName`) are preferred over short random IDs.
-- The node instance's `model.context[].value` references an entry via `"value": "=bindings.<id>"`.
-- `resourceSubType` mirrors the node's `model.bindings.resourceSubType`: `Process` (rpa), `Agent` (agent), `Flow` (flow), `ProcessOrchestration` (agentic-process), `Api` (api-workflow), or the app type for HITL.
+- The node instance has no `model` block — it carries only `inputs`, `outputs`, and `display`.
+- `resourceKey` must exactly match the definition's `model.bindings.resourceKey` (verbatim from the registry). The runtime uses this key to scope placeholder resolution so that binding names like `name` / `folderPath` (shared across resource kinds) don't cross-alias.
+- `resourceSubType` mirrors the definition's `model.bindings.resourceSubType`: `Process` (rpa), `Agent` (agent), `Flow` (flow), `ProcessOrchestration` (agentic-process), `Api` (api-workflow), or the app type for HITL.
 
-**Why this is required.** The registry's `Data.Node.model.context[].value` fields are template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — they are NOT runtime-resolvable. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without both pieces, `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip maestro flow validate` passes.
+**Why this is required.** The definition's `model.context[].value` fields are placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions, so they can't be confused with one. Before the BPMN is emitted, the runtime rewrites each placeholder to `=bindings.<id>` by finding a workflow-level binding with `(resourceKey, name)` matching the node's manifest `model.bindings.resourceKey` + the placeholder name. Without matching entries in top-level `bindings[]`, `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip maestro flow validate` passes.
 
-**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
+**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. Critical Rule #7 applies unchanged.
 
 See each resource plugin's `impl.md` for the full JSON per node type: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [flow](plugins/flow/impl.md), [agentic-process](plugins/agentic-process/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md).
 
