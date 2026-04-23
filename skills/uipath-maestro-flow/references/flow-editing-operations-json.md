@@ -329,7 +329,7 @@ Edit the start node in-place (no delete/re-add needed):
    }
    ```
 
-2. Add a `subflows.<SUBFLOW_NODE_ID>` entry with its own nodes, edges, and variables:
+2. Add a `subflows.<SUBFLOW_NODE_ID>` entry with its own nodes, edges, variables, and layout:
    ```json
    {
      "subflows": {
@@ -345,6 +345,12 @@ Edit the start node in-place (no delete/re-add needed):
              { "id": "<OUT_VAR>", "direction": "out", "type": "..." }
            ],
            "nodes": []
+         },
+         "layout": {
+           "nodes": {
+             "sfStart": { "position": { "x": 200, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
+             "sfEnd":   { "position": { "x": 400, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false }
+           }
          }
        }
      }
@@ -354,6 +360,7 @@ Edit the start node in-place (no delete/re-add needed):
 3. Subflow's `in` variables must match the parent node's `inputs` keys
 4. Map all `out` variables on the subflow's End node `outputs`
 5. Parent-scope `$vars` are NOT visible inside the subflow — pass values via inputs
+6. Subflow node positions go in the **subflow's own** `layout.nodes` — not in the top-level `layout.nodes`. Each subflow has an independent layout scope.
 
 See [subflow/impl.md](plugins/subflow/impl.md) for the full JSON structure and rules.
 
