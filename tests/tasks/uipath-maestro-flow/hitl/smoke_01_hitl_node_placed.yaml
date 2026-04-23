@@ -46,19 +46,33 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the inline HITL node type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop"'
+    command: |
+      python3 - <<'PY'
+      from pathlib import Path
+
+      flow = Path("InvoiceApproval/InvoiceApproval/InvoiceApproval.flow").read_text()
+      assert '"uipath.human-in-the-loop"' in flow, flow
+      print("OK")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow uses quickform schema type"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"type": "quick"'
+    command: |
+      python3 - <<'PY'
+      from pathlib import Path
+
+      flow = Path("InvoiceApproval/InvoiceApproval/InvoiceApproval.flow").read_text()
+      assert '"type": "quick"' in flow, flow
+      print("OK")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
     weight: 2.0
     pass_threshold: 1.0
 
