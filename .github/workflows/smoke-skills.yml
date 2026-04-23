@@ -178,6 +178,25 @@ jobs:
         id: smoke
         run: |
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke"
+          echo "Shell glob expansion (with default globstar settings):"
+          shopt -p globstar || true
+          ls -la ${{ needs.detect.outputs.task_globs }} | head -50
+          echo "----- Per-file TaskDefinition validation (diagnostic) -----"
+          cat > /tmp/probe.py <<'PYEOF'
+          import sys
+          from pathlib import Path
+          from coder_eval.orchestration.task_loader import load_task
+          for f in sys.argv[1:]:
+              try:
+                  load_task(Path(f))
+              except Exception as e:
+                  print(f"FAIL load: {f} -> {type(e).__name__}: {str(e)[:500]}", file=sys.stderr)
+                  sys.exit(1)
+          print("All task files load cleanly.")
+          PYEOF
+          sed -i 's/^          //' /tmp/probe.py
+          python3 /tmp/probe.py ${{ needs.detect.outputs.task_globs }} || echo "DIAG-FAIL"
+          echo "----- End diagnostic -----"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
             -e experiments/default.yaml --tags smoke -j 1 -v
         continue-on-error: true
