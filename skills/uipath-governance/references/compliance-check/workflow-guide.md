@@ -2,6 +2,18 @@
 
 End-to-end orchestrator for checking a `.uipolicy` compliance pack against the live tenant state.
 
+## Runtime output rules (read before Step 0)
+
+These rules govern **what the user sees**, not what the tools do internally. Tool calls are plumbing. Your text output between tool calls is the only thing that renders.
+
+1. **No step narration.** Do not emit headings like "Step 0 preflight…", "Now resolving pack…", "All 3 policies are AITL — applicable", "Let me verify…", or any variant. The step headings in this document are for *you*, not the user.
+2. **No intermediate echoes.** Do not print manifest.json contents, clause listings, first-clause inspections, per-policy metadata tables, cached CLI responses, or partial drift tables. The final summary renders the result; intermediate state stays in tool output only.
+3. **One visible block, at the end.** After the reports are written, emit exactly one terminal summary (format in Step 6). That is the user-visible output for the entire run.
+4. **Consolidate shell work.** Preflight + unzip + structural existence checks go in one `Bash` call, not four. Each tool call is a permission prompt; chain them.
+5. **Don't re-verify.** Do not run an extra tool call "to double-check" a drift finding after the diff is complete. The walk already produced the result.
+6. **No inline script generation.** Do not write a from-scratch Python renderer during the run. Use `jq`/inline loops per the per-step instructions. The HTML template and property reference are the only authored data assets.
+7. **Errors are the exception.** If a step fails, surface the exact failure (path, error message) and halt. That is the only other permitted user-visible output.
+
 ## References
 
 - [Pack Resolution](pack-resolution.md) — how to resolve the input pack
@@ -10,33 +22,37 @@ End-to-end orchestrator for checking a `.uipolicy` compliance pack against the l
 - [Report Format](report-format.md) — JSON compliance report schema
 - **AITL Plugin:** [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md)
 
-## Step 0 — Preflight
+## Step 0 + Step 1 — Preflight, auth context, unzip, structure check (one shell call)
+
+Combine the login check, auth read, unzip, and archive existence checks into a **single** `Bash` call so the user sees one permission prompt, not four. Example:
 
 ```bash
-uip login status --output json
+set -eu
+# Auth
+uip login status --output json | jq -e '.Data.Status == "Logged in"' >/dev/null || { echo "NOT_LOGGED_IN" >&2; exit 1; }
+AUTH="$HOME/.uipath/.auth"
+UIPATH_TENANT_ID=$(grep '^UIPATH_TENANT_ID=' "$AUTH" | cut -d= -f2-)
+UIPATH_TENANT_NAME=$(grep '^UIPATH_TENANT_NAME=' "$AUTH" | cut -d= -f2-)
+
+# Pack — substitute the actual resolution from pack-resolution.md (file / url / id)
+TMP=$(mktemp -d)/pack
+mkdir -p "$TMP/extracted"
+unzip -q "$PACK_SOURCE" -d "$TMP/extracted"
+
+# Structure
+test -f "$TMP/extracted/manifest.json"     || { echo "missing manifest.json" >&2; exit 1; }
+test -f "$TMP/extracted/clause-map.json"   || { echo "missing clause-map.json" >&2; exit 1; }
+test -d "$TMP/extracted/policies"          || { echo "missing policies/ dir" >&2; exit 1; }
+
+# Export for downstream steps
+printf 'TMP=%s\nUIPATH_TENANT_ID=%s\nUIPATH_TENANT_NAME=%s\n' "$TMP" "$UIPATH_TENANT_ID" "$UIPATH_TENANT_NAME" > /tmp/pack_tmp.env
 ```
 
-Require `Data.Status == "Logged in"`. If not, halt and ask the user to run `uip login`.
+If `NOT_LOGGED_IN` appears on stderr, halt and ask the user to run `uip login`.
 
-Read auth context:
+Pack resolution options (`--pack-file <path>`, `--pack-url <url>`, or `--pack-id <id> [--pack-version <v>]`) are documented in [pack-resolution.md](pack-resolution.md). Substitute the appropriate `$PACK_SOURCE` above.
 
-```bash
-AUTH_FILE="$HOME/.uipath/.auth"
-UIPATH_TENANT_ID=$(grep '^UIPATH_TENANT_ID=' "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_TENANT_NAME=$(grep '^UIPATH_TENANT_NAME=' "$AUTH_FILE" | cut -d'=' -f2-)
-UIPATH_URL=$(grep '^UIPATH_URL=' "$AUTH_FILE" | cut -d'=' -f2-)
-```
-
-## Step 1 — Resolve the pack
-
-Follow [pack-resolution.md](pack-resolution.md). Accept `--pack-file <path>`, `--pack-url <url>`, or `--pack-id <id> [--pack-version <v>]`.
-
-After unzip, parse:
-1. `manifest.json` — pack metadata and policy index
-2. `clause-map.json` — clause-to-property mappings
-3. Every `policies/*.json` — individual policy files
-
-Validate per [pack-format.md](pack-format.md) validation rules. Halt on any validation failure.
+Parse `manifest.json`, `clause-map.json`, and every `policies/*.json` in a **subsequent single** call using `jq` — do not print any of their contents to the user. Validate per [pack-format.md](pack-format.md). Halt on any validation failure with the specific error path.
 
 ## Step 2 — Partition policies by product
 
@@ -86,145 +102,74 @@ Drift checks always resolve the **effective policy for the currently authenticat
 
 The pack's `deploymentLevel` is still captured for the report (it describes *where* the pack expected the policy to land), but it does not drive the CLI call.
 
-## Step 5 — Walk clauses and diff against effective policy
+## Step 5 — Fetch effective policies (one CLI call per unique license + product)
 
-Iterate `clause-map.json` clause-first. Expected values come from the policy file referenced by each contribution; live values come from `get-by-user`. Two in-memory caches live for the duration of a single run:
+Discover every unique `(licenseType, productIdentifier)` pair among the pack's AITL product policy files, call `uip admin aops-policy deployment get-by-user` once per pair, and write the responses to a cache file keyed by `"{licenseType}|{productIdentifier}"`. All of this goes in a single `Bash` call:
 
-```
-policyFileCache  : map<relativePath, parsedPolicyJson>       # parse each policy file once
-cliCache         : map<"{licenseType}|{productIdentifier}", CliResult>   # one CLI call per unique (license, product)
-```
+```bash
+source /tmp/pack_tmp.env
+CACHE=/tmp/cli-cache.json
+echo '{}' > "$CACHE"
 
-For each in-scope clause (from Step 3), sequentially:
+# Collect (license, product) pairs across all AITL product policy files
+pairs=$(for f in "$TMP/extracted/policies"/*.json; do
+    jq -r 'select(.policyKind == "product" and .policy.productIdentifier == "AITrustLayer")
+           | "\(.policy.licenseTypeIdentifier)|\(.policy.productIdentifier)"' "$f"
+done | sort -u)
 
-```
-clauseResult = {
-    clauseId, name, category, obligationLevel,
-    status: unknown,
-    contributions: []
-}
-
-for contribution in clause.contributions:
-    policyFile = policyFileCache.load(contribution.uipolicyFile)
-
-    # V1 scope — only AITL product policies are diffed
-    if policyFile.policyKind != "product"
-       or policyFile.policy.productIdentifier != "AITrustLayer":
-        clauseResult.contributions.append({
-            product: policyFile.policy?.productIdentifier or policyFile.accessPolicy?.accessPolicyType,
-            status: "skipped",
-            reason: "out-of-version-scope",
-            properties: []
-        })
-        continue
-
-    product = policyFile.policy.productIdentifier
-    license = policyFile.policy.licenseTypeIdentifier
-    expectedFormData = policyFile.formData
-    key = "{license}|{product}"
-
-    # Cache hit? Reuse. Otherwise call the CLI once.
-    # The CLI always returns an effective deployed policy for a valid (license, product, tenant) —
-    # there is no "not deployed" branch at the fetch level.
-    if key not in cliCache:
-        cliCache[key] = invoke plugin [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md)
-                        with (license, product, UIPATH_TENANT_ID)
-        # → returns CliResult { policyName, deployment, data }
-
-    live = cliCache[key]
-
-    properties = []
-    for propertyPath in contribution.properties:
-        expected = jsonPath(expectedFormData, propertyPath)
-        actual   = jsonPath(live.data,        propertyPath)
-        properties.append({
-            path: propertyPath,
-            expected, actual,
-            match: deepEqual(expected, actual)
-        })
-    # A missing path (actual == null) counts as a mismatch — it's drift, not a
-    # special "not-applied" case. The tenant is non-compliant either way.
-
-    clauseResult.contributions.append({
-        product,
-        status: "checked",
-        effectivePolicyName: live.policyName,
-        effectiveDeployment: live.deployment,
-        properties
-    })
-
-clauseResult.status = aggregate(clauseResult.contributions)
+while IFS='|' read -r license product; do
+    [ -z "$license" ] && continue
+    key="${license}|${product}"
+    data=$(uip admin aops-policy deployment get-by-user "$license" "$product" "$UIPATH_TENANT_ID" --output json | jq '.Data')
+    tmp=$(jq --arg k "$key" --argjson v "$data" '.[$k] = $v' "$CACHE") && echo "$tmp" > "$CACHE"
+done <<< "$pairs"
 ```
 
-### Value comparison rules (AITL)
+Do **not** print the CLI responses. The cache file is the handoff to Step 6.
 
-Consult the quirks table in [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md) before equality-checking. In particular: `allow-llm-model-auto-routing` is a `"yes"`/`"no"` string (not boolean), `traces-ttl`/`traces-ttl-effective` are duration strings, `pii-*` values are enums, and arrays like `pii-entity-table` are order-independent and matched by `identifier`.
+## Step 6 — Generate reports + terminal summary (one script call)
 
-For drifted (`match: false`) properties, enrich with `classificationType` if it's available in the policy reference data.
+Invoke the skill's runner, which walks clauses, applies the aggregate rule, writes the JSON report per [report-format.md](report-format.md), renders the HTML report from [assets/templates/compliance-report-template.html](../../assets/templates/compliance-report-template.html) per [html-report-guide.md](html-report-guide.md), and prints the terminal summary:
 
-### `aggregate(contributions)` — first match wins
+```bash
+source /tmp/pack_tmp.env
+SKILL=/path/to/skills/uipath-governance       # $(dirname "$(dirname "$(realpath references/compliance-check/workflow-guide.md)")")
+python3 "$SKILL/assets/scripts/run-compliance-check.py" \
+    --pack-dir    "$TMP/extracted" \
+    --cli-cache   /tmp/cli-cache.json \
+    --tenant-id   "$UIPATH_TENANT_ID" \
+    --tenant-name "$UIPATH_TENANT_NAME" \
+    --out-dir     .
+```
 
-1. Any `checked` contribution has a property with `match == false` → **`drifted`**
-2. At least one `checked` contribution (rule 1 didn't fire) → **`compliant`**
-3. All contributions `skipped` → **`skipped`** (clause excluded from compliant / drifted counts)
+The script exits 0 whether or not drift is found (drift is a finding, not a failure). Non-zero exit means the walk itself failed (malformed pack, cache miss) — surface the stderr verbatim.
 
-`skipped` contributions never drive the clause status — they're recorded for audit but ignored in the decision. A missing property path is treated as drift under rule 1.
+The script's stdout **is** the user-visible output for the entire run: terminal summary, then the two report file paths. Do not add extra commentary. Do not re-print findings from the JSON report.
+
+### What the script does (reference only — do not re-implement)
+
+- Parses `manifest.json`, `clause-map.json`, every `policies/*.json` into `policyFileCache`
+- Walks clauses; for each contribution resolves the `(license, product)` pair and looks up the cached CLI response in `cliCache` (passed in via `--cli-cache`)
+- Skips non-AITL / access contributions (`out-of-version-scope`)
+- Per property path: `expected = jsonPath(formData, path)`, `actual = jsonPath(live.data, path)`, `match = deepEqual(expected, actual)`. A missing path (`actual == null`) is drift, not a special state.
+- Aggregate rule (first match wins): any mismatch in a `checked` contribution → `drifted`; else any `checked` contribution → `compliant`; else all `skipped` → `skipped`
+- AITL value quirks from [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md) (e.g. `pii-entity-table` matched by `identifier`) are built into `deep_equal`
+- Writes `compliance-report-{packId}-{timestamp}.json` and `compliance-report-{packId}-{timestamp}.html` into `--out-dir`
 
 ### Dispatch table (V1)
 
-| `productIdentifier` | Plugin |
+| `productIdentifier` | Handled by |
 |---|---|
-| `AITrustLayer` | [plugins/ai-trust-layer/impl.md](plugins/ai-trust-layer/impl.md) |
-| Any other | **SKIP** per contribution (record `out-of-version-scope`) |
+| `AITrustLayer` | `run-compliance-check.py` (diff + report) |
+| Any other | Recorded as `out-of-version-scope` skip — no CLI call, no diff |
 
 ### Caching invariants
 
-- `cliCache` is **per-run only** — do not persist across invocations.
-- Key is `{licenseType}|{productIdentifier}`. `tenantIdentifier` is not in the key because it's constant per run (from `~/.uipath/.auth`).
-- Twenty clauses pointing at the same `(license, product)` pair must produce **exactly one** `get-by-user` call.
+- `cliCache` is **per-run only** — do not persist across invocations (delete `/tmp/cli-cache.json` between runs or place it under a fresh `mktemp`).
+- Key is `{licenseType}|{productIdentifier}`. `tenantIdentifier` is not in the key because it's constant per run.
+- Twenty clauses pointing at the same `(license, product)` pair must produce **exactly one** `get-by-user` call (Step 5 enforces this by deduplicating pairs before the loop).
 
-## Step 6 — Terminal summary
-
-Print a human-readable summary:
-
-```
-Compliance Check: iso-27001-2022 v1.0.0 → tenant DefaultTenant
-
-  ✓ A.8.11  Data Masking                    compliant
-  ✗ A.8.12  Data Leakage Prevention         drifted (2 properties)
-  ✗ A.5.3   Segregation of Duties           drifted (3 properties)
-
-Result: 1/3 compliant, 2 drifted
-Skipped (V1 scope): Development, Robot, StudioWeb
-Report: ./compliance-report-iso-27001-2022-20260416T143000Z.json
-```
-
-Order: drifted clauses first (by obligation level: Mandatory > ConditionalMandatory > Recommended > Optional), then compliant.
-
-## Step 7 — Write JSON report
-
-Write to `./compliance-report-{packId}-{timestamp}.json` per [report-format.md](report-format.md).
-
-Include ALL clauses (compliant, drifted) and ALL skipped policies.
-
-Do NOT commit or stage the report file.
-
-## Step 7b — Generate HTML report
-
-Generate a self-contained HTML report for auditor review using the template at `assets/templates/compliance-report-template.html`.
-
-1. Read the HTML template file.
-2. Populate it by replacing the `{{PLACEHOLDER}}` tokens with actual data from the compliance check.
-3. Generate the clause status table rows and drift detail blocks from the clause results.
-4. Write to `./compliance-report-{packId}-{timestamp}.html` alongside the JSON report.
-
-See [html-report-guide.md](html-report-guide.md) for the full placeholder reference and row generation instructions.
-
-The HTML report is a **fixed-format, self-contained file** with no external dependencies. It renders identically regardless of who runs the skill or what tools they have installed. The auditor opens it in any browser.
-
-Do NOT commit or stage the HTML report file.
-
-## Step 8 — Remediation handoff
+## Step 7 — Remediation handoff
 
 If any clause has `status: "drifted"`:
 
@@ -245,8 +190,9 @@ All checked clauses are compliant. No action needed.
 
 | Error | Step | Action |
 |---|---|---|
-| Not logged in | 0 | Halt. Ask user to `uip login`. |
-| Malformed pack | 1 | Halt. Surface the validation error. |
-| No applicable policies | 2 | Write report with all skipped. Exit cleanly. |
-| CLI call fails | 5 | Halt. Surface the error. Write partial report. |
+| Not logged in | 0+1 | Halt. Ask user to `uip login`. |
+| Malformed pack | 0+1 | Halt. Surface the path + validation error. |
+| No applicable policies | 2 | Invoke Step 6 anyway — the script writes a report with all `skipped`. |
+| CLI call fails | 5 | Halt. Surface stderr. |
 | Unknown clause ID in scope filter | 3 | Halt. Surface the unknown ID. |
+| `run-compliance-check.py` exit ≠ 0 | 6 | Halt. Surface stderr. Do not try to reimplement the walk inline. |

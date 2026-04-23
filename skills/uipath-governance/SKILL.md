@@ -39,6 +39,7 @@ Read the entry point file for the matched feature and follow its workflow.
 6. **Never commit the report.** It contains tenant identifiers and policy values.
 7. **Clause-level reporting.** Always map property diffs back to clauses. Never present raw `formData` diffs without clause context.
 8. **Feature logic lives in references.** SKILL.md routes to features — it does not contain workflow steps.
+9. **Quiet by default.** Do not narrate steps, do not echo intermediate pack/policy data, do not announce what you are "about to do". The only user-visible output is the final terminal summary plus the two report paths. Tool calls are not user output — the user sees *your* text. Write none until you have the final summary.
 
 ## Anti-patterns
 
