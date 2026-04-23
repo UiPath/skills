@@ -2,26 +2,28 @@
 
 ## Node Type
 
-Two HTTP node types are available. Pick by authentication needs, not by recency:
+**Default: `core.action.http.v2`** (Managed HTTP Request). Use v1 (`core.action.http`) only in one narrow case — see below.
 
-- **`core.action.http`** (v1, standalone) — use for **public APIs / no-auth or simple manual auth** (API key in header, bearer token you already have). No `bindings_v2.json`, no connection resource, no `node configure` step. Smaller flow files, simpler debug.
-- **`core.action.http.v2`** (Managed HTTP Request) — use when the request needs **Integration Service connector-managed authentication** (OAuth handled by an IS connection). Requires `uip maestro flow node configure` to populate `inputs.detail` + generate `bindings_v2.json`.
+- **`core.action.http.v2`** (Managed HTTP Request) — default for all HTTP calls. Works for both IS connector-managed auth (OAuth via a connection) and manual auth. Requires `uip maestro flow node configure` to populate `inputs.detail` + generate `bindings_v2.json`. `supportsErrorHandling: true` enables the implicit `error` port.
+- **`core.action.http`** (v1, standalone) — use ONLY for **public APIs with no authentication** (e.g., open-meteo, public data endpoints where you send zero auth headers). Smaller flow files and no connection resource needed.
+
+> **Check for a connector first.** Before using either HTTP node, run `uip maestro flow registry search "<service>"` to see if an IS connector exists for the target service (Slack, Salesforce, Jira, GitHub, etc.). If one does, **use the connector** — not raw HTTP with a bearer token. IS connectors handle auth, retries, pagination, and schema shape.
 
 > **Never use v1 with `authenticationType: "connection"`** — the v1 node does not pass IS credentials at runtime. If you need IS-managed auth, use v2.
 
 ## When to Use
 
-Use an HTTP node to call a REST API — either with IS connector-managed authentication (v2) or without auth / simple manual auth (v1 or v2 manual mode).
+Default to v2 managed HTTP. Fall back to v1 only when all of: (a) the target service has no IS connector, (b) no authentication is required, (c) the flow needs a trivial REST call with no retry/error-port plumbing.
 
 ### Selection Heuristics
 
 | Situation | Node |
 | --- | --- |
-| Public API, no auth (e.g., open-meteo, weather, public data) | **v1** — simplest; no connection resource needed |
-| Simple manual auth (static API key / bearer token) | **v1** — pass the header directly |
-| IS connector exists and needs OAuth/managed auth | **v2** — connector mode with connection binding |
-| Connector exists but lacks the specific curated activity, and you need its auth | **v2** — connector mode |
-| Connector exists and covers the use case end-to-end | Neither — use [Connector Activity](../connector/planning.md) |
+| Target service has an IS connector (Slack, Salesforce, Jira, GitHub, etc.) | Neither — use [Connector Activity](../connector/planning.md) |
+| IS connector exists but lacks the specific curated activity, and you need its auth | **v2** — connector mode |
+| Public REST API, **no auth at all** (e.g., open-meteo, public weather/data) | **v1** — simplest; no connection resource needed |
+| Public REST API, simple manual auth (static API key / bearer token) AND no IS connector | **v2** manual mode (keeps error-port + retry pattern) |
+| Any call that needs the implicit `error` output port or `inputs.branches` | **v2** — v1 has no `supportsErrorHandling` |
 | Target system has no API (desktop app) | Neither — use [RPA Workflow](../rpa/planning.md) |
 
 ### Two Authentication Modes
