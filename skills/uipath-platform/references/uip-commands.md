@@ -43,7 +43,7 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [orche
 | **Sessions** | `list-attended-sessions`, `list-unattended-sessions`, `list-machines-sessions`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
 | **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
-| **Licenses** | `list --type`, `toggle`, `info` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Licenses** | `list --type`, `toggle`, `info` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Audit Logs** | `list [--export]` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Credential Stores** | `list`, `get` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Feeds** | `list` | [Tenant Admin](orchestrator/tenant-admin.md) |
