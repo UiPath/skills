@@ -6,6 +6,12 @@ description: >
 tags: [uipath-maestro-flow, e2e, generate, ootb]
 max_iterations: 1
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
 sandbox:
   driver: tempdir
   python: {}
@@ -16,14 +22,18 @@ initial_prompt: |
   to inches (× 12), inches to feet (÷ 12), or yards to feet (× 3) accordingly,
   and returns the converted number.
 
+  Use a Switch node on `direction` to branch to one of three cases
+  ("f2i", "i2f", "y2f"); each branch applies the corresponding conversion
+  (in a Script node) and converges on a single End node that returns the result.
+
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
-    description: "uip flow validate passes on the flow file"
-    command: "uip flow validate FeetInches/FeetInches/FeetInches.flow"
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate FeetInches/FeetInches/FeetInches.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

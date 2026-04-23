@@ -50,18 +50,17 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Flow does not reference cancelled or timeout handles"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
-    excludes:
-      - '"cancelled"'
-      - '"timeout"'
-    weight: 2.0
-    pass_threshold: 1.0
+  # Note: a prior "does not reference cancelled/timeout handles" excludes-only
+  # check was removed. The HITL node's `definitions` entry is copied verbatim
+  # from the registry (Critical Rule #7) and declares *all* handles (completed,
+  # cancelled, timeout) — so a substring search against the flow JSON cannot
+  # distinguish "handle declared in the manifest" from "handle wired on an
+  # edge". The positive "completed" check above is the meaningful signal;
+  # the validate step below catches genuinely malformed edges.
 
   - type: run_command
-    description: "uip flow validate passes"
-    command: "uip flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --format json"
+    description: "uip maestro flow validate passes"
+    command: "uip maestro flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
