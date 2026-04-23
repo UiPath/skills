@@ -3,7 +3,7 @@ description: >
   Quality test: agent correctly maps a business description to a quickform
   schema — right field directions (input/output/inOut), correct outcomes,
   and priority. Tests C1 (field design) and C2 (outcome design).
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, integration, hitl]
 
 agent:
   type: claude-code
@@ -49,7 +49,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate VendorPOReview/VendorPOReview/VendorPOReview.flow --output json"
+    command: "uip flow validate VendorPOReview/VendorPOReview/VendorPOReview.flow --format json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

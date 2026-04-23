@@ -3,7 +3,7 @@ description: >
   Smoke test: agent builds a simple invoice approval flow containing an inline
   HITL node (uipath.human-in-the-loop). Verifies the node is written directly
   into the .flow file as JSON and the flow validates.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
+tags: [uipath-maestro-flow, smoke, hitl]
 
 agent:
   type: claude-code
@@ -61,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    command: "uip flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --format json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
