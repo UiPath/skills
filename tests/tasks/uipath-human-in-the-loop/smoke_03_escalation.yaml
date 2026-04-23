@@ -40,11 +40,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Agent identified an escalation pattern"
     path: "recommendation.json"
-    includes:
-      - "escalat"
+    assertions:
+      - expression: "pattern"
+        operator: regex
+        expected: "(?i)escalat"
     weight: 1.5
     pass_threshold: 1.0
 
