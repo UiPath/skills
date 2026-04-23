@@ -24,7 +24,7 @@ INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
 FLOW_PATH = Path(os.getcwd()) / "WeatherSol" / "WeatherFlow" / "WeatherFlow.flow"
 
 
-def main():
+def main() -> None:
     try:
         flow = json.loads(FLOW_PATH.read_text())
     except json.JSONDecodeError as e:
