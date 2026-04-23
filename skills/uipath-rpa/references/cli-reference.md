@@ -209,6 +209,67 @@ uip rpa get-versions --package-id <PackageId> --output jsonuip rpa get-versions 
 
 ---
 
+## Commands -- Data Fabric Entities
+
+UiPath Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project -- as typed arguments (e.g. `UiPath.DataService.Activities`, `add-test-data-entity`) or anywhere else that binds to generated entity types -- they must first be **installed** into the project. Installation writes a manifest at `.entities/EntitiesStore.json` and compiles a strongly-typed assembly; all entity-aware activities, coded service calls, and test-data bindings resolve against it.
+
+Typical flow: `list-data-fabric-entities` (discover) → `install-data-fabric-entities --add ...` (install) → reference the generated entity types from your workflow or test case.
+
+---
+
+### list-data-fabric-entities
+
+List Data Fabric entities relevant to the active project. Returns a unified view of entities currently installed in the project **and** entities available in the connected tenant, each tagged with an `installed` flag.
+
+```bash
+uip rpa list-data-fabric-entities --project-dir "<PROJECT_DIR>" --output json
+uip rpa list-data-fabric-entities --service-document "<PATH>" --project-dir "<PROJECT_DIR>" --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--service-document` | No | Project-relative path to a specific entities manifest (e.g. `.entities/Custom.json`). Omit to use the project's default. |
+
+Each returned entry includes: `name`, `displayName`, `namespace` (if installed), `serviceDocument` (if installed), `storeUrl` (if cloud-available), and `installed: true | false`.
+
+Use this before `install-data-fabric-entities` to pick names from the tenant, or to verify what is already bound to the project.
+
+---
+
+### install-data-fabric-entities
+
+Install, update, or remove Data Fabric entity bindings by applying an add/remove delta to the project's currently installed set. Dependency expansion is automatic -- adding `E1` pulls in any entity `E1` references.
+
+```bash
+uip rpa install-data-fabric-entities --add "Invoice" --add "Customer" --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-data-fabric-entities --remove "LegacyOrder" --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-data-fabric-entities --add "Invoice" --remove "LegacyOrder" --namespace "My.App.Entities" --project-dir "<PROJECT_DIR>" --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--add` | One of `--add`/`--remove` | Entity name to add. Pass the flag multiple times for multiple entities (e.g. `--add Invoice --add Customer`). |
+| `--remove` | One of `--add`/`--remove` | Entity name to remove. Pass the flag multiple times for multiple entities (e.g. `--remove LegacyOrder --remove StaleCustomer`). |
+| `--service-document` | No | Project-relative manifest path. Omit to use the project's default. |
+| `--namespace` | No | .NET namespace for the generated entity types. Omit to keep the previously-used namespace, or derive one from the project name on a first install. |
+
+Behavior notes:
+
+- **Semantics:** final selection = `(currently installed ∪ add) − remove`. If the same name appears in both `--add` and `--remove`, remove wins.
+- **Dependencies:** pulled in automatically; the returned `entities` array is the full set actually installed.
+- **Server-deleted entities:** silently filtered before install -- they can't be compiled against. The diff between request and returned `entities` tells you what was dropped.
+- **Empty resulting selection:** uninstalls everything for the target service document (removes the manifest + generated assembly).
+- **At least one of `--add` / `--remove` must be non-empty.** To fully uninstall, pass every currently-installed name in `--remove`.
+
+Returns JSON:
+```json
+{ "serviceDocument": ".entities/EntitiesStore.json", "namespace": "My.App.Entities", "entities": ["Invoice", "Customer", "Address"] }
+```
+
+**Use this before** invoking any workflow or test case that references the entity types, and before `add-test-data-entity` -- the test-data command requires its target entity to already be managed in the project.
+
+---
+
 ## Commands -- Test Manager
 
 ### get-manual-test-cases
