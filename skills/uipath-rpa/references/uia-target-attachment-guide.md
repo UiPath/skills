@@ -67,11 +67,11 @@ uip rpa uia object-repository get-screen-xaml \
   --project-dir "<PROJECT_DIR>"
 ```
 
-Returns a `<TargetApp>` element. Embed it inside the ApplicationCard using the `uix:` prefix (drop any `xmlns` attribute on the pasted element):
+Returns a `<TargetApp>` element. Embed it inside the ApplicationCard:
 
 ```xml
 <uix:NApplicationCard.TargetApp>
-  <uix:TargetApp Area="..." BrowserType="..." ContentHash="..." Reference="..." Selector="..." Url="..." Version="V2" />
+  <uix:TargetApp .../>
 </uix:NApplicationCard.TargetApp>
 ```
 
@@ -83,7 +83,7 @@ uip rpa uia object-repository get-elements-xaml \
   --project-dir "<PROJECT_DIR>"
 ```
 
-Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property (or the nested property named on the activity, e.g., `SearchedElement.Target`) using the `uix:` prefix (drop any `xmlns` attribute on the pasted element):
+Returns `<TargetAnchorable>` elements, one per reference ID, separated by `=== Element Name ===` headers. Embed each inside its activity's `.Target` property (or the nested property named on the activity, e.g., `SearchedElement.Target`):
 
 ```xml
 <uix:NClick ...>
