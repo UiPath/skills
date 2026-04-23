@@ -20,7 +20,7 @@ Mixing strategies within a single skill run is expected during the migration. Bo
 > - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
 > - Edges → `plugins/edges/impl-json.md` (JSON strategy) — `plugins/edges/impl-cli.md` is the fallback
 > - Tasks → `plugins/tasks/<type>/impl-cli.md` (or `impl-json.md` for connector-activity and connector-trigger)
-> - Triggers → `plugins/triggers/<type>/impl-cli.md`
+> - Triggers → `plugins/triggers/<type>/impl-cli.md` (or `impl-json.md` for event triggers)
 > - Conditions → `plugins/conditions/<scope>/impl-cli.md`
 > - SLA → `plugins/sla/impl-json.md` (primary) — `plugins/sla/impl-cli.md` is the fallback
 > - Global variables & arguments → `plugins/variables/global-vars/impl-json.md`
