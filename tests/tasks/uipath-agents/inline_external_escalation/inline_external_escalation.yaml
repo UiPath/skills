@@ -1,12 +1,12 @@
-task_id: skill-agent-inline-in-flow
+task_id: skill-agent-inline-external-escalation-tool
 description: >
-  End-to-end test: given a goal-only prompt to build a flow that uses
-  a low-code agent, the agent must derive from the skill that the
-  right architecture is the inline-in-flow pattern. Verifies the
-  agent uses `uip agent init --inline-in-flow` and `uip agent
-  validate --inline-in-flow`, and produces the expected UUID-named
-  subdirectory layout (no entry-points.json, no project.uiproj,
-  empty flow-layout.json).
+  Escalation app tools (external resource) for flow inline agents.
+  End-to-end test: scaffold a flow project with an inline low-code
+  agent that escalates uncertain cases to an EXTERNAL ActionCenter app
+  already deployed to Orchestrator (not inside this solution).
+  Verifies the escalation resource.json under the inline agent's UUID
+  subdirectory + a `uipath.agent.resource.escalation` flow node wired
+  to the autonomous agent node's `escalation` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
@@ -21,9 +21,12 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "WeatherSol" containing a flow project
-  "WeatherFlow". The flow project should use a low-code agent to
-  summarize weather data.
+  Create a UiPath solution "FraudFlowSol" containing a flow project
+  "FraudFlow". The flow should use an inline low-code agent that
+  triages transactions and escalates uncertain cases to an EXISTING
+  EXTERNAL ActionCenter app named "FraudEscalationQueue" already
+  deployed to the Orchestrator "Shared" folder (not inside this
+  solution). Wire the escalation as a resource on the inline agent.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -55,6 +58,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent added a flow node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
@@ -72,19 +83,19 @@ success_criteria:
 
   - type: file_exists
     description: "Flow file was created"
-    path: "WeatherSol/WeatherFlow/WeatherFlow.flow"
+    path: "FraudFlowSol/FraudFlow/FraudFlow.flow"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Flow project descriptor was created"
-    path: "WeatherSol/WeatherFlow/project.uiproj"
+    path: "FraudFlowSol/FraudFlow/project.uiproj"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent layout + flow wiring (node model.source, serviceType, edges)"
-    command: "python3 $TASK_DIR/check_inline_agent.py"
+    description: "Inline external escalation: resource.json shape + escalation flow node + escalation-handle edge"
+    command: "python3 $TASK_DIR/check_inline_external_escalation.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

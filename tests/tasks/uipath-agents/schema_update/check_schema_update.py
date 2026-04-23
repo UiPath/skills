@@ -20,8 +20,9 @@ import os
 import sys
 from pathlib import Path
 
-AGENT = Path(os.getcwd()) / "QuerySolution" / "QueryAgent" / "agent.json"
-ENTRY = Path(os.getcwd()) / "QuerySolution" / "QueryAgent" / "entry-points.json"
+ROOT = Path(os.getcwd()) / "QuerySol" / "QueryAgent"
+AGENT = ROOT / "agent.json"
+ENTRY = ROOT / "entry-points.json"
 
 
 def load(path: Path) -> dict:
@@ -91,7 +92,7 @@ def assert_user_message_inlines_variable(agent: dict, field: str) -> None:
     print(f"OK: user message inlines {placeholder} with a matching variable contentToken")
 
 
-def main():
+def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
 

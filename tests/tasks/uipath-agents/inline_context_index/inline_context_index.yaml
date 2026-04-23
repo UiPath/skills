@@ -1,12 +1,13 @@
-task_id: skill-agent-inline-in-flow
+task_id: skill-agent-inline-context-index
 description: >
-  End-to-end test: given a goal-only prompt to build a flow that uses
-  a low-code agent, the agent must derive from the skill that the
-  right architecture is the inline-in-flow pattern. Verifies the
-  agent uses `uip agent init --inline-in-flow` and `uip agent
-  validate --inline-in-flow`, and produces the expected UUID-named
-  subdirectory layout (no entry-points.json, no project.uiproj,
-  empty flow-layout.json).
+  Context grounding tools for flow inline agents. End-to-end test:
+  scaffold a flow project with an inline low-code agent that grounds
+  its answers in an external semantic index. Verifies the context
+  resource.json under the inline agent's UUID subdirectory uses
+  `$resourceType: "context"`, `contextType: "index"`, a valid
+  retrievalMode, and that a `uipath.agent.resource.context.index` flow
+  node is wired to the autonomous agent node's `context` handle.
+  Indexes always live externally to the solution.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
@@ -21,9 +22,12 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "WeatherSol" containing a flow project
-  "WeatherFlow". The flow project should use a low-code agent to
-  summarize weather data.
+  Create a UiPath solution "KnowledgeFlowSol" containing a flow project
+  "KnowledgeFlow". The flow should use an inline low-code agent that
+  grounds its answers in an EXTERNAL semantic index named
+  "ProductKnowledge" deployed to the Orchestrator "Shared" folder
+  (indexes always live outside the solution). Wire the index as a
+  context resource on the inline agent.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -55,6 +59,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent added a flow node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
@@ -72,19 +84,19 @@ success_criteria:
 
   - type: file_exists
     description: "Flow file was created"
-    path: "WeatherSol/WeatherFlow/WeatherFlow.flow"
+    path: "KnowledgeFlowSol/KnowledgeFlow/KnowledgeFlow.flow"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Flow project descriptor was created"
-    path: "WeatherSol/WeatherFlow/project.uiproj"
+    path: "KnowledgeFlowSol/KnowledgeFlow/project.uiproj"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent layout + flow wiring (node model.source, serviceType, edges)"
-    command: "python3 $TASK_DIR/check_inline_agent.py"
+    description: "Inline context index: resource.json shape + context.index flow node + context-handle edge"
+    command: "python3 $TASK_DIR/check_inline_context_index.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

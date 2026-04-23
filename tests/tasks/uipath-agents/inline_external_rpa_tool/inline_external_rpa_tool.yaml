@@ -1,12 +1,12 @@
-task_id: skill-agent-inline-in-flow
+task_id: skill-agent-inline-external-rpa-tool
 description: >
-  End-to-end test: given a goal-only prompt to build a flow that uses
-  a low-code agent, the agent must derive from the skill that the
-  right architecture is the inline-in-flow pattern. Verifies the
-  agent uses `uip agent init --inline-in-flow` and `uip agent
-  validate --inline-in-flow`, and produces the expected UUID-named
-  subdirectory layout (no entry-points.json, no project.uiproj,
-  empty flow-layout.json).
+  Add RPA tool (inline agent, external resource). End-to-end test:
+  scaffold a flow project with an inline low-code agent that calls an
+  EXTERNAL RPA process deployed to Orchestrator (not inside this
+  solution). Verifies the tool resource.json under the inline agent's
+  UUID subdirectory uses `type: "process"`, `location: "external"`,
+  real `folderPath`, and that a `uipath.agent.resource.tool.rpa` flow
+  node is wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 max_iterations: 1
 
@@ -21,9 +21,11 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "WeatherSol" containing a flow project
-  "WeatherFlow". The flow project should use a low-code agent to
-  summarize weather data.
+  Create a UiPath solution "BillingFlowSol" containing a flow project
+  "BillingFlow". The flow should use an inline low-code agent that
+  calls an EXTERNAL RPA process called "InvoiceProcessor" deployed to
+  the Orchestrator "Shared" folder (not inside this solution). Wire
+  the RPA process as a tool on the inline agent.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -55,6 +57,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent added a flow node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
@@ -72,19 +82,19 @@ success_criteria:
 
   - type: file_exists
     description: "Flow file was created"
-    path: "WeatherSol/WeatherFlow/WeatherFlow.flow"
+    path: "BillingFlowSol/BillingFlow/BillingFlow.flow"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Flow project descriptor was created"
-    path: "WeatherSol/WeatherFlow/project.uiproj"
+    path: "BillingFlowSol/BillingFlow/project.uiproj"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent layout + flow wiring (node model.source, serviceType, edges)"
-    command: "python3 $TASK_DIR/check_inline_agent.py"
+    description: "Inline external RPA tool: resource.json shape (location=external) + flow node + tool-handle edge"
+    command: "python3 $TASK_DIR/check_inline_external_rpa_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

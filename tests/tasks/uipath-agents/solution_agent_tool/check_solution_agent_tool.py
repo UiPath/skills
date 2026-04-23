@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Multi-agent solution check.
+"""Solution agent-as-tool resource check.
 
 Validates:
   1. ParentAgent and ToolAgent have distinct, well-formed projectId
-     UUIDs (guards Anti-pattern 8 — do not copy-paste UUIDs).
+     UUIDs (guards against copy-pasted UUIDs across agents).
   2. ParentAgent/resources/ToolAgent/resource.json declares ToolAgent
      as a solution-internal agent tool:
        - $resourceType == "tool"
@@ -41,7 +41,7 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
-def assert_distinct_project_ids():
+def assert_distinct_project_ids() -> None:
     parent = load(PARENT_AGENT)
     tool = load(TOOL_AGENT)
     parent_id = parent.get("projectId")
@@ -57,7 +57,7 @@ def assert_distinct_project_ids():
     print(f"OK: Distinct projectIds — {parent_id} vs {tool_id}")
 
 
-def assert_resource_fields(resource: dict):
+def assert_resource_fields(resource: dict) -> None:
     expected = {
         "$resourceType": "tool",
         "type": "agent",
@@ -102,7 +102,7 @@ def strip_descriptions(node):
     return node
 
 
-def assert_schemas_match_tool_agent(resource: dict, tool: dict):
+def assert_schemas_match_tool_agent(resource: dict, tool: dict) -> None:
     pairs = [
         ("inputSchema", resource.get("inputSchema"), tool.get("inputSchema")),
         ("outputSchema", resource.get("outputSchema"), tool.get("outputSchema")),
@@ -121,7 +121,7 @@ def assert_schemas_match_tool_agent(resource: dict, tool: dict):
         print(f"OK: resource.json.{label} is shape-equivalent to ToolAgent/agent.json.{label}")
 
 
-def main():
+def main() -> None:
     if not SOLUTION_DIR.is_dir():
         sys.exit(f"FAIL: Solution directory {SOLUTION_DIR} does not exist")
 
