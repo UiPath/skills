@@ -148,6 +148,10 @@ Each key in `layout.nodes` is a node `id`. Every node in the `nodes` array shoul
 - Standard size is `{ "width": 96, "height": 96 }` for all node types
 - Never use vertical (top-to-bottom) layout
 
+**Subflow layout is scoped.** Each subflow entry in `subflows.<id>` has its **own** `layout.nodes` map for the nodes inside that subflow. Do NOT put subflow node positions in the top-level `layout.nodes` — they live alongside the subflow's `nodes`/`edges`/`variables`. See [subflow/impl.md](plugins/subflow/impl.md).
+
+**Legacy files.** Older `.flow` files stored position/size inline as `node.ui`. The workbench auto-upgrades these on first save — on read, it merges `node.ui` into the in-memory model; on write, it extracts everything back into the top-level `layout` map and strips `ui` from nodes. When authoring or editing JSON directly, always emit the new shape (top-level `layout`, no `ui` on nodes) — do not hand-migrate existing files, just re-save them in the workbench.
+
 ## Edge — both ports required
 
 ```json
