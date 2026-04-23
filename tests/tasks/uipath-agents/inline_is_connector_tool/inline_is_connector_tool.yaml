@@ -35,10 +35,11 @@ initial_prompt: |
   bindings, and refresh the solution so the connection resource is
   provisioned. Validate the inline agent.
 
-  Do NOT publish, upload, or deploy. Do NOT invoke the connector at
-  runtime. Do NOT ask for approval, confirmation, or feedback. Do NOT
-  pause between planning and implementation. Complete the entire task
-  end-to-end in a single pass.
+  Do NOT invoke the connector at runtime.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed

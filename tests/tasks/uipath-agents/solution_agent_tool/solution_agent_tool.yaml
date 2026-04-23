@@ -25,7 +25,9 @@ initial_prompt: |
   agents, "ParentAgent" and "ToolAgent". ToolAgent echoes back the
   string it receives. ParentAgent should use ToolAgent as a tool.
 
-  Do NOT upload, publish, or deploy.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
@@ -45,7 +47,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent linked projects to the solution with uip solution project add"
+    description: "Agent linked the project to the solution with uip solution project add"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+project\s+add'
     min_count: 1

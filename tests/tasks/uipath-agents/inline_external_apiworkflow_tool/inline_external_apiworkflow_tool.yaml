@@ -2,7 +2,7 @@ task_id: skill-agent-inline-external-apiworkflow-tool
 description: >
   Add API workflow tool (inline agent, external resource). End-to-end
   test: scaffold a flow project with an inline low-code agent that
-  calls an EXTERNAL API workflow deployed in Orchestrator (not inside
+  calls an EXTERNAL API workflow deployed to Orchestrator (not inside
   this solution). Verifies the tool resource.json under the inline
   agent's UUID subdirectory uses `type: "api"`, `location: "external"`,
   real `folderPath`, and that a `uipath.agent.resource.tool.*` flow
@@ -23,7 +23,7 @@ sandbox:
 initial_prompt: |
   Create a UiPath solution "QuoteFlowSol" containing a flow project
   "QuoteFlow". The flow should use an inline low-code agent that
-  calls an EXTERNAL API workflow called "GetLatestQuote" deployed in
+  calls an EXTERNAL API workflow called "GetLatestQuote" deployed to
   the Orchestrator "Shared" folder (not inside this solution). Wire
   the API workflow as a tool on the inline agent.
 

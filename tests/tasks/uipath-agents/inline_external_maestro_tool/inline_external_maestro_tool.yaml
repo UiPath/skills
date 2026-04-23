@@ -2,7 +2,7 @@ task_id: skill-agent-inline-external-maestro-tool
 description: >
   Add Maestro tool (inline agent, external resource). End-to-end test:
   scaffold a flow project with an inline low-code agent that calls an
-  EXTERNAL Maestro flow deployed in Orchestrator (not inside this
+  EXTERNAL Maestro flow deployed to Orchestrator (not inside this
   solution). Verifies the tool resource.json under the inline agent's
   UUID subdirectory uses `type: "processOrchestration"`, `location:
   "external"`, real `folderPath`, and that a
@@ -24,7 +24,7 @@ sandbox:
 initial_prompt: |
   Create a UiPath solution "ClaimsFlowSol" containing a flow project
   "ClaimsFlow". The flow should use an inline low-code agent that
-  calls an EXTERNAL Maestro flow called "ProcessClaim" deployed in
+  calls an EXTERNAL Maestro flow called "ProcessClaim" deployed to
   the Orchestrator "Shared" folder (not inside this solution). Wire
   the Maestro flow as a tool on the inline agent.
 

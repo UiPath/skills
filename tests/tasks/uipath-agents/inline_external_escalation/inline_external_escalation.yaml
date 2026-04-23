@@ -3,7 +3,7 @@ description: >
   Escalation app tools (external resource) for flow inline agents.
   End-to-end test: scaffold a flow project with an inline low-code
   agent that escalates uncertain cases to an EXTERNAL ActionCenter app
-  already deployed in Orchestrator (not inside this solution).
+  already deployed to Orchestrator (not inside this solution).
   Verifies the escalation resource.json under the inline agent's UUID
   subdirectory + a `uipath.agent.resource.escalation` flow node wired
   to the autonomous agent node's `escalation` handle.
@@ -25,7 +25,7 @@ initial_prompt: |
   "FraudFlow". The flow should use an inline low-code agent that
   triages transactions and escalates uncertain cases to an EXISTING
   EXTERNAL ActionCenter app named "FraudEscalationQueue" already
-  deployed in the Orchestrator "Shared" folder (not inside this
+  deployed to the Orchestrator "Shared" folder (not inside this
   solution). Wire the escalation as a resource on the inline agent.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,

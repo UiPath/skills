@@ -25,7 +25,7 @@ initial_prompt: |
   Create a UiPath solution "KnowledgeFlowSol" containing a flow project
   "KnowledgeFlow". The flow should use an inline low-code agent that
   grounds its answers in an EXTERNAL semantic index named
-  "ProductKnowledge" deployed in the Orchestrator "Shared" folder
+  "ProductKnowledge" deployed to the Orchestrator "Shared" folder
   (indexes always live outside the solution). Wire the index as a
   context resource on the inline agent.
 

@@ -25,7 +25,7 @@ initial_prompt: |
   Create a UiPath solution "RouterFlowSol" containing a flow project
   "RouterFlow". The flow should use an inline low-code agent that
   delegates specialized questions to an EXTERNAL agent called
-  "SupportExpert" already deployed in the Orchestrator "Shared"
+  "SupportExpert" already deployed to the Orchestrator "Shared"
   folder (not inside this solution). Wire the external agent as a
   tool on the inline agent.
 

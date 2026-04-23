@@ -2,7 +2,7 @@ task_id: skill-agent-inline-external-rpa-tool
 description: >
   Add RPA tool (inline agent, external resource). End-to-end test:
   scaffold a flow project with an inline low-code agent that calls an
-  EXTERNAL RPA process deployed in Orchestrator (not inside this
+  EXTERNAL RPA process deployed to Orchestrator (not inside this
   solution). Verifies the tool resource.json under the inline agent's
   UUID subdirectory uses `type: "process"`, `location: "external"`,
   real `folderPath`, and that a `uipath.agent.resource.tool.rpa` flow
@@ -23,7 +23,7 @@ sandbox:
 initial_prompt: |
   Create a UiPath solution "BillingFlowSol" containing a flow project
   "BillingFlow". The flow should use an inline low-code agent that
-  calls an EXTERNAL RPA process called "InvoiceProcessor" deployed in
+  calls an EXTERNAL RPA process called "InvoiceProcessor" deployed to
   the Orchestrator "Shared" folder (not inside this solution). Wire
   the RPA process as a tool on the inline agent.
 
