@@ -7,6 +7,13 @@ description: >
   syntax, and contentTokens construction. A check script verifies
   deep equivalence of the two schema files.
 tags: [uipath-agents, smoke, schema]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir

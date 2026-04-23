@@ -87,6 +87,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
+    description: "Flow project descriptor was created"
+    path: "OrchestratorFlowSol/OrchestratorFlow/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
     description: "ToolAgent solution project was scaffolded"
     path: "OrchestratorFlowSol/ToolAgent/agent.json"
     weight: 1.5

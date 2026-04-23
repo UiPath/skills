@@ -34,11 +34,27 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
+    description: "Agent created the solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent scaffolded the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init\s+.*--inline-in-flow'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked the project to the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -69,6 +85,12 @@ success_criteria:
     description: "Flow file was created"
     path: "PayrollFlowSol/PayrollFlow/PayrollFlow.flow"
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow project descriptor was created"
+    path: "PayrollFlowSol/PayrollFlow/project.uiproj"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
