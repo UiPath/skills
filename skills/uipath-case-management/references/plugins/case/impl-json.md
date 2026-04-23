@@ -173,7 +173,7 @@ When `description` is absent in the T01 input, emit `description: ""` (always-em
         "caseIdentifier": "<case-identifier — defaults to <name>>",
         "caseAppEnabled": <true|false — defaults to false>,
         "caseIdentifierType": "<constant|external — defaults to constant>",
-        "version": "v17",
+        "version": "v19",
         "publishVersion": 2,
         "data": {
             "intsvcActivityConfig": "v2",
@@ -204,7 +204,7 @@ Same as above with `description` value populated from sdd.md:
         "caseIdentifier": "<case-identifier>",
         "caseAppEnabled": <true|false>,
         "caseIdentifierType": "<constant|external>",
-        "version": "v17",
+        "version": "v19",
         "publishVersion": 2,
         "data": {
             "intsvcActivityConfig": "v2",
@@ -238,7 +238,7 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 2. **Root shape.**
    - `root.id === "root"`
    - `root.type === "case-management:root"`
-   - `root.version === "v17"`
+   - `root.version === "v19"`
    - `root.publishVersion === 2`
    - `root.data.intsvcActivityConfig === "v2"`
    - `root.data.uipath.variables.inputOutputs` is an array (empty at T01)

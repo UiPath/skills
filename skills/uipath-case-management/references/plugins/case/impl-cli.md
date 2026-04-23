@@ -70,7 +70,7 @@ After the command runs, `caseplan.json` contains (CLI 0.3.4):
         "caseIdentifier": "LOAN",
         "caseAppEnabled": true,
         "caseIdentifierType": "constant",
-        "version": "v17",
+        "version": "v19",
         "publishVersion": 2,
         "data": {
             "intsvcActivityConfig": "v2",
@@ -107,7 +107,7 @@ Capture from `--output json`:
 
 - **File path** — confirm the file exists on disk.
 - **Initial Trigger ID** — the literal string `"trigger_1"`. Use as the source for the first edge (Trigger → first stage).
-- Confirm `root.type == "case-management:root"` and `root.version == "v17"`.
+- Confirm `root.type == "case-management:root"` and `root.version == "v19"`.
 
 ## Editing the Root Case
 

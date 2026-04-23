@@ -94,6 +94,7 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
 | `selected-tasks-completed` | `selectedTasksIds` (array) |
 | `wait-for-connector` | — |
 | `adhoc` | — |
+| `runs-sequentially` | — |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
 

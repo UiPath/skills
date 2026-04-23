@@ -44,7 +44,7 @@ Metadata and configuration for the case definition.
   "caseIdentifier": "LOAN",
   "caseAppEnabled": false,
   "caseIdentifierType": "constant",
-  "version": "v17",
+  "version": "v19",
   "publishVersion": 2,
   "data": {
     "slaRules": [
@@ -69,7 +69,7 @@ Metadata and configuration for the case definition.
 | `caseIdentifier` | string | Identifier used at runtime |
 | `caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
 | `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
-| `version` | string | Schema version — `"v17"` for current schema. Emitted by `uip maestro case cases add`. |
+| `version` | string | Schema version — `"v19"` for current schema. Emitted by `uip maestro case cases add`. |
 | `publishVersion` | number? | Publish version — `2` for current schema |
 | `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
@@ -314,6 +314,7 @@ Rules = Rule[][]
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
+| `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
 
 Not every rule type is valid at every level — see each condition plugin's `impl-cli.md` / `impl-json.md` for the allowed subset per location.
 
@@ -437,7 +438,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
     "caseIdentifier": "Simple Case",
     "caseAppEnabled": false,
     "caseIdentifierType": "constant",
-    "version": "v17",
+    "version": "v19",
     "publishVersion": 2,
     "data": {
       "intsvcActivityConfig": "v2",
