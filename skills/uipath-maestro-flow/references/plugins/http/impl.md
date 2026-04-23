@@ -2,12 +2,9 @@
 
 ## Node Type
 
-Two HTTP nodes exist — pick per [planning.md](planning.md#selection-heuristics):
+`core.action.http.v2` (Managed HTTP Request)
 
-- **`core.action.http`** (v1) — public APIs / simple manual auth. No `node configure` step; author JSON directly.
-- **`core.action.http.v2`** (Managed HTTP Request) — IS connector-managed auth (OAuth via a connection). Requires `node configure`.
-
-The rest of this guide covers the v2 configure workflow. For v1, add the node directly via JSON with `inputs.method`, `inputs.url`, optional `inputs.headers`, `inputs.body`, etc. — no connection resource needed. See [flow-editing-operations-json.md](../../flow-editing-operations-json.md) for add/wire procedures.
+> **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
 
 ## Registry Validation
 
