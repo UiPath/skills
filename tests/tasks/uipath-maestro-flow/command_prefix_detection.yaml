@@ -26,7 +26,7 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "Generated flow file exists"
-    path: "NamespaceCheck/NamespaceCheck.flow"
+    path: "NamespaceCheck/NamespaceCheck/NamespaceCheck.flow"
     weight: 1.0
     pass_threshold: 1.0
 
