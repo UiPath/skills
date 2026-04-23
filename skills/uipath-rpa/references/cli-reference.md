@@ -88,7 +88,7 @@ uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json```
 
 ### create-project
 
-Create a new UiPath project from a template. Also available as `uip rpa new`.
+Create a new UiPath project from a template.
 
 ```bash
 uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
@@ -566,7 +566,7 @@ uip rpa search-templates --limit 10 --include-prerelease --output json
 
 Returns a JSON array with fields: `packageId`, `version`, `title`, `description`, `authors`, `source`, `tags`.
 
-Use the `packageId` and `version` from results with `uip rpa new --template-package-id` to create a project from that template.
+Use the `packageId` and `version` from results with `uip rpa create-project --template-package-id` to create a project from that template.
 
 ---
 
