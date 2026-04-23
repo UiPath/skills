@@ -43,6 +43,15 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
    - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
 4. Then proceed with the skill workflow
 
+## Precondition: Analyzer Rules
+
+Check if `.claude/rules/analyzer-rules.md` exists in the project directory.
+
+- **If it exists** → it is already in context via `.claude/rules/` auto-loading. Generated code must satisfy every `error` and `warning` rule listed there. Only regenerate when the user explicitly asks, or when `get-errors` / `uip rpa build` surfaces a rule ID not present in the file.
+- **If it does NOT exist** → trigger the `uipath-analyzer-rules-agent`, wait for its response, and write the returned document to:
+  - `.claude/rules/analyzer-rules.md` (create `.claude/rules/` if needed)
+  - `AGENTS.md` at project root, between `<!-- ANALYZER-RULES:START -->` / `<!-- ANALYZER-RULES:END -->` markers. If markers are absent, append the block (below `PROJECT-CONTEXT` if present). Skip `AGENTS.md` if the agent returned the Error Case block — surface the CLI error to the user instead.
+
 ## Step 0: Resolve PROJECT_DIR and Environment
 
 Before creating or modifying anything, determine which project to work with and ensure Studio is running. See [references/environment-setup.md](references/environment-setup.md) for the full procedure.
@@ -150,6 +159,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [is-connector-xaml-guide.md](references/is-connector-xaml-guide.md) → [connector-capabilities.md](references/connector-capabilities.md) |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
+| **List project best-practice / analyzer rules** | Both | [cli-reference.md § get-analyzer-rules](references/cli-reference.md) → `.claude/rules/analyzer-rules.md` |
 | **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
 | **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |
 | **Troubleshoot coded errors** | Coded | [coded/coding-guidelines.md § Common Issues](references/coded/coding-guidelines.md) |
