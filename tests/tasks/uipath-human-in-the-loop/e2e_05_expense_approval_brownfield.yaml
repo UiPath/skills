@@ -11,7 +11,7 @@ tags: [uipath-human-in-the-loop, e2e, brown-field]
 
 agent:
   type: claude-code
-  max_turns: 90
+  max_turns: 70
   turn_timeout: 1200
 
 sandbox:
