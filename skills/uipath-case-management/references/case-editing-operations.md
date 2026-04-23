@@ -10,7 +10,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 
 | Plugin | Strategy | Notes |
 |---|---|---|
-| `case` (root + initial trigger) | **JSON** | Migrated. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Scaffolding (`uip solution new`, `uip maestro case init`, `uip solution project add`) stays CLI; only `cases add` flips to direct-JSON-write. `cases edit` remains CLI-only. |
+| `case` (root + initial trigger) | **JSON** | Migrated. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Plugin now owns both **project scaffolding** (replaces `uip maestro case init` — writes the 5 boilerplate files directly) and `cases add` (writes `caseplan.json`). Only `uip solution new` + `uip solution project add` remain CLI — they bookend the plugin as Step 6.0 and Step 6.2. `cases edit` remains CLI-only. |
 | `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
 | `triggers/manual` | CLI | Migration queued. |

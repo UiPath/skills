@@ -1,4 +1,6 @@
-# case (root) — Implementation
+# case (root) — CLI Implementation (Fallback)
+
+> **Fallback path.** The `case` plugin is on the JSON strategy per [`case-editing-operations.md`](../../case-editing-operations.md). Use [`impl-json.md`](impl-json.md) by default — this file is the CLI fallback for when the JSON path fails empirically. The JSON recipe covers both scaffold (replaces `uip maestro case init`) and the root caseplan write (replaces `cases add`) in a single plugin invocation.
 
 ## Prerequisites
 
@@ -10,6 +12,8 @@ cd <directory> && uip solution new <SolutionName>
 cd <SolutionName> && uip maestro case init <ProjectName>
 uip solution project add <ProjectName> <SolutionName>.uipx
 ```
+
+> When falling back from the JSON path, `uip solution new` + `uip solution project add` are the **same** commands run by the JSON path's Step 6.0 and Step 6.2 — only `uip maestro case init` differs (CLI invokes it here; JSON writes the 5 files directly in [`impl-json.md`](impl-json.md) § Scaffold).
 
 ## CLI Command
 

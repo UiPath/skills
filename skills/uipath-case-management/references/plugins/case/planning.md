@@ -1,6 +1,6 @@
 # case (root) — Planning
 
-The root case definition — the top-level container that every other node lives inside. Created exactly once per `caseplan.json` via `uip maestro case cases add`.
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. Under the JSON strategy the case plugin **also owns project scaffolding** (the 5 boilerplate files written by `uip maestro case init` on the CLI path) — see [impl-json.md](impl-json.md).
 
 ## When to Use
 
@@ -49,16 +49,25 @@ Under the CLI fallback path, `uip maestro case cases add` still emits an implici
 
 ## Project Structure Prerequisites
 
-The case file lives inside a solution + project structure. Before T01 runs, the execution phase creates:
+The case file lives inside a solution + project structure. After T01 completes, the layout is:
 
 ```
 <directory>/
   <SolutionName>/
-    <SolutionName>.uipx
-    <ProjectName>/
-      project.uiproj
-      content/...
-      caseplan.json   ← this file
+    <SolutionName>.uipx            ← created by `uip solution new` (Step 6.0, CLI)
+    <ProjectName>/                 ← created + populated by T01 (case plugin)
+      project.uiproj               ← § Scaffold writes
+      operate.json                 ← § Scaffold writes
+      entry-points.json            ← § Scaffold writes (empty entryPoints[])
+      bindings_v2.json             ← § Scaffold writes
+      package-descriptor.json      ← § Scaffold writes
+      caseplan.json                ← § Write caseplan.json writes
 ```
 
-See [implementation.md Step 6](../../implementation.md) for the `uip solution new` / `uip maestro case init` / `uip solution project add` sequence that must run before `cases add`.
+Sequencing under the JSON strategy:
+
+1. **Step 6.0 (CLI)** — `uip solution new <SolutionName>` — creates the solution dir + `.uipx`.
+2. **T01 (plugin)** — § Scaffold writes the 5 boilerplate files, then § Write caseplan.json writes the root skeleton. See [impl-json.md](impl-json.md).
+3. **Step 6.2 (CLI)** — `uip solution project add <ProjectName> <SolutionName>.uipx` — registers the project in `.uipx.Projects[]`. Must run after `project.uiproj` exists.
+
+Under the CLI fallback, Step 6.0 + `uip maestro case init` + Step 6.2 + `cases add` run sequentially — see [impl-cli.md](impl-cli.md) § Prerequisites.
