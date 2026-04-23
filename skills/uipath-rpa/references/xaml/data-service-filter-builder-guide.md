@@ -366,7 +366,7 @@ Logical meaning: `(FIELD_1 OP VALUE_1) AND ((FIELD_2 OP VALUE_2) OR (FIELD_3 OP 
 
 ## Step-by-Step: Generate Filter XAML
 
-1. **Read `EntitiesStore.json`** — find the target entity by name under `Entities[]`. Note the entity `Id`. See [overview.md § Entity Metadata](../../../../references/activity-docs/UiPath.DataService.Activities/25.9/activities/overview.md#entity-metadata--entitiesstoresjson) for the JSON schema.
+1. **Read `EntitiesStore.json`** — resolve the path from `project.json` → `entitiesStores[0].serviceDocument`. If `entitiesStores` is missing or the file does not exist → **stop and ask the user** to import at least one entity via Studio > Data Service tab > "Import Entities". Do not proceed without this file. Once resolved, read it and find the target entity by name under `Entities[]`. Note the entity `Id`.
 2. **Identify filter fields** — for each condition, find the field in `Entities[].Fields[]`. Note:
    - `Field.Name` — used as `SimpleFilter.FieldName`
    - `Field.SqlType.Name` — determines valid operators and `InArgument` type
@@ -383,7 +383,7 @@ Logical meaning: `(FIELD_1 OP VALUE_1) AND ((FIELD_2 OP VALUE_2) OR (FIELD_3 OP 
 
 Query `NumericEntity` where: NumField equals 23, AND CreatedBy.IsActive equals True, AND CreatedBy.Name contains "suphal", AND (UpdateTime > 2026-04-07 OR Id != New Guid()).
 
-Entity is VB project. EntityId from EntitiesStore.json: `cd543a02-3621-f111-9a48-000d3a354532`.
+Entity is VB project. EntityId from `EntitiesStore.json`: `cd543a02-3621-f111-9a48-000d3a354532`.
 
 ```xml
 <uda:QueryEntityRecords x:TypeArguments="local:NumericEntity"
