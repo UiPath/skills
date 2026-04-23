@@ -15,7 +15,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
 | `triggers/manual` | CLI | Migration queued. |
 | `triggers/timer` | CLI | Migration queued. |
-| `triggers/event` | CLI | Migration queued. |
+| `triggers/event` | **JSON** | CLI fetches metadata, skill writes trigger JSON. See [plugins/triggers/event/impl-json.md](plugins/triggers/event/impl-json.md). |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
 | `variables/io-binding` | **JSON** | Direct write to `task.data.inputs[i].value`. No CLI needed. See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md). |
 | `tasks/process` | **JSON** | See [plugins/tasks/process/impl-json.md](plugins/tasks/process/impl-json.md). |
