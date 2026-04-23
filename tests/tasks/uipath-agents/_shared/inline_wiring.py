@@ -1,7 +1,6 @@
 """Shared helpers for uipath-agents inline-agent flow-wiring checks.
 
-Used by Batch 3 tests (F12.*, F13, F14, F15.*, F17, F18, F19) that verify
-the combined shape of:
+Used by inline-agent tests that verify the combined shape of:
   - a `uipath.agent.autonomous` inline agent node in a `.flow` file,
   - a `uipath.agent.resource.<kind>.*` resource node in the same flow,
   - an edge wiring the autonomous node's `tool` / `context` / `escalation`
