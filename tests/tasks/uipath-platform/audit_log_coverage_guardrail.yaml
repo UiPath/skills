@@ -1,0 +1,54 @@
+task_id: skill-uipath-platform-audit-log-coverage
+description: >
+  Skill-guided evaluation: `uipath-platform` should steer the agent away from
+  unsupported unified platform audit-log work and explicitly reject
+  `uip or audit-logs` as a substitute.
+tags: [uipath-platform, integration, audit]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Using the `uipath-platform` skill, determine whether the UiPath CLI supports
+  unified platform audit logs.
+
+  Do not authenticate. Do not use REST APIs. Do not substitute
+  `uip or audit-logs`.
+
+  Save your findings to audit_report.json with at minimum:
+    {
+      "supported_by_cli": false,
+      "commands_checked": ["<list of uip commands you inspected>"],
+      "unsafe_substitutions_rejected": ["uip or audit-logs"],
+      "recommended_action": "<what the agent should tell the user>"
+    }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inspected the CLI help surface"
+    tool_name: "Bash"
+    command_pattern: 'uip(\s+or)?\s+.*--help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "audit_report.json captures the no-coverage guardrail"
+    command: |
+      python3 - <<'PY'
+      import json
+      from pathlib import Path
+
+      report = json.loads(Path("audit_report.json").read_text())
+      supported = report.get("supported_by_cli") is False
+      checked = isinstance(report.get("commands_checked"), list) and len(report["commands_checked"]) >= 1
+      rejected = "uip or audit-logs" in report.get("unsafe_substitutions_rejected", [])
+      action = str(report.get("recommended_action", "")).lower()
+      ok = supported and checked and rejected and ("not covered" in action or "unsupported" in action or "stop" in action)
+      print("OK" if ok else "FAIL")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
+    weight: 2.0
+    pass_threshold: 1.0
