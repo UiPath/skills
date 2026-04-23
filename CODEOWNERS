@@ -5,7 +5,10 @@
 /.github/ @uipreliga
 
 # Hooks
-/hooks/ @DragosUnguru
+/hooks/ @DragosUnguru @RaduAna-Maria
+
+# Plugin agents
+/agents/ @RaduAna-Maria
 
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
