@@ -1,0 +1,122 @@
+task_id: skill-tasks-smoke-discovery
+description: >
+  Smoke test: agent uses the uipath-tasks skill to run all discovery commands
+  offline — list tasks across folders, list tasks scoped to a folder, list
+  with --as-admin, get a task by ID, get a task using the type-hint endpoint
+  (--task-type + --folder-id), and list assignable users for a folder. Tests
+  that the agent uses the correct CLI verbs and flags, and that --output json
+  is applied consistently. Runs against fake IDs — auth errors are expected.
+tags: [uipath-tasks, smoke, discovery]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-tasks skill and follow its workflow.
+
+  You are exploring UiPath Action Center. Perform each discovery step in order.
+  Use --output json on every uip tasks command.
+
+  1. List all tasks across folders.
+  2. List tasks scoped to folder ID 123.
+  3. List tasks as admin (elevated access).
+  4. Get details of task 7654321 (task IDs are numeric, not GUIDs).
+  5. Get task 7654321 again, this time using the type-hint endpoint:
+     pass both --task-type FormTask and --folder-id 123 so the CLI routes
+     to the faster forms endpoint.
+  6. List assignable users for folder ID 123.
+
+  Save a summary to report.json:
+  {
+    "commands_used": ["<list of uip tasks commands you ran in order>"],
+    "used_type_hint": <true if step 5 included --task-type AND --folder-id>,
+    "used_as_admin": <true if step 3 included --as-admin>,
+    "task_id_style": "<'numeric' or 'guid'>"
+  }
+
+  Important:
+  - The uip CLI is NOT connected to a live Action Center tenant. Commands
+    will fail with auth errors — that is expected. Run each command once,
+    record the result, and move on. Do NOT retry or attempt to login.
+  - Do NOT invent new task IDs. Use 7654321 as given.
+  - Do NOT call any assign, reassign, unassign, or complete commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed tasks across all folders"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list\s+--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed tasks scoped to a folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list\s+.*--folder-id\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed tasks with --as-admin"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list\s+.*--as-admin'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved a task with tasks get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+get\s+\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the type-hint endpoint (--task-type + --folder-id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+get\s+\d+\s+.*--task-type\s+FormTask.*--folder-id'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed assignable users for a folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+users\s+\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on tasks commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+.*--output\s+json'
+    min_count: 4
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Report confirms numeric task IDs and type-hint usage"
+    path: "report.json"
+    assertions:
+      - expression: "task_id_style"
+        operator: equals
+        expected: "numeric"
+      - expression: "used_type_hint"
+        operator: equals
+        expected: true
+      - expression: "used_as_admin"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
