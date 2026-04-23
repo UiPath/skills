@@ -45,11 +45,18 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow uses completed as the HITL output handle"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
-    includes:
-      - '"completed"'
+    command: |
+      python3 - <<'PY'
+      from pathlib import Path
+
+      flow = Path("PurchaseApproval/PurchaseApproval/PurchaseApproval.flow").read_text()
+      assert '"completed"' in flow, flow
+      print("OK")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
     weight: 3.0
     pass_threshold: 1.0
 
@@ -69,10 +76,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "report.json records completed as the edge handle"
     path: "report.json"
-    includes:
-      - "completed"
+    assertions:
+      - expression: "edge_from_hitl"
+        operator: equals
+        expected: "completed"
     weight: 1.5
     pass_threshold: 1.0
