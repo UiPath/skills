@@ -17,10 +17,12 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ```
 .
 ├── .claude/                   # Claude Code project-level configuration
-│   └── commands/              # Slash commands (e.g., /test-coverage)
+│   └── commands/              # Project-only slash commands (e.g., /test-coverage)
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
+├── commands/                  # Plugin-namespaced slash commands shipped to end users
+│   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.)
 │   └── ensure-uip.sh         # Cross-platform tool installation script

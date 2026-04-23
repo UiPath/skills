@@ -7,6 +7,9 @@
 # Hooks
 /hooks/ @DragosUnguru
 
+# Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
+/commands/ @DragosUnguru @tmatup
+
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 

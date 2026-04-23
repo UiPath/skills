@@ -1,4 +1,6 @@
-# stage-entry-conditions — Implementation
+# stage-entry-conditions — Implementation (CLI)
+
+> Direct-JSON alternative: [`impl-json.md`](impl-json.md).
 
 ## CLI Command
 

@@ -47,8 +47,9 @@ Metadata and configuration for the case definition.
   "version": "v17",
   "publishVersion": 2,
   "data": {
-    "sla": { "count": 5, "unit": "d" },
-    "slaRules": [],
+    "slaRules": [
+      { "expression": "=js:true", "count": 5, "unit": "d" }
+    ],
     "intsvcActivityConfig": "v2",
     "uipath": {
       "bindings": [],
@@ -70,8 +71,7 @@ Metadata and configuration for the case definition.
 | `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `version` | string | Schema version — `"v17"` for current schema. Emitted by `uip maestro case cases add`. |
 | `publishVersion` | number? | Publish version — `2` for current schema |
-| `data.sla` | SlaSchema? | Default SLA for the case (see §5) |
-| `data.slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules (see §5) |
+| `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `data.uipath` | object? | Variable and binding declarations |
 | `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
@@ -137,7 +137,9 @@ Standard workflow stage. Contains tasks.
     "isInvalidDropTarget": false,
     "isPendingParent": false,
     "tasks": [ [ { "...": "task" } ] ],
-    "sla": { "count": 2, "unit": "d" }
+    "slaRules": [
+      { "expression": "=js:true", "count": 2, "unit": "d" }
+    ]
   }
 }
 ```
@@ -163,7 +165,7 @@ Standard workflow stage. Contains tasks.
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
 | `tasks` | Task[][] | 2D array: `tasks[lane][index]`. The skill places one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns. Lane has no execution meaning — sequencing and parallelism live in task-entry conditions. Empty array `[]` when no tasks yet. |
-| `sla` | SlaSchema? | SLA for this stage |
+| `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
@@ -172,7 +174,7 @@ Standard workflow stage. Contains tasks.
 
 ### c) Exception Stage Node — `"case-management:ExceptionStage"`
 
-Same top-level and render fields as regular Stage. Adds `entryConditions`, `exitConditions`, and supports expression-driven SLA rules.
+Same top-level and render fields as regular Stage. Adds `entryConditions`, `exitConditions` initialized at creation time.
 
 **Additional `ExceptionStageNodeData` fields:**
 
@@ -180,7 +182,8 @@ Same top-level and render fields as regular Stage. Adds `entryConditions`, `exit
 |-------|------|-------------|
 | `entryConditions` | EntryCondition[] | Initialized to `[]` on create; see §3 |
 | `exitConditions` | ExitCondition[] | Initialized to `[]` on create; see §3 |
-| `slaRules` | SlaRuleEntry[]? | Expression-driven SLA rules for this exception stage |
+
+> **SLA on ExceptionStage** — the runtime accepts `slaRules[]` on `ExceptionStage` the same way it does on regular `Stage`, but the CLI's `sla set --stage-id` blocks it. Use the JSON strategy to author it. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ### d) Sticky Note Node — `"case-management:StickyNote"`
 
@@ -325,39 +328,64 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 
 ## 6. SLA and Escalation
 
+All SLA data on a target (root or stage) lives in a single `slaRules[]` array. The default SLA is the trailing entry with `expression: "=js:true"`; conditional overrides sit before it in priority order. Escalations nest inside each rule's `escalationRule[]`.
+
 ```json
-"sla": {
-  "count": 2,
-  "unit": "d",
-  "escalationRule": [
-    {
-      "id": "<id>",
-      "displayName": "Notify manager",
-      "action": {
-        "type": "notification",
-        "recipients": [{ "scope": "User", "target": "manager@corp.com", "value": "manager@corp.com" }]
-      },
-      "triggerInfo": { "type": "at-risk", "atRiskPercentage": 80 }
-    }
-  ]
-}
+"slaRules": [
+  {
+    "expression": "=js:vars.priority === 'Urgent'",
+    "count": 30,
+    "unit": "m",
+    "escalationRule": [
+      {
+        "id": "esc_aB3kL9",
+        "triggerInfo": { "type": "sla-breached" },
+        "action": {
+          "type": "notification",
+          "recipients": [
+            { "scope": "User", "target": "<user-uuid>", "value": "manager@corp.com" }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "expression": "=js:true",
+    "count": 5,
+    "unit": "d",
+    "escalationRule": [
+      {
+        "id": "esc_xY2mNp",
+        "displayName": "Notify manager",
+        "triggerInfo": { "type": "at-risk", "atRiskPercentage": 80 },
+        "action": {
+          "type": "notification",
+          "recipients": [
+            { "scope": "User", "target": "<user-uuid>", "value": "manager@corp.com" }
+          ]
+        }
+      }
+    ]
+  }
+]
 ```
 
 Time units: `"min"` (minutes), `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
-Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`.
-Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`.
+Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`. `atRiskPercentage` is required when `type === "at-risk"` and omitted otherwise.
+Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is the user / group UUID; `value` is the display string (email or group name).
 
-### SlaRuleEntry (expression-driven overrides)
+### SlaRuleEntry
 
-```json
-{
-  "expression": "in.Priority == 'High'",
-  "count": 1,
-  "unit": "d"
-}
-```
+| Field | Type | Description |
+|-------|------|-------------|
+| `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. |
+| `count` | number? | SLA duration count (optional — a bare escalation-only rule may omit this). |
+| `unit` | `"min" \| "h" \| "d" \| "w" \| "m"` ? | SLA duration unit (optional — paired with `count`). |
+| `escalationRule` | EscalationRule[]? | Notifications to fire at-risk or on breach. Runtime attaches escalations to whichever rule is active. |
 
-Evaluated in array order; the first truthy expression wins. The trailing entry with `expression: "=js:true"` (or equivalent) acts as the default.
+Evaluated in array order; the first truthy expression wins. The trailing `"=js:true"` entry acts as the default.
+
+> **CLI vs JSON divergences for SLA** — CLI's `sla escalation add` can only attach to the default `"=js:true"` rule. CLI's `sla set --stage-id` rejects `ExceptionStage`. CLI emits one `EscalationRule` per recipient (single-element `recipients[]`). The JSON strategy lifts all three limits — see [`plugins/sla/impl-json.md § Known CLI divergences`](plugins/sla/impl-json.md).
 
 ---
 

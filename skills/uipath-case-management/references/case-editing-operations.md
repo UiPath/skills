@@ -10,7 +10,7 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 
 | Plugin | Strategy | Notes |
 |---|---|---|
-| `case` (root + initial trigger) | CLI | `uip maestro case cases add` creates the file scaffolding and is out of scope for the JSON shift. |
+| `case` (root + initial trigger) | **JSON** | Migrated. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Scaffolding (`uip solution new`, `uip maestro case init`, `uip solution project add`) stays CLI; only `cases add` flips to direct-JSON-write. `cases edit` remains CLI-only. |
 | `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
 | `triggers/manual` | CLI | Migration queued. |
@@ -24,8 +24,8 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `tasks/action` | **JSON** | See [plugins/tasks/action/impl-json.md](plugins/tasks/action/impl-json.md). |
 | `tasks/api-workflow` | **JSON** | See [plugins/tasks/api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md). |
 | `tasks/case-management` | **JSON** | See [plugins/tasks/case-management/impl-json.md](plugins/tasks/case-management/impl-json.md). |
-| `tasks/connector-activity` | CLI | Migration queued. Auto-injected default entry condition complicates the recipe. |
-| `tasks/connector-trigger` | CLI | Migration queued. Same as connector-activity. |
+| `tasks/connector-activity` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md). |
+| `tasks/connector-trigger` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-trigger/impl-json.md](plugins/tasks/connector-trigger/impl-json.md). |
 | `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
 | `conditions/stage-entry-conditions` | CLI | Migration queued. |
 | `conditions/stage-exit-conditions` | CLI | Migration queued. |
@@ -66,5 +66,4 @@ When a plugin's migration PR lands:
 1. Update its row here from `CLI` to `JSON`.
 2. Add `impl-json.md` to the plugin's folder with the `direct-json: supported` frontmatter.
 3. Ensure `impl-json.md` has a complete JSON Recipe.
-4. Ensure a compatibility fixture lives at `docs/uipath-case-management/migration-fixtures/<plugin>/` (input fragment, CLI-output, JSON-write-output, diff script). These fixtures are verification-only and live outside the skill; they will be removed once every plugin has migrated.
-5. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed.
+4. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed — pin the CLI version the recipe was captured against and list the structural-equivalence + validation-parity checks that passed locally.

@@ -20,7 +20,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `display-name` | sdd.md (optional) | |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
-| `condition-expression` | Required for `adhoc` and `wait-for-connector` | |
+| `condition-expression` | Optional | |
 
 ## Rule-Type Catalog (task-entry scope)
 
@@ -29,7 +29,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `current-stage-entered` | Fires when the containing stage is entered | — |
 | `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `--selected-tasks-ids` |
 | `wait-for-connector` | Waits for a connector event | `--condition-expression` |
-| `adhoc` | Fires when an arbitrary expression evaluates truthy | `--condition-expression` |
+| `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `--condition-expression` (optional) |
 
 ## Ordering
 

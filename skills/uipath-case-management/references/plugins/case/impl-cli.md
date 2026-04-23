@@ -55,48 +55,54 @@ uip maestro case cases add \
 
 ## Resulting JSON Shape
 
-After the command runs, `caseplan.json` contains:
+After the command runs, `caseplan.json` contains (CLI 0.3.4):
 
 ```json
 {
-  "root": {
-    "id": "<shortId>",
-    "name": "Loan Approval",
-    "type": "case-management:root",
-    "caseIdentifier": "LOAN",
-    "caseIdentifierType": "constant",
-    "caseAppEnabled": true,
-    "version": "v17",
-    "publishVersion": 2,
-    "data": {
-      "intsvcActivityConfig": "v2",
-      "uipath": {
-        "variables": {},
-        "bindings": []
-      }
+    "root": {
+        "id": "root",
+        "name": "Loan Approval",
+        "type": "case-management:root",
+        "caseIdentifier": "LOAN",
+        "caseAppEnabled": true,
+        "caseIdentifierType": "constant",
+        "version": "v17",
+        "publishVersion": 2,
+        "data": {
+            "intsvcActivityConfig": "v2",
+            "uipath": {
+                "variables": {
+                    "inputOutputs": []
+                },
+                "bindings": []
+            }
+        },
+        "description": "End-to-end loan application processing..."
     },
-    "description": "End-to-end loan application processing..."
-  },
-  "nodes": [
-    {
-      "id": "<trigger-id>",
-      "type": "case-management:Trigger",
-      "position": { "x": 200, "y": 0 },
-      "data": { "uipath": { "serviceType": "None" } }
-    }
-  ],
-  "edges": []
+    "nodes": [
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "position": { "x": 0, "y": 0 },
+            "data": { "label": "Trigger 1" }
+        }
+    ],
+    "edges": []
 }
 ```
 
-> The implicit Trigger node is created automatically. Its ID is returned in the `--output json` response — capture it for use as an edge source in Step 8.
+> The implicit Trigger node is hard-coded: `id = "trigger_1"`, `position = { x: 0, y: 0 }`, `data.label = "Trigger 1"`. No `style`, `measured`, `parentElement`, or `uipath.serviceType` fields. Secondary triggers added via `triggers add-manual` have a different shape.
+>
+> `root.description` is present only when `--description` is passed; omitted otherwise. When present, it appears as a sibling of `data` at root level (not inside `data`).
+>
+> `root.data` starts pre-populated with `intsvcActivityConfig: "v2"` and `uipath.variables.inputOutputs: []` + `uipath.bindings: []`. Downstream plugins (notably `variables/global-vars`) append to those structures.
 
 ## Post-Add Validation
 
 Capture from `--output json`:
 
 - **File path** — confirm the file exists on disk.
-- **Initial Trigger ID** — save it as the source for the first edge (Trigger → first stage).
+- **Initial Trigger ID** — the literal string `"trigger_1"`. Use as the source for the first edge (Trigger → first stage).
 - Confirm `root.type == "case-management:root"` and `root.version == "v17"`.
 
 ## Editing the Root Case

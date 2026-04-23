@@ -39,7 +39,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 12. **Persist every registry resolution to `registry-resolved.json`** with full detail: search query, all matched results, selected result, rationale. This is the debug audit trail.
 13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `=vars.<outputVarId>` at execution time by reading the source output's `var` field from caseplan.json. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip maestro case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [references/plugins/variables/io-binding/impl-json.md](references/plugins/variables/io-binding/impl-json.md).
 14. **Expression prefixes are fixed:** `=metadata.`, `=js:`, `=vars.`, `=datafabric.`, `=bindings.`, `=orchestrator.JobAttachments`, `=response`, `=result`, `=Error`, `=jsonString:`. Plain strings without a prefix are literals, not expressions.
-15. **Connector integration uses the 3-step pipeline**: `get-connector` → `get-connection` → (optional) `tasks describe --connection-id`. One plugin (`connector-activity` / `connector-trigger` / event-`trigger`) per integration pattern — schema is data-driven. See [references/connector-integration.md](references/connector-integration.md).
+15. **Connector integration uses direct JSON write.** Planning discovers fields via `is resources describe` (activities) or `is triggers describe` (triggers), resolves references via `is resources execute list`, and writes resolved values to `tasks.md`. Implementation calls `get-connection` + `tasks describe` and writes task data directly to `caseplan.json`. See each plugin's `planning.md` + `impl-json.md` for the full workflow.
 16. **Enrichable non-connector task types** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`) pass `--task-type-id` on `tasks add` to auto-populate inputs/outputs. Connector variants use `tasks add-connector` with `--type-id` + `--connection-id` instead.
 17. **Every stage needs at least one inbound edge** or it will be orphaned. The Trigger node created automatically by `cases add` is the entry point for all single-trigger cases.
 18. **One task per lane (UI layout only).** Pass `--lane <n>` on every `tasks add` / `tasks add-connector`, incrementing `n` per task within a stage. Lane is a rendering coordinate for the FE — it does not affect execution. Parallelism and sequencing are controlled entirely by task-entry conditions.
@@ -153,15 +153,15 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Wire inputs/outputs and cross-task refs** | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | **Configure a connector activity / trigger / event** | [references/connector-integration.md](references/connector-integration.md) |
 | **Handle unresolved resources (skeleton tasks)** | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
-| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-cli.md`](references/plugins/case/impl-cli.md) |
+| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-json.md`](references/plugins/case/impl-json.md) (migrated) / [`impl-cli.md`](references/plugins/case/impl-cli.md) (fallback) |
 | **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + [`impl-json.md`](references/plugins/stages/impl-json.md) (pilot) / [`impl-cli.md`](references/plugins/stages/impl-cli.md) (fallback) |
 | **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-json.md`](references/plugins/edges/impl-json.md) (JSON strategy) / [`impl-cli.md`](references/plugins/edges/impl-cli.md) (fallback) |
-| **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-cli.md`](references/plugins/sla/impl-cli.md) |
+| **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-json.md`](references/plugins/sla/impl-json.md) (primary) / [`impl-cli.md`](references/plugins/sla/impl-cli.md) (fallback) |
 | **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + [`impl-json.md`](references/plugins/variables/global-vars/impl-json.md) |
 | **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + [`impl-json.md`](references/plugins/variables/io-binding/impl-json.md) |
 | **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-json.md` (JSON strategy — `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) / `impl-cli.md` (CLI strategy — `connector-activity`, `connector-trigger`) |
 | **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl-cli.md` |
-| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` |
+| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` / `impl-json.md` |
 
 ### Plugin Index
 
@@ -223,6 +223,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 - **Do NOT run `uip maestro case debug` automatically.** It executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.
 - **Do NOT execute CLI commands in parallel.** Each command may depend on IDs returned by the previous one — run them sequentially.
 - **Do NOT validate after each individual command.** Intermediate states are expected to be invalid. Run `uip maestro case validate` once after the full build.
+- **Do NOT mutate `caseplan.json` (or sibling JSON files) via subprocess scripts.** When a plugin is on the JSON strategy, use Claude's Read + Write/Edit tools only — no `python`, `node`, `jq`, `sed`, `awk`, or helper scripts that open/parse/modify/save the file. Bash subprocesses remain OK for stdout-only helpers (e.g., `node -e "...console.log(randomId)"`) and for CLI mutations on non-migrated plugins. See [references/case-editing-operations-json.md § Tool usage](references/case-editing-operations-json.md#tool-usage--mandatory).
 
 ## Key Concepts
 

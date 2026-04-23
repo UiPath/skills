@@ -71,6 +71,16 @@ This repository works as a **Claude Code plugin**. Install skills via `uip skill
 
 If you've already installed manually, uninstall and re-install via `uip skills install` to switch to automatic updates.
 
+#### Reduce permission prompts
+
+By default, Claude Code prompts for approval on every `uip` command, and a realistic Flow or RPA build runs 25+ distinct subcommands. Claude Code plugins cannot ship permission allowlists declaratively, so run this once to install a curated allowlist of safe read-only commands (registry lookups, validation, local scaffolding) while keeping prompts for side-effectful operations (login, debug, publish):
+
+```text
+/uipath:install-permissions
+```
+
+The command prints the recommended JSON and offers to merge it into your settings (`~/.claude/settings.json` for global, or project-local `.claude/settings.local.json`). You will also see a one-line nudge at session start until an allowlist is installed.
+
 ### OpenAI Codex CLI
 
 This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).

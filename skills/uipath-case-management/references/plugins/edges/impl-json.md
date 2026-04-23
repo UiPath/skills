@@ -159,10 +159,10 @@ The one subtle point: CLI `edges edit` refuses to touch `source`/`target`. Direc
 
 ## Compatibility
 
-Captured against CLI version `0.1.21`. See [`docs/uipath-case-management/migration-fixtures/edges/`](../../../../../docs/uipath-case-management/migration-fixtures/edges/) for fixtures.
+Captured against CLI version `0.1.21`.
 
-- [x] **Golden diff:** normalized `json-write-output.json` matches `cli-output.json` after ID normalization — `docs/uipath-case-management/migration-fixtures/edges/diff.sh` passes
-- [ ] **Validation parity:** both outputs produce the same set of validation errors/warnings — not yet run against the installed binary
-- [ ] **Downstream CLI mutation append:** `uip maestro case edges edit <json-written-edge-id>` and `uip maestro case edges remove <json-written-edge-id>` both succeed — not yet exercised
-- [ ] **Round-trip:** CLI-written edge coexists with direct-JSON-written edge in the same file; validate passes — not yet exercised
-- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised
+- [x] **Structural equivalence:** direct-JSON-write produces edge objects that match the CLI's `edges add` output after ID normalization.
+- [ ] **Validation parity:** both outputs produce the same set of validation errors/warnings — not yet run against the installed binary.
+- [ ] **Downstream CLI mutation append:** `uip maestro case edges edit <json-written-edge-id>` and `uip maestro case edges remove <json-written-edge-id>` both succeed — not yet exercised.
+- [ ] **Round-trip:** CLI-written edge coexists with direct-JSON-written edge in the same file; validate passes — not yet exercised.
+- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

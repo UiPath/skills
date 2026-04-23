@@ -1,8 +1,6 @@
-# Resource Bindings — Implementation (PLACEHOLDER)
+# Resource Bindings — Implementation
 
-> **Status**: Placeholder — not referenced by SKILL.md or planning/implementation docs.
-> Currently the skill relies on CLI commands (`tasks add --task-type-id`) to auto-create bindings.
-> This file documents the JSON-level binding structure for future direct-write support.
+Root-level binding creation for `root.data.uipath.bindings[]`. Referenced by connector task plugins for ConnectionId + folderKey bindings.
 
 ## What Bindings Are
 
@@ -52,9 +50,8 @@ Multiple tasks referencing the same resource share one binding. Deduped by `defa
 
 IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`). Generated via `createBinding()` in `FPSFormControlUtils.ts`.
 
-## TODO — Direct Write Migration
+## Usage
 
-When moving from CLI to direct JSON editing:
-1. Create binding entries in `root.data.uipath.bindings[]` before task creation
-2. Set `task.data.name = "=bindings.<id>"` and `task.data.folderPath = "=bindings.<id>"`
+1. Create binding entries in `root.data.uipath.bindings[]` before or during task creation
+2. Reference from task data via `=bindings.<id>` (e.g., `data.context[].value` for connectors, `data.name` / `data.folderPath` for process tasks)
 3. Apply deduplication check before creating new bindings
