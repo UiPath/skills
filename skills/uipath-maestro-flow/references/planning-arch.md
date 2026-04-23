@@ -97,6 +97,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
+| `uipath.human-in-the-loop` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
 
 ### Control Flow
 
@@ -142,7 +143,7 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 | Agentic Process | `uipath.core.agentic-process.{key}` | [agentic-process](plugins/agentic-process/planning.md) |
 | Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/planning.md) |
 | API Workflow | `uipath.core.api-workflow.{key}` | [api-workflow](plugins/api-workflow/planning.md) |
-| Human Task | `uipath.core.hitl.{key}` | [hitl](plugins/hitl/planning.md) |
+| Human Task (app-based) | `uipath.core.human-task.{key}` | [hitl](plugins/hitl/planning.md) |
 
 ### Placeholders
 
@@ -193,6 +194,8 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
+| `uipath.human-in-the-loop` | `input` | `completed` |
+| `uipath.core.human-task.{key}` | `input` | `output` |
 
 > **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.
 

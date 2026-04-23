@@ -1,0 +1,76 @@
+task_id: skill-flow-hitl-smoke-completed-port
+description: >
+  Smoke test: agent wires the HITL node's `completed` output port (not the
+  old `cancelled` or `timeout` ports). Verifies correct edge structure in
+  a three-node approval flow.
+tags: [uipath-maestro-flow, smoke, hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 20
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "PurchaseApproval" with this structure:
+    Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
+
+  Use the inline quickform HITL node (uipath.human-in-the-loop).
+  The HITL node shows the reviewer: purchase amount and vendor name.
+  Outcomes: Approve and Reject.
+
+  Wire the HITL node's completed handle to the Script node.
+  The Script node logs: "Approval recorded."
+
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "edge_from_hitl": "<sourceHandle used on the HITL edge>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Flow file was created"
+    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow uses completed as the HITL output handle"
+    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    includes:
+      - '"completed"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow does not reference cancelled or timeout handles"
+    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    excludes:
+      - '"cancelled"'
+      - '"timeout"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --format json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json records completed as the edge handle"
+    path: "report.json"
+    includes:
+      - "completed"
+    weight: 1.5
+    pass_threshold: 1.0
