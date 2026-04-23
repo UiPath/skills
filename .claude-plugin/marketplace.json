@@ -4,29 +4,32 @@
     "name": "UiPath",
     "email": "support@uipath.com"
   },
+  "metadata": {
+    "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
+    "version": "0.0.19"
+  },
   "plugins": [
     {
       "name": "uipath",
-      "source": "./",
       "description": "UiPath plugin for Claude Code — custom skills, agents, hooks, and MCP servers for UiPath workflows, UI automation, UI testing and UiPath diagnostics",
-      "version": "0.0.19",
-      "author": {
-        "name": "UiPath"
-      },
-      "homepage": "https://github.com/UiPath/skills",
-      "repository": "https://github.com/UiPath/skills",
-      "license": "MIT",
-      "keywords": [
-        "uipath",
-        "automation",
-        "rpa",
-        "code",
-        "workflow",
-        "ui-automation",
-        "ui-testing",
-        "desktop",
-        "browser",
-        "diagnostics"
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/uipath-agents",
+        "./skills/uipath-case-management",
+        "./skills/uipath-coded-apps",
+        "./skills/uipath-data-fabric",
+        "./skills/uipath-diagnostics",
+        "./skills/uipath-feedback",
+        "./skills/uipath-human-in-the-loop",
+        "./skills/uipath-maestro-flow",
+        "./skills/uipath-planner",
+        "./skills/uipath-platform",
+        "./skills/uipath-rpa",
+        "./skills/uipath-rpa-legacy",
+        "./skills/uipath-servo",
+        "./skills/uipath-solution-design",
+        "./skills/uipath-test"
       ]
     }
   ]
