@@ -134,7 +134,7 @@ Hard-fail on the first write error — no rollback, no staging directory. Partia
 
 - `<SolutionDir>/<ProjectName>/project.uiproj` exists and parses as JSON.
 - `<SolutionDir>/<ProjectName>/operate.json` contains a non-empty `projectId` string.
-- `<SolutionDir>/<ProjectName>/entry-points.json.entryPoints` is `[]`.
+- `<SolutionDir>/<ProjectName>/entry-points.json` parses as JSON and its `entryPoints` field is `[]`.
 
 If any check fails, halt and report.
 
