@@ -99,7 +99,7 @@ success_criteria:
   - type: file_exists
     description: "ResearchAgent/agent.json was created"
     path: "ResearchSol/ResearchAgent/agent.json"
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists

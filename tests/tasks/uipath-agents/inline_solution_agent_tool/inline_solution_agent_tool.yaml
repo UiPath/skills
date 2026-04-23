@@ -93,7 +93,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "ToolAgent solution project was scaffolded"
+    description: "ToolAgent/agent.json was created"
     path: "OrchestratorFlowSol/ToolAgent/agent.json"
     weight: 1.5
     pass_threshold: 1.0
