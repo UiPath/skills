@@ -17,7 +17,7 @@ skip: true
 
 agent:
   type: claude-code
-  max_turns: 120
+  max_turns: 50
   turn_timeout: 1800
 
 sandbox:
