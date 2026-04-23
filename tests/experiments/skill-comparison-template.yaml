@@ -17,17 +17,24 @@ description: "One-sentence hypothesis under test"
 # Defaults — apply to every variant unless overridden.
 # Use bypassPermissions for unattended comparison runs (no prompts).
 # Lock the model so variants don't pick up different defaults.
+# Pass --repeats N at CLI time to override repeats without editing this file.
 # ---------------------------------------------------------------------------
 defaults:
-  max_iterations: 1
-  task_timeout: 600
+  max_iterations: 2
+  task_timeout: 1200
   turn_timeout: 300
+  repeats: 1
   agent:
     type: claude-code
     permission_mode: bypassPermissions
     model: claude-sonnet-4-6
     max_turns: 20
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Work only inside your current working directory.
+      Do NOT read, list, or access any files outside your working directory.
+      In particular, do NOT access the plugin directories — those are loaded by
+      the skill system and you do not need to read them directly.
 
 # ---------------------------------------------------------------------------
 # Variants — one entry per condition you're comparing.
@@ -57,28 +64,7 @@ variants:
           path: "/ABSOLUTE/PATH/TO/skills-variant"     # TODO: worktree path
 
 # ---------------------------------------------------------------------------
-# For N>1: duplicate each variant with suffixed IDs (see playbook step 6).
-# Uncomment and edit the block below if you want 3 reps per condition in
-# one run instead of scripting a loop.
+# For N>1: pass --repeats N to coder-eval run at CLI time instead of
+# duplicating variants here. The repeats: 1 default above is overridden
+# by the --repeats flag without needing to edit this file.
 # ---------------------------------------------------------------------------
-#
-#  - variant_id: main-r2
-#    agent:
-#      plugins:
-#        - type: "local"
-#          path: "/ABSOLUTE/PATH/TO/skills-main"
-#  - variant_id: main-r3
-#    agent:
-#      plugins:
-#        - type: "local"
-#          path: "/ABSOLUTE/PATH/TO/skills-main"
-#  - variant_id: variant-r2
-#    agent:
-#      plugins:
-#        - type: "local"
-#          path: "/ABSOLUTE/PATH/TO/skills-variant"
-#  - variant_id: variant-r3
-#    agent:
-#      plugins:
-#        - type: "local"
-#          path: "/ABSOLUTE/PATH/TO/skills-variant"

@@ -107,37 +107,41 @@ Start from [`tests/experiments/skill-comparison-template.yaml`](../../tests/expe
 Fill in:
 - `experiment_id`: `compare-<ref_a_slug>-vs-<ref_b_slug>`
 - `description`: the hypothesis from Phase 2
-- One variant per ref. Variant IDs must be the slugs.
+- `defaults.repeats`: set to `<n_reps>` (the value from `$ARGUMENTS`, default 3). This replaces the per-variant duplication approach — coder_eval's native repeats support fans out each (task, variant) pair into `<n_reps>` replicates automatically.
+- One variant per ref (no `-rN` suffixes). Variant IDs must be the slugs.
 - Absolute worktree paths in each variant's `plugins[].path`.
 - A pinned-SHA comment on the line above each variant. Format depends on ref kind:
   - Branch ref: `# pinned: <branch> @ <sha>` — e.g. `# pinned: feat/my-change @ a1b2c3d`.
   - SHA ref: `# pinned: <sha>` — e.g. `# pinned: a1b2c3d` (no branch; the input was the SHA itself).
 
-Suffix rule for rep variants:
-- **N=1** → one variant per ref, `variant_id` is the bare slug (e.g. `variant_id: main` or `variant_id: a1b2c3d`). No `-rN` suffix.
-- **N>1** → duplicate each variant N times with `-r1`, `-r2`, ... `-rN` suffixes on the `variant_id`, starting at `-r1`. All reps of a variant share the same path.
-
-Example for N=3:
+Example (shown for N=3):
 
 ```yaml
-  - variant_id: <slug>-r1
-    # pinned: <ref> (@ <sha> if branch, or just <sha> if SHA)
+defaults:
+  ...
+  repeats: 3
+  agent:
+    ...
+    system_prompt: |
+      You are a coding agent. Work only inside your current working directory.
+      Do NOT read, list, or access any files outside your working directory.
+      In particular, do NOT access the plugin directories — those are loaded by
+      the skill system and you do not need to read them directly.
+
+variants:
+  # pinned: main @ a1b2c3d
+  - variant_id: main
     agent:
       plugins:
         - type: "local"
-          path: "<abs-worktree-path>"
-  - variant_id: <slug>-r2
-    # pinned: <ref> (@ <sha> if branch, or just <sha> if SHA)
+          path: "<abs-worktree-path-main>"
+
+  # pinned: feat/my-change @ e4f5g6h
+  - variant_id: feat-my-change
     agent:
       plugins:
         - type: "local"
-          path: "<abs-worktree-path>"
-  - variant_id: <slug>-r3
-    # pinned: <ref> (@ <sha> if branch, or just <sha> if SHA)
-    agent:
-      plugins:
-        - type: "local"
-          path: "<abs-worktree-path>"
+          path: "<abs-worktree-path-variant>"
 ```
 
 Do not include a `bare` variant. This command compares two skill configurations — add baselines manually if needed.
@@ -175,9 +179,12 @@ SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run <resolved-task-files> \
   -e experiments/compare-<ref_a_slug>-vs-<ref_b_slug>.yaml \
   --run-dir "$RUN_DIR" \
+  --repeats <n_reps> \
   [--tags <tag1>,<tag2>,...]   # only when <task_selector> was tags:...
   -j 1 -v
 ```
+
+The `--repeats` flag overrides the `repeats:` value in the experiment YAML at runtime, so the YAML can stay committed with `repeats: 1` as a safe default while runs always use the CLI-supplied value.
 
 Record `tests/$RUN_DIR` as the run directory — everything downstream reads from there.
 
@@ -194,7 +201,7 @@ Stream output. If the run fails mid-way, capture the partial results and continu
    | <ref_a> | ... | ... | ... | ... |
    | <ref_b> | ... | ... | ... | ... |
 
-   If N>1, aggregate across `-r1`/`-r2`/`-rN`: use mean for score/duration/tokens, and `passed_runs / total_runs` for success rate per task.
+   If N>1, coder_eval produces per-replicate output under `<RUN_DIR>/<variant>/<task>/00/`, `01/`, etc. Aggregate across replicates: use mean for score/duration/tokens, and `passed_runs / total_runs` for success rate per task. The top-level `variant.json` already includes aggregated statistics when `repeats > 1`; prefer those over manual aggregation.
 
 2. Identify divergent tasks. Use the per-task `passed` boolean (from `success_criteria` in `task.json`) and the reliability score, in this order:
    - **Hard divergence** — one variant's `passed` is `true` and the other's is `false` for the same task. Always a divergence, regardless of scores.
@@ -211,7 +218,7 @@ Stream output. If the run fails mid-way, capture the partial results and continu
 
 4. Count reliability signals:
    - **Head-to-head wins** per variant — count divergent-task wins only. A win requires the winner's `passed` to be `true` OR the winner's score to be higher by more than 0.1.
-   - **Flip rate** (N>1 only) — for each task, determine the winning variant in each rep. A task is "flipped" if not all reps produced the same winner (ties across reps are not flips). Report `flip_rate = flipped_tasks / tasks_with_at_least_one_non_tie_rep`. Flip rate `> 0` is a high-variance signal.
+   - **Flip rate** (N>1 only) — for each task, compare the winning variant across replicates (`00/`, `01/`, ...). A task is "flipped" if not all replicates produced the same winner (ties across replicates are not flips). Report `flip_rate = flipped_tasks / tasks_with_at_least_one_non_tie_replicate`. Flip rate `> 0` is a high-variance signal.
    - **Token efficiency** — percent difference between variants' total tokens. Only material at `> 10%`.
 
 ## Phase 8 — Write the comparison report
