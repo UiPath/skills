@@ -31,9 +31,9 @@ AND a 4-digit expected value, a wrong answer cannot match by accident.
 Error path — a bogus article makes the Wikimedia API return 404, which
 fails the HTTP node. The flow must wire the HTTP node's `error` output
 port (an implicit port created because `supportsErrorHandling: true` on
-the v2 node) to an End node that returns the literal string 'Article not
-found'. Without the error-port edge the flow Faults and the debug call
-exits 1.
+both `core.action.http` (v1) and `core.action.http.v2`) to an End node
+that returns the literal string 'Article not found'. Without the
+error-port edge the flow Faults and the debug call exits 1.
 """
 
 import os
@@ -58,10 +58,11 @@ def main():
     if case not in CASES:
         sys.exit(f"FAIL: Unknown case {case!r}; expected one of {list(CASES)}")
 
-    # Require both node types — HTTP for the API call and a Transform
-    # variant (generic/filter/map/group-by all share the `core.action.transform`
+    # Require both node types — HTTP for the API call (v1 or v2 — the
+    # `core.action.http` substring matches both) and a Transform variant
+    # (generic/filter/map/group-by all share the `core.action.transform`
     # prefix) for the filter step.
-    assert_flow_has_node_type(["core.action.http.v2", "core.action.transform"])
+    assert_flow_has_node_type(["core.action.http", "core.action.transform"])
 
     article, date1, date2, expected = CASES[case]
     inputs = {"article": article, "date1": date1, "date2": date2}
