@@ -25,10 +25,6 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
   "inputs": {
     "timerType": "timeDuration",
     "timerPreset": "PT15M"
-  },
-  "model": {
-    "type": "bpmn:IntermediateCatchEvent",
-    "eventDefinition": "bpmn:TimerEventDefinition"
   }
 }
 ```
@@ -45,10 +41,6 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
     "timerType": "timeDuration",
     "timerPreset": "custom",
     "timerValue": "P1DT5H30M"
-  },
-  "model": {
-    "type": "bpmn:IntermediateCatchEvent",
-    "eventDefinition": "bpmn:TimerEventDefinition"
   }
 }
 ```
@@ -65,17 +57,13 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
     "timerType": "timeDate",
     "timerPreset": "custom",
     "timerDate": "=js:$vars.scheduledDate"
-  },
-  "model": {
-    "type": "bpmn:IntermediateCatchEvent",
-    "eventDefinition": "bpmn:TimerEventDefinition"
   }
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`. BPMN type and event definition come from the definition in `definitions[]`.
 
 ## Debug
 
@@ -84,4 +72,4 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 | Invalid timer value | Malformed ISO 8601 string | Check format: `P[n]Y[n]M[n]W[n]DT[n]H[n]M[n]S` |
 | Missing `timerValue` | `timerPreset: "custom"` but no `timerValue` | Add `timerValue` with ISO 8601 duration |
 | Missing `timerDate` | `timerType: "timeDate"` but no `timerDate` | Add `timerDate` with ISO 8601 datetime or `=js:` expression |
-| Missing `eventDefinition` in model | Copied from wrong template | Add `"eventDefinition": "bpmn:TimerEventDefinition"` to `model` |
+| BPMN timer event not emitted | Wrong `core.logic.delay` definition in `definitions[]` | Re-copy from `uip maestro flow registry get core.logic.delay --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |

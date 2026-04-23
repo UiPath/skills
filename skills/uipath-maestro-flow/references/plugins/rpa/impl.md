@@ -27,23 +27,26 @@ uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --output json
 uip maestro flow registry get "uipath.core.rpa-workflow.{key}" --local --output json
 ```
 
-Confirm:
+Confirm (these fields live in the **definition** — copied verbatim from the registry into `definitions[]`, never on the instance):
 
 - Input port: `input`
 - Output port: `output`
 - `model.serviceType` — `Orchestrator.StartJob`
 - `model.bindings.resourceSubType` — `Process`
+- `model.bindings.resourceKey` — the `<FolderPath>.<ResourceName>` string used to scope binding resolution
 - `inputDefinition` — may contain typed input fields (check `properties`)
 - `outputDefinition.output` — process return value
 - `outputDefinition.error` — error schema
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
 
 ## JSON Structure
 
 ### Node instance (inside `nodes[]`)
+
+The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and binding/context templates come from the definition in `definitions[]`.
 
 ```json
 {
@@ -68,32 +71,9 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": {
-    "type": "bpmn:ServiceTask",
-    "serviceType": "Orchestrator.StartJob",
-    "version": "v2",
-    "section": "Published",
-    "bindings": {
-      "resource": "process",
-      "resourceSubType": "Process",
-      "resourceKey": "Finance/Automation.Invoice Processor",
-      "orchestratorType": "process",
-      "values": {
-        "name": "Invoice Processor",
-        "folderPath": "Finance/Automation"
-      }
-    },
-    "context": [
-      { "name": "name",       "type": "string", "value": "=bindings.bProcessInvoicesName",       "default": "Invoice Processor" },
-      { "name": "folderPath", "type": "string", "value": "=bindings.bProcessInvoicesFolderPath", "default": "Finance/Automation" },
-      { "name": "_label",     "type": "string", "value": "Invoice Processor" }
-    ]
   }
 }
 ```
-
-> `resourceKey` takes the form `<FolderPath>.<ResourceName>` — confirm the exact value from `uip maestro flow registry get` output (it already has the correct key format).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -124,9 +104,9 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+> **Why the top-level `bindings[]` entries are required.** The definition's `model.context[].value` fields are template placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions. Before BPMN emit, the runtime rewrites each placeholder to `=bindings.<id>` by finding a top-level `bindings[]` entry whose `name` matches the placeholder and whose `resourceKey` matches the definition's `model.bindings.resourceKey`. Without matching top-level entries, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder."
 
-> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — they are the authoring template. Critical Rule #7 applies unchanged.
 
 ## If the RPA Process Does Not Exist Yet
 

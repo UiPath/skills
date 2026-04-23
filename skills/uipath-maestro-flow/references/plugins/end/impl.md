@@ -22,8 +22,7 @@ Confirm: input port `input`, no output ports.
   "type": "core.control.end",
   "typeVersion": "1.0.0",
   "display": { "label": "Done" },
-  "inputs": {},
-  "model": { "type": "bpmn:EndEvent" }
+  "inputs": {}
 }
 ```
 
@@ -45,8 +44,7 @@ When the workflow declares `out` variables, every End node must map all of them:
     "resultSummary": {
       "source": "=js:$vars.formatOutput.output.summary"
     }
-  },
-  "model": { "type": "bpmn:EndEvent" }
+  }
 }
 ```
 
@@ -54,7 +52,7 @@ Each key in `outputs` must match a variable `id` from `variables.globals` where 
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `outputs`.
 
 Output mapping must be added by editing the `.flow` JSON directly — see [JSON: Add output mapping](../../flow-editing-operations-json.md#add-output-mapping-on-an-end-node).
 

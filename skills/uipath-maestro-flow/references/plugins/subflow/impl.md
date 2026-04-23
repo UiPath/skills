@@ -37,8 +37,7 @@ Confirm: input port `input`, output ports `output` and `error`.
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:SubProcess" }
+  }
 }
 ```
 
@@ -56,7 +55,10 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "type": "core.trigger.manual",
           "typeVersion": "1.0.0",
           "display": { "label": "Start" },
-          "inputs": {},
+          "inputs": {
+            "entryPointId": "unique-uuid-here",
+            "isDefaultEntryPoint": true
+          },
           "outputs": {
             "output": {
               "type": "object",
@@ -64,8 +66,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
               "source": "null",
               "var": "output"
             }
-          },
-          "model": { "type": "bpmn:StartEvent", "entryPointId": "unique-uuid-here", "isDefaultEntryPoint": true }
+          }
         },
         {
           "id": "script1",
@@ -115,8 +116,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
               "source": "=result.Error",
               "var": "error"
             }
-          },
-          "model": { "type": "bpmn:ScriptTask" }
+          }
         },
         {
           "id": "subflow1End",
@@ -126,8 +126,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "inputs": {},
           "outputs": {
             "result": { "source": "=js:$vars.script1.output.result" }
-          },
-          "model": { "type": "bpmn:EndEvent" }
+          }
         }
       ],
       "edges": [

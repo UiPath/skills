@@ -73,8 +73,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
@@ -117,8 +116,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
@@ -170,8 +168,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
@@ -225,8 +222,7 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
       "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
