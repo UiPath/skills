@@ -61,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --format json"
+    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

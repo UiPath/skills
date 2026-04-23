@@ -53,6 +53,7 @@ success_criteria:
   - type: file_contains
     description: "Flow does not reference cancelled or timeout handles"
     path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    includes: []
     excludes:
       - '"cancelled"'
       - '"timeout"'
@@ -60,8 +61,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip flow validate passes"
-    command: "uip flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --format json"
+    description: "uip maestro flow validate passes"
+    command: "uip maestro flow validate PurchaseApproval/PurchaseApproval/PurchaseApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

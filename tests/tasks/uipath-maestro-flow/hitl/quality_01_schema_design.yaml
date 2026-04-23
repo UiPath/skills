@@ -49,7 +49,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip flow validate VendorPOReview/VendorPOReview/VendorPOReview.flow --format json"
+    command: "uip maestro flow validate VendorPOReview/VendorPOReview/VendorPOReview.flow --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
