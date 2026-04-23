@@ -64,10 +64,6 @@ The case file lives inside a solution + project structure. After T01 completes, 
       caseplan.json                ← § Write caseplan.json writes
 ```
 
-Sequencing under the JSON strategy:
+Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.2.
 
-1. **Step 6.0 (CLI)** — `uip solution new <SolutionName>` — creates the solution dir + `.uipx`.
-2. **T01 (plugin)** — § Scaffold writes the 5 boilerplate files, then § Write caseplan.json writes the root skeleton. See [impl-json.md](impl-json.md).
-3. **Step 6.2 (CLI)** — `uip solution project add <ProjectName> <SolutionName>.uipx` — registers the project in `.uipx.Projects[]`. Must run after `project.uiproj` exists.
-
-Under the CLI fallback, Step 6.0 + `uip maestro case init` + Step 6.2 + `cases add` run sequentially — see [impl-cli.md](impl-cli.md) § Prerequisites.
+See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence. CLI fallback: [impl-cli.md](impl-cli.md) § Prerequisites.
