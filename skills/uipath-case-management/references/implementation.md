@@ -64,7 +64,7 @@ For multi-trigger cases, add the additional triggers first via the appropriate t
 
 ## Step 9 — Add tasks and bind inputs/outputs
 
-For each task entry in `tasks.md §4.6`, open the matching plugin's implementation doc per the strategy matrix in [case-editing-operations.md](case-editing-operations.md). For `connector-activity` and `connector-trigger`, use `impl-json.md` (direct JSON write). For all other task types, use `impl-cli.md`. **Capture the `TaskId`** — cross-task references and conditions need it.
+For each task entry in `tasks.md §4.6`, open the matching plugin's implementation doc per the strategy matrix in [case-editing-operations.md](case-editing-operations.md). For all tasks, use `impl-json.md` (direct JSON write). **Capture the `TaskId`** — cross-task references and conditions need it.
 
 After adding a task, bind its inputs by editing `caseplan.json` directly per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
@@ -83,18 +83,9 @@ For **connector tasks**, pass variable references inline in `--input-values` at 
 
 When a task entry's `taskTypeId` (or `type-id` / `connection-id` for connector tasks) is `<UNRESOLVED: …>`, create a **skeleton task** instead of halting. See [skeleton-tasks.md](skeleton-tasks.md) for the canonical reference.
 
-**Process / agent / rpa / action / api-workflow / case-management:**
+**Process / agent / rpa / action / api-workflow / case-management (JSON strategy):** follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`) directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`. Omit `data.context`, `data.inputs`, `data.outputs`.
 
-```bash
-uip maestro case tasks add <file> <stage-id> \
-  --type <process|agent|rpa|action|api-workflow|case-management> \
-  --display-name "<name>" \
-  [--is-required] \
-  [--should-run-only-once] \
-  --output json
-```
-
-**Connector activity / trigger:**
+**Connector activity / trigger (CLI strategy):**
 
 ```bash
 uip maestro case tasks add-connector <file> <stage-id> \
@@ -103,7 +94,7 @@ uip maestro case tasks add-connector <file> <stage-id> \
   --output json
 ```
 
-**Skip all input binding for skeleton tasks** — they have no inputs (created without `--task-type-id`). Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip all input binding for skeleton tasks** — they have no inputs (empty `data` / no `--task-type-id`). Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
 
 Skeleton tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured skeleton `TaskId` normally.

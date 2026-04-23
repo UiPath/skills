@@ -18,12 +18,12 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `triggers/event` | CLI | Migration queued. |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
 | `variables/io-binding` | **JSON** | Direct write to `task.data.inputs[i].value`. No CLI needed. See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md). |
-| `tasks/process` | CLI | Migration queued. |
-| `tasks/agent` | CLI | Migration queued. |
-| `tasks/rpa` | CLI | Migration queued. |
-| `tasks/action` | CLI | Migration queued. |
-| `tasks/api-workflow` | CLI | Migration queued. |
-| `tasks/case-management` | CLI | Migration queued. |
+| `tasks/process` | **JSON** | See [plugins/tasks/process/impl-json.md](plugins/tasks/process/impl-json.md). |
+| `tasks/agent` | **JSON** | See [plugins/tasks/agent/impl-json.md](plugins/tasks/agent/impl-json.md). |
+| `tasks/rpa` | **JSON** | See [plugins/tasks/rpa/impl-json.md](plugins/tasks/rpa/impl-json.md). |
+| `tasks/action` | **JSON** | See [plugins/tasks/action/impl-json.md](plugins/tasks/action/impl-json.md). |
+| `tasks/api-workflow` | **JSON** | See [plugins/tasks/api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md). |
+| `tasks/case-management` | **JSON** | See [plugins/tasks/case-management/impl-json.md](plugins/tasks/case-management/impl-json.md). |
 | `tasks/connector-activity` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md). |
 | `tasks/connector-trigger` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-trigger/impl-json.md](plugins/tasks/connector-trigger/impl-json.md). |
 | `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
