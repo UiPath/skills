@@ -621,7 +621,7 @@ Options for `add`:
 | `<stage-id>` | **(required)** ID of the stage node |
 | `<task-id>` | **(required)** ID of the task |
 | `-d, --display-name <name>` | Display name for the condition |
-| `--rule-type <type>` | Initial rule type: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc` |
+| `--rule-type <type>` | Initial rule type: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc`, `runs-sequentially` |
 | `--condition-expression <expr>` | Condition expression for the initial rule |
 | `--selected-tasks-ids <ids>` | Comma-separated task IDs. **Required** when `--rule-type` is `selected-tasks-completed` |
 
