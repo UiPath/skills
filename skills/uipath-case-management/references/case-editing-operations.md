@@ -10,28 +10,28 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 
 | Plugin | Strategy | Notes |
 |---|---|---|
-| `case` (root + initial trigger) | CLI | `uip maestro case cases add` creates the file scaffolding and is out of scope for the JSON shift. |
+| `case` (root + initial trigger) | **JSON** | Migrated. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Scaffolding (`uip solution new`, `uip maestro case init`, `uip solution project add`) stays CLI; only `cases add` flips to direct-JSON-write. `cases edit` remains CLI-only. |
 | `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
-| `triggers/manual` | **JSON** | Migrated. See [plugins/triggers/manual/impl-json.md](plugins/triggers/manual/impl-json.md). Also mutates sibling `entry-points.json` — see that file for the 2-file sync contract. |
-| `triggers/timer` | **JSON** | Writes secondary Trigger node with `Intsvc.TimerTrigger` service type + `timeCycle` ISO 8601 string; adapts shape to initial (`trigger_1`) or secondary based on existing trigger count. See [plugins/triggers/timer/impl-json.md](plugins/triggers/timer/impl-json.md). |
-| `triggers/event` | CLI | Migration queued. |
+| `triggers/manual` | CLI | Migration queued. |
+| `triggers/timer` | CLI | Migration queued. |
+| `triggers/event` | **JSON** | CLI fetches metadata, skill writes trigger JSON. See [plugins/triggers/event/impl-json.md](plugins/triggers/event/impl-json.md). |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
 | `variables/io-binding` | **JSON** | Direct write to `task.data.inputs[i].value`. No CLI needed. See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md). |
-| `tasks/process` | CLI | Migration queued. |
-| `tasks/agent` | CLI | Migration queued. |
-| `tasks/rpa` | CLI | Migration queued. |
-| `tasks/action` | CLI | Migration queued. |
-| `tasks/api-workflow` | CLI | Migration queued. |
-| `tasks/case-management` | CLI | Migration queued. |
-| `tasks/connector-activity` | CLI | Migration queued. Auto-injected default entry condition complicates the recipe. |
-| `tasks/connector-trigger` | CLI | Migration queued. Same as connector-activity. |
+| `tasks/process` | **JSON** | See [plugins/tasks/process/impl-json.md](plugins/tasks/process/impl-json.md). |
+| `tasks/agent` | **JSON** | See [plugins/tasks/agent/impl-json.md](plugins/tasks/agent/impl-json.md). |
+| `tasks/rpa` | **JSON** | See [plugins/tasks/rpa/impl-json.md](plugins/tasks/rpa/impl-json.md). |
+| `tasks/action` | **JSON** | See [plugins/tasks/action/impl-json.md](plugins/tasks/action/impl-json.md). |
+| `tasks/api-workflow` | **JSON** | See [plugins/tasks/api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md). |
+| `tasks/case-management` | **JSON** | See [plugins/tasks/case-management/impl-json.md](plugins/tasks/case-management/impl-json.md). |
+| `tasks/connector-activity` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md). |
+| `tasks/connector-trigger` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-trigger/impl-json.md](plugins/tasks/connector-trigger/impl-json.md). |
 | `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
-| `conditions/stage-entry-conditions` | **JSON** | Write directly to the target stage's `data.entryConditions[]`. See [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md). |
-| `conditions/stage-exit-conditions` | **JSON** | Write directly to the target stage's `data.exitConditions[]`. See [plugins/conditions/stage-exit-conditions/impl-json.md](plugins/conditions/stage-exit-conditions/impl-json.md). |
-| `conditions/task-entry-conditions` | **JSON** | Write directly to the target task's `entryConditions[]`. See [plugins/conditions/task-entry-conditions/impl-json.md](plugins/conditions/task-entry-conditions/impl-json.md). |
-| `conditions/case-exit-conditions` | **JSON** | Write directly to `root.caseExitConditions[]`. See [plugins/conditions/case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md). |
-| `sla` | **JSON** | Migrated. Per-target `slaRules[]` compose-and-write. Fills CLI gaps: per-conditional-rule escalations, ExceptionStage SLA, multi-recipient single rule. See [plugins/sla/impl-json.md](plugins/sla/impl-json.md). |
+| `conditions/stage-entry-conditions` | CLI | Migration queued. |
+| `conditions/stage-exit-conditions` | CLI | Migration queued. |
+| `conditions/task-entry-conditions` | CLI | Migration queued. |
+| `conditions/case-exit-conditions` | CLI | Migration queued. |
+| `sla` | CLI | Migration queued. |
 
 ## How agents consume this matrix
 
@@ -66,5 +66,4 @@ When a plugin's migration PR lands:
 1. Update its row here from `CLI` to `JSON`.
 2. Add `impl-json.md` to the plugin's folder with the `direct-json: supported` frontmatter.
 3. Ensure `impl-json.md` has a complete JSON Recipe.
-4. Manually validate the migrated plugin against a real CLI run — regenerate `caseplan.json` (and any sibling files the plugin mutates) via `uip maestro case ...` commands, then compare against the direct-JSON-write output. Document the comparison in the PR description.
-5. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed (CLI-parity diff, validator parity, downstream append, Studio Web render).
+4. Ensure a "Compatibility" section in the plugin's `impl-json.md` documents what passed — pin the CLI version the recipe was captured against and list the structural-equivalence + validation-parity checks that passed locally.

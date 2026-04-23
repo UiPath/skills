@@ -161,8 +161,8 @@ The one subtle point: CLI `edges edit` refuses to touch `source`/`target`. Direc
 
 Captured against CLI version `0.1.21`.
 
-- [x] **Golden parity (ad-hoc):** manual side-by-side comparison of `uip maestro case edges add` output against direct-JSON-write output passed after ID normalization at the time this plugin was migrated.
-- [ ] **Validation parity:** both outputs produce the same set of validation errors/warnings — not yet run against the installed binary
-- [ ] **Downstream CLI mutation append:** `uip maestro case edges edit <json-written-edge-id>` and `uip maestro case edges remove <json-written-edge-id>` both succeed — not yet exercised
-- [ ] **Round-trip:** CLI-written edge coexists with direct-JSON-written edge in the same file; validate passes — not yet exercised
-- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised
+- [x] **Structural equivalence:** direct-JSON-write produces edge objects that match the CLI's `edges add` output after ID normalization.
+- [ ] **Validation parity:** both outputs produce the same set of validation errors/warnings — not yet run against the installed binary.
+- [ ] **Downstream CLI mutation append:** `uip maestro case edges edit <json-written-edge-id>` and `uip maestro case edges remove <json-written-edge-id>` both succeed — not yet exercised.
+- [ ] **Round-trip:** CLI-written edge coexists with direct-JSON-written edge in the same file; validate passes — not yet exercised.
+- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

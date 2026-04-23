@@ -57,7 +57,7 @@ Emission rules:
 1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins). Matches CLI's final-array semantics.
 2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
 3. **Bare default rule is legal.** If a target has escalations but no `sla set` T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`. Matches CLI's `getOrCreateDefaultRule` behavior.
-4. **Omit `escalationRule` entirely** (don't emit `[]`) when a rule has no attached escalations.
+4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
 
 ## Recipe — one escalation entry

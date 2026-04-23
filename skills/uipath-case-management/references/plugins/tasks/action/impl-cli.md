@@ -54,7 +54,7 @@ uip maestro case tasks add caseplan.json stg000abc123 \
     "priority": "High",
     "recipient": "approver@corp.com",
     "actionCatalogName": "<catalog-name-from-enrichment>",
-    "labels": [ /* enriched */ ],
+    "labels": "<labels string from enrichment>",
     "context": { "taskTypeId": "act_app_9876543210" }
   },
   "isRequired": true
