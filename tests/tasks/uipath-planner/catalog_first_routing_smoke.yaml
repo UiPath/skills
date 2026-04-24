@@ -1,0 +1,50 @@
+task_id: skill-planner-catalog-first-routing-smoke
+description: >
+  Skill-guided evaluation: planner consults the generated compact skill catalog
+  before routing an ambiguous UiPath platform request. This protects the
+  catalog-first planner behavior added for progressive discovery.
+tags: [uipath-planner, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A user asks: "I need a plan for creating an Orchestrator queue, publishing an
+  existing automation package, and deploying it to Orchestrator. I am not sure
+  which UiPath skill should own the work."
+
+  Use the UiPath planner skill. Before using the static map, consult the compact
+  skills catalog if it is available. Do not run login and do not execute the
+  deployment. Save the plan to plan.md in the current working directory.
+
+  The plan must include:
+  - Discovery source: the catalog or fallback used for routing.
+  - Primary skill: the first specialist skill to open.
+  - Execution outline: the next steps for the main agent.
+  - Stop conditions: concrete conditions that should pause execution.
+
+success_criteria:
+  - type: file_exists
+    description: "plan.md was created"
+    path: "plan.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "plan.md records catalog-first discovery"
+    path: "plan.md"
+    includes:
+      - "Discovery source"
+      - "catalog"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "plan.md routes Orchestrator work to uipath-platform"
+    path: "plan.md"
+    includes:
+      - "uipath-platform"
+      - "Primary skill"
+    weight: 2.0
+    pass_threshold: 1.0

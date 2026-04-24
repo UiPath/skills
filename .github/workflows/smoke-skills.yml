@@ -59,7 +59,7 @@ jobs:
           fi
 
           # Extract unique skill names from changed paths
-          SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u)
+          SKILLS=$(echo "$CHANGED" | grep -E '^skills/[^/]+/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u)
 
           # Also include skills whose test tasks changed
           TEST_SKILLS=$(echo "$CHANGED" | grep '^tests/tasks/' | sed 's|tests/tasks/\([^/]*\)/.*|\1|' | sort -u)
