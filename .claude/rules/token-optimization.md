@@ -58,34 +58,28 @@ Strip comments from code examples when surrounding prose already explains intent
 - Comment explains workaround or UiPath-specific quirk not covered by surrounding prose
 - Comment marks section boundary in long code block (e.g., `// --- Phase 2: Validation ---`)
 
-## 3. XAML Namespace Deduplication
+## 3. Boilerplate Deduplication
 
-XAML code examples repeat standard `xmlns` declarations in every block. Agent only needs to see them once.
+Code examples in a skill often repeat the same structural boilerplate — namespace declarations, import blocks, wrapper envelopes, schema headers. Agent only needs to see them once per file.
 
-### Rule
+### General Rule
 
-1. **First XAML code block in file**: include full `xmlns` declarations
-2. **Subsequent XAML code blocks in same file**: replace standard UiPath xmlns lines with `<!-- standard xmlns omitted -->`
-3. Only omit **standard** xmlns — keep any non-standard or example-specific xmlns that differs from first block
+1. **First code block in file** for a given format: include full boilerplate
+2. **Subsequent code blocks in same file** of the same format: replace standard boilerplate with a single-line placeholder comment in that format's comment syntax (e.g., `<!-- standard xmlns omitted -->`, `// standard imports omitted`, `# standard header omitted`)
+3. Only omit **standard** boilerplate — keep any non-standard, example-specific, or differing lines that carry information for the current example
+4. Never omit boilerplate in `assets/templates/` — templates are copy-paste scaffolding and must be complete
 
-### Standard UiPath xmlns (safe to omit after first occurrence)
+### Per-Format Boilerplate Registries
 
-```
-xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
-xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
-xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
-xmlns:scg="clr-namespace:System.Collections.Generic;assembly=..."
-xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=..."
-xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-xmlns:ui="http://schemas.uipath.com/workflow/activities"
-xmlns:upa="http://schemas.uipath.com/workflow/activities"
-xmlns:upas="http://schemas.uipath.com/workflow/activities/start"
-```
+Each skill that introduces a new file format adds its standard boilerplate list to the skill's own references (e.g., `references/<format>-boilerplate.md`) so agents editing that skill know what is safe to omit. When extending this rule to a new format, add the registry in the owning skill and link it from here.
 
-### NOT standard (never omit)
+Known registries:
 
-- Package-specific xmlns added for particular activity (e.g., connector-specific namespaces)
-- xmlns that only appear in one example and are specific to that example's point
+- **XAML (uipath-rpa)**: standard UiPath `xmlns` declarations — see the RPA skill's XAML reference for the full list.
+
+### Example — XAML
+
+Standard UiPath `xmlns` declarations (`xmlns:ui`, `xmlns:sap`, `xmlns:x`, etc.) appear in every workflow. After the first block in a file, replace them with `<!-- standard xmlns omitted -->`. Package-specific or example-specific `xmlns` stay.
 
 ## Scope
 
