@@ -61,7 +61,7 @@ The repository contains skills for building and managing UiPath automation proje
 
 ## Multi-Tool Support
 
-This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor IDE**.
+This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, and **Cursor IDE**.
 
 ### Claude Code
 
@@ -80,6 +80,10 @@ By default, Claude Code prompts for approval on every `uip` command, and a reali
 ```
 
 The command prints the recommended JSON and offers to merge it into your settings (`~/.claude/settings.json` for global, or project-local `.claude/settings.local.json`). You will also see a one-line nudge at session start until an allowlist is installed.
+
+### Google Gemini CLI
+
+Gemini CLI is supported by `uip skills install` — pick **Gemini CLI** when the wizard prompts for a target and skills are wired up automatically.
 
 ### OpenAI Codex CLI
 
