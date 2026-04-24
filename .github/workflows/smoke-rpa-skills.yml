@@ -147,9 +147,20 @@ jobs:
       - name: Run RPA smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
-          # Route agent + reviewer through Anthropic API (Bedrock
-          # guardrails were blocking legitimate UiPath XAML output on
-          # rpa-legacy; coder_eval's reviewer doesn't support Bedrock).
+          # Route the agent through AWS Bedrock. The Anthropic workspace
+          # hit its API usage limit (resets 2026-05-01), so DirectRoute
+          # is blocked. Bedrock has a separate quota.
+          #
+          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
+          # token spend — coder_eval's reviewer only supports Anthropic
+          # direct or UiPath LLM Gateway, not Bedrock). If the shared
+          # workspace quota is still drained when the reviewer fires,
+          # orchestrator._run_final_llm_review swallows the error and
+          # the task still records its deterministic criteria result.
+          API_BACKEND: bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         working-directory: tests
         id: smoke
