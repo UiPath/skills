@@ -12,13 +12,26 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ---
 
+## Pre-flight: Window Baseline
+
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via the `uia snapshot inspect` CLI to check whether the target app is open. Two outcomes:
+
+- **Target window present** → proceed directly to `uia-configure-target`; it will attach.
+- **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
+
+Do not re-inspect or keep polling after the initial check — subsequent capture and attach are `uia-configure-target`'s job. This single pre-flight exists only to drive the launch decision.
+
+**Never use `Get-Process`, `tasklist`, `ps`, WMI, window-title scraping, or any other OS-level process command** to infer app state. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions.
+
+---
+
 ## Terminology — what "screen" means
 
 "Screen" appears across UIA docs in three distinct senses. Know which one a passage uses before acting on it.
 
 | Sense | Used in | What it is | Boundary / identity |
 |-------|---------|------------|---------------------|
-| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-multi-step-flows.md](uia-multi-step-flows.md) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
+| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
 | **OR screen** | Object Repository CLI, `.objects/` layout, `Descriptors.<App>.<Screen>.<Element>`, [uia-configure-target-workflows.md](uia-configure-target-workflows.md) | A data-model entity in the Object Repository, registered via `create-screen` / matched via `get-screens`. | Identified by its window selector. |
 | **Screen handle** (coded only) | "Screen Handle Affinity" under § For Coded Workflows | A runtime `UiTargetApp` returned by `uiAutomation.Open` / `Attach`, bound to one OR screen. | Element descriptors are valid only on the handle for their own OR screen. |
 
@@ -45,7 +58,6 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 - **SelectItem on web dropdowns** — `SelectItem` may fail on custom `<select>` elements. Workaround: use `TypeInto` instead.
 - **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow. Always try proper selectors first.
 - **Wrong Object Repository references** — never copy references from examples or other projects. Always use `uia-configure-target` to generate them for the current application state.
-- **Launching the app before configuring targets** — do NOT launch the target application before running `uia-configure-target`. The skill captures the window tree first and only launches if the app isn't found. Launching preemptively risks targeting the wrong window.
 - **Using `InjectJsScript` instead of standard activities** — do NOT use `InjectJsScript` when standard UI activities (GetText, Click, TypeInto, ExtractTableData, etc.) with configured targets would work. `InjectJsScript` is a last resort — it's hard to debug, fragile to page changes, and bypasses the Object Repository.
 - **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient.
 
@@ -57,7 +69,7 @@ See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for t
 
 ### Multi-Step UI Flows (Advancing Application State)
 
-See [uia-multi-step-flows.md](uia-multi-step-flows.md).
+See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows).
 
 ---
 
@@ -167,7 +179,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 > "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
-For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-multi-step-flows.md](uia-multi-step-flows.md) for the capture loop and the Complete-then-advance rule.
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
 
 ### Key Concepts
 

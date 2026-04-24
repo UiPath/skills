@@ -165,7 +165,7 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 Before writing any XAML with UI activities, every UI element target **MUST** be configured through the `uia-configure-target` skill flow. See [uia-configure-target-workflows.md](../uia-configure-target-workflows.md).
 
-**NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow. **NEVER** launch the target application before running `uia-configure-target`.
+**NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
 ### For CREATE Requests
 
