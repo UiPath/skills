@@ -35,7 +35,7 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip solution`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
-| Desktop/browser automation (`uipath-servo`) | Command categories (Discover, Interact, Inspect, Manage), input methods, framework types. Found in "Commands" section hierarchy. |
+| Desktop/browser interaction (`interact`) | Command categories (Discover, Interact, Inspect, Manage), input methods, framework types. Found in "Commands" section hierarchy. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 
 Group components by category. For skills with `references/plugins/` subdirectories (like `uipath-maestro-flow`), each plugin directory is one component — use the planning.md to understand what it covers.
@@ -76,7 +76,7 @@ Determine what environment each skill requires to be testable. Use the same phra
 - **Local-only** — no cloud auth or special hardware (e.g., flow validate, solution pack)
 - **Requires cloud auth** — needs UiPath tenant authentication (e.g., platform ops, flow debug, deploy)
 - **Requires Windows + Studio Desktop** — needs Studio installed (task prompts typically note "Studio Desktop is NOT available" when skipping these)
-- **Requires browser extension / Servo CLI / display** — desktop/browser automation skills
+- **Requires browser extension / display** — desktop/browser automation skills
 
 Tag each skill with its dependencies. This informs which tests are feasible to write and run in CI.
 

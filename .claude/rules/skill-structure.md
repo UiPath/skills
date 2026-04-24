@@ -31,7 +31,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 - `name` MUST exactly match the parent folder name
 - `description` MUST be under 250 characters. Claude Code truncates non-bundled skill descriptions at 250 chars in the system prompt — anything beyond is invisible to the model
 - `description` MUST start with `[PREVIEW]` when the skill is first created. Remove the tag only when the skill is considered stable
-- `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters
+- `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters
 - `description` MUST include compact redirects for commonly confused sibling skills using `→` notation (e.g., `For XAML→uipath-rpa`)
 - `description` MUST NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — these waste characters and get truncated
 - All frontmatter fields (`allowed-tools`, `user-invocable`, etc.) MUST be at the top level — NOT nested under a `metadata:` key (Claude Code only reads top-level fields)
