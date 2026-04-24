@@ -13,6 +13,7 @@ Triggers are event-based activities that fire when something happens in an exter
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
+- [Webhook URL Retrieval](#webhook-url-retrieval)
 - [Happy-Path Example](#happy-path-example)
 
 ---

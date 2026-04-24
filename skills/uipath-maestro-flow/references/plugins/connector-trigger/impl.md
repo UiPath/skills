@@ -185,7 +185,9 @@ The command populates `inputs.detail` (including the internal `configuration` bl
 
 ### Step 6b — Retrieve and display webhook URL (webhooks only)
 
-**This step is required for ALL triggers where `eventMode` is `"webhooks"`**, regardless of whether `byoaConnection` is true or false.
+**This step applies to triggers where `eventMode` is `"webhooks"`**, regardless of whether `byoaConnection` is true or false.
+
+> **Guard:** If the trigger object's `isWebhookUrlVisible` is `false` (from `triggers objects` output in Step 1b), skip this step — the connector manages webhook registration automatically and does not expose a URL for manual registration.
 
 1. Get the `ElementInstanceId` for the selected connection from the connections list output:
 
@@ -370,11 +372,17 @@ uip is triggers describe "<connector-key>" "<operation>" "<objectName>" --connec
 
 # Connections (same as IS activity)
 uip is connections list "<connector-key>" --output json
+uip is connections list "<connector-key>" --byoa --output json    # BYOA connections only (Step 1b)
 uip is connections ping "<connection-id>" --output json
 
 # Reference resolution (same as IS activity)
 uip is resources execute list "<connector-key>" "<resource>" \
   --connection-id "<id>" --output json
+
+# Webhook URL retrieval (Step 6b — webhooks eventMode only)
+uip is webhooks config "<connector-key>" \
+  --connection-id "<connection-guid>" \
+  --element-instance-id <number> --output json
 ```
 
 ---
