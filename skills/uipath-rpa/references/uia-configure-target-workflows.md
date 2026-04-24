@@ -38,7 +38,7 @@ The skill will search the Object Repository for existing matches before creating
 
 `--activity <type>` applies to the **entire batch** — every element in `--elements` is configured for that one activity type (the default is `Click`). When a single screen mixes activity types (e.g., a `TypeInto` target for a text input plus a `Click` target for a button), split into one `uia-configure-target` call per type:
 
-```
+```bash
 # TypeInto targets
 uia-configure-target --window "Todo App" --elements "new todo input" --activity TypeInto
 
