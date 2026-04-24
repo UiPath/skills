@@ -8,7 +8,11 @@ Some UI elements only become visible after interacting with earlier elements (e.
 
 ## Advancing UI State
 
-After registering an element in the Object Repository, interact with it (or a sibling element) to reveal the next screen. See the skill `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Re-inspect the window before each interaction so element refs are fresh; never reuse refs across unrelated snapshots.
+After registering an element in the Object Repository, interact with it (or a sibling element) to reveal the next screen via the `uia interact` CLI. See the skill at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`.
+
+**Reuse refs from the current `uia-configure-target` capture — do not re-inspect.** `uia interact` resolves element refs against the most recent snapshot in memory regardless of which CLI wrote it (the two write to different folders, but the snapshot is shared). Pass the same e-refs (`e28`, `e35`, etc.) directly to `uia interact click`/`type`/`select`. Running `snapshot inspect` just to re-mint refs for an unchanged UI is wasted work — the refs you have are still live.
+
+Re-inspect (or re-run `snapshot capture`) only when the UI has actually advanced since the last capture; refs from a pre-advance snapshot will not resolve against the new state.
 
 ## Multi-Step Capture Loop
 
