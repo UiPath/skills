@@ -18,7 +18,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 | Sense | Used in | What it is | Boundary / identity |
 |-------|---------|------------|---------------------|
-| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-multi-step-flows.md](uia-multi-step-flows.md) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (servo / `uia interact`) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
+| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-multi-step-flows.md](uia-multi-step-flows.md) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
 | **OR screen** | Object Repository CLI, `.objects/` layout, `Descriptors.<App>.<Screen>.<Element>`, [uia-configure-target-workflows.md](uia-configure-target-workflows.md) | A data-model entity in the Object Repository, registered via `create-screen` / matched via `get-screens`. | Identified by its window selector. |
 | **Screen handle** (coded only) | "Screen Handle Affinity" under § For Coded Workflows | A runtime `UiTargetApp` returned by `uiAutomation.Open` / `Attach`, bound to one OR screen. | Element descriptors are valid only on the handle for their own OR screen. |
 
@@ -165,7 +165,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 ### Multi-Screen Authoring
 
-> "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by servo / `uia interact` advances, not the number of `.objects/` screen entries that get created.
+> "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
 For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-multi-step-flows.md](uia-multi-step-flows.md) for the capture loop and the Complete-then-advance rule.
 

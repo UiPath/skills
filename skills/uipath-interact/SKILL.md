@@ -18,6 +18,10 @@ Drive live desktop applications and browser tabs via the `uip rpa uia` CLI: disc
 
 For anything else (building workflows, configuring Object Repository targets, fixing selectors, etc.) -- use the `uipath-rpa` skill. It is the entry point for all non-interactive UIA work and routes to the appropriate sub-skills.
 
+## Prerequisites
+
+See [uia-prerequisites.md](../uipath-rpa/references/uia-prerequisites.md).
+
 ## Entry procedure
 
 Read and follow `$PROJECT_DIR/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md` **inline** in the main conversation. Do NOT delegate to a subagent -- the skill drives the live CLI and needs the main conversation's feedback loop (screenshots, captured output, user replies).

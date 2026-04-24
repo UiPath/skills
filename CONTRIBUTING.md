@@ -311,7 +311,7 @@ Before submitting your PR, verify:
 ## Pull Request Process
 
 1. **Fork** this repository
-2. **Create a feature branch** from `main` (e.g., `feat/add-my-skill`, `fix/servo-snapshot-docs`)
+2. **Create a feature branch** from `main` (e.g., `feat/add-my-skill`, `fix/uia-snapshot-docs`)
 3. **Make your changes** following the guidelines above
 4. **Run through the Quality Checklist**
 5. **Submit a pull request** against `main`
@@ -325,7 +325,7 @@ Before submitting your PR, verify:
 | Type | Pattern | Example |
 |------|---------|---------|
 | New skill | `feat/add-<skill-name>` | `feat/add-uipath-data-service` |
-| Skill improvement | `feat/<skill-name>-<description>` | `feat/servo-add-drag-support` |
+| Skill improvement | `feat/<skill-name>-<description>` | `feat/uia-add-drag-support` |
 | Bug fix | `fix/<skill-name>-<description>` | `fix/flow-validate-edge-ports` |
 | Documentation | `docs/<description>` | `docs/update-platform-cli-reference` |
 

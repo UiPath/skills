@@ -34,7 +34,7 @@ Workflow steps, response shape, downstream OR regeneration for coded vs XAML, an
 
 ## Interacting with a Registered Target
 
-See [uia-multi-step-flows.md](uia-multi-step-flows.md) for when to use `uia interact` vs servo and the full capture loop.
+See [uia-multi-step-flows.md](uia-multi-step-flows.md) for the capture loop and how to advance app state between captures via the `uia interact` CLI.
 
 ## Attaching Targets to Workflow Activities
 
