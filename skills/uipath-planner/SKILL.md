@@ -20,6 +20,10 @@ Your job is to **elicit preferences, plan, and route** — never execute.
 
 Skip this planner for simple, well-defined single-skill tasks (e.g., "create a workflow that sends an email") — the agent loads the specialist skill directly.
 
+## Skill Catalog First
+
+Before relying on the static capability map below, read `../skills.catalog.json` if it exists and use the skill descriptions there to shortlist candidate skills. Open only the selected skill's `SKILL.md`; follow that skill's references only as needed. Use the static map below as a fallback and for stable routing constraints.
+
 ## Skill capability map
 
 High-level view of what each specialist owns. **Do not describe internal flows of any specialist in your plan** — each skill documents its own procedures and will drift out of sync if duplicated here.
