@@ -17,6 +17,8 @@ Before executing each plugin's T-entries, consult the strategy matrix in [case-e
 
 Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
 
+**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Rule #23a](../SKILL.md) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
+
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
 > - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
 > - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
@@ -143,7 +145,7 @@ Do not enumerate every task — Studio Web visualization fills that role.
 
 ### 9.5.3 — First prompt
 
-Use **AskUserQuestion**:
+Use **AskUserQuestion**. Mandatory on every run — auto mode, non-interactive mode, and prior approvals do NOT bypass this prompt (SKILL.md Rule #25). Never proceed to Phase 2b without a direct user response here.
 
 - `Publish for review`
 - `Skip publish and continue`

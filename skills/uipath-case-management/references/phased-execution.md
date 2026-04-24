@@ -58,7 +58,7 @@ Skeleton mode relaxes the validator to tolerate intentional Phase 2a incompleten
 
 ## Hard stop
 
-Present a summary, then prompt the user.
+**Unconditional.** Present a summary, then prompt the user via AskUserQuestion. The prompt is MANDATORY on every run — auto mode, non-interactive mode, prior blanket approval, and a clean skeleton validate do NOT bypass it. The only valid transition from Phase 2a to Phase 2b is a user response to this AskUserQuestion. If the harness refuses interactive prompts, halt with an explicit error rather than proceeding silently.
 
 ### Summary content
 

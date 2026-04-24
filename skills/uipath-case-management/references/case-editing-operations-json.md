@@ -150,6 +150,8 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 Always read `caseplan.json` fully with the Read tool, modify the in-memory object in reasoning, and write the whole file back with the Write tool. For narrowly-scoped, unambiguous single-field updates, the Edit tool is also acceptable. Re-read before the next mutation; do not hold the parsed object across tool calls.
 
+**One T-entry per cycle.** Each T-entry from `tasks.md` gets its own Read → mutate → Write round-trip. Do not batch multiple T-entries (e.g., "add all 5 stages in one write") — the transcript must show one tool-call pair per declarative unit, so every mutation is independently reviewable and revertable. Within a single T-entry, all fields that logically belong to that entry (a stage node plus its render fields, a task plus its default entry condition, etc.) are written together in that one Write.
+
 ### Generate a fresh ID
 
 Per the algorithm above. Use a Bash + `node -e` one-liner that **only prints the ID to stdout** — the agent consumes the printed value and embeds it via Write/Edit. No file I/O inside the subprocess.
@@ -250,3 +252,4 @@ On failure: fix the reported issue (usually a missing field, malformed handle, o
 - **Do NOT skip the default entry condition on connector tasks.** The frontend expects it.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Write (or Edit for narrowly-scoped unambiguous replacements).
 - **Do NOT run validation after every single write.** Validate at plugin boundaries, not per-field.
+- **Do NOT batch multiple T-entries into one JSON write.** Each T-entry from `tasks.md` gets its own Read → mutate → Write cycle. No "compose all stages + edges + tasks in memory, flush once" — that destroys the per-mutation audit trail.
