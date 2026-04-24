@@ -71,12 +71,12 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 **If no `.flow` file exists and surface is Flow**, scaffold solution-first — Flow projects MUST live inside a solution:
 
 ```bash
-uip solution new <ProjectName> --output json
-cd <ProjectName> && uip maestro flow init <ProjectName>
-# Creates: <ProjectName>/<ProjectName>/<ProjectName>.flow
+uip solution new <SolutionName> --output json
+cd <SolutionName> && uip maestro flow init <ProjectName>
+# Creates: <SolutionName>/<ProjectName>/<ProjectName>.flow
 ```
 
-The flow file path is `<ProjectName>/<ProjectName>/<ProjectName>.flow` (double-nested). The outer `<ProjectName>/` is the solution directory (contains the `.uipx` file); the inner `<ProjectName>/` is the flow project. Running `uip maestro flow init` without first running `uip solution new` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
+The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip maestro flow init` without first running `uip solution new` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
 
 ---
 
