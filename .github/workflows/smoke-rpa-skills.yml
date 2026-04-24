@@ -77,12 +77,6 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/uipcli
-          token: ${{ secrets.GH_PAT }}
-          path: .uipcli
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -92,8 +86,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - uses: oven-sh/setup-bun@v2
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -115,67 +107,38 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # The uipcli monorepo build needs GitHub Packages auth to fetch
-      # internal @uipath/* deps (e.g. @uipath/tool-agent). Write a
-      # project-scoped .npmrc inside .uipcli/ so bun install picks it
-      # up — and crucially do NOT touch the global ~/.npmrc so that
-      # `uip tools install @uipath/rpa-tool` later resolves from
-      # public npm (where the tarballs aren't broken).
-      - name: Write .uipcli/.npmrc for private @uipath deps
+      # All @uipath/* npm packages come from GitHub Packages, not
+      # public npm. Configure the registry globally so `npm install -g`
+      # and uipcli's own `uip tools install` auto-install both route
+      # through GH Packages.
+      - name: Configure npm for GitHub Packages (@uipath)
         shell: bash
         env:
           GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
         run: |
-          cat > .uipcli/.npmrc <<NPMRC
+          cat > ~/.npmrc <<NPMRC
           @uipath:registry=https://npm.pkg.github.com
           //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
           NPMRC
 
-      # Build uipcli and install it GLOBALLY via `bun pm pack` +
-      # `npm install -g` rather than `npm link`. With `npm link`, the
-      # linked CLI's `import.meta.url` resolves to the monorepo source
-      # path, so uipcli's tool walk-up discovers `.uipcli/packages/`
-      # first (finds rpa-legacy-tool), short-circuits, and never falls
-      # back to the npm global `@uipath/` dir where
-      # `npm install -g @uipath/rpa-tool` lands. Installing the packed
-      # tarball puts the CLI at the same global prefix as the tools,
-      # so the walk-up sees both.
-      - name: Build, pack, and install uip CLI globally from source
-        working-directory: .uipcli
-        shell: bash
-        run: |
-          bun install
-          bun run build
-          cd packages/cli
-          bun pm pack
-          TGZ=$(ls *.tgz | head -1)
-          npm install -g "$TGZ" --registry=https://registry.npmjs.org/
-          uip --version
-
-      # Install both RPA tools from public npm.
-      #
-      # The published tarballs on registry.npmjs.org have concrete
-      # dependency versions (verified — `dependencies` is `{}` and
-      # `devDependencies` use plain semver). The
-      # `EUNSUPPORTEDPROTOCOL / Unsupported URL Type "workspace:"`
-      # failures happen only when npm pulls from the GitHub Packages
-      # mirror (npm.pkg.github.com), whose tarballs ship with
-      # unrebuilt workspace refs.
-      #
-      # Some ambient config (e.g. `bun install` side effects or a
-      # user-level config the Windows runner image ships with) is
-      # steering `uip tools install` at GH Packages even when we
-      # don't set `~/.npmrc` ourselves. `npm install -g` with an
-      # explicit `--registry` forces the install to go public, and
-      # drops the package at `<npm-global-prefix>/node_modules/@uipath/<tool>`
-      # — exactly where uipcli's ToolManager discovers tools at
-      # startup, so `isInstalled(<verb>)` returns true and the
-      # broken auto-install path never runs.
-      - name: Pre-install RPA tools from public npm
+      # Install the CLI + RPA tools from GitHub Packages, pinned to the
+      # 0.9.x line (latest stable at time of writing). `npm install -g`
+      # lands everything under the same `<npm-global-prefix>/@uipath/`
+      # dir, which is exactly where uipcli's ToolManager walks up to
+      # discover tools — so `uip rpa …` / `uip rpa-legacy …` work
+      # without triggering the auto-install path.
+      - name: Install uip CLI + RPA tools from GitHub Packages (0.9.x)
         shell: bash
         run: |
           set -e
-          npm install -g --registry=https://registry.npmjs.org/ @uipath/rpa-tool @uipath/rpa-legacy-tool
+          REGISTRY=https://npm.pkg.github.com
+          FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.9.") and "-" not in v]; sys.exit("No 0.9.x stable version found") if not vs else print(vs[-1])'
+          CLI_VERSION=$(npm view @uipath/cli versions --registry=$REGISTRY --json | python -c "$FILTER")
+          RPA_VERSION=$(npm view @uipath/rpa-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
+          LEGACY_VERSION=$(npm view @uipath/rpa-legacy-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
+          echo "Installing: cli@$CLI_VERSION, rpa-tool@$RPA_VERSION, rpa-legacy-tool@$LEGACY_VERSION"
+          npm install -g "@uipath/cli@$CLI_VERSION" "@uipath/rpa-tool@$RPA_VERSION" "@uipath/rpa-legacy-tool@$LEGACY_VERSION"
+          uip --version
           uip tools list --output json
 
       - name: Pre-warm Helm (download NuGet package before tests)

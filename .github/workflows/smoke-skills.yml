@@ -162,12 +162,6 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/uipcli
-          token: ${{ secrets.GH_PAT }}
-          path: .uipcli
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -178,34 +172,30 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: oven-sh/setup-bun@v2
-
       - name: Install coder-eval
         working-directory: .coder_eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      # Project-scoped .npmrc so bun install can auth to GitHub Packages
-      # for the uipcli build's private @uipath/* deps — without
-      # polluting the global registry for later `uip tools install`
-      # calls (public npm has working tarballs, GH Packages has the
-      # workspace:* bug).
-      - name: Write .uipcli/.npmrc for private @uipath deps
+      # All @uipath/* npm packages come from GitHub Packages (where the
+      # UiPath CLI line is published), not public npm.
+      - name: Configure npm for GitHub Packages (@uipath)
         env:
           GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
         run: |
-          cat > .uipcli/.npmrc <<NPMRC
+          cat > ~/.npmrc <<NPMRC
           @uipath:registry=https://npm.pkg.github.com
           //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
           NPMRC
 
-      - name: Build and install uip CLI from source
-        working-directory: .uipcli
+      - name: Install uip CLI from GitHub Packages (0.9.x)
         run: |
-          bun install
-          bun run build
-          cd packages/cli && npm link
+          FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.9.") and "-" not in v]; sys.exit("No 0.9.x stable version found") if not vs else print(vs[-1])'
+          CLI_VERSION=$(npm view @uipath/cli versions --json | python -c "$FILTER")
+          echo "Installing: @uipath/cli@$CLI_VERSION"
+          npm install -g "@uipath/cli@$CLI_VERSION"
+          uip --version
 
       - name: Run smoke tests
         env:
