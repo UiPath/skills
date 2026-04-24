@@ -16,14 +16,14 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | Process Reference "Name" | Shown in the UI |
-| `name` | Process Reference "Name" | CLI flag `--name` |
-| `folder-path` | Process Reference "Folder" | CLI flag `--folder-path`. Required for disambiguation. |
-| `task-type-id` | Registry resolution (see below) | CLI flag `--task-type-id`. Enables auto-enrichment. |
+| `display-name` | Process Reference "Name" | Written to `task.displayName`. Shown in the UI. |
+| `name` | Process Reference "Name" | Written to `task.data.name` |
+| `folder-path` | Process Reference "Folder" | Written to `task.data.folderPath`. Required for disambiguation. |
+| `task-type-id` | Registry resolution (see below) | Written to `task.data.context.taskTypeId`. Enables auto-enrichment. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | Listed for downstream cross-task references |
-| `runOnlyOnce` | sdd.md (default `true`) | CLI flag `--should-run-only-once` |
-| `isRequired` | sdd.md (default `true`) | CLI flag `--is-required` |
+| `runOnlyOnce` | sdd.md (default `true`) | Written to `task.shouldRunOnlyOnce` |
+| `isRequired` | sdd.md (default `true`) | Written to `task.isRequired` |
 
 ## Registry Resolution
 
@@ -40,7 +40,7 @@ If no match is found across both cache files after `uip maestro case registry pu
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
 - Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).
 - Continue planning for remaining tasks.
-- Execution creates a skeleton task (no `--task-type-id`, no bindings). See [skeleton-tasks.md](../../../skeleton-tasks.md).
+- Execution creates a skeleton task (no `taskTypeId`, no bindings). See [skeleton-tasks.md](../../../skeleton-tasks.md).
 
 ## tasks.md Entry Format
 

@@ -1,40 +1,38 @@
-# Case Editing Operations — Direct JSON Strategy
+# Caseplan Editing Operations
 
-All mutations to `caseplan.json` performed via direct read/write/edit of the file, bypassing `uip maestro case` mutation commands. This document covers the cross-cutting mechanics; per-node JSON shapes live in each plugin's `impl-json.md`.
-
-> **When to use this strategy:** Only for plugins marked `Strategy = JSON` in [case-editing-operations.md](case-editing-operations.md). Default is still CLI — see [case-editing-operations-cli.md](case-editing-operations-cli.md).
+Cross-cutting mechanics for mutating `caseplan.json` via Read/Write/Edit. Per-node shapes live in each plugin's `impl-json.md`.
 
 ---
 
-## Key Differences from CLI
+## Responsibilities When Writing caseplan.json
 
-When editing `caseplan.json` directly, you are responsible for everything the CLI handles automatically:
+Every write must supply the fields below. Studio Web frontend expects them; missing any risks validation failure or broken render.
 
-| Concern | CLI handles | Direct JSON — you must |
-|---|---|---|
-| ID generation | Auto-generated via `prefixedId(prefix, count)` | Generate matching IDs per the ID Generation section below |
-| `elementId` on tasks | Auto-computed as `${stageId}-${taskId}` | Compute and write this field on every task |
-| Edge handles | Auto-formatted as `${nodeId}____<source|target>____<direction>` | Construct handle strings with exactly 4 underscores on each side |
-| Stage position | Auto-computed `{ x: 100 + existingStageCount * 500, y: 200 }` | Count existing stages first; compute; then write |
-| Stage render fields | Auto-set (`style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`) | Emit every one of these fields on every new Stage node |
-| Connector task default entry condition | Auto-injected (`current-stage-entered`) | Emit the default entry condition on every connector task |
-| Edge cleanup on stage removal | Cascaded automatically | Find and remove every edge where `source` or `target` equals the removed stage's ID |
-| Root-level bindings cleanup | Auto-managed when a connector task is removed | Prune `root.data.uipath.bindings` entries no longer referenced by any task |
-| Lane array expansion | Auto-expanded when `--lane <n>` references an index past the current length | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
-| `id-map.json` sidecar | Not maintained by CLI | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
-| `caseplan.json` file creation | Auto-created by `cases add` | T01 (case plugin) writes the file from scratch; downstream plugins mutate in place |
+| Concern | What you write |
+|---|---|
+| ID generation | Generate per `prefixedId(prefix, count)` — see "ID Generation" below |
+| `elementId` on tasks | Compute `${stageId}-${taskId}` and write on every task |
+| Edge handles | `${nodeId}____<source\|target>____<direction>` — exactly 4 underscores each side |
+| Stage position | Count existing stages, compute `{ x: 100 + count * 500, y: 200 }` |
+| Stage render fields | `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every Stage node |
+| Connector task default entry condition | Inject `current-stage-entered` entry condition on every connector task |
+| Edge cleanup on node removal | Remove every edge whose `source` or `target` equals the removed node ID |
+| Root-level bindings cleanup | Prune `root.data.uipath.bindings` entries no longer referenced by any task |
+| Lane array expansion | Expand `stageNode.data.tasks` to cover `laneIndex` before pushing |
+| `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin; flush to disk |
+| `caseplan.json` file creation | T01 (case plugin) writes from scratch; downstream plugins mutate in place |
 
 ---
 
 ## Pre-flight Checklist
 
-Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
+Before every write, confirm each item.
 
-1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
-   - **For the `case` plugin (T01)**: neither `caseplan.json` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution new` (Step 6.0, CLI) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.json writes the root skeleton. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
+1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path.
+   - **For the `case` plugin (T01)**: neither `caseplan.json` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution new` (Step 6.0) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.json writes the root skeleton. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
    - **For every other plugin**: `caseplan.json` must already exist (the `case` plugin always runs first as T01). If absent, run the `case` plugin first; do not attempt to synthesize a different JSON shape.
 
-2. **IDs match CLI format.** Generate IDs using the `prefixedId` algorithm (see "ID Generation" below). The frontend's `generateNextId(prefix, count)` expects this exact format — deviation risks Studio Web rejection.
+2. **IDs match expected format.** Generate IDs using the `prefixedId` algorithm below. The frontend's `generateNextId(prefix, count)` expects this exact format — deviation risks Studio Web rejection.
 
 3. **Render fields present on every new Stage:**
    - `style: { width: 304, opacity: 0.8 }`
@@ -47,7 +45,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 4. **Position computed, not hard-coded.** Count `schema.nodes.filter(n => n.type === "case-management:Stage" || n.type === "case-management:ExceptionStage")` BEFORE writing a new stage. Compute `position.x = 100 + count * 500`, `position.y = 200`.
 
-5. **Regular Stage vs Exception Stage at creation time.** CLI `stages add` initializes `entryConditions` / `exitConditions` only for `case-management:ExceptionStage` (as `[]`). Regular `case-management:Stage` is written without those keys. They are created later — by `stage-entry-conditions add` / `stage-exit-conditions add` — and at that point regular stages DO carry them. Match the CLI's creation-time shape: no empty arrays on regular Stage.
+5. **Regular Stage vs Exception Stage at creation time.** ExceptionStage initializes `entryConditions` / `exitConditions` as `[]`. Regular `case-management:Stage` is written without those keys — they appear later when stage-entry-conditions or stage-exit-conditions are added. Match this creation-time shape: no empty arrays on regular Stage.
 
 6. **Edge handles use exactly 4 underscores each side.** `${sourceId}____source____${direction}`, `${targetId}____target____${direction}`. Directions: `right` | `left` | `top` | `bottom`. Defaults: source=`right`, target=`left`.
 
@@ -70,13 +68,13 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 13. **Validate after every plugin's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each plugin completes its mutations. Fixing errors early is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes + trigger has no outgoing edges). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
-    - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no incoming edges yet). The plugin's validation parity is captured in the fixture instead.
+    - **Exception — stages plugin:** A stages-only caseplan is also known-invalid (stages have no incoming edges yet). The plugin's validation parity is captured in the fixture instead.
 
 ---
 
 ## ID Generation
 
-All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `count` random characters drawn uniformly from `[A-Za-z0-9]` (62 chars). Source: `cli/packages/case-tool/src/utils/shortId.ts`.
+All IDs follow the `prefixedId(prefix, count)` scheme: a fixed prefix + `count` random characters drawn uniformly from `[A-Za-z0-9]` (62 chars). Source: `cli/packages/case-tool/src/utils/shortId.ts`.
 
 | Entity | Prefix | Suffix length | Example |
 |---|---|---|---|
@@ -94,8 +92,6 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | Binding | `b` | 8 | `b3KmNp7Q9` |
 
 ### Algorithm
-
-Match the CLI exactly:
 
 1. Start with the prefix string.
 2. Generate `count * 2` random bytes (over-sampled to reduce refills).
@@ -144,13 +140,17 @@ This is a hard constraint — it keeps every mutation reviewable in the tool-cal
 
 Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
 
-**Bash is still used for**: ID randomness (`node -e "..."` one-liners that print to stdout only — see "Generate a fresh ID" below), CLI mutations on non-migrated plugins, `uip maestro case validate`, and `uip maestro case registry` discovery. Never for file mutation.
+**Bash is still used for**: ID randomness (`node -e "..."` one-liners that print to stdout only — see "Generate a fresh ID" below), `uip maestro case validate`, and `uip maestro case registry` discovery. Never for file mutation.
 
 ### Read → modify → write
 
 Always read `caseplan.json` fully with the Read tool, modify the in-memory object in reasoning, and write the whole file back with the Write tool. For narrowly-scoped, unambiguous single-field updates, the Edit tool is also acceptable. Re-read before the next mutation; do not hold the parsed object across tool calls.
 
-**One T-entry per cycle.** Each T-entry from `tasks.md` gets its own Read → mutate → Write round-trip. Do not batch multiple T-entries (e.g., "add all 5 stages in one write") — the transcript must show one tool-call pair per declarative unit, so every mutation is independently reviewable and revertable. Within a single T-entry, all fields that logically belong to that entry (a stage node plus its render fields, a task plus its default entry condition, etc.) are written together in that one Write.
+**One category per cycle.** Each plugin category (stages, edges, triggers, tasks, conditions-per-scope, SLA, variables) gets its own Read → mutate → Write round-trip covering every T-entry in that category. **Do not compose across categories in memory and flush once** — that breaks per-category rollback and hides intermediate state.
+
+**Edit-tool-first.** When a mutation is a narrowly-scoped, unambiguous single-field change (e.g., binding a task input `value`, setting `isRequired: true` on a specific task), prefer the `Edit` tool — it avoids the full-file Read cost and shows the exact diff in the tool-call transcript. Use Read+Write when the mutation is structural (appending a new node / edge / condition array) or when Edit's `old_string` can't be made unique in the file.
+
+Re-read `caseplan.json` before starting each new category — do not hold the parsed object across categories.
 
 ### Generate a fresh ID
 
@@ -169,7 +169,7 @@ If the Bash tool is unavailable for any reason, fall back to a pseudo-random ID 
 2. Determine render fields per plugin's JSON Recipe.
 3. For Stages: count existing stages, compute `position.x = 100 + count * 500`, `position.y = 200`.
 4. Generate a fresh node ID.
-5. Append the node to `schema.nodes` (stages use `.unshift()` in the CLI — prepend — but either position works for the frontend; prepend to match CLI output exactly).
+5. Prepend the node to `schema.nodes` (Stage convention).
 6. Write `caseplan.json`.
 
 ### Add an edge
@@ -226,19 +226,19 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 
 ### Replace a skeleton task with an enriched task
 
-See [skeleton-tasks.md § Upgrade Procedure](skeleton-tasks.md) for the CLI-driven flow. For direct-JSON-write, the equivalent is: edit the task's `data` field in place to add `taskTypeId`, schema-driven `inputs`/`outputs`, and any required context — keeping the task's `id` and `elementId` unchanged so any conditions referencing it remain valid.
+See [skeleton-tasks.md § Upgrade Procedure](skeleton-tasks.md). Edit the task's `data` field in place to add `taskTypeId`, schema-driven `inputs`/`outputs`, and any required context — keeping the task's `id` and `elementId` unchanged so any conditions referencing it remain valid.
 
 ### Re-wire a stage's outgoing edge
 
-Edges are immutable on source/target at the CLI level (`edges edit` only allows label/handle changes). To re-wire: delete + re-add.
+Edges are immutable on source/target — delete + re-add to re-wire.
 
 ---
 
 ## Validation Cadence
 
-Run `uip maestro case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); the CLI handles this tolerably well but validate is authoritative at the plugin boundary.
+Run `uip maestro case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); validate is authoritative at the plugin boundary.
 
-On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion per the skill's Critical Rule #20.
+On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion per SKILL.md Rule #20.
 
 ---
 
@@ -246,10 +246,10 @@ On failure: fix the reported issue (usually a missing field, malformed handle, o
 
 - **Do NOT shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other subprocess to mutate `caseplan.json` or its siblings.** Use Read + Write/Edit only. Subprocess scripts bypass the tool-call audit trail and make the mutation invisible in the transcript. See "Tool usage — mandatory" above.
 - **Do NOT write helper scripts (`.py`, `.js`, `.sh`) that open / parse / modify / save JSON files.** Even one-shot scripts are forbidden — the agent is the processor, Read/Write/Edit are the only I/O primitives.
-- **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
+- **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects the `prefixedId` format.
 - **Do NOT forget `style`/`measured`/`width`/`zIndex` on stages.** Validate passes, but Studio Web renders broken.
-- **Do NOT put `entryConditions`/`exitConditions` on regular Stages.** Only ExceptionStage has them.
+- **Do NOT put `entryConditions`/`exitConditions` on regular Stages.** Only ExceptionStage has them at creation time.
 - **Do NOT skip the default entry condition on connector tasks.** The frontend expects it.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Write (or Edit for narrowly-scoped unambiguous replacements).
 - **Do NOT run validation after every single write.** Validate at plugin boundaries, not per-field.
-- **Do NOT batch multiple T-entries into one JSON write.** Each T-entry from `tasks.md` gets its own Read → mutate → Write cycle. No "compose all stages + edges + tasks in memory, flush once" — that destroys the per-mutation audit trail.
+- **Do NOT batch across categories into one JSON write.** Each category (stages, edges, tasks, conditions, SLA, variables) gets its own Read → mutate → Write cycle. No "compose all stages + edges + tasks in memory, flush once" — that destroys per-category rollback. Batching T-entries _within_ a single category (e.g., all stages in one Write) is fine.

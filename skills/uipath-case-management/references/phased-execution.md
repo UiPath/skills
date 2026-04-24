@@ -2,7 +2,7 @@
 
 Authoritative reference for the two-phase implementation flow. Read before executing any T-entry from an approved `tasks.md`.
 
-> **Relationship to other docs.** This document defines the phase boundary. Per-plugin execution detail still lives in `plugins/<name>/impl-json.md` (or `impl-cli.md` per the strategy matrix in [case-editing-operations.md](case-editing-operations.md)). Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
+> **Relationship to other docs.** This document defines the phase boundary. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
 ## Why two phases
 

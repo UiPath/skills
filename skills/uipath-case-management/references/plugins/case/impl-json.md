@@ -1,25 +1,21 @@
----
-direct-json: supported
----
-
 # case (root) — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `case = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting caseplan.json editing mechanics live in [`caseplan-editing.md`](../../caseplan-editing.md).
 
 ## Purpose
 
 Create the full project on disk in a single plugin invocation — 5 scaffold files + `caseplan.json`. Runs exactly once per project as T01 in every `tasks.md`. Two sections:
 
-1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly. Replaces `uip maestro case init`.
-2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`). Replaces `uip maestro case cases add`.
+1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
+2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution new`) and project registration (`uip solution project add`) remain CLI — see [`impl-cli.md`](impl-cli.md) § Prerequisites. `cases edit` also remains CLI-only and is out of scope (SKILL regenerates from scratch — see SKILL.md Rule #8).
+Solution setup (`uip solution new`) and project registration (`uip solution project add`) are separate CLI prerequisites. `cases edit` is out of scope (SKILL regenerates from scratch — see SKILL.md Rule #8).
 
-**No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 — either via direct JSON write (when migrated) or `uip maestro case triggers add-<manual|timer|event>` (current CLI path). This is a deliberate divergence from CLI `cases add`, which always emits a default `trigger_1` node.
+**No trigger emitted at T01.** `nodes: []` is written at scaffold time. The primary trigger is added by the triggers plugin at T02.
 
 ## Scope
 
-**Add only.** `cases edit` is out of scope for this recipe and stays on the CLI path. Phase 2 always regenerates `caseplan.json` from scratch after approval of `tasks.md`, so the edit code-path is not exercised at runtime.
+**Add only.** `cases edit` is out of scope for this recipe. Phase 2 always regenerates `caseplan.json` from scratch after approval of `tasks.md`, so the edit code-path is not exercised at runtime.
 
 ## Input spec (from `tasks.md`)
 
@@ -30,17 +26,17 @@ Solution setup (`uip solution new`) and project registration (`uip solution proj
 | `case-identifier` | no | Defaults to `name`. |
 | `identifier-type` | no | `constant` \| `external`. Defaults to `constant`. |
 | `case-app-enabled` | no | Boolean. Defaults to `false`. |
-| `description` | no | Defaults to empty string. Always emitted (see Known CLI divergences). |
+| `description` | no | Defaults to empty string. Always emitted — `root.description` is always present (empty string when unset). |
 
 See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
 
 ## § Scaffold — write project boilerplate
 
-Runs before § Write caseplan.json. Replaces `uip maestro case init` with direct writes of 5 static JSON files. All substitution is name-for-name — no CLI subprocess.
+Runs before § Write caseplan.json. Writes 5 static JSON files with name-for-name substitution — no subprocess.
 
 ### Pre-flight
 
-1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution new` — Step 6.0 / [`impl-cli.md`](impl-cli.md) § Prerequisites).
+1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution new` — Step 6.0 / see [`planning.md § Project Structure Prerequisites`](planning.md#project-structure-prerequisites)).
 2. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
@@ -96,7 +92,7 @@ Use the Write tool for each. All 5 files go directly into `<SolutionDir>/<Projec
 }
 ```
 
-> **Diverges from CLI.** `uip maestro case init` emits one entry with hard-coded `filePath: "/content/caseplan.json.bpmn#trigger_1"` and `displayName: "Trigger 1"`. That reference dangles whenever the primary trigger uses a generated `trigger_<6>` ID. The JSON recipe emits an empty array — the triggers plugin owns every `entryPoints[]` insertion starting at T02.
+> **Empty at scaffold.** `entryPoints: []` is seeded empty. The triggers plugin owns every `entryPoints[]` insertion starting at T02, so the `filePath` fragment always matches the real primary-trigger ID — no dangling reference, no reconciliation step.
 
 #### `bindings_v2.json`
 
@@ -141,7 +137,7 @@ If any check fails, halt and report.
 ## § Write caseplan.json — Pre-write checks
 
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
-2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule #8, so a collision here means a genuine re-run and overwriting is correct. This diverges from CLI `cases add`, which refuses when the file exists — see Known CLI divergences.
+2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule #8, so a collision here means a genuine re-run and overwriting is correct.
 
 ## ID generation
 
@@ -162,7 +158,7 @@ Pure skeleton: `root` definition, empty `nodes: []`, empty `edges: []`. The prim
 
 ### Minimal variant (no description)
 
-When `description` is absent in the T01 input, emit `description: ""` (always-emit; see Known CLI divergences).
+When `description` is absent in the T01 input, emit `description: ""` (always-emit — never omit the key).
 
 ```json
 {
@@ -249,28 +245,20 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 
-**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build per Rule #20.
+**Do NOT run `uip maestro case validate` here.** A case-only caseplan fails validation by design — expected Phase 2a state (no stage nodes, no trigger, no outgoing edges). Validation runs once after the full build per Rule #20.
 
-## Known CLI divergences
+## Design notes
 
-Direct-JSON-write is a superset of the CLI's `cases add`. The divergences below are deliberate.
+- **No trigger at T01.** `nodes: []` is emitted. The primary trigger is added by the triggers plugin at T02 — the path fragment in `entry-points.json` always matches the real primary-trigger ID, so no dangling `trigger_1` reference is ever written.
+- **`entry-points.json` scaffolded empty.** `entryPoints: []` at scaffold. The triggers plugin owns every `entryPoints[]` insertion starting at T02.
+- **No `content/` directory on disk.** Scaffold files are laid flat under `<ProjectName>/`. The `content/` prefix in `package-descriptor.json.files` describes the packed `.nupkg` layout, not source layout. Do not create a `content/` subdir.
+- **No `.bpmn` emitted at scaffold time.** `caseplan.json.bpmn` is generated by downstream tooling (validate / pack / publish). § Scaffold omits it.
+- **`root.description` is always emitted.** Always write `"description": "<value>"` (empty string when sdd.md has no description) at the root level (sibling of `data`, NOT inside `root.data`) so downstream consumers read a consistent shape.
+- **Collision behavior: overwrite.** Overwrites unconditionally when `caseplan.json` exists; creates when absent. Phase 2 re-runs regenerate the full file from scratch after re-approval of `tasks.md` (SKILL.md Rule #8).
+- **Pre-populated `root.data`.** Emit `root.data.intsvcActivityConfig: "v2"` and `root.data.uipath.variables.inputOutputs: [] / bindings: []` on a fresh write. Downstream plugins (notably `variables/global-vars`) append to those structures — do not overwrite them at T01.
 
-- **No trigger at T01.** CLI `cases add` emits a hard-coded initial Trigger node `{ id: "trigger_1", ..., data: { label: "Trigger 1" } }`. The JSON recipe emits `nodes: []`. Primary-trigger creation is the triggers plugin's responsibility at T02 (via `uip maestro case triggers add-<type>` today; direct-JSON-write once the triggers plugin migrates). A structural comparison between the two shapes converges after stripping `trigger_1` from the CLI side.
-- **`entry-points.json` scaffolded empty.** CLI `uip maestro case init` writes one dangling entry referencing `trigger_1`. § Scaffold writes `entryPoints: []` and delegates insertion to the triggers plugin at T02 — so the path fragment always matches the real primary-trigger ID. No dangling ref, no reconciliation step.
-- **No `content/` directory on disk.** CLI and JSON both lay the scaffold files flat under `<ProjectName>/`. The `content/` prefix in `package-descriptor.json.files` describes the packed `.nupkg` layout, not source layout. Do not create a `content/` subdir.
-- **No `.bpmn` emitted at scaffold time.** Empirically confirmed against `uip` 1.0.0 — `uip maestro case init` does not write `caseplan.json.bpmn` either. Downstream tooling (validate / pack / publish) generates it. § Scaffold omits it to match.
-- **`root.description` is always emitted.** `cases add` omits the `description` key entirely when `--description` is not passed, and emits it at the root level (sibling of `data`) when passed. The JSON recipe always writes `"description": "<value>"` (empty string when sdd.md has no description) so downstream consumers read a consistent shape.
-- **Collision behavior.** CLI `cases add` fails with `"File already exists: <file>. Use 'cases edit' to modify it."` when `caseplan.json` already exists. Direct-JSON-write overwrites unconditionally — and creates the file if absent. This is intentional — Phase 2 re-runs regenerate the full file from scratch after re-approval of `tasks.md` (SKILL.md Rule #8). The CLI's refuse-on-exist behavior assumed a `cases edit` follow-up that direct-JSON-write does not need.
-- **`description` placement.** Both CLI and JSON place `root.description` at the root level (sibling of `data`), NOT inside `root.data`. The JSON recipe matches CLI placement exactly — only the always-emit behavior differs.
-- **Pre-populated `root.data`.** CLI 0.3.4 emits `root.data.intsvcActivityConfig: "v2"` and `root.data.uipath.variables.inputOutputs: [] / bindings: []` on a fresh `cases add`. The JSON recipe matches this shape. Downstream plugins (notably `variables/global-vars`) append to those structures — do not overwrite them at T01.
+## Validation
 
-## Compatibility
-
-Captured against CLI version `0.3.4` (caseplan.json shape) and `uip` 1.0.0 (scaffold file shapes).
-
-- [x] **Structural equivalence:** direct-JSON-write skeleton (`root` + `nodes: []` + `edges: []`) matches the CLI `cases add` output after stripping the CLI-side `trigger_1` node and normalizing the `description: ""` divergence.
-- [x] **Validation:** JSON-write output produces a known-invalid failure profile (`no trigger node` + `no stage nodes`). Different from CLI's profile (`no stage nodes` + `trigger has no outgoing edges`) because CLI emits `trigger_1` and JSON does not. Both are expected-invalid for a case-only caseplan; validation at this boundary is skipped per SKILL.md Rule #20.
-- [ ] **Downstream CLI trigger append:** `uip maestro case triggers add-manual` on a direct-JSON-written skeleton succeeds — exercised separately; verified in the `entry-points.json` coupling note above.
-- [ ] **Downstream CLI mutation append:** `uip maestro case stages add` on a direct-JSON-written skeleton caseplan succeeds — not yet exercised.
-- [ ] **Round-trip:** direct-JSON-write → `uip maestro case cases edit` accepts the file → subsequent mutations succeed — not yet exercised.
+- [x] **Structural validity:** output parses as JSON and `root` shape checks pass (see § Post-write validation).
+- [x] **Known-invalid at T01:** a case-only caseplan fails `uip maestro case validate` by design — expected Phase 2a state. Validation at this boundary is skipped per SKILL.md Rule #20.
 - [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

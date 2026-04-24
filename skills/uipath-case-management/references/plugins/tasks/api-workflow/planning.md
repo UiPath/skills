@@ -2,22 +2,18 @@
 
 An API Workflow (formerly "Coded Workflow") task. Invokes a UiPath API workflow by entityKey.
 
-## When to Use
-
-Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a TypeScript / C# coded workflow that exposes an API-style interface.
-
 ## Required Fields from sdd.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | API Workflow Reference "Name" | |
-| `name` | API Workflow Reference "Name" | CLI flag `--name` |
-| `folder-path` | API Workflow Reference "Folder" | CLI flag `--folder-path` |
-| `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
+| `display-name` | API Workflow Reference "Name" | Written to `task.displayName` |
+| `name` | API Workflow Reference "Name" | Written to `task.data.name` |
+| `folder-path` | API Workflow Reference "Folder" | Written to `task.data.folderPath` |
+| `task-type-id` | Registry resolution (below) | Written to `task.data.context.taskTypeId`. `entityKey` in `api-index.json`. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | |
-| `runOnlyOnce` | sdd.md (default `true`) | |
-| `isRequired` | sdd.md (default `true`) | |
+| `runOnlyOnce` | sdd.md (default `true`) | Written to `task.shouldRunOnlyOnce` |
+| `isRequired` | sdd.md (default `true`) | Written to `task.isRequired` |
 
 ## Registry Resolution
 

@@ -24,22 +24,22 @@ Every case-exit condition declared in sdd.md gets its own T-task — **including
 
 ## Rule-Type Catalog (case-exit scope)
 
-Allowed `--rule-type` values depend on `marks-case-complete`:
+Allowed `rule-type` values depend on `marks-case-complete`:
 
 **When `marks-case-complete: true`** (the case completes):
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
-| `required-stages-completed` | **Preferred.** Case completes when every stage with `isRequired: true` (set on `stages add` via planning metadata) has completed. No stage list needed. | — |
-| `wait-for-connector` | Wait for an external connector event to close the case. | `--condition-expression` |
+| `required-stages-completed` | **Preferred.** Case completes when every stage with `isRequired: true` (set on stage creation via planning metadata) has completed. No stage list needed. | — |
+| `wait-for-connector` | Wait for an external connector event to close the case. | `condition-expression` |
 
 **When `marks-case-complete: false`** (the case exits without closing):
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
-| `selected-stage-completed` | Exit triggered by a specific stage completing. | `--selected-stage-id` |
-| `selected-stage-exited` | Exit triggered by a specific stage being exited (even without completing). | `--selected-stage-id` |
-| `wait-for-connector` | Wait for an external connector event. | `--condition-expression` |
+| `selected-stage-completed` | Exit triggered by a specific stage completing. | `selected-stage-id` |
+| `selected-stage-exited` | Exit triggered by a specific stage being exited (even without completing). | `selected-stage-id` |
+| `wait-for-connector` | Wait for an external connector event. | `condition-expression` |
 
 ## Preferred Pattern
 
@@ -49,7 +49,7 @@ Add non-completing exit conditions only when the sdd.md explicitly describes an 
 
 ## Ordering
 
-Case exit conditions are created **after** all stages exist (so `--selected-stage-id` can resolve via the stage capture map). In `tasks.md`, place these between stage conditions and SLA.
+Case exit conditions are created **after** all stages exist (so `selected-stage-id` can resolve via the stage capture map). In `tasks.md`, place these between stage conditions and SLA.
 
 ## tasks.md Entry Format
 
