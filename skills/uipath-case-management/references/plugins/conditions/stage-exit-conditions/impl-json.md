@@ -11,7 +11,6 @@ Write the stage-exit condition directly to the target stage's `data.exitConditio
   "id": "Condition_xC1XyX",
   "displayName": "All tasks done",
   "type": "exit-only",
-  "exitToStageId": null,
   "marksStageComplete": true,
   "rules": [
     [
@@ -46,7 +45,6 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ```json
 "type": "exit-only",
-"exitToStageId": null,
 "marksStageComplete": true,
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-tasks-completed" } ]]
 ```
@@ -55,7 +53,6 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ```json
 "type": "exit-only",
-"exitToStageId": "Stage_cD4mNt",
 "marksStageComplete": false,
 "rules": [[
   {
@@ -72,7 +69,6 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ```json
 "type": "exit-only",
-"exitToStageId": null,
 "marksStageComplete": true,
 "rules": [[
   {
@@ -87,7 +83,6 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ```json
 "type": "wait-for-user",
-"exitToStageId": null,
 "marksStageComplete": true,
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-tasks-completed" } ]]
 ```
@@ -98,12 +93,11 @@ The case pauses after the rule fires; the user picks the next stage from candida
 
 ```json
 "type": "return-to-origin",
-"exitToStageId": null,
 "marksStageComplete": true,
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-tasks-completed" } ]]
 ```
 
-Routes the case back to the originating stage. `exitToStageId` stays `null` — the runtime resolves origin dynamically.
+Routes the case back to the originating stage.
 
 ## Rule-Type × marksStageComplete Matrix
 
@@ -118,4 +112,4 @@ Routes the case back to the originating stage. `exitToStageId` stays `null` — 
 
 ## Post-Write Verification
 
-Confirm target stage's `data.exitConditions[]` contains the new object with `id`, `type`, `exitToStageId` (`null` or captured ID), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
+Confirm target stage's `data.exitConditions[]` contains the new object with `id`, `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
