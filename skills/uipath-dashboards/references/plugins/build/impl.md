@@ -22,9 +22,12 @@ Pipeline: `Scaffold → Configure → Generate → Preview`
 Delegate to [../../primitives/scaffold.md](../../primitives/scaffold.md). This:
 1. Renders `assets/templates/scaffold/*.template` into `./<kebab-name>/`.
 2. Runs `npm install`.
-3. Runs `npx shadcn@latest init --defaults`.
+3. Runs `npx shadcn@latest init --defaults` (WILL overwrite `src/index.css` — we restore in step 6).
 4. Runs `npx shadcn@latest add card badge table chart tooltip separator skeleton`.
 5. Writes `.gitignore` (see scaffold.md for the exact list).
+6. **RESTORES** `src/index.css` from our template (mandatory — shadcn's v4-style grayscale defaults break chart colors and Card styling if left in place).
+7. Pins `tailwindcss: ^3.4.13` in devDependencies (prevents v4 upgrade conflict with our v3-style config).
+8. Runs end-to-end sanity checks (chart-1 HSL value present, no leftover oklch, tailwindcss v3 installed, chart.tsx exists). Halts on any check failure — do NOT hand a broken CSS pipeline to the dev server.
 
 ### Configure
 Delegate to [../../primitives/intent-capture.md](../../primitives/intent-capture.md). This:

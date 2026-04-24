@@ -36,7 +36,9 @@ Verify `node_modules/` exists + `@uipath/uipath-typescript` is present.
 ```bash
 npx shadcn@latest init --defaults
 ```
-Uses `components.json.template` we've already rendered — `--defaults` accepts all defaults (style: default, baseColor: slate, cssVariables: true, rsc: false).
+Uses `components.json.template` we've already rendered — `--defaults` accepts all defaults.
+
+**IMPORTANT:** `shadcn init` **overwrites `src/index.css`** with the current shadcn defaults (as of shadcn v5 / Tailwind v4 these are `oklch(L 0 0)` grayscale values, with dead `@import` lines to `tw-animate-css`, `shadcn/tailwind.css`, `@fontsource-variable/geist`). Do NOT accept that file as-is — Step 6 below restores our HSL-space vars that match the Tailwind config's `hsl(var(--X))` wrap.
 
 ### 4. Add shadcn components
 ```bash
@@ -55,8 +57,36 @@ dist/
 node_modules/
 ```
 
-### 6. Idempotence check
-If called on an existing dir: detect by `<target>/package.json` existence. Delegate to [incremental-editor.md](incremental-editor.md); do NOT re-run steps 1-4.
+### 6. Restore our `src/index.css` (CRITICAL — runs AFTER shadcn init+add)
+Re-render `assets/templates/scaffold/src/index.css.template` → `<target>/src/index.css`, OVERWRITING whatever shadcn wrote. This re-establishes:
+- `@tailwind base/components/utilities` (no dead `@import` lines)
+- HSL-space CSS vars (`--chart-1: 221 83% 53%` etc.) that match the Tailwind config's `hsl(var(--X))` wrap
+- Vibrant chart colors (not the shadcn v4 grayscale defaults)
+- Dark-mode overrides
+
+Without this step, every widget's `fill="var(--color-invocations)"` resolves to `hsl(oklch(...))` which is invalid CSS → bars render black, Cards have no borders, `bg-background` / `bg-card` don't apply, dashboard looks entirely unstyled.
+
+**Verify:** `grep -q "221 83% 53%" <target>/src/index.css` should succeed after this step.
+
+### 7. Pin Tailwind v3 (prevent v4 upgrade)
+Ensure `<target>/package.json` has `"tailwindcss": "^3.4.13"` in `devDependencies`. If `shadcn init` or `shadcn add` bumped to v4, downgrade:
+```bash
+npm install --save-dev tailwindcss@^3.4.13
+```
+
+Rationale: our `tailwind.config.ts.template` uses v3 syntax (`content: [...]`, `plugins: [require('tailwindcss-animate')]`). Upgrading to v4 requires a different config format; we stay on v3 until the whole toolchain catches up.
+
+### 8. Idempotence check
+If called on an existing dir: detect by `<target>/package.json` existence. Delegate to [incremental-editor.md](incremental-editor.md); do NOT re-run steps 1-7.
+
+### 9. End-to-end sanity check (BEFORE handing to dev-server)
+After all steps, verify:
+1. `<target>/src/index.css` contains `--chart-1: 221 83% 53%` (our HSL, not shadcn's oklch).
+2. `<target>/src/index.css` does NOT contain `@import "shadcn/tailwind.css"` or `oklch(` — those are leftover shadcn v4 artifacts that indicate Step 6 didn't run.
+3. `<target>/src/components/ui/chart.tsx` exists (shadcn add succeeded).
+4. `<target>/node_modules/tailwindcss/package.json` `version` field starts with `3.` (v3, not v4).
+
+If ANY check fails → halt with the exact failed check reported to the user. Do NOT launch `npm run dev` with a broken CSS pipeline — the dashboard will render as unstyled HTML (grayscale bars, no cards, no grid), which is a worse user experience than a loud failure.
 
 ## Error paths
 | Condition | Action |
@@ -66,3 +96,4 @@ If called on an existing dir: detect by `<target>/package.json` existence. Deleg
 | `shadcn init` fails | Halt with stderr; link shadcn docs. Don't silent-skip. |
 | `shadcn add` fails for a component | Halt; an incomplete UI kit is a worse state than no UI kit. |
 | Template substitution leaves `{{placeholder}}` unresolved | Halt; surface the template path + missing var. |
+| Step 9 sanity check fails | Halt; surface the failed check. Do NOT proceed to dev-server. |
