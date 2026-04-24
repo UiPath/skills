@@ -169,16 +169,38 @@ jobs:
           bun run build
           cd packages/cli && npm link
 
+      # Pre-install the rpa + rpa-legacy tools. When a task invokes `uip
+      # rpa ...`, the CLI otherwise auto-runs `uip tools install rpa`
+      # against the public registry — and the currently published
+      # @uipath/rpa-tool releases have `workspace:*` protocol deps
+      # (EUNSUPPORTEDPROTOCOL) that only resolve inside the uipcli
+      # monorepo. Pinning to the latest 0.3.x stable sidesteps that bug
+      # and keeps the tool present before any task starts.
+      - name: Configure npm for GitHub Packages registry
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+        run: |
+          echo "@uipath:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN" >> ~/.npmrc
+
+      - name: Pre-install uip RPA tools (latest 0.3.x)
+        run: |
+          REGISTRY=https://npm.pkg.github.com
+          FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.3.") and "-" not in v]; sys.exit("No 0.3.x stable version found") if not vs else print(vs[-1])'
+          RPA_VERSION=$(npm view @uipath/rpa-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
+          LEGACY_VERSION=$(npm view @uipath/rpa-legacy-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
+          echo "Pre-installing: rpa-tool@$RPA_VERSION, rpa-legacy-tool@$LEGACY_VERSION"
+          uip tools install @uipath/rpa-tool@$RPA_VERSION
+          uip tools install @uipath/rpa-legacy-tool@$LEGACY_VERSION
+          uip tools list --output json
+
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
-          API_BACKEND: bedrock
-          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
-          # Reviewer + llm_judge backend: coder_eval's reviewer does not
-          # run on Bedrock today, so route LLM evaluation calls through
-          # the Anthropic API.
+          # Route the agent and the LLM reviewer through the Anthropic
+          # API. Bedrock guardrails were blocking legitimate UiPath XAML
+          # output on the rpa-legacy task, and coder_eval's reviewer
+          # backend does not support Bedrock anyway.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         working-directory: tests
         id: smoke
@@ -248,6 +270,47 @@ jobs:
             tests/runs/**/task.log
           if-no-files-found: warn
           retention-days: 14
+
+      # Quality gate: fail the job if any task's LLM reviewer score is
+      # below 0.8, independent of deterministic criteria. The reviewer
+      # catches skill-adherence regressions that file-exists /
+      # file-contains checks miss (e.g. agent called the wrong subcommand
+      # but still produced the right output shape).
+      - name: Enforce LLM reviewer score threshold (>= 0.8)
+        if: always()
+        working-directory: tests
+        run: |
+          THRESHOLD=0.8
+          python - <<PY
+          import json, pathlib, sys
+          threshold = $THRESHOLD
+          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          if not run_dirs:
+              print('::warning::No run directory — skipping reviewer threshold check')
+              sys.exit(0)
+          run_dir = run_dirs[-1]
+          failures = []
+          missing = []
+          for p in sorted(run_dir.rglob('task.json')):
+              d = json.loads(p.read_text(encoding='utf-8'))
+              lr = d.get('llm_review') or {}
+              score = lr.get('score')
+              tid = d.get('task_id', p.parent.name)
+              if not isinstance(score, (int, float)):
+                  missing.append(tid)
+                  continue
+              if score < threshold:
+                  failures.append((tid, score, (lr.get('issues') or '').splitlines()[0][:120]))
+          if missing:
+              for tid in missing:
+                  print(f'::warning::{tid}: no llm_review (reviewer skipped or errored)')
+          if failures:
+              for tid, score, issues in failures:
+                  print(f'::error::{tid}: llm_review score {score:.2f} < {threshold} — {issues}')
+              print(f'::error::{len(failures)} task(s) below LLM reviewer threshold {threshold}')
+              sys.exit(1)
+          print(f'All {len([1 for _ in run_dir.rglob(\"task.json\")])} task(s) passed llm_review >= {threshold}')
+          PY
 
       - name: Fail if tests failed
         # Also catch `cancelled` (the job timeout firing) so a truncated
