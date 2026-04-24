@@ -60,17 +60,17 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
    - Reads an existing `.xaml` in the project root (e.g., `Main.xaml`) to extract the root `<Activity>` xmlns declarations and both `<TextExpression.NamespacesForImplementation>` and `<TextExpression.ReferencesForImplementation>` blocks. Copied verbatim into the new file.
    - Runs `uip rpa get-default-activity-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard"` for the NApplicationCard template, and reads the per-activity behavior doc (see [Scaffolding Agent Template](#scaffolding-agent-template) § "Context").
    - Writes the complete `.xaml` file: `<Activity>` root with `x:Class`, namespace declarations, TextExpression blocks, an NApplicationCard carrying `sap2010:WorkflowViewState.IdRef="NApplicationCard_1"` (no `<uix:NApplicationCard.TargetApp>` child — attachment happens next), and an empty `<Sequence DisplayName="Do">` (open/close form, not self-closing) inside the ApplicationCard body where screen agents will insert activities.
-   - Attaches the registered screen to the NApplicationCard (activity ref ID `NApplicationCard_1`). Every CLI call is wrapped with `timeout 60000`.
+   - Attaches the registered screen to the NApplicationCard (activity ref ID `NApplicationCard_1`).
 
-4. **Post-write verification** (D-09): The agent runs `get-errors` itself, wrapped with a `timeout`:
+4. **Post-write verification** (D-09): The agent runs `get-errors` itself:
    ```bash
-   timeout 60000 uip rpa get-errors \
+   uip rpa get-errors \
      --file-path "<XAML_FILE_PATH>" \
      --project-dir "<PROJECT_DIR>" \
      --output json \
        ```
 
-5. **Self-repair** (D-10): If `get-errors` returns errors, fix and re-run. Max 3 fix cycles. After 3 attempts, stop and report remaining errors to the main conversation. **If the CLI itself times out** (Studio unresponsive, validation hung), the agent must report `"Validation unavailable — Studio not responding; file written but unverified."` and exit — never hang.
+5. **Self-repair** (D-10): If `get-errors` returns errors, fix and re-run. Max 3 fix cycles. After 3 attempts, stop and report remaining errors to the main conversation.
 
 6. **Prompt template:** See [Scaffolding Agent Template](#scaffolding-agent-template) for the complete Agent() call.
 
@@ -84,20 +84,20 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
 
 3. **What the agent does** (the agent retrieves its own data — orchestrator does NOT pre-fetch):
    - Reads the file and locates the inner `<Sequence DisplayName="Do">`. Ordering safety is enforced upstream by the task queueing model (see [Waiting for Background Agents](#waiting-for-background-agents) — `Write-<N>` cannot spawn until `Write-<N-1>` is `completed`), so the agent treats the file as in a known good state.
-   - Runs `uip rpa get-default-activity-xaml --activity-class-name "<class>"` (with `timeout`) for each activity class in its action list.
+   - Runs `uip rpa get-default-activity-xaml --activity-class-name "<class>"` for each activity class in its action list.
    - Reads the per-activity behavior doc for each activity class — see [Screen Activity Agent Template](#screen-activity-agent-template) § "Retrieve your data" for the doc-resolution rule.
    - Assigns unique IdRefs per the IdRef contract, constructs activities (no `.Target` / `.SearchedElement.Target` child — attachment happens next), and inserts them immediately before the closing `</Sequence>` of the inner `<Sequence DisplayName="Do">`. Does NOT modify any content before the insertion point.
-   - Attaches each `reference_id` to its assigned IdRef, passing `target_property` when the action specifies one. Every CLI call is wrapped with `timeout 60000`.
+   - Attaches each `reference_id` to its assigned IdRef, passing `target_property` when the action specifies one.
 
-4. **Post-write verification** (D-09): Agent runs `get-errors` itself, wrapped with a `timeout`:
+4. **Post-write verification** (D-09): Agent runs `get-errors` itself:
    ```bash
-   timeout 60000 uip rpa get-errors \
+   uip rpa get-errors \
      --file-path "<XAML_FILE_PATH>" \
      --project-dir "<PROJECT_DIR>" \
      --output json \
        ```
 
-5. **Self-repair** (D-10): Max 3 fix cycles, then report to main conversation. If the CLI times out, the agent reports the timeout explicitly — never hangs.
+5. **Self-repair** (D-10): Max 3 fix cycles, then report to main conversation.
 
 6. **Prompt template:** See [Screen Activity Agent Template](#screen-activity-agent-template) for the complete Agent() call.
 
@@ -171,11 +171,10 @@ These three rules govern what the orchestrator may and may not do while a `Write
 1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML and docs.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, `<TargetAnchorable>` snippets, or the attachment guide body into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates, reads the per-activity behavior docs, and reads the attachment guide itself per [Screen Activity Agent Template](#screen-activity-agent-template) § "Retrieve your data". The attachment guide lives at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` (Fast Path for linking, with a snippet-embed fallback).
 2. Describe actions as a structured list with exact data values (`display_name`, `type`, `reference_id`, optional `text`/`duration_seconds`/`target_property`) — see [Action List Format](#action-list-format). Each action carries enough detail for the agent to construct the activity from the template it retrieves and then attach the target.
 3. Specify interaction patterns **explicitly** for each non-trivial interaction: dropdown selection (Click then TypeInto with `[k(enter)]`), checkbox toggling, element reuse across repeated form instances. These go in a per-screen notes block in the prompt. Do NOT include `Delay` activities by default — UIA activities retry target lookup internally; see [When Delay is Warranted](#when-delay-is-warranted).
-4. Specify **expression-language-specific syntax** for inline expressions. CSharp: `<Delay>` uses an `<InArgument x:TypeArguments="x:TimeSpan">` with a `<CSharpValue>` containing `TimeSpan.FromSeconds(N)`. VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" />`. Always match the `expressionLanguage` value passed in the prompt.
+4. **Pass `<EXPRESSION_LANGUAGE>` in every screen agent prompt** (`CSharp` or `VB`, read from `project.json`). Do NOT inline CSharp-vs-VB binding syntax examples — the agent derives correct syntax from the template returned by `get-default-activity-xaml` (which respects `--project-dir`) and from the per-activity behavior doc. For system activities without a package `.md` doc, the agent consults the expression-language binding guide.
 5. All context (action list, interaction patterns) goes **inline in the Agent() prompt parameter** as labeled blocks (D-06). Do not pass context via temp `.md` files or any other file-based method.
 6. Include the **edit instruction** in every screen agent prompt: where to insert (before the closing `</Sequence>` tag of the inner `<Sequence DisplayName="Do">`), and what not to touch (all content before the insertion point).
 7. Include the **validation instruction**: run `get-errors`, fix issues, max 3 fix cycles before reporting to main conversation.
-8. **Every agent-side CLI call MUST be wrapped with a 60-second Bash `timeout`** (`timeout 60000 uip rpa ...`). On timeout, the agent must fail fast with a clear error, not retry indefinitely. Without this, a stalled `get-errors` (Studio disconnected) will cause the agent to hang for tens of minutes.
 
 ## Edge Cases
 
@@ -227,7 +226,7 @@ Screens 1 through N-1 are already written and valid — no rollback is needed. T
 
 See [Waiting for Background Agents](#waiting-for-background-agents) for the three governing rules. In short: never spawn `Write-<N>` while `Write-<N-1>` is `in_progress` (use `TaskGet` to verify), never poll, and acknowledge every `<task-notification>` with `TaskUpdate` → `completed` in the same turn.
 
-Write agents are typically fast — they perform pure text generation against a structured prompt and a few CLI calls. If an agent is consistently slow (e.g., >5 minutes), suspect a hung CLI call (Studio unresponsive). The 60-second `timeout` wrapper on every agent-side CLI call (Prompt Construction Rule 8) is what prevents this from cascading into 30+ minute hangs.
+Write agents are typically fast — they perform pure text generation against a structured prompt and a few CLI calls. If an agent is consistently slow (e.g., >5 minutes), suspect a hung CLI call (Studio unresponsive).
 
 ## Anti-patterns
 
@@ -241,8 +240,7 @@ Write agents are typically fast — they perform pure text generation against a 
 8. Do NOT skip the selector stability gate before the agent attaches targets. Syntactically valid XAML that uses runtime-broken selectors is harder to debug than a build error.
 9. Do NOT modify the `.xaml` file from the main conversation while a write agent is running. The chained model depends on each agent reading the current valid file state; concurrent edits produce an unknown file state for the next agent.
 10. Do NOT spawn write agents in foreground mode — this blocks the main conversation and serializes the pipeline. Always use `run_in_background: true` so the main conversation can configure the next screen's targets in parallel.
-11. Do NOT call agent-side CLI commands without a `timeout` wrapper. A hung Studio causes `get-errors` to block indefinitely — agents must fail fast, not hang.
-12. Do NOT insert `Delay` activities to wait for UI elements to appear. UIA activities retry target-finding internally for their configured timeout, so a leading `Delay` just inflates runtime. Include `Delay` only when [When Delay is Warranted](#when-delay-is-warranted) applies — and require a one-sentence justification in the prompt's per-screen notes.
+11. Do NOT insert `Delay` activities to wait for UI elements to appear. UIA activities retry target-finding internally for their configured timeout, so a leading `Delay` just inflates runtime. Include `Delay` only when [When Delay is Warranted](#when-delay-is-warranted) applies — and require a one-sentence justification in the prompt's per-screen notes.
 
 ## Prompt Templates
 
@@ -266,7 +264,7 @@ Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
 2. Read `<PROJECT_DIR>/Main.xaml` (or any existing `.xaml` in the project root) to extract the root `<Activity>` xmlns declarations AND both `<TextExpression.NamespacesForImplementation>` and `<TextExpression.ReferencesForImplementation>` blocks. Copy them verbatim into your output.
 3. Fetch the NApplicationCard template:
    ```bash
-   timeout 60000 uip rpa get-default-activity-xaml \
+   uip rpa get-default-activity-xaml \
      --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard" \
      --project-dir "<PROJECT_DIR>" \
      --output json   ```
@@ -286,14 +284,14 @@ Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
 
 ## Attach the screen to the NApplicationCard
 
-Following the attachment guide you read in step 5, attach screen `<SCREEN_REFERENCE_ID>` to activity `NApplicationCard_1`. Wrap every CLI call with `timeout 60000`.
+Following the attachment guide you read in step 5, attach screen `<SCREEN_REFERENCE_ID>` to activity `NApplicationCard_1`.
 
 ## Validation
 
 After attachment:
 ```bash
-timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
-If it returns errors, fix and re-validate. Max 3 fix attempts. If the CLI times out (Studio unresponsive), report: "Validation unavailable — Studio not responding; file written but unverified." Do not hang.
+uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
+If it returns errors, fix and re-validate. Max 3 fix attempts.
 
 ## Placeholders
 
@@ -326,7 +324,7 @@ Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g
 
 1. For each activity class name above, fetch its template:
    ```bash
-   timeout 60000 uip rpa get-default-activity-xaml \
+   uip rpa get-default-activity-xaml \
      --activity-class-name "<class>" \
      --project-dir "<PROJECT_DIR>" \
      --output json   ```
@@ -344,23 +342,20 @@ Insert the following activities IMMEDIATELY BEFORE the closing `</Sequence>` tag
 
 <ACTION_LIST>
 
-Each action has fields: `display_name`, `type` (NClick | NTypeInto | Delay | ...), and either `reference_id` (for UI activities) with optional `text` (for NTypeInto) and optional `target_property` (for activities whose target is not at `.Target`, e.g., `SearchedElement.Target`), or `duration_seconds` (for Delay).
+Each action has fields: `display_name`, `type` (NClick | NTypeInto | NSelectItem | ...), and either `reference_id` (for UI activities) with optional `text` (for NTypeInto) and optional `target_property` (for activities whose target is not at `.Target`, e.g., `SearchedElement.Target`), or `duration_seconds` (for Delay).
 
-For NClick: insert `<uix:NClick ... sap2010:WorkflowViewState.IdRef="NClick_<N>" />` with no `.Target` child.
-For NTypeInto: set `Text` as an attribute on `<uix:NTypeInto ... sap2010:WorkflowViewState.IdRef="NTypeInto_<N>" Text="...">` with no `.Target` child.
-For Delay with CSharp: `<Delay sap2010:WorkflowViewState.IdRef="Delay_<N>"><Delay.Duration><InArgument x:TypeArguments="x:TimeSpan"><CSharpValue x:TypeArguments="x:TimeSpan">TimeSpan.FromSeconds(N)</CSharpValue></InArgument></Delay.Duration></Delay>` — duration as an InArgument, NOT an attribute.
-For Delay with VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" sap2010:WorkflowViewState.IdRef="Delay_<N>" />`.
+Build each activity's XAML from the template you retrieved in step 1 and the behavior rules from the doc you read in step 2. Assign `sap2010:WorkflowViewState.IdRef` per the IdRef contract in the attachment guide (step 3). Do NOT invent attribute names or structural shapes from prior-training memory — the template and doc are authoritative.
 
 ## Attach targets
 
-For every action with a `reference_id`, follow the attachment guide you read in step 3 to attach the OR reference to the IdRef you assigned. Pass `target_property` when the action specifies one. Wrap every CLI call with `timeout 60000`.
+For every action with a `reference_id`, follow the attachment guide you read in step 3 to attach the OR reference to the IdRef you assigned. Pass `target_property` when the action specifies one.
 
 ## Validation
 
 After attachment (and any fallback embedding):
 ```bash
-timeout 60000 uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
-Fix on error, max 3 attempts. If CLI times out, report the timeout explicitly — do NOT hang.
+uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
+Fix on error, max 3 attempts.
 
 ## Placeholders
 
