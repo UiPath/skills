@@ -50,7 +50,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 23. **Execute CLI commands sequentially.** No parallel execution — each command may depend on IDs returned by the previous one.
 24. **One T-entry per Read → modify → Write cycle.** For JSON-strategy plugins, apply each T-entry incrementally: Read `caseplan.json`, mutate for that single T-entry, Write back, then re-Read for the next T-entry. Do NOT compose a large in-memory JSON covering multiple stages/edges/tasks/conditions and flush once — that hides intermediate state, inflates diffs, breaks review, and loses rollback granularity. Batched single-file writes are allowed only within a single T-entry's own mutation (e.g., one stage node + its required render fields).
 25. **Check the plugin migration matrix before every plugin's execution.** [`references/case-editing-operations.md`](references/case-editing-operations.md) declares per plugin whether to use the `uip maestro case` CLI or direct JSON edits. Default is CLI; migrated plugins opt in to JSON. When a plugin is on the JSON strategy, follow its `impl-json.md` + [`references/case-editing-operations-json.md`](references/case-editing-operations-json.md) instead of the CLI command. Mixing strategies in the same run is expected during the migration.
-26. **HARD STOP between Phase 2a (skeleton) and Phase 2b (detail) — unconditional.** After Phase 2a builds the structural skeleton, run skeleton-mode validate then present the hard-stop **AskUserQuestion** prompt. This prompt is MANDATORY every run — never skip it for auto mode, non-interactive mode, upfront user consent, implied prior approval, or a clean skeleton validate. If the harness forbids interactive prompts, halt with a clear error instead of proceeding — silent skip is a bug. Phase 2a does NOT bind task input values, does NOT call `is resources describe` for connector tasks, does NOT write conditions, and does NOT write SLA — all deferred to Phase 2b. Phase 2b must re-read `tasks.md` AND `caseplan.json` before mutating. Full contract (prompt options, summary content, publish branch, abort cleanup, re-entry protocol) in [`references/phased-execution.md`](references/phased-execution.md).
+26. **HARD STOP between Phase 2a (skeleton) and Phase 2b (detail) — unconditional.** After Phase 2a builds the structural skeleton, run regular `uip maestro case validate` (no `--mode` flag) for informational output only — do NOT halt on errors/warnings. Phase 2a state is expected to be invalid: unbound required input values, missing condition rules, missing SLA. Surface counts in the hard-stop summary; the user decides whether to proceed. Then present the hard-stop **AskUserQuestion** prompt. This prompt is MANDATORY every run — never skip it for auto mode, non-interactive mode, upfront user consent, or implied prior approval. If the harness forbids interactive prompts, halt with a clear error instead of proceeding — silent skip is a bug. Phase 2a does NOT bind task input values, does NOT call `is resources describe` for connector tasks, does NOT write conditions, and does NOT write SLA — all deferred to Phase 2b. Phase 2b must re-read `tasks.md` AND `caseplan.json` before mutating. Full contract (prompt options, summary content, publish branch, abort cleanup, re-entry protocol) in [`references/phased-execution.md`](references/phased-execution.md).
 
 ## Workflow
 
@@ -78,7 +78,7 @@ Present `tasks.md` to the user for approval. **Do NOT proceed until the user exp
    - Non-connector resolved: full `data.inputs[]` schema, empty `value` fields
    - Connector resolved: `type-id` + `connection-id` only; **no `is describe` call in 2a**
    - Unresolved: skeleton (empty `data: {}`) per Rule #11
-7. Skeleton-mode validate (Step 9.5.1): `uip maestro case validate --mode skeleton`
+7. Informational validate (Step 9.5.1): `uip maestro case validate` — expected to report errors/warnings (unbound values, missing conditions/SLA). Do NOT halt; surface counts in the summary.
 8. **HARD STOP** (Step 9.5.2–9.5.5): AskUserQuestion — `Publish for review` / `Skip publish and continue` / `Abort`
    - On `Publish`: `uip solution upload <SolutionDir>`, print DesignerUrl, then AskUserQuestion — `Continue to phase 2b` / `Abort`
    - On `Abort`: dump `build-issues.md`, print paths, exit (no cleanup)
@@ -143,11 +143,13 @@ Order: stages → edges → tasks → conditions → SLA. One T-numbered entry p
 
 Re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute Phase 2a (Steps 6 – 9.1). Phase 2a builds solution + project + root + global vars + stages + edges + triggers + task shells only. **Do not bind input values, do not describe connector schemas, do not write conditions, do not write SLA** in Phase 2a — all deferred to Phase 2b.
 
-### Step 7 — Skeleton validate + HARD STOP (Step 9.5)
+### Step 7 — Informational validate + HARD STOP (Step 9.5)
 
 ```bash
-uip maestro case validate <file> --mode skeleton --output json
+uip maestro case validate <file> --output json
 ```
+
+**Do NOT halt on errors/warnings** — Phase 2a state is expected invalid (unbound inputs, missing conditions, missing SLA). Capture error/warning counts for the summary.
 
 Then **AskUserQuestion**: `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`, run `uip solution upload <SolutionDir>`, print `DesignerUrl`, then **AskUserQuestion**: `Continue to phase 2b` / `Abort`. On `Abort`, dump `tasks/build-issues.md`, print paths, exit.
 
@@ -254,7 +256,8 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 - **Do NOT execute CLI commands in parallel.** Each command may depend on IDs returned by the previous one — run them sequentially.
 - **Do NOT validate after each individual command.** Intermediate states are expected to be invalid. Run `uip maestro case validate` once after the full build.
 - **Do NOT batch multiple T-entries into one JSON write.** Every T-entry gets its own Read → mutate → Write cycle (Rule #24). Composing a large in-memory JSON spanning many stages/edges/tasks and flushing once hides intermediate state and breaks review granularity.
-- **Do NOT skip the Phase 2a → 2b hard stop for any reason.** Auto mode, non-interactive mode, prior blanket approval, and a clean skeleton validate all still require the AskUserQuestion prompt (Rule #26). Halt with an explicit error if the harness refuses the prompt.
+- **Do NOT skip the Phase 2a → 2b hard stop for any reason.** Auto mode, non-interactive mode, prior blanket approval, and a clean Phase 2a all still require the AskUserQuestion prompt (Rule #26). Halt with an explicit error if the harness refuses the prompt.
+- **Do NOT halt on Phase 2a validate errors/warnings.** The validate call at end of Phase 2a is informational — unbound inputs, missing conditions, and missing SLA are expected (they arrive in Phase 2b). Surface counts in the hard-stop summary; let the user decide.
 - **Do NOT mutate `caseplan.json` (or sibling JSON files) via subprocess scripts.** When a plugin is on the JSON strategy, use Claude's Read + Write/Edit tools only — no `python`, `node`, `jq`, `sed`, `awk`, or helper scripts that open/parse/modify/save the file. Bash subprocesses remain OK for stdout-only helpers (e.g., `node -e "...console.log(randomId)"`) and for CLI mutations on non-migrated plugins. See [references/case-editing-operations-json.md § Tool usage](references/case-editing-operations-json.md#tool-usage--mandatory).
 
 ## Key Concepts

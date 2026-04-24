@@ -6,7 +6,7 @@ Execute the approved `tasks.md` plan, building `caseplan.json` via either `uip m
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Two sub-phases with a hard stop.** Execution is split into **Phase 2a** (skeleton build — structural nodes only) and **Phase 2b** (detail build — values, conditions, SLA). Between them, an **AskUserQuestion** hard stop lets the user optionally publish the skeleton to Studio Web for visual review before committing to detail work. Read [phased-execution.md](phased-execution.md) for the phase contract, skeleton-mode validation, hard-stop prompt, re-entry protocol, and abort semantics. The step numbering below marks the phase boundary.
+> **Two sub-phases with a hard stop.** Execution is split into **Phase 2a** (skeleton build — structural nodes only) and **Phase 2b** (detail build — values, conditions, SLA). Between them, an **AskUserQuestion** hard stop lets the user optionally publish the skeleton to Studio Web for visual review before committing to detail work. Read [phased-execution.md](phased-execution.md) for the phase contract, informational Phase 2a validate, hard-stop prompt, re-entry protocol, and abort semantics. The step numbering below marks the phase boundary.
 
 ## Strategy selection (per plugin)
 
@@ -122,15 +122,15 @@ Skeleton tasks integrate with the rest of the graph:
 
 End of Phase 2a. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Hard stop](phased-execution.md). This section is a bridge — do NOT duplicate that contract here.
 
-1. Run skeleton-mode validate:
+1. Run informational validate (regular, no `--mode` flag):
 
    ```bash
-   uip maestro case validate "<caseplan.json path>" --mode skeleton --output json
+   uip maestro case validate "<caseplan.json path>" --output json
    ```
 
-   On failure: halt — do NOT auto-retry. Reported errors are structural Phase 2a bugs, not expected incompleteness. Fix the offending plugin step's output and re-run that step; then re-run validate. Never present the hard stop with a failing skeleton validate.
+   **Do NOT halt on errors or warnings.** Phase 2a output is expected invalid (unbound inputs, missing conditions, missing SLA — all filled in Phase 2b). Capture error + warning counts for the summary; do not attempt to classify "expected" vs "unexpected" errors.
 
-2. Print the hard-stop summary ([phased-execution.md § Summary content](phased-execution.md)).
+2. Print the hard-stop summary, including the captured validate counts ([phased-execution.md § Summary content](phased-execution.md)).
 
 3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #26.
 

@@ -14,7 +14,7 @@ This gives the user a review checkpoint on the shape of the case before the agen
 
 | Phase | What gets built | Output |
 |---|---|---|
-| **2a — Skeleton build** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` passes skeleton-mode validation |
+| **2a — Skeleton build** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; validate run for info only (expected to report unbound inputs / missing conditions / missing SLA) |
 | **Hard stop** | User reviews via Studio Web (optional), then approves / aborts | User choice captured via AskUserQuestion |
 | **2b — Detail build** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` passes full validation |
 
@@ -44,28 +44,30 @@ This gives the user a review checkpoint on the shape of the case before the agen
 - Conditions of any scope (stage-entry, stage-exit, task-entry, case-exit).
 - SLA rules (default, conditional) and escalation rules.
 
-## Skeleton-mode validation
+## Phase 2a informational validate
 
-At the end of Phase 2a, run:
+At the end of Phase 2a, run regular validate:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --mode skeleton --output json
+uip maestro case validate "<caseplan.json path>" --output json
 ```
 
-Skeleton mode relaxes the validator to tolerate intentional Phase 2a incompleteness: unbound required fields, missing condition rules, missing terminal exit, missing secondary-stage exit conditions. All structural checks (JSON shape, missing trigger, dangling edges, duplicate conditions, name uniqueness) remain errors.
+**This call is informational only — do NOT halt on errors or warnings.** Phase 2a state is expected to be invalid: unbound required input values, missing condition rules, missing terminal exit, missing secondary-stage exit conditions, missing SLA. All of those are resolved in Phase 2b.
 
-**On skeleton-validate failure:** halt immediately — do NOT auto-retry. The artifact is structurally broken (a Phase 2a bug, not an expected incompleteness). Fix the offending plugin step's output and re-run that step, then re-run validate. No retry-count budget applies here — skeleton-validate failures are deterministic structural bugs that retrying the same inputs will not resolve. Do not proceed to the hard stop with a failing skeleton validate.
+Capture the error and warning counts (and optionally the first few messages) and include them in the hard-stop summary. The user decides whether the skeleton is worth publishing/continuing, or whether something looks off and they want to `Abort` for inspection.
+
+**Do not parse the validate output for "expected" vs "unexpected" errors.** The skill does not try to classify validation errors at this boundary — if the user sees something that looks like a true structural bug (dangling edge, missing trigger, duplicate names), they choose `Abort` and fix it before re-running. Simpler, no false negatives from misclassification.
 
 ## Hard stop
 
-**Unconditional.** Present a summary, then prompt the user via AskUserQuestion. The prompt is MANDATORY on every run — auto mode, non-interactive mode, prior blanket approval, and a clean skeleton validate do NOT bypass it. The only valid transition from Phase 2a to Phase 2b is a user response to this AskUserQuestion. If the harness refuses interactive prompts, halt with an explicit error rather than proceeding silently.
+**Unconditional.** Present a summary, then prompt the user via AskUserQuestion. The prompt is MANDATORY on every run — auto mode, non-interactive mode, and prior blanket approval do NOT bypass it. The only valid transition from Phase 2a to Phase 2b is a user response to this AskUserQuestion. If the harness refuses interactive prompts, halt with an explicit error rather than proceeding silently.
 
 ### Summary content
 
 Print before the prompt:
 
 1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / skeleton tasks / unresolved resources.
-2. Skeleton validation result: `Passed (0 errors, N warnings)`.
+2. Validate result (informational): `<N> errors, <M> warnings` — call out that Phase 2a state is expected invalid (unbound inputs / missing conditions / missing SLA are all filled in Phase 2b). Surfacing the counts is enough; do not dump the full error list unless the user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -157,4 +159,4 @@ No artifact deletion. No rollback. The user owns the partial state.
 
 - **Re-ingesting Studio Web edits.** If the user edits the published skeleton in Studio Web during review, those edits are not round-tripped back into local `caseplan.json`. Phase 2b writes on top of local state; the final Step 13 re-publish overwrites Studio Web with the completed local build.
 - **Resuming an aborted session.** Re-running the skill regenerates `tasks.md` from scratch (Rule #8) and re-executes both phases from Phase 2a Step 1.
-- **Adding the `--mode skeleton` flag to the CLI.** That is a `case-tool` change, not a skill change. This doc assumes the flag exists.
+- **A dedicated skeleton validation mode.** The skill does not depend on a `--mode skeleton` CLI flag. Regular `uip maestro case validate` runs at end of Phase 2a for informational output only; expected Phase 2a errors are not filtered or classified here.
