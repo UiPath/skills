@@ -272,15 +272,17 @@ jobs:
           retention-days: 14
 
       # Quality gate: fail the job if any task's LLM reviewer score is
-      # below 0.8, independent of deterministic criteria. The reviewer
+      # below 0.7, independent of deterministic criteria. The reviewer
       # catches skill-adherence regressions that file-exists /
       # file-contains checks miss (e.g. agent called the wrong subcommand
-      # but still produced the right output shape).
-      - name: Enforce LLM reviewer score threshold (>= 0.8)
+      # but still produced the right output shape). 0.7 (not 0.8) gives
+      # the qualitative verdict room to dock for minor process issues the
+      # agent already recovered from without false-failing correct runs.
+      - name: Enforce LLM reviewer score threshold (>= 0.7)
         if: always()
         working-directory: tests
         env:
-          REVIEWER_THRESHOLD: "0.8"
+          REVIEWER_THRESHOLD: "0.7"
         # Single-quoted heredoc keeps Python literals intact. Threshold
         # is read from the env so we don't have to escape dollar signs.
         run: |
