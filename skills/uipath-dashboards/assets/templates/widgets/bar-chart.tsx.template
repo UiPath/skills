@@ -1,11 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
 import { LoadingState } from '@/dashboard/chrome/LoadingState';
 import { EmptyState } from '@/dashboard/chrome/EmptyState';
-import { fmt{{AxisFormatter}} } from '@/lib/format';
+import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
+import { ViewAllLink } from '@/dashboard/chrome/ViewAllLink';
+import { fmt{{AxisFormatter}}, fmtNumber } from '@/lib/format';
 import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * Bar-chart widget. Canonical anatomy:
+ *   Header:  title + description + ViewAllLink
+ *   Body:    inline headline (value + DeltaBadge) → chart
+ *
+ * Substitutions:
+ *   {{title}}          — "Invocation volume"
+ *   {{description}}    — "Agent calls — last 24 hours"  (REQUIRED — never empty)
+ *   {{detailHref}}     — drill-down route ("#invocation-volume")
+ *   {{seriesKey}}      — data key ("invocations")
+ *   {{seriesLabel}}    — human label ("Invocations")
+ *   {{colorIdx}}       — 1-5 per semantic color token
+ *   {{xKey}}           — x-axis field ("hour")
+ *   {{AxisFormatter}}  — Hour | Day | Weekday | Number
+ *   {{emptyMessage}}   — "No agent invocations in the last 24 hours."
+ *   {{deltaDirection}} — DeltaBadge direction (see kpi-with-delta.tsx)
+ */
 
 const chartConfig = {
   {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-{{colorIdx}}))' },
@@ -16,23 +36,55 @@ type Props = { sdk: UiPath };
 export function {{ComponentName}}({ sdk }: Props) {
   const { data, isLoading, error } = use{{HookName}}(sdk);
 
-  if (isLoading) return <LoadingState height="h-60" />;
-  if (error) throw error;   // caught by ErrorBoundary one level up
-  if (!data || data.length === 0) return <EmptyState message="{{emptyMessage}}" />;
+  if (isLoading) return <LoadingState height="h-72" />;
+  if (error) throw error;
+  if (!data || !data.points || data.points.length === 0) {
+    return <EmptyState message="{{emptyMessage}}" />;
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{{title}}</CardTitle>
+    <Card className="transition-all hover:shadow-sm">
+      <CardHeader className="space-y-0 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">{{title}}</p>
+          <ViewAllLink href="{{detailHref}}" />
+        </div>
+        <p className="text-xs text-muted-foreground">{{description}}</p>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-60 w-full">
-          <BarChart data={data}>
+
+      <CardContent className="pt-0">
+        {/* Inline headline + delta — above chart body */}
+        <div className="mb-3 flex items-end gap-2">
+          <span className="text-2xl font-semibold tabular-nums text-foreground">
+            {fmtNumber(data.headline ?? 0)}
+          </span>
+          {data.deltaText && (
+            <DeltaBadge direction="{{deltaDirection}}" text={data.deltaText} className="mb-1" />
+          )}
+        </div>
+
+        <ChartContainer config={chartConfig} className="h-48 w-full">
+          <BarChart data={data.points}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="{{xKey}}" tickFormatter={fmt{{AxisFormatter}}} tick={{ fontSize: 11 }} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+            <XAxis
+              dataKey="{{xKey}}"
+              tickFormatter={fmt{{AxisFormatter}}}
+              tick={{ fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              allowDecimals={false}
+              tick={{ fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+            />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="{{seriesKey}}" fill="var(--color-{{seriesKey}})" radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="{{seriesKey}}"
+              fill="var(--color-{{seriesKey}})"
+              radius={[3, 3, 0, 0]}
+            />
           </BarChart>
         </ChartContainer>
       </CardContent>

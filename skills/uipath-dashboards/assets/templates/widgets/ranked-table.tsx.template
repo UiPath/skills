@@ -1,11 +1,42 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
 import { LoadingState } from '@/dashboard/chrome/LoadingState';
 import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { ViewAllLink } from '@/dashboard/chrome/ViewAllLink';
+import { SeverityBadge, type Severity } from '@/dashboard/chrome/SeverityBadge';
+import { cn } from '@/lib/utils';
+import { fmtTimeAgo } from '@/lib/format';
 import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * Ranked-table widget.
+ *
+ * Canonical anatomy:
+ *   Header: title + description + ViewAllLink
+ *   Body:   sortable table with:
+ *     - uppercase muted column headers (text-xs tracking-wide)
+ *     - colored numeric cells via errorThreshold logic
+ *     - optional SeverityBadge column (via severity field)
+ *     - fmtTimeAgo for 'when' columns
+ *     - clickable rows with hover:bg-muted/50
+ *
+ * Substitutions:
+ *   {{title}}           — "Top agents by invocation"
+ *   {{description}}     — "Last 24 hours"
+ *   {{detailHref}}      — "#top-agents"
+ *   {{RowType}}         — e.g., `{ name: string; invocations: number; errors: number; latency: string }`
+ *   {{defaultSortKey}}  — key to sort by on first render
+ *   {{emptyMessage}}    — "No agent activity in the last 24 hours."
+ *   {{columnHeaders}}   — generator emits <TableHead onClick={() => toggle('key')}>Label <Arrow k="key" /></TableHead> per column
+ *   {{columnCells}}     — generator emits one <TableCell> per column with appropriate formatter:
+ *                          - fmtNumber(row.invocations)
+ *                          - <span className={errorClass(row.errors)}>{row.errors}</span>  // colored error count
+ *                          - <SeverityBadge severity={row.severity as Severity} />
+ *                          - fmtTimeAgo(row.when)
+ */
 
 type Row = {{RowType}};
 type Props = { sdk: UiPath };
@@ -30,21 +61,32 @@ export function {{ComponentName}}({ sdk }: Props) {
     else { setSortKey(key); setSortDir('desc'); }
   };
   const Arrow = ({ k }: { k: keyof Row }) =>
-    sortKey !== k ? null : sortDir === 'asc' ? <ChevronUp className="w-3 h-3 inline" /> : <ChevronDown className="w-3 h-3 inline" />;
+    sortKey !== k ? null : sortDir === 'asc' ? <ChevronUp className="inline w-3 h-3" /> : <ChevronDown className="inline w-3 h-3" />;
 
   return (
     <Card>
-      <CardHeader><CardTitle>{{title}}</CardTitle></CardHeader>
-      <CardContent>
+      <CardHeader className="space-y-0 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">{{title}}</p>
+          <ViewAllLink href="{{detailHref}}" />
+        </div>
+        <p className="text-xs text-muted-foreground">{{description}}</p>
+      </CardHeader>
+
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="border-b">
               {{columnHeaders}}
             </TableRow>
           </TableHeader>
           <TableBody>
             {sorted.map((row, i) => (
-              <TableRow key={i}>
+              <TableRow
+                key={i}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => { window.location.hash = `{{detailHref}}-${i}`; }}
+              >
                 {{columnCells}}
               </TableRow>
             ))}
@@ -54,3 +96,27 @@ export function {{ComponentName}}({ sdk }: Props) {
     </Card>
   );
 }
+
+/**
+ * Column-cell helpers — generator emits these inline per column.
+ *
+ * Header cell:
+ *   <TableHead className="text-xs uppercase tracking-wide text-muted-foreground cursor-pointer"
+ *              onClick={() => toggle('errors')}>
+ *     Errors <Arrow k="errors" />
+ *   </TableHead>
+ *
+ * Error count cell (colored by threshold):
+ *   <TableCell>
+ *     <span className={cn(
+ *       'font-medium tabular-nums',
+ *       row.errors > 5 ? 'text-destructive' : row.errors > 0 ? 'text-chart-4' : 'text-chart-3',
+ *     )}>{row.errors}</span>
+ *   </TableCell>
+ *
+ * Severity cell:
+ *   <TableCell><SeverityBadge severity={row.severity as Severity} /></TableCell>
+ *
+ * Time-ago cell:
+ *   <TableCell className="text-muted-foreground">{fmtTimeAgo(row.when)}</TableCell>
+ */

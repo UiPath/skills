@@ -4,16 +4,18 @@ Rules the generator follows when composing `Dashboard.tsx`. These encode "beauti
 
 ## 10 rules
 
-1. **KPI row at top.** 1–4 tiles, equal-width: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6`. NEVER more than 4 KPIs; if more are wanted, promote overflow into a ranked-table below.
-2. **Primary chart full-width next.** The headline trend the prompt implied. `className="w-full"`.
-3. **Secondary charts in 2-up grid.** `grid-cols-1 lg:grid-cols-2 gap-6`. Max 4 tiles in this grid; further widgets wrap to a third row.
-4. **Tables last.** Densest content; bottom placement.
-5. **Gutters uniform.** `gap-6` (24px). Card padding `p-6`. Page padding `p-8` lg / `p-4` sm. No per-card tuning.
-6. **Every widget in a Card.** No free-floating JSX.
-7. **`chrome/Header.tsx` at top** — humanized `state.app.name` + last-refreshed timestamp + a right-side cluster containing `<ThemeToggle />` and (optionally) a Refresh button, both in a `flex items-center gap-2` wrapper.
-8. **Light mode default, dark mode toggleable.** `<html>` starts with no class; an inline script in `index.html` applies `.dark` if `localStorage["uipath-dashboard-theme"] === 'dark'` BEFORE React mounts. The `<ThemeToggle>` (Sun / Moon icon button) lives in the Header and is MANDATORY — not optional. Every widget template uses `dark:` Tailwind variants so both modes look correct. Never hardcode `class="dark"` on `<html>`. See [design-system.md § Light + dark mode](design-system.md).
-9. **Density "comfortable".** Table rows `py-3` not `py-1`. Breathing room matters more than density on first load.
-10. **No auto-generated dashboard title.** Humanize `state.app.name` (`agent-health-dashboard` → `Agent Health Dashboard`). Widget titles come from user intent, not SDK method name.
+1. **Dashboard header** with title AND description. "Agent Health / Agent invocation volume, error rates, and performance metrics." Never just a title. Description is a one-sentence declaration of scope. The `Header` primitive accepts `title` + `description` props.
+2. **KPI row at top.** 1–4 tiles, equal-width: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4`. NEVER more than 4 KPIs; if more are wanted, promote overflow into a ranked-table below. **Entire KPI card is a `<a href={detailHref}>`** — whole tile clickable, not just a corner link.
+3. **Chart row: 2-up grid.** `grid-cols-1 lg:grid-cols-2 gap-4`. Two chart cards side-by-side. If >2 charts, wrap to a second 2-up row below. (This supersedes earlier drafts specifying "primary full-width + 2-up below" — the governance-next reference dashboards all use a flat 2-up grid; it reads better and composes more consistently.)
+4. **Tables full-width last.** Densest content; bottom placement. Spans the full container width. Rows are `cursor-pointer hover:bg-muted/50` with drill-down navigation on click.
+5. **Gutters uniform.** `gap-4` (16px) between cards in rows — tighter than earlier drafts to match the reference density. Card padding `p-5` for chart/KPI tiles, `p-0` for tables (the Table component controls its own padding). Page padding `p-8` lg / `p-4` sm.
+7. **Every widget in a Card.** No free-floating JSX.
+8. **Every widget obeys [widget-anatomy.md](widget-anatomy.md).** Six parts — icon (KPIs), title, description, headline-with-delta (metric widgets), body, optional info-tooltip, view-all-link (charts + tables). Missing any required part = generator bug; halt and fix.
+9. **Everything is clickable that has a detail view.** Chart cards and table rows wrap in `onClick` handlers with `cursor-pointer` + `hover:shadow-md transition-shadow`. Placeholder href `#<kebab-name>` until routing is wired.
+10. **`chrome/Header.tsx` at top** — humanized `state.app.name` + description + a right-side cluster containing `<ThemeToggle />` and (optionally) Refresh + Customize buttons, in a `flex items-center gap-2` wrapper.
+11. **Light mode default, dark mode toggleable.** `<html>` starts with no class; an inline script in `index.html` applies `.dark` if `localStorage["uipath-dashboard-theme"] === 'dark'` BEFORE React mounts. The `<ThemeToggle>` (Sun / Moon icon button) lives in the Header and is MANDATORY. Every widget template uses `dark:` Tailwind variants. Never hardcode `class="dark"` on `<html>`. See [design-system.md § Light + dark mode](design-system.md).
+12. **Density "comfortable".** Table rows `py-3` not `py-1`. Breathing room matters more than density on first load.
+13. **No auto-generated dashboard title.** Humanize `state.app.name` (`agent-health-dashboard` → `Agent Health Dashboard`). Widget titles come from user intent, not SDK method name.
 
 ## `Dashboard.tsx` skeleton (what the generator writes)
 
@@ -32,24 +34,27 @@ import type { UiPath } from '@uipath/uipath-typescript/core';
 export function Dashboard({ sdk }: { sdk: UiPath }) {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 lg:p-8">
-      <Header title="Agent Health Dashboard" />
+      <Header
+        title="Agent Health"
+        description="Agent invocation volume, error rates, and performance metrics."
+      />
 
-      {/* KPI row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+      {/* Row 1: KPI row — 4 clickable tiles */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <ActiveAgentsKPI sdk={sdk} />
         <InvocationsTodayKPI sdk={sdk} />
         <AvgResponseTimeKPI sdk={sdk} />
         <ErrorRateKPI sdk={sdk} />
       </div>
 
-      {/* Primary chart */}
-      <div className="mt-6">
+      {/* Row 2: chart row — 2-up grid */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <InvocationVolume sdk={sdk} />
+        <ErrorRateTrend sdk={sdk} />
       </div>
 
-      {/* 2-up grid for secondaries */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <ErrorRateTrend sdk={sdk} />
+      {/* Row 3: full-width table (tables always last) */}
+      <div className="mt-6">
         <TopAgentsTable sdk={sdk} />
       </div>
     </div>

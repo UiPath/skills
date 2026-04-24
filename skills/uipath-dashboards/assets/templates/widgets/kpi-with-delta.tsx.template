@@ -1,34 +1,54 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
 import { LoadingState } from '@/dashboard/chrome/LoadingState';
-import { fmtNumber, fmtPercent } from '@/lib/format';
+import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
+import { fmtNumber } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * KPI tile with semantic delta. Whole card clicks through to the detail view.
+ *
+ * Substitutions:
+ *   {{IconName}}      — lucide icon matching the metric (see design-system.md § Icon catalog)
+ *   {{title}}         — label under value ("Active agents")
+ *   {{detailHref}}    — drill-down route ("#active-agents")
+ *   {{deltaDirection}} — 'up-good' | 'up-bad' | 'down-good' | 'down-bad' | 'neutral' | 'status'
+ *                       Picked by intent, not sign: "up-good" = increase is good (active agents),
+ *                       "up-bad" = increase is bad (latency, cost). Never default to raw sign.
+ */
+import { {{IconName}} } from 'lucide-react';
 
 type Props = { sdk: UiPath };
 
 export function {{ComponentName}}({ sdk }: Props) {
   const { data, isLoading, error } = use{{HookName}}(sdk);
-  if (isLoading) return <LoadingState height="h-20" />;
+  if (isLoading) return <LoadingState height="h-24" />;
   if (error) throw error;
 
   const value = data?.value ?? 0;
-  const delta = data?.delta ?? 0;    // fractional, e.g., 0.12 = +12%
-  const positive = delta >= 0;
-  const Arrow = positive ? ArrowUpRight : ArrowDownRight;
-  const badgeVariant = positive ? 'default' : 'destructive';
+  const deltaText = data?.deltaText ?? '';     // e.g., "+3 this week", "+8% vs yesterday"
+  const Icon: LucideIcon = {{IconName}};
 
   return (
-    <Card>
-      <CardContent className="py-6">
-        <p className="text-sm text-muted-foreground">{{title}}</p>
-        <p className="text-3xl font-semibold tabular-nums mt-2">{fmtNumber(value)}</p>
-        <Badge variant={badgeVariant} className="mt-2 gap-1">
-          <Arrow className="w-3 h-3" />
-          <span className="tabular-nums">{fmtPercent(Math.abs(delta))}</span>
-        </Badge>
-      </CardContent>
-    </Card>
+    <a
+      href="{{detailHref}}"
+      className={cn(
+        'group block rounded-xl border bg-card p-5 transition-all',
+        'hover:border-primary/50 hover:shadow-sm',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      )}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
+        {deltaText && <DeltaBadge direction="{{deltaDirection}}" text={deltaText} />}
+      </div>
+      <p className="mb-0.5 text-2xl font-semibold tabular-nums text-foreground">
+        {fmtNumber(value)}
+      </p>
+      <p className="text-xs text-muted-foreground">{{title}}</p>
+    </a>
   );
 }

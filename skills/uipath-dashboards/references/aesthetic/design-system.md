@@ -9,13 +9,54 @@ Installed on first scaffold via `npx shadcn@latest add --yes`:
 | Component | Purpose |
 |---|---|
 | `Card` (+ `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`) | Every widget wraps in a Card. The primitive. |
-| `Badge` (default / secondary / destructive / outline) | Delta indicators on KPIs; tone badges on cells |
+| `Badge` (default / secondary / destructive / outline) | Only for status labels inside tables; **prefer `DeltaBadge` for deltas and `SeverityBadge` for severity**. |
 | `Table` (+ `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`) | Ranked-table widget |
 | `Chart` (shadcn's Recharts wrapper — `ChartContainer`, `ChartTooltip`, `ChartLegend`) | Every chart widget |
 | `Tooltip` (+ `TooltipProvider`, `TooltipContent`, `TooltipTrigger`) | Inline hover help |
 | `Separator` | Visual dividers between layout sections |
 | `Skeleton` | Loading state placeholders |
-| `Button` (ghost / outline variants only) | Refresh button in Header; no primary buttons (dashboards are read-only) |
+| `Button` (ghost / outline / icon variants) | Refresh, ThemeToggle, Customize. No primary buttons (dashboards are read-only) |
+
+### Chrome primitives (skill-owned, live in `src/dashboard/chrome/`)
+
+These wrap shadcn + lucide into dashboard-specific affordances. Every widget composes them rather than rolling its own.
+
+| Primitive | Purpose | Canonical usage |
+|---|---|---|
+| `DeltaBadge` | Semantic delta pill with arrow + text. Direction conveys *good vs bad*, not just sign. | `<DeltaBadge direction="up-good" text="+8% vs yesterday" />` |
+| `SeverityBadge` | Colored pill for severity / status in tables. | `<SeverityBadge severity="high" />` |
+| `ViewAllLink` | Standard drill-down link (`View all →`). Required on chart + table cards. | `<ViewAllLink href="#invocation-volume" />` |
+| `InfoTooltip` | ⓘ icon with tooltip. Use when the metric needs explanation. | `<InfoTooltip message="Percentage points — not to be confused with percent." />` |
+| `ThemeToggle` | Mandatory in Header. Sun / Moon icon button. | `<ThemeToggle />` |
+| `Header` | Title + description + right-side action cluster. | `<Header title="Agent Health" description="..." />` |
+| `EmptyState`, `ErrorBoundary`, `LoadingState` | Widget state primitives. | Rendered by each widget when data is unavailable. |
+
+## Icon catalog (lucide-react)
+
+Every KPI gets an icon. Every chart/table icon is optional but encouraged. The generator picks from this intent-map; if no clear match, omit the icon rather than force a wrong one.
+
+| Intent / metric | lucide-react icon | Import |
+|---|---|---|
+| Active agents / running count | `Briefcase` | `import { Briefcase } from 'lucide-react'` |
+| Invocations / throughput / calls | `Zap` | — |
+| Response time / latency / duration | `Clock` | — |
+| Error rate / faults / failures | `AlertTriangle` | — |
+| Cost / spend / budget | `DollarSign` | — |
+| Target / budget line / goal | `Target` | — |
+| Compliance / policy pass rate | `Shield` | — |
+| Active policies / rule sets | `ClipboardList` | — |
+| Open violations / alerts | `AlertCircle` | — |
+| Pending review / backlog | `AlertOctagon` | — |
+| Tasks / actions / assignments | `CheckSquare` | — |
+| Queues / workflow items | `LineChart` / `ListOrdered` | — |
+| Users / assignees / principals | `Users` | — |
+| Models / ML configurations | `Cpu` | — |
+| Buckets / files / storage | `Database` | — |
+| Cases / pipeline stages | `FolderOpen` | — |
+| Trend up (when metric is a trend KPI) | `TrendingUp` / `TrendingDown` | — |
+| Bar chart / distribution | `BarChart3` | — |
+
+Icons render in a `rounded-md bg-muted p-2` square with `w-4 h-4 text-muted-foreground` — muted, never color-tinted to the metric's palette.
 
 ## Components OUT (skip in v1)
 

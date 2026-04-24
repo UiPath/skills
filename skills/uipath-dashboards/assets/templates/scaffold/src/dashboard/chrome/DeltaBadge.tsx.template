@@ -1,0 +1,75 @@
+import { ArrowUpRight, ArrowDownRight, ArrowRight, Circle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+/**
+ * Direction-aware delta badge.
+ *
+ * `direction` combines the arrow direction with its SEMANTIC meaning:
+ *   - 'up-good'   : value went up, which is GOOD (green). e.g., +3 active agents.
+ *   - 'up-bad'    : value went up, which is BAD (red). e.g., +12ms latency.
+ *   - 'down-good' : value went down, which is GOOD (green). e.g., -0.6pp error rate.
+ *   - 'down-bad'  : value went down, which is BAD (red). e.g., -15% invocations.
+ *   - 'neutral'   : informational, amber. e.g., "2 overdue".
+ *   - 'status'    : status word, tone-driven. e.g., "On track" (green), "Under budget" (green).
+ *
+ * Renders a pill with background tint, colored arrow, and space-separated text.
+ */
+export type DeltaDirection =
+  | 'up-good'
+  | 'up-bad'
+  | 'down-good'
+  | 'down-bad'
+  | 'neutral'
+  | 'status';
+
+type Props = {
+  direction: DeltaDirection;
+  /** e.g., "+3 this week", "+8% vs yesterday", "-0.6pp this week", "On track". */
+  text: string;
+  className?: string;
+};
+
+const toneFor = (d: DeltaDirection) => {
+  switch (d) {
+    case 'up-good':
+    case 'down-good':
+    case 'status':
+      return 'bg-chart-3/10 text-chart-3 border-chart-3/20';
+    case 'up-bad':
+    case 'down-bad':
+      return 'bg-destructive/10 text-destructive border-destructive/20';
+    case 'neutral':
+      return 'bg-chart-4/10 text-chart-4 border-chart-4/20';
+  }
+};
+
+const ArrowFor = ({ direction }: { direction: DeltaDirection }) => {
+  switch (direction) {
+    case 'up-good':
+    case 'up-bad':
+    case 'status':
+      return <ArrowUpRight className="w-3 h-3" />;
+    case 'down-good':
+    case 'down-bad':
+      return <ArrowDownRight className="w-3 h-3" />;
+    case 'neutral':
+      return <ArrowRight className="w-3 h-3" />;
+    default:
+      return <Circle className="w-3 h-3" />;
+  }
+};
+
+export function DeltaBadge({ direction, text, className }: Props) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium tabular-nums',
+        toneFor(direction),
+        className,
+      )}
+    >
+      <ArrowFor direction={direction} />
+      {text}
+    </span>
+  );
+}

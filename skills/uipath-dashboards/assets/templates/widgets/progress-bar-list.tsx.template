@@ -1,0 +1,89 @@
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { ViewAllLink } from '@/dashboard/chrome/ViewAllLink';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * Progress-bar-list widget — for "X by Y with share-of-total" displays.
+ * Examples: cost by model, tasks by priority, spend by department.
+ *
+ * Each row: color dot + label + value (+ optional percent in muted text) + progress bar.
+ * No SVG, no chart library — pure div-based.
+ *
+ * Substitutions:
+ *   {{title}}         — "Cost by model"
+ *   {{description}}   — "Month-to-date AI unit consumption by model"
+ *   {{detailHref}}    — "#cost-by-model"
+ *   {{labelKey}}      — row field for the left label ("model")
+ *   {{valueKey}}      — row field for the numeric value ("spend")
+ *   {{valueFormatter}} — formatter function name or inline expression: e.g., `(v) => fmtCurrency(v)` or `fmtNumber`
+ *   {{emptyMessage}}  — "No spend recorded this month."
+ *
+ * Expected data shape: `{ items: Array<{ [labelKey]: string; [valueKey]: number; colorIdx?: 1|2|3|4|5 }>; total?: number }`
+ * If `total` omitted, computed as sum of `valueKey` across rows.
+ */
+
+type Row = { {{labelKey}}: string; {{valueKey}}: number; colorIdx?: 1 | 2 | 3 | 4 | 5 };
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+
+  if (isLoading) return <LoadingState height="h-60" />;
+  if (error) throw error;
+  if (!data || !data.items || data.items.length === 0) {
+    return <EmptyState message="{{emptyMessage}}" />;
+  }
+
+  const items = data.items as Row[];
+  const total = data.total ?? items.reduce((sum, r) => sum + r.{{valueKey}}, 0);
+
+  return (
+    <Card className="transition-all hover:shadow-sm">
+      <CardHeader className="space-y-0 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">{{title}}</p>
+          <ViewAllLink href="{{detailHref}}" />
+        </div>
+        <p className="text-xs text-muted-foreground">{{description}}</p>
+      </CardHeader>
+
+      <CardContent>
+        <div className="space-y-4 pt-2">
+          {items.map((row, i) => {
+            const pct = total > 0 ? Math.round((row.{{valueKey}} / total) * 100) : 0;
+            const colorIdx = row.colorIdx ?? ((i % 5) + 1);
+            return (
+              <div key={row.{{labelKey}}}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-xs text-foreground">
+                    <span
+                      className="inline-block h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: `hsl(var(--chart-${colorIdx}))` }}
+                    />
+                    {row.{{labelKey}}}
+                  </span>
+                  <span className="text-xs font-medium tabular-nums text-foreground">
+                    {({{valueFormatter}})(row.{{valueKey}})}
+                    <span className="ml-1 font-normal text-muted-foreground">({pct}%)</span>
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${pct}%`,
+                      backgroundColor: `hsl(var(--chart-${colorIdx}))`,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

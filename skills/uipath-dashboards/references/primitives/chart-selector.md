@@ -46,7 +46,8 @@ Given a data shape returned by the data-router's SDK call spec, pick the right w
 | ranked | any | multi-column | `ranked-table` | `ranked-table.tsx.template` |
 | two-series | 2 | volume + rate | `dual-axis-chart` | `dual-axis-chart.tsx.template` |
 | parts-of-whole | ≤5 | — | `donut-chart` | `donut-chart.tsx.template` |
-| parts-of-whole | >5 | — | degrade to `horizontal-bar` | `horizontal-bar.tsx.template` |
+| parts-of-whole | >5 | — | degrade to `progress-bar-list` | `progress-bar-list.tsx.template` |
+| share-of-total | any | "X by Y with %" | `progress-bar-list` | `progress-bar-list.tsx.template` |
 | funnel | stages | — | `funnel` | `funnel.tsx.template` |
 | heatmap | 7×24 | day × hour | `heatmap` | `heatmap.tsx.template` |
 

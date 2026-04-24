@@ -1,0 +1,33 @@
+import { Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+/**
+ * Wraps shadcn's Tooltip around an info icon — for explanatory context next
+ * to a widget title. Use when the metric's meaning isn't obvious from the
+ * label alone (e.g., "what does 'pp' mean in '-0.6pp this week'?").
+ *
+ * Placement: typically in CardHeader right-side cluster with ViewAllLink.
+ * Message: one clear sentence. Long explanations belong in a detail view.
+ */
+type Props = { message: string };
+
+export function InfoTooltip({ message }: Props) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label="More information"
+            className="inline-flex items-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs">
+          {message}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
