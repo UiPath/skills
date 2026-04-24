@@ -40,10 +40,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent identified an approval gate pattern"
+  - type: json_check
+    description: "Agent identified an approval gate pattern (case-tolerant)"
     path: "recommendation.json"
-    includes:
-      - "approval"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "pprov"
     weight: 1.5
     pass_threshold: 1.0

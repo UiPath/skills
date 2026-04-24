@@ -39,11 +39,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent named a specific pattern (non-empty pattern field)"
+  - type: json_check
+    description: "Agent named an approval-family pattern (case-tolerant)"
     path: "recommendation.json"
-    includes:
-      - "approval"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "pprov"
     weight: 1.5
     pass_threshold: 1.0
 
