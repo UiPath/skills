@@ -50,6 +50,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 17. **Don't hand-write `layout.nodes` or `subflows[<id>].layout`** — these are owned by `flow tidy`. When authoring nodes, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save. Sticky notes (`type: "stickyNote"`) are the one exception — tidy preserves their custom size and position. See [flow-file-format.md — Layout](references/flow-file-format.md#layout).
 18. **Every node that produces data MUST have `outputs` on the node instance** — Without an `outputs` block, downstream `$vars` references will not resolve at runtime. Action nodes need `output` + `error`; trigger nodes need `output` only; end/terminate nodes do not use this pattern. See [flow-file-format.md — Node outputs](references/flow-file-format.md#node-outputs). **Wrong:** relying on `outputDefinition` in `definitions` alone. **Right:** `outputs` on the node instance itself.
 19. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
+20. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See Step 2.
 
 ## Common Edits (existing flows)
 
@@ -148,9 +149,11 @@ uip login                                          # interactive OAuth (opens br
 uip login --authority https://alpha.uipath.com     # non-production environments
 ```
 
-### Step 2 — Create a solution and Flow project
+### Step 2 — Create a solution, THEN a Flow project inside it
 
-Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See Critical Rule #19.
+> **A Flow project cannot exist outside a solution (Critical Rule #20).** You MUST scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
+
+Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See Critical Rule #19.
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -161,6 +164,8 @@ Every Flow project lives inside a solution. Check the current directory for exis
 uip solution new "<SolutionName>" --output json
 ```
 
+This creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **You must `cd` into the new solution directory before Step 2b.**
+
 > **Naming convention:** Use the same name for both the solution and the project unless the user specifies otherwise. If the user only provides a project name, use it as the solution name too.
 
 #### 2b. Create the Flow project inside the solution folder
@@ -168,6 +173,8 @@ uip solution new "<SolutionName>" --output json
 ```bash
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
 ```
+
+The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
 
 #### 2c. Add the project to the solution
 
@@ -177,7 +184,30 @@ uip solution project add \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-This scaffolds a complete project inside a solution. See [references/flow-file-format.md](references/flow-file-format.md) for the full project structure.
+#### Expected layout after Steps 2a–2c
+
+```
+<cwd>/
+└── <SolutionName>/                    ← from `uip solution new`
+    ├── <SolutionName>.uipx
+    └── <ProjectName>/                 ← from `uip maestro flow init` (run from inside <SolutionName>/)
+        ├── <ProjectName>.flow         ← the file you edit
+        ├── project.uiproj
+        ├── bindings_v2.json
+        ├── entry-points.json
+        ├── operate.json
+        └── package-descriptor.json
+```
+
+**Self-check — run this before Step 3:**
+
+```bash
+ls "<directory>/<SolutionName>/<ProjectName>/<ProjectName>.flow"
+```
+
+If the file does not exist at that exact path (double-nested), Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
+
+See [references/flow-file-format.md](references/flow-file-format.md) for the full project structure.
 
 ### Step 3 — Refresh the registry
 
@@ -278,6 +308,8 @@ When the build completes, present the next-step dropdown described in the [Compl
 
 ## Anti-Patterns
 
+- **Never run `uip maestro flow init` outside a solution directory** — the resulting `.flow` file MUST sit at `<Solution>/<Project>/<Project>.flow` (double-nested). Running `flow init` from a bare cwd, from the user's home, or from the parent of `<Solution>/` produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and the `uip solution project add` wiring. Always complete Step 2a first, `cd` into the solution dir, then Step 2b. Run the Step-2 self-check (`ls <Solution>/<Project>/<Project>.flow`) before continuing.
+- **Never use `--format json` on any `uip` command** — the flag is `--output json` (Critical Rule #4). `--format` produces `error: unknown option '--format'` and exit code 3 on every `uip` subcommand, not a helpful message pointing you at `--output`.
 - **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
 - **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
