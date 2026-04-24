@@ -169,30 +169,37 @@ jobs:
           bun run build
           cd packages/cli && npm link
 
-      # Pre-install the rpa-legacy tool from the uipcli monorepo. The
-      # tasks otherwise trigger `uip tools install <name>` auto-install
+      # Pre-link rpa-legacy-tool from the uipcli monorepo. Tasks
+      # otherwise trigger `uip tools install <name>` auto-install
       # against the npm registry, which fails with
       # `npm error code EUNSUPPORTEDPROTOCOL / Unsupported URL Type
-      # "workspace:"` because the published @uipath/rpa-legacy-tool and
-      # @uipath/rpa-tool releases carry unrebuilt `workspace:*` deps
-      # that only resolve inside the uipcli monorepo itself. Building
-      # from the monorepo we already have checked out sidesteps the
-      # packaging bug entirely: `bun pm pack` produces a tarball with
-      # real dependency versions that `uip tools install <tgz>` accepts.
+      # "workspace:"` because the currently published
+      # @uipath/rpa-legacy-tool + @uipath/rpa-tool releases carry
+      # unrebuilt `workspace:*` deps that only resolve inside the uipcli
+      # monorepo itself. `uip tools install <tgz>` is rejected with
+      # "Unknown tool" (the CLI only accepts a whitelist of package
+      # names, not file paths), so we can't use a locally-packed
+      # tarball either.
       #
-      # rpa-tool: does NOT live in the uipcli monorepo (published from a
-      # separate source). We cannot repackage it the same way, so we
-      # leave it to the task's auto-install path; any failure surfaces
-      # in the LLM reviewer score gate below.
-      - name: Pre-install rpa-legacy-tool from uipcli monorepo
+      # What works: `npm link` from inside the tool package registers
+      # a symlink at `<npm-global-prefix>/lib/node_modules/@uipath/<tool>`
+      # — which is exactly where uip's ToolManager discovers tools at
+      # startup. When the verb fires (e.g. `uip rpa-legacy ...`),
+      # isInstalled() returns true and the auto-install is skipped.
+      #
+      # rpa-tool: NOT in the uipcli monorepo (published from a separate
+      # source we don't have checked out), so we can't repackage it.
+      # Any resulting task failure surfaces via the LLM reviewer score
+      # gate below.
+      - name: Pre-link rpa-legacy-tool from uipcli monorepo
         working-directory: .uipcli
         run: |
           set -e
-          (cd packages/rpa-legacy-tool && bun run build && bun pm pack)
-          TGZ=$(ls .uipcli/packages/rpa-legacy-tool/*.tgz 2>/dev/null || ls packages/rpa-legacy-tool/*.tgz)
-          echo "Installing rpa-legacy-tool from: $TGZ"
-          uip tools install "$TGZ"
-          uip tools list --output json
+          cd packages/rpa-legacy-tool
+          bun run build
+          npm link
+          cd ../..
+          uip tools list --output json || true
 
       - name: Run smoke tests
         env:
@@ -279,19 +286,23 @@ jobs:
       - name: Enforce LLM reviewer score threshold (>= 0.8)
         if: always()
         working-directory: tests
+        env:
+          REVIEWER_THRESHOLD: "0.8"
+        # Single-quoted heredoc keeps Python literals intact. Threshold
+        # is read from the env so we don't have to escape dollar signs.
         run: |
-          THRESHOLD=0.8
-          python - <<PY
-          import json, pathlib, sys
-          threshold = $THRESHOLD
+          python - <<'PY'
+          import json, os, pathlib, sys
+          threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
           run_dirs = sorted(pathlib.Path('runs').glob('*/'))
           if not run_dirs:
               print('::warning::No run directory — skipping reviewer threshold check')
               sys.exit(0)
           run_dir = run_dirs[-1]
+          task_jsons = sorted(run_dir.rglob('task.json'))
           failures = []
           missing = []
-          for p in sorted(run_dir.rglob('task.json')):
+          for p in task_jsons:
               d = json.loads(p.read_text(encoding='utf-8'))
               lr = d.get('llm_review') or {}
               score = lr.get('score')
@@ -300,16 +311,16 @@ jobs:
                   missing.append(tid)
                   continue
               if score < threshold:
-                  failures.append((tid, score, (lr.get('issues') or '').splitlines()[0][:120]))
-          if missing:
-              for tid in missing:
-                  print(f'::warning::{tid}: no llm_review (reviewer skipped or errored)')
+                  issues = (lr.get('issues') or '').splitlines()[0][:120]
+                  failures.append((tid, score, issues))
+          for tid in missing:
+              print(f'::warning::{tid}: no llm_review (reviewer skipped or errored)')
           if failures:
               for tid, score, issues in failures:
                   print(f'::error::{tid}: llm_review score {score:.2f} < {threshold} — {issues}')
               print(f'::error::{len(failures)} task(s) below LLM reviewer threshold {threshold}')
               sys.exit(1)
-          print(f'All {len([1 for _ in run_dir.rglob(\"task.json\")])} task(s) passed llm_review >= {threshold}')
+          print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
           PY
 
       - name: Fail if tests failed
