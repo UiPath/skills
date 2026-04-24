@@ -49,10 +49,11 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 22. **Edit `content/*.json` only** — `content/*.bpmn` is auto-generated and will be overwritten.
 23. **Execute CLI commands sequentially.** No parallel execution — each command may depend on IDs returned by the previous one.
 24. **Check the plugin migration matrix before every plugin's execution.** [`references/case-editing-operations.md`](references/case-editing-operations.md) declares per plugin whether to use the `uip maestro case` CLI or direct JSON edits. Default is CLI; migrated plugins opt in to JSON. When a plugin is on the JSON strategy, follow its `impl-json.md` + [`references/case-editing-operations-json.md`](references/case-editing-operations-json.md) instead of the CLI command. Mixing strategies in the same run is expected during the migration.
+25. **HARD STOP between Phase 2a (skeleton) and Phase 2b (detail).** After Phase 2a builds the structural skeleton (solution, project, root, global vars, stages, edges, triggers, task shells), run skeleton-mode validate (`uip maestro case validate --mode skeleton`) and present the hard-stop prompt via **AskUserQuestion** (`Publish for review` / `Skip publish and continue` / `Abort`). Phase 2a does NOT bind task input values, does NOT call `is resources describe` for connector tasks, does NOT write conditions, and does NOT write SLA — all deferred to Phase 2b. On `Publish for review`, run `uip solution upload`, print DesignerUrl, then prompt (`Continue to phase 2b` / `Abort`). On `Abort`, dump `build-issues.md` and leave artifacts in place (no cleanup). On continue, Phase 2b must re-read `tasks.md` AND `caseplan.json` before mutating — never trust in-memory state across the stop. Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 
 ## Workflow
 
-Two phases with a hard stop between them: **Planning** generates a reviewable `tasks.md` from `sdd.md`. **Implementation** executes `tasks.md` via the `uip maestro case` CLI.
+Three hard stops: **Planning** (sdd.md → tasks.md) → approve → **Phase 2a** (skeleton) → publish-for-review stop → **Phase 2b** (detail) → post-build stop.
 
 ### Phase 1 — Planning (sdd.md → tasks.md)
 
@@ -63,24 +64,39 @@ Two phases with a hard stop between them: **Planning** generates a reviewable `t
 
 Present `tasks.md` to the user for approval. **Do NOT proceed until the user explicitly approves.**
 
-### Phase 2 — Implementation (tasks.md → caseplan.json)
+### Phase 2a — Skeleton build (tasks.md → structural caseplan.json)
 
-**Read [references/implementation.md](references/implementation.md)** for the full execution procedure. Steps:
+**Read [references/implementation.md](references/implementation.md) + [references/phased-execution.md](references/phased-execution.md).** Builds structural shape only:
 
-1. Create the solution + project + case file (Step 6)
-2. Add stages (Step 7)
-3. Add edges (Step 8)
-4. Add tasks and bind inputs/outputs (Step 9) — per-task-type detail in `plugins/tasks/<type>/impl-json.md` (JSON strategy for `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`; `impl-cli.md` for `connector-activity` / `connector-trigger`)
-5. Add conditions (Step 10) — per-scope detail in `plugins/conditions/<scope>/impl-cli.md` (or `impl-json.md` once migrated)
-6. Configure SLA and escalation (Step 11)
-7. Validate (Step 12)
-8. Post-build loop (Step 13) — AskUserQuestion dropdown for next steps; loop until user selects `Done`
+1. Solution + project + root case (Step 6)
+2. Global variables + arguments (Step 6.1)
+3. Stages (Step 7)
+4. Edges (Step 8)
+5. Triggers (full)
+6. Tasks — shape only (Step 9):
+   - Non-connector resolved: full `data.inputs[]` schema, empty `value` fields
+   - Connector resolved: `type-id` + `connection-id` only; **no `is describe` call in 2a**
+   - Unresolved: skeleton (empty `data: {}`) per Rule #11
+7. Skeleton-mode validate (Step 9.5.1): `uip maestro case validate --mode skeleton`
+8. **HARD STOP** (Step 9.5.2–9.5.5): AskUserQuestion — `Publish for review` / `Skip publish and continue` / `Abort`
+   - On `Publish`: `uip solution upload <SolutionDir>`, print DesignerUrl, then AskUserQuestion — `Continue to phase 2b` / `Abort`
+   - On `Abort`: dump `build-issues.md`, print paths, exit (no cleanup)
 
-After the user approves `tasks.md`, re-read `tasks.md` before proceeding.
+### Phase 2b — Detail build (skeleton → validated caseplan.json)
+
+After approval, re-read `tasks.md` AND `caseplan.json` (Step 9.6) to rebuild name → ID maps. Then:
+
+1. Connector task schema + defaults (Step 9.7) — `is resources describe` / `is triggers describe`, write `data.inputs[]` / `data.outputs[]`
+2. Task input/output value binding (Step 9.8) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
+3. Conditions, all 4 scopes (Step 10)
+4. SLA + escalation (Step 11)
+5. Full validate (Step 12) — `uip maestro case validate` (no `--mode`)
+6. Dump `build-issues.md` (Step 12.1)
+7. Post-build loop (Step 13) — AskUserQuestion dropdown; loop until user selects `Done`
 
 ## Quick Start
 
-For a fresh case built from `sdd.md`, the 8 steps:
+For a fresh case built from `sdd.md`, the 9 steps:
 
 ### Step 0 — Resolve the `uip` binary
 
@@ -122,21 +138,33 @@ Order: stages → edges → tasks → conditions → SLA. One T-numbered entry p
 
 **AskUserQuestion**: `Approve and proceed` / `Request changes`. Loop on `Request changes`. Do not execute without explicit approval.
 
-### Step 6 — Re-read tasks.md and execute
+### Step 6 — Re-read tasks.md and execute Phase 2a
 
-Re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute each T-entry in order. Open the matching plugin's `impl-cli.md` (or `impl-json.md`, per the strategy matrix) for each task/trigger/condition.
+Re-read `tasks.md`, then open [references/implementation.md](references/implementation.md) and execute Phase 2a (Steps 6 – 9.1). Phase 2a builds solution + project + root + global vars + stages + edges + triggers + task shells only. **Do not bind input values, do not describe connector schemas, do not write conditions, do not write SLA** in Phase 2a — all deferred to Phase 2b.
 
-### Step 7 — Validate
+### Step 7 — Skeleton validate + HARD STOP (Step 9.5)
 
 ```bash
-uip maestro case validate <file>
+uip maestro case validate <file> --mode skeleton --output json
+```
+
+Then **AskUserQuestion**: `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`, run `uip solution upload <SolutionDir>`, print `DesignerUrl`, then **AskUserQuestion**: `Continue to phase 2b` / `Abort`. On `Abort`, dump `tasks/build-issues.md`, print paths, exit.
+
+Full contract in [references/phased-execution.md](references/phased-execution.md).
+
+### Step 8 — Re-read and execute Phase 2b
+
+Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Execute Steps 9.7 – 12.1: connector detail, I/O binding, conditions, SLA, full validate, dump issues.
+
+```bash
+uip maestro case validate <file> --output json
 ```
 
 Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fix` / `Pause for manual edit` / `Abort`.
 
-### Step 8 — Post-build prompt
+### Step 9 — Post-build prompt
 
-**AskUserQuestion** with options: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`. Loop until the user selects `Done`.
+**AskUserQuestion** with options: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`. Loop until the user selects `Done`. A final `Publish to Studio Web` here overwrites any volatile edits made during Step 7's review-time publish.
 
 ## Reference Navigation
 
@@ -144,6 +172,7 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 |---|---|
 | **Plan tasks from sdd.md** | [references/planning.md](references/planning.md) |
 | **Execute tasks.md into a case** | [references/implementation.md](references/implementation.md) |
+| **Phase 2a / 2b split + hard stop contract** | [references/phased-execution.md](references/phased-execution.md) |
 | **Know which strategy (CLI vs JSON) per plugin** | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | **Edit caseplan.json directly (JSON strategy)** | [references/case-editing-operations-json.md](references/case-editing-operations-json.md) |
 | **Run mutations via CLI (CLI strategy)** | [references/case-editing-operations-cli.md](references/case-editing-operations-cli.md) |
