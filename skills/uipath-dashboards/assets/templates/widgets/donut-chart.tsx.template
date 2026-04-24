@@ -1,0 +1,52 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
+import { PieChart, Pie, Cell } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+const chartConfig = {
+  {{chartConfigEntries}}
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+  if (isLoading) return <LoadingState height="h-60" />;
+  if (error) throw error;
+  if (!data || data.length === 0) return <EmptyState message="{{emptyMessage}}" />;
+
+  // Refuse to render > 5 slices (per charting.md anti-patterns).
+  if (data.length > 5) {
+    console.warn('[donut-chart] > 5 slices; degrading. Regenerate with horizontal-bar.');
+    return <EmptyState message="Too many categories for a donut chart. Use a horizontal bar instead." />;
+  }
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{{title}}</CardTitle></CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-60 w-full">
+          <PieChart>
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Pie data={data} dataKey="{{valueKey}}" nameKey="{{nameKey}}" innerRadius={50} outerRadius={90}>
+              {data.map((_entry, i) => (
+                <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />
+              ))}
+            </Pie>
+            <ChartLegend content={<ChartLegendContent />} />
+          </PieChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}

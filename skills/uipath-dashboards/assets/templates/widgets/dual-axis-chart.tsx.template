@@ -1,0 +1,51 @@
+// NOTE: Prefer small-multiples (two separate widgets) when the two series'
+// scales compete for attention. Dual-axis is a last resort.
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { fmt{{AxisFormatter}} } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+const chartConfig = {
+  {{barKey}}: { label: '{{barLabel}}', color: 'hsl(var(--chart-1))' },
+  {{lineKey}}: { label: '{{lineLabel}}', color: 'hsl(var(--chart-5))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+  if (isLoading) return <LoadingState height="h-60" />;
+  if (error) throw error;
+  if (!data || data.length === 0) return <EmptyState message="{{emptyMessage}}" />;
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{{title}}</CardTitle></CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-60 w-full">
+          <ComposedChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="{{xKey}}" tickFormatter={fmt{{AxisFormatter}}} tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Bar yAxisId="left" dataKey="{{barKey}}" fill="var(--color-{{barKey}})" radius={[4, 4, 0, 0]} />
+            <Line yAxisId="right" type="monotone" dataKey="{{lineKey}}" stroke="var(--color-{{lineKey}})" strokeWidth={2} dot={false} />
+          </ComposedChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}

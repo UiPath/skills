@@ -1,0 +1,22 @@
+import { Card, CardContent } from '@/components/ui/card';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { fmtNumber } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+  if (isLoading) return <LoadingState height="h-20" />;
+  if (error) throw error;
+
+  return (
+    <Card>
+      <CardContent className="py-6">
+        <p className="text-sm text-muted-foreground">{{title}}</p>
+        <p className="text-3xl font-semibold tabular-nums mt-2">{fmtNumber(data ?? 0)}</p>
+      </CardContent>
+    </Card>
+  );
+}

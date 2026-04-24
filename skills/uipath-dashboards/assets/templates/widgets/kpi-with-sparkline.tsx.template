@@ -1,0 +1,41 @@
+import { Card, CardContent } from '@/components/ui/card';
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
+import { LineChart, Line } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { fmtNumber } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+const chartConfig = {
+  {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-{{colorIdx}}))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+  if (isLoading) return <LoadingState height="h-20" />;
+  if (error) throw error;
+
+  const current = data?.points?.at(-1)?.[`{{seriesKey}}`] ?? 0;
+
+  return (
+    <Card>
+      <CardContent className="py-6">
+        <p className="text-sm text-muted-foreground">{{title}}</p>
+        <p className="text-3xl font-semibold tabular-nums mt-2">{fmtNumber(current)}</p>
+        <ChartContainer config={chartConfig} className="h-10 w-full mt-2">
+          <LineChart data={data?.points ?? []}>
+            <Line
+              type="monotone"
+              dataKey="{{seriesKey}}"
+              stroke="var(--color-{{seriesKey}})"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}

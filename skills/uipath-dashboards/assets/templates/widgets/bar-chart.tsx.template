@@ -1,0 +1,41 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { fmt{{AxisFormatter}} } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+const chartConfig = {
+  {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-{{colorIdx}}))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+
+  if (isLoading) return <LoadingState height="h-60" />;
+  if (error) throw error;   // caught by ErrorBoundary one level up
+  if (!data || data.length === 0) return <EmptyState message="{{emptyMessage}}" />;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{{title}}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-60 w-full">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="{{xKey}}" tickFormatter={fmt{{AxisFormatter}}} tick={{ fontSize: 11 }} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="{{seriesKey}}" fill="var(--color-{{seriesKey}})" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}

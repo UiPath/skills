@@ -1,0 +1,36 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { FunnelChart, Funnel, LabelList } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+const chartConfig = {
+  {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-1))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+  if (isLoading) return <LoadingState height="h-60" />;
+  if (error) throw error;
+  if (!data || data.length === 0) return <EmptyState message="{{emptyMessage}}" />;
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>{{title}}</CardTitle></CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-60 w-full">
+          <FunnelChart>
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Funnel dataKey="{{valueKey}}" data={data} isAnimationActive>
+              <LabelList position="right" dataKey="{{nameKey}}" fill="currentColor" />
+            </Funnel>
+          </FunnelChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}
