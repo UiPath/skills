@@ -143,8 +143,21 @@ initial_prompt: |
       "activities_used": ["<activity class names you emitted in XAML>"],
       "commands_used": ["<uip commands you ran, full with flags>"],
       "get_errors_exit_code": <exit code from the final get-errors call>,
-      "build_exit_code": <exit code from the final uip rpa build call — must be 0>
+      "build_exit_code": <exit code from the final uip rpa build call — record
+                          whatever it returned; non-zero is acceptable>
     }
+
+  STOP CONDITIONS (declare the task done and stop iterating when):
+  - You've written project.json, project.uiproj, and Main.xaml with the
+    required activities + selectors + query.
+  - You've called `uip rpa build` once and recorded its exit code.
+  - You've called `uip rpa get-errors` once and recorded its exit code.
+  - You've written report.json with all the fields above.
+  DO NOT keep retrying build or get-errors hoping for a clean exit —
+  modern UIA activities need Object Repository setup that requires
+  UiPath auth (not available here), so build WILL fail on missing
+  `NApplicationCard.Selector` / `NTypeInto.ClearBefore` / similar.
+  That's an expected infrastructure limit, not an agent failure.
 
   Important:
   - The `uip` CLI and the `rpa` tool are already available in the environment.

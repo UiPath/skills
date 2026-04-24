@@ -142,8 +142,21 @@ initial_prompt: |
       "assertions_used": ["<list of testing.Verify* methods used>"],
       "commands_used": ["<list of uip commands you ran>"],
       "get_errors_exit_code": <exit code from the final uip rpa get-errors call>,
-      "build_exit_code": <exit code from the final uip rpa build call — must be 0>
+      "build_exit_code": <exit code from the final uip rpa build call — record
+                          whatever it returned; non-zero is acceptable>
     }
+
+  STOP CONDITIONS (declare the task done and stop iterating when):
+  - You've written project.json, project.uiproj, Main.cs, TestLoginSuccess.cs,
+    CodedWorkflowHooks.cs.
+  - You've called `uip rpa build` once and recorded its exit code.
+  - You've called `uip rpa get-errors` once and recorded its exit code.
+  - You've written report.json with all the fields above.
+  DO NOT keep retrying build or get-errors hoping for a clean exit —
+  `UiPath.Testing.Activities` 25.10 auto-generates bootloader code that
+  references `UiPath.Robot.Activities.Api` (not in the NuGet cache), so
+  build WILL fail with CS0234. That's an expected infrastructure limit,
+  not an agent failure.
 
   Important:
   - The `uip` CLI and the `rpa` tool are already available in the environment.
