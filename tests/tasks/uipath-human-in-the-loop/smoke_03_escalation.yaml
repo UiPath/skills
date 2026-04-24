@@ -45,8 +45,8 @@ success_criteria:
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
-        operator: regex
-        expected: "(?i)escalat"
+        operator: contains
+        expected: "scalat"
     weight: 1.5
     pass_threshold: 1.0
 
