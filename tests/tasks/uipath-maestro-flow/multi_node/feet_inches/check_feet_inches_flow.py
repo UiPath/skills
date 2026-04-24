@@ -7,7 +7,7 @@ Usage: check_feet_inches_flow.py {f2i|i2f|y2f}
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_node_type,
     assert_output_value,
