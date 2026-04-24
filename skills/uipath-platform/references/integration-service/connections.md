@@ -16,6 +16,8 @@ Connections are authenticated sessions for a specific connector. They store cred
 | **`State`** | `Enabled` or other status. Only Enabled connections can be used. |
 | **`IsDefault`** | `Yes` or `No`. Recommend the default connection but always let the user confirm. |
 | `Owner` | Who created the connection |
+| `ByoaConnection` | `Yes` or `No`. Whether this is a BYOA (Bring Your Own Account) connection — the customer registered their own OAuth app with the external service. Required for some webhook triggers. |
+| `ElementInstanceId` | Numeric instance ID for this connection's element. Used with `uip is webhooks config` to retrieve webhook URLs. |
 | `Folder` | Folder this connection belongs to |
 
 ---
@@ -32,6 +34,19 @@ Connections are authenticated sessions for a specific connector. They store cred
 3. If only one enabled connection exists, still confirm: "I found connection **<name>** (default, enabled). Should I use this one?"
 4. If not enabled → prompt user to re-authenticate via `is connections edit <id>`
 5. If no connections exist → prompt user to create one via `is connections create "<connector-key>"`
+
+### For BYOA Connections (Webhook Triggers)
+
+Some webhook triggers require a BYOA (Bring Your Own Account) connection — the customer must have registered their own OAuth app with the external service. The `byoaConnection` flag on the trigger objects response indicates this requirement.
+
+1. Filter to BYOA connections only:
+
+   ```bash
+   uip is connections list "<connector-key>" --byoa --output json
+   ```
+
+2. If no BYOA connections exist, tell the user they need to create one in the Integration Service portal
+3. BYOA connections have `ByoaConnection: Yes` in the response
 
 ### For HTTP Fallback
 

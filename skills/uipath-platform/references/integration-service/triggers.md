@@ -96,11 +96,57 @@ Returns field definitions with names, types, and descriptions. Always requests `
 
 ### Trigger Objects (from `triggers objects`)
 
-Array of objects — each has a **name** to use in the describe command.
+Array of objects — each has a **name** to use in the describe command. Also includes:
+
+| Field | Description |
+|---|---|
+| `name` | Object name (use in describe command) |
+| `displayName` | Human-readable name |
+| `byoaConnection` | `true` if this event requires a BYOA connection |
+| `isWebhookUrlVisible` | `true` if the webhook URL should be shown to the user |
+| `eventMode` | `"webhooks"` or `"polling"` — how the trigger receives events |
 
 ### Trigger Metadata (from `triggers describe`)
 
 Object with field definitions. Structure varies by connector but typically includes field names, types, display names, and descriptions.
+
+Additional fields:
+
+| Field | Description |
+|---|---|
+| `eventMode` | `"webhooks"` or `"polling"` |
+| `byoaConnection` | `true` if this trigger requires a BYOA connection |
+| `isWebhookUrlVisible` | `true` if the webhook URL should be shown |
+
+---
+
+## Webhook URL Retrieval
+
+When a trigger uses `eventMode: "webhooks"`, the webhook URL must be retrieved and registered on the customer's external service. Without this step, the trigger will never fire.
+
+### When to retrieve the webhook URL
+
+- The trigger's `eventMode` is `"webhooks"` (from `triggers describe` or `triggers objects`)
+- This applies to ALL webhook-mode triggers, regardless of whether `byoaConnection` is true
+
+### How to retrieve the webhook URL
+
+1. Get the `ElementInstanceId` from the connection:
+
+   ```bash
+   uip is connections list "<connector-key>" --connection-id "<id>" --output json
+   ```
+
+2. Retrieve the webhook URL:
+
+   ```bash
+   uip is webhooks config "<connector-key>" \
+     --connection-id "<connection-guid>" \
+     --element-instance-id <number> \
+     --output json
+   ```
+
+3. The response contains the `WebhookUrl` — present this to the user and instruct them to register it in their external service's app settings (e.g., Slack Event Subscriptions, Salesforce Webhook configuration).
 
 ---
 
