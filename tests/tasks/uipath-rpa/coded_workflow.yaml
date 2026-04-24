@@ -81,16 +81,38 @@ initial_prompt: |
   CI environment note — IMPORTANT: this sandbox has NO UiPath sign-in
   configured. Any `uip rpa` subcommand that needs Studio/Helm auth will
   return "HelmFeatureNotAvailableException (sign-in required)" and exit
-  non-zero. This affects `uip rpa create-project` and `uip rpa get-errors`.
-  DO NOT retry those commands when they hit the auth error — instead:
-    * Hand-author `project.json` directly (use the skill's project.json
-      reference / template) instead of running `create-project`.
+  non-zero. This affects `uip rpa create-project`, `uip rpa get-errors`,
+  `uip rpa get-default-activity-xaml`, and related Helm-backed tools.
+  Do NOT retry those commands when they hit the auth error. Do NOT run
+  `uip login` (no creds to sign in with). Do NOT pass `--use-studio`.
+  Instead:
+    * Hand-author the project scaffolding directly:
+        - `TestAutomation/project.json` — follow the skill's project.json
+          reference / template. Must set `"expressionLanguage": "CSharp"`
+          and declare `TestLoginSuccess.cs` in `fileInfoCollection` with
+          `"testCaseType"`.
+        - `TestAutomation/project.uiproj` — required by `uip rpa build`
+          (without it build fails with "No project.uiproj or
+          webAppManifest.json"). Minimal shape:
+            {
+              "Name": "TestAutomation",
+              "ProjectType": "Tests",
+              "Description": "Smoke test project",
+              "MainFile": "Main.cs"
+            }
     * Treat `uip rpa get-errors`' exit 1 as expected and move on — its
       exit code is NOT the CI compile gate.
+    * Every `.cs` file MUST declare `namespace TestAutomation;` at the
+      top so the synthesized `<ClassName>+<ClassName>Activity` wrappers
+      resolve correctly. Missing or mismatched namespaces produce
+      CS0234 ("type or namespace does not exist") at build time.
 
   Validation — run these two commands in this order:
 
-  1. `uip rpa build --project-dir ./TestAutomation --output json`
+  1. `uip rpa build "$PWD/TestAutomation" --output json`
+     (the PROJECT_DIR is positional, NOT `--project-dir`; use the
+     absolute path — relative paths like `./TestAutomation` hit a
+     path-resolution bug that duplicates the leaf directory.)
      This is the AUTHORITATIVE compile gate in CI. It does NOT need
      Studio/Helm auth and must exit 0 before you declare the task done.
      Fix every compile error it surfaces and rerun until it's clean.
