@@ -13,6 +13,12 @@ description: >
   commands to succeed at runtime.
 tags: [uipath-rpa-legacy, smoke, create, validate]
 
+task_timeout: 1200
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 900
+
 sandbox:
   driver: tempdir
   python: {}

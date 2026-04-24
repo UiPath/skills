@@ -5,6 +5,15 @@ description: >
   partial class CodedWorkflow pattern (not the old base class pattern).
 tags: [uipath-rpa, smoke, coded, hooks]
 
+# RPA tasks that invoke `uip rpa get-errors` pay a 30–60s Helm spin-up
+# per call. Experiment defaults (300s turn / 20 turns) are too tight for
+# the full generate-then-validate flow.
+task_timeout: 1200
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 900
+
 sandbox:
   driver: tempdir
   python: {}
