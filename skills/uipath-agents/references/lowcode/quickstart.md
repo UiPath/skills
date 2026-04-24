@@ -703,6 +703,14 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow Scenario 1 first.
 
+### Step 1.5 — Discover available validators
+
+```bash
+uip agent guardrails list --output json
+```
+
+Use the output to determine which `validatorType` values exist, their allowed scopes, stages, and required parameters. Do not hardcode assumptions — always check the CLI output for the authoritative list.
+
 ### Step 2 — Add a built-in PII validator
 
 Add a guardrail object to the `guardrails` array in `agent.json`:

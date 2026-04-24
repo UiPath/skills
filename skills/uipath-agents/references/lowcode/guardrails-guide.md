@@ -50,15 +50,19 @@ The `selector` field controls where the guardrail applies.
 
 ### Built-in Validator Scope Support
 
-Not all validators support all scopes. Use this table:
+Not all validators support all scopes. Run the following command to get the authoritative list of validators, their allowed scopes, stages, and parameters:
 
-| Validator | Agent | Llm | Tool | Pre | Post |
-|-----------|-------|-----|------|-----|------|
-| `pii_detection` | Yes | Yes | Yes | Yes | Yes |
-| `harmful_content` | Yes | Yes | Yes | Yes | Yes |
-| `prompt_injection` | No | Yes | No | Yes | No |
-| `intellectual_property` | Yes | Yes | No | No | Yes |
-| `user_prompt_attacks` | No | Yes | No | Yes | No |
+```bash
+uip agent guardrails list --output json
+```
+
+Each entry in the `Data` array contains:
+- `Validator` — the `validatorType` string (e.g., `"pii_detection"`)
+- `AllowedScopes` — array of valid scope values (e.g., `["Agent", "Llm", "Tool"]`)
+- `GuardrailStages` — object mapping each scope to its valid stages (e.g., `{"Agent": ["PreExecution", "PostExecution"]}`)
+- `Parameters` — array of parameter definitions with `Type`, `Id`, and `Required`
+
+Use this output to determine which scopes and stages are valid for each validator. Do not hardcode assumptions about scope/stage support.
 
 ## Actions
 
@@ -305,72 +309,19 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Reference
 
-#### pii_detection
+Run `uip agent guardrails list --output json` to get the full list of available validators with their allowed scopes, stages, and parameters. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
 
-Detects personally identifiable information.
+**How to map `uip agent guardrails list` output to guardrail JSON:**
 
-- **Scopes:** Agent, Llm, Tool
-- **Stages:** PreExecution, PostExecution (all scopes)
+| CLI field | Maps to |
+|-----------|---------|
+| `Validator` | `validatorType` value |
+| `AllowedScopes` | Valid values for `selector.scopes` |
+| `GuardrailStages[scope]` | Valid execution stages for that scope |
+| `Parameters[].Id` | `validatorParameters[].id` |
+| `Parameters[].Type` | `validatorParameters[].$parameterType` |
 
-**Parameters:**
-
-| `id` | `$parameterType` | Description |
-|------|-------------------|-------------|
-| `entities` | `enum-list` | PII entity types to detect (see list below) |
-| `entityThresholds` | `map-enum` | Per-entity confidence thresholds (0.0–1.0). Keys = entity names, values = threshold numbers |
-
-**Entity types (PascalCase):** `Email`, `Address`, `CreditCardNumber`, `CryptoWallet`, `DateOfBirth`, `IBANCode`, `IPAddress`, `Location`, `MedicalLicense`, `NationalID`, `PassportNumber`, `PhoneNumber`, `TaxID`, `URL`, `USBankAccountNumber`, `USDriverLicense`, `USITIN`, `UsukPassportNumber`, `USSocialSecurityNumber`
-
-#### harmful_content
-
-Detects harmful or unsafe content categories.
-
-- **Scopes:** Agent, Llm, Tool
-- **Stages:** PreExecution, PostExecution (all scopes)
-
-**Parameters:**
-
-| `id` | `$parameterType` | Description |
-|------|-------------------|-------------|
-| `harmfulContentEntities` | `enum-list` | Categories to detect |
-| `harmfulContentEntityThresholds` | `map-enum` | Per-category severity thresholds (0–6). Keys = category names, values = severity integers |
-
-**Categories:** `Hate`, `SelfHarm`, `Sexual`, `Violence`
-
-#### prompt_injection
-
-Detects prompt injection attempts in LLM inputs.
-
-- **Scopes:** Llm only
-- **Stages:** PreExecution only
-
-**Parameters:**
-
-| `id` | `$parameterType` | Description |
-|------|-------------------|-------------|
-| `threshold` | `number` | Detection sensitivity (0.0–1.0, step 0.1). Lower = more sensitive |
-
-#### intellectual_property
-
-Detects intellectual property content (text or code) in outputs.
-
-- **Scopes:** Llm, Agent
-- **Stages:** PostExecution only
-
-**Parameters:**
-
-| `id` | `$parameterType` | Description |
-|------|-------------------|-------------|
-| `ipEntities` | `enum-list` | IP types to detect: `"Text"`, `"Code"` |
-
-#### user_prompt_attacks
-
-Detects adversarial prompt attacks from user input.
-
-- **Scopes:** Llm only
-- **Stages:** PreExecution only
-
-**Parameters:** None (empty `validatorParameters: []`)
+> **Important:** PII entity names use PascalCase (`"Email"`, not `"email_address"`). Harmful content categories use PascalCase (`"Hate"`, not `"hate"`). Scope values use PascalCase (`"Agent"`, `"Llm"`, `"Tool"`).
 
 ## Full Examples
 
