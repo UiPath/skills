@@ -1,0 +1,7 @@
+import { UiPath } from '@uipath/uipath-typescript/core';
+import { resolveAuth } from './auth-strategy';
+
+export async function initSdk(): Promise<UiPath> {
+  const config = await resolveAuth();
+  return new UiPath(config);
+}

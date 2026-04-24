@@ -1,0 +1,17 @@
+export const fmtHour = (iso: string) =>
+  new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: true }).format(new Date(iso));
+
+export const fmtDay = (iso: string) =>
+  new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(iso));
+
+export const fmtNumber = (n: number) =>
+  new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(n);
+
+export const fmtPercent = (n: number) =>
+  new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(n);
+
+export const fmtDuration = (ms: number) => {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${(ms / 60_000).toFixed(1)}m`;
+};

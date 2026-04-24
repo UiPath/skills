@@ -1,0 +1,29 @@
+import path from 'path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// Guardrail: fail build if VITE_UIPATH_PAT is set during `npm run build`.
+// PATs are dev-only; baking one into the production bundle is a security incident.
+function failBuildIfPatSet(): import('vite').Plugin {
+  return {
+    name: 'fail-build-if-pat-set',
+    apply: 'build',
+    configResolved() {
+      if (process.env.VITE_UIPATH_PAT) {
+        throw new Error(
+          '[security] VITE_UIPATH_PAT is set during production build.\n' +
+          'PATs must NEVER be baked into the production bundle. Unset it and re-run.'
+        );
+      }
+    },
+  };
+}
+
+export default defineConfig({
+  base: './',                // platform invariant — relative paths for Coded App iframe
+  plugins: [react(), failBuildIfPatSet()],
+  resolve: {
+    alias: { '@': path.resolve(__dirname, './src') },
+  },
+  server: { port: 5173 },
+});

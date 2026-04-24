@@ -1,0 +1,8 @@
+{
+  "clientId": "00000000-0000-0000-0000-000000000000",
+  "scope": "",
+  "orgName": "{{orgName}}",
+  "tenantName": "{{tenantName}}",
+  "baseUrl": "{{baseUrl}}",
+  "redirectUri": "https://{{orgName}}.{{envInfix}}uipath.host/{{routingName}}"
+}

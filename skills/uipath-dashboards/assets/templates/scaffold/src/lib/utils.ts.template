@@ -1,0 +1,25 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+/**
+ * Zero-fill time-bucketed series — every widget that buckets time uses this.
+ * Given rows like [{hour: "10:00", count: 5}] and buckets ["08:00", "09:00", "10:00"],
+ * returns [{hour: "08:00", count: 0}, {hour: "09:00", count: 0}, {hour: "10:00", count: 5}].
+ */
+export function zeroFill<T extends Record<string, unknown>>(
+  rows: T[],
+  keyField: keyof T,
+  buckets: Array<T[keyof T]>,
+  defaults: Record<string, number>,
+): T[] {
+  const index = new Map(rows.map((r) => [r[keyField], r]));
+  return buckets.map((b) => {
+    const existing = index.get(b);
+    if (existing) return existing;
+    return { [keyField]: b, ...defaults } as unknown as T;
+  });
+}

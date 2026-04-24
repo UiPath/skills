@@ -1,0 +1,87 @@
+import type { UiPathSDKConfig } from '@uipath/uipath-typescript/core';
+
+const ALLOWED_PARENT_ORIGINS = [
+  'https://alpha.uipath.com',
+  'https://staging.uipath.com',
+  'https://cloud.uipath.com',
+];
+const HANDSHAKE_TIMEOUT_MS = 8000;
+
+export class AuthStrategyError extends Error {
+  constructor(message: string) { super(message); this.name = 'AuthStrategyError'; }
+}
+
+/**
+ * Resolve UiPath SDK auth config using one of three strategies in order:
+ *   1. iframe postMessage handshake with parent (deployed in Automation Cloud)
+ *   2. meta-tag <meta name="uipath:secret"> injected by Apps runtime (alt)
+ *   3. VITE_UIPATH_PAT from .env.local (local dev)
+ *
+ * Throws AuthStrategyError if all three fail.
+ */
+export async function resolveAuth(): Promise<UiPathSDKConfig> {
+  const base = {
+    baseUrl: import.meta.env.VITE_UIPATH_BASE_URL as string,
+    orgName: import.meta.env.VITE_UIPATH_ORG_NAME as string,
+    tenantName: import.meta.env.VITE_UIPATH_TENANT_NAME as string,
+  };
+
+  // Strategy 1: iframe postMessage handshake
+  const baseDomain = new URLSearchParams(window.location.search).get('basedomain');
+  if (baseDomain) {
+    if (!isOriginAllowed(baseDomain)) {
+      throw new AuthStrategyError(`Parent origin not in allow-list: ${baseDomain}`);
+    }
+    const token = await requestTokenFromParent(baseDomain);
+    return { ...base, secret: token };
+  }
+
+  // Strategy 2: meta-tag
+  const metaToken = document.querySelector<HTMLMetaElement>('meta[name="uipath:secret"]')?.content;
+  if (metaToken) return { ...base, secret: metaToken };
+
+  // Strategy 3: local PAT
+  const pat = import.meta.env.VITE_UIPATH_PAT as string | undefined;
+  if (pat && pat.length > 0) return { ...base, secret: pat };
+
+  throw new AuthStrategyError(
+    'No auth source available. Local dev: set VITE_UIPATH_PAT in .env.local. ' +
+    'Deployed: check basedomain query param + parent window responsiveness to REFRESHTOKEN.'
+  );
+}
+
+function isOriginAllowed(origin: string): boolean {
+  if (ALLOWED_PARENT_ORIGINS.includes(origin)) return true;
+  try {
+    return new URL(origin).hostname === 'localhost';
+  } catch {
+    return false;
+  }
+}
+
+function requestTokenFromParent(parentOrigin: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const listener = (event: MessageEvent) => {
+      if (event.origin !== parentOrigin) return;
+      if (event.data?.eventType !== 'TOKENREFRESHED') return;
+      const token = event.data?.content?.token?.accessToken;
+      if (!token) {
+        cleanup();
+        reject(new AuthStrategyError('Host responded to REFRESHTOKEN without a token'));
+        return;
+      }
+      cleanup();
+      resolve(token);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new AuthStrategyError('Host did not respond to REFRESHTOKEN within 8s'));
+    }, HANDSHAKE_TIMEOUT_MS);
+    const cleanup = () => {
+      clearTimeout(timer);
+      window.removeEventListener('message', listener);
+    };
+    window.addEventListener('message', listener);
+    window.parent.postMessage({ eventType: 'REFRESHTOKEN', content: {} }, parentOrigin);
+  });
+}

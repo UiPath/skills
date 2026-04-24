@@ -1,0 +1,35 @@
+import { Component, type ReactNode } from 'react';
+
+type Props = { children: ReactNode };
+type State = { hasError: boolean; message: string };
+
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = { hasError: false, message: '' };
+
+  static getDerivedStateFromError(err: Error): State {
+    return { hasError: true, message: err.message };
+  }
+
+  componentDidCatch(err: Error) {
+    // Intentionally console.warn (not .error) to avoid noisy tenant consoles.
+    console.warn('[dashboard] widget threw:', err.message);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-background text-destructive p-8">
+          <h1 className="text-lg font-semibold">A widget crashed</h1>
+          <pre className="mt-4 whitespace-pre-wrap">{this.state.message}</pre>
+          <button
+            className="mt-4 underline"
+            onClick={() => this.setState({ hasError: false, message: '' })}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}

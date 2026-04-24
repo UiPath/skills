@@ -1,0 +1,25 @@
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+
+type Props = { title: string; lastRefreshed?: Date; onRefresh?: () => void };
+
+export function Header({ title, lastRefreshed, onRefresh }: Props) {
+  const fmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric' });
+  return (
+    <header className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {lastRefreshed && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Last updated {fmt.format(lastRefreshed)}
+          </p>
+        )}
+      </div>
+      {onRefresh && (
+        <Button variant="outline" size="sm" onClick={onRefresh}>
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        </Button>
+      )}
+    </header>
+  );
+}
