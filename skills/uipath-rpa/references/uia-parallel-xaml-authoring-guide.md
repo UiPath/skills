@@ -21,7 +21,7 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
 
 1. **Identify screens.** List each distinct application state the workflow will interact with. A "screen" is a stable UI state where one or more elements need to be targeted — a page, a modal dialog, an inline form, or a panel that appears after an action.
 
-2. **Map actions per screen.** For each screen, list the ordered interactions: which element, what action (Click, TypeInto, SelectItem, GoToUrl), what data value, and any special behavior (dropdown patterns, wait durations, checkbox toggling).
+2. **Map actions per screen.** For each screen, list the ordered interactions: which element, what action (Click, TypeInto, SelectItem, GoToUrl), what data value, and any special behavior (dropdown patterns, checkbox toggling). Do NOT preemptively plan `Delay` activities to "wait for elements to appear" — UIA activities have embedded target-finding retry and will wait on their own. See [When Delay is Warranted](#when-delay-is-warranted) for the narrow cases where an explicit delay is justified.
 
 3. **Determine ApplicationCard scope.** Decide whether the workflow uses one ApplicationCard (all screens share the same window or browser tab — the common case for single-app web automation) or multiple (different applications or browser tabs requiring separate ApplicationCards).
 
@@ -58,7 +58,7 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
 3. **What the agent retrieves and creates** (the agent does the retrieval — orchestrator does NOT pre-fetch):
    - Reads `<PROJECT_DIR>/project.json` to obtain `expressionLanguage`.
    - Reads an existing `.xaml` in the project root (e.g., `Main.xaml`) to extract the root `<Activity>` xmlns declarations and both `<TextExpression.NamespacesForImplementation>` and `<TextExpression.ReferencesForImplementation>` blocks. Copied verbatim into the new file.
-   - Runs `uip rpa get-default-activity-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard"` for the NApplicationCard template.
+   - Runs `uip rpa get-default-activity-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard"` for the NApplicationCard template, and reads the per-activity behavior doc (see [Scaffolding Agent Template](#scaffolding-agent-template) § "Context").
    - Writes the complete `.xaml` file: `<Activity>` root with `x:Class`, namespace declarations, TextExpression blocks, an NApplicationCard carrying `sap2010:WorkflowViewState.IdRef="NApplicationCard_1"` (no `<uix:NApplicationCard.TargetApp>` child — attachment happens next), and an empty `<Sequence DisplayName="Do">` (open/close form, not self-closing) inside the ApplicationCard body where screen agents will insert activities.
    - Attaches the registered screen to the NApplicationCard (activity ref ID `NApplicationCard_1`). Every CLI call is wrapped with `timeout 60000`.
 
@@ -85,6 +85,7 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
 3. **What the agent does** (the agent retrieves its own data — orchestrator does NOT pre-fetch):
    - Reads the file and locates the inner `<Sequence DisplayName="Do">`. Ordering safety is enforced upstream by the task queueing model (see [Waiting for Background Agents](#waiting-for-background-agents) — `Write-<N>` cannot spawn until `Write-<N-1>` is `completed`), so the agent treats the file as in a known good state.
    - Runs `uip rpa get-default-activity-xaml --activity-class-name "<class>"` (with `timeout`) for each activity class in its action list.
+   - Reads the per-activity behavior doc for each activity class — see [Screen Activity Agent Template](#screen-activity-agent-template) § "Retrieve your data" for the doc-resolution rule.
    - Assigns unique IdRefs per the IdRef contract, constructs activities (no `.Target` / `.SearchedElement.Target` child — attachment happens next), and inserts them immediately before the closing `</Sequence>` of the inner `<Sequence DisplayName="Do">`. Does NOT modify any content before the insertion point.
    - Attaches each `reference_id` to its assigned IdRef, passing `target_property` when the action specifies one. Every CLI call is wrapped with `timeout 60000`.
 
@@ -167,9 +168,9 @@ These three rules govern what the orchestrator may and may not do while a `Write
 
 ## Prompt Construction Rules
 
-1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or `<TargetAnchorable>` snippets into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates itself via `get-default-activity-xaml` and attaches targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` (Fast Path for linking, with a snippet-embed fallback).
+1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML and docs.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or `<TargetAnchorable>` snippets into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates and reads the per-activity behavior docs itself per [Screen Activity Agent Template](#screen-activity-agent-template) § "Retrieve your data". Targets are attached per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` (Fast Path for linking, with a snippet-embed fallback).
 2. Describe actions as a structured list with exact data values (`display_name`, `type`, `reference_id`, optional `text`/`duration_seconds`/`target_property`) — see [Action List Format](#action-list-format). Each action carries enough detail for the agent to construct the activity from the template it retrieves and then attach the target.
-3. Specify interaction patterns **explicitly** for each non-trivial interaction: dropdown selection (Click then TypeInto with `[k(enter)]`), wait durations between actions, checkbox toggling, element reuse across repeated form instances. These go in a per-screen notes block in the prompt.
+3. Specify interaction patterns **explicitly** for each non-trivial interaction: dropdown selection (Click then TypeInto with `[k(enter)]`), checkbox toggling, element reuse across repeated form instances. These go in a per-screen notes block in the prompt. Do NOT include `Delay` activities by default — UIA activities retry target lookup internally; see [When Delay is Warranted](#when-delay-is-warranted).
 4. Specify **expression-language-specific syntax** for inline expressions. CSharp: `<Delay>` uses an `<InArgument x:TypeArguments="x:TimeSpan">` with a `<CSharpValue>` containing `TimeSpan.FromSeconds(N)`. VB: `<Delay Duration="[TimeSpan.FromSeconds(N)]" />`. Always match the `expressionLanguage` value passed in the prompt.
 5. All context (action list, interaction patterns) goes **inline in the Agent() prompt parameter** as labeled blocks (D-06). Do not pass context via temp `.md` files or any other file-based method.
 6. Include the **edit instruction** in every screen agent prompt: where to insert (before the closing `</Sequence>` tag of the inner `<Sequence DisplayName="Do">`), and what not to touch (all content before the insertion point).
@@ -177,6 +178,22 @@ These three rules govern what the orchestrator may and may not do while a `Write
 8. **Every agent-side CLI call MUST be wrapped with a 60-second Bash `timeout`** (`timeout 60000 uip rpa ...`). On timeout, the agent must fail fast with a clear error, not retry indefinitely. Without this, a stalled `get-errors` (Studio disconnected) will cause the agent to hang for tens of minutes.
 
 ## Edge Cases
+
+### When Delay is Warranted
+
+UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have **embedded target-finding resilience** — they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness.
+
+**Do NOT insert `Delay` just because:**
+- A navigation, modal, or panel just opened and the next element might not be visible yet — the next UIA activity retries until its timeout.
+- The previous action was slow — UIA activities already wait.
+- "It feels safer."
+
+**`Delay` is warranted only when ALL of the following hold:**
+- The wait is NOT for a UI element that a following UIA activity will target (UIA's retry covers that case).
+- There is a concrete reason the next activity cannot absorb the wait — e.g., a post-action animation that no UIA target is anchored on, a fixed-duration business pause (rate-limit cool-down, deliberate pacing between identical submissions), or a background job the UI doesn't reflect until later.
+- The orchestrator can state, in one sentence in the prompt's per-screen notes, why a UIA activity's built-in retry is insufficient for this specific case.
+
+If the agent cannot articulate that sentence, drop the `Delay`.
 
 ### Reused Forms (Same OR Targets, Different Data)
 
@@ -225,6 +242,7 @@ Write agents are typically fast — they perform pure text generation against a 
 9. Do NOT modify the `.xaml` file from the main conversation while a write agent is running. The chained model depends on each agent reading the current valid file state; concurrent edits produce an unknown file state for the next agent.
 10. Do NOT spawn write agents in foreground mode — this blocks the main conversation and serializes the pipeline. Always use `run_in_background: true` so the main conversation can configure the next screen's targets in parallel.
 11. Do NOT call agent-side CLI commands without a `timeout` wrapper. A hung Studio causes `get-errors` to block indefinitely — agents must fail fast, not hang.
+12. Do NOT insert `Delay` activities to wait for UI elements to appear. UIA activities retry target-finding internally for their configured timeout, so a leading `Delay` just inflates runtime. Include `Delay` only when [When Delay is Warranted](#when-delay-is-warranted) applies — and require a one-sentence justification in the prompt's per-screen notes.
 
 ## Prompt Templates
 
@@ -253,6 +271,9 @@ Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
      --project-dir "<PROJECT_DIR>" \
      --output json   ```
    Use the returned XAML as-is for the NApplicationCard element.
+
+4. **Read the NApplicationCard behavior doc** at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/activities/ApplicationCard.md` (naming rule: strip the leading `N` from UIA class names — `NApplicationCard` → `ApplicationCard.md`). `get-default-activity-xaml` only emits a structural scaffold — it does NOT document enum values, property semantics, or required scopes. The `.md` doc is authoritative for per-activity behavior. **Apply any encoding/format rules from the doc when constructing the activity XAML** — do NOT rely on prior-training memory for text-encoding or attribute formats.
+
 ## File structure requirements
 
 - Root `<Activity>` with `x:Class="<X_CLASS_VALUE>"` (derived from `<OUTPUT_XAML_PATH>` per the naming rule in [xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md): folder separators become underscores).
@@ -306,7 +327,7 @@ Edit the file `<OUTPUT_XAML_PATH>`. Read the file first, then locate the inner `
 
 Expression language: `<EXPRESSION_LANGUAGE>` (`CSharp` or `VB`).
 
-Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g., `UiPath.UIAutomationNext.Activities.NClick, UiPath.UIAutomationNext.Activities.NTypeInto, System.Activities.Statements.Delay`).
+Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g., `UiPath.UIAutomationNext.Activities.NClick, UiPath.UIAutomationNext.Activities.NTypeInto, UiPath.UIAutomationNext.Activities.NSelectItem`). Include `System.Activities.Statements.Delay` **only** if the action list explicitly requires one — UIA activities retry target-finding internally, so `Delay` is rarely needed.
 
 1. For each activity class name above, fetch its template:
    ```bash
@@ -315,6 +336,10 @@ Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g
      --project-dir "<PROJECT_DIR>" \
      --output json   ```
    Use the returned XAML as the structural base for every instance of that activity type.
+
+2. For each activity class name above, also **Read the per-activity behavior doc** at `<PROJECT_DIR>/.local/docs/packages/<PackageId>/activities/<ActivityName>.md`. Naming rule: strip the leading `N` from UIA class names (`NTypeInto` → `TypeInto.md`, `NClick` → `Click.md`, `NSelectItem` → `SelectItem.md`, `NApplicationCard` → `ApplicationCard.md`, `NGetText` → `GetText.md`, `NCheckState` → `CheckAppState.md`). PackageId is `UiPath.UIAutomation.Activities` for `UiPath.UIAutomationNext.Activities.*` classes. System activities (e.g., `System.Activities.Statements.Delay`) have no package `.md` doc — use the expression-language binding guide already referenced by the skill, not a package doc.
+
+   `get-default-activity-xaml` only emits a structural scaffold — it does NOT document text encoding, enum values, property semantics, or required scopes. The `.md` doc is authoritative for per-activity behavior. **Apply any encoding/format rules from the doc when constructing the activity XAML** — do NOT rely on prior-training memory for text-encoding or attribute formats.
 
 ## Attachment guide
 
@@ -368,14 +393,15 @@ The orchestrator composes the action list once per screen agent from the registe
 ```json
 [
   {"display_name": "Click Accounts Nav", "type": "NClick", "reference_id": "xPMFx.../3eZ3506YOEalsrUWRMADfQ"},
-  {"display_name": "Wait for Accounts List", "type": "Delay", "duration_seconds": 3},
   {"display_name": "Type Account Name", "type": "NTypeInto", "reference_id": "xPMFx.../h0mdnfakSk6gE9v5ZkYNuQ", "text": "Get Cloudy"}
 ]
 ```
 
+Note the absence of any `Delay` between the click and the type — the subsequent `NTypeInto` will retry target lookup on its own while the Accounts List renders. Include `Delay` only when [When Delay is Warranted](#when-delay-is-warranted) applies.
+
 Minimum fields per entry:
 - `display_name` — string. Becomes the activity's `DisplayName`.
-- `type` — `NClick`, `NTypeInto`, `Delay`, `NSelectItem`, `NGoToUrl`, etc.
+- `type` — `NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc. `Delay` is supported but should be used only when [When Delay is Warranted](#when-delay-is-warranted) applies.
 - For UI activities: `reference_id` — the OR reference ID. The agent attaches it to the activity.
 - For UI activities whose target is not at `.Target`: optional `target_property` — dot-separated property path (e.g., `"SearchedElement.Target"`). Passed through to the attachment call when the target isn't at `.Target`; omit otherwise.
 - For `NTypeInto`: optional `text` — the text to type.
