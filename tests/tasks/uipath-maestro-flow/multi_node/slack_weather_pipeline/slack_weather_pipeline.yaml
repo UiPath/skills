@@ -3,7 +3,7 @@ description: >
   Multi-step pipeline: read Slack channel description, extract city with a script,
   fetch weather for that city via HTTP, decide warm/cold. Exercises chaining
   Slack connector → Script → HTTP → Decision → End with data flowing between nodes.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector:slack, feature:http]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
 max_iterations: 1
 task_timeout: 2400 # this is a harder test.
 

@@ -3,7 +3,7 @@ description: >
   Smoke test: agent wires the HITL node's `completed` output port (not the
   old `cancelled` or `timeout` ports). Verifies correct edge structure in
   a three-node approval flow.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl, feature:hitl]
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
   type: claude-code

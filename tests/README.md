@@ -78,32 +78,32 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **lifecycle** | `lifecycle:X`, required | What the agent is asked to do | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` |
 | **shape** | `shape:X`, optional | Flow composition under test | `single-node`, `multi-node` (omit for smoke tests that don't build a flow) |
 | **node** | `node:X`, repeatable | Node type(s) under test | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` (omit `script`/`http` — ubiquitous) |
-| **resource** | `resource:X`, repeatable | Resource-node type(s) under test | `coded-agent`, `lowcode-agent`, `api-workflow`, `rpa` |
-| **connector** | `connector:X`, repeatable | Connector(s) the flow uses | `slack`, `outlook`, `sharepoint`, `salesforce`, `teams`, `azure`, `google-tasks`, `act-365`, `woocommerce`, `egnyte`, `sap-s4hana`, `google-speech-to-text`, `azure-application-insights` — add new ones as they appear |
-| **feature** | `feature:X`, repeatable | Cross-cutting capability | `hitl`, `trigger`, `registry`, `transform`, `http`, `connector-feature`, `ceql-where`, `enum`, `enhanced-enum`, `filter-builder`, `multiselect`, `path-params`, `query-params`, `required-groups`, `searchable-joins`, `upload`, `file-picker`, `field-actions`, `method-override`, `generate-schema`, `list-curated`, `complex-array`, `dtl-load-by-default-true`, `dtl-load-by-default-false`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks` |
+| **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
+| **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
+| **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
 ### Rules
 
 1. **Required on every task: `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage, and evalboard dashboards.
 2. **One value per singular dimension** (`tier`, `lifecycle`, `shape`). A task doesn't have two tiers.
-3. **`node:`, `resource:`, `connector:`, `feature:` are repeatable.** A flow that uses both Slack and Outlook gets both `connector:slack` and `connector:outlook`.
-4. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
-5. **Short, kebab-case values.** `connector:sap-s4hana`, not `connector:sap-s4hana-cloud-v2-ops`. Full connector package keys belong in the YAML body, not the tag.
-6. **`connector:` and `resource:` are orthogonal to `skill`.** Don't tag a flow task with `rpa` (bare) or `uipath-rpa` as a feature — use `resource:rpa` for an RPA resource node in a flow.
+3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
+4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path, `task_id`, or YAML body. Adding `connector:slack` etc. is no longer the convention.
+5. **Use only the vocabularies above.** Propose new values in the PR — do not invent tags inline. New values should apply to at least two tasks in practice.
+6. **Don't repeat the skill name as a feature tag.** Don't tag a flow task with `rpa` (bare) or `uipath-rpa` as a feature.
 
 ### Example
 
 ```yaml
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector:slack, feature:http]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
 ```
 
 ### Useful slices this enables
 
 - `make tags TAGS="smoke"` → every skill's entry-gate checks.
-- `make tags TAGS="integration feature:connector-feature"` → connector-feature coverage across skills.
+- `make tags TAGS="integration connector"` → connector coverage across skills.
 - `make tags TAGS="e2e lifecycle:generate"` → end-to-end authoring from scratch, across skills.
 - `make tags TAGS="lifecycle:edit"` → modification-on-existing-project behavior.
-- Evalboard: `where tag startswith "connector:"` → pass-rate broken down by connector.
+- Evalboard: `where tag == "connector"` → pass-rate across all connector-using tasks.
 - Evalboard: `where tag == "shape:multi-node"` → composite-flow reliability.
 
 ## Directory Structure

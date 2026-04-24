@@ -6,7 +6,7 @@ description: >
   when the article is invalid. Exercises managed HTTP with a dynamic URL
   built from flow inputs, the implicit HTTP error port, and a Transform
   filter + aggregate on the response items.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform, feature:http, feature:transform]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform, feature:http]
 max_iterations: 1
 
 agent:

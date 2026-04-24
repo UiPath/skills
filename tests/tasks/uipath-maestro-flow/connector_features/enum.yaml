@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-enum
 description: >
   Tests the enum IS feature — configures a connector node with an enum field
   on the Azure connector for storage account kind.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, feature:connector-feature, feature:enum, connector:azure]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
 task_timeout: 1500
 agent:

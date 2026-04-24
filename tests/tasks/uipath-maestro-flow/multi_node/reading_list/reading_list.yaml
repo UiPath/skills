@@ -4,7 +4,7 @@ description: >
   books using declarative transform operations (filter + map). Tests whether the
   agent selects transform nodes over script nodes for standard data wrangling,
   and correctly configures filter conditions and map transformations.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform, feature:transform]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform]
 max_iterations: 1
 
 agent:

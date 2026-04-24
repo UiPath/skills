@@ -4,7 +4,7 @@ description: >
   channel description of #office-bellevue and outputs it. This is an
   end-to-end test that exercises connector discovery, connection binding,
   reference resolution, node configuration, and cloud debug execution.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, connector:slack]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, connector]
 max_iterations: 1
 
 agent:

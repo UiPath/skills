@@ -7,7 +7,7 @@ description: >
   only — trigger-fired execution is not reliably testable against the
   shared Outlook connection (see skills repo outlook_trigger_inbox task
   notes).
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector:outlook, connector:slack]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector]
 
 agent:
   type: claude-code

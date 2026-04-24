@@ -3,7 +3,7 @@ description: >
   Create a UiPath Flow that invokes the name-to-age API workflow with the
   name 'tomasz' and returns his age. Exercises API workflow resource node
   discovery and wiring.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource:api-workflow]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
 max_iterations: 1
 
 agent:

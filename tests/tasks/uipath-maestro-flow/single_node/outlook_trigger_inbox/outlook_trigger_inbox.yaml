@@ -11,7 +11,7 @@ description: >
   may route self-sends via inbox rules that bypass the connector's
   trigger lookback). Adding a debug E2E requires a dedicated service
   mailbox with no rules; tracked as follow-up.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector:outlook]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector]
 max_iterations: 1
 
 agent:

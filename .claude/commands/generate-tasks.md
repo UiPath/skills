@@ -57,23 +57,24 @@ Every generated task must carry tags from the **Tag Taxonomy** documented in [`t
 | **lifecycle** (required, `lifecycle:X`) | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` | What the agent is asked to do. Most smoke tests are `lifecycle:validate` or `lifecycle:discover`; most e2e are `lifecycle:generate` or `lifecycle:edit`; `lifecycle:execute` applies when the task actually runs the built artifact. |
 | **shape** (`shape:X`, on flow-building tests) | `single-node`, `multi-node` | Omit for smoke tests that don't build a flow. Use intent (test focus) not node count when borderline. |
 | **node** (`node:X`, repeatable) | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` | Node type(s) under test. Omit `script`/`http` — too ubiquitous. Do not tag incidental/plumbing nodes. |
-| **resource** (`resource:X`, repeatable) | `coded-agent`, `lowcode-agent`, `api-workflow`, `rpa` | Resource-node type(s) under test. |
-| **connector** (`connector:X`, repeatable) | `slack`, `outlook`, `sharepoint`, `salesforce`, `teams`, `azure`, `google-tasks`, `act-365`, `woocommerce`, `egnyte`, `sap-s4hana`, `google-speech-to-text`, `azure-application-insights` | Short kebab-case connector names. Add new ones as they appear. Full package keys belong in YAML body. |
-| **feature** (`feature:X`, repeatable) | `hitl`, `trigger`, `registry`, `transform`, `http`, `connector-feature`, `ceql-where`, `enum`, `enhanced-enum`, `filter-builder`, `multiselect`, `path-params`, `query-params`, `required-groups`, `searchable-joins`, `upload`, `file-picker`, `field-actions`, `method-override`, `generate-schema`, `list-curated`, `complex-array`, `dtl-load-by-default-true`, `dtl-load-by-default-false`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks` | Zero or more cross-cutting capabilities. Do not invent new values — if none fit, flag in Phase 4 summary for taxonomy extension. |
+| **resource** (flat, present iff applicable) | `resource` | Boolean marker for tasks that exercise any resource-node type (coded-agent / lowcode-agent / api-workflow / rpa). The specific resource is identifiable from the file path / `task_id`. |
+| **connector** (flat, present iff applicable) | `connector` | Boolean marker for tasks that use any IS connector. The specific connector is in the YAML body / file path. |
+| **feature** (`feature:X`, repeatable) | `http`, `trigger`, `registry`, `transform`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks` | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary — do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature`. If none fit, flag in Phase 4 summary for taxonomy extension. |
 
 **Selection rules:**
 1. **Always include `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage reports, and evalboard drilldown.
 2. **Pick the most specific `lifecycle` that fits.** If the task both generates and validates (common), use `lifecycle:generate` — validation is implicit in success criteria.
-3. **`node:`, `resource:`, `connector:`, `feature:` are repeatable.** A flow using both Slack and Outlook gets both `connector:slack` and `connector:outlook`.
-4. **Do not tag incidental / plumbing nodes.** If every test in a category adds a Decision node purely to gate success/failure, do not tag `node:decision` — it pollutes drilldowns. Only tag when the node type is the point.
-5. **Do not repeat the skill name as a feature tag.** Don't tag `uipath-agents` tasks with `feature:agent`. Use `resource:coded-agent` for a coded-agent resource node in a flow, etc.
-6. **Order tags consistently:** `[skill, tier, lifecycle:X, shape:X, node:..., resource:..., connector:..., feature:...]`. Makes grep/review easier.
+3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
+4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path / `task_id`.
+5. **Do not tag incidental / plumbing nodes.** If every test in a category adds a Decision node purely to gate success/failure, do not tag `node:decision` — it pollutes drilldowns. Only tag when the node type is the point.
+6. **Do not repeat the skill name as a feature tag.** Don't tag `uipath-agents` tasks with `feature:agent`.
+7. **Order tags consistently:** `[skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]`. Makes grep/review easier.
 
 **Worked examples:**
 
 ```yaml
 # Green-field flow authoring that hits HITL + approval-gate + write-back
-tags: [uipath-human-in-the-loop, e2e, lifecycle:generate, shape:multi-node, node:hitl, feature:hitl, feature:approval-gate, feature:write-back]
+tags: [uipath-human-in-the-loop, e2e, lifecycle:generate, shape:multi-node, node:hitl, feature:approval-gate, feature:write-back]
 
 # Smoke test that lists IS connector activities
 tags: [uipath-platform, smoke, lifecycle:discover, feature:activities]
@@ -87,8 +88,8 @@ tags: [uipath-rpa, integration, lifecycle:edit, feature:test-case]
 # Smoke test that exercises the Flow node registry
 tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
 
-# Flow using Slack + HTTP, decision-node under test
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector:slack, feature:http]
+# Flow using a connector + HTTP, decision-node under test
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
 ```
 
 Before writing the YAML, verify the assembled tag list against `grep -r "^tags:" tests/tasks/` output to confirm the combination isn't obviously wrong (e.g. `lifecycle:generate` on a smoke test that doesn't create a project).

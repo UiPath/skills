@@ -90,18 +90,17 @@ Extract these fields:
 task_id         — unique test identifier (e.g., "skill-flow-calculator")
 description     — what the test validates
 tags            — array carrying values from the Tag Taxonomy dimensions
-                  documented in tests/README.md. Namespaced form (preferred):
-                  [skill, tier, lifecycle:X, shape:X, node:..., resource:...,
-                   connector:..., feature:...]
+                  documented in tests/README.md. Form:
+                  [skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
                     lifecycle  — lifecycle:{generate|edit|validate|discover|activate|execute|deploy}
                     shape      — shape:{single-node|multi-node}              (flow-building tests)
                     node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
-                    resource   — resource:{coded-agent|lowcode-agent|api-workflow|rpa}       (0..n)
-                    connector  — connector:{slack|outlook|sharepoint|…}       (0..n)
-                    feature    — feature:{hitl|trigger|registry|transform|http|connector-feature|
-                                 approval-gate|write-back|escalation|…}       (0..n)
+                    resource   — flat boolean marker (present iff task uses a resource node) (0..1)
+                    connector  — flat boolean marker (present iff task uses any connector)   (0..1)
+                    feature    — feature:{http|trigger|registry|transform|approval-gate|
+                                 write-back|escalation|…}                     (0..n)
                   Legacy bare tags (`generate`, `edit`, `green-field`, `hitl`, …)
                   are still counted for scoring — flag migration gaps in Phase 4j.
                   Record every dimension; Phase 4f keys off all of them, not just tier.
@@ -221,8 +220,9 @@ For each skill that has at least one test, compute which values from the Tag Tax
 
 - **Lifecycle** — tick each of `lifecycle:generate`, `lifecycle:edit`, `lifecycle:validate`, `lifecycle:discover`, `lifecycle:activate`, `lifecycle:execute`, `lifecycle:deploy` if any test carries that tag.
 - **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
-- **Node / Resource / Connector** — list values present under each namespace (`node:*`, `resource:*`, `connector:*`) for skills where those axes apply.
-- **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:hitl`, `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:connector-feature`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
+- **Node** — list values present under `node:*` for skills where that axis applies.
+- **Resource / Connector** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`) for skills where they apply.
+- **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
 
 Legacy tests on pre-namespace taxonomy (bare `generate`, `edit`, `green-field`, `hitl`) count toward the same dimension for the scoring — note any that still need migration in the gap section.
 
@@ -360,15 +360,19 @@ Sidecar diagnostic — see Phase 4i. Not part of the weighted overall score.
 | `shape:single-node` | skill-flow-decision, skill-flow-rpa, … | ✓ |
 | `shape:multi-node` | skill-flow-calculator, skill-flow-customer-escalation, … | ✓ |
 
-**Node / Resource / Connector**
+**Node**
 
-`node:decision` (3), `node:switch` (2), `resource:rpa` (1), `resource:coded-agent` (1), `connector:slack` (2), `connector:outlook` (2), …
+`node:decision` (3), `node:switch` (2), `node:hitl` (1), …
+
+**Resource / Connector**
+
+`resource` (4 tasks), `connector` (22 tasks).
 
 **Feature tags in use**
 
-`feature:registry` (1), `feature:transform` (2), `feature:http` (4), `feature:connector-feature` (18), …
+`feature:registry` (1), `feature:transform` (2), `feature:http` (4), …
 
-(For skills with a clear "expected" feature set — e.g., HITL should exercise `feature:hitl`, `feature:approval-gate`, `feature:write-back`, `feature:escalation` — use the Status column with ✓/✗. For skills with open vocabulary, list counts.)
+(For skills with a clear "expected" feature set — e.g., HITL should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation` — use the Status column with ✓/✗. For skills with open vocabulary, list counts.)
 
 ## Untested Features
 
