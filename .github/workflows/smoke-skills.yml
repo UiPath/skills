@@ -30,10 +30,31 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
-          # If test infrastructure changed, run all smoke tests
+          # RPA + rpa-legacy skills run on the Windows workflow
+          # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
+          # the full lifecycle (`uip rpa` / `uip rpa-legacy` CLI) is
+          # what's being exercised — so we skip those tasks here.
+          WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
+
+          # If test infrastructure changed, run all smoke tests except
+          # the Windows-only ones.
           if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$'; then
-            echo "task_globs=tasks/**/*.yaml" >> "$GITHUB_OUTPUT"
-            echo "Running all smoke tests (test infrastructure changed)"
+            shopt -s globstar nullglob
+            GLOBS=""
+            for f in tests/tasks/**/*.yaml; do
+              case "$f" in
+                tests/tasks/uipath-rpa/*|tests/tasks/uipath-rpa-legacy/*) continue ;;
+              esac
+              GLOBS="$GLOBS ${f#tests/}"
+            done
+            GLOBS=$(echo "$GLOBS" | xargs)
+            if [ -z "$GLOBS" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "No non-Windows smoke tasks to run."
+            else
+              echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
+              echo "Running all non-Windows smoke tests (test infrastructure changed)"
+            fi
             exit 0
           fi
 
@@ -50,10 +71,15 @@ jobs:
             exit 0
           fi
 
-          # Build task glob pattern for changed skills that have tests
+          # Build task glob pattern for changed skills that have tests.
+          # Skip the Windows-only RPA skills — they run on smoke-rpa-skills.yml.
           GLOBS=""
           UNTESTED=""
           for skill in $SKILLS; do
+            if echo "$WINDOWS_SKILLS" | grep -qw "$skill"; then
+              echo "Skipping $skill (runs on Windows — see smoke-rpa-skills.yml)"
+              continue
+            fi
             if [ -d "tests/tasks/$skill" ]; then
               if [ -n "$GLOBS" ]; then
                 GLOBS="$GLOBS tasks/$skill/**/*.yaml"
@@ -168,38 +194,6 @@ jobs:
           bun install
           bun run build
           cd packages/cli && npm link
-
-      # Pre-link rpa-legacy-tool from the uipcli monorepo. Tasks
-      # otherwise trigger `uip tools install <name>` auto-install
-      # against the npm registry, which fails with
-      # `npm error code EUNSUPPORTEDPROTOCOL / Unsupported URL Type
-      # "workspace:"` because the currently published
-      # @uipath/rpa-legacy-tool + @uipath/rpa-tool releases carry
-      # unrebuilt `workspace:*` deps that only resolve inside the uipcli
-      # monorepo itself. `uip tools install <tgz>` is rejected with
-      # "Unknown tool" (the CLI only accepts a whitelist of package
-      # names, not file paths), so we can't use a locally-packed
-      # tarball either.
-      #
-      # What works: `npm link` from inside the tool package registers
-      # a symlink at `<npm-global-prefix>/lib/node_modules/@uipath/<tool>`
-      # — which is exactly where uip's ToolManager discovers tools at
-      # startup. When the verb fires (e.g. `uip rpa-legacy ...`),
-      # isInstalled() returns true and the auto-install is skipped.
-      #
-      # rpa-tool: NOT in the uipcli monorepo (published from a separate
-      # source we don't have checked out), so we can't repackage it.
-      # Any resulting task failure surfaces via the LLM reviewer score
-      # gate below.
-      - name: Pre-link rpa-legacy-tool from uipcli monorepo
-        working-directory: .uipcli
-        run: |
-          set -e
-          cd packages/rpa-legacy-tool
-          bun run build
-          npm link
-          cd ../..
-          uip tools list --output json || true
 
       - name: Run smoke tests
         env:
