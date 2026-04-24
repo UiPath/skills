@@ -7,7 +7,7 @@ Run an apples-to-apples A/B comparison between two refs of the skills repo — e
 - `<task_selector>` — optional third argument. Restricts which tasks run. Defaults to **all tasks** (warn the user: this can be slow and expensive). Accepts three forms; pick the most specific one that fits the question:
   - **Skill name** (bare word): `uipath-maestro-flow` → all task files under `tests/tasks/uipath-maestro-flow/`. Use this when the comparison is scoped to one skill.
   - **Tag filter** with `tags:` prefix: `tags:smoke` or `tags:smoke,init` → comma-separated tags, OR semantics (any task carrying any of these tags). Forwarded to `coder-eval run --tags`. Use this for cross-skill slices like "only smoke tests" or "only e2e + connector tests".
-  - **Path glob** with `paths:` prefix: `paths:tasks/uipath-maestro-flow/init_validate.yaml` or `paths:tasks/*/smoke_*.yaml` (comma-separated globs allowed). Use this when you want a hand-picked subset.
+  - **Path glob** with `paths:` prefix: `paths:tasks/uipath-maestro-flow/smoke/init_validate.yaml` or `paths:tasks/*/smoke_*.yaml` (comma-separated globs allowed). Use this when you want a hand-picked subset.
 - `<n_reps>` — optional fourth argument. Reps per variant. Defaults to `3`. Accept integers 1–5.
 
 **Examples:**
@@ -16,7 +16,7 @@ Run an apples-to-apples A/B comparison between two refs of the skills repo — e
 - `/skill-compare a1b2c3d e4f5g6h uipath-maestro-flow` — two SHAs (compare two historical points).
 - `/skill-compare main feat/my-change tags:smoke` — two branches, only smoke tests across all skills.
 - `/skill-compare main feat/my-change tags:smoke,init 5` — smoke OR init tasks, N=5.
-- `/skill-compare main feat/my-change paths:tasks/uipath-maestro-flow/init_validate.yaml,tasks/uipath-maestro-flow/registry_discovery.yaml` — two specific files.
+- `/skill-compare main feat/my-change paths:tasks/uipath-maestro-flow/smoke/init_validate.yaml,tasks/uipath-maestro-flow/smoke/registry_discovery.yaml` — two specific files.
 - `/skill-compare main feat/my-change` — all tasks across all skills, N=3 (slow + expensive; expect to be re-prompted at Phase 5).
 
 **Ref slugs** (used in filenames and worktree paths):

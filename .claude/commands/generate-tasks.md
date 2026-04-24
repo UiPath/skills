@@ -52,39 +52,47 @@ Every generated task must carry tags from the **Tag Taxonomy** documented in [`t
 
 | Dimension | Pick | Notes |
 |---|---|---|
-| **skill** (required) | `uipath-<name>` | Must match the target skill folder. Always first in the list. |
-| **tier** (required) | `smoke`, `integration`, or `e2e` | Always second in the list. From Phase 2a. |
-| **lifecycle** | `activate`, `generate`, `edit`, `validate`, `execute`, `deploy` | What is the agent being asked to do? Most smoke tests are `activate` or `validate`; most e2e are `generate` (green-field) or `edit` (brown-field); `execute` applies when the task actually runs the built artifact (e.g. `flow debug`). |
-| **scenario** | `green-field`, `brown-field`, `fixture` | Starting state. `green-field` = empty workspace. `brown-field` = existing project the agent modifies. `fixture` = pre-seeded inputs (e.g. a PDD file dropped in). Skip if the task is a single-CLI-command smoke test with no real workspace state. |
-| **feature** | `hitl`, `approval-gate`, `write-back`, `escalation`, `registry`, `connector-feature`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `transform`, `http` | Zero or more. Only add a feature tag when the task genuinely exercises that capability. Do not invent new feature tags — if none of the closed-set values fit, omit the feature dimension and flag it in the Phase 4 summary so the taxonomy can be extended in a follow-up PR. |
+| **skill** (required, flat) | `uipath-<name>` | Must match the target skill folder. Always first. |
+| **tier** (required, flat) | `smoke`, `integration`, `e2e` | Always second. From Phase 2a. |
+| **lifecycle** (required, `lifecycle:X`) | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` | What the agent is asked to do. Most smoke tests are `lifecycle:validate` or `lifecycle:discover`; most e2e are `lifecycle:generate` or `lifecycle:edit`; `lifecycle:execute` applies when the task actually runs the built artifact. |
+| **shape** (`shape:X`, on flow-building tests) | `single-node`, `multi-node` | Omit for smoke tests that don't build a flow. Use intent (test focus) not node count when borderline. |
+| **node** (`node:X`, repeatable) | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` | Node type(s) under test. Omit `script`/`http` — too ubiquitous. Do not tag incidental/plumbing nodes. |
+| **resource** (flat, present iff applicable) | `resource` | Boolean marker for tasks that exercise any resource-node type (coded-agent / lowcode-agent / api-workflow / rpa). The specific resource is identifiable from the file path / `task_id`. |
+| **connector** (flat, present iff applicable) | `connector` | Boolean marker for tasks that use any IS connector. The specific connector is in the YAML body / file path. |
+| **feature** (`feature:X`, repeatable) | `http`, `trigger`, `registry`, `transform`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks` | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary — do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature`. If none fit, flag in Phase 4 summary for taxonomy extension. |
 
 **Selection rules:**
-1. **Always include `skill` and `tier`.** Task YAMLs without both fail the tests/README contract.
-2. **Pick the most specific `lifecycle` that fits.** If the task both generates and validates (common), use `generate` — validation is implicit in the success criteria.
-3. **Do not repeat the skill name as a feature tag.** E.g. don't tag `uipath-agents` tasks with a bare `agent` feature. If you need to express "this maestro-flow task exercises an RPA resource node", use a descriptive feature tag and note it in the summary — but prefer existing closed-set tags when possible.
-4. **Feature tags are cross-cutting.** `hitl` on a maestro-flow task signals "this flow contains a HITL node" and is how cross-skill HITL coverage gets sliced. `registry` spans flow/agent/case registries. `escalation` spans HITL and agents.
-5. **Order tags consistently:** `[skill, tier, lifecycle, scenario, ...features]`. This matches existing tasks and makes grep/review easier.
+1. **Always include `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage reports, and evalboard drilldown.
+2. **Pick the most specific `lifecycle` that fits.** If the task both generates and validates (common), use `lifecycle:generate` — validation is implicit in success criteria.
+3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
+4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path / `task_id`.
+5. **Do not tag incidental / plumbing nodes.** If every test in a category adds a Decision node purely to gate success/failure, do not tag `node:decision` — it pollutes drilldowns. Only tag when the node type is the point.
+6. **Do not repeat the skill name as a feature tag.** Don't tag `uipath-agents` tasks with `feature:agent`.
+7. **Order tags consistently:** `[skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]`. Makes grep/review easier.
 
-**Worked examples** (from existing tasks):
+**Worked examples:**
 
 ```yaml
 # Green-field flow authoring that hits HITL + approval-gate + write-back
-tags: [uipath-human-in-the-loop, e2e, generate, green-field, hitl, approval-gate, write-back]
+tags: [uipath-human-in-the-loop, e2e, lifecycle:generate, shape:multi-node, node:hitl, feature:approval-gate, feature:write-back]
 
-# Smoke test that just lists IS connector activities
-tags: [uipath-platform, smoke, activate, activities]
+# Smoke test that lists IS connector activities
+tags: [uipath-platform, smoke, lifecycle:discover, feature:activities]
 
 # E2E Data Fabric CRUD cycle on a live tenant
-tags: [uipath-data-fabric, e2e, execute, entities, records]
+tags: [uipath-data-fabric, e2e, lifecycle:execute, feature:entities, feature:records]
 
 # Brown-field RPA test case authored on an existing project
-tags: [uipath-rpa, integration, edit, brown-field, test-case]
+tags: [uipath-rpa, integration, lifecycle:edit, feature:test-case]
 
 # Smoke test that exercises the Flow node registry
-tags: [uipath-maestro-flow, smoke, activate, registry]
+tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
+
+# Flow using a connector + HTTP, decision-node under test
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
 ```
 
-Before writing the YAML, verify the assembled tag list against `grep -r "^tags:" tests/tasks/` output to confirm the combination isn't obviously wrong (e.g. `green-field` on a smoke test that doesn't create a project).
+Before writing the YAML, verify the assembled tag list against `grep -r "^tags:" tests/tasks/` output to confirm the combination isn't obviously wrong (e.g. `lifecycle:generate` on a smoke test that doesn't create a project).
 
 ### 2c. Choose task_id
 

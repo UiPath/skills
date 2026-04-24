@@ -3,7 +3,7 @@ description: >
   Create a UiPath Flow that fetches today's weather in Bellevue from open-meteo,
   formats a summary with a script, and branches on temperature: if > 60F output
   'nice day', otherwise 'bring a jacket'. Exercises HTTP, script, and decision nodes.
-tags: [uipath-maestro-flow, e2e, edit, ootb]
+tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:decision]
 max_iterations: 1
 
 agent:

@@ -1,8 +1,8 @@
-task_id: skill-flow-ipe-ceql_where
+task_id: skill-flow-ipe-ceql-where
 description: >
   Tests the CEQL where query IS feature — configures a connector node with a
   CEQL filter expression
-tags: [uipath-maestro-flow, integration, connector-feature, ceql-where]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
 task_timeout: 1500
 agent:

@@ -89,17 +89,20 @@ Extract these fields:
 ```
 task_id         — unique test identifier (e.g., "skill-flow-calculator")
 description     — what the test validates
-tags            — array carrying values from the five Tag Taxonomy dimensions
-                  documented in tests/README.md. Position convention:
-                  [skill, tier, lifecycle, scenario, ...features]
-                    skill     — uipath-<name>                                 (required)
-                    tier      — smoke | integration | e2e                      (required)
-                    lifecycle — activate | generate | edit | validate | execute | deploy
-                    scenario  — green-field | brown-field | fixture
-                    features  — hitl, approval-gate, write-back, escalation, registry,
-                                connector-feature, connections, activities, records,
-                                entities, api-workflow, compliance, test-case, hooks,
-                                transform, http (0..n)
+tags            — array carrying values from the Tag Taxonomy dimensions
+                  documented in tests/README.md. Form:
+                  [skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]
+                    skill      — uipath-<name>                                (required, flat)
+                    tier       — smoke | integration | e2e                    (required, flat)
+                    lifecycle  — lifecycle:{generate|edit|validate|discover|activate|execute|deploy}
+                    shape      — shape:{single-node|multi-node}              (flow-building tests)
+                    node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
+                    resource   — flat boolean marker (present iff task uses a resource node) (0..1)
+                    connector  — flat boolean marker (present iff task uses any connector)   (0..1)
+                    feature    — feature:{http|trigger|registry|transform|approval-gate|
+                                 write-back|escalation|…}                     (0..n)
+                  Legacy bare tags (`generate`, `edit`, `green-field`, `hitl`, …)
+                  are still counted for scoring — flag migration gaps in Phase 4j.
                   Record every dimension; Phase 4f keys off all of them, not just tier.
 initial_prompt  — the prompt given to the agent
 success_criteria — array of assertion objects
@@ -213,11 +216,15 @@ Report these alongside the Summary table to flag structural fragility that a hig
 
 ### 4i. Tag-dimension coverage (sidecar diagnostic)
 
-For each skill that has at least one test, compute which values from the Tag Taxonomy are exercised. Report the three variable dimensions (the `skill` dimension is trivially covered and `tier` is already reported in the Summary table):
+For each skill that has at least one test, compute which values from the Tag Taxonomy are exercised. Report the variable dimensions (the `skill` dimension is trivially covered and `tier` is already reported in the Summary table):
 
-- **Lifecycle** — tick each of `activate`, `generate`, `edit`, `validate`, `execute`, `deploy` if any test carries that tag.
-- **Scenario** — tick each of `green-field`, `brown-field`, `fixture`.
-- **Feature** — list the feature tags present vs a reasonable "expected" set for this skill (derived from the skill's SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `hitl`, `approval-gate`, `write-back`, `escalation`; `uipath-maestro-flow` should exercise `registry`, `connector-feature`, `transform`, `http`, …). If the skill's vocabulary is open, just list what's present without the ✗ column.
+- **Lifecycle** — tick each of `lifecycle:generate`, `lifecycle:edit`, `lifecycle:validate`, `lifecycle:discover`, `lifecycle:activate`, `lifecycle:execute`, `lifecycle:deploy` if any test carries that tag.
+- **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
+- **Node** — list values present under `node:*` for skills where that axis applies.
+- **Resource / Connector** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`) for skills where they apply.
+- **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
+
+Legacy tests on pre-namespace taxonomy (bare `generate`, `edit`, `green-field`, `hitl`) count toward the same dimension for the scoring — note any that still need migration in the gap section.
 
 This is structured data for the per-skill report (see template below). It is NOT folded into the weighted overall score — adding it on top of Components/Steps would double-count (a missing `edit` lifecycle already shows up as a workflow-step gap).
 
@@ -227,12 +234,11 @@ Run these checks and emit findings into the "Coverage Gaps — Priority Ranked" 
 
 | Signal | Condition | Priority | Gap title template |
 |---|---|---|---|
-| **Lifecycle gap (edit)** | The skill teaches an edit workflow (it documents modifying an existing artifact — common for `uipath-maestro-flow`, `uipath-rpa`, `uipath-agents`) but no test carries the `edit` lifecycle tag. | **High** | "Editing existing `<artifact>`" |
-| **Scenario gap (brown-field)** | All tests carry `green-field` (or no scenario tag), and the skill explicitly supports modifying existing projects. | **Medium** | "Brown-field modification of existing `<artifact>`" |
+| **Lifecycle gap (edit)** | The skill teaches an edit workflow (it documents modifying an existing artifact — common for `uipath-maestro-flow`, `uipath-rpa`, `uipath-agents`) but no test carries `lifecycle:edit` (or legacy bare `edit`). | **High** | "Editing existing `<artifact>`" |
 | **Negative-test gap** | The skill's SKILL.md lists ≥3 anti-patterns and zero tests assert on any of them. | **High** | "Negative tests for anti-patterns" |
 | **Tier gap** | The skill has tests but is missing a tier (smoke-only, integration-only, or e2e-only). | **High** (if smoke or e2e is missing — those are the minimum bar), **Medium** (integration missing) | "Missing `<tier>` tier" |
 
-Whenever a signal fires, the corresponding recommendation in Phase 5's Recommendations section must include the tag list that would address it (e.g. a "Brown-field modification" recommendation ships with `(e2e, edit, brown-field, …)`).
+Whenever a signal fires, the corresponding recommendation in Phase 5's Recommendations section must include the tag list that would address it (e.g. a "Brown-field modification" recommendation ships with `(e2e, lifecycle:edit, …)`).
 
 ## Phase 5 — Write reports
 
@@ -289,7 +295,7 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 
 | Test ID | Type | Tags | Description | Components Exercised |
 |---------|------|------|-------------|---------------------|
-| skill-flow-calculator | e2e | generate, green-field, transform | Multiply two inputs via script node | `core.action.script`, input vars, output vars, validate, debug |
+| skill-flow-calculator | e2e | lifecycle:generate, shape:multi-node | Multiply two inputs via script node | `core.action.script`, input vars, output vars, validate, debug |
 
 ## Component Coverage
 
@@ -340,26 +346,33 @@ Sidecar diagnostic — see Phase 4i. Not part of the weighted overall score.
 
 | Value | Tests | Status |
 |---|---|---|
-| `activate` | skill-flow-registry-discovery | ✓ |
-| `generate` | skill-flow-calculator, skill-flow-reading-list, … | ✓ |
-| `edit` | — | ✗ |
-| `validate` | skill-flow-init-validate | ✓ |
-| `execute` | skill-flow-calculator, skill-flow-dice-roller | ✓ |
-| `deploy` | — | ✗ |
+| `lifecycle:discover` | skill-flow-registry-discovery | ✓ |
+| `lifecycle:generate` | skill-flow-calculator, skill-flow-reading-list, … | ✓ |
+| `lifecycle:edit` | skill-flow-add-node, … | ✓ |
+| `lifecycle:validate` | skill-flow-init-validate | ✓ |
+| `lifecycle:execute` | — | ✗ |
+| `lifecycle:deploy` | — | ✗ |
 
-**Scenario**
+**Shape** (flow-building tests only)
 
 | Value | Tests | Status |
 |---|---|---|
-| `green-field` | all | ✓ |
-| `brown-field` | — | ✗ |
-| `fixture` | — | ✗ |
+| `shape:single-node` | skill-flow-decision, skill-flow-rpa, … | ✓ |
+| `shape:multi-node` | skill-flow-calculator, skill-flow-customer-escalation, … | ✓ |
+
+**Node**
+
+`node:decision` (3), `node:switch` (2), `node:hitl` (1), …
+
+**Resource / Connector**
+
+`resource` (4 tasks), `connector` (22 tasks).
 
 **Feature tags in use**
 
-`registry` (2), `transform` (3), `http` (1), `connector-feature` (18), …
+`feature:registry` (1), `feature:transform` (2), `feature:http` (4), …
 
-(For skills with a clear "expected" feature set — e.g., HITL should exercise `hitl`, `approval-gate`, `write-back`, `escalation` — use the same Status column with ✓/✗. For skills with an open feature vocabulary, just list counts.)
+(For skills with a clear "expected" feature set — e.g., HITL should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation` — use the Status column with ✓/✗. For skills with open vocabulary, list counts.)
 
 ## Untested Features
 
@@ -392,8 +405,8 @@ Gaps in edge cases or features that other tests partially cover indirectly.
 
 Top 5–10 tests to write next, ordered by how much coverage they add. Each recommendation carries the full proposed tag list so `/generate-tasks` can consume it verbatim.
 
-1. **`<suggested-task-id>`** (e2e, generate, green-field, transform) — Covers: `core.logic.loop`, `core.logic.merge`, `core.action.transform`, iteration pattern. *Why:* The entire control-flow family is untested; a single test with a loop-and-merge topology covers 4 components.
-2. **`skill-flow-edit-loop`** (e2e, edit, brown-field, registry) — Covers: editing an existing flow, adding a loop node to an existing topology. *Why:* No test carries the `edit` lifecycle or `brown-field` scenario — modifying existing flows is a first-class workflow in this skill.
+1. **`<suggested-task-id>`** (e2e, lifecycle:generate, shape:multi-node, node:loop, node:transform) — Covers: `core.logic.loop`, `core.logic.merge`, `core.action.transform`, iteration pattern. *Why:* The entire control-flow family is untested; a single test with a loop-and-merge topology covers 4 components.
+2. **`skill-flow-edit-loop`** (e2e, lifecycle:edit, shape:multi-node, node:loop) — Covers: editing an existing flow, adding a loop node to an existing topology. *Why:* No test carries the `edit` lifecycle or `brown-field` scenario — modifying existing flows is a first-class workflow in this skill.
 ```
 
 ---
@@ -447,8 +460,8 @@ List all components grouped by category. Use a compact format — no Direct/Indi
 
 Recommend 2 smoke tests and 2 e2e tests to establish baseline coverage (per CONTRIBUTING.md minimum bar: 1 smoke + 1 e2e). For each, include the full proposed tag list so `/generate-tasks` can consume the recommendation verbatim:
 
-1. **`<suggested-task-id>`** (smoke, generate, green-field) — Covers: <components, rules>. *Why:* <rationale>. <Infrastructure note if needed.>
-2. **`<suggested-task-id>`** (e2e, generate, green-field, <feature>) — Covers: <…>. *Why:* <…>.
+1. **`<suggested-task-id>`** (smoke, lifecycle:generate) — Covers: <components, rules>. *Why:* <rationale>. <Infrastructure note if needed.>
+2. **`<suggested-task-id>`** (e2e, lifecycle:generate, shape:multi-node, feature:<X>) — Covers: <…>. *Why:* <…>.
 ```
 
 ---

@@ -1,0 +1,88 @@
+task_id: skill-flow-init-validate
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
+  a new UiPath Flow project inside a solution and validate it. Tests whether
+  the skill teaches the correct solution-first workflow and CLI usage.
+tags: [uipath-maestro-flow, smoke, lifecycle:generate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a new UiPath Flow project called "WeatherAlert" and make sure it
+  validates successfully.
+
+  Save a summary of what you did to report.json with at minimum:
+    {
+      "project_name": "WeatherAlert",
+      "commands_used": ["<list of uip commands you ran>"],
+      "validation_passed": true
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Do not run `uip maestro flow debug` — just validate locally.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project with uip maestro flow init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the .flow file"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked flow project to solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created inside the solution"
+    path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure and values"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "WeatherAlert"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 3
+    weight: 2.0
+    pass_threshold: 0.75

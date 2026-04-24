@@ -1,8 +1,8 @@
-task_id: skill-flow-ipe-complex_array
+task_id: skill-flow-ipe-complex-array
 description: >
   Tests the complex array IS feature — configures a connector node with a
   complex array field on the Act! 365 connector.
-tags: [uipath-maestro-flow, integration, connector-feature, complex-array]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
 task_timeout: 1500
 agent:

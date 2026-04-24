@@ -3,7 +3,7 @@ description: >
   Remove the formatSummary script node from the BellevueWeather flow and rewire
   the decision node to read temperature directly from the HTTP response.
   Exercises deleting a node and reconnecting edges.
-tags: [uipath-maestro-flow, e2e, edit, ootb]
+tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 max_iterations: 1
 
 agent:

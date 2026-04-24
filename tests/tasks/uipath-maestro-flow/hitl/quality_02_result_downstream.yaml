@@ -3,7 +3,7 @@ description: >
   Quality test: agent correctly references the HITL node's output via
   $vars.<nodeId>.result in a downstream node. Tests that the agent knows
   the result variable path and wires it into a decision or script node.
-tags: [uipath-maestro-flow, integration, hitl]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
   type: claude-code

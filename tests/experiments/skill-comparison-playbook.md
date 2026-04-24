@@ -91,7 +91,7 @@ Each variant runs the full task set once. Aggregate across the `r1`/`r2`/`r3` va
 ```bash
 for i in 1 2 3; do
   SKILLS_REPO_PATH=$(cd .. && pwd) \
-    .venv/bin/coder-eval run tasks/uipath-maestro-flow/*.yaml \
+    .venv/bin/coder-eval run tasks/uipath-maestro-flow/**/*.yaml \
     -e experiments/my-comparison.yaml \
     --run-dir runs/compare-$(date +%F)-rep-$i
 done
@@ -106,7 +106,7 @@ Lower effort to set up, harder to analyze (three separate run dirs to combine).
 ```bash
 cd tests
 SKILLS_REPO_PATH=$(cd .. && pwd) \
-  .venv/bin/coder-eval run tasks/uipath-maestro-flow/*.yaml \
+  .venv/bin/coder-eval run tasks/uipath-maestro-flow/**/*.yaml \
   -e experiments/my-comparison.yaml \
   -j 1 -v
 ```
