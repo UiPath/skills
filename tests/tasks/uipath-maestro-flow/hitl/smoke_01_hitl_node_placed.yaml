@@ -8,7 +8,7 @@ tags: [uipath-maestro-flow, smoke, hitl]
 agent:
   type: claude-code
   permission_mode: acceptEdits
-  max_turns: 20
+  max_turns: 30
   turn_timeout: 600
 
 sandbox:
