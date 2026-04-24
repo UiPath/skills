@@ -186,10 +186,22 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      - name: Build and install uip CLI from source
-        working-directory: .uipcli
+      # Project-scoped .npmrc so bun install can auth to GitHub Packages
+      # for the uipcli build's private @uipath/* deps — without
+      # polluting the global registry for later `uip tools install`
+      # calls (public npm has working tarballs, GH Packages has the
+      # workspace:* bug).
+      - name: Write .uipcli/.npmrc for private @uipath deps
         env:
           GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+        run: |
+          cat > .uipcli/.npmrc <<NPMRC
+          @uipath:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
+          NPMRC
+
+      - name: Build and install uip CLI from source
+        working-directory: .uipcli
         run: |
           bun install
           bun run build

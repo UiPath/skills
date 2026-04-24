@@ -115,6 +115,22 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
+      # The uipcli monorepo build needs GitHub Packages auth to fetch
+      # internal @uipath/* deps (e.g. @uipath/tool-agent). Write a
+      # project-scoped .npmrc inside .uipcli/ so bun install picks it
+      # up — and crucially do NOT touch the global ~/.npmrc so that
+      # `uip tools install @uipath/rpa-tool` later resolves from
+      # public npm (where the tarballs aren't broken).
+      - name: Write .uipcli/.npmrc for private @uipath deps
+        shell: bash
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+        run: |
+          cat > .uipcli/.npmrc <<NPMRC
+          @uipath:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
+          NPMRC
+
       - name: Build and install uip CLI from source
         working-directory: .uipcli
         shell: bash
