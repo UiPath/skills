@@ -1,8 +1,8 @@
-task_id: skill-flow-ipe-list_curated
+task_id: skill-flow-ipe-list-curated
 description: >
   Tests the curated List operation IS feature — configures a connector node
   with curated list fields on the Google Tasks connector.
-tags: [uipath-maestro-flow, integration, connector-feature, list-curated]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, node:terminate, feature:connector-feature, feature:list-curated, connector:google-tasks]
 
 task_timeout: 1500
 agent:

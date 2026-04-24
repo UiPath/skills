@@ -1,8 +1,8 @@
-task_id: skill-flow-ipe-field_actions
+task_id: skill-flow-ipe-field-actions
 description: >
   Tests the field actions IS feature — configures a connector node with
   field action dependencies on the WooCommerce connector.
-tags: [uipath-maestro-flow, integration, connector-feature, field-actions]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, node:terminate, feature:connector-feature, feature:field-actions, connector:woocommerce]
 
 task_timeout: 1500
 agent:

@@ -1,0 +1,45 @@
+task_id: skill-flow-slack-channel-description
+description: >
+  Create a UiPath Flow that uses the Slack IS connector to retrieve the
+  channel description of #office-bellevue and outputs it. This is an
+  end-to-end test that exercises connector discovery, connection binding,
+  reference resolution, node configuration, and cloud debug execution.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, connector:slack]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow named "SlackChannelDescription" that retrieves
+  the channel description of #office-bellevue and outputs it.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── End-to-end execution ────────────────────────────────────────────────
+  - type: run_command
+    description: "Flow debug runs successfully and output contains the Bellevue office address"
+    command: "python3 $TASK_DIR/check_channel_description.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

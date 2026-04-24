@@ -1,8 +1,8 @@
-task_id: skill-flow-ipe-file_picker
+task_id: skill-flow-ipe-file-picker
 description: >
   Tests the FolderPicker IS feature — configures a connector node with a
   folder picker field on the Egnyte connector.
-tags: [uipath-maestro-flow, integration, connector-feature, file-picker]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, node:terminate, feature:connector-feature, feature:file-picker, connector:egnyte]
 
 task_timeout: 1500
 agent:

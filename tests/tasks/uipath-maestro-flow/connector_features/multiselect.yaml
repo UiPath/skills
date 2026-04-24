@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-multiselect
 description: >
   Tests the multiselect IS feature — configures a connector node with a
   multiselect field on the Act! 365 connector.
-tags: [uipath-maestro-flow, integration, connector-feature, multiselect]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, node:terminate, feature:connector-feature, feature:multiselect, connector:act-365]
 
 task_timeout: 1500
 agent:

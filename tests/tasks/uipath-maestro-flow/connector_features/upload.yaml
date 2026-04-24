@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-upload
 description: >
   Tests the multipart file upload IS feature — configures a connector node
   with a file upload field on the Google Speech-to-Text connector.
-tags: [uipath-maestro-flow, integration, connector-feature, upload]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, node:terminate, feature:connector-feature, feature:upload, connector:google-speech-to-text]
 
 task_timeout: 1500
 agent:

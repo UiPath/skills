@@ -1,8 +1,8 @@
-task_id: skill-flow-ipe-required_groups
+task_id: skill-flow-ipe-required-groups
 description: >
   Tests the required groups IS feature — configures a connector node where at
   least one field from each required group must be populated on the Teams connector.
-tags: [uipath-maestro-flow, integration, connector-feature, required-groups]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, node:terminate, feature:connector-feature, feature:required-groups, connector:teams]
 
 task_timeout: 1500
 agent:

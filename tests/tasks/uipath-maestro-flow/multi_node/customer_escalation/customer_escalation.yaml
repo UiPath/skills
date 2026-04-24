@@ -1,0 +1,65 @@
+task_id: skill-flow-customer-escalation
+description: >
+  Complex multi-branch escalation flow: Outlook email-received trigger →
+  urgency-keyword script → VIP-domain script → Decision → branches that
+  send Slack DMs + Outlook reply (VIP path) or generate a mock support
+  ticket + Outlook reply (standard path). Scoped to static validation
+  only — trigger-fired execution is not reliably testable against the
+  shared Outlook connection (see skills repo outlook_trigger_inbox task
+  notes).
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector:outlook, connector:slack]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 60
+  turn_timeout: 1200
+
+task_timeout: 2400
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli@0.1.21"
+
+initial_prompt: |
+  Build a Maestro Flow called "CustomerEscalation" that triggers on new
+  Outlook inbox emails, parses the subject and body for urgency keywords
+  (urgent, critical, emergency, asap, down, outage, broken, immediately,
+  p0, p1, sev1) using a script node, then looks up the sender's domain
+  against a mock CRM VIP list (uipath.com, microsoft.com, google.com,
+  amazon.com, apple.com, salesforce.com, outlook.com) in another script
+  node, and branches with a decision node on whether the email is both
+  urgent AND from a VIP.
+
+  If true, send two Slack DMs to rocky.madden@uipath.com — one escalation
+  alert with sender info, tier, subject, and preview, and one manager
+  notification with a 15-minute SLA — then reply to the sender via Outlook
+  with a VIP acknowledgment promising a 15-minute response.
+
+  If false, generate a mock SUPPORT-XXXX ticket in a script node with
+  priority based on urgency, then reply to the sender via Outlook with
+  the ticket ID, priority, assignee, and a 24-hour SLA.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+
+  Before starting, load the uipath-maestro-flow skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate CustomerEscalation/CustomerEscalation/CustomerEscalation.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+max_iterations: 1
