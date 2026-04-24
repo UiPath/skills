@@ -56,3 +56,25 @@ New UIA docs go into the UIA package's source repo under `UiPath.UIAutomation.Ac
 ## Rationale
 
 `UiPath.UIAutomation.Activities` ships its own skill docs, CLI reference, and workflow guides — all co-versioned with the package. Duplication in `skills/uipath-rpa/` causes drift: when UIA evolves, stale duplicates mislead agents into invoking commands that no longer exist or using wrong flag names. Route agents to the co-versioned docs instead.
+
+## No Meta-Commentary
+
+Do NOT write sentences that describe the document's own editorial behavior, reconcile differences between documents, or announce why a structure exists. Prose must carry information the reader needs — not commentary about the prose itself.
+
+Patterns to cut:
+
+- "The rest of this guide presumes X"
+- "For brevity, we do not repeat Y here"
+- "This section exists because Z"
+- "The other doc lists this as conditional because ..."
+- "Note that we use X terminology instead of Y"
+
+**Incorrect** (explains a cross-document discrepancy instead of stating what to pass):
+
+> Every `Write-<N>` task: `A, B, C, D, E`. In the pipeline every write task has activities to insert, so the last two are always populated here — the agent's contract lists them as conditional because it also supports a scaffold-only mode the pipeline does not use.
+
+**Correct** (states only what is passed):
+
+> Every `Write-<N>` task: `A, B, C, D, E`.
+
+If two documents disagree, fix one of them — do not explain the disagreement in prose.

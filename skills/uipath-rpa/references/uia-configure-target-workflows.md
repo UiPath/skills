@@ -40,4 +40,4 @@ Once targets are registered in the OR (via `uia-configure-target` or indication 
 
 For XAML workflows spanning multiple screens, use the parallel authoring pipeline. The main conversation passes only OR reference IDs to each write agent — no XAML snippets. The agent handles attachment itself per the shared guide.
 
-See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for prompt templates and the chained dependency model.
+See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for the prompt template and the chained dependency model.

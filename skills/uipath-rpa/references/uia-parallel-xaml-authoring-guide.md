@@ -4,7 +4,7 @@
 
 - The workflow targets **2 or more distinct screens** requiring target configuration via `uia-configure-target`
 - The workflow is a **XAML workflow** (not a coded workflow in C#)
-- **Single-screen workflows:** skip this pipeline entirely — one agent writes the complete file (scaffolding + activities) in a single pass
+- **Single-screen workflows:** skip this pipeline entirely — one agent creates the file and writes all activities in a single pass
 
 ## Target Attachment Model
 
@@ -17,7 +17,7 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
 
 ## Phase 0: Plan the Workflow
 
-> **CRITICAL:** Complete Phase 0 before spawning any agent. The orchestrator's job in Phase 0 is to plan screens and actions, then determine the few values agents cannot derive themselves (expression language, x:Class). All other data (activity templates, xmlns, TextExpression blocks) is retrieved inside the agent — see [Prompt Templates](#prompt-templates).
+> **CRITICAL:** Complete Phase 0 before spawning any agent. The orchestrator's job in Phase 0 is to plan screens and actions, then determine the few values agents cannot derive themselves (expression language, x:Class). All other data (activity templates, xmlns, TextExpression blocks) is retrieved inside the agent — see [agents/uia-xaml-author-agent.md](../agents/uia-xaml-author-agent.md).
 
 1. **Identify screens.** List each distinct application state the workflow will interact with. A "screen" is a stable UI state where one or more elements need to be targeted — a page, a modal dialog, an inline form, or a panel that appears after an action.
 
@@ -29,67 +29,48 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
 
 5. **Determine the two values agents cannot derive themselves:**
 
-   a. **Expression language** — read from `project.json` → `expressionLanguage` field (`CSharp` or `VB`). Passed to every screen activity agent prompt.
+   a. **Expression language** — read from `project.json` → `expressionLanguage` field (`CSharp` or `VB`). Passed to every write agent prompt.
 
-   b. **x:Class value** — derived from the output `.xaml` filename per the naming rule in [xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md): folder separators become underscores, not dots. Root-level `MyWorkflow.xaml` → `x:Class="MyWorkflow"`. Subfolder `Workflows/MyWorkflow.xaml` → `x:Class="Workflows_MyWorkflow"`. Passed to the scaffolding agent prompt.
+   b. **x:Class value** — derived from the output `.xaml` filename per the naming rule in [xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md): folder separators become underscores, not dots. Root-level `MyWorkflow.xaml` → `x:Class="MyWorkflow"`. Subfolder `Workflows/MyWorkflow.xaml` → `x:Class="Workflows_MyWorkflow"`. Passed to `Write-<Screen 1>` (create-mode) as `<X_CLASS_VALUE>`.
 
 6. **Create a split task list** before starting Phase 1. Each screen produces TWO tasks with distinct lifecycles — `Configure-<ScreenName>` (owned by the main conversation, completes when OR registration finishes) and `Write-<ScreenName>` (owned by a background agent, completes on `<task-notification>`). Splitting these prevents the ambiguous "configure done but write running" status that collapses the Task list progress view.
 
    ```
    - Configure-<ScreenName-1>            (main conv)
-   - Write-Scaffold                       (background agent) blockedBy: Configure-<ScreenName-1>
-   - Write-<ScreenName-1>                 (background agent) blockedBy: Write-Scaffold, Configure-<ScreenName-1>
+   - Write-<ScreenName-1>                 (background agent, create-mode) blockedBy: Configure-<ScreenName-1>
    - Configure-<ScreenName-2>            (main conv)
-   - Write-<ScreenName-2>                 (background agent) blockedBy: Configure-<ScreenName-2>, Write-<ScreenName-1>
+   - Write-<ScreenName-2>                 (background agent, append-mode) blockedBy: Configure-<ScreenName-2>, Write-<ScreenName-1>
    - ...
    - Configure-<ScreenName-N>            (main conv)
-   - Write-<ScreenName-N>                 (background agent) blockedBy: Configure-<ScreenName-N>, Write-<ScreenName-N-1>
+   - Write-<ScreenName-N>                 (background agent, append-mode) blockedBy: Configure-<ScreenName-N>, Write-<ScreenName-N-1>
    - Finalize                             (main conv) blockedBy: Write-<ScreenName-N>
    ```
 
    `Configure-<N+1>` is NOT blocked by `Write-<N>` — this preserves the pipeline's parallelism (configure next while previous writer runs). See [Task Structure](#task-structure) below for the `TaskCreate` / `TaskUpdate` pseudocode and the mandatory `TaskGet` integrity check before each `Agent()` spawn.
 
-## Phase 1: Scaffolding Agent
+## Phase 1: Write Agents
 
-1. **When to spawn:** Immediately after the first screen is registered in the Object Repository, before element configuration for that screen begins. The scaffolding agent depends only on the first screen reference being registered — not on any element targets.
-
-2. **Run mode:** Spawn the scaffolding agent with `run_in_background: true`. Foreground mode blocks the main conversation and defeats the purpose of the parallel pipeline — while the scaffolding agent works, the main conversation must advance the application to the next screen and configure its targets. The scaffolding agent creates a new file with no concurrent access risk, so background mode is safe.
-
-3. **What the agent retrieves and creates** (the agent does the retrieval — orchestrator does NOT pre-fetch):
-   - Reads `<PROJECT_DIR>/project.json` to obtain `expressionLanguage`.
-   - Reads an existing `.xaml` in the project root (e.g., `Main.xaml`) to extract the root `<Activity>` xmlns declarations and both `<TextExpression.NamespacesForImplementation>` and `<TextExpression.ReferencesForImplementation>` blocks. Copied verbatim into the new file.
-   - Runs `uip rpa get-default-activity-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard"` for the NApplicationCard template, and reads the per-activity behavior doc (see [Scaffolding Agent Template](#scaffolding-agent-template) § "Context").
-   - Writes the complete `.xaml` file: `<Activity>` root with `x:Class`, namespace declarations, TextExpression blocks, an NApplicationCard carrying `sap2010:WorkflowViewState.IdRef="NApplicationCard_1"` (no `<uix:NApplicationCard.TargetApp>` child — attachment happens next), and an empty `<Sequence DisplayName="Do">` (open/close form, not self-closing) inside the ApplicationCard body where screen agents will insert activities.
-   - Attaches the registered screen to the NApplicationCard (activity ref ID `NApplicationCard_1`).
-
-4. **Post-write verification** (D-09): The agent runs `get-errors` itself:
-   ```bash
-   uip rpa get-errors \
-     --file-path "<XAML_FILE_PATH>" \
-     --project-dir "<PROJECT_DIR>" \
-     --output json \
-       ```
-
-5. **Self-repair** (D-10): If `get-errors` returns errors, fix and re-run. Max 3 fix cycles. After 3 attempts, stop and report remaining errors to the main conversation.
-
-6. **Prompt template:** See [Scaffolding Agent Template](#scaffolding-agent-template) for the complete Agent() call.
-
-## Phase 2: Screen Activity Agents
+Each screen has one `Write-<Screen N>` task, backed by the unified [UIA XAML Author Agent](../agents/uia-xaml-author-agent.md). `Write-<Screen 1>` runs in **create-mode** — the agent creates the file, attaches screen 1 to `NApplicationCard_1`, and inserts screen 1's activities. Subsequent `Write-<Screen N>` for N>1 run in **append-mode** — the agent opens the existing file and inserts screen N's activities. The agent derives the mode from which inputs are set.
 
 1. **Spawn precondition** — Do NOT spawn `Write-<N>` until ALL of the following hold (the orchestrator MUST verify each via `TaskGet` before calling `Agent()`):
    - (a) `Configure-<N>` is `completed` (screen N's element targets are fully configured and registered in the OR — the orchestrator hands off only reference IDs; the agent does the attaching).
-   - (b) `Write-<N-1>` is `completed` (or `Write-Scaffold` for N=1). **If `Write-<N-1>` is `in_progress`, do NOT spawn — the chain is violated.** See [Waiting for Background Agents](#waiting-for-background-agents).
+   - (b) `Write-<N-1>` is `completed` (for N > 1). **If `Write-<N-1>` is `in_progress`, do NOT spawn — the chain is violated.** See [Waiting for Background Agents](#waiting-for-background-agents).
 
-2. **Run mode:** Spawn each screen activity agent with `run_in_background: true`. While the agent writes screen N, the main conversation must advance the application to screen N+1 and configure its targets (`Configure-<N+1>`) — but it must NOT spawn `Write-<N+1>` until `Write-<N>` is `completed`. The chain requires each agent to read the previous agent's finalized file state.
+2. **Run mode:** Spawn each write agent with `run_in_background: true`. While the agent writes screen N, the main conversation must advance the application to screen N+1 and configure its targets (`Configure-<N+1>`) — but it must NOT spawn `Write-<N+1>` until `Write-<N>` is `completed`. The chain requires each agent to read the previous agent's finalized file state.
 
-3. **What the agent does** (the agent retrieves its own data — orchestrator does NOT pre-fetch):
-   - Reads the file and locates the inner `<Sequence DisplayName="Do">`. Ordering safety is enforced upstream by the task queueing model (see [Waiting for Background Agents](#waiting-for-background-agents) — `Write-<N>` cannot spawn until `Write-<N-1>` is `completed`), so the agent treats the file as in a known good state.
-   - Runs `uip rpa get-default-activity-xaml --activity-class-name "<class>"` for each activity class in its action list.
-   - Reads the per-activity behavior doc for each activity class — see [Screen Activity Agent Template](#screen-activity-agent-template) § "Retrieve your data" for the doc-resolution rule.
-   - Assigns unique IdRefs per the IdRef contract, constructs activities (no `.Target` / `.SearchedElement.Target` child — attachment happens next), and inserts them immediately before the closing `</Sequence>` of the inner `<Sequence DisplayName="Do">`. Does NOT modify any content before the insertion point.
-   - Attaches each `reference_id` to its assigned IdRef, passing `target_property` when the action specifies one.
+3. **Inputs passed to the agent** (see the agent file's [input contract](../agents/uia-xaml-author-agent.md#input-contract) for the full set):
+   - Every `Write-<N>` task: `<PROJECT_DIR>`, `<OUTPUT_XAML_PATH>`, `<EXPRESSION_LANGUAGE>`, `<SKILL_DIR>`, `<ACTIVITY_CLASS_LIST>`, `<ACTION_LIST>`.
+   - Create-mode only (`Write-<Screen 1>`): `<X_CLASS_VALUE>`, `<FIRST_SCREEN_REFERENCE_ID>`. Mode is derived: if the file does not exist and `<FIRST_SCREEN_REFERENCE_ID>` is set, the agent goes create-mode; otherwise append-mode.
 
-4. **Post-write verification** (D-09): Agent runs `get-errors` itself:
+4. **What the agent does** (the agent retrieves its own data — orchestrator does NOT pre-fetch):
+   - Detects mode from file existence and input shape; fails fast on mismatch.
+   - Fetches `uip rpa get-default-activity-xaml` templates for every activity class it needs (plus `NApplicationCard` in create-mode).
+   - Reads the per-activity behavior doc for each class.
+   - Reads the attachment guide at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+   - In create-mode: reads an existing `.xaml` in `<PROJECT_DIR>` to extract xmlns + TextExpression blocks, writes the file skeleton (root `<Activity>`, `NApplicationCard_1`, empty inner `<Sequence DisplayName="Do">`), and attaches `<FIRST_SCREEN_REFERENCE_ID>` to `NApplicationCard_1`.
+   - Inserts each action's activity immediately before the closing `</Sequence>` of the inner `<Sequence DisplayName="Do">`. Assigns unique IdRefs per the attachment guide's IdRef contract. Attaches each `reference_id` (with `target_property` when specified). Does NOT modify any content before the insertion point.
+
+5. **Post-write verification** (D-09): the agent runs `get-errors` itself:
    ```bash
    uip rpa get-errors \
      --file-path "<XAML_FILE_PATH>" \
@@ -97,9 +78,9 @@ See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/reference
      --output json \
        ```
 
-5. **Self-repair** (D-10): Max 3 fix cycles, then report to main conversation.
+6. **Self-repair** (D-10): Max 3 fix cycles, then report remaining errors to the main conversation.
 
-6. **Prompt template:** See [Screen Activity Agent Template](#screen-activity-agent-template) for the complete Agent() call.
+7. **Prompt template:** See [agents/uia-xaml-author-agent.md](../agents/uia-xaml-author-agent.md) for the Agent() call block and placeholder list.
 
 ### Screen Boundaries
 
@@ -114,12 +95,11 @@ See also: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ref
 
 The write agents form a strict chain — each depends on the previous:
 
-| Agent | Depends on (`Write-<N>` blockedBy) |
+| Agent | `Write-<N>` blockedBy |
 |-------|-----------|
-| Scaffolding agent | `Configure-<Screen 1>` |
-| Screen 1 agent | `Write-Scaffold` + `Configure-<Screen 1>` |
-| Screen 2 agent | `Write-<Screen 1>` + `Configure-<Screen 2>` |
-| Screen N agent | `Write-<Screen N-1>` + `Configure-<Screen N>` |
+| Screen 1 agent (create-mode) | `Configure-<Screen 1>` |
+| Screen 2 agent (append-mode) | `Write-<Screen 1>` + `Configure-<Screen 2>` |
+| Screen N agent (append-mode) | `Write-<Screen N-1>` + `Configure-<Screen N>` |
 
 The main conversation runs `Configure-<N+1>` in parallel with `Write-<N>`. `Configure-<N+1>` is NOT blocked by `Write-<N>`.
 
@@ -142,7 +122,7 @@ These three rules govern what the orchestrator may and may not do while a `Write
 
 3. **Every `<task-notification>` must be acknowledged in the same turn by `TaskUpdate` → `completed` on the matching `Write-<N>` task.** Missing a notification becomes structurally impossible if this rule holds.
 
-## Phase 3: Finalization
+## Phase 2: Finalization
 
 1. **Validate the complete workflow.** After the last write agent completes, run `get-errors` on the full file (D-11):
    ```bash
@@ -168,13 +148,11 @@ These three rules govern what the orchestrator may and may not do while a `Write
 
 ## Prompt Construction Rules
 
-1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML and docs.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, `<TargetAnchorable>` snippets, or the attachment guide body into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates, reads the per-activity behavior docs, and reads the attachment guide itself per [Screen Activity Agent Template](#screen-activity-agent-template) § "Retrieve your data". The attachment guide lives at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` (Fast Path for linking, with a snippet-embed fallback).
+1. **Pass the ref-ID-keyed action list; the agent retrieves its own XAML and docs.** Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, `<TargetAnchorable>` snippets, or the attachment guide body into the agent prompt. The orchestrator constructs a structured action list (see [Action List Format](#action-list-format)); the agent fetches activity templates, reads the per-activity behavior docs, and reads the attachment guide itself. The attachment guide lives at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` (Fast Path for linking, with a snippet-embed fallback).
 2. Describe actions as a structured list with exact data values (`display_name`, `type`, `reference_id`, optional `text`/`duration_seconds`/`target_property`) — see [Action List Format](#action-list-format). Each action carries enough detail for the agent to construct the activity from the template it retrieves and then attach the target.
 3. Specify interaction patterns **explicitly** for each non-trivial interaction: dropdown selection (Click then TypeInto with `[k(enter)]`), checkbox toggling, element reuse across repeated form instances. These go in a per-screen notes block in the prompt. Do NOT include `Delay` activities by default — UIA activities retry target lookup internally; see [When Delay is Warranted](#when-delay-is-warranted).
-4. **Pass `<EXPRESSION_LANGUAGE>` in every screen agent prompt** (`CSharp` or `VB`, read from `project.json`). Do NOT inline CSharp-vs-VB binding syntax examples — the agent derives correct syntax from the template returned by `get-default-activity-xaml` (which respects `--project-dir`) and from the per-activity behavior doc. For system activities without a package `.md` doc, the agent consults the expression-language binding guide.
-5. All context (action list, interaction patterns) goes **inline in the Agent() prompt parameter** as labeled blocks (D-06). Do not pass context via temp `.md` files or any other file-based method.
-6. Include the **edit instruction** in every screen agent prompt: where to insert (before the closing `</Sequence>` tag of the inner `<Sequence DisplayName="Do">`), and what not to touch (all content before the insertion point).
-7. Include the **validation instruction**: run `get-errors`, fix issues, max 3 fix cycles before reporting to main conversation.
+4. **Pass `<EXPRESSION_LANGUAGE>` in every write agent prompt** (`CSharp` or `VB`, read from `project.json`). Do NOT inline CSharp-vs-VB binding syntax examples — the agent derives correct syntax from the template returned by `get-default-activity-xaml` (which respects `--project-dir`) and from the per-activity behavior doc. For system activities without a package `.md` doc, the agent consults the expression-language binding guide.
+5. All context (action list, interaction patterns) goes **inline in the Agent() prompt parameter** as labeled blocks (D-06). Do not pass context via temp `.md` files or any other file-based method. Edit-insertion and validation instructions already live in the agent template at [agents/uia-xaml-author-agent.md](../agents/uia-xaml-author-agent.md) — do not duplicate them in the orchestrator.
 
 ## Edge Cases
 
@@ -214,7 +192,7 @@ When splitting, each agent appends independently and the later agent's activitie
 
 ### Single-Screen Workflows
 
-Skip the pipeline entirely. Spawn one agent that creates the complete file — scaffolding structure plus all screen activities — in a single pass. The pipeline overhead (separate scaffolding agent, chained dependency ordering across Tasks) is not justified for a single screen.
+Skip the chain entirely. Spawn one [UIA XAML Author Agent](../agents/uia-xaml-author-agent.md) invocation in create-mode with the screen's action list — one agent creates the file and writes every activity in a single pass. The chain overhead (multiple `Write-<N>` tasks and sequential dependencies) is not justified for a single screen.
 
 ### Write Agent Failure
 
@@ -230,146 +208,22 @@ Write agents are typically fast — they perform pure text generation against a 
 
 ## Anti-patterns
 
-1. Do NOT have a screen activity agent create the file from scratch — the scaffolding agent does that.
-2. Do NOT have a screen activity agent modify activities from earlier screens — insert before the closing `</Sequence>` tag only.
+1. Do NOT let an append-mode write agent (`Write-<N>` for N > 1) create the file. The file must already exist; if it doesn't, `Write-<Screen 1>` failed — fix that first.
+2. Do NOT let a write agent modify activities inserted by earlier screens — insert only before the closing `</Sequence>` tag.
 3. Do NOT spawn `Write-<N>` while `Write-<N-1>` is `in_progress`. Check `TaskGet(Write-<N-1>)` first; only spawn if `completed`. Spawning early breaks the chain — the agents will race on the same insertion point.
 4. Do NOT poll for agent completion. No `sleep`, no `Monitor` + `until` loop, no `ScheduleWakeup`, no file-growth checks, no respawning the agent to "see if it's done". Either do non-conflicting work, or reply with a one-line status and stop. The runtime delivers `<task-notification>` asynchronously.
 5. Do NOT paste activity templates, xmlns blocks, TextExpression blocks, TargetApp XAML, or OR `<TargetAnchorable>` snippets into the agent prompt. Pass reference IDs, activity class names, and a structured action list — the agent retrieves activity templates itself and attaches targets on its own.
 6. Do NOT pass unstable selectors (auto-generated numeric IDs, `css-selector` attributes, hash-based class names) to write agents — identify and fix them during target configuration via selector improvement before the agent attaches targets.
-7. Do NOT duplicate pipeline logic in SKILL.md or other reference files — they should route here instead.
-8. Do NOT skip the selector stability gate before the agent attaches targets. Syntactically valid XAML that uses runtime-broken selectors is harder to debug than a build error.
-9. Do NOT modify the `.xaml` file from the main conversation while a write agent is running. The chained model depends on each agent reading the current valid file state; concurrent edits produce an unknown file state for the next agent.
-10. Do NOT spawn write agents in foreground mode — this blocks the main conversation and serializes the pipeline. Always use `run_in_background: true` so the main conversation can configure the next screen's targets in parallel.
-11. Do NOT insert `Delay` activities to wait for UI elements to appear. UIA activities retry target-finding internally for their configured timeout, so a leading `Delay` just inflates runtime. Include `Delay` only when [When Delay is Warranted](#when-delay-is-warranted) applies — and require a one-sentence justification in the prompt's per-screen notes.
+7. Do NOT skip the selector stability gate before the agent attaches targets. Syntactically valid XAML that uses runtime-broken selectors is harder to debug than a build error.
+8. Do NOT modify the `.xaml` file from the main conversation while a write agent is running. The chained model depends on each agent reading the current valid file state; concurrent edits produce an unknown file state for the next agent.
+9. Do NOT spawn write agents in foreground mode — this blocks the main conversation and serializes the pipeline. Always use `run_in_background: true` so the main conversation can configure the next screen's targets in parallel.
+10. Do NOT insert `Delay` activities to wait for UI elements to appear. UIA activities retry target-finding internally for their configured timeout, so a leading `Delay` just inflates runtime. Include `Delay` only when [When Delay is Warranted](#when-delay-is-warranted) applies — and require a one-sentence justification in the prompt's per-screen notes.
 
 ## Prompt Templates
 
-Copy-paste these Agent() call blocks and fill placeholders.
+See [agents/uia-xaml-author-agent.md](../agents/uia-xaml-author-agent.md) for the unified UIA XAML author agent — Agent() call block, placeholder contract, and mode-derivation rules. One template covers all three modes (scaffold-only, scaffold+activities, append-activities); the agent derives the mode from which inputs are set and from whether `<OUTPUT_XAML_PATH>` already exists.
 
 > **Note:** Use a capable model (for example, `claude-sonnet-4-5` or higher) for write agents — XAML generation requires reliable instruction-following.
-
-### Scaffolding Agent Template
-
-```
-Agent(
-  description: "Scaffold <WORKFLOW_NAME>",
-  mode: "bypassPermissions",
-  run_in_background: true,
-  prompt: """
-Create a new UiPath XAML workflow file at `<OUTPUT_XAML_PATH>`.
-
-## Context (retrieve these yourself — do NOT ask)
-
-1. Read `<PROJECT_DIR>/project.json` to get `expressionLanguage` (`CSharp` or `VB`).
-2. Read `<PROJECT_DIR>/Main.xaml` (or any existing `.xaml` in the project root) to extract the root `<Activity>` xmlns declarations AND both `<TextExpression.NamespacesForImplementation>` and `<TextExpression.ReferencesForImplementation>` blocks. Copy them verbatim into your output.
-3. Fetch the NApplicationCard template:
-   ```bash
-   uip rpa get-default-activity-xaml \
-     --activity-class-name "UiPath.UIAutomationNext.Activities.NApplicationCard" \
-     --project-dir "<PROJECT_DIR>" \
-     --output json   ```
-   Use the returned XAML as-is for the NApplicationCard element.
-
-4. **Read the NApplicationCard behavior doc** at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/activities/ApplicationCard.md` (naming rule: strip the leading `N` from UIA class names — `NApplicationCard` → `ApplicationCard.md`). `get-default-activity-xaml` only emits a structural scaffold — it does NOT document enum values, property semantics, or required scopes. The `.md` doc is authoritative for per-activity behavior. **Apply any encoding/format rules from the doc when constructing the activity XAML** — do NOT rely on prior-training memory for text-encoding or attribute formats.
-
-5. **Read the attachment guide** at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`. It is authoritative for the IdRef contract, the Fast Path link commands, and the embedded-snippet fallback. Apply it exactly when attaching targets — do NOT rely on prior-training memory.
-
-## File structure requirements
-
-- Root `<Activity>` with `x:Class="<X_CLASS_VALUE>"` (derived from `<OUTPUT_XAML_PATH>` per the naming rule in [xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md): folder separators become underscores).
-- `mc:Ignorable="sap sap2010"`, `sap2010:ExpressionActivityEditor.ExpressionActivityEditor="<CSharp|VB>"`, `sap2010:WorkflowViewState.IdRef="ActivityBuilder_1"`.
-- The `<TextExpression.*>` blocks from step 2.
-- A single NApplicationCard from step 3 with `sap2010:WorkflowViewState.IdRef="NApplicationCard_1"` and NO `<uix:NApplicationCard.TargetApp>` child (linking attaches it in the next step).
-- Inside `<uix:NApplicationCard.Body>` → `<ActivityAction>`, create an empty `<Sequence DisplayName="Do"></Sequence>`. Use open/close form (not self-closing).
-
-## Attach the screen to the NApplicationCard
-
-Following the attachment guide you read in step 5, attach screen `<SCREEN_REFERENCE_ID>` to activity `NApplicationCard_1`.
-
-## Validation
-
-After attachment:
-```bash
-uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
-If it returns errors, fix and re-validate. Max 3 fix attempts.
-
-## Placeholders
-
-| Placeholder | Value |
-|---|---|
-| <OUTPUT_XAML_PATH> | <fill in> |
-| <RELATIVE_XAML_PATH> | <OUTPUT_XAML_PATH> relative to <PROJECT_DIR> |
-| <X_CLASS_VALUE> | <fill in> |
-| <PROJECT_DIR> | <fill in> |
-| <SCREEN_REFERENCE_ID> | <fill in> |
-"""
-)
-```
-
-### Screen Activity Agent Template
-
-```
-Agent(
-  description: "Write <SCREEN_NAME> activities to <WORKFLOW_NAME>",
-  mode: "bypassPermissions",
-  run_in_background: true,
-  prompt: """
-Edit the file `<OUTPUT_XAML_PATH>`. Read the file first, then locate the inner `<Sequence DisplayName="Do">` inside `<uix:NApplicationCard.Body>` → `<ActivityAction>` — that is your insertion point.
-
-## Retrieve your data (do NOT ask)
-
-Expression language: `<EXPRESSION_LANGUAGE>` (`CSharp` or `VB`).
-
-Activity class names you will use: `<ACTIVITY_CLASS_LIST>` (comma-separated, e.g., `UiPath.UIAutomationNext.Activities.NClick, UiPath.UIAutomationNext.Activities.NTypeInto, UiPath.UIAutomationNext.Activities.NSelectItem`). Include `System.Activities.Statements.Delay` **only** if the action list explicitly requires one — UIA activities retry target-finding internally, so `Delay` is rarely needed.
-
-1. For each activity class name above, fetch its template:
-   ```bash
-   uip rpa get-default-activity-xaml \
-     --activity-class-name "<class>" \
-     --project-dir "<PROJECT_DIR>" \
-     --output json   ```
-   Use the returned XAML as the structural base for every instance of that activity type.
-
-2. For each activity class name above, also **Read the per-activity behavior doc** at `<PROJECT_DIR>/.local/docs/packages/<PackageId>/activities/<ActivityName>.md`. Naming rule: strip the leading `N` from UIA class names (`NTypeInto` → `TypeInto.md`, `NClick` → `Click.md`, `NSelectItem` → `SelectItem.md`, `NApplicationCard` → `ApplicationCard.md`, `NGetText` → `GetText.md`, `NCheckState` → `CheckAppState.md`). PackageId is `UiPath.UIAutomation.Activities` for `UiPath.UIAutomationNext.Activities.*` classes. System activities (e.g., `System.Activities.Statements.Delay`) have no package `.md` doc — use the expression-language binding guide already referenced by the skill, not a package doc.
-
-   `get-default-activity-xaml` only emits a structural scaffold — it does NOT document text encoding, enum values, property semantics, or required scopes. The `.md` doc is authoritative for per-activity behavior. **Apply any encoding/format rules from the doc when constructing the activity XAML** — do NOT rely on prior-training memory for text-encoding or attribute formats.
-
-3. **Read the attachment guide** at `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`. It is authoritative for the IdRef contract, the Fast Path link commands, and the embedded-snippet fallback. Apply it exactly when attaching targets — do NOT rely on prior-training memory.
-
-## Action list — implement in this EXACT order
-
-Insert the following activities IMMEDIATELY BEFORE the closing `</Sequence>` tag of the inner `<Sequence DisplayName="Do">`. Do NOT modify any content before the insertion point. Each new activity carries a unique `sap2010:WorkflowViewState.IdRef` assigned per the IdRef contract in the attachment guide you read in step 3, and has NO `.Target` / `.SearchedElement.Target` child — attachment happens after insertion.
-
-<ACTION_LIST>
-
-Each action has fields: `display_name`, `type` (NClick | NTypeInto | NSelectItem | ...), and either `reference_id` (for UI activities) with optional `text` (for NTypeInto) and optional `target_property` (for activities whose target is not at `.Target`, e.g., `SearchedElement.Target`), or `duration_seconds` (for Delay).
-
-Build each activity's XAML from the template you retrieved in step 1 and the behavior rules from the doc you read in step 2. Assign `sap2010:WorkflowViewState.IdRef` per the IdRef contract in the attachment guide (step 3). Do NOT invent attribute names or structural shapes from prior-training memory — the template and doc are authoritative.
-
-## Attach targets
-
-For every action with a `reference_id`, follow the attachment guide you read in step 3 to attach the OR reference to the IdRef you assigned. Pass `target_property` when the action specifies one.
-
-## Validation
-
-After attachment (and any fallback embedding):
-```bash
-uip rpa get-errors --file-path "<OUTPUT_XAML_PATH>" --project-dir "<PROJECT_DIR>" --output json```
-Fix on error, max 3 attempts.
-
-## Placeholders
-
-| Placeholder | Value |
-|---|---|
-| <OUTPUT_XAML_PATH> | <fill in> |
-| <RELATIVE_XAML_PATH> | <OUTPUT_XAML_PATH> relative to <PROJECT_DIR> |
-| <PROJECT_DIR> | <fill in> |
-| <EXPRESSION_LANGUAGE> | CSharp or VB |
-| <ACTIVITY_CLASS_LIST> | comma-separated fully-qualified activity class names |
-| <ACTION_LIST> | JSON or YAML list — see [Action List Format](#action-list-format) |
-"""
-)
-```
 
 ## Action List Format
 
@@ -392,7 +246,7 @@ Minimum fields per entry:
 - For `NTypeInto`: optional `text` — the text to type.
 - For `Delay`: `duration_seconds` instead of `reference_id`.
 
-The agent assigns `sap2010:WorkflowViewState.IdRef` per the contract in the Screen Activity Agent Template — the orchestrator does NOT specify IdRefs in the action list.
+The agent assigns `sap2010:WorkflowViewState.IdRef` per the contract in the attachment guide (read by the agent) — the orchestrator does NOT specify IdRefs in the action list.
 
 ## Task Structure
 
@@ -405,9 +259,18 @@ configure_task = TaskCreate(
 )
 write_task = TaskCreate(
   subject: f"Write-{screen_name}",
-  description: f"Insert activities for {screen_name} into {xaml_filename}"
+  description: (
+    f"Create XAML and insert activities for {screen_name} into {xaml_filename}"
+    if screen_index == 1 else
+    f"Insert activities for {screen_name} into {xaml_filename}"
+  )
 )
-TaskUpdate(write_task.id, addBlockedBy: [configure_task.id, previous_write_task.id])
+# Screen 1: write blockedBy Configure-1 only (no previous Write task).
+# Screen N > 1: write blockedBy Configure-N + Write-<N-1>.
+if screen_index == 1:
+  TaskUpdate(write_task.id, addBlockedBy: [configure_task.id])
+else:
+  TaskUpdate(write_task.id, addBlockedBy: [configure_task.id, previous_write_task.id])
 
 # Main conv: do configure work
 TaskUpdate(configure_task.id, status: "in_progress")
@@ -415,15 +278,16 @@ TaskUpdate(configure_task.id, status: "in_progress")
 TaskUpdate(configure_task.id, status: "completed")
 
 # Before spawning write agent: verify predecessor (Waiting for Background Agents, rule 1)
-predecessor = TaskGet(previous_write_task.id)
-if predecessor.status != "completed":
-  raise "Pipeline violation: cannot spawn Write-<N> while Write-<N-1> is in_progress"
+if screen_index > 1:
+  predecessor = TaskGet(previous_write_task.id)
+  if predecessor.status != "completed":
+    raise "Pipeline violation: cannot spawn Write-<N> while Write-<N-1> is in_progress"
 
 TaskUpdate(write_task.id, status: "in_progress")
-Agent(run_in_background: true, ...)
+Agent(run_in_background: true, ...)   # create-mode inputs for N==1, append-mode inputs for N>1
 
 # On <task-notification> arrival for this agent (Waiting for Background Agents, rule 3):
 TaskUpdate(write_task.id, status: "completed")
 ```
 
-The scaffolding case is special: `Write-Scaffold` blockedBy `Configure-<Screen 1>` only. `Write-<Screen 1>` blockedBy `Write-Scaffold` AND `Configure-<Screen 1>`.
+Screen 1's write task runs the agent in create-mode; subsequent screens run in append-mode. The agent derives the mode from which inputs are set — no mode flag in the pipeline.

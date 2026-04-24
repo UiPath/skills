@@ -16,7 +16,7 @@ After registering an element in the Object Repository, you often need to interac
 
 Use `uia interact` when the UIA snapshot is already loaded (for example, immediately after a `uia-configure-target` capture of the current screen), so the `eN` refs are still valid.
 
-Command syntax and caveats: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` § Interact.
+Command syntax and caveats (no --folder-path for interact commands): `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md` § Interact.
 
 ### Fallback: `servo`
 
@@ -41,6 +41,6 @@ For XAML workflows that span multiple screens, use the parallel authoring pipeli
 
 Single-screen workflows skip the pipeline: build the full workflow in one pass using all the collected OR references.
 
-See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for the full pipeline (scaffolding agent, chained screen agents, OR reference handoff, task structure, and prompt templates).
+See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for the full pipeline (chained write agents, OR reference handoff, task structure, and prompt template pointer).
 
 See also: [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the `uia-configure-target` skill policy and indication fallback routing.
