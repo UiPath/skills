@@ -2,9 +2,19 @@
 
 These six behaviors are consistent across every service and have specifically burned real code. They produce silent wrong results, not loud errors. This file is the **dashboard-specific gotcha layer** — method signatures and filter-field catalogs live in the SDK's `https://uipath.github.io/uipath-typescript/llms-full-content.txt`, not here.
 
-## 1. Pagination is cursor-based and manual
+## 1. Pagination is cursor-based and manual (with PER-SERVICE caps)
 
-`service.getAll()` with no pagination options returns **one page** (capped at 1000 items by UiPath). It does NOT auto-paginate. For the full set:
+`service.getAll()` with no pagination options returns **one page**. It does NOT auto-paginate. And the per-page cap is NOT universal — three families with different limits:
+
+| Service family | Services | Max `pageSize` | Error on violation |
+|---|---|---|---|
+| Orchestrator OData | Jobs, Tasks, Releases/Processes, Assets, Queues, Buckets | **1000** | — |
+| pims | CaseInstances, ProcessInstances | **500** | `PIMS-100048: pageSize must be less than or equal to 500` |
+| autopilot | Conversations (param is named `limit`, NOT `pageSize`) | **100** | `Number must be less than or equal to 100` |
+
+Hitting a pims or autopilot service with `pageSize: 1000` returns 400 with the error strings above. Use `PAGE_SIZE.pims` / `PAGE_SIZE.autopilot` from `src/lib/queries/_shared.ts` explicitly for those — `fetchAllPims()` already bakes in the 500 default.
+
+For the full set (still cursor-based):
 
 ```ts
 async function fetchAll<T>(call: (args: any) => Promise<any>, args: Record<string, unknown> = {}) {
@@ -52,6 +62,25 @@ jobs.getAll({ filter: "packageType eq 'Agent'" });
 ```
 
 Every service has a similar rename table. When in doubt, inspect `node_modules/@uipath/uipath-typescript/dist/<service>/index.mjs` and search for a `Map` constant (e.g., `const JobMap = { ... }`).
+
+### Filterable ≠ projected
+
+Some fields appear on the *response row* but are NOT accepted as OData `$filter` predicates. The OData schema exposes a subset of server-side fields for filtering that's narrower than the projected row.
+
+**Releases (Processes):** `packageType` is projected but NOT filterable.
+```ts
+// ❌ 400 Bad Request — PackageType isn't filterable on ReleaseDto
+processes.getAll({ filter: "PackageType eq 'Agent'" });
+
+// ✅ paginate all releases, filter client-side
+import { filterAgentsClientSide } from '@/lib/queries/_shared';
+const all = await fetchAllPaginated(processes.getAll.bind(processes));
+const agents = filterAgentsClientSide(all);
+```
+
+Helpers ship in `_shared.ts`: `filterAgentsClientSide()`, `filterProcessesClientSide()`.
+
+When a filter returns 400, first suspect "field projected but not filterable" before assuming a syntax error. Grep the SDK's `.d.ts` types for `Filterable` properties or inspect the OData `$metadata` endpoint.
 
 ## 3. Folder scoping
 

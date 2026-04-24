@@ -53,6 +53,7 @@ Overwrite? (y/n)
 2. Apply targeted edit (e.g., change time window constant, filter).
 3. Diff check — confirm if touching hand-edited lines.
 4. Write.
+5. **Verify the write physically landed.** Immediately read the file back (or grep for the exact string you just wrote). Do NOT trust the tool's "updated successfully" message alone — there are reproducible cases where an `Edit` retry after a "File has not been read" error reports success but leaves the file unchanged. Silent no-ops here cause hidden regressions (e.g., a `pageSize: 1000` retry that's actually still 500 in the file). This is a cheap one-line discipline that costs nothing on the happy path and catches catastrophic drift on the failure path.
 
 ## Remove-widget recipe
 1. Delete widget file.

@@ -22,6 +22,26 @@ import { Jobs } from '@uipath/uipath-typescript/jobs';
 export const jobsService = (sdk: UiPath) => new Jobs(sdk as never);
 
 // ───────────────────────────────────────────────────────────────────────────
+// Per-service pagination caps — NOT universal
+// ───────────────────────────────────────────────────────────────────────────
+// invariants.md §1 previously claimed "1000 is the universal OData max". It
+// isn't. Per-service caps, with errors on violation:
+//
+//   Orchestrator OData (Jobs, Tasks, Releases, Assets, Queues, Buckets) → 1000
+//   pims (CaseInstances, ProcessInstances)                              → 500
+//     error on violation: "PIMS-100048: pageSize must be less than or equal to 500"
+//   autopilot (Conversations) → 100  (and param is named `limit`, not `pageSize`)
+//     error on violation: "Number must be less than or equal to 100"
+//
+// fetchAll / fetchAllPaginated default to 1000 — callers targeting pims/autopilot
+// MUST pass the per-service cap explicitly.
+export const PAGE_SIZE = {
+  orchestrator: 1000,
+  pims: 500,
+  autopilot: 100,
+} as const;
+
+// ───────────────────────────────────────────────────────────────────────────
 // Pagination — cursor-based, dedup-by-id (see sdk/invariants.md §1, §5)
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -39,12 +59,13 @@ export async function fetchAll<T extends { id?: string | number }>(
   service: ServiceLike<T>,
   args: Record<string, unknown> = {},
   maxPages = 50,
+  pageSize: number = PAGE_SIZE.orchestrator,
 ): Promise<T[]> {
   const seen = new Set<string>();
   const out: T[] = [];
   let cursor: { value: string } | undefined;
   for (let page = 0; page < maxPages; page++) {
-    const resp = await service.getAll(cursor ? { cursor } : { ...args, pageSize: 1000 });
+    const resp = await service.getAll(cursor ? { cursor } : { ...args, pageSize });
     const batch = resp.items ?? [];
     for (const row of batch) {
       const k = String(row.id ?? JSON.stringify(row));
@@ -61,7 +82,27 @@ export async function fetchAll<T extends { id?: string | number }>(
 export const fetchAllJobs = (
   jobs: ReturnType<typeof jobsService>,
   filter: string,
-) => fetchAll(jobs as never, { filter });
+) => fetchAll(jobs as never, { filter }, 50, PAGE_SIZE.orchestrator);
+
+/** For pims services (CaseInstances, ProcessInstances). 500-row cap. */
+export const fetchAllPims = <T extends { id?: string | number }>(
+  service: ServiceLike<T>,
+  args: Record<string, unknown> = {},
+) => fetchAll(service, args, 50, PAGE_SIZE.pims);
+
+/**
+ * For services that return a plain T[] with no pagination at all
+ * (MaestroProcesses.getAll, ProcessIncidents.getAll, Cases.getAll — case
+ * DEFINITIONS, not instances). Attempting cursor pagination against them
+ * yields weird coercion bugs; use this fetcher instead.
+ */
+export async function fetchPlainArray<T>(
+  getAll: () => Promise<T[] | Paginated<T>>,
+): Promise<T[]> {
+  const resp = await getAll();
+  if (Array.isArray(resp)) return resp;
+  return resp.items ?? [];
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Job state predicates
@@ -231,6 +272,45 @@ export const jobDurationMs = (job: Job): number | null => {
 // ───────────────────────────────────────────────────────────────────────────
 // SDK error normalization (CRITICAL — never render raw jobError as React child)
 // ───────────────────────────────────────────────────────────────────────────
+
+// ───────────────────────────────────────────────────────────────────────────
+// Task SLA
+// ───────────────────────────────────────────────────────────────────────────
+// Reality: Tasks don't have a `dueDate` field on the raw response. SLA info
+// lives in `taskSlaDetail: { status, dueTime }` with `status` as one of:
+//
+//   'Overdue'          — past dueTime
+//   'OverdueSoon'      — within a tenant-configured window before dueTime
+//   'OverdueLater'     — further out than the 'OverdueSoon' window
+//   'CompletedInTime'  — closed before dueTime
+//
+// Callers that want a 4-way SLA bucket for KPIs / tables use this helper
+// rather than reading `task.dueDate` (which does not exist).
+
+type TaskSlaStatus = 'Overdue' | 'OverdueSoon' | 'OverdueLater' | 'CompletedInTime' | 'Unknown';
+
+type TaskShape = {
+  taskSlaDetail?: { status?: string; dueTime?: string };
+};
+
+export function taskSlaStatusOf(task: TaskShape): TaskSlaStatus {
+  const s = task.taskSlaDetail?.status;
+  if (s === 'Overdue' || s === 'OverdueSoon' || s === 'OverdueLater' || s === 'CompletedInTime') return s;
+  return 'Unknown';
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Process / Release filtering — client-side for packageType (NOT filterable via OData)
+// ───────────────────────────────────────────────────────────────────────────
+// Releases expose `packageType` on the projected row but NOT as a filterable
+// OData property. `processes.getAll({ filter: "PackageType eq 'Agent'" })`
+// returns 400. Paginate everything, filter in memory.
+
+export const filterAgentsClientSide = <T extends { packageType?: string }>(rows: T[]) =>
+  rows.filter((r) => r.packageType === 'Agent');
+
+export const filterProcessesClientSide = <T extends { packageType?: string }>(rows: T[]) =>
+  rows.filter((r) => r.packageType === 'Process');
 
 type JobErrorShape = {
   code?: string;

@@ -4,6 +4,42 @@ When deriving metrics, the agent must know how each SDK service *thinks*. This f
 
 This is the knowledge an expert human dashboards engineer would have. We encode it here so the generator reasons at that level.
 
+## Service base URLs (for debugging and raw HTTP fallback)
+
+| Service | Base path | Canonical `getAll` endpoint |
+|---|---|---|
+| Orchestrator (Jobs / Tasks / Assets / Queues / Buckets / Processes-Releases) | `orchestrator_/odata/` | `<Entity>` or `<Entity>/UiPath.Server.Configuration.OData.Get<Entity>AcrossFolders` |
+| pims — CaseInstances | `pims_/api/v1/` | `instances?processType=CaseManagement` |
+| pims — ProcessInstances | `pims_/api/v1/` | `instances?processType=ProcessManagement` |
+| pims — ProcessIncidents | `pims_/api/v1/` | `incidents/summary` *(not `/incidents`; that returns 405)* |
+| autopilot — Conversations | `autopilotforeveryone_/api/v1/` | `conversation` |
+| Data Service — Entities | `dataservice_/api/data/v1/` | `entities` |
+| Conversational Agent traces | `agents_/api/v1/` | `conversations` *(distinct from autopilot)* |
+
+When a widget breaks with 404/405, first move is to verify the base path. Grep `node_modules/@uipath/uipath-typescript/dist/<service>/index.mjs` for template strings like `` `${PIMS_BASE}/api/v1/incidents/summary` `` — the real paths are always visible there.
+
+## Paginated vs non-paginated services
+
+Default to `fetchAllPaginated()` for Orchestrator OData (cursor-based with dedup-by-id). Exceptions:
+
+| Service | Shape | Helper |
+|---|---|---|
+| `MaestroProcesses.getAll()` | returns `T[]` directly (no cursor) | `fetchPlainArray()` |
+| `ProcessIncidents.getAll()` | returns `T[]` directly | `fetchPlainArray()` |
+| `Cases.getAll()` (case *definitions*) | returns `T[]` directly | `fetchPlainArray()` |
+| `CaseInstances.getAll()` (case *instances*) | paginated, 500-row cap | `fetchAllPims()` |
+| `ProcessInstances.getAll()` | paginated, 500-row cap | `fetchAllPims()` |
+
+Using the cursor-based paginator against `MaestroProcesses` / `ProcessIncidents` / `Cases` causes coercion bugs — it tries to iterate a plain array as if it were a `{items, nextCursor}` envelope.
+
+**Shared backing storage:** `CaseInstances` and `ProcessInstances` hit the same `/pims_/api/v1/instances` endpoint with different `processType` query params. A dashboard querying both hits the same endpoint twice (different filters). The 500-row cap is shared — a dashboard with both services querying in parallel can still each get 500 rows, but they compete for the same backend.
+
+## Folder-scoped services and the across-folders fallback
+
+Orchestrator services that are traditionally folder-scoped (Buckets, Assets, Tasks, Queues, Jobs) raise `"A folder is required for this action."` when hit raw without a folder header. The SDK's `<service>.getAll()` without a `folderId` auto-routes to the `Get<Entity>AcrossFolders` OData action instead — which returns data the caller's token can see across all folders.
+
+If you're debugging a widget and looking at the network tab, the URL you see may be `/orchestrator_/odata/Buckets/UiPath.Server.Configuration.OData.GetBucketsAcrossFolders` rather than `/odata/Buckets`. Both are the SDK's behavior; don't assume a 200 at one means the other works.
+
 ## Per-service mental model
 
 ### Jobs (`@uipath/uipath-typescript/jobs`)
@@ -16,7 +52,14 @@ This is the knowledge an expert human dashboards engineer would have. We encode 
 - `id` → job GUID
 - `processName` → what ran
 - `packageType` → `Process` vs `Agent` (how to tell robot from agent)
-- `state` → `Running`, `Pending`, `Faulted`, `Successful`, `Stopped`, etc.
+- `state` → canonical enum set:
+  - `Running` — currently executing
+  - `Pending` — queued, not yet started
+  - `Successful` — completed without error (this is the "all-good" terminal state)
+  - `Faulted` — runtime error (the strict fault signal)
+  - `Stopped` — human-aborted before completion
+  - `Suspended` — paused mid-run; expected to resume
+  - Less common: `Killed`, `Cancelled`, `Terminated`, `Abandoned` — tenant-specific; grep `node_modules/@uipath/uipath-typescript/dist/jobs/` for the full set
 - `startTime` / `endTime` → duration = `endTime - startTime`
 - `createdTime` → when it was queued
 - `folderName` → which folder scope
@@ -75,13 +118,19 @@ This is the knowledge an expert human dashboards engineer would have. We encode 
 - `assignedToUser.name` → who owns it
 - `creationTime` / `lastAssignedTime` / `completionTime`
 - `taskDefinitionName` → type of task
-- `dueDate` → SLA target
+- `taskSlaDetail` → **SLA status lives here, NOT on a `dueDate` field** (the raw response has no `dueDate`):
+  ```ts
+  taskSlaDetail?: {
+    status?: 'Overdue' | 'OverdueSoon' | 'OverdueLater' | 'CompletedInTime';
+    dueTime?: string;  // ISO timestamp
+  }
+  ```
 
-**Time axis:** yes — creation, assignment, completion, dueDate.
+**Time axis:** yes — creation, assignment, completion, and `taskSlaDetail.dueTime`.
 
-**Derived: SLA risk** = `dueDate - now()`. Negative = breached.
+**Derived: SLA status** — use `taskSlaStatusOf(task)` from `_shared.ts`. Returns one of `Overdue | OverdueSoon | OverdueLater | CompletedInTime | Unknown`. Never compute `dueDate - now()` directly — the `dueDate` field doesn't exist on the raw response; the SLA status is already bucketed server-side.
 
-**What this service is GOOD for:** backlog, SLA health, completion rate, per-assignee load.
+**What this service is GOOD for:** backlog, SLA health via `taskSlaStatusOf`, completion rate, per-assignee load.
 
 ---
 
@@ -152,15 +201,33 @@ This is the knowledge an expert human dashboards engineer would have. We encode 
 **Three rows:** `MaestroProcess` (definition), `ProcessInstance` (running long-lived), `ProcessIncident` (issue).
 
 **Semantic columns (ProcessInstance):**
-- `instanceId`, `status`, `stage`, `folderKey` (GUID)
+- `instanceId`, `folderKey` (GUID)
+- `latestRunStatus` → status enum. Observed values: `'Running'`, `'Completed'`, `'Faulted'`, `'Paused'`, `'Cancelled'`. Use `.toLowerCase()` if comparing — SDK's casing is inconsistent across tenants.
 - `startTime`, `endTime`, duration for completed
+- NO `stage` field on the raw response. Stage information has to be derived from `getStages()` / `getExecutionHistory()` for a specific instance.
+
+**Semantic columns (CaseInstance):**
+- `instanceId`, `caseAppKey`, `folderKey`
+- `latestRunStatus` → same enum as ProcessInstance. For case pipeline KPIs, map `.toLowerCase().includes('…')` → `Open` | `Paused` | `Closed`:
+  - `running` / `inprogress` / `pending` → Open
+  - `paused` / `suspended` → Paused
+  - `completed` / `closed` / `cancelled` / `faulted` → Closed
+- `openTime` / `closedTime`
 
 **Semantic columns (ProcessIncident):**
-- `elementId` (which BPMN element flagged)
-- `incidentType`, `severity`, `status`
-- `createdTime`
+Actual raw response shape (`ProcessIncidentGetAllResponse`):
+```ts
+{
+  count: number;
+  errorMessage: string;
+  errorCode: string;
+  firstOccuranceTime: string;  // ISO
+  processKey: string;
+}
+```
+Previous drafts of this doc claimed a `severity` field — it does NOT exist. Group-by for severity-like breakdowns uses `errorCode` (or derive a severity classifier from the `errorCode` prefix at widget-generation time; document the classification in the widget's description).
 
-**What this service is GOOD for:** long-running orchestration monitoring, incident boards, BPMN overlays.
+**What this service is GOOD for:** long-running orchestration monitoring, incident boards, BPMN overlays. NOT for severity-first dashboards unless you map `errorCode → severity` yourself.
 
 ---
 
@@ -185,6 +252,11 @@ This is the knowledge an expert human dashboards engineer would have. We encode 
 **What this service is GOOD for:** conversation volume, feedback distribution, tool usage, per-agent activity.
 
 **Gotcha:** UI-initiated agent runs may not appear via this SDK — they appear in Jobs. For "agent runs" prefer Jobs filtered by `ProcessType eq 'Agent'`.
+
+**Silent-failure trap (scope):** if the user's PAT doesn't include `ConversationalAgents Traces.Api` scope, the endpoint may return `{data: []}` or a 302 redirect instead of a 403. Widgets then show "No conversations on record." indistinguishable from a legitimately empty tenant. When generating Conversation widgets:
+1. Log the expected scope to console at hook init so developers can diagnose from DevTools.
+2. Mirror the scope requirement into the generated `SECURITY.md`: *"Conversation widgets need the `ConversationalAgents Traces.Api` scope. Standard Orchestrator PATs do NOT include it — generate a scoped PAT from the conversational-agent portal."*
+3. If possible, add a lightweight scope-probe at mount that hits a trivial endpoint and logs "scope missing" on 4xx/redirect.
 
 ---
 
