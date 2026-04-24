@@ -4,9 +4,10 @@ description: >
   urgency-keyword script → VIP-domain script → Decision → branches that
   send Slack DMs + Outlook reply (VIP path) or generate a mock support
   ticket + Outlook reply (standard path). Scoped to static validation
-  only — trigger-fired execution is not reliably testable against the
-  shared Outlook connection (see skills repo outlook_trigger_inbox task
-  notes).
+  plus structural node-graph checks — trigger-fired execution is not
+  reliably testable against the shared Outlook connection (see
+  outlook_trigger_inbox task notes), and the flow has real side effects
+  (Slack DMs, outbound Outlook replies) that shouldn't run in CI.
 tags: [flow, flow-json, generate, connector, multi-step, trigger]
 
 agent:
@@ -59,7 +60,48 @@ success_criteria:
     command: "uip maestro flow validate CustomerEscalation/CustomerEscalation/CustomerEscalation.flow"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Structural: node graph shape ──────────────────────────────────────
+  - type: run_command
+    description: "Flow has an Outlook email-received trigger node"
+    command: "python3 $TASK_DIR/check_customer_escalation.py check_trigger"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two script nodes sit between trigger and decision (urgency + VIP lookup)"
+    command: "python3 $TASK_DIR/check_customer_escalation.py check_pre_decision"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one decision node with two outgoing edges"
+    command: "python3 $TASK_DIR/check_customer_escalation.py check_decision_fanout"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VIP branch has >=2 Slack send-message nodes and >=1 Outlook action node"
+    command: "python3 $TASK_DIR/check_customer_escalation.py check_vip_branch"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Standard branch has >=1 script node (ticket gen) and >=1 Outlook action node"
+    command: "python3 $TASK_DIR/check_customer_escalation.py check_standard_branch"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 max_iterations: 1
