@@ -29,13 +29,13 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 2. **Always run `uip maestro case registry pull` before planning** — caches the registry at `~/.uipcli/case-resources/` so all subsequent discovery is local.
 3. **Registry discovery is direct cache-file inspection, not CLI search.** `uip maestro case registry search` has known gaps (especially for action-apps). Read the `<type>-index.json` files directly. See [references/registry-discovery.md](references/registry-discovery.md).
 4. **Always use `--output json`** on every `uip maestro case` read command whose output is parsed programmatically.
-5. **Follow the plugin for every node type.** Every task, trigger, and condition variant has its own plugin under `references/plugins/`. Open the matching `planning.md` during planning and the appropriate execution doc — `impl-cli.md` for CLI-strategy plugins, `impl-json.md` for JSON-strategy plugins (check the matrix in [`references/case-editing-operations.md`](references/case-editing-operations.md)). Do not guess CLI flags or JSON shapes from memory.
+5. **Follow the plugin for every node type.** Every task, trigger, and condition variant has its own plugin under `references/plugins/`. Open the matching `planning.md` during planning and `impl-json.md` during execution. Do not guess JSON shapes from memory.
 6. **`tasks.md` entries are declarative.** No `uip` CLI commands inside `tasks.md`. Each entry is parameters, IDs, and metadata only. The execution phase translates specs into CLI calls.
 7. **One T-entry per sdd.md declaration — no omissions.** Every stage, edge, task, trigger, condition, and SLA rule declared in `sdd.md` gets its own T-numbered entry, even when the declared value looks like a "default" (e.g., condition rule-type `current-stage-entered` / `case-entered`, stage-exit type `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`). Never group multiple items under one T-number. Never skip a declaration on the grounds that "the default behavior would already cover it" — if `sdd.md` wrote it down, `tasks.md` must emit a T-task for it.
 8. **Always regenerate `tasks.md` from scratch** — never do incremental updates. Avoids stale state from previous runs.
 9. **HARD STOP before execution.** After generating `tasks.md`, present it to the user and require explicit approval via **AskUserQuestion** (`Approve and proceed` / `Request changes`). Do not execute until approved.
 10. **After approval, re-read `tasks.md` before executing.** `tasks.md` is the complete handoff artifact — all IDs, inputs, outputs, and references are captured there.
-11. **Unresolved task resources produce skeleton tasks — never mock, never fabricate.** Keep the `<UNRESOLVED: ...>` marker on the `taskTypeId` / `type-id` / `connection-id` slot in `tasks.md`, and omit `inputs:` / `outputs:` from that task entry. At execution time, the task is created in `caseplan.json` with `--type` + `--display-name` only (skeleton task) — no task-type-id, no connection-id, no variable bindings. Task-entry conditions and `selected-tasks-completed` rules still reference the skeleton's `TaskId`, so the workflow structure stays reviewable. The user attaches the real resource + bindings externally before runtime. See [references/skeleton-tasks.md](references/skeleton-tasks.md). Never fabricate a task-type-id or connection-id to "fill the gap".
+11. **Unresolved task resources produce skeleton tasks — never mock, never fabricate.** Keep the `<UNRESOLVED: ...>` marker on the `taskTypeId` / `type-id` / `connection-id` slot in `tasks.md`, and omit `inputs:` / `outputs:` from that task entry. At execution time, the task is written as a skeleton node in `caseplan.json` — structural fields only, no task-type-id, no connection-id, no variable bindings. Task-entry conditions and `selected-tasks-completed` rules still reference the skeleton's `TaskId`, so the workflow structure stays reviewable. The user attaches the real resource + bindings externally before runtime. See [references/skeleton-tasks.md](references/skeleton-tasks.md) for exact JSON shape. Never fabricate a task-type-id or connection-id to "fill the gap".
 12. **Persist every registry resolution to `registry-resolved.json`** with full detail: search query, all matched results, selected result, rationale. This is the debug audit trail.
 13. **Cross-task references** use `"Stage Name"."Task Name".output_name` in planning and resolve to `=vars.<outputVarId>` at execution time by reading the source output's `var` field from caseplan.json. Every ref must point to a task already in `tasks.md` order. Discover output names via `uip maestro case tasks describe` — do not fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [references/plugins/variables/io-binding/impl-json.md](references/plugins/variables/io-binding/impl-json.md).
 14. **Expression prefixes are fixed:** `=metadata.`, `=js:`, `=vars.`, `=datafabric.`, `=bindings.`, `=orchestrator.JobAttachments`, `=response`, `=result`, `=Error`, `=jsonString:`. Plain strings without a prefix are literals, not expressions.
@@ -43,14 +43,13 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 16. **Enrichable non-connector task types** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`) pass `--task-type-id` on `tasks add` to auto-populate inputs/outputs. Connector variants use `tasks add-connector` with `--type-id` + `--connection-id` instead.
 17. **Every stage needs at least one inbound edge** or it will be orphaned. The Trigger node created automatically by `cases add` is the entry point for all single-trigger cases.
 18. **One task per lane (UI layout only).** Pass `--lane <n>` on every `tasks add` / `tasks add-connector`, incrementing `n` per task within a stage. Lane is a rendering coordinate for the FE — it does not affect execution. Parallelism and sequencing are controlled entirely by task-entry conditions.
-19. **User questions use AskUserQuestion with a "Something else" escape hatch.** Whenever a decision has finite enumerable choices (≤5), present a dropdown with those options AND "Something else" as the last option. For open-ended inputs (e.g., `--every 1h` vs `2h` vs `1d`), use a direct prompt. Never force a false choice. **Exception:** the Phase 2a→2b hard stop (Rule #26) is a strict gate — its prompts (`Publish for review` / `Skip publish and continue` / `Abort`, and `Continue to phase 2b` / `Abort`) use a closed option set with no escape hatch. The equivalent of "Something else" at that boundary is `Abort` followed by manual edits to `caseplan.json`.
+19. **User questions use AskUserQuestion with a "Something else" escape hatch.** Whenever a decision has finite enumerable choices (≤5), present a dropdown with those options AND "Something else" as the last option. For open-ended inputs (e.g., `1h` vs `2h` vs `1d`), use a direct prompt. Never force a false choice. **Exception:** the Phase 2a→2b hard stop (Rule #25) is a strict gate — its prompts (`Publish for review` / `Skip publish and continue` / `Abort`, and `Continue to phase 2b` / `Abort`) use a closed option set with no escape hatch. The equivalent of "Something else" at that boundary is `Abort` followed by manual edits to `caseplan.json`.
 20. **Validate after build, not during.** Run `uip maestro case validate` only after all stages, edges, tasks, conditions, and SLA are added. Intermediate states are expected to be invalid. Retry up to 3× on failure; on the 3rd failure, halt and ask the user with options: `Retry with fix` / `Pause for manual edit` / `Abort`.
 21. **Never run `uip maestro case debug` automatically** — it executes the case for real (sends emails, posts messages, calls APIs). Only run on explicit user consent.
 22. **Edit `content/*.json` only** — `content/*.bpmn` is auto-generated and will be overwritten.
 23. **Execute CLI commands sequentially.** No parallel execution — each command may depend on IDs returned by the previous one.
-24. **One T-entry per Read → modify → Write cycle.** For JSON-strategy plugins, apply each T-entry incrementally: Read `caseplan.json`, mutate for that single T-entry, Write back, then re-Read for the next T-entry. Do NOT compose a large in-memory JSON covering multiple stages/edges/tasks/conditions and flush once — that hides intermediate state, inflates diffs, breaks review, and loses rollback granularity. Batched single-file writes are allowed only within a single T-entry's own mutation (e.g., one stage node + its required render fields).
-25. **Check the plugin migration matrix before every plugin's execution.** [`references/case-editing-operations.md`](references/case-editing-operations.md) declares per plugin whether to use the `uip maestro case` CLI or direct JSON edits. Default is CLI; migrated plugins opt in to JSON. When a plugin is on the JSON strategy, follow its `impl-json.md` + [`references/case-editing-operations-json.md`](references/case-editing-operations-json.md) instead of the CLI command. Mixing strategies in the same run is expected during the migration.
-26. **HARD STOP between Phase 2a (skeleton) and Phase 2b (detail) — unconditional.** After Phase 2a builds the structural skeleton, run regular `uip maestro case validate` (no `--mode` flag) for informational output only — do NOT halt on errors/warnings. Phase 2a state is expected to be invalid: unbound required input values, missing condition rules, missing SLA. Surface counts in the hard-stop summary; the user decides whether to proceed. Then present the hard-stop **AskUserQuestion** prompt. This prompt is MANDATORY every run — never skip it for auto mode, non-interactive mode, upfront user consent, or implied prior approval. If the harness forbids interactive prompts, halt with a clear error instead of proceeding — silent skip is a bug. Phase 2a does NOT bind task input values, does NOT call `is resources describe` for connector tasks, does NOT write conditions, and does NOT write SLA — all deferred to Phase 2b. Phase 2b must re-read `tasks.md` AND `caseplan.json` before mutating. Full contract (prompt options, summary content, publish branch, abort cleanup, re-entry protocol) in [`references/phased-execution.md`](references/phased-execution.md).
+24. **Never create `caseplan.json` in one shot — mutate incrementally, one category per Read → modify → Write cycle.** Categories: stages, edges, triggers, tasks, conditions (per scope), SLA, variables. One cycle per category — Read, apply every T-entry in that category, Write, re-Read before the next category. Do NOT compose a monolithic in-memory JSON covering multiple categories and flush once — that hides intermediate state and breaks per-category rollback. **Prefer the `Edit` tool over Read+Write** when a mutation is a narrowly-scoped, unambiguous single-field change (e.g., binding a task input `value` in Phase 2b) — Edit's tool-call shows the exact diff and avoids the full-file Read cost. Use Read+Write when the mutation is structural (new node, new edge, new condition array) or when Edit's `old_string` can't be made unique.
+25. **HARD STOP between Phase 2a (skeleton) and Phase 2b (detail) — unconditional.** After Phase 2a builds the structural skeleton, run regular `uip maestro case validate` (no `--mode` flag) for informational output only — do NOT halt on errors/warnings. Phase 2a state is expected to be invalid: unbound required input values, missing condition rules, missing SLA. Surface counts in the hard-stop summary; the user decides whether to proceed. Then present the hard-stop **AskUserQuestion** prompt. This prompt is MANDATORY every run — never skip it for auto mode, non-interactive mode, upfront user consent, or implied prior approval. If the harness forbids interactive prompts, halt with a clear error instead of proceeding — silent skip is a bug. Phase 2a does NOT bind task input values, does NOT call `is resources describe` for connector tasks, does NOT write conditions, and does NOT write SLA — all deferred to Phase 2b. Phase 2b must re-read `tasks.md` AND `caseplan.json` before mutating. Full contract (prompt options, summary content, publish branch, abort cleanup, re-entry protocol) in [`references/phased-execution.md`](references/phased-execution.md).
 
 ## Workflow
 
@@ -176,24 +175,22 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 | **Plan tasks from sdd.md** | [references/planning.md](references/planning.md) |
 | **Execute tasks.md into a case** | [references/implementation.md](references/implementation.md) |
 | **Phase 2a / 2b split + hard stop contract** | [references/phased-execution.md](references/phased-execution.md) |
-| **Know which strategy (CLI vs JSON) per plugin** | [references/case-editing-operations.md](references/case-editing-operations.md) |
-| **Edit caseplan.json directly (JSON strategy)** | [references/case-editing-operations-json.md](references/case-editing-operations-json.md) |
-| **Run mutations via CLI (CLI strategy)** | [references/case-editing-operations-cli.md](references/case-editing-operations-cli.md) |
+| **Edit caseplan.json (cross-cutting mechanics)** | [references/caseplan-editing.md](references/caseplan-editing.md) |
 | **Understand the case JSON schema** | [references/case-schema.md](references/case-schema.md) |
 | **Know all CLI flags** | [references/case-commands.md](references/case-commands.md) |
 | **Resolve task types from registry** | [references/registry-discovery.md](references/registry-discovery.md) |
 | **Wire inputs/outputs and cross-task refs** | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | **Configure a connector activity / trigger / event** | [references/connector-integration.md](references/connector-integration.md) |
 | **Handle unresolved resources (skeleton tasks)** | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
-| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-json.md`](references/plugins/case/impl-json.md) (migrated) / [`impl-cli.md`](references/plugins/case/impl-cli.md) (fallback) |
-| **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + [`impl-json.md`](references/plugins/stages/impl-json.md) (pilot) / [`impl-cli.md`](references/plugins/stages/impl-cli.md) (fallback) |
-| **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-json.md`](references/plugins/edges/impl-json.md) (JSON strategy) / [`impl-cli.md`](references/plugins/edges/impl-cli.md) (fallback) |
-| **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-json.md`](references/plugins/sla/impl-json.md) (primary) / [`impl-cli.md`](references/plugins/sla/impl-cli.md) (fallback) |
+| **Create the root case (T01)** | [references/plugins/case/planning.md](references/plugins/case/planning.md) + [`impl-json.md`](references/plugins/case/impl-json.md) |
+| **Create a stage (regular or exception)** | [references/plugins/stages/planning.md](references/plugins/stages/planning.md) + [`impl-json.md`](references/plugins/stages/impl-json.md) |
+| **Connect nodes with edges** | [references/plugins/edges/planning.md](references/plugins/edges/planning.md) + [`impl-json.md`](references/plugins/edges/impl-json.md) |
+| **Configure SLA (default, conditional, escalation)** | [references/plugins/sla/planning.md](references/plugins/sla/planning.md) + [`impl-json.md`](references/plugins/sla/impl-json.md) |
 | **Declare global variables and arguments** | [references/plugins/variables/global-vars/planning.md](references/plugins/variables/global-vars/planning.md) + [`impl-json.md`](references/plugins/variables/global-vars/impl-json.md) |
 | **Wire task inputs/outputs (I/O binding)** | [references/plugins/variables/io-binding/planning.md](references/plugins/variables/io-binding/planning.md) + [`impl-json.md`](references/plugins/variables/io-binding/impl-json.md) |
-| **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-json.md` (JSON strategy — `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) / `impl-cli.md` (CLI strategy — `connector-activity`, `connector-trigger`) |
-| **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl-cli.md` |
-| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-cli.md` / `impl-json.md` |
+| **Add a specific task type** | `references/plugins/tasks/<type>/planning.md` + `impl-json.md` |
+| **Add a specific trigger type** | `references/plugins/triggers/<type>/planning.md` + `impl-json.md` |
+| **Add a specific condition scope** | `references/plugins/conditions/<scope>/planning.md` + `impl-json.md` |
 
 ### Plugin Index
 
@@ -242,33 +239,29 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 
 ## Anti-patterns — What NOT to Do
 
-- **Do NOT put `uip maestro case ...` CLI commands inside `tasks.md`.** `tasks.md` is declarative only — causes double-execution or mis-parsing.
-- **Do NOT incrementally update an existing `tasks.md`.** Always regenerate from scratch.
-- **Do NOT skip registry lookups** based on assumptions like "this type is not discoverable." Always search the cache files first.
-- **Do NOT group multiple sdd.md tasks under one T-number.** Each task, trigger, edge, or condition gets its own numbered entry.
+Only anti-patterns without a direct Critical Rule counterpart. All other "don'ts" are covered by Rules above.
+
+- **Do NOT skip registry lookups** based on assumptions like "this type is not discoverable." Always search the cache files first — see [references/registry-discovery.md](references/registry-discovery.md).
 - **Do NOT fabricate input or output names in cross-task references.** Run `uip maestro case tasks describe` to discover actual names. A fabricated name becomes a silent runtime null.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe the condition in natural language; the execution phase determines the exact expression form.
-- **Do NOT fabricate task-type-ids or connection-ids.** When a resource is unresolved, use skeleton-task creation: `tasks add --type <t> --display-name <n>` with no `--task-type-id`, and for connectors `tasks add-connector --type <t> --display-name <n>` with no `--type-id` / `--connection-id`. Skip input/output bindings entirely — skeletons have no input schema. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
 - **Do NOT invoke other skills automatically.** If the case needs a process, agent, or action that doesn't exist, emit a skeleton task (per Rule #11) and list the missing resources in the completion report so the user can register them externally. On-demand resource creation is a future milestone, not today.
-- **Do NOT place multiple tasks in the same lane.** The FE renders same-lane tasks stacked in one column, which is unreadable for non-trivial stages. Give each task its own `--lane` index. Lane carries no execution semantics — it's layout only.
-- **Do NOT edit `content/*.bpmn` files.** They are auto-generated and will be overwritten.
-- **Do NOT run `uip maestro case debug` automatically.** It executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.
-- **Do NOT execute CLI commands in parallel.** Each command may depend on IDs returned by the previous one — run them sequentially.
-- **Do NOT validate after each individual command.** Intermediate states are expected to be invalid. Run `uip maestro case validate` once after the full build.
-- **Do NOT batch multiple T-entries into one JSON write.** Every T-entry gets its own Read → mutate → Write cycle (Rule #24). Composing a large in-memory JSON spanning many stages/edges/tasks and flushing once hides intermediate state and breaks review granularity.
-- **Do NOT skip the Phase 2a → 2b hard stop for any reason.** Auto mode, non-interactive mode, prior blanket approval, and a clean Phase 2a all still require the AskUserQuestion prompt (Rule #26). Halt with an explicit error if the harness refuses the prompt.
-- **Do NOT halt on Phase 2a validate errors/warnings.** The validate call at end of Phase 2a is informational — unbound inputs, missing conditions, and missing SLA are expected (they arrive in Phase 2b). Surface counts in the hard-stop summary; let the user decide.
-- **Do NOT mutate `caseplan.json` (or sibling JSON files) via subprocess scripts.** When a plugin is on the JSON strategy, use Claude's Read + Write/Edit tools only — no `python`, `node`, `jq`, `sed`, `awk`, or helper scripts that open/parse/modify/save the file. Bash subprocesses remain OK for stdout-only helpers (e.g., `node -e "...console.log(randomId)"`) and for CLI mutations on non-migrated plugins. See [references/case-editing-operations-json.md § Tool usage](references/case-editing-operations-json.md#tool-usage--mandatory).
+- **Do NOT mutate `caseplan.json` (or sibling JSON files) via subprocess scripts.** Use Claude's Read + Write/Edit tools only — no `python`, `node`, `jq`, `sed`, `awk`, or helper scripts that open/parse/modify/save the file. Bash subprocesses remain OK for stdout-only helpers (e.g., `node -e "...console.log(randomId)"`). See [references/caseplan-editing.md § Tool usage](references/caseplan-editing.md#tool-usage--mandatory).
 
 ## Key Concepts
 
-### Local vs cloud commands
+### Shell CLI usage
 
-| Commands | What they do | Auth needed |
+All `caseplan.json` mutation happens via Read/Write/Edit. The skill invokes shell CLI only for:
+
+| Command group | What it does | Auth needed |
 |----------|--------------|-------------|
-| `uip maestro case cases`, `stages`, `tasks`, `edges`, `var`, `sla` | Edit local `caseplan.json` | No |
 | `uip maestro case registry pull/list/search`, `get-connector`, `get-connection` | Registry discovery (uses cached data after pull) | Yes (for `pull`) |
-| `uip maestro case instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
+| `uip maestro case tasks describe` / `tasks enrich` | Task schema discovery for binding | Yes |
+| `is resources describe` / `is triggers describe` / `is resources execute list` | Connector schema discovery | Yes |
+| `uip maestro case validate` | Caseplan validation | No |
+| `uip maestro case debug` | Live debug execution (explicit consent only) | Yes |
+| `uip solution new` / `uip solution project add` / `uip solution upload` | Solution scaffold / registration / publish | Yes (for `upload`) |
+| `uip maestro case instance`, `processes`, `incident`, `process`, `job` | Runtime query | Yes |
 
 ### CLI output format
 
@@ -283,19 +276,6 @@ Always pass `--output json` when the output is parsed.
 
 ## Completion Output
 
-When the build completes, report to the user:
-
-1. **File path** of `caseplan.json`
-2. **What was built** — summary of stages, edges, tasks, conditions, SLA
-3. **Validation status** — whether `uip maestro case validate` passes (or remaining errors)
-4. **Skeleton tasks + unresolved resources** — list every skeleton task created (TaskId, type, display-name, stage) alongside the external resource the user must register to upgrade it (task-type-id / connection-id). Include the wiring-notes from `tasks.md` so the user knows which inputs/outputs to attach. See [references/skeleton-tasks.md](references/skeleton-tasks.md) for the upgrade procedure.
-5. **Missing connections** — any connector tasks needing IS connections that don't exist yet
-6. **Next step** — **AskUserQuestion** dropdown (per Rule #19):
-   - `Run debug session` → ask for explicit consent, then run `uip maestro case debug`
-   - `Publish to Studio Web` → `uip solution upload <SolutionDir>`
-   - `Done`
-   - `Something else`
-
-Do not take any of these actions automatically — wait for explicit selection.
+On build completion: report `caseplan.json` path, build summary (stages/edges/tasks/conditions/SLA counts), validate status, every skeleton task + its upgrade resource (see [references/skeleton-tasks.md](references/skeleton-tasks.md)), missing IS connections. Then present post-build prompt per [references/phased-execution.md § Phase 2b Execution Order step 7](references/phased-execution.md). Never take post-build actions (debug, publish) automatically — AskUserQuestion first.
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

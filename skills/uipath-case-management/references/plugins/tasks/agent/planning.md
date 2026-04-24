@@ -2,23 +2,19 @@
 
 An AI agent task. Invokes a UiPath Agent by entityKey for reasoning, classification, extraction, or generative work.
 
-## When to Use
-
-Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent that processes inputs and returns structured outputs. Use when the task requires reasoning or judgment rather than deterministic automation.
-
 ## Required Fields from sdd.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | Agent Reference "Name" | Shown in the UI |
-| `name` | Agent Reference "Name" | CLI flag `--name` |
-| `folder-path` | Agent Reference "Folder" | CLI flag `--folder-path` |
-| `task-type-id` | Registry resolution (below) | CLI flag `--task-type-id`, enables enrichment |
+| `display-name` | Agent Reference "Name" | Written to `task.displayName`. Shown in the UI. |
+| `name` | Agent Reference "Name" | Written to `task.data.name` |
+| `folder-path` | Agent Reference "Folder" | Written to `task.data.folderPath` |
+| `task-type-id` | Registry resolution (below) | Written to `task.data.context.taskTypeId`. Enables enrichment. |
 | `element-id` | (optional) | Required only when the agent has multiple element bindings |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | For downstream cross-task references |
-| `runOnlyOnce` | sdd.md (default `true`) | CLI flag `--should-run-only-once` |
-| `isRequired` | sdd.md (default `true`) | CLI flag `--is-required` |
+| `runOnlyOnce` | sdd.md (default `true`) | Written to `task.shouldRunOnlyOnce` |
+| `isRequired` | sdd.md (default `true`) | Written to `task.isRequired` |
 
 ## Registry Resolution
 

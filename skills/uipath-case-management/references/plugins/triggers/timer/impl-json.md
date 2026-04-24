@@ -1,10 +1,6 @@
----
-direct-json: supported
----
-
 # timer trigger — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../../case-editing-operations.md) lists `triggers/timer = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting caseplan.json editing mechanics live in [`caseplan-editing.md`](../../../caseplan-editing.md).
 
 ## Purpose
 
@@ -27,7 +23,7 @@ existingTriggers = schema.nodes.filter(n => n.type === "case-management:Trigger"
 
 ### Case A — zero existing triggers (first-trigger path)
 
-Emit the initial `trigger_1` shape. This is the canonical first-trigger shape produced by `uip maestro case cases add` today (see [`cli/packages/case-tool/src/commands/cases.ts`](https://github.com/UiPath/uipath-cli) `buildMinimalSchema`), extended with the timer `uipath` block:
+Emit the canonical first-trigger shape with the timer `uipath` block:
 
 ```json
 {
@@ -76,7 +72,7 @@ Emit a secondary trigger with full render fields:
 y = max(existingTriggers[i].position.y) + 140
 ```
 
-When the only existing trigger is the CLI-seeded `trigger_1` at `{x: 0, y: 0}`, the first secondary timer trigger lands at `{x: -100, y: 140}`.
+When the only existing trigger is a `trigger_1` at `{x: 0, y: 0}`, the first secondary timer trigger lands at `{x: -100, y: 140}`.
 
 The `x` coordinate is always `-100`.
 
@@ -99,12 +95,12 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 - `<UUID v4>` — fresh `crypto.randomUUID()` per write. Non-deterministic; normalizer strips in golden diff.
 - `displayName` matches `node.data.label` (including the `Trigger <N>` default if `displayName` absent).
 
-**Write order:** `caseplan.json` first, then `entry-points.json`. Matches CLI's `saveTrigger` order — if the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
+**Write order:** `caseplan.json` first, then `entry-points.json`. If the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
 
 ## ID generation
 
 - First-trigger path: literal `trigger_1` (no randomness).
-- Secondary path: `trigger_` prefix + 6 random chars per [`case-editing-operations-json.md § ID Generation`](../../../case-editing-operations-json.md#id-generation).
+- Secondary path: `trigger_` prefix + 6 random chars per [`caseplan-editing.md § ID Generation`](../../../caseplan-editing.md#id-generation).
 
 Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference.
 
@@ -122,16 +118,7 @@ After writing, confirm:
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
 
-## Known CLI divergences
+## Validation
 
-None functional. JSON recipe mirrors CLI output exactly for the secondary-trigger path. The first-trigger path (Case A) is not reachable via CLI `triggers add-timer` today — the CLI always appends a secondary because `cases add` pre-seeds `trigger_1` as a manual trigger. The JSON recipe's Case A exists to support the upcoming `case` plugin migration that will stop auto-seeding `trigger_1`; until that lands, only Case B is exercised.
-
-## Compatibility
-
-Captured against CLI version `0.1.21`.
-
-- [x] **Golden parity (ad-hoc):** manual side-by-side comparison of `uip maestro case triggers add-timer` output against direct-JSON-write output passed for both `caseplan.json` (trigger node appended with `Intsvc.TimerTrigger` + `timeCycle`) and `entry-points.json` (matching entry appended) after ID + UUID normalization at the time this plugin was migrated.
-- [x] **Validation parity:** both outputs produce the same set of errors/warnings from `uip maestro case validate` (expected failure profile for a triggers-only fragment with no stages/edges)
-- [ ] **Downstream CLI mutation append:** `uip maestro case edges add --source <json-written-trigger-id>` and friends accept the JSON-written node — not yet exercised
-- [ ] **Round-trip:** CLI-written timer → direct-JSON-write adds a second timer → validate passes with only expected failures — not yet exercised
-- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised
+- [x] **Structural validity:** `uip maestro case validate` passes on output (expected failure profile for a triggers-only fragment with no stages/edges until downstream plugins run).
+- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

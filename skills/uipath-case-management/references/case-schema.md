@@ -1,6 +1,6 @@
 # Case Management JSON Schema — Cross-Cutting Reference
 
-Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl-cli.md` / `impl-json.md`.
+Structural reference for the case definition JSON. Shared across all node types. Per-task-type and per-condition-type field shapes live in each plugin's `impl-json.md`.
 
 ## Top-level structure
 
@@ -14,21 +14,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 
 ---
 
-**ID format (cross-cutting).** All generated IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix followed by `count` random characters from `[A-Za-z0-9]`. Direct-JSON-write must use the same format — the frontend's `generateNextId(prefix, count)` depends on it.
-
-| Entity | Prefix | Suffix length | Example |
-|---|---|---|---|
-| Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` |
-| Trigger (added after initial) | `trigger_` | 6 | `trigger_xY2mNp` |
-| Edge | `edge_` | 6 | `edge_Qz7hVr` |
-| Task | `t` | 8 | `t8GQTYo8O` |
-| Task entry condition | `c` | 8 | `c4fGhJ2Mn` |
-| Task entry rule | `r` | 8 | `rK9xQw3Lp` |
-| Stage/case/task condition | `Condition_` | 6 | `Condition_xC1XyX` |
-| Rule inside those conditions | `Rule_` | 6 | `Rule_jdBFrJ` |
-| Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` |
-| SLA escalation | `esc_` | 6 | `esc_gH2jKl` |
-| Binding | `b` | 8 | `b3KmNp7Q9` |
+**ID format (cross-cutting).** Every generated ID follows `prefixedId(prefix, count)` — fixed prefix + `count` random `[A-Za-z0-9]` chars. Per-entity prefix/suffix-length table + algorithm in [`caseplan-editing.md § ID Generation`](caseplan-editing.md#id-generation).
 
 ---
 
@@ -69,7 +55,7 @@ Metadata and configuration for the case definition.
 | `caseIdentifier` | string | Identifier used at runtime |
 | `caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
 | `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
-| `version` | string | Schema version — `"v19"` for current schema. Emitted by `uip maestro case cases add`. |
+| `version` | string | Schema version — `"v19"` for current schema. |
 | `publishVersion` | number? | Publish version — `2` for current schema |
 | `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
@@ -96,7 +82,7 @@ Rule structure uses DNF — see §4.
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
-Entry point. Created automatically by `uip maestro case cases add`. Exactly one per case (single-trigger cases); additional triggers added via `uip maestro case stages add --type trigger` use the `trigger_` ID prefix.
+Entry point. Exactly one primary trigger per case (single-trigger cases); additional triggers use the `trigger_` ID prefix.
 
 ```json
 {
@@ -114,7 +100,7 @@ Entry point. Created automatically by `uip maestro case cases add`. Exactly one 
 
 No `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (unlike Stage).
 
-`serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-cli.md` / `impl-json.md`.
+`serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
 ### b) Stage Node — `"case-management:Stage"`
 
@@ -144,15 +130,7 @@ Standard workflow stage. Contains tasks.
 }
 ```
 
-**Top-level node fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `position` | `{x,y}` | Auto-computed by CLI as `{ x: 100 + existingStageCount * 500, y: 200 }`. Direct-JSON-write must count existing stages before writing. |
-| `style` | object | Hard-coded `{ width: 304, opacity: 0.8 }`. |
-| `measured` | object | Hard-coded `{ width: 304, height: 128 }`. |
-| `width` | number | Hard-coded `304` (separate from `style.width` and `measured.width`). |
-| `zIndex` | number | Hard-coded `1001`. |
+**Top-level render fields** (`position`, `style`, `measured`, `width`, `zIndex`) — see [`caseplan-editing.md § Pre-flight Checklist`](caseplan-editing.md#pre-flight-checklist) items 3 and 4 for values and position formula.
 
 **`StageNodeData` fields:**
 
@@ -170,7 +148,7 @@ Standard workflow stage. Contains tasks.
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 
-> **Regular `Stage` is created without `entryConditions`/`exitConditions`.** The CLI's `stages add` initializes these fields only for `ExceptionStage`. Regular stages acquire them later when `stage-entry-conditions add` / `stage-exit-conditions add` runs against them — the fields are created at that point, not at stage-creation time. See §3 for the condition shapes and §2b for how edge transitions reference the source stage's `exitConditions`.
+> **Regular `Stage` is created without `entryConditions`/`exitConditions`.** These fields are initialized only for `ExceptionStage` at creation time. Regular stages acquire them later when the stage-entry-conditions / stage-exit-conditions plugins run against them — the fields are created at that point, not at stage-creation time. See §3 for the condition shapes and §2b for how edge transitions reference the source stage's `exitConditions`.
 
 ### c) Exception Stage Node — `"case-management:ExceptionStage"`
 
@@ -183,7 +161,7 @@ Same top-level and render fields as regular Stage. Adds `entryConditions`, `exit
 | `entryConditions` | EntryCondition[] | Initialized to `[]` on create; see §3 |
 | `exitConditions` | ExitCondition[] | Initialized to `[]` on create; see §3 |
 
-> **SLA on ExceptionStage** — the runtime accepts `slaRules[]` on `ExceptionStage` the same way it does on regular `Stage`, but the CLI's `sla set --stage-id` blocks it. Use the JSON strategy to author it. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+> **SLA on ExceptionStage** — both `Stage` and `ExceptionStage` accept `slaRules[]` — see [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ### d) Sticky Note Node — `"case-management:StickyNote"`
 
@@ -212,7 +190,7 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 ## 3. Conditions (cross-cutting)
 
-All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl-cli.md` / `impl-json.md`.
+All conditions share the same shape but attach at different levels. Per-level field tables and `--rule-type` semantics live in the corresponding condition plugin's `impl-json.md`.
 
 ### EntryCondition (stage-level)
 
@@ -282,7 +260,7 @@ Connects Stage → Stage. Transition conditions live on the source stage's `exit
 }
 ```
 
-**Handle format:** `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>` — exactly **four underscores** on each side of `source` / `target`. Directions: `right`, `left`, `top`, `bottom`. Defaults used by the CLI: source=`right`, target=`left`.
+**Handle format:** `<nodeId>____source____<direction>` or `<nodeId>____target____<direction>` — exactly **four underscores** on each side of `source` / `target`. Directions: `right`, `left`, `top`, `bottom`. Defaults: source=`right`, target=`left`.
 
 **Edge type is inferred from the source node:** Trigger source → `TriggerEdge`; Stage source → `Edge`.
 
@@ -316,7 +294,7 @@ Rules = Rule[][]
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
 
-Not every rule type is valid at every level — see each condition plugin's `impl-cli.md` / `impl-json.md` for the allowed subset per location.
+Not every rule type is valid at every level — see each condition plugin's `impl-json.md` for the allowed subset per location.
 
 ```json
 { "rule": "case-entered", "id": "<id>" }
@@ -386,13 +364,13 @@ Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is t
 
 Evaluated in array order; the first truthy expression wins. The trailing `"=js:true"` entry acts as the default.
 
-> **CLI vs JSON divergences for SLA** — CLI's `sla escalation add` can only attach to the default `"=js:true"` rule. CLI's `sla set --stage-id` rejects `ExceptionStage`. CLI emits one `EscalationRule` per recipient (single-element `recipients[]`). The JSON strategy lifts all three limits — see [`plugins/sla/impl-json.md § Known CLI divergences`](plugins/sla/impl-json.md).
+> **SLA authoring notes** — per-conditional-rule escalations are supported (attach `escalationRule[]` to any entry in `slaRules[]`, not only the default `=js:true` rule). `ExceptionStage` accepts `slaRules[]` the same as regular `Stage`. Multi-recipient rules are supported via a single `EscalationRule` with `recipients: [r1, r2, …]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ---
 
 ## 7. Tasks — BaseTask shape (shared)
 
-All tasks inside a stage share this envelope. Per-type `data` fields live in each task plugin's `impl-cli.md` / `impl-json.md`.
+All tasks inside a stage share this envelope. Per-type `data` fields live in each task plugin's `impl-json.md`.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -400,7 +378,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `elementId` | string | Composite `${stageId}-${taskId}` (e.g. `Stage_aB3kL9-t8GQTYo8O`) |
 | `displayName` | string? | Human-readable label shown in the UI |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
-| `data` | object | Type-specific configuration — see corresponding plugin's `impl-cli.md` / `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
+| `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | Expression — skip the task when truthy |
 | `entryConditions` | TaskEntryCondition[]? | See §3. **Connector tasks (`execute-connector-activity`, `wait-for-connector`) receive a default `current-stage-entered` entry condition on creation. Non-connector tasks do NOT.** |
 | `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
@@ -410,7 +388,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 
 **Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. The skill convention is one task per lane.
 
-**Task type catalog** (full shape in each plugin's `impl-cli.md` / `impl-json.md`):
+**Task type catalog** (full shape in each plugin's `impl-json.md`):
 
 | Task `type` | Plugin |
 |-------------|--------|

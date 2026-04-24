@@ -1,16 +1,12 @@
----
-direct-json: supported
----
-
 # sla — JSON Implementation
 
 > **Phase split.** Phase 2b only. Phase 2a does not write SLA or escalation rules. See [`../../phased-execution.md`](../../phased-execution.md).
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `sla = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting caseplan.json editing mechanics live in [`caseplan-editing.md`](../../caseplan-editing.md).
 
 ## Purpose
 
-Compose the `slaRules[]` array for each target (root or stage) in one write. Unlike the CLI's `sla set` / `sla rules add` / `sla escalation add` split, the JSON path groups all SLA T-entries by target and emits the full array in a single mutation.
+Compose the `slaRules[]` array for each target (root or stage) in one write. Groups all SLA T-entries by target and emits the full array in a single mutation.
 
 ## Input spec (from `tasks.md §4.8`)
 
@@ -22,7 +18,7 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Unl
 
 ## ID generation
 
-- Escalation: `esc_` + 6 chars. Per [`case-editing-operations-json.md § ID Generation`](../../case-editing-operations-json.md#id-generation).
+- Escalation: `esc_` + 6 chars. Per [`caseplan-editing.md § ID Generation`](../../caseplan-editing.md#id-generation).
 - Conditional SlaRuleEntry: **no `id` field**. CLI never emits one; removal is by array index.
 
 Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", ruleExpression: "<parent rule expression>", target: "root" | "<stageId>"}`.
@@ -31,7 +27,7 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 
 - `target: "root"` → `root.data.slaRules` (**inside `root.data`** — sibling of `intsvcActivityConfig` and `uipath`, NOT a top-level key and NOT a direct child of `root`)
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (inside the stage node's `data`)
-- Accepted node types: `case-management:Stage` **and `case-management:ExceptionStage`** (gap-fill, see Known CLI divergences)
+- Accepted node types: `case-management:Stage` **and `case-management:ExceptionStage`** — runtime accepts `slaRules[]` on both.
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
 
 ## Recipe — one target
@@ -74,9 +70,9 @@ For a stage target, the same `slaRules` array is written under `node.data.slaRul
 
 Emission rules:
 
-1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins). Matches CLI's final-array semantics.
+1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins). Runtime evaluates in array order; first truthy expression wins.
 2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
-3. **Bare default rule is legal.** If a target has escalations but no `sla set` T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`. Matches CLI's `getOrCreateDefaultRule` behavior.
+3. **Bare default rule is legal.** If a target has escalations but no `sla set` T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
 
@@ -101,7 +97,7 @@ Emission rules:
 
 - `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`).
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
-- `recipients` is an array — **one entry per sdd-declared recipient**. See Known CLI divergences.
+- `recipients` is an array — **one entry per sdd-declared recipient**. Multi-recipient rules are supported: emit a single `EscalationRule` with `recipients: [r1, r2, …]` when sdd declares multiple recipients on the same escalation.
 
 ## Unresolved recipients (skeleton-style)
 
@@ -115,7 +111,15 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the table in [`impl-cli.md § Expression Translation`](impl-cli.md#expression-translation). If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md rule #19.
+`tasks.md` entries carry natural-language conditions. Translate at execution time to `=js:<expr>`:
+
+| sdd.md phrase | Expression |
+|---------------|-----------|
+| "when priority is Urgent" | `=js:vars.priority === 'Urgent'` |
+| "when amount exceeds 10000" | `=js:vars.amount > 10000` |
+| "when customer is a VIP" | `=js:vars.customerTier === 'VIP'` |
+
+If the translation is not obvious, ask the user with **AskUserQuestion** including 2–3 candidate expressions + "Something else" per SKILL.md rule #19.
 
 ## Post-write validation
 
@@ -124,19 +128,13 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 - Confirm every generated `esc_` ID appears in `id-map.json`.
 - Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).
 
-## Known CLI divergences
+## Schema notes
 
-JSON is a superset of the CLI path. Each divergence is deliberate:
+- **Per-conditional-rule escalations.** An `escalationRule[]` can be attached to any entry in `slaRules[]` — not only the default `=js:true` rule. The T-entry's `attach-to` field selects the target rule by its T-number. Studio Web-authored caseplan.json files use this pattern.
+- **ExceptionStage SLA.** Runtime accepts `slaRules[]` on `case-management:ExceptionStage` the same as on regular `Stage`. Write SLA to both node types when sdd calls for it.
+- **Multi-recipient single rule.** One `EscalationRule` carries `recipients: [r1, r2, …]`. The `EscalationRuleRecipient[]` type supports multi-recipient rules directly — emit a single rule rather than one rule per recipient.
 
-- **Per-conditional-rule escalations.** CLI's `escalation add` always attaches to the default `=js:true` rule. JSON attaches to any `slaRules[]` entry via the T-entry's `attach-to` field. Studio Web-authored caseplan.json files already use this pattern.
-- **ExceptionStage SLA.** CLI's `requireStageForSla` rejects `case-management:ExceptionStage`. JSON writes SLA to both `Stage` and `ExceptionStage`. Runtime accepts both.
-- **Multi-recipient single rule.** CLI emits one `EscalationRule` per recipient. JSON emits one rule with `recipients: [r1, r2, …]` when sdd declares multiple recipients on the same escalation. Matches sdd intent; the `EscalationRuleRecipient[]` type supports it.
-- **Co-authorship is asymmetric.** CLI can append escalations to our default rule (`getOrCreateDefaultRule` finds the `=js:true` entry). CLI cannot edit per-conditional-rule escalations — those are JSON-only territory.
+## Validation
 
-## Compatibility
-
-- [ ] **CLI-parity:** structural equivalence between CLI output (`sla set` + `rules add` + `escalation add`) and direct-JSON-write, modulo random `esc_xxxxxx` IDs
-- [ ] **Validation parity:** both outputs produce the same `uip maestro case validate` result
-- [ ] **Gap-fill:** per-conditional-rule escalations, ExceptionStage `slaRules[]`, and multi-recipient single-rule variants each pass `uip maestro case validate`
-- [ ] **Studio Web render:** per-conditional-rule escalations display correctly
-- [ ] **Co-authorship forward:** CLI `sla escalation add` against JSON-written default rule appends successfully
+- [ ] **Structural validity:** `uip maestro case validate` passes after all SLA targets have been written (not per-target).
+- [ ] **Studio Web render:** per-conditional-rule escalations display correctly on upload.

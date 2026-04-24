@@ -1,10 +1,6 @@
----
-direct-json: supported
----
-
 # stages — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `stages = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting caseplan.json editing mechanics live in [`caseplan-editing.md`](../../caseplan-editing.md).
 
 ## Input spec (from `tasks.md`)
 
@@ -19,7 +15,7 @@ Authoritative when the matrix in [`case-editing-operations.md`](../../case-editi
 
 - Prefix: `Stage_` (same for regular and exception stages)
 - Suffix length: 6
-- Algorithm: per [`case-editing-operations-json.md § ID Generation`](../../case-editing-operations-json.md#id-generation)
+- Algorithm: per [`caseplan-editing.md § ID Generation`](../../caseplan-editing.md#id-generation)
 
 Record `T<n> → Stage_xxxxxx` in `id-map.json` for downstream cross-reference.
 
@@ -45,7 +41,7 @@ Trigger nodes are NOT counted.
 
 ## Recipe — Regular Stage
 
-Append (or prepend — CLI uses `.unshift()`) this object to `schema.nodes`:
+Append this object to `schema.nodes`:
 
 ```json
 {
@@ -68,7 +64,7 @@ Append (or prepend — CLI uses `.unshift()`) this object to `schema.nodes`:
 }
 ```
 
-**Do not initialize `entryConditions` or `exitConditions` on a regular Stage at creation time.** The CLI's `stages add` emits those fields only for `ExceptionStage`. Regular stages acquire them later via `stage-entry-conditions add` / `stage-exit-conditions add`, which create and append to `data.entryConditions` / `data.exitConditions` — do not create those keys here.
+**Do not initialize `entryConditions` or `exitConditions` on a regular Stage at creation time.** Those fields are initialized only for `ExceptionStage`. Regular stages acquire them later via the stage-entry-conditions / stage-exit-conditions plugins, which create and append to `data.entryConditions` / `data.exitConditions` — do not create those keys here.
 
 ## Recipe — Exception Stage
 
@@ -99,7 +95,7 @@ Same as regular, with `type: "case-management:ExceptionStage"` and two additiona
 
 ## Semantic position
 
-The new node is added to the top-level `schema.nodes` array. CLI prepends (`.unshift()`) — direct-JSON-write MAY prepend for byte-equivalence or append (both are valid for the frontend). Choose append for simpler diffing against evolving CLI output.
+The new node is added to the top-level `schema.nodes` array. Both append and prepend are valid for the frontend. Append for simpler diffs.
 
 ## Post-write validation
 
@@ -110,25 +106,16 @@ After writing, confirm:
 - `nodes[].data.label` matches the T-entry's displayName
 - `nodes[].data.isRequired` is present and boolean
 - All render fields (`style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`) are present
-- For ExceptionStage: `data.entryConditions: []` and `data.exitConditions: []` are present (CLI initializes both as empty arrays at creation time)
+- For ExceptionStage: `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)
 - For regular Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
 
 Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 
-## Known CLI divergences
+## Design notes
 
-Direct-JSON-write is a superset of the CLI's `stages add`. The divergences below are deliberate — they fill gaps the CLI cannot express at stage creation time.
+- **`data.isRequired` is always emitted.** Always write `isRequired: <bool>` — downstream `required-stages-completed` logic needs an explicit value. Default to `false` when sdd.md does not specify.
 
-- **`data.isRequired` is always emitted.** `stages add` has no `--is-required` flag, so the CLI omits the key entirely. The JSON recipe always writes `isRequired: <bool>` because downstream `required-stages-completed` logic needs an explicit value and there is no other CLI path to set it at creation time. A structural comparison normalizes `isRequired: false` ↔ absent so equivalence still holds.
-- **CLI `.unshift()`s new stages** so most-recent-added appears first in `schema.nodes`. Direct-JSON-write matches this ordering for byte-closer diffs. Both append and prepend are semantically valid for the frontend.
+## Validation
 
-## Compatibility
-
-Captured against CLI version `0.1.21`.
-
-- [x] **Structural equivalence:** direct-JSON-write produces a stage node set that matches the CLI's `stages add` output after ID normalization and the `isRequired: false` ↔ absent normalization.
-- [x] **Validation parity:** both outputs produce the same set of 3 errors + 3 warnings from `uip maestro case validate` (the expected failure profile for a stages-only fragment with no edges/tasks).
-- [x] **Downstream direct-JSON-write append:** direct-JSON-write edges can target JSON-written stage IDs (proven by the edges plugin sharing this recipe).
-- [ ] **Downstream CLI mutation append:** `uip maestro case edges add --source <json-written-stage-id>` and `uip maestro case tasks add <file> <json-written-stage-id>` both succeed — not yet exercised against the installed binary.
-- [ ] **Round-trip:** CLI-written stage → direct-JSON-write adds a second stage → `uip maestro case validate` passes with only the expected failures — not yet exercised.
+- [x] **Structural validity:** `uip maestro case validate` passes on output (with the expected failure profile for a stages-only fragment with no edges/tasks — full validation runs once after the full build per SKILL.md Rule #20).
 - [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.
