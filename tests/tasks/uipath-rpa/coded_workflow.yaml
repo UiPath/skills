@@ -40,11 +40,16 @@ initial_prompt: |
      every test case in the project. Use the partial-class CodedWorkflow
      pattern with IBeforeAfterRun (NOT a base class).
 
-  Validation:
-  - Run `uip rpa get-errors --project-dir ./TestAutomation --output json`
-    after generating the files. The call takes 30–60s because Studio
-    Helm spins up — do NOT skip it. Fix any errors the skill surfaces
-    and rerun until clean.
+  Validation (run BOTH — they give complementary signal):
+  - `uip rpa get-errors --project-dir ./TestAutomation --output json`
+    is the skill-canonical validation step. It takes 30–60s (Helm
+    cold-start). In CI it may exit non-zero because Helm requires
+    UiPath sign-in that isn't wired up — that's expected. Capture
+    the exit code either way and continue.
+  - `uip rpa build --project-dir ./TestAutomation --output json`
+    is the hard compile gate — it doesn't need Studio/Helm auth and
+    must exit 0. Fix any compile errors it surfaces and rerun until
+    clean. This is the authoritative signal the project compiles.
 
   Save a summary to report.json at the sandbox root:
     {
@@ -56,7 +61,8 @@ initial_prompt: |
       "hooks_class_declaration": "<the class declaration line from the hooks file>",
       "assertions_used": ["<list of testing.Verify* methods used>"],
       "commands_used": ["<list of uip commands you ran>"],
-      "get_errors_exit_code": <exit code from the final uip rpa get-errors call>
+      "get_errors_exit_code": <exit code from the final uip rpa get-errors call>,
+      "build_exit_code": <exit code from the final uip rpa build call — must be 0>
     }
 
   Important:
@@ -130,13 +136,26 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Require the agent's own `uip rpa get-errors` to have returned
-  # success. This captures the compile signal without paying a second
-  # Helm cold-start in the criterion runner.
+  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # the canonical validation step, so require the agent to call it.
+  # We do NOT gate on its exit code — Helm/Studio auth isn't wired up
+  # in CI, so get-errors legitimately exits non-zero even when the code
+  # compiles fine.
   - type: command_executed
-    description: "Agent ran uip rpa get-errors successfully"
+    description: "Agent ran uip rpa get-errors (skill-canonical validation step)"
     tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+get-errors'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Hard compile gate: `uip rpa build` doesn't need Helm/Studio auth,
+  # so in CI it's the authoritative "does this project compile" check.
+  # Require it to have returned success.
+  - type: command_executed
+    description: "Agent ran uip rpa build successfully (compile gate)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+build'
     min_count: 1
     require_success: true
     weight: 2.0
@@ -149,7 +168,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "report.json confirms CSharp, partial-class hooks, and a working get-errors call"
+    description: "report.json confirms CSharp, partial-class hooks, and a clean compile"
     path: "report.json"
     assertions:
       - expression: "project_name"
@@ -164,7 +183,9 @@ success_criteria:
       - expression: "hooks_class_declaration"
         operator: contains
         expected: "partial class CodedWorkflow"
-      - expression: "get_errors_exit_code"
+      # build is the hard compile signal; get-errors is best-effort in
+      # CI (Helm auth may be absent) so we don't assert on its exit code.
+      - expression: "build_exit_code"
         operator: equals
         expected: 0
       - expression: "length(files_created)"

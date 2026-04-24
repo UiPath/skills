@@ -49,10 +49,15 @@ initial_prompt: |
   - Discover the activity XAML with `uip rpa get-default-activity-xaml`
     (or equivalent discovery command the skill teaches) before
     hand-authoring anything.
-  - After writing Main.xaml, run
-    `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
-    and fix anything it surfaces. The call takes 30–60s because Studio
-    Helm spins up — do NOT skip it.
+  - After writing Main.xaml, run BOTH validation commands — they give
+    complementary signal:
+      * `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
+        is the skill-canonical validation. In CI it may exit non-zero
+        because Helm requires UiPath sign-in that isn't wired up — that's
+        expected. Capture the exit code either way and continue.
+      * `uip rpa build --project-dir ./GoogleSearch --output json`
+        is the hard compile gate — it doesn't need Studio/Helm auth and
+        must exit 0. Fix anything it surfaces until it's clean.
 
   Save a summary to report.json at the sandbox root:
     {
@@ -60,7 +65,8 @@ initial_prompt: |
       "expression_language": "VisualBasic",
       "activities_used": ["<activity class names you emitted in XAML>"],
       "commands_used": ["<uip commands you ran, full with flags>"],
-      "get_errors_exit_code": <exit code from the final get-errors call>
+      "get_errors_exit_code": <exit code from the final get-errors call>,
+      "build_exit_code": <exit code from the final uip rpa build call — must be 0>
     }
 
   Important:
@@ -109,13 +115,26 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Require the agent's own `uip rpa get-errors` to have returned
-  # success. This captures the compile signal without paying a second
-  # Helm cold-start in the criterion runner.
+  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # the canonical validation step, so require the agent to call it.
+  # We do NOT gate on its exit code — Helm/Studio auth isn't wired up
+  # in CI, so get-errors legitimately exits non-zero even when the XAML
+  # is well-formed.
   - type: command_executed
-    description: "Agent ran uip rpa get-errors on Main.xaml successfully"
+    description: "Agent ran uip rpa get-errors on Main.xaml (skill-canonical validation)"
     tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+get-errors.*Main\.xaml'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Hard compile gate: `uip rpa build` doesn't need Helm/Studio auth,
+  # so in CI it's the authoritative "does this project compile" check.
+  # Require it to have returned success.
+  - type: command_executed
+    description: "Agent ran uip rpa build successfully (compile gate)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+build'
     min_count: 1
     require_success: true
     weight: 2.0
@@ -128,7 +147,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "report.json confirms VisualBasic + a working get-errors call + the activities used"
+    description: "report.json confirms VisualBasic + a clean compile + the activities used"
     path: "report.json"
     assertions:
       - expression: "project_name"
@@ -137,7 +156,9 @@ success_criteria:
       - expression: "expression_language"
         operator: equals
         expected: "VisualBasic"
-      - expression: "get_errors_exit_code"
+      # build is the hard compile signal; get-errors is best-effort in
+      # CI (Helm auth may be absent) so we don't assert on its exit code.
+      - expression: "build_exit_code"
         operator: equals
         expected: 0
       - expression: "length(commands_used)"
