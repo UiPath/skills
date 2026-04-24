@@ -169,29 +169,29 @@ jobs:
           bun run build
           cd packages/cli && npm link
 
-      # Pre-install the rpa + rpa-legacy tools. When a task invokes `uip
-      # rpa ...`, the CLI otherwise auto-runs `uip tools install rpa`
-      # against the public registry — and the currently published
-      # @uipath/rpa-tool releases have `workspace:*` protocol deps
-      # (EUNSUPPORTEDPROTOCOL) that only resolve inside the uipcli
-      # monorepo. Pinning to the latest 0.3.x stable sidesteps that bug
-      # and keeps the tool present before any task starts.
-      - name: Configure npm for GitHub Packages registry
-        env:
-          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+      # Pre-install the rpa-legacy tool from the uipcli monorepo. The
+      # tasks otherwise trigger `uip tools install <name>` auto-install
+      # against the npm registry, which fails with
+      # `npm error code EUNSUPPORTEDPROTOCOL / Unsupported URL Type
+      # "workspace:"` because the published @uipath/rpa-legacy-tool and
+      # @uipath/rpa-tool releases carry unrebuilt `workspace:*` deps
+      # that only resolve inside the uipcli monorepo itself. Building
+      # from the monorepo we already have checked out sidesteps the
+      # packaging bug entirely: `bun pm pack` produces a tarball with
+      # real dependency versions that `uip tools install <tgz>` accepts.
+      #
+      # rpa-tool: does NOT live in the uipcli monorepo (published from a
+      # separate source). We cannot repackage it the same way, so we
+      # leave it to the task's auto-install path; any failure surfaces
+      # in the LLM reviewer score gate below.
+      - name: Pre-install rpa-legacy-tool from uipcli monorepo
+        working-directory: .uipcli
         run: |
-          echo "@uipath:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN" >> ~/.npmrc
-
-      - name: Pre-install uip RPA tools (latest 0.3.x)
-        run: |
-          REGISTRY=https://npm.pkg.github.com
-          FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.3.") and "-" not in v]; sys.exit("No 0.3.x stable version found") if not vs else print(vs[-1])'
-          RPA_VERSION=$(npm view @uipath/rpa-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
-          LEGACY_VERSION=$(npm view @uipath/rpa-legacy-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
-          echo "Pre-installing: rpa-tool@$RPA_VERSION, rpa-legacy-tool@$LEGACY_VERSION"
-          uip tools install @uipath/rpa-tool@$RPA_VERSION
-          uip tools install @uipath/rpa-legacy-tool@$LEGACY_VERSION
+          set -e
+          (cd packages/rpa-legacy-tool && bun run build && bun pm pack)
+          TGZ=$(ls .uipcli/packages/rpa-legacy-tool/*.tgz 2>/dev/null || ls packages/rpa-legacy-tool/*.tgz)
+          echo "Installing rpa-legacy-tool from: $TGZ"
+          uip tools install "$TGZ"
           uip tools list --output json
 
       - name: Run smoke tests
