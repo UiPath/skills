@@ -56,7 +56,7 @@ success_criteria:
 
   - type: file_contains
     description: "HITL node is present in the flow file"
-    path: "InvoiceApproval/flow_files/InvoiceApproval.flow"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
     includes:
       - '"uipath.human-in-the-loop"'
     weight: 2.0
@@ -64,7 +64,7 @@ success_criteria:
 
   - type: file_contains
     description: "Completed handle is wired in the flow file"
-    path: "InvoiceApproval/flow_files/InvoiceApproval.flow"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
     includes:
       - '"completed"'
     weight: 1.5
@@ -73,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--format\s+json'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
