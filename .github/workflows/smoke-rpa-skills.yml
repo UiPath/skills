@@ -121,23 +121,19 @@ jobs:
           //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
           NPMRC
 
-      # Install the CLI + RPA tools from GitHub Packages, pinned to the
-      # 0.9.x line (latest stable at time of writing). `npm install -g`
-      # lands everything under the same `<npm-global-prefix>/@uipath/`
-      # dir, which is exactly where uipcli's ToolManager walks up to
-      # discover tools — so `uip rpa …` / `uip rpa-legacy …` work
-      # without triggering the auto-install path.
-      - name: Install uip CLI + RPA tools from GitHub Packages (0.9.x)
+      # Install the CLI + RPA tools from GitHub Packages at the
+      # `latest` dist-tag. Each package follows its own version line
+      # (cli → 1.0.x, rpa-tool → 0.9.x, rpa-legacy-tool → 1.0.x), so
+      # `@latest` is simpler and more resilient than pinning a
+      # specific major.minor. `npm install -g` lands everything under
+      # `<npm-global-prefix>/@uipath/` — exactly where uipcli's
+      # ToolManager walks up to discover tools — so `uip rpa …` /
+      # `uip rpa-legacy …` work without triggering auto-install.
+      - name: Install uip CLI + RPA tools from GitHub Packages
         shell: bash
         run: |
           set -e
-          REGISTRY=https://npm.pkg.github.com
-          FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.9.") and "-" not in v]; sys.exit("No 0.9.x stable version found") if not vs else print(vs[-1])'
-          CLI_VERSION=$(npm view @uipath/cli versions --registry=$REGISTRY --json | python -c "$FILTER")
-          RPA_VERSION=$(npm view @uipath/rpa-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
-          LEGACY_VERSION=$(npm view @uipath/rpa-legacy-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
-          echo "Installing: cli@$CLI_VERSION, rpa-tool@$RPA_VERSION, rpa-legacy-tool@$LEGACY_VERSION"
-          npm install -g "@uipath/cli@$CLI_VERSION" "@uipath/rpa-tool@$RPA_VERSION" "@uipath/rpa-legacy-tool@$LEGACY_VERSION"
+          npm install -g @uipath/cli@latest @uipath/rpa-tool@latest @uipath/rpa-legacy-tool@latest
           uip --version
           uip tools list --output json
 

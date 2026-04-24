@@ -189,12 +189,9 @@ jobs:
           //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
           NPMRC
 
-      - name: Install uip CLI from GitHub Packages (0.9.x)
+      - name: Install uip CLI from GitHub Packages
         run: |
-          FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.9.") and "-" not in v]; sys.exit("No 0.9.x stable version found") if not vs else print(vs[-1])'
-          CLI_VERSION=$(npm view @uipath/cli versions --json | python -c "$FILTER")
-          echo "Installing: @uipath/cli@$CLI_VERSION"
-          npm install -g "@uipath/cli@$CLI_VERSION"
+          npm install -g @uipath/cli@latest
           uip --version
 
       - name: Run smoke tests
