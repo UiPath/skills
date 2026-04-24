@@ -9,7 +9,7 @@ Rules the generator follows when composing `Dashboard.tsx`. These encode "beauti
 3. **Chart row: 2-up grid.** `grid-cols-1 lg:grid-cols-2 gap-4`. Two chart cards side-by-side. If >2 charts, wrap to a second 2-up row below. (This supersedes earlier drafts specifying "primary full-width + 2-up below" — the governance-next reference dashboards all use a flat 2-up grid; it reads better and composes more consistently.)
 4. **Tables full-width last.** Densest content; bottom placement. Spans the full container width. Rows are `cursor-pointer hover:bg-muted/50` with drill-down navigation on click.
 5. **Gutters uniform.** `gap-4` (16px) between cards in rows — tighter than earlier drafts to match the reference density. Card padding `p-5` for chart/KPI tiles, `p-0` for tables (the Table component controls its own padding). Page padding `p-8` lg / `p-4` sm.
-7. **Every widget in a Card.** No free-floating JSX.
+7. **Every widget in a Card AND wrapped in `<WidgetBoundary>`.** No free-floating JSX. `<WidgetBoundary label="<widget title>">` isolates failures — a throw in one widget renders a compact inline error card in that tile only; the rest of the dashboard keeps rendering. Without per-widget boundaries, one SDK shape drift or missing scope takes the whole dashboard dark. See `assets/templates/scaffold/src/dashboard/chrome/WidgetBoundary.tsx.template`.
 8. **Every widget obeys [widget-anatomy.md](widget-anatomy.md).** Six parts — icon (KPIs), title, description, headline-with-delta (metric widgets), body, optional info-tooltip, view-all-link (charts + tables). Missing any required part = generator bug; halt and fix.
 9. **Every widget routes to a real detail view.** Clickable affordances navigate to `/<kebab-slug>` (HashRouter) where a `<WidgetName>View.tsx` renders the widget's underlying records without aggregation. No placeholder hashes. The generator produces a view AND a list-style query hook for every widget it emits — see [detail-views.md](detail-views.md).
 10. **`chrome/Header.tsx` at top** — humanized `state.app.name` + description + a right-side cluster containing `<ThemeToggle />` and (optionally) Refresh + Customize buttons, in a `flex items-center gap-2` wrapper.
@@ -39,23 +39,24 @@ export function Dashboard({ sdk }: { sdk: UiPath }) {
         description="Agent invocation volume, error rates, and performance metrics."
       />
 
-      {/* Row 1: KPI row — 4 clickable tiles */}
+      {/* Row 1: KPI row — each widget wrapped in <WidgetBoundary> so one
+          widget's failure stays local. */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ActiveAgentsKPI sdk={sdk} />
-        <InvocationsTodayKPI sdk={sdk} />
-        <AvgResponseTimeKPI sdk={sdk} />
-        <ErrorRateKPI sdk={sdk} />
+        <WidgetBoundary label="Active agents"><ActiveAgentsKPI sdk={sdk} /></WidgetBoundary>
+        <WidgetBoundary label="Invocations today"><InvocationsTodayKPI sdk={sdk} /></WidgetBoundary>
+        <WidgetBoundary label="Avg response time"><AvgResponseTimeKPI sdk={sdk} /></WidgetBoundary>
+        <WidgetBoundary label="Error rate"><ErrorRateKPI sdk={sdk} /></WidgetBoundary>
       </div>
 
       {/* Row 2: chart row — 2-up grid */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <InvocationVolume sdk={sdk} />
-        <ErrorRateTrend sdk={sdk} />
+        <WidgetBoundary label="Invocation volume"><InvocationVolume sdk={sdk} /></WidgetBoundary>
+        <WidgetBoundary label="Error rate trend"><ErrorRateTrend sdk={sdk} /></WidgetBoundary>
       </div>
 
       {/* Row 3: full-width table (tables always last) */}
       <div className="mt-6">
-        <TopAgentsTable sdk={sdk} />
+        <WidgetBoundary label="Top agents"><TopAgentsTable sdk={sdk} /></WidgetBoundary>
       </div>
     </div>
   );
