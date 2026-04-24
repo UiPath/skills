@@ -39,7 +39,7 @@ Never preload both.
 ## Critical Rules
 
 1. **Preflight before any cloud touch.** Run `uip login status --output json`. If `Data.Status != "Logged in"`, stop and instruct `uip login --authority https://<env>.uipath.com`.
-2. **Read identity from `~/.uipath/.auth`.** Never ask the user for env / orgName / tenantName — resolve them per [references/primitives/auth-context.md](references/primitives/auth-context.md).
+2. **Read identity from `~/.uipath/.auth`.** Never ask the user for env / orgName / tenantName — resolve them per [references/primitives/auth-context.md](references/primitives/auth-context.md). **Do not ask for folder at Build time** — widgets default to tenant-wide queries; folder is a Deploy concern (which Orchestrator folder hosts the app), resolved in Deploy mode. Only resolve a folder at Build if the user's prompt explicitly scopes to one.
 3. **`--output json` on every `uip` call.** Parse `Data` / `Message` from the structured response.
 4. **Never cache live tenant reads.** Folder lists, job counts, deployed-app lists must hit live. Caching is reserved for templates and scaffolds.
 5. **Never auto-deploy.** Every Deploy surfaces the intended plan and waits for explicit user approval (`y`/`n`).
