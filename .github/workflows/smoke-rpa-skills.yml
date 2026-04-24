@@ -139,22 +139,30 @@ jobs:
           bun run build
           cd packages/cli && npm link
 
-      # Install both RPA tools from the public npm registry.
+      # Install both RPA tools from public npm.
       #
       # The published tarballs on registry.npmjs.org have concrete
-      # dependency versions (verified — `dependencies` and
-      # `devDependencies` contain only semver specifiers). The
-      # `workspace:*` EUNSUPPORTEDPROTOCOL failures we hit earlier
-      # were from the GitHub Packages mirror (npm.pkg.github.com),
-      # whose tarballs ship with unrebuilt workspace refs. Using
-      # `uip tools install` without a custom `@uipath` registry
-      # routes through its default public-npm path and Just Works.
+      # dependency versions (verified — `dependencies` is `{}` and
+      # `devDependencies` use plain semver). The
+      # `EUNSUPPORTEDPROTOCOL / Unsupported URL Type "workspace:"`
+      # failures happen only when npm pulls from the GitHub Packages
+      # mirror (npm.pkg.github.com), whose tarballs ship with
+      # unrebuilt workspace refs.
+      #
+      # Some ambient config (e.g. `bun install` side effects or a
+      # user-level config the Windows runner image ships with) is
+      # steering `uip tools install` at GH Packages even when we
+      # don't set `~/.npmrc` ourselves. `npm install -g` with an
+      # explicit `--registry` forces the install to go public, and
+      # drops the package at `<npm-global-prefix>/node_modules/@uipath/<tool>`
+      # — exactly where uipcli's ToolManager discovers tools at
+      # startup, so `isInstalled(<verb>)` returns true and the
+      # broken auto-install path never runs.
       - name: Pre-install RPA tools from public npm
         shell: bash
         run: |
           set -e
-          uip tools install @uipath/rpa-tool
-          uip tools install @uipath/rpa-legacy-tool
+          npm install -g --registry=https://registry.npmjs.org/ @uipath/rpa-tool @uipath/rpa-legacy-tool
           uip tools list --output json
 
       - name: Pre-warm Helm (download NuGet package before tests)
