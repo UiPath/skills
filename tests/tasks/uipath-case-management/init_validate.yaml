@@ -10,7 +10,7 @@ tags: [uipath-case-management, smoke, init, validate]
 
 agent:
   type: claude-code
-  max_turns: 20
+  max_turns: 40
 
 sandbox:
   driver: tempdir
