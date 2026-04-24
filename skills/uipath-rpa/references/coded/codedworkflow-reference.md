@@ -10,7 +10,7 @@ All workflow and test case files inherit from `CodedWorkflow`, which provides bu
 | `Delay(TimeSpan time)` / `Delay(int delayMs)` | Pause execution synchronously |
 | `DelayAsync(TimeSpan time)` / `DelayAsync(int delayMs)` | Pause execution asynchronously |
 | `BuildClient(string scope = "Orchestrator", bool force = true)` | Build an authenticated `HttpClient` for Orchestrator or custom scopes |
-| `GetRunningJobInformation()` | Get info about the current running job (status, progress, parameters, timestamps) |
+| `GetRunningJobInformation()` | Returns `IRunningJobInformation` with current job context: job ID, process name/version, tenant, folder, organization, robot name, and more (see [IRunningJobInformation](#irunningjobinformation-properties) below) |
 | `RunWorkflow(string workflowFilePath, IDictionary<string, object> inputArguments = null, TimeSpan? timeout = null, bool isolated = false, InvokeTargetSession targetSession = InvokeTargetSession.Current)` | **Fallback method:** Invoke workflow by string path. Use `workflows.MyWorkflow()` instead when possible |
 | `RunWorkflowAsync(...)` | Async version of `RunWorkflow` (same limitations apply) |
 
@@ -174,6 +174,32 @@ The `services` property provides access to:
 - `OrchestratorClientService` (via `BuildClient`) — Orchestrator API interaction
 - `WorkflowInvocationService` (via `RunWorkflow`) — fallback for dynamic workflow invocation
 - `OutputLoggerService` (via `Log`) — logging
+
+## IRunningJobInformation Properties
+
+`GetRunningJobInformation()` returns an `IRunningJobInformation` instance (from `UiPath.Robot.Activities.Api`). Key properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `JobId` | `Guid` | Current job identifier |
+| `ProcessName` | `string` | Running process name |
+| `ProcessVersion` | `string` | Running process version |
+| `OrganizationId` | `string` | Organization identifier |
+| `TenantId` | `string` | Tenant identifier |
+| `TenantName` | `string` | Tenant display name |
+| `FolderId` | `long?` | Orchestrator folder numeric ID |
+| `FolderName` | `string` | Orchestrator folder display name |
+| `FolderKey` | `Guid` | Orchestrator folder GUID key |
+| `RobotName` | `string` | Executing robot name |
+| `UserEmail` | `string` | Logged-in user's email |
+| `InitiatedBy` | `string` | What started the job (`"Orchestrator"`, `"Studio"`, `"Assistant"`, etc.) |
+
+### Usage Example
+
+```csharp
+var jobInfo = GetRunningJobInformation();
+Log($"Org: {jobInfo.OrganizationId}, Tenant: {jobInfo.TenantName}, Folder: {jobInfo.FolderName}");
+```
 
 ## Before/After Hooks (IBeforeAfterRun)
 
