@@ -67,6 +67,40 @@ Tests are organized into three types, distinguished by **tags** (not directories
 | `integration` | Correct output across diverse scenarios, error paths, anti-patterns | Daily |
 | `e2e` | Full lifecycle: Explore -> Plan -> Build -> Validate -> Deploy -> Run | Daily/weekly (check [Dashboard](https://dataexplorer.azure.com/dashboards/20cc55fe-33ae-4973-a951-855e76528219))|
 
+## Tag Taxonomy
+
+Every task's `tags:` list is a flat array, but tags come from a small set of **dimensions** with closed vocabularies. Pick one value per dimension that applies; skip dimensions that genuinely don't apply to the task. Stick to these values — ad-hoc tags (e.g. one-off feature names) make tag filtering noisy and useless.
+
+| Dimension | Purpose | Values (closed set) |
+|---|---|---|
+| **skill** | Which skill is under test | `uipath-<name>` — must match the skill folder name (e.g. `uipath-maestro-flow`, `uipath-rpa`). Required on every task. |
+| **tier** | Test depth / cost | `smoke`, `integration`, `e2e`. Required on every task. |
+| **lifecycle** | What the agent is asked to do | `activate`, `generate`, `edit`, `validate`, `execute`, `deploy` |
+| **scenario** | Starting state handed to the agent | `green-field` (empty workspace), `brown-field` (existing project), `fixture` (pre-seeded inputs) |
+| **feature** | Cross-cutting capability under test | `hitl`, `approval-gate`, `write-back`, `escalation`, `registry`, `connector-feature`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `transform`, `http` |
+
+### Rules
+
+1. **Always tag `skill` and `tier`.** Those two are mandatory — they drive `make` targets and the coverage reports.
+2. **Use only the closed-set values above.** If you think a new value is needed, propose it in the PR — do not invent tags inline. New tags should be broad enough to apply to at least three tasks.
+3. **One value per dimension.** Don't tag both `smoke` and `e2e` on the same task; pick the tier the task actually tests.
+4. **`feature` is optional and additive.** A task can carry multiple feature tags if it genuinely exercises multiple (e.g. `hitl` + `approval-gate`). Don't use `feature` tags as task identifiers — that's what `task_id` is for.
+5. **No skill-name collisions.** Don't tag a maestro-flow task with `rpa` or `agent` as a feature — use `uipath-rpa` / `uipath-agents` only for the skill under test. If you need to express "this maestro-flow task exercises an RPA resource node", add a feature tag like `rpa-resource` after discussing in the PR.
+
+### Example
+
+```yaml
+tags: [uipath-human-in-the-loop, e2e, generate, green-field, hitl, approval-gate, write-back]
+#      ^^ skill                   ^^ tier ^^ lifecycle ^^ scenario   ^^^^^^^^^^^^^^^^^^^^^ feature
+```
+
+### Useful slices this enables
+
+- `make tags TAGS="smoke"` → every skill's entry-gate checks.
+- `make tags TAGS="integration connector-feature"` → connector-feature coverage across skills.
+- `make tags TAGS="e2e green-field"` → end-to-end authoring from scratch, across skills.
+- `make tags TAGS="brown-field edit"` → modification-on-existing-project behavior.
+
 ## Directory Structure
 
 ```
@@ -96,6 +130,8 @@ Experiment files define shared agent defaults per test type. Tasks inherit these
 | `default.yaml` | Smoke | 1 | 20 | 600s | 300s |
 | `integration.yaml` | Integration | 2 | 30 | 900s | 300s |
 | `e2e.yaml` | E2E | 2 | 40 | 1200s | 300s |
+
+For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
 Task files should **not** duplicate the full `agent:` block — the experiment provides the defaults. Only specify fields that differ from the experiment:
 
@@ -132,8 +168,8 @@ initial_prompt: |
 1. Create `tests/tasks/<skill-name>/` matching the skill folder name under `skills/`.
 2. Add at minimum **1 smoke test** and **1 e2e test** (required for every new skill PR).
 3. Use minimal prompts — the goal is to test whether the skill guides the agent correctly, not to hand-hold it.
-4. Tag every task appropriately: `smoke`, `integration`, or `e2e`.
-5. Always include the skill directory name as a tag (e.g., `uipath-maestro-flow`, `uipath-rpa`).
+4. Tag every task using the [Tag Taxonomy](#tag-taxonomy): required `skill` + `tier`, plus `lifecycle`, `scenario`, and `feature` where applicable.
+5. Stick to the closed-vocabulary values. Propose new tags in the PR — do not invent them inline.
 
 ### Task ID Convention
 
