@@ -118,7 +118,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 Node positioning is stored in a **top-level `layout` object**, not on individual nodes. Do NOT put `ui` or `position` on node instances.
 
-> **Size rule — `{ "width": 96, "height": 96 }` on every node.** The file format stores **expanded** dimensions. For every standard flow node (triggers, actions, decisions, switches, loops, merges, ends, scripts, HTTP, transforms, connectors, agents, RPA, subflows), size is always `{ "width": 96, "height": 96 }`. Do NOT use rectangular dimensions like `{ "width": 200, "height": 80 }` — those render as rectangles in Studio Web. Do NOT omit `size` — the canvas falls back to an expanded-shape default that may not be 96×96. Always emit size explicitly on every `layout.nodes.<id>` entry.
+> **Size rule — `{ "width": 96, "height": 96 }` on every node.** The file format stores **expanded** dimensions. For every standard flow node, size is always `{ "width": 96, "height": 96 }`. Do NOT use rectangular dimensions like `{ "width": 200, "height": 80 }` — those render as rectangles in Studio Web. Do NOT omit `size` — the canvas falls back to an expanded-shape default that may not be 96×96. Always emit size explicitly on every `layout.nodes.<id>` entry.
 
 ```json
 "layout": {
