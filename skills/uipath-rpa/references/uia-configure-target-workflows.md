@@ -2,6 +2,8 @@
 
 **Always use the `uia-configure-target` skill** to create or find targets in the Object Repository. This skill handles the full flow: capturing the application, discovering elements, generating selectors, improving them, and registering them in the OR.
 
+> **Working directory:** run every `uip rpa uia` CLI call from the project directory — the folder containing `project.json`.
+
 ## Execution Model
 
 **Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
