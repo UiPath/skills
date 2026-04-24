@@ -91,7 +91,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 3. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Per-file `get-errors` after every create or edit; project-level `build` (or a passing `run-file` smoke test) before reporting done. See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
-6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively. **If the workflow targets 2+ distinct screens**, MUST use the parallel authoring pipeline in [references/uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) — never author multi-screen UIA XAML in a single pass.
+6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
 7. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 
 ### Execution Discipline (Both Modes)
@@ -142,7 +142,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
-| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) |
+| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-multi-step-flows.md](references/uia-multi-step-flows.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [connector-capabilities.md](references/connector-capabilities.md) → [xaml/workflow-guide.md § Step 1.9](references/xaml/workflow-guide.md) |
@@ -253,11 +253,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 ### Multi-Screen UI Automation Workflows
 
-For XAML workflows targeting 2 or more distinct screens requiring `uia-configure-target`, use the parallel authoring pipeline instead of writing the entire workflow in a single pass. The pipeline chains write agents per screen, overlapping target configuration with XAML generation. See [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md).
-
-- Use split tasks (`Configure-<N>` + `Write-<N>`) with `addBlockedBy` to enforce the chained write model — see the parallel authoring guide.
-
-Single-screen workflows skip the pipeline — one agent writes the complete file in a single pass.
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `get-errors` after each batch. See [uia-multi-step-flows.md](references/uia-multi-step-flows.md) for the capture loop and the Complete-then-advance rule.
 
 ## Resolving Packages & Activity Docs
 
@@ -289,7 +285,6 @@ Additional UIA procedures and guides:
 - [uia-multi-step-flows.md](references/uia-multi-step-flows.md) — Advancing application state between screens
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
 - [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow and indication fallback
-- [uia-parallel-xaml-authoring-guide.md](references/uia-parallel-xaml-authoring-guide.md) — Parallel XAML authoring pipeline for multi-screen workflows
 
 ## Completion Output
 

@@ -159,10 +159,6 @@ Before writing any XAML with UI activities, every UI element target **MUST** be 
 
 **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow. **NEVER** launch the target application before running `uia-configure-target`.
 
-### UI Automation — Multi-Screen Pipeline Gate (MANDATORY)
-
-Count distinct screens before the CREATE strategy below. If the workflow targets **2+ distinct screens** via `uia-configure-target`, you **MUST** use the parallel authoring pipeline in [../uia-parallel-xaml-authoring-guide.md](../uia-parallel-xaml-authoring-guide.md). The "start minimal, one activity at a time" strategy below is for single-screen workflows only.
-
 ### For CREATE Requests
 
 **Strategy:** Generate minimal working version, one activity at a time, validate frequently.

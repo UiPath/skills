@@ -9,7 +9,7 @@
 **Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
 
 Why this matters:
-- **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created — either inline (for single-file workflows) or handed off to write agents (for multi-screen pipelines). See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+- **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 - **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via the OR CLI. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
 
 Read the SKILL.md, then execute each step of the internal procedure yourself. Only spawn `Agent` where the skill explicitly says to.
@@ -42,6 +42,4 @@ Once targets are registered in the OR (via `uia-configure-target` or indication 
 
 ### Multi-Screen Workflows
 
-For XAML workflows spanning multiple screens, use the parallel authoring pipeline. The main conversation passes only OR reference IDs to each write agent — no XAML snippets. The agent handles attachment itself per the shared guide.
-
-See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for the prompt template and the chained dependency model.
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.

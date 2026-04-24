@@ -37,10 +37,6 @@ Command syntax: see the `servo` skill.
 
 ## Multi-Screen Workflows
 
-For XAML workflows that span multiple screens, use the parallel authoring pipeline: one write agent per screen, chained in order. The screen boundary for each write agent aligns with the Complete-then-advance rule above — everything configured before the next `uia interact` / `servo` advance belongs to one write agent's scope.
-
-Single-screen workflows skip the pipeline: build the full workflow in one pass using all the collected OR references.
-
-See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for the full pipeline (chained write agents, OR reference handoff, task structure, and prompt template pointer).
+For XAML workflows that span multiple capture screens, add each screen's activities to the workflow as its targets are registered. Each batch aligns with the Complete-then-advance rule above: everything configured before the next `uia interact` / `servo` advance belongs to one batch. Validate with `get-errors` after each batch to catch issues early.
 
 See also: [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the `uia-configure-target` skill policy and indication fallback routing.
