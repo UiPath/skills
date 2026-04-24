@@ -28,7 +28,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a solution with uip solution new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -36,7 +36,7 @@ success_criteria:
   - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -44,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -52,7 +52,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on uip commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -60,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent linked flow project to solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
