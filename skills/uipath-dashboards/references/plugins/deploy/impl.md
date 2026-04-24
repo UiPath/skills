@@ -10,7 +10,31 @@ Same as Build. Halt if not logged into `uip`.
 ### Step 1 — Require state
 Check `<cwd>/.uipath-dashboards/state.json`. Missing → halt: *"No dashboard built here. Run Build first."* Deploy never scaffolds.
 
-### Step 2 — Classify deploy type
+### Step 2 — Resolve deploy-time folder
+`state.json.folderKey` is typically `null` at this point — Build leaves it unset because folder is a Deploy concern (which Orchestrator folder hosts the app, not which folder's data the widgets query).
+
+If `state.json.folderKey` is null:
+1. Fetch folder list via SDK:
+   ```ts
+   import { Folders } from '@uipath/uipath-typescript';
+   const folders = new Folders(sdk);
+   const list = await folders.getAll();
+   ```
+2. Present numbered picker:
+   ```
+   Which Orchestrator folder should this app be deployed to?
+   (This controls who can open the app via folder permissions — it's
+    independent of which folder's data the widgets show.)
+     1. Main       (a3f2-...)
+     2. Shared     (b7c1-...)
+     3. Engineering (d4e9-...)
+     > 1
+   ```
+3. Write `state.json.folderKey` — persisted for subsequent upgrades.
+
+If `state.json.folderKey` is already set (user deployed before, OR the Build prompt named a folder) → skip the picker; use the existing value.
+
+### Step 3 — Classify deploy type
 Read `state.json.deployment.systemName`:
 - `null` → **Fresh deploy**
 - non-null → **Upgrade deploy**
@@ -24,7 +48,7 @@ Pipeline: `Validate → Plan → Confirm → Build → Pack → Publish → Depl
 ### Validate
 - `<project>/package.json`, `vite.config.ts`, `uipath.json` exist.
 - `<project>/src/dashboard/` non-empty (at least `Dashboard.tsx` + 1 widget).
-- `state.json.folderKey`, `state.json.app.name`, `state.json.app.semver` populated.
+- `state.json.folderKey` populated (after Step 2), `state.json.app.name`, `state.json.app.semver` populated.
 - Halt with targeted error + fix hint on any miss.
 
 ### Plan

@@ -33,8 +33,8 @@ Delegate to [../../primitives/scaffold.md](../../primitives/scaffold.md). This:
 Delegate to [../../primitives/intent-capture.md](../../primitives/intent-capture.md). This:
 1. Derives `app.name` / `routingName` as kebab-case from the prompt.
 2. Reads `auth-context` for env / orgName / tenantName.
-3. Fetches folder list via SDK, presents numbered picker, user selects → `folderKey`.
-4. Writes initial `<project>/.uipath-dashboards/state.json` per [state-file.md](../../primitives/state-file.md).
+3. **Does NOT fetch a folder list by default.** Folder is a Deploy concern (which Orchestrator folder hosts the deployed app) and is resolved by [../deploy/impl.md § Step 2](../deploy/impl.md). ONLY exception: if the user's prompt explicitly scopes to a folder ("for the Finance folder", "in X folder"), resolve it at Build time and write to `state.json.folderKey` so generated query hooks pass it through.
+4. Writes initial `<project>/.uipath-dashboards/state.json` — typically with `folderKey: null`.
 
 ### Generate
 For each widget implied by the user's prompt:

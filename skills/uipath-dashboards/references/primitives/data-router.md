@@ -28,7 +28,7 @@ Translate a user-intent phrase ("top agents by invocation", "error rate over 7 d
 5. **[../sdk/service-semantics.md](../sdk/service-semantics.md)** is the SDK's mental model — what each service's canonical row is, its filterable dimensions, its time axis, its idiomatic column set for detail views. Read this when deriving any metric, especially for choosing which service owns the data.
 6. **Consult `sdk/invariants.md`** BEFORE writing any filter — server-side field names, pagination rule, zero-fill rule. Mixing client/server names yields silent no-ops.
 7. **Stamp scopes from `sdk/scope-map.md`** — the router output's `scope` array merges into `state.json.scopes` (informational in secret-mode).
-8. **Folder-scoped by default.** Include `state.json.folderKey` unless the intent is explicitly cross-folder (user phrase contains "across all folders" / "tenant-wide").
+8. **Tenant-wide by default.** Queries do NOT pass `folderId` / `folderKey` unless the user's prompt explicitly names a folder ("for the Finance folder", "in X folder") OR `state.json.folderKey` was set at Build (which only happens when the prompt named a folder). The folder in `state.json` after Deploy is where the *app gets deployed*, not where its *data comes from* — do not conflate these. See [intent-capture.md](intent-capture.md) § "Build-time folder resolution".
 9. **Compose from primitives, don't reinvent.** `fetchAllWithFilter`, `zeroFill`, `isoDaysAgo`, `hourBucket`, `groupBy`, `dedupById`, `percentile`, `delta` are all in `src/lib/queries/_shared.ts` and `src/lib/utils.ts`. The generator uses them; it does NOT write a new `.reduce()` for every metric.
 
 ## Details
@@ -44,6 +44,19 @@ The resolution procedure for ANY metric:
 3. **Validate against invariants** — server-side OData names (not client-side renames), cursor-object pagination, dedup-by-id, zero-fill time buckets, drop-epoch-fallbacks.
 4. **Check [intent-map.md](../sdk/intent-map.md)** as a sanity check — if there's a worked example for this or a similar metric, does your derivation match? If not, step back and verify your axes.
 5. **If the metric can't be derived** (service not in SDK, data genuinely unavailable), halt and tell the user what you CAN query that's adjacent — never fabricate.
+
+### Folder scoping at query time
+
+Two distinct concerns — never conflate:
+
+| Concern | Controlled by | Set when |
+|---|---|---|
+| **Query-time folder scope** — which folder's data shows in the widget | prompt parse at Build time | Only if user says "for the X folder" or similar |
+| **Deploy-time folder** — which Orchestrator folder hosts the deployed Coded Web App (access control) | Deploy's folder picker | Always set at Deploy (required) |
+
+The two folders *may* be the same or different — that's the user's choice. The skill doesn't assume they're linked.
+
+Generator rule: if `state.json.folderKey` is null at Build time (typical case), generated query hooks call `service.getAll({ filter })` with NO folder header. If set (prompt named a folder), pass `folderId` / `folderKey` per the service's semantics (see [../sdk/service-semantics.md § Cross-cutting semantics § Folder identity](../sdk/service-semantics.md)).
 
 ### v2+ reserved branches
 

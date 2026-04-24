@@ -42,11 +42,12 @@ Atomic on-disk state file.
 ```
 
 ### Field ownership
-| Field | Written by |
-|---|---|
-| `schemaVersion`, `env`, `orgName`, `tenantName`, `folderKey` | `intent-capture` (first Build) |
-| `app.name`, `app.routingName`, `app.semver` | `intent-capture` (first Build), `deploy-cli` (semver bumps) |
-| `deployment.*` | `deploy-cli` or `deploy-fallback` (on successful deploy/upgrade) |
+| Field | Written by | Notes |
+|---|---|---|
+| `schemaVersion`, `env`, `orgName`, `tenantName` | `intent-capture` (first Build) | derived from `auth-context`; never prompted |
+| `folderKey` | **Deploy** by default; Build only if the user's prompt explicitly scopes to a folder | Folder is a Deploy concern — which Orchestrator folder hosts the deployed app, not which folder's data the widgets query. See [../plugins/deploy/impl.md § Step 2](../plugins/deploy/impl.md). |
+| `app.name`, `app.routingName`, `app.semver` | `intent-capture` (first Build), `deploy-cli` (semver bumps) | |
+| `deployment.*` | `deploy-cli` or `deploy-fallback` (on successful deploy/upgrade) | |
 
 ### Atomic write recipe
 ```bash
