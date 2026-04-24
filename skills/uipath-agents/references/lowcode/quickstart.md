@@ -39,7 +39,9 @@
 
 13. **External tools require solution-level resource files and debug_overwrites.json.** When adding an external tool (e.g., an RPA process, agent, API workflow, or agentic process already deployed in Orchestrator), you must create the agent-level `resources/{ToolName}/resource.json`, solution-level resource files under `resources/solution_folder/`, AND a `userProfile/<userId>/debug_overwrites.json` for folder resolution. Without these, Studio Web will show "resource is missing in this environment". See [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files for External Tools.
 
-14. **Never manually edit `storageVersion`.** It is managed by `uip agent validate` (which migrates files to the latest version on success) and by Studio Web on import. If validate reports that `storageVersion` is newer than supported, upgrade uipcli rather than editing the field by hand.
+14. **Read [guardrails-guide.md](guardrails-guide.md) before adding or editing guardrails.** The guardrail schema is specific — do NOT guess field names. The guide contains the exact JSON structure, all valid `$guardrailType` values (`"custom"` and `"builtInValidator"` only), validator types, actions, and rules. Writing guardrails without reading the guide first will produce invalid JSON that the runtime rejects silently.
+
+15. **Never manually edit `storageVersion`.** It is managed by `uip agent validate` (which migrates files to the latest version on success) and by Studio Web on import. If validate reports that `storageVersion` is newer than supported, upgrade uipcli rather than editing the field by hand.
 
 15. **Inline agents in flows use `uipath.agent.autonomous` nodes.** The node's `model.source` references the inline agent's `projectId` UUID. The agent definition lives in a subdirectory inside the flow project. See [agent-flow-integration.md](agent-flow-integration.md).
 
@@ -691,6 +693,97 @@ The upload response includes a `Data.DesignerUrl` — open it to verify the cont
 
 ---
 
+## Quick Start: Scenario 8 — Agent with Guardrails
+
+Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
+
+> **MANDATORY: Read [guardrails-guide.md](guardrails-guide.md) BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
+
+### Step 1 — Verify existing agent
+
+Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow Scenario 1 first.
+
+### Step 2 — Add a built-in PII validator
+
+Add a guardrail object to the `guardrails` array in `agent.json`:
+
+```json
+"guardrails": [
+  {
+    "$guardrailType": "builtInValidator",
+    "id": "<GENERATE_UUID>",
+    "name": "PII detection guardrail",
+    "description": "Detects personally identifiable information using Azure Cognitive Services",
+    "validatorType": "pii_detection",
+    "validatorParameters": [
+      {
+        "$parameterType": "enum-list",
+        "id": "entities",
+        "value": ["Email", "PhoneNumber", "CreditCardNumber"]
+      },
+      {
+        "$parameterType": "map-enum",
+        "id": "entityThresholds",
+        "value": {
+          "Email": 0.5,
+          "PhoneNumber": 0.5,
+          "CreditCardNumber": 0.5
+        }
+      }
+    ],
+    "action": {
+      "$actionType": "block",
+      "reason": "PII detected in output."
+    },
+    "enabledForEvals": true,
+    "selector": {
+      "scopes": ["Agent"]
+    }
+  }
+]
+```
+
+### Step 3 — Add a custom word rule guardrail
+
+Append a second guardrail to the same `guardrails` array:
+
+```json
+{
+  "$guardrailType": "custom",
+  "id": "<GENERATE_UUID>",
+  "name": "Block forbidden terms",
+  "description": "",
+  "rules": [
+    {
+      "$ruleType": "word",
+      "fieldSelector": {
+        "$selectorType": "all"
+      },
+      "operator": "contains",
+      "value": "CONFIDENTIAL"
+    }
+  ],
+  "action": {
+    "$actionType": "block",
+    "reason": "Forbidden term detected."
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Agent", "Llm"]
+  }
+}
+```
+
+### Step 4 — Validate
+
+```bash
+uip agent validate "<AGENT_NAME>" --output json
+```
+
+Confirm the guardrails appear in the validated output without errors.
+
+---
+
 ## Inline Agents in Flow Projects
 
 Agents can be embedded as a subdirectory inside a flow project. Read [embedding-in-flows.md](embedding-in-flows.md) for the full guide.
@@ -717,6 +810,13 @@ Key differences from standalone:
 11. **Do not call raw Automation.Solutions REST APIs** — always use `uip solution` commands.
 12. **Do not camelCase `contextType` or `retrievalMode` values** — write `"datafabricentityset"`, `"deeprag"`, `"batchtransform"` (all lowercase). `uip agent validate` accepts camelCase but Studio Web silently drops the resource from the agent UI on import.
 13. **Do not pass `--for-low-code-agents` to `uip is connectors list` or `uip is activities list`** — this flag has been removed. Run the commands without it and filter yourself if needed.
+14. **Do not omit discriminator fields in guardrails** — every action needs `$actionType` (not `type`), every validator parameter needs `$parameterType` and `id` (not `name`), every custom rule needs `$ruleType`, every field selector needs `$selectorType`. Missing any discriminator causes `uip agent validate` to fail.
+15. **Do not use snake_case for PII entity names** — use PascalCase: `"Email"` not `"email_address"`, `"PhoneNumber"` not `"phone_number"`. See [guardrails-guide.md](guardrails-guide.md) for the full entity list.
+16. **Do not add `prompt_injection` or `user_prompt_attacks` to Tool or Agent scope** — these validators only work with `"Llm"` scope and `PreExecution` stage
+17. **Do not add `intellectual_property` to Tool scope or PreExecution stage** — only `"Llm"` and `"Agent"` scopes, `PostExecution` only
+18. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Configure guardrails at the agent.json root `guardrails` array only.
+19. **Do not use lowercase scope values in guardrails** — use `"Agent"`, `"Llm"`, `"Tool"` (PascalCase), not `"agent"`, `"llm"`, `"tool"`
+20. **Do not expect `uip solution resource refresh` to wire non-StorageBucket index data sources** — GoogleDrive/OneDrive/Dropbox/Confluence/Attachments indexes, `attachments` contexts, and `datafabricentityset` contexts are not auto-generated. Refresh warns + skips them; any solution-level files for these must be hand-authored.
 
 ## Task Navigation
 
@@ -730,6 +830,7 @@ Key differences from standalone:
 | Add Integration Service tool | Scenario 5 above, [agent-json-format.md](agent-json-format.md) § Integration Service tool resource |
 | Add escalation to an Action Center app | Scenario 6 above, [agent-json-format.md](agent-json-format.md) § Escalation resource |
 | Add an index-backed context (Context Grounding) | Scenario 7 above, [agent-json-format.md](agent-json-format.md) § Context resource |
+| Add guardrails (PII, harmful content, custom rules) | Scenario 8 above, [guardrails-guide.md](guardrails-guide.md) |
 | See available CLI commands | [cli-commands.md](cli-commands.md) |
 | Embed an agent in a flow | [embedding-in-flows.md](embedding-in-flows.md) |
 | Wire agents in a solution (UUIDs, resource files) | [agent-solution-guide.md](agent-solution-guide.md) |

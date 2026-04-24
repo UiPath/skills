@@ -74,9 +74,12 @@ Primary configuration file. Edit directly.
       ]
     }
   ],
+  "guardrails": [],
   "projectId": "<AUTO_GENERATED_UUID>"
 }
 ```
+
+> **`guardrails`** — array of guardrail objects that inspect agent inputs/outputs for policy violations. See [guardrails-guide.md](guardrails-guide.md) for the full schema, validator reference, and examples.
 
 ### Settings
 
@@ -267,7 +270,7 @@ The `validate` command reads these files, resolves `referenceKey` for solution t
     "exampleCalls": []                // Required for external tools
   },
   "guardrail": {
-    "policies": []
+    "policies": []              // Auto-populated by `uip agent validate` from root-level guardrails. Do not edit manually. See guardrails-guide.md.
   },
   "id": "<uuid>",              // Stable; generate once, never change
   "referenceKey": "<release-key-guid>", // For external: the release Key (lowercase GUID from /odata/Releases API). For solution-internal: leave empty, validate resolves it.
@@ -351,7 +354,7 @@ Integration Service tools call connector activities (e.g., Slack Send Message, W
   },
   "iconUrl": "<connector image URL — see rules below>",
   "settings": {},
-  "guardrail": { "policies": [] },
+  "guardrail": { "policies": [] },     // Auto-populated by validate from root-level guardrails. Do not edit manually. See guardrails-guide.md.
   "isPreview": false,
   "properties": {
     "toolPath": "<path from metadata, e.g. /v2/webSearch>",
@@ -803,7 +806,7 @@ The root `agent.json` does not contain a `resources` field. Resources are define
     "folderPath": "solution_folder"
   },
   "guardrail": {
-    "policies": []
+    "policies": []              // Legacy placeholder — do not populate. See guardrails-guide.md.
   },
   "id": "<uuid>",
   "referenceKey": "",           // Leave empty; validate resolves it and writes it back to disk
