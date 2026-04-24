@@ -17,7 +17,7 @@ Before executing each plugin's T-entries, consult the strategy matrix in [case-e
 
 Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
 
-**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Rule #23a](../SKILL.md) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
+**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Rule #24](../SKILL.md) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
 > - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
@@ -120,63 +120,21 @@ Skeleton tasks integrate with the rest of the graph:
 
 ## Step 9.5 — Skeleton-mode validate + HARD STOP
 
-End of Phase 2a. See [phased-execution.md § Hard stop](phased-execution.md) for the full contract.
+End of Phase 2a. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Hard stop](phased-execution.md). This section is a bridge — do NOT duplicate that contract here.
 
-### 9.5.1 — Skeleton-mode validate
+1. Run skeleton-mode validate:
 
-```bash
-uip maestro case validate "<caseplan.json path>" --mode skeleton --output json
-```
+   ```bash
+   uip maestro case validate "<caseplan.json path>" --mode skeleton --output json
+   ```
 
-Skeleton mode tolerates expected Phase 2a incompleteness (unbound required fields, missing condition rules, missing terminal exit, missing secondary-stage exit conditions) while still catching structural bugs (JSON shape, dangling edges, duplicate conditions, missing trigger/stage, name uniqueness).
+   On failure: halt — do NOT auto-retry. Reported errors are structural Phase 2a bugs, not expected incompleteness. Fix the offending plugin step's output and re-run that step; then re-run validate. Never present the hard stop with a failing skeleton validate.
 
-- **On success:** proceed to 9.5.2.
-- **On failure:** halt. Reported errors are structural bugs in Phase 2a, not expected incompleteness. Fix the offending plugin step and re-run. Do not present the hard stop with a failing skeleton validate.
+2. Print the hard-stop summary ([phased-execution.md § Summary content](phased-execution.md)).
 
-### 9.5.2 — Hard-stop summary
+3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #26.
 
-Print before the prompt:
-
-1. Counts: primary stages / exception stages / edges / triggers / tasks total / skeleton tasks / unresolved resources.
-2. Skeleton validation result: `Passed (0 errors, N warnings)`.
-3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
-
-Do not enumerate every task — Studio Web visualization fills that role.
-
-### 9.5.3 — First prompt
-
-Use **AskUserQuestion**. Mandatory on every run — auto mode, non-interactive mode, and prior approvals do NOT bypass this prompt (SKILL.md Rule #25). Never proceed to Phase 2b without a direct user response here.
-
-- `Publish for review`
-- `Skip publish and continue`
-- `Abort`
-
-### 9.5.4 — Publish branch
-
-On `Publish for review`:
-
-```bash
-uip solution upload "<SolutionDir>" --output json
-```
-
-Print the returned `DesignerUrl`. Then **AskUserQuestion** (second prompt):
-
-- `Continue to phase 2b`
-- `Abort`
-
-### 9.5.5 — Abort branch
-
-On `Abort` (from either prompt):
-
-1. Write in-memory issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
-2. Print paths of `caseplan.json`, `tasks.md`, `registry-resolved.json`, and the solution directory.
-3. Exit.
-
-**Do NOT delete any artifacts.** User owns the partial state.
-
-### 9.5.6 — Continue branch
-
-On `Skip publish and continue`, or `Continue to phase 2b` after publish: proceed to Phase 2b Step 9.6.
+On continue (either `Skip publish and continue` or `Continue to phase 2b` after publish): proceed to Step 9.6.
 
 ---
 

@@ -54,7 +54,7 @@ uip maestro case validate "<caseplan.json path>" --mode skeleton --output json
 
 Skeleton mode relaxes the validator to tolerate intentional Phase 2a incompleteness: unbound required fields, missing condition rules, missing terminal exit, missing secondary-stage exit conditions. All structural checks (JSON shape, missing trigger, dangling edges, duplicate conditions, name uniqueness) remain errors.
 
-**On skeleton-validate failure:** halt. The artifact is structurally broken — a Phase 2a bug, not an expected incompleteness. Fix the offending plugin step and re-run. Do not proceed to the hard stop with a failing skeleton validate.
+**On skeleton-validate failure:** halt immediately — do NOT auto-retry. The artifact is structurally broken (a Phase 2a bug, not an expected incompleteness). Fix the offending plugin step's output and re-run that step, then re-run validate. No retry-count budget applies here — skeleton-validate failures are deterministic structural bugs that retrying the same inputs will not resolve. Do not proceed to the hard stop with a failing skeleton validate.
 
 ## Hard stop
 
@@ -117,7 +117,7 @@ Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — 
 After re-entry:
 
 1. **Connector task detail** — for each connector task in `tasks.md`, run the plugin's `impl-json.md` detail steps: `is resources describe` (or `is triggers describe`), write `data.inputs[]` / `data.outputs[]` schema + resolved values.
-2. **Non-connector task I/O value binding** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). For each task's inputs in `tasks.md` order, write the literal, expression, or cross-task reference (resolved to `=vars.<var>`) into `task.data.inputs[i].value`.
+2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write the literal, expression, or cross-task reference (resolved to `=vars.<var>`) into `task.data.inputs[i].value`. Connector tasks have their `data.inputs[]` schema written in step 1 above; value binding happens here in step 2, the same as non-connector tasks.
 3. **Conditions** — per-scope plugin `impl-json.md`:
    - Stage entry conditions
    - Stage exit conditions
