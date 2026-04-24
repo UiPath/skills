@@ -1,0 +1,67 @@
+task_id: skill-hitl-quality-approval-gate-schema
+description: >
+  Quality test: agent must design a correct HITL schema for an invoice
+  approval workflow — covering inputs, outputs, and outcomes — and confirm
+  with the user before running any CLI. Tests B1, B2, B3, B4.
+tags: [uipath-human-in-the-loop, integration, schema, approval-gate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I need to add a human approval step to my invoice processing flow.
+  A finance manager needs to see: the invoice ID, vendor name, and total
+  amount. They need to add an approval comment. They can either Approve
+  or Reject the invoice.
+
+  Design the HITL schema and write it to schema_proposal.json. Do NOT
+  run any CLI commands yet — just produce the schema for my review.
+
+  schema_proposal.json format:
+  {
+    "confirmed": false,
+    "schema": {
+      "inputs": [{"name": "...", "type": "..."}],
+      "outputs": [{"name": "...", "type": "..."}],
+      "outcomes": [{"name": "...", "type": "string"}]
+    }
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "schema_proposal.json was written"
+    path: "schema_proposal.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Schema has required inputs (invoiceId, vendor, amount)"
+    path: "schema_proposal.json"
+    assertions:
+      - expression: "length(schema.inputs)"
+        operator: gte
+        expected: 3
+      - expression: "length(schema.outcomes)"
+        operator: gte
+        expected: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Schema includes Approve outcome"
+    path: "schema_proposal.json"
+    includes:
+      - "Approve"
+      - "Reject"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "confirmed field is false — agent did not run CLI prematurely"
+    path: "schema_proposal.json"
+    includes:
+      - '"confirmed": false'
+    weight: 2.0
+    pass_threshold: 1.0
+

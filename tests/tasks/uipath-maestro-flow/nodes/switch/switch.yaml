@@ -1,0 +1,50 @@
+task_id: skill-flow-switch
+description: >
+  Create a UiPath Flow that takes a quarter number (1-4) and uses a Switch node
+  to map it to the corresponding season name. Exercises Switch node discovery,
+  multi-case routing, and per-branch Script logic.
+tags: [uipath-maestro-flow, e2e, generate, ootb]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "SeasonLookup" that takes a quarter number
+  (1, 2, 3, or 4) as input and returns the corresponding season name:
+    - 1 -> "Spring"
+    - 2 -> "Summer"
+    - 3 -> "Fall"
+    - 4 -> "Winter"
+
+  The flow should branch into separate cases for each quarter value.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate SeasonLookup/SeasonLookup/SeasonLookup.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Structural and execution checks --
+  - type: run_command
+    description: "Flow contains a Switch node and debug returns correct season for quarter 2"
+    command: "python3 $TASK_DIR/check_switch_flow.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

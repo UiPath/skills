@@ -6,7 +6,7 @@ All workflow and test case files inherit from `CodedWorkflow`, which provides bu
 
 | Method | Description |
 |--------|-------------|
-| `Log(string message, LogLevel level = LogLevel.Info, IDictionary<string, object> additionalLogFields = null)` | Output log messages with optional level and custom fields |
+| `Log(string message, LogLevel level = LogLevel.Info, IDictionary<string, object> additionalLogFields = null)` | Output log messages with optional level and custom fields. Valid `LogLevel` values: `Trace`, `Verbose`, `Info`, `Warn`, `Error`, `Fatal`. Note: `LogLevel.Warning` does not exist — use `LogLevel.Warn` |
 | `Delay(TimeSpan time)` / `Delay(int delayMs)` | Pause execution synchronously |
 | `DelayAsync(TimeSpan time)` / `DelayAsync(int delayMs)` | Pause execution asynchronously |
 | `BuildClient(string scope = "Orchestrator", bool force = true)` | Build an authenticated `HttpClient` for Orchestrator or custom scopes |
@@ -50,11 +50,21 @@ var result = RunWorkflow(workflowPath, new Dictionary<string, object>
 });
 ```
 
+> **Return value:** `RunWorkflow` returns `IDictionary<string, object>`. Argument direction is determined by the `Execute` method signature:
+>
+> - **Single return value** (`public string Execute(int a, int b)`) — the result is stored under the key `"Output"`. Access it as `result["Output"]`.
+> - **Multiple outputs via tuple** (`public (string a, string b) Execute()`) — each tuple member becomes a separate key: `result["a"]`, `result["b"]`. These are Out arguments.
+> - **InOut arguments** — when a parameter name appears in both the input parameters and the return tuple, it is an InOut argument. Example: `public (string a, string b) Execute(string b, int c)` — `a` is Out, `b` is InOut (same name in input and output), `c` is In.
+>
+> For same-project workflows, prefer the type-safe `workflows.MyWorkflow()` property — it returns the declared return type directly and avoids this dictionary lookup.
+
 ## Service Properties (injected based on installed packages)
 
 Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.ReadRange(...)`, `testing.VerifyExpression(...)`, etc. See the Service-to-Package mapping in SKILL.md.
 
 ## Integration Service Connections
+
+> **Two IS connection patterns exist in coded workflows.** This section covers first-party package connections (Office365, GSuite) where Studio auto-generates `ConnectionsManager.cs` / `ConnectionsFactory.cs`. For raw IS connectors (Jira, Salesforce, custom) that use `CodedConnectorConfiguration` + agent-generated `ISConnections.cs`, see [integration-service-guide.md](integration-service-guide.md).
 
 When packages that use Integration Service connections are installed (e.g. `UiPath.MicrosoftOffice365.Activities`, `UiPath.GSuite.Activities`), Studio auto-generates two files in `.codedworkflows/`:
 
@@ -191,52 +201,75 @@ var jobInfo = GetRunningJobInformation();
 Log($"Org: {jobInfo.OrganizationId}, Tenant: {jobInfo.TenantName}, Folder: {jobInfo.FolderName}");
 ```
 
-## Extending CodedWorkflow with Before/After Hooks
+## Before/After Hooks (IBeforeAfterRun)
 
-To add shared setup/teardown logic that runs before and after ALL test cases, create a base class that implements `IBeforeAfterRun`:
+Any class inheriting from `CodedWorkflow` can implement `IBeforeAfterRun` to add setup/teardown logic. Two approaches:
 
+**Per-file:** Implement directly on a workflow or test case — hooks run only for that file:
 ```csharp
-// CodedWorkflowBase.cs — Coded Source File (NOT a workflow, NO .cs.json)
+public class TestLoginFlow : CodedWorkflow, IBeforeAfterRun
+{
+    public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
+    public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
+
+    [TestCase]
+    public void Execute() { /* Before() already ran, After() runs after */ }
+}
+```
+
+**Project-wide:** Use a `partial class CodedWorkflow` — hooks apply to every workflow and test case:
+```csharp
+// CodedWorkflowHooks.cs — Coded Source File (no entry point)
 using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public class CodedWorkflowBase : CodedWorkflow, IBeforeAfterRun
+    public partial class CodedWorkflow : IBeforeAfterRun
     {
-        public void Before(BeforeRunContext context)
-        {
-            Log("Execution started for " + context.RelativeFilePath);
-            // Setup: open app, log in, navigate to starting state
-        }
+        public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
+        public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
+    }
+}
+```
 
-        public void After(AfterRunContext context)
+## Extending CodedWorkflow with Partial Classes
+
+The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks:
+
+```csharp
+// CodedWorkflowExtensions.cs — Coded Source File (no entry point)
+using UiPath.CodedWorkflows;
+
+namespace MyProject
+{
+    public partial class CodedWorkflow
+    {
+        protected string GetEnvironmentUrl()
         {
-            Log("Execution finished for " + context.RelativeFilePath);
-            // Teardown: close app, clean up test data
+            var env = system.GetAsset("Environment").ToString();
+            return env == "prod" ? "https://app.example.com" : "https://staging.example.com";
         }
     }
 }
 ```
 
-Then change your workflows/test cases to inherit from `CodedWorkflowBase` instead of `CodedWorkflow`:
+### Key Points
 
-```csharp
-// TestInvoiceCreation.cs — Test Case
-using UiPath.CodedWorkflows;
+- **`IBeforeAfterRun`** is an interface — any `CodedWorkflow`-derived class can implement it
+- **`partial class CodedWorkflow`** is a C# feature — extends the auto-generated class for all files in the project
+- **They combine:** use `partial class CodedWorkflow : IBeforeAfterRun` when you want hooks on every file
+- **Use `IBeforeAfterRun` on individual files** when only specific workflows/test cases need setup/teardown
+- **Use `partial class CodedWorkflow`** (without hooks) to add shared methods, properties, or constants
+- **Context objects** (`BeforeRunContext`, `AfterRunContext`) provide `RelativeFilePath`, `WorkflowFilePath`, etc.
+- **After() runs even on failure** — guaranteed cleanup
 
-namespace MyProject
-{
-    public class TestInvoiceCreation : CodedWorkflowBase  // Inherits from CodedWorkflowBase
-    {
-        [TestCase]
-        public void Execute()
-        {
-            // Before() runs automatically before this method
-            // ... test logic ...
-            // After() runs automatically after this method
-        }
-    }
-}
-```
+### When to Use Which
 
-This approach ensures `Before()` and `After()` run for all workflows/test cases that inherit from `CodedWorkflowBase`.
+| Scenario | Pattern |
+|----------|---------|
+| One test case needs its own setup/teardown | `IBeforeAfterRun` on the class |
+| All test cases share the same setup/teardown | `partial class CodedWorkflow : IBeforeAfterRun` |
+| Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
+| All of the above | Combine patterns in one or more partial files |
+
+Code templates: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)

@@ -21,7 +21,7 @@ Every flow has a `variables` object at the top level of the `.flow` file. It con
 ```
 
 | Section | Purpose |
-|---|---|
+| --- | --- |
 | `globals` | Workflow-level variables: inputs, outputs, and state |
 | `nodes` | Node output variables (auto-generated when using CLI `node add`) |
 | `variableUpdates` | Per-node expressions that update state variables |
@@ -35,7 +35,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 ### Directions
 
 | Direction | Role | Readable | Writable | Use case |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `in` | External input | Yes | No | Values passed when the flow is triggered or called |
 | `out` | Workflow output | Yes | Mapped on End node | Values returned when the flow completes |
 | `inout` | Internal state | Yes | Yes (via `variableUpdates`) | Counters, accumulators, flags shared across nodes |
@@ -51,7 +51,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   schema?: object         // JSON Schema (draft-07) for complex types
   defaultValue?: unknown  // Initial value (must match type)
   description?: string    // Human-readable description
-  triggerNodeId?: string  // Trigger node this input is associated with (root flows only)
+  triggerNodeId?: string  // Trigger node this input is associated with (works in both root flows and subflows)
 }
 ```
 
@@ -134,7 +134,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 ### Type Reference
 
 | Type | Default Value | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `string` | `""` | Default type if omitted |
 | `number` | `0` | Integer or float |
 | `boolean` | `false` | |
@@ -147,7 +147,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 
 Node variables represent outputs produced by nodes during execution. They are read-only and referenced via `$vars.{nodeId}.{outputId}`.
 
-When you add a node via `uip flow node add`, node variables are created automatically. When editing JSON directly, add them manually.
+When you add a node via `uip maestro flow node add`, node variables are created automatically. When editing JSON directly, add them manually.
 
 ### Schema
 
@@ -264,6 +264,8 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
 
+> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`).
+
 ---
 
 ## Output Mapping on End Nodes
@@ -308,18 +310,21 @@ Used for conditions, input values, variable updates, and output mappings. The `=
 
 ### Template Expressions (`{ }`)
 
-Used for string interpolation in text fields. Expressions inside single braces are evaluated and converted to strings.
+Used for string interpolation in **native flow string fields** only. Expressions inside single braces are evaluated and converted to strings.
 
 ```
 Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 ```
 
+> **Brace-templates do NOT work in Integration Service activity inputs.** The flow-layer template runner only processes native flow fields (decision expressions, variable updates, end-node output `source`, script bodies, agent prompt text). Fields inside `inputs.detail.bodyParameters` on `core.action.http.v2` or `uipath.connector.*` activity nodes — `url`, `headers`, `body`, `query` — are passed through to the IS runtime unchanged, so `{$vars.article}` ships literally. Observed behavior: the `$` is stripped and the braces survive (`user/{vars.article}` reaches the service). **For any dynamic value in an IS activity input, use `=js:` instead** — e.g., `` "url": "=js:`https://.../user/${$vars.article}`" `` or `"headers": { "Authorization": "=js:'Bearer ' + $vars.token" }`.
+
 ### Comparison
 
 | Feature | `=js:` | `{ }` template |
-|---|---|---|
+| --- | --- | --- |
 | Return type | Any (boolean, number, object, array) | Always string |
-| Use case | Conditions, inputs, mappings | Text/prompt fields |
+| Use case | Conditions, inputs, mappings | Native flow text/prompt fields only |
+| Works in IS activity inputs (HTTP URL/headers/body, connector `bodyParameters`) | Yes | **No — use `=js:`** |
 | Full JS | Yes | Expression-only (no statements) |
 | Prefix | `=js:` required | No prefix, braces inline |
 
@@ -330,11 +335,11 @@ Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 These variables are available in all expression contexts:
 
 | Global | Description | Access pattern |
-|---|---|---|
+| --- | --- | --- |
 | `$vars` | All workflow and node variables | `$vars.{variableId}` or `$vars.{nodeId}.{outputId}` |
 | `$metadata` | Workflow metadata (instanceId, executionId) | `$metadata.instanceId` |
 | `$self` | Current node's output (HTTP branch conditions only) | `$self.output.statusCode` |
-| `iterator` | Loop iteration context (inside loops only) | `iterator.currentItem`, `iterator.currentIndex` |
+| `$vars.<loopId>.*` | Loop iteration context (inside loops only) | `$vars.loop1.currentItem`, `$vars.loop1.currentIndex` |
 
 ### `$vars` Access Patterns
 
@@ -367,18 +372,19 @@ Expressions behave differently depending on where they appear.
 
 ### Script Node Body
 
-The `inputs.script` field contains a function body that **must return an object**. Full JavaScript statements are allowed (variables, loops, conditionals). The returned object becomes `$vars.{nodeId}.output`.
+The `inputs.script` field contains a function body. Full JavaScript statements are allowed (variables, loops, conditionals). The returned value becomes `$vars.{nodeId}.output`.
+
+Scripts can return any value — objects, numbers, strings, arrays, or booleans:
 
 ```javascript
+// Returning an object (multiple fields)
 const items = $vars.fetchData.output.body.items;
 const filtered = items.filter(i => i.active);
-return {
-  count: filtered.length,
-  names: filtered.map(i => i.name)
-};
-```
+return { count: filtered.length, names: filtered.map(i => i.name) };
 
-> **Script nodes always return objects.** `return 42` or `return "hello"` will fail. Use `return { value: 42 }`.
+// Returning a bare value (useful for accumulators in loops)
+return $vars.total + $vars.loop1.currentItem;
+```
 
 ### Decision Node (`inputs.expression`)
 
@@ -398,9 +404,9 @@ Each case has an expression evaluated in order. First truthy result wins; otherw
 {
   "inputs": {
     "cases": [
-      { "label": "Low", "expression": "=js:$vars.score <= 30" },
-      { "label": "Medium", "expression": "=js:$vars.score <= 70" },
-      { "label": "High", "expression": "=js:$vars.score > 70" }
+      { "label": "Low", "expression": "$vars.score <= 30" },
+      { "label": "Medium", "expression": "$vars.score <= 70" },
+      { "label": "High", "expression": "$vars.score > 70" }
     ]
   }
 }
@@ -411,7 +417,7 @@ Each case has an expression evaluated in order. First truthy result wins; otherw
 Uses `$self` to reference the current HTTP node's response.
 
 ```
-=js:$self.output.statusCode >= 200 && $self.output.statusCode < 300
+$self.output.statusCode >= 200 && $self.output.statusCode < 300
 ```
 
 ### Variable Update Expressions
@@ -432,7 +438,7 @@ The `inputs.collection` field on a Loop node resolves to an array to iterate ove
 =js:$vars.inputArray.filter(x => x.active)
 ```
 
-Inside the loop body, use `iterator.currentItem` and `iterator.currentIndex`.
+Inside the loop body, use `$vars.<loopId>.currentItem` and `$vars.<loopId>.currentIndex` (e.g., `$vars.loop1.currentItem`).
 
 ---
 
@@ -479,11 +485,15 @@ A node's output (`$vars.{nodeId}.output`) is available to **all downstream nodes
 
 Inside a loop body, you have access to:
 - All parent-scope `$vars` (read-only from loop's perspective)
-- `iterator.currentItem` — current array element
-- `iterator.currentIndex` — zero-based index
-- `iterator.collection` — the original array
+- `$vars.<loopId>.currentItem` — current array element
+- `$vars.<loopId>.currentIndex` — zero-based index
+- `$vars.<loopId>.collection` — the original array
 
-After loop completion, `$vars.{loopId}.output` contains aggregated results from all iterations.
+Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
+
+> **Important:** Loop body nodes must have `"parentId": "<loopId>"` set in their JSON. Without this, the runtime does not know the node is inside the loop and `$vars.<loopId>.currentItem` will be undefined.
+
+After loop completion, `$vars.<loopId>.output` contains aggregated results from all iterations.
 
 ### Subflow Scope
 
@@ -499,7 +509,7 @@ There are **no CLI commands** for adding or removing variables. Manage variables
 
 1. Open `<ProjectName>.flow`
 2. Add the variable object to `variables.globals`
-3. Run `uip flow validate` to check for errors
+3. Run `uip maestro flow validate` to check for errors
 
 ### Adding node variables after manual node insertion
 
@@ -518,7 +528,7 @@ When adding nodes via direct JSON edit (not CLI), you must also add correspondin
 }
 ```
 
-> **When using `uip flow node add`**, node variables are handled automatically. Only add them manually when editing JSON directly.
+> **When using `uip maestro flow node add`**, node variables are handled automatically. Only add them manually when editing JSON directly.
 
 ### Mapping outputs on End nodes
 
@@ -585,6 +595,14 @@ A flow with input, state, and output variables:
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
       "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
       "model": { "type": "bpmn:StartEvent" }
     },
     {
@@ -593,6 +611,20 @@ A flow with input, state, and output variables:
       "typeVersion": "1.0.0",
       "inputs": {
         "script": "const items = $vars.inputItems.filter(i => i.active);\nreturn { count: items.length, items: items };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
       },
       "model": { "type": "bpmn:ScriptTask" }
     },

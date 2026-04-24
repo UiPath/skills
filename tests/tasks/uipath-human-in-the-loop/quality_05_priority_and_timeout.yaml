@@ -1,0 +1,67 @@
+task_id: skill-hitl-quality-priority-timeout
+description: >
+  Quality test: agent must configure a high-priority HITL node with a
+  48-hour timeout for a financial compliance check. Tests C3 (priority)
+  and C4 (timeout ISO 8601).
+tags: [uipath-human-in-the-loop, integration, options]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Add a Human-in-the-Loop node to a new flow called "FinanceCompliance".
+  This is a financial compliance check — set it to HIGH priority and give
+  reviewers 48 hours to respond before it times out.
+
+  Wire the completed handle to a script node that logs the approval.
+  Validate the flow after adding.
+
+  Save results to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "priority_used": "<the priority value set in the flow, e.g. high>",
+    "timeout_used": "<the ISO 8601 duration set in the flow, e.g. PT48H>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_contains
+    description: "Flow file contains PT48H timeout for the HITL node"
+    path: "FinanceCompliance/flow_files/FinanceCompliance.flow"
+    includes:
+      - '"PT48H"'
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node is present in the flow file"
+    path: "FinanceCompliance/flow_files/FinanceCompliance.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate.*--format\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures correct priority and timeout"
+    path: "report.json"
+    assertions:
+      - expression: "priority_used"
+        operator: equals
+        expected: "high"
+      - expression: "timeout_used"
+        operator: equals
+        expected: "PT48H"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 0.75

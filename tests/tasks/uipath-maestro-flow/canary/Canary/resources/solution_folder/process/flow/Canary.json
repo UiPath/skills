@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Canary",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9716cd9a-1b63-4cbd-8aa1-a842e510cfa6",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "Canary"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "Canary",
+      "package": {
+        "key": "d3bf64e4-a739-4768-82fa-4ea5853445e5"
+      },
+      "inputArguments": "{}",
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "8652bde4-7837-43b8-bf0a-03a00fe648d6",
+    "files": []
+  }
+}

@@ -74,7 +74,7 @@ using System.Text.RegularExpressions;  // regex
 **When adding a file that uses a service:**
 1. Check `project.json` to confirm the required package is listed in `dependencies` — add it if missing
 2. Add only the `using` statements needed for the types actually referenced in the file
-3. Add the entry point or fileInfoCollection to `project.json` (for workflow or test case files only)
+3. Add the entry point to `project.json` (**Process projects only** — Tests and Library projects do not use `entryPoints`). Add `fileInfoCollection` for test case files (all project types)
 
 ## Best Practices
 
@@ -83,21 +83,44 @@ using System.Text.RegularExpressions;  // regex
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
 - **When writing UI automation code** — follow the **Finding Descriptors** hierarchy (see [ui-automation-guide.md](../ui-automation-guide.md)) in strict order. Do NOT write any UI code until descriptors are resolved:
   1. Read `ObjectRepository.cs` — use existing descriptors if present
-  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa inspect-package --use-studio`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
+  2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa inspect-package`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles snapshot capture, element discovery, selector generation, selector improvement, and OR registration. Do NOT manually call low-level `uip rpa uia` CLI commands outside of the skill flow. Fallback: `indicate-application` / `indicate-element` if the skill docs are unavailable
   4. UITask (ScreenPlay) is ONLY for when selectors are genuinely brittle/unreliable — NEVER as a first approach
   5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
-- Use `uip rpa inspect-package --use-studio` for API discovery when documentation is unclear
+- Use `uip rpa inspect-package` for API discovery when documentation is unclear
+
+### IResource / ILocalResource — Converting File Paths
+
+Many activities (O365, GSuite, Mail, file operations) require `IResource` or `ILocalResource` instead of a string path. NEVER pass a raw string where `IResource` is expected — it will fail at runtime. NEVER try to construct `LocalResource(string)` directly — the constructor is internal.
+
+| Method | Signature | Use when |
+|--------|-----------|----------|
+| `GetResourceForLocalPath` | `system.GetResourceForLocalPath(string path, PathType pathType)` → `IResource` | You have a path and need an `IResource` (no existence check needed) |
+| `PathExists` (with out param) | `system.PathExists(string path, PathType pathType, out ILocalResource resource)` → `bool` | You need to verify the file exists AND get an `ILocalResource` |
+
+```csharp
+// Direct conversion — preferred when you know the file exists
+IResource file = system.GetResourceForLocalPath(@"C:\Reports\report.pdf", PathType.File);
+IResource folder = system.GetResourceForLocalPath(@"C:\Archive", PathType.Folder);
+
+// With existence check
+if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResource localFile))
+{
+    // use localFile
+}
+```
+
+`PathType` values: `PathType.File`, `PathType.Folder`
 
 ### Code Quality
 - **Start simple, iterate** — Create minimal working version first, then refine
+- **NEVER use C# `out` or `ref` keywords in `[Workflow]` methods** — The auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
 ### Validation Loop (Critical Rule #14)
-uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
-
+uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json
 @../validation-guide.md
 
 ### Error Handling
@@ -128,13 +151,13 @@ C) <user-driven approach>
 
 ### Project & Code Structure
 
-- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa create-project --use-studio` (Critical Rule #1)
+- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa create-project` (Critical Rule #1)
 - Never generate C# code without first searching for existing .cs files (API Discovery)
 - Never edit files without reading them first
 - Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #4)
 - Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
-- Never guess service method names — verify with existing code or `uip rpa inspect-package --use-studio`
+- Never guess service method names — verify with existing code or `uip rpa inspect-package`
 
 ### UI Automation
 
@@ -180,10 +203,10 @@ C) <user-driven approach>
 | **"Studio X.X.X does not have interop support"** | Auto-detected Studio is too old (< 26.2) | Always pass `--studio-dir "<STUDIO_DIR>"` pointing to the dev build |
 | **No Studio instances found** | Studio is not running | Run `uip rpa start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>"` |
 | **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, restart Studio |
-| **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed |
+| **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed (Process projects only — Tests and Library projects do not use `entryPoints`) |
 | **Service property not available** | Missing package dependency | Add required package to project.json dependencies |
 | **Timeout** | Studio took too long to start | Increase timeout: `--timeout 600` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |
 | **inspect-package cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
-| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa create-project --use-studio` instead of writing `project.json` manually |
+| **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa create-project` instead of writing `project.json` manually |

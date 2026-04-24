@@ -1,0 +1,123 @@
+task_id: skill-sdd-gap-detection
+description: >
+  Skill-guided evaluation: agent uses the uipath-solution-design skill to
+  analyze a deliberately incomplete PDD. Tests whether the skill correctly
+  applies [DEFAULT] markers for standard gaps and [SME REVIEW] markers for
+  business-knowledge gaps, per Critical Rules 4 and the Gap Detection Checklist.
+tags: [uipath-solution-design, smoke, gap-detection]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Analyze the following Process Design Document and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints.
+
+  This PDD is deliberately incomplete. Apply [DEFAULT] and [SME REVIEW] markers
+  as the skill instructs. For any [SME REVIEW] items, keep them as-is in the
+  SDD — do NOT resolve them.
+
+  After writing the SDD, save a summary to report.json:
+    {
+      "sdd_filename": "<the filename you wrote>",
+      "primary_product": "<the product you selected>",
+      "default_count": <number of [DEFAULT] markers in the SDD>,
+      "sme_review_count": <number of [SME REVIEW] markers in the SDD>
+    }
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Payment Reconciliation
+
+  ## Process Overview
+  - **Process Name:** Payment Reconciliation
+  - **Department:** Finance
+  - **Objective:** Match payments from the bank statement against invoices
+    in the ERP system and flag discrepancies.
+
+  ## In Scope
+  - Download bank statement CSV from banking portal
+  - Compare each payment against open invoices in SAP
+  - Flag unmatched payments
+
+  ## Out of Scope
+  - Dispute resolution
+  - Refund processing
+
+  ## Detailed Process Steps
+  | Step | Action | Application |
+  |------|--------|-------------|
+  | 1.1 | Log into banking portal | Browser |
+  | 1.2 | Download today's statement | Browser |
+  | 1.3 | Open SAP and navigate to open invoices | SAP GUI |
+  | 1.4 | For each payment row, search by amount and reference | SAP GUI |
+  | 1.5 | If match found, mark invoice as reconciled | SAP GUI |
+  | 1.6 | If no match, add to discrepancy report | Excel |
+
+  ## Application Details
+  | Application | Interface |
+  |-------------|-----------|
+  | Banking Portal | Web |
+  | SAP GUI | Desktop |
+  | Excel | Desktop |
+
+  --- END PDD ---
+
+  Note: This PDD has NO business exceptions section, NO system errors section,
+  NO schedule/frequency, NO volume/throughput, NO credentials section, and NO
+  notification recipients. The skill should fill these gaps appropriately.
+
+success_criteria:
+  - type: file_exists
+    description: "SDD file was created"
+    path: "payment-reconciliation-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD contains [DEFAULT] markers for standard gaps"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "[DEFAULT]"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD contains [SME REVIEW] markers for business-knowledge gaps"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "[SME REVIEW]"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD still has exception and error handling sections despite missing PDD data"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "Exception Handling"
+      - "Error Handling"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json shows both DEFAULT and SME REVIEW markers were used"
+    path: "report.json"
+    assertions:
+      - expression: "default_count"
+        operator: gte
+        expected: 1
+      - expression: "sme_review_count"
+        operator: gte
+        expected: 1
+      - expression: "process_name"
+        operator: equals
+        expected: "Payment Reconciliation"
+    weight: 2.0
+    pass_threshold: 0.75

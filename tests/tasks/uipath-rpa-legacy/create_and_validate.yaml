@@ -1,0 +1,110 @@
+task_id: skill-rpa-legacy-create-and-validate
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa-legacy skill to create
+  a new legacy UiPath RPA project (.NET Framework 4.6.1) with a simple
+  workflow. Tests whether the skill teaches the correct targetFramework
+  setting, XAML baseline (VB.NET, mscorlib), CLI flag conventions
+  (--output json), and discovery workflow.
+
+  Platform note: Legacy RPA targets .NET Framework 4.6.1 (Windows-only), so
+  `uip rpa-legacy validate` cannot successfully execute on Linux/Mac CI.
+  This smoke test verifies the skill guides the agent to produce correct
+  artifacts and invoke the right commands — it does not require the CLI
+  commands to succeed at runtime.
+tags: [uipath-rpa-legacy, smoke, create, validate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a new legacy UiPath RPA project called "HelloLegacy" with a Main.xaml
+  that logs "Hello from legacy" using a LogMessage activity. Follow the skill's
+  full workflow: create the project, generate the XAML, and attempt validation.
+
+  Save a summary of what you did to report.json with at minimum:
+    {
+      "project_name": "HelloLegacy",
+      "target_framework": "Legacy",
+      "commands_used": ["<list of uip commands you ran>"]
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Do not run `uip rpa-legacy debug` — just attempt validation.
+  - The underlying CLI backend may not work on non-Windows hosts; that is
+    acceptable — what matters is that you produce correct files and invoke
+    the correct commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked uip rpa-legacy validate"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json (not --format json) on uip rpa-legacy commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "project.json was created"
+    path: "HelloLegacy/project.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.xaml workflow was created"
+    path: "HelloLegacy/Main.xaml"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json sets targetFramework to Legacy"
+    path: "HelloLegacy/project.json"
+    includes:
+      - '"targetFramework"'
+      - '"Legacy"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml uses legacy baseline (mscorlib, not System.Private.CoreLib)"
+    path: "HelloLegacy/Main.xaml"
+    includes:
+      - "assembly=mscorlib"
+    excludes:
+      - "System.Private.CoreLib"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml contains a LogMessage activity with the expected text"
+    path: "HelloLegacy/Main.xaml"
+    includes:
+      - "LogMessage"
+      - "Hello from legacy"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure and values"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "HelloLegacy"
+      - expression: "target_framework"
+        operator: equals
+        expected: "Legacy"
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 1
+    weight: 1.5
+    pass_threshold: 0.75

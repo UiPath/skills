@@ -7,8 +7,8 @@
 **Execute `uia-configure-target` steps inline in the main conversation.** Do NOT delegate the entire skill to a subagent. The skill's internal steps already spawn their own subagents.
 
 Why this matters:
-- **OR references** must be visible in the main conversation to build the final workflow XAML.
-- **Context continuity** — the main conversation tracks which screens and elements are already registered, which avoids duplicate captures and keeps the workflow build coherent.
+- **OR references** must be visible in the main conversation so they can be attached to workflow activities as the workflow is created — either inline (for single-file workflows) or handed off to write agents (for multi-screen pipelines). See [uia-target-attachment-guide.md](uia-target-attachment-guide.md).
+- **Context continuity** — as the main conversation proceeds, it already knows which screens and elements are registered: the references were returned in earlier turns, and the OR itself is queryable via `object-repository get-screens` / `get-elements`. This is what "knowing what's registered" means here — the in-conversation state plus live OR queries — so duplicate captures are avoided and the workflow build stays coherent.
 
 Read the SKILL.md, then execute each TARGET step yourself. Only spawn `Agent` where the skill explicitly says to (create-selector, improve-selector).
 
@@ -36,7 +36,7 @@ The skill will search the Object Repository for existing matches before creating
 
 ## Rules
 
-**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't tracked in the project.
+**Do NOT manually call low-level `uip rpa uia` CLI commands** (`snapshot capture`, `snapshot filter`, `selector-intelligence get-default-selector`) to build selectors outside of the skill flow. These are internal tools used *by* the skill — calling them directly skips selector improvement and OR registration, producing fragile selectors that aren't registered in the Object Repository.
 
 **Do NOT launch the target application before running `uia-configure-target`.** The skill's first steps capture the top-level window tree and search for the app. Only if the app is not found in the window list should you launch it — and then re-run the capture. Launching preemptively creates duplicate instances and risks targeting the wrong window.
 
@@ -48,17 +48,12 @@ The skill will search the Object Repository for existing matches before creating
 
 ```bash
 # 1. Indicate a screen (creates App automatically if none exists)
-uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
+uip rpa indicate-application --name "<ScreenName>" --description "<ScreenDescription>" --project-dir "<PROJECT_DIR>" --output json
 # 2. Indicate elements on that screen (use --parent-id from step 1 result's Data.reference)
-uip rpa indicate-element --name "<ElementName>" --activity-class-name "<TypeInto|Click|GetText|...>" --parent-id "<screen-reference>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
-# 3. Retrieve OR entries after indication
-uip rpa uia object-repository get-screen-xaml --reference-id "<screen-reference>"
-uip rpa uia object-repository get-element-xaml --reference-id "<element-reference>"
+uip rpa indicate-element --name "<ElementName>" --activity-class-name "<TypeInto|Click|GetText|...>" --parent-id "<screen-reference>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
-Both commands return `{ "Data": { "reference": "..." } }` — use that reference ID for subsequent commands and OR lookups. After indication, Studio regenerates Object Repository files; re-read them to get descriptor paths for your workflow.
+Both commands return `{ "Data": { "reference": "..." } }` — use that reference ID for OR lookups and target attachment. After indication, Studio regenerates Object Repository files. For coded workflows, re-read `ObjectRepository.cs` to get descriptor paths. For XAML workflows, attach each reference to its activity per [uia-target-attachment-guide.md](uia-target-attachment-guide.md).
 
 <details>
 <summary>Full parameter reference</summary>
@@ -93,3 +88,31 @@ When no App exists in `.objects/`, omit `--parent-id` and `--parent-name` — th
 | `.objects/` has subdirectories but no `.metadata` files | Corrupted/incomplete App from a failed creation | Clear orphan directories and run `indicate-application` without `--parent-id` |
 
 </details>
+
+## Interacting with a Registered Target
+
+After TARGET-8 returns an OR reference ID, you can drive that target directly from the main conversation using `uia interact` — no servo snapshot, no second ref system. This is the preferred way to advance the application state to the next screen when building multi-step flows.
+
+```bash
+# Click using the OR reference ID returned by create-screen / create-elements
+uip rpa uia interact click --reference-id "<OR_REFERENCE_ID>"
+
+# Type into a target using the OR reference ID
+uip rpa uia interact type --reference-id "<OR_REFERENCE_ID>" --text "hello"
+```
+
+Alternate input forms:
+- `--definition-file-path "<WORK_FOLDER>/Target_N_Definition.json"` — use the definition file (useful before OR registration)
+- `--window-selector "<html ... />" --partial-selector "<webctrl ... />"` — raw selectors (ad-hoc, no OR entry)
+
+See [uia-multi-step-flows.md](uia-multi-step-flows.md) for when to use `uia interact` vs servo and the full capture loop.
+
+## Attaching Targets to Workflow Activities
+
+Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per [uia-target-attachment-guide.md](uia-target-attachment-guide.md).
+
+### Multi-Screen Workflows
+
+For XAML workflows spanning multiple screens, use the parallel authoring pipeline. The main conversation passes only OR reference IDs to each write agent — no XAML snippets. The agent handles attachment itself per the shared guide.
+
+See [uia-parallel-xaml-authoring-guide.md](uia-parallel-xaml-authoring-guide.md) for prompt templates and the chained dependency model.

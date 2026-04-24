@@ -1,0 +1,43 @@
+task_id: skill-flow-move-node
+description: >
+  Move the decision node before formatSummary so both branches merge back into
+  formatSummary, then a single end node. Exercises reordering nodes and merging branches.
+tags: [uipath-maestro-flow, e2e, edit, ootb]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: "../templates/initial_flow"
+
+initial_prompt: |
+  Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message ('nice day' or 'bring a jacket') based on which branch the decision took.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow debug runs with merged branches, output contains branch message"
+    command: "python3 $TASK_DIR/check_move_node.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

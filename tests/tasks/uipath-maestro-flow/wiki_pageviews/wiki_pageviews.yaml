@@ -1,0 +1,64 @@
+task_id: skill-flow-wiki-pageviews
+description: >
+  Create a UiPath Flow that fetches a range of Wikipedia pageviews, filters
+  high-traffic days via a Transform node, and returns the sum of their views
+  — routing to a fixed error string via the HTTP node's error output port
+  when the article is invalid. Exercises managed HTTP with a dynamic URL
+  built from flow inputs, the implicit HTTP error port, and a Transform
+  filter + aggregate on the response items.
+tags: [uipath-maestro-flow, e2e, generate, ootb, http, transform]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "WikiPageviews" that takes `article`
+  (string) and `date1`, `date2` (strings in `YYYYMMDD` format) as inputs.
+  Call the Wikimedia pageviews API
+  (`https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{date1}/{date2}`)
+  once to fetch the daily view counts in the range, use a Transform node to
+  filter the returned items down to days whose `views` exceed 500, then sum
+  the `views` across those matching days and return the total as an integer.
+  When the article does not exist and the HTTP call fails, wire the HTTP
+  node's `error` output port to an End node that returns the literal string
+  `Article not found` instead.
+
+  Wikimedia rejects requests without a User-Agent (HTTP 403 per their robot
+  policy), so set a descriptive `User-Agent` header on the HTTP node — for
+  example `WikiPageviewsFlow/1.0 (example@example.com)`.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate WikiPageviews/WikiPageviews/WikiPageviews.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution checks — success path (transform filter + sum) + error path (http error port) ─────
+  - type: run_command
+    description: "UiPath 2024-01-01..15: debug returns 4130 (sum of views on days above 500)"
+    command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Invalid article: HTTP error output port returns the string 'Article not found'"
+    command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

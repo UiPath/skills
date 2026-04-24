@@ -1,0 +1,94 @@
+task_id: skill-rpa-coded-test-case
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to create a coded
+  test case file with Given-When-Then structure, correct project.json entry
+  points, and proper assertions. Tests whether the skill teaches the correct
+  coded test case workflow.
+tags: [uipath-rpa, smoke, coded, test-case]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have an existing UiPath coded automation project called "InvoiceProcessor"
+  that processes invoices. I need you to add a coded test case that verifies
+  the invoice creation workflow.
+
+  The project already exists at ./InvoiceProcessor with a project.json.
+  Studio Desktop is NOT available — skip any CLI commands that require
+  --use-studio. Focus on generating the correct files and project.json updates.
+
+  Requirements:
+  - Create a coded test case file TestInvoiceCreation.cs
+  - Use the Given-When-Then (Arrange-Act-Assert) pattern
+  - Use the testing service for assertions (VerifyExpression or VerifyAreEqual)
+  - Update project.json with the correct entry point and fileInfoCollection
+  - If the project needs shared Before/After hooks, set them up using the
+    partial class CodedWorkflow pattern (NOT a base class)
+
+  Save a summary to report.json:
+    {
+      "files_created": ["<list of files created>"],
+      "test_case_class": "<class name>",
+      "base_class": "<base class used>",
+      "assertions_used": ["<list of testing.Verify* methods used>"],
+      "hooks_pattern": "<'partial_class' or 'base_class' or 'none'>"
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Use `--output json` on any uip commands you run.
+
+success_criteria:
+  - type: file_exists
+    description: "Test case .cs file was created"
+    path: "InvoiceProcessor/TestInvoiceCreation.cs"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case has [TestCase] attribute and CodedWorkflow base class"
+    path: "InvoiceProcessor/TestInvoiceCreation.cs"
+    includes:
+      - "[TestCase]"
+      - "CodedWorkflow"
+      - "void Execute"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case uses Given-When-Then / Arrange-Act-Assert pattern"
+    path: "InvoiceProcessor/TestInvoiceCreation.cs"
+    includes:
+      - "testing.Verify"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json has test case entry in fileInfoCollection"
+    path: "InvoiceProcessor/project.json"
+    includes:
+      - "TestInvoiceCreation"
+      - "testCaseType"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms correct base class and hooks pattern"
+    path: "report.json"
+    assertions:
+      - expression: "base_class"
+        operator: contains
+        expected: "CodedWorkflow"
+      - expression: "hooks_pattern"
+        operator: not_equals
+        expected: "base_class"
+    weight: 1.5
+    pass_threshold: 0.75

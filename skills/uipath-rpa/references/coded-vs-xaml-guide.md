@@ -74,14 +74,14 @@ InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snipp
 
 | Criterion | InvokeCode | Coded Source File | Coded Workflow |
 |-----------|-----------|-------------------|----------------|
-| **Where it lives** | Inline in XAML activity | Standalone `.cs` file | `.cs` file + `.cs.json` |
+| **Where it lives** | Inline in XAML activity | Standalone `.cs` file | `.cs` file |
 | **Inherits CodedWorkflow** | No | No | Yes |
 | **Access to services** (`excel`, `mail`, etc.) | No | No | Yes |
 | **Can define classes/types** | No | Yes | No (one class per file, must be workflow) |
 | **Reusable across workflows** | No (copy-paste) | Yes (import namespace) | Yes (invoke from any workflow) |
 | **Unit testable** | No | Indirectly | Yes (via Coded Test Case) |
 | **Recommended max size** | ~15 lines | No limit | No limit |
-| **Entry point in project.json** | N/A | No | Yes |
+| **Entry point in project.json** | N/A | No | Process only |
 
 ---
 
@@ -109,7 +109,6 @@ OrderProcessing/
 ├── ScrapeOrderPortal.xaml       # XAML: UI automation with selectors
 ├── SendConfirmationEmail.xaml   # XAML: Mail activities (straightforward)
 ├── ValidateAndTransform.cs      # Coded workflow: 12 validation rules + LINQ transforms
-├── ValidateAndTransform.cs.json
 ├── OrderModels.cs               # Coded source file: Order, LineItem, ValidationResult
 └── TransformHelpers.cs          # Coded source file: date parsing, currency conversion
 ```
@@ -124,14 +123,11 @@ Coded workflow drives the process. XAML workflows wrap activity-heavy steps that
 InvoiceProcessor/
 ├── project.json
 ├── Main.cs                      # Coded: orchestrates, calls all steps
-├── Main.cs.json
 ├── ExtractInvoiceData.cs        # Coded: PDF parsing + JSON deserialization
-├── ExtractInvoiceData.cs.json
 ├── PostToSAP.xaml               # XAML: SAP connector activities
 ├── GenerateReport.xaml           # XAML: Excel activities (write range, format, save)
 ├── InvoiceModels.cs             # Coded source file: Invoice, LineItem DTOs
 └── TestExtractInvoice.cs        # Coded test case
-    TestExtractInvoice.cs.json
 ```
 
 **When to use:** The core logic is algorithmic (coded) but some steps are best expressed with pre-built activity packages (SAP, Excel).
@@ -141,7 +137,7 @@ InvoiceProcessor/
 Coded Source Files define typed models that both XAML and coded workflows use via arguments.
 
 ```
-// OrderModels.cs — Coded Source File (no CodedWorkflow, no .cs.json)
+// OrderModels.cs — Coded Source File (no CodedWorkflow, no entry point)
 namespace OrderProcessing
 {
     public class Order

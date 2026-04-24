@@ -1,0 +1,97 @@
+task_id: skill-flow-hitl-quality-result-downstream
+description: >
+  Quality test: agent correctly references the HITL node's output via
+  $vars.<nodeId>.result in a downstream node. Tests that the agent knows
+  the result variable path and wires it into a decision or script node.
+tags: [uipath-maestro-flow, integration, hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 25
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "ExpenseApproval" that:
+
+  1. Manual trigger starts the flow
+  2. HITL node — expense review:
+       - Reviewer sees: expense amount, requester name, category (all read-only)
+       - Reviewer fills in: approved (boolean), comments (text, optional)
+       - Outcomes: Approve (primary), Reject
+  3. Script node — reads the reviewer's decision from the HITL result and
+     logs: "Decision: <approved value>, Comments: <comments value>"
+     The script must reference the HITL output via the correct runtime variable path.
+  4. End node
+
+  Wire: Trigger -> HITL ->|completed| Script -> End
+
+  Use the inline quickform node (uipath.human-in-the-loop).
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "result_path": "<full variable path used in the script, e.g. $vars.hitlReview1.result.approved>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains inline HITL node"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow references the HITL result variable"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - "$vars."
+      - ".result"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow has a boolean output field for approved"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"boolean"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json result_path references $vars and .result"
+    path: "report.json"
+    includes:
+      - "$vars."
+      - ".result"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures hitl_node_id and validation"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "hitl_node_id"
+        operator: not_equals
+        expected: ""
+    weight: 2.0
+    pass_threshold: 0.75

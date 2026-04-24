@@ -1,0 +1,199 @@
+name: Smoke Skill Tests
+
+concurrency:
+  group: smoke-skills-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'skills/*/references/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    name: Detect changed skills
+    outputs:
+      task_globs: ${{ steps.detect.outputs.task_globs }}
+      skip: ${{ steps.detect.outputs.skip }}
+      untested_skills: ${{ steps.detect.outputs.untested_skills }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed skills and map to test tasks
+        id: detect
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # If test infrastructure changed, run all smoke tests
+          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$'; then
+            echo "task_globs=tasks/**/*.yaml" >> "$GITHUB_OUTPUT"
+            echo "Running all smoke tests (test infrastructure changed)"
+            exit 0
+          fi
+
+          # Extract unique skill names from changed paths
+          SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u)
+
+          # Also include skills whose test tasks changed
+          TEST_SKILLS=$(echo "$CHANGED" | grep '^tests/tasks/' | sed 's|tests/tasks/\([^/]*\)/.*|\1|' | sort -u)
+          SKILLS=$(printf '%s\n%s' "$SKILLS" "$TEST_SKILLS" | sort -u | grep -v '^$' || true)
+
+          if [ -z "$SKILLS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No skill changes detected — skipping smoke tests"
+            exit 0
+          fi
+
+          # Build task glob pattern for changed skills that have tests
+          GLOBS=""
+          UNTESTED=""
+          for skill in $SKILLS; do
+            if [ -d "tests/tasks/$skill" ]; then
+              if [ -n "$GLOBS" ]; then
+                GLOBS="$GLOBS tasks/$skill/**/*.yaml"
+              else
+                GLOBS="tasks/$skill/**/*.yaml"
+              fi
+              echo "Will test: $skill"
+            else
+              if [ -n "$UNTESTED" ]; then
+                UNTESTED="$UNTESTED, $skill"
+              else
+                UNTESTED="$skill"
+              fi
+              echo "No tests for: $skill (skipping)"
+            fi
+          done
+
+          if [ -n "$UNTESTED" ]; then
+            echo "untested_skills=$UNTESTED" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -z "$GLOBS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Changed skills have no smoke tests: $UNTESTED"
+          else
+            echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
+          fi
+
+  warn-untested:
+    needs: detect
+    if: needs.detect.outputs.untested_skills != ''
+    runs-on: ubuntu-latest
+    name: Warn about untested skills
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const skills = '${{ needs.detect.outputs.untested_skills }}';
+            const body = `⚠️ **Smoke test coverage gap** — the following changed skills have no tests under \`tests/tasks/\`:\n\n${skills.split(', ').map(s => '- `' + s + '`').join('\n')}\n\nConsider adding smoke tests before merging.`;
+
+            // Avoid duplicate comments on repeated pushes
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('Smoke test coverage gap'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  e2e:
+    needs: detect
+    if: needs.detect.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: Run skill smoke tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/coder_eval
+          token: ${{ secrets.GH_PAT }}
+          path: .coder_eval
+
+      - uses: actions/checkout@v4
+        with:
+          repository: UiPath/uipcli
+          token: ${{ secrets.GH_PAT }}
+          path: .uipcli
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install coder-eval
+        working-directory: .coder_eval
+        env:
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system .
+
+      - name: Build and install uip CLI from source
+        working-directory: .uipcli
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+        run: |
+          bun install
+          bun run build
+          cd packages/cli && npm link
+
+      - name: Run smoke tests
+        env:
+          SKILLS_REPO_PATH: ${{ github.workspace }}
+          API_BACKEND: bedrock
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+        working-directory: tests
+        id: smoke
+        run: |
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke"
+          coder-eval run ${{ needs.detect.outputs.task_globs }} \
+            -e experiments/default.yaml --tags smoke -j 1 -v
+        continue-on-error: true
+
+      - name: Print experiment report
+        if: always()
+        working-directory: tests
+        run: |
+          for f in runs/*/experiment.md runs/*/default/variant.md runs/*/default/*/task.json; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+              echo ""
+            fi
+          done
+
+      - name: Fail if tests failed
+        if: steps.smoke.outcome == 'failure'
+        run: exit 1

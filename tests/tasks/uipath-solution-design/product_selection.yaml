@@ -1,0 +1,131 @@
+task_id: skill-sdd-product-selection
+description: >
+  Skill-guided evaluation: agent uses the uipath-solution-design skill to
+  analyze a PDD with clear AI agent signals. Tests whether the product
+  selection decision table correctly identifies Agents as the primary product
+  instead of defaulting to RPA Process.
+tags: [uipath-solution-design, smoke, product-selection]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Analyze the following Process Design Document and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints.
+
+  For any gap-filling questions about the agent, use these defaults:
+  - Framework: LangGraph
+  - Tools: order_lookup (API call), knowledge_search (RAG)
+  - Memory: short-term only
+  - Evaluation: trajectory similarity
+
+  For any [SME REVIEW] items, use the defaults and proceed.
+
+  After writing the SDD, save a summary to report.json:
+    {
+      "sdd_filename": "<the filename you wrote>",
+      "primary_product": "<the product you selected>",
+      "framework": "<agent framework if applicable>",
+      "process_name": "Customer Support Agent"
+    }
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Customer Support Agent
+
+  ## Process Overview
+  - **Process Name:** Customer Support Agent
+  - **Department:** Customer Service
+  - **Objective:** Use AI reasoning to analyze customer inquiries, search a
+    product knowledge base, and generate contextual responses.
+  - **Volume:** ~200 inquiries per day
+
+  ## In Scope
+  - Natural language understanding of customer queries
+  - RAG-based knowledge retrieval from product documentation
+  - Tool calling to look up order status via REST API
+  - Multi-step reasoning for complex troubleshooting scenarios
+  - Escalation to human agents when confidence is low
+
+  ## Out of Scope
+  - Payment refund processing
+  - Account deletion
+
+  ## Agent Capabilities
+  | Capability | Description |
+  |------------|-------------|
+  | Query classification | LLM classifies the inquiry type (order, product, billing, other) |
+  | Knowledge search | Semantic search across product docs and FAQ |
+  | Order lookup | Calls order management API with order ID |
+  | Response generation | LLM generates a response using retrieved context |
+  | Escalation | Routes to human agent if confidence < 70% |
+
+  ## Error Handling
+  | Scenario | Action |
+  |----------|--------|
+  | LLM returns invalid output | Retry with reformulated prompt (max 2) |
+  | API call fails | Return cached response if available, else escalate |
+  | Knowledge base empty result | Ask user to rephrase, then escalate |
+
+  --- END PDD ---
+
+success_criteria:
+  - type: file_exists
+    description: "SDD file was created"
+    path: "customer-support-agent-sdd.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD identifies Agents as the product (not RPA)"
+    path: "customer-support-agent-sdd.md"
+    includes:
+      - "Agent"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD uses agent template sections"
+    path: "customer-support-agent-sdd.md"
+    includes:
+      - "Agent Overview"
+      - "Agent Framework"
+      - "Tools"
+      - "Memory"
+      - "Evaluation"
+      - "Project Structure"
+      - "Implementation Plan"
+    weight: 2.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "SDD references agent-specific capabilities from PDD"
+    path: "customer-support-agent-sdd.md"
+    includes:
+      - "knowledge"
+      - "order"
+      - "escalat"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms Agents as primary product"
+    path: "report.json"
+    assertions:
+      - expression: "primary_product"
+        operator: contains
+        expected: "Agent"
+      - expression: "process_name"
+        operator: equals
+        expected: "Customer Support Agent"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD does NOT use RPA template sections"
+    path: "customer-support-agent-sdd.md"
+    includes:
+      - "LangGraph"
+    weight: 1.0
+    pass_threshold: 1.0

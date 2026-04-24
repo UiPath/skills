@@ -1,0 +1,95 @@
+task_id: skill-hitl-e2e-apptask-brownfield
+# NOTE: "e2e" here means authoring end-to-end (brownfield AppTask node insertion).
+# This test does NOT execute the flow at runtime. It validates the skill's ability
+# to resolve a deployed app, write resource files, and author the HITL node JSON.
+# Skipped until a shared staging app + tenant are available for CI.
+description: >
+  Authoring E2E test (AppTask surface): agent inserts a HITL node backed by an
+  existing deployed Action App into a brownfield flow. Tests the full AppTask
+  authoring path: credentials from ~/.uipath/.auth, solution context resolution,
+  app search, retrieve-configuration, resource file writing, debug overwrites,
+  node JSON with inputs.type=custom. Does not deploy or execute the flow.
+tags: [uipath-human-in-the-loop, e2e, brown-field, apptask]
+skip: true
+# Blocked: requires live tenant with a deployed Action App and ~/.uipath/.auth
+# credentials. Cannot be run in tempdir sandbox without real infrastructure.
+# Unblock when a shared staging app + tenant are available for CI.
+
+agent:
+  type: claude-code
+  max_turns: 50
+  turn_timeout: 1800
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath Flow project and a deployed Action Center app called
+  "Expense Review" in the Shared folder. I need to add a HITL node to my
+  expense approval flow that uses this existing deployed app as the task form.
+
+  First, create the starting flow at ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow:
+
+  {
+    "nodes": [
+      {"id": "trigger1", "type": "core.trigger.manual", "label": "Start", "position": {"x": 100, "y": 200}},
+      {"id": "postExpense", "type": "core.action.script", "label": "Post to SAP", "position": {"x": 400, "y": 200}, "inputs": {"script": "console.log('posting');"}}
+    ],
+    "edges": [
+      {"id": "e1", "source": "trigger1", "target": "postExpense", "sourcePort": "output", "targetPort": "input"}
+    ],
+    "variables": [],
+    "definitions": []
+  }
+
+  Add a Human-in-the-Loop node backed by the existing deployed "Expense Review"
+  app. Use the AppTask path (inputs.type = "custom"), not an inline QuickForm.
+  Wire the completed handle to the posting step and validate the flow.
+
+  Save results to report.json:
+  {
+    "hitl_node_id": "<id of the HITL node>",
+    "app_name": "Expense Review",
+    "inputs_type": "custom",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_contains
+    description: "HITL node with AppTask (custom) type is present in the flow file"
+    path: "ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+      - '"custom"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "App reference is wired into the node"
+    path: "ExpenseAppTask/ExpenseAppTask/ExpenseAppTask.flow"
+    includes:
+      - '"appSystemName"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate.*--format\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms AppTask type and validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "inputs_type"
+        operator: equals
+        expected: "custom"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,81 @@
+task_id: skill-flow-hitl-smoke-node-placed
+description: >
+  Smoke test: agent builds a simple invoice approval flow containing an inline
+  HITL node (uipath.human-in-the-loop). Verifies the node is written directly
+  into the .flow file as JSON and the flow validates.
+tags: [uipath-maestro-flow, smoke, hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 20
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "InvoiceApproval" that:
+  1. Starts with a manual trigger
+  2. Pauses for a finance manager to review and approve an invoice (human-in-the-loop)
+  3. Ends after the review is complete
+
+  The HITL node must use the inline quickform style (uipath.human-in-the-loop),
+  not an external app. The node must show the reviewer: invoice ID and amount.
+  The reviewer clicks Approve or Reject.
+
+  Wire the completed handle to an End node.
+
+  Do NOT run flow debug. Validate the flow after building it.
+
+  Save a summary to report.json:
+  {
+    "flow_file": "<path to the .flow file>",
+    "hitl_node_id": "<id of the HITL node>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Flow file was created"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains the inline HITL node type"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow uses quickform schema type"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    includes:
+      - '"type": "quick"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures hitl_node_id and validation_passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "hitl_node_id"
+        operator: not_equals
+        expected: ""
+    weight: 2.0
+    pass_threshold: 0.75

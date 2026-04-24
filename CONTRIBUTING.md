@@ -16,9 +16,13 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ```
 .
+├── .claude/                   # Claude Code project-level configuration
+│   └── commands/              # Project-only slash commands (e.g., /test-coverage)
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
+├── commands/                  # Plugin-namespaced slash commands shipped to end users
+│   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.)
 │   └── ensure-uip.sh         # Cross-platform tool installation script
@@ -29,6 +33,11 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │       ├── SKILL.md           # Skill definition (required)
 │       ├── references/        # Supporting reference documents (optional)
 │       └── assets/            # Templates, examples, static files (optional)
+├── tests/                     # Skill evaluation tests (coder_eval)
+│   ├── experiments/           # Experiment configs (smoke, integration, e2e)
+│   ├── tasks/                 # Test tasks organized by skill
+│   │   └── <skill-name>/     # One folder per skill
+│   └── reports/               # Generated coverage reports (/test-coverage)
 ├── CODEOWNERS                 # GitHub ownership by skill/path
 ├── README.md                  # Project overview and quick start
 ├── CONTRIBUTING.md            # This file
@@ -187,6 +196,62 @@ bash scripts/setup-hooks.sh
 
 This configures git to use `.githooks/` and enables the skill description validator.
 
+## Testing Skills
+
+Skills are tested using [coder_eval](https://github.com/UiPath/coder_eval) — a framework that runs an AI agent against a task and scores the result. Tests live in `tests/tasks/<skill-name>/` and verify that the skill guides the agent to use the correct CLI commands, follow critical rules, and produce valid output.
+
+There are three test types, distinguished by tags:
+
+| Tag | Purpose | Cadence |
+|-----|---------|---------|
+| `smoke` | Skill triggers correctly, CLI produces valid output (1-5 simple scenarios) | Every PR |
+| `integration` | Correct output across diverse scenarios, error paths, anti-patterns | Daily |
+| `e2e` | Full lifecycle: Explore -> Plan -> Build -> Validate -> Deploy -> Run | Daily/weekly (check [Dashboard](https://dataexplorer.azure.com/dashboards/20cc55fe-33ae-4973-a951-855e76528219)) |
+
+### Running Tests
+
+```bash
+cd tests
+make install       # one-time: install coder-eval from GitHub
+make all           # run all tests (smoke + integration + e2e)
+make smoke         # run all smoke tests
+make integration   # run all integration tests
+make e2e           # run all end-to-end tests
+make test-uipath-maestro-flow  # run all tests for a specific skill
+```
+
+### Adding Tests for a Skill
+
+1. Create `tests/tasks/<skill-name>/` matching your skill folder name
+2. Add at minimum **1 smoke test** and **1 e2e test** (required for every new skill PR)
+3. Use minimal prompts — the goal is to test the skill's guidance quality, not hand-hold the agent
+4. Tag every task appropriately: `smoke`, `integration`, or `e2e`
+5. Follow the task ID pattern: `skill-<domain>-<capability>`
+
+See `tests/README.md` for the full task YAML template, success criteria reference, and examples from existing tests.
+
+### Analyzing Test Coverage
+
+Use the `/test-coverage` slash command to see what a skill's tests cover and where gaps exist:
+
+```bash
+/test-coverage uipath-maestro-flow   # single skill
+/test-coverage all                    # all skills
+```
+
+This produces a markdown report in `tests/reports/` with component coverage, rule coverage, priority-ranked gaps, and concrete recommendations for new tests to write. Run this before and after adding tests to measure your progress.
+
+### Scaffolding Tests with `/generate-tasks`
+
+Use the `/generate-tasks` command to scaffold task YAML files from coverage gaps:
+
+```bash
+/generate-tasks uipath-platform              # generate tasks for highest-priority gaps
+/generate-tasks uipath-platform authentication  # target a specific area
+```
+
+Generated tasks are **starting points for reference only** — review and improve them before relying on them for CI. Verify that CLI commands, success criteria, and prompts match the skill's actual behavior, and adjust weights and thresholds based on what matters most for your skill.
+
 ## Quality Checklist
 
 Before submitting your PR, verify:
@@ -206,6 +271,11 @@ Before submitting your PR, verify:
 - [ ] Guide files use `-guide.md` suffix
 - [ ] Templates use `-template` suffix
 - [ ] No duplicate content already covered in another skill's references
+
+### Tests
+- [ ] At least 1 smoke test in `tests/tasks/<skill-name>/`
+- [ ] At least 1 e2e test in `tests/tasks/<skill-name>/`
+- [ ] All tests tagged appropriately (`smoke`, `integration`, or `e2e`)
 
 ### General
 - [ ] CODEOWNERS updated with your GitHub handle

@@ -1,0 +1,27 @@
+experiment_id: skill-tests-e2e
+description: "End-to-end tests — full lifecycle with staging tenant connectivity"
+
+defaults:
+  max_iterations: 2
+  task_timeout: 1200
+  turn_timeout: 300
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    max_turns: 200
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  # Append default post_run to every e2e task: delete Studio Web solutions
+  # uploaded by `uip maestro flow debug` (no-op for tasks that don't produce .uipx).
+  post_run:
+    - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+      timeout: 120
+
+variants:
+  - variant_id: default

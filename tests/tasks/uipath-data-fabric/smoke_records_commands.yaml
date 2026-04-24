@@ -1,0 +1,110 @@
+task_id: skill-datafabric-smoke-records-commands
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to insert, query, and
+  update records in a given entity. Tests correct records command syntax:
+  --body JSON for insert/update, Id field required for updates, filterGroup
+  for queries, and cursor-based pagination (--limit/--cursor, not --offset).
+tags: [uipath-data-fabric, smoke, records]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  There is a "MovieReviews" entity in Data Fabric with entity ID "abc-123-def".
+  It has fields: title (text), rating (number), watched (boolean).
+
+  Do the following steps in order:
+  1. Insert a record: { title: "Inception", rating: 9, watched: true }
+  2. Insert a second record: { title: "Dune", rating: 8, watched: false }
+  3. Query for all records where watched = true
+  4. List the first page of all records (limit 10)
+  5. Update the Inception record — set rating to 10.
+     (Use the record ID from the insert response to do the update.)
+
+  Save a summary to report.json:
+  {
+    "commands_used": ["<list of uip df commands you ran in order>"],
+    "insert_body_example": { ... the JSON body passed to records insert ... },
+    "query_filter": { ... the filterGroup JSON used for the watched=true query ... },
+    "pagination_method": "<'cursor' or 'offset'>",
+    "update_includes_id": true
+  }
+
+  Important:
+  - The uip CLI is available but is NOT connected to a live Data Fabric tenant
+    in this environment. Commands will fail with auth errors — that is expected.
+    Run each command once, record the result (success or error) in report.json,
+    and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip df command.
+  - Do NOT delete the entity or attempt entities delete.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inserted a record using records insert --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert\s+.*--body'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried records using records query"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed records with --limit flag (cursor pagination)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a record using records update --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update\s+.*--body'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on all uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Query uses filterGroup syntax (not direct SQL-style filter)"
+    path: "report.json"
+    includes:
+      - "filterGroup"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent used cursor pagination and included Id in update body"
+    path: "report.json"
+    assertions:
+      - expression: "pagination_method"
+        operator: equals
+        expected: "cursor"
+      - expression: "update_includes_id"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0

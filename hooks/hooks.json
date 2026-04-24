@@ -9,6 +9,12 @@
             "timeout": 180,
             "once": true,
             "statusMessage": "Checking uip, servo and rpa-tool installation..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/suggest-permissions.sh\"",
+            "timeout": 5,
+            "once": true
           }
         ]
       }

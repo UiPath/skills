@@ -1,0 +1,49 @@
+task_id: skill-hitl-smoke-approval-gate
+description: >
+  Smoke test: agent should detect an approval gate pattern and recommend
+  HITL even though the user said "approve" rather than "HITL". Verifies
+  proactive business-language-based triggering.
+tags: [uipath-human-in-the-loop, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow that extracts expense report data and emails it to
+  finance — but a manager must approve each expense report before the email
+  is sent.
+
+  Write a recommendation.json file with:
+  {
+    "hitl_needed": <true or false>,
+    "pattern": "<which business pattern applies>",
+    "proposed_schema": {
+      "inputs": ["<field names>"],
+      "outputs": ["<field names>"],
+      "outcomes": ["<button names>"]
+    }
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified HITL is needed"
+    path: "recommendation.json"
+    includes:
+      - '"hitl_needed": true'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent identified an approval gate pattern"
+    path: "recommendation.json"
+    includes:
+      - "approval"
+    weight: 1.5
+    pass_threshold: 1.0

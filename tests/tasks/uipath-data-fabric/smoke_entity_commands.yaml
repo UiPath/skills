@@ -1,0 +1,87 @@
+task_id: skill-datafabric-smoke-entity-commands
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to list native entities
+  and create a new entity with typed fields. Tests that the skill teaches
+  correct entity command syntax: --body with fieldName keys (not --fields),
+  --native-only flag, and --output json on all commands.
+tags: [uipath-data-fabric, smoke, entities]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  I need to set up a "Products" entity in Data Fabric with the following fields:
+  - name (text)
+  - price (decimal)
+  - inStock (boolean)
+  - releaseDate (date)
+
+  First check what entities already exist (native entities only), then create
+  the Products entity if it does not exist yet.
+
+  Save a summary to report.json:
+  {
+    "commands_used": ["<list of uip df commands you ran>"],
+    "entity_create_body": { "fields": [ ... ] },
+    "entity_id": "<ID returned, or 'error: <message>' if command failed>"
+  }
+
+  Important:
+  - The uip CLI is available but is NOT connected to a live Data Fabric tenant
+    in this environment. Commands will fail with auth errors — that is expected.
+    Run each command once, record the result (success or error) in report.json,
+    and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip df command.
+  - Do NOT delete the entity.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed native entities only (--native-only flag required)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used entities create with --body (not --fields flag)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+.*--body'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Entity body uses fieldName key (not name key)"
+    path: "report.json"
+    includes:
+      - "fieldName"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct shape with at least 2 commands used"
+    path: "report.json"
+    assertions:
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0

@@ -1,30 +1,66 @@
 # Default owners for the entire repo
-* @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar
+- @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2
+
+# CI workflows and review config
+/.github/ @uipreliga
 
 # Hooks
 /hooks/ @DragosUnguru
 
-# Activity references
-/references/ @DragosUnguru
+# Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
+/commands/ @DragosUnguru @tmatup
+
+# Activity references (bundled inside uipath-rpa skill)
+/skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
 
 # Platform skill
-/skills/uipath-platform/ @gabrielavaduva
+/skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo
+/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
-# Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden
+# Solution Design skill
+/skills/uipath-solution-design/ @RaduAna-Maria
 
-# Flow skill — node category guides (away team owned)
-# Add your team here when contributing a new node category file
-/skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
-/skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden
+# Flow skill
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+
+# HITL skill
+/skills/uipath-human-in-the-loop/ @dushyant-uipath
+/tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
+
+# Case Management skill
+/skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
+
+# Coded Apps skill
+/skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
+
+# Flow skill — plugin guides (away team owned)
+# Add your team here when contributing a new plugin category
+/skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+
+# Legacy RPA skill
+/skills/uipath-rpa-legacy/ @roalexandru
+
+# Diagnostics
+/skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+
+# AOps Governance skill
+/skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
+# Test skill (reports, manual test automation, manual test execution)
+/skills/uipath-test/ @vaishalisharma-uipath @amoluipath
+
+# Data Fabric skill (CLI entity/record management)
+/skills/uipath-data-fabric/ @aditi-goyal-uipath
+/tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath

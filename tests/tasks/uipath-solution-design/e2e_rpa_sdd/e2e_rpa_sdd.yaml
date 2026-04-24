@@ -1,0 +1,209 @@
+task_id: skill-sdd-e2e-rpa-process
+description: >
+  End-to-end evaluation: agent uses the uipath-solution-design skill to read a
+  comprehensive PDD, select RPA Process as the product, and generate a complete
+  SDD with all template sections populated. A Python check script validates
+  structural completeness and content quality.
+tags: [uipath-solution-design, e2e, rpa, sdd]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Read the PDD below and generate a complete Solution Design Document (SDD).
+  Use Autonomous mode — do not pause for checkpoints.
+
+  For any [SME REVIEW] items, use the defaults and proceed.
+
+  Important:
+  - Do NOT attempt to create a UiPath project or run any `uip` commands.
+  - Your only deliverable is the SDD markdown file.
+  - Before starting, load the uipath-solution-design skill. Read and follow
+    its workflow steps exactly.
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Employee Onboarding Data Entry
+
+  ## 1. Introduction
+  - **Process Name:** Employee Onboarding Data Entry
+  - **Objective:** Automate the entry of new employee data from HR intake forms
+    into Workday and Active Directory, reducing manual effort and data errors.
+  - **Department:** Human Resources — People Operations
+  - **Key Contact:** Jane Smith (HR Process Lead)
+
+  ## 2. Process Overview
+  | Field | Value |
+  |-------|-------|
+  | Full name | Employee Onboarding Data Entry |
+  | Department | HR — People Operations |
+  | Description | For each new hire, read the intake form from SharePoint, enter personal data into Workday, create an AD account, and send a welcome email. |
+  | Required roles | Unattended Robot |
+  | Schedule | Daily at 7 AM, Monday–Friday |
+  | Volume | 10–25 new hires per day (peak: month-end, up to 40) |
+  | Average handling time (manual) | 12 minutes per employee |
+  | Target handling time (automated) | 2 minutes per employee |
+  | FTE count | 2.5 FTEs currently |
+  | Exception rate | ~5% |
+  | Input | Excel intake form on SharePoint |
+  | Output | Workday employee record, AD account, welcome email sent |
+
+  ### In Scope
+  - Download intake form from SharePoint
+  - Validate required fields
+  - Enter employee data into Workday
+  - Create Active Directory account
+  - Send welcome email via Outlook
+  - Log results to tracking spreadsheet
+
+  ### Out of Scope
+  - Benefits enrollment
+  - IT equipment provisioning
+  - Background check initiation
+
+  ## 3. Process Map
+  ```
+  Start → Download Form → Validate Data → Enter Workday → Create AD Account
+  → Send Welcome Email → Log Result → Next Employee → End
+  ```
+
+  ## 4. Detailed Process Steps
+
+  | Step | Action | Application | Expected Result | Remarks |
+  |------|--------|-------------|-----------------|---------|
+  | 1.1 | Navigate to SharePoint HR folder | Browser (Edge) | Folder listing visible | URL: https://company.sharepoint.com/hr/onboarding |
+  | 1.2 | Download today's intake Excel file | Browser (Edge) | .xlsx saved to temp folder | Filename pattern: Intake_YYYYMMDD.xlsx |
+  | 1.3 | Open Excel and read employee rows | Excel | DataTable with employee records | Skip rows where Status = "Processed" |
+  | 1.4 | Validate required fields per row | Excel | Validation result per row | Required: FirstName, LastName, Email, Department, StartDate, ManagerEmail |
+  | 1.4.A | If validation fails | — | Mark row as "Invalid", log reason | Business exception B1 |
+  | 1.5 | Log into Workday | Browser (Edge) | Workday home page | SSO authentication via Azure AD |
+  | 1.6 | Navigate to Create Position | Browser (Edge) | New position form | Menu: Staffing > Create Position |
+  | 1.7 | Fill employee details: name, email, department, start date, manager | Browser (Edge) | Fields populated | Map Department value per mapping table below |
+  | 1.8 | Submit Workday entry | Browser (Edge) | Confirmation with Employee ID | Capture Employee ID for AD account |
+  | 1.9 | Open Active Directory Users & Computers | Desktop (ADUC) | ADUC console | Or use PowerShell if available |
+  | 1.10 | Create new user account | ADUC / PowerShell | AD account created | Username format: first.last; default password per policy |
+  | 1.11 | Add to department security group | ADUC / PowerShell | User in correct group | Group name = Department name |
+  | 1.12 | Open Outlook, compose welcome email | Outlook | Email draft | Template in PDD appendix |
+  | 1.13 | Send email to new hire + manager | Outlook | Email sent | CC: manager from ManagerEmail field |
+  | 1.14 | Update tracking spreadsheet: status = "Completed" | Excel | Row updated | Include Employee ID and timestamp |
+
+  ## 5. Business Exceptions
+
+  | ID | Name | Trigger Step | Condition | Action |
+  |----|------|-------------|-----------|--------|
+  | B1 | Invalid intake data | 1.4 | Required field missing or malformed | Mark row "Invalid", log reason, continue to next row |
+  | B2 | Duplicate employee | 1.8 | Workday returns "employee already exists" | Skip, mark "Duplicate", notify HR lead |
+  | B3 | Department not in mapping | 1.7 | Department value not found in mapping table | Mark as "[SME REVIEW]", skip row, notify HR lead |
+
+  ## 6. System Errors
+
+  | ID | Name | Trigger Step | Condition | Retry | Action |
+  |----|------|-------------|-----------|-------|--------|
+  | E1 | SharePoint unavailable | 1.1 | Page does not load within 30s | 3 retries, 30s backoff | Abort run, send alert email |
+  | E2 | Workday timeout | 1.5–1.8 | Page unresponsive | 2 retries, 15s backoff | Skip employee, retry later |
+  | E3 | AD connection failure | 1.9 | Cannot connect to domain controller | 3 retries, 60s backoff | Abort AD step, continue with email |
+  | E4 | Outlook not responding | 1.12 | COM object failure | 2 retries | Skip email, log for manual send |
+
+  ## 7. Application Details
+
+  | Application | Interface | Login Method | Access Method | Language |
+  |-------------|-----------|-------------|---------------|----------|
+  | SharePoint | Web | Azure AD SSO | Edge browser, URL above | English |
+  | Excel | Desktop | Local | Installed, .xlsx files | English |
+  | Workday | Web | Azure AD SSO | Edge browser | English |
+  | Active Directory | Desktop / PowerShell | Domain credentials | ADUC or PowerShell | English |
+  | Outlook | Desktop | Local | Installed | English |
+
+  ## 8. Credentials
+
+  | Asset Name | Type | Description |
+  |------------|------|-------------|
+  | Cred_SharePoint | Credential | Azure AD service account for SharePoint |
+  | Cred_Workday | Credential | Azure AD service account for Workday |
+  | Cred_AD | Credential | Domain admin account for AD operations |
+  | Cred_Outlook | Credential | Service account for sending emails |
+
+  ## 9. Value Mappings
+
+  ### Department Mapping — Intake Form to Workday
+  | Intake Form Value | Workday Value |
+  |-------------------|---------------|
+  | Engineering | ENG-100 |
+  | Marketing | MKT-200 |
+  | Sales | SLS-300 |
+  | Finance | FIN-400 |
+  | Human Resources | HR-500 |
+
+  --- END PDD ---
+
+success_criteria:
+  # ── File creation ──────────────────────────────────────────────────────
+  - type: file_exists
+    description: "SDD file created with kebab-case name"
+    path: "employee-onboarding-data-entry-sdd.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Structural completeness ────────────────────────────────────────────
+  - type: run_command
+    description: "Python check validates SDD structure, sections, and content quality"
+    command: "python3 $TASK_DIR/check_sdd.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # ── Content fidelity: PDD data carried through ─────────────────────────
+  - type: file_contains
+    description: "SDD preserves key PDD data points"
+    path: "employee-onboarding-data-entry-sdd.md"
+    includes:
+      - "Employee Onboarding Data Entry"
+      - "Workday"
+      - "Active Directory"
+      - "SharePoint"
+      - "Outlook"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD preserves exception and error IDs"
+    path: "employee-onboarding-data-entry-sdd.md"
+    includes:
+      - "B1"
+      - "B2"
+      - "B3"
+      - "E1"
+      - "E2"
+    weight: 1.5
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "SDD includes value mapping from PDD"
+    path: "employee-onboarding-data-entry-sdd.md"
+    includes:
+      - "ENG-100"
+      - "MKT-200"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Implementation plan ────────────────────────────────────────────────
+  - type: file_contains
+    description: "Implementation plan has task structure with dependencies"
+    path: "employee-onboarding-data-entry-sdd.md"
+    includes:
+      - "Implementation Plan"
+      - "Task 1"
+      - "Task 2"
+      - "Dependencies:"
+      - "References:"
+    weight: 2.0
+    pass_threshold: 1.0

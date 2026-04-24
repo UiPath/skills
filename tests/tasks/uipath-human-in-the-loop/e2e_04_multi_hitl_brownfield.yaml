@@ -1,0 +1,96 @@
+task_id: skill-hitl-e2e-multi-hitl-brownfield
+# NOTE: "e2e" here means authoring end-to-end (brownfield JSON flow editing).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to insert multiple HITL nodes.
+description: >
+  Authoring E2E golden scenario (brown field, complex): agent reads an existing
+  HR onboarding flow and inserts TWO separate HITL checkpoints — before document
+  validation and before IT provisioning. Tests multi-node insertion and full
+  validation of the authored .flow file. Does not deploy or run the flow.
+tags: [uipath-human-in-the-loop, e2e, brown-field, multi-hitl, hr-onboarding]
+
+agent:
+  type: claude-code
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have an HR onboarding flow. Create it by writing to
+  HROnboarding/HROnboarding/HROnboarding.flow:
+
+  {
+    "nodes": [
+      {"id": "trigger1", "type": "core.trigger.manual", "label": "New Hire Request", "position": {"x": 100, "y": 300}},
+      {"id": "fetchDocs", "type": "core.action.script", "label": "Fetch Documents", "position": {"x": 300, "y": 300}, "inputs": {"script": "// fetch submitted docs"}},
+      {"id": "validateDocs", "type": "core.action.script", "label": "Validate Documents", "position": {"x": 500, "y": 300}, "inputs": {"script": "// validate doc completeness"}},
+      {"id": "provisionIT", "type": "core.action.script", "label": "Provision IT Access", "position": {"x": 700, "y": 300}, "inputs": {"script": "// create accounts"}},
+      {"id": "sendWelcome", "type": "core.action.script", "label": "Send Welcome Email", "position": {"x": 900, "y": 300}, "inputs": {"script": "// send welcome"}}
+    ],
+    "edges": [
+      {"id": "e1", "source": "trigger1", "target": "fetchDocs", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e2", "source": "fetchDocs", "target": "validateDocs", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e3", "source": "validateDocs", "target": "provisionIT", "sourcePort": "output", "targetPort": "input"},
+      {"id": "e4", "source": "provisionIT", "target": "sendWelcome", "sourcePort": "output", "targetPort": "input"}
+    ],
+    "variables": [],
+    "definitions": []
+  }
+
+  Add human validation at TWO points:
+  1. Before document validation — an HR officer must review submitted documents
+  2. Before IT provisioning — a manager must approve IT access
+
+  Wire the completed handles for both HITL nodes to their respective downstream
+  steps. Validate the full flow after both nodes are added.
+
+  Save results to report.json:
+  {
+    "hitl_nodes": [
+      {"id": "<first HITL node id>", "label": "<label>", "before": "<node it precedes>"},
+      {"id": "<second HITL node id>", "label": "<label>", "before": "<node it precedes>"}
+    ],
+    "handles_wired": ["<list of all edges added>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_contains
+    description: "HITL node(s) present in the flow file"
+    path: "HROnboarding/HROnboarding/HROnboarding.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Completed handles wired in the flow file"
+    path: "HROnboarding/HROnboarding/HROnboarding.flow"
+    includes:
+      - '"completed"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow after all changes"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate.*--format\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json shows 2 HITL nodes and validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "length(hitl_nodes)"
+        operator: gte
+        expected: 2
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 1.0

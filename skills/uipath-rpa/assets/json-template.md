@@ -76,13 +76,14 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
 - `outputType` → `"Tests"`
 - `fileInfoCollection` → one entry per test case file (add more entries as you add test cases)
 - No `processOptions` block
+- **No `main`** — Tests projects do not have a main entry point file
+- **No `entryPoints`** — Tests projects do not use entry points
 
 ```json
 {
   "name": "{{PROJECT_NAME}}",
   "projectId": "{{UUID_V4}}",
   "description": "{{DESCRIPTION}}",
-  "main": "Main.cs",
   "dependencies": {
     "UiPath.System.Activities": "[25.12.2]",
     "UiPath.Testing.Activities": "[25.10.0]",
@@ -129,14 +130,7 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
     "saveToCloud": false
   },
   "expressionLanguage": "CSharp",
-  "entryPoints": [
-    {
-      "filePath": "{{TestCase}}.cs",
-      "uniqueId": "{{UUID_V4}}",
-      "input": [],
-      "output": []
-    }
-  ],
+  "entryPoints": [],
   "isTemplate": false,
   "templateProjectData": {},
   "publishData": {},
@@ -144,11 +138,14 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
 }
 ```
 
+> **`editingStatus` lifecycle:** Set `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
+
 ### Variant: Library Project (Reference Only)
 
 Replace the `designOptions` block. Key differences from the Process template:
 - `outputType` → `"Library"`
 - `libraryOptions.privateWorkflows` lists any workflows that should NOT be exposed as activities
+- **No `entryPoints`** — Library projects do not use entry points
 
 ```json
 {
@@ -195,14 +192,7 @@ Replace the `designOptions` block. Key differences from the Process template:
     "saveToCloud": false
   },
   "expressionLanguage": "CSharp",
-  "entryPoints": [
-    {
-      "filePath": "Main.cs",
-      "uniqueId": "{{UUID_V4}}",
-      "input": [],
-      "output": []
-    }
-  ],
+  "entryPoints": [],
   "isTemplate": false,
   "templateProjectData": {},
   "publishData": {},
@@ -254,52 +244,6 @@ Common `type` values: `System.String`, `System.Int32`, `System.Boolean`, `System
   "MainFile": "Main.cs"
 }
 ```
-
-## .cs.json Metadata — Workflow with No Arguments
-
-```json
-{
-  "DisplayName": "{{DISPLAY_NAME}}",
-  "Tooltip": null,
-  "HelpLink": null,
-  "Color": null,
-  "OriginalIconFileName": null,
-  "Arguments": []
-}
-```
-
-## .cs.json Metadata — Workflow with Arguments
-
-```json
-{
-  "DisplayName": "{{DISPLAY_NAME}}",
-  "Tooltip": null,
-  "HelpLink": null,
-  "Color": null,
-  "OriginalIconFileName": null,
-  "Arguments": [
-    {
-      "Name": "{{PARAM_NAME}}",
-      "DisplayName": "{{PARAM_DISPLAY_NAME}}",
-      "Category": null,
-      "Tooltip": null,
-      "Placeholder": null,
-      "Widget": null,
-      "IsRequired": true,
-      "IsPrincipal": true,
-      "ArgumentType": 0,
-      "DataSourceItems": null
-    }
-  ]
-}
-```
-
-### ArgumentType Values
-- `0` — Input
-- `1` — Output
-- `2` — InOut
-
----
 
 ## Data-Driven Test Variations File
 

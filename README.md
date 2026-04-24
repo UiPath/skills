@@ -65,15 +65,21 @@ This repository works with **Claude Code**, **OpenAI Codex CLI**, and **Cursor I
 
 ### Claude Code
 
-This repository works as a **Claude Code plugin**. Install skills as a plugin marketplace for direct access to slash commands.
+This repository works as a **Claude Code plugin**. Install skills via `uip skills install` (the recommended method above) — this keeps skills updated automatically.
 
-```bash
-# Add the marketplace
-claude plugin marketplace add https://github.com/UiPath/skills
+> **Avoid manual plugin installation** (e.g., `claude plugin marketplace add` / `claude plugin install`). Manually installed plugins must be updated manually, and you may miss skill updates and fixes.
 
-# Install the plugin
-claude plugin install uipath@uipath-marketplace
+If you've already installed manually, uninstall and re-install via `uip skills install` to switch to automatic updates.
+
+#### Reduce permission prompts
+
+By default, Claude Code prompts for approval on every `uip` command, and a realistic Flow or RPA build runs 25+ distinct subcommands. Claude Code plugins cannot ship permission allowlists declaratively, so run this once to install a curated allowlist of safe read-only commands (registry lookups, validation, local scaffolding) while keeping prompts for side-effectful operations (login, debug, publish):
+
+```text
+/uipath:install-permissions
 ```
+
+The command prints the recommended JSON and offers to merge it into your settings (`~/.claude/settings.json` for global, or project-local `.claude/settings.local.json`). You will also see a one-line nudge at session start until an allowlist is installed.
 
 ### OpenAI Codex CLI
 

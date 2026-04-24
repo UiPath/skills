@@ -1,0 +1,70 @@
+task_id: skill-platform-is-connector-discovery
+description: >
+  Smoke test: agent uses the uipath-platform skill to discover Integration
+  Service connectors by vendor name. Tests that the skill teaches the correct
+  connector search workflow (list with --filter, --output json) and the HTTP
+  fallback strategy when no native connector exists.
+tags: [uipath-platform, smoke, integration-service, connectors]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  I need to find UiPath Integration Service connectors for "Google" and also
+  check if there is a connector for "Apify".
+
+  For each vendor:
+  1. Search for matching connectors
+  2. If no native connector exists, explain the fallback strategy
+
+  Save your findings to report.json:
+  {
+    "google_connectors": ["<list of connector keys found>"],
+    "apify_connectors": ["<list of connector keys found, or empty>"],
+    "apify_fallback": "<fallback strategy if no native connector>",
+    "commands_used": ["<list of uip is commands you ran>"]
+  }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected.
+    Run each command once, record the result (success or error) in report.json,
+    and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent searched for Google connectors using --filter"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+list.*--filter'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on connector commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+list.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json has correct structure, HTTP fallback documented"
+    command: "python3 $TASK_DIR/_shared/is_check.py check_connector_discovery"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

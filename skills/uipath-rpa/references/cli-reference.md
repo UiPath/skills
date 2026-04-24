@@ -66,8 +66,7 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`.
 List running UiPath Studio instances and their IPC status.
 
 ```bash
-uip rpa list-instances --output json --use-studio
-```
+uip rpa list-instances --output json```
 
 No command-specific options.
 
@@ -81,8 +80,7 @@ Ensure a Studio instance is running. Resolution waterfall:
 3. Start a new instance via `--studio-dir` -- poll until available
 
 ```bash
-uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json```
 
 ---
 
@@ -90,11 +88,10 @@ uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json --use-studio
 
 ### create-project
 
-Create a new UiPath project from a template. Also available as `uip rpa new`.
+Create a new UiPath project from a template.
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json --use-studio
-```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
@@ -112,8 +109,7 @@ uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json -
 Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance, so this is rarely required.
 
 ```bash
-uip rpa open-project --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa open-project --project-dir "<PROJECT_DIR>" --output json```
 
 No command-specific options.
 
@@ -127,11 +123,9 @@ Run or debug a workflow file using Studio.
 
 ```bash
 # Run (default -- closes app on completion or error):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
-
+uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 # Debug (pauses on error -- keeps app open for inspection/repair):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json --use-studio
-```
+uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -149,13 +143,34 @@ uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command St
 Return validation errors for a file or project. By default, forces Studio to re-validate before returning errors.
 
 ```bash
-uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json --use-studio
-```
+uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--file-path` | No | File to check (relative to project directory). Omit to check the whole project. |
 | `--skip-validation` | No | Return cached errors without re-validating (faster, but may be stale) |
+
+---
+
+### build
+
+Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses. Required before returning a project to the user (see [validation-guide.md § Project Build Verification](validation-guide.md#project-build-verification-required-before-returning-a-project)). Runs independently of Studio IPC; takes the project directory as a positional argument.
+
+```bash
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<projectDir>` | Yes | Path to the project directory (positional — not `--project-dir`) |
+| `--log-level` | No | `Debug` / `Info` / `Warn` / `Error`. Default `Warn`. |
+| `--skip-analyze` | No | Skip the static analysis step (faster, less thorough) |
+| `--exclude-configured-sources` | No | Exclude user/machine-configured NuGet sources |
+| `--nuget-sources-config-path` | No | Path to a custom NuGet sources config file |
+| `--governance-file-path` | No | Path to a governance/policy rules file |
+| `--governance-file-type` | No | Type of the governance file |
+| `--detailed-log-path` | No | Path to write a detailed log file |
+
+**Relationship to `run-file`:** `run-file` compiles internally, so a successful smoke test implies `build` would pass. When no smoke test is run (side effects, interactive workflow, no test input), `build` is the required end-goal check for compilability — including attribute-form expression failures (`JIT compilation is disabled for non-Legacy projects`) in XAML projects with `expressionLanguage: CSharp` that don't surface during static `get-errors`.
 
 ---
 
@@ -166,8 +181,7 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json --us
 Install or update NuGet packages in the project.
 
 ```bash
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json --use-studio
-```
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -186,14 +200,73 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 Get available versions for a NuGet package.
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --output json --use-studio
-uip rpa get-versions --package-id <PackageId> --include-prerelease --output json --use-studio
-```
+uip rpa get-versions --package-id <PackageId> --output jsonuip rpa get-versions --package-id <PackageId> --include-prerelease --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--package-id` | Yes | NuGet package ID to query |
 | `--include-prerelease` | No | Include prerelease versions (default false) |
+
+---
+
+## Commands -- Data Fabric Entities
+
+UiPath Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project -- as typed arguments (e.g. `UiPath.DataService.Activities`, `add-test-data-entity`) or anywhere else that binds to generated entity types -- they must first be **installed** into the project. Installation writes a manifest at `.entities/EntitiesStore.json` and compiles a strongly-typed assembly; all entity-aware activities, coded service calls, and test-data bindings resolve against it.
+
+Typical flow: `list-data-fabric-entities` (discover) → `install-data-fabric-entities --add ...` (install) → reference the generated entity types from your workflow or test case.
+
+---
+
+### list-data-fabric-entities
+
+List Data Fabric entities relevant to the active project. Returns a unified view of entities currently installed in the project **and** entities available in the connected tenant, each tagged with an `installed` flag.
+
+```bash
+uip rpa list-data-fabric-entities --project-dir "<PROJECT_DIR>" --output json
+uip rpa list-data-fabric-entities --service-document "<PATH>" --project-dir "<PROJECT_DIR>" --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--service-document` | No | Project-relative path to a specific entities manifest (e.g. `.entities/Custom.json`). Omit to use the project's default. |
+
+Each returned entry includes: `name`, `displayName`, `namespace` (if installed), `serviceDocument` (if installed), `storeUrl` (if cloud-available), and `installed: true | false`.
+
+Use this before `install-data-fabric-entities` to pick names from the tenant, or to verify what is already bound to the project.
+
+---
+
+### install-data-fabric-entities
+
+Install, update, or remove Data Fabric entity bindings by applying an add/remove delta to the project's currently installed set. Dependency expansion is automatic -- adding `E1` pulls in any entity `E1` references.
+
+```bash
+uip rpa install-data-fabric-entities --add "Invoice" --add "Customer" --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-data-fabric-entities --remove "LegacyOrder" --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-data-fabric-entities --add "Invoice" --remove "LegacyOrder" --namespace "My.App.Entities" --project-dir "<PROJECT_DIR>" --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--add` | One of `--add`/`--remove` | Entity name to add. Pass the flag multiple times for multiple entities (e.g. `--add Invoice --add Customer`). |
+| `--remove` | One of `--add`/`--remove` | Entity name to remove. Pass the flag multiple times for multiple entities (e.g. `--remove LegacyOrder --remove StaleCustomer`). |
+| `--service-document` | No | Project-relative manifest path. Omit to use the project's default. |
+| `--namespace` | No | .NET namespace for the generated entity types. Omit to keep the previously-used namespace, or derive one from the project name on a first install. |
+
+Behavior notes:
+
+- **Semantics:** final selection = `(currently installed ∪ add) − remove`. If the same name appears in both `--add` and `--remove`, remove wins.
+- **Dependencies:** pulled in automatically; the returned `entities` array is the full set actually installed.
+- **Server-deleted entities:** silently filtered before install -- they can't be compiled against. The diff between request and returned `entities` tells you what was dropped.
+- **Empty resulting selection:** uninstalls everything for the target service document (removes the manifest + generated assembly).
+- **At least one of `--add` / `--remove` must be non-empty.** To fully uninstall, pass every currently-installed name in `--remove`.
+
+Returns JSON:
+```json
+{ "serviceDocument": ".entities/EntitiesStore.json", "namespace": "My.App.Entities", "entities": ["Invoice", "Customer", "Address"] }
+```
+
+**Use this before** invoking any workflow or test case that references the entity types, and before `add-test-data-entity` -- the test-data command requires its target entity to already be managed in the project.
 
 ---
 
@@ -204,8 +277,7 @@ uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
 Get unautomated test case IDs from Test Manager.
 
 ```bash
-uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json```
 
 No command-specific options.
 
@@ -216,8 +288,7 @@ No command-specific options.
 Get steps for specific test cases from Test Manager.
 
 ```bash
-uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json --use-studio
-```
+uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -409,9 +480,7 @@ When `uip` commands fail, diagnose by error category:
 Search for activities by keyword. Global search -- not limited to installed packages.
 
 ```bash
-uip rpa find-activities --query "<KEYWORD>" --output json --use-studio
-uip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json --use-studio
-```
+uip rpa find-activities --query "<KEYWORD>" --output jsonuip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -427,11 +496,9 @@ Get the default XAML template for an activity. Two modes depending on whether th
 
 ```bash
 # Non-dynamic activity:
-uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json --use-studio
-
+uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json --use-studio
-```
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -446,9 +513,7 @@ uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id
 Search example workflows by service tags.
 
 ```bash
-uip rpa list-workflow-examples --tags "service1,service2" --output json --use-studio
-uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json --use-studio
-```
+uip rpa list-workflow-examples --tags "service1,service2" --output jsonuip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -463,8 +528,7 @@ uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 
 Retrieve the full XAML content of an example workflow.
 
 ```bash
-uip rpa get-workflow-example --key "<BLOB_PATH>" --output json --use-studio
-```
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -477,9 +541,7 @@ uip rpa get-workflow-example --key "<BLOB_PATH>" --output json --use-studio
 Focus an activity in the Studio designer view.
 
 ```bash
-uip rpa focus-activity --activity-id "<IDREF>" --output json --use-studio
-uip rpa focus-activity --output json --use-studio
-```
+uip rpa focus-activity --activity-id "<IDREF>" --output jsonuip rpa focus-activity --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -504,7 +566,7 @@ uip rpa search-templates --limit 10 --include-prerelease --output json
 
 Returns a JSON array with fields: `packageId`, `version`, `title`, `description`, `authors`, `source`, `tags`.
 
-Use the `packageId` and `version` from results with `uip rpa new --template-package-id` to create a project from that template.
+Use the `packageId` and `version` from results with `uip rpa create-project --template-package-id` to create a project from that template.
 
 ---
 
@@ -513,8 +575,7 @@ Use the `packageId` and `version` from results with `uip rpa new --template-pack
 Close the current project in Studio.
 
 ```bash
-uip rpa close-project --output json --use-studio
-```
+uip rpa close-project --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|

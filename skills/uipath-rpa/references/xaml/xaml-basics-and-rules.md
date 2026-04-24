@@ -73,37 +73,146 @@ Linear, step-by-step execution. Best for straightforward processes.
 
 ### Flowchart
 Branching logic with decision nodes. Best for complex decision flows.
+
+**Key pattern:** All FlowStep/FlowDecision/FlowSwitch nodes are direct children of `<Flowchart>`. Use `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`) to cross-reference nodes.
+
 ```xml
-<Flowchart DisplayName="My Flowchart">
+<Flowchart DisplayName="My Flowchart" sap2010:WorkflowViewState.IdRef="Flowchart_1">
   <Flowchart.StartNode>
-    <FlowStep x:Name="__ReferenceID0">
-      <!-- Start activity and connections -->
-    </FlowStep>
+    <x:Reference>__ReferenceID0</x:Reference>
   </Flowchart.StartNode>
-  <!-- FlowStep, FlowDecision, FlowSwitch nodes -->
+  <FlowStep x:Name="__ReferenceID0">
+    <!-- Activity here -->
+    <FlowStep.Next>
+      <x:Reference>__ReferenceID1</x:Reference>
+    </FlowStep.Next>
+  </FlowStep>
+  <FlowDecision x:Name="__ReferenceID1">
+    <FlowDecision.Condition>
+      <CSharpValue x:TypeArguments="x:Boolean">condition</CSharpValue>
+    </FlowDecision.Condition>
+    <FlowDecision.True>
+      <x:Reference>__ReferenceID0</x:Reference>
+    </FlowDecision.True>
+    <!-- FlowDecision.False omitted = end of flow -->
+  </FlowDecision>
 </Flowchart>
 ```
 
+**Node registration:** If a node is defined inline within a property element (e.g., inside `FlowStep.Next`) instead of as a direct Flowchart child, it needs a trailing `<x:Reference>` entry as a direct child of `<Flowchart>`. See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for details.
+
+**Expression language:** VB projects use `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />` instead of `<CSharpValue>`.
+
+**ViewState is needed** for usable Flowchart layout. See [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout) for coordinate systems, sizes, and recipes.
+
 ### State Machine
-State-based workflow with transitions. Best for long-running processes with distinct states.
+State-based workflow with transitions. Best for long-running processes with distinct states (e.g., REFramework).
+
 ```xml
-<StateMachine DisplayName="My State Machine">
-  <StateMachine.States>
-    <State DisplayName="Initial State">
-      <State.Transitions>
-        <Transition DisplayName="To Next" To="{x:Reference __ReferenceID1}" />
-      </State.Transitions>
-    </State>
-  </StateMachine.States>
+<StateMachine InitialState="{x:Reference __ReferenceID0}" DisplayName="My State Machine"
+              sap2010:WorkflowViewState.IdRef="StateMachine_1">
+  <State x:Name="__ReferenceID0" DisplayName="Initial State">
+    <State.Entry>
+      <Sequence DisplayName="Initialize">
+        <!-- Activities when entering state -->
+      </Sequence>
+    </State.Entry>
+    <State.Transitions>
+      <Transition DisplayName="To Processing">
+        <Transition.Condition>[condition]</Transition.Condition>
+        <Transition.To>
+          <x:Reference>__ReferenceID1</x:Reference>
+        </Transition.To>
+      </Transition>
+    </State.Transitions>
+  </State>
+  <State x:Name="__ReferenceID1" DisplayName="Processing">
+    <!-- State.Entry, State.Transitions -->
+  </State>
+  <State x:Name="__ReferenceID2" DisplayName="End" IsFinal="True" />
 </StateMachine>
 ```
+
+**Key patterns:**
+- `InitialState` attribute references the starting State
+- States are direct children of `<StateMachine>` (no wrapper element)
+- `IsFinal="True"` marks the terminal state
+- Transitions use `<Transition.To><x:Reference>__ReferenceID</x:Reference></Transition.To>` child element pattern
+
+**ViewState is needed** for usable State Machine layout. See [canvas-layout-guide.md § State Machine Layout](canvas-layout-guide.md#4-state-machine-layout) for coordinate systems, transition connection points, and recipes.
+
+### Long Running Workflow (ProcessDiagram)
+BPMN-style horizontal flow for event-driven, long-running processes. Uses `upa:ProcessDiagram` with `EventNode`, `TaskNode`, `DecisionNode`, and `EndNode`.
+
+Requires additional namespaces:
+```xml
+xmlns:upa="clr-namespace:UiPath.Process.Activities;assembly=UiPath.Process.Activities"
+xmlns:upas="clr-namespace:UiPath.Process.Activities.Shared;assembly=UiPath.Process.Activities"
+```
+
+```xml
+<upa:ProcessDiagram DisplayName="Long Running Workflow" sap2010:WorkflowViewState.IdRef="ProcessDiagram_1">
+  <upa:ProcessDiagram.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </upa:ProcessDiagram.StartNode>
+  <upa:EventNode x:Name="__ReferenceID0" DisplayName="Manual Trigger">
+    <upa:EventNode.Behavior>
+      <upa:StartBehavior>
+        <upa:StartBehavior.DesignerMetadata>
+          <upas:DesignerMetadata NodeType="StartEvent.Interrupting.None" />
+        </upa:StartBehavior.DesignerMetadata>
+      </upa:StartBehavior>
+    </upa:EventNode.Behavior>
+    <upa:EventNode.Next>
+      <upa:TaskNode x:Name="__ReferenceID1" DisplayName="Process">
+        <upa:TaskNode.Behavior>
+          <upa:NodeBehavior>
+            <upa:NodeBehavior.DesignerMetadata>
+              <upas:DesignerMetadata NodeType="Task.None" />
+            </upa:NodeBehavior.DesignerMetadata>
+          </upa:NodeBehavior>
+        </upa:TaskNode.Behavior>
+        <Sequence DisplayName="Process Steps">
+          <!-- Activities here -->
+        </Sequence>
+      </upa:TaskNode>
+    </upa:EventNode.Next>
+  </upa:EventNode>
+  <!-- Register inline nodes -->
+  <x:Reference>__ReferenceID1</x:Reference>
+</upa:ProcessDiagram>
+```
+
+**Key patterns:**
+- Flows **left-to-right** (horizontal), not top-to-bottom
+- `EventNode` = start/end circles, `TaskNode` = activity rectangles, `DecisionNode` = diamond (True/False branches), `EndNode` = end circle
+- `BoundaryNode` attaches to `TaskNode.BoundaryNodes` for error handling
+- Same `<x:Reference>` node registration rules as Flowchart — inline nodes need trailing registration
+
+**ViewState is needed.** See [canvas-layout-guide.md § Long Running Workflow](canvas-layout-guide.md#5-long-running-workflow-processdiagram-layout) for horizontal layout recipes.
 
 ## XAML Safety Rules
 
 Critical rules to follow when editing XAML files to prevent validation errors and workflow corruption.
 
-### NEVER Touch ViewState
-The `<sap2010:WorkflowViewState.ViewStateManager>` section contains designer layout metadata. **Never modify it.** UiPath Studio manages this automatically. Corrupting ViewState can break the workflow in the visual designer.
+### ViewState Rules
+
+ViewState controls how activities appear in the visual designer. Rules differ by workflow type and operation:
+
+**Sequences:** ViewState is optional — Studio auto-manages `IsExpanded` state. No coordinates needed.
+
+**Flowcharts, State Machines, Long Running Workflows:** ViewState determines node positions on the 2D canvas. Without it, Studio stacks all nodes at (0,0) — producing an unusable overlapping layout. Studio will auto-arrange when the file is opened, but the result may not match your intended layout.
+
+**When editing existing files:**
+- Do NOT modify the global `<sap2010:WorkflowViewState.ViewStateManager>` section — it can corrupt the designer layout
+- Do NOT modify existing ViewState on nodes you are not changing
+- When adding new nodes to a Flowchart/StateMachine, read existing node positions first to avoid overlap
+
+**When generating new Flowchart/StateMachine/ProcessDiagram files:**
+- Generate ViewState (ShapeLocation, ShapeSize, ConnectorLocation) for every node to produce a usable layout
+- See [canvas-layout-guide.md](canvas-layout-guide.md) for coordinate systems, standard sizes, and layout recipes
+
+> **Why the distinction?** The `uip rpa` commands communicate with Studio via IPC, and Studio regenerates layout when opening files. However, auto-arrange produces arbitrary layouts. If you need a specific visual structure (e.g., decision tree, loop pattern), generate ViewState explicitly.
 
 ### Preserve xmlns Declarations
 Never remove existing `xmlns` attributes from the root `<Activity>` element. Only add new ones as needed. Removing a namespace declaration that is referenced anywhere in the file will cause validation errors.
@@ -115,16 +224,16 @@ Always check the project's expression language before writing expressions:
 
 Mixing expression languages causes build failures.
 
-### Use `uip rpa get-default-activity-xaml --use-studio` Output
-Never construct activity XAML from memory. The `uip rpa get-default-activity-xaml --use-studio` command returns the exact XAML needed for the installed package version, including:
+### Use `uip rpa get-default-activity-xaml` Output
+Never construct activity XAML from memory. The `uip rpa get-default-activity-xaml` command returns the exact XAML needed for the installed package version, including:
 - Correct element names and namespaces
 - Required properties and their types
 - Default values
 - Assembly references to add
 
-Use `uip rpa find-activities --use-studio` to find the activity's fully qualified class name, type ID, and `isDynamicActivity` flag. Then use `uip rpa get-default-activity-xaml --use-studio` with the appropriate parameters.
+Use `uip rpa find-activities` to find the activity's fully qualified class name, type ID, and `isDynamicActivity` flag. Then use `uip rpa get-default-activity-xaml` with the appropriate parameters.
 
-Use `uip rpa list-workflow-examples --use-studio` and `uip rpa get-workflow-example --use-studio` to see example usages of the given activity, in addition to searching existing local `.xaml` files.
+Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` to see example usages of the given activity, in addition to searching existing local `.xaml` files.
 
 ### Preserve Existing Structure
 When editing XAML:
@@ -133,7 +242,7 @@ When editing XAML:
 - Use the `Edit` tool for targeted replacements (match exact `old_string`, replace with `new_string`)
 
 ### Validate After Every Change
-Run `uip rpa get-errors --use-studio` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.
+Run `uip rpa get-errors` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.
 
 ## Common Editing Operations
 
@@ -196,7 +305,10 @@ Add `<AssemblyReference>` entries:
 
 ### Expressions
 
-#### C# Projects (default)
+#### C# Expressions (`expressionLanguage: CSharp`)
+
+Applies to XAML workflow files in projects whose `project.json` has `expressionLanguage: CSharp`. These rules govern expressions inside XAML — they are unrelated to coded workflows (`.cs` files), which are plain C# and do not use `CSharpValue` / `CSharpReference` elements.
+
 Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReference>` (for write/lvalue) elements inside `<InArgument>` / `<OutArgument>`:
 ```xml
 <Assign DisplayName="Set Name">
@@ -215,7 +327,17 @@ Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReferenc
 
 **Important**: Do NOT use `[bracket]` shorthand for expressions. Brackets create `VisualBasicValue` nodes at deserialization time, causing validation failures for C#-only syntax (`null`, `?.`, `??`, `typeof()`, etc.).
 
-#### VB Projects
+**Stronger rule for attribute-form bindings on `InArgument<T>` / `OutArgument<T>`:** in XAML projects with `expressionLanguage: CSharp`, any **non-literal** attribute value (`Message="variableName"`, `Text="&quot;Hello &quot; + name"`) is also deserialized as a `VisualBasicValue<T>` and fails at runtime with `JIT compilation is disabled for non-Legacy projects`. The attribute parser defaults to VB regardless of the project's expression language. Use `<CSharpValue>` / `<CSharpReference>` child elements for anything that isn't a plain literal. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**Safe attribute-form values** (no expression evaluator involved, type converter handles them directly):
+- Literal strings on `InArgument<String>`: `Text="Book trip"`, `DisplayName="Open file"`
+- Enums: `Level="Info"`, `ClickType="Single"`, `MouseButton="Left"`
+- Numbers, booleans, `{x:Null}`
+- `TimeSpan` literals: `Duration="00:00:02"`
+
+**For activity-specific recipes** (`LogMessage.Message` as `InArgument<Object>`, `NGetText.TextString` as `OutArgument<String>`, `StartProcess.FileName` with composed paths, `Assign`, `If.Condition`, etc.), see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md). That file is the canonical lookup for the binding form per common activity property.
+
+#### VB Expressions (`expressionLanguage: VisualBasic`)
 Expressions use VB syntax with `[bracket]` shorthand (VB is the default deserialization target for brackets):
 ```xml
 <InArgument x:TypeArguments="x:String">[firstName & " " & lastName]</InArgument>
@@ -505,12 +627,12 @@ Shows the generic `ConnectorActivity` pattern used for Integration Service conne
 
 **Key patterns:**
 - `isactr:ConnectorActivity` is the generic IS activity type (`xmlns:isactr="http://schemas.uipath.com/workflow/integration-service-activities/isactr"`)
-- `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uip rpa get-default-activity-xaml --use-studio`
+- `Configuration` holds a base64-encoded GZip-compressed blob — **never construct this manually**, it comes from `uip rpa get-default-activity-xaml`
 - `ConnectionId` is the Integration Service connection GUID
 - `UiPathActivityTypeId` identifies the specific connector operation
 - `FieldObjects` define input/output fields with `isactr:FieldObject` elements
 - Output types reference a JIT-generated assembly (e.g., `CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3`)
-- The generated assembly name and namespace imports are connector-specific — always use `uip rpa get-default-activity-xaml --use-studio` output
+- The generated assembly name and namespace imports are connector-specific — always use `uip rpa get-default-activity-xaml` output
 
 ## Property Binding: Attributes vs Child Elements
 
@@ -546,7 +668,7 @@ DisplayName="My Activity" Message="[variable]" Level="Info"
 Properties may exist in one package version but not another. If `get-errors` reports "Could not find member 'PropertyName'":
 1. The property may not exist in the installed package version — remove it
 2. The property may have been renamed between versions — check examples from the same package version
-3. Use `uip rpa get-default-activity-xaml --use-studio` output as the authoritative set of properties for the installed version
+3. Use `uip rpa get-default-activity-xaml` output as the authoritative set of properties for the installed version
 
 ## ConnectorActivity Internals
 
@@ -556,9 +678,9 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 
 | Property | Editable? | Description |
 |----------|-----------|-------------|
-| `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uip rpa get-default-activity-xaml --use-studio` command. Do not parse, modify, or construct manually. |
+| `Configuration` | **NEVER** | ZIP-compressed, Base64-encoded JSON blob containing the full activity schema (fields, types, connector metadata). This is obtained and computed for you using the `uip rpa get-default-activity-xaml` command. Do not parse, modify, or construct manually. |
 | `ConnectionId` | Yes (replace GUID) | Integration Service connection GUID. Use `uip is connections list [connector-key]` to discover available connections and their IDs. |
-| `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uip rpa get-default-activity-xaml --use-studio` or `uip rpa find-activities --use-studio`. |
+| `UiPathActivityTypeId` | **NEVER** | Identifies the specific connector operation. Obtain using `uip rpa get-default-activity-xaml` or `uip rpa find-activities`. |
 | `DisplayName` | Yes | Human-readable activity name for the designer. |
 
 ### FieldObjects (Input/Output Interface)
@@ -567,7 +689,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 
 | Attribute | Description |
 |-----------|-------------|
-| `Name` | Field identifier (maps to the connector API parameter). Must match exactly what `uip rpa get-default-activity-xaml --use-studio` returns. |
+| `Name` | Field identifier (maps to the connector API parameter). Must match exactly what `uip rpa get-default-activity-xaml` returns. |
 | `Type` | One of: `FieldArgument` (contains an Activity Argument), `FieldLiteral` (contains a literal value), `FilterTreeValue` (filter builder criteria), `None` (empty). |
 
 **What you CAN edit in FieldObjects:**
@@ -578,7 +700,7 @@ Understanding the structure of `isactr:ConnectorActivity` so you know what you c
 - Field `Name` values — these must match the connector API schema exactly.
 - Field `Type` values — these are determined by the connector metadata.
 - Output field structure — the `OutArgument` types reference JIT-generated assemblies.
-- Adding/removing FieldObjects — the set of fields comes from `uip rpa get-default-activity-xaml --use-studio`.
+- Adding/removing FieldObjects — the set of fields comes from `uip rpa get-default-activity-xaml`.
 
 ### JIT-Generated Assemblies
 
@@ -591,13 +713,13 @@ CDF573A04A6_search_r.VeKd1XI2qK1X56UO2Br3Ui3
 These assembly names are:
 - **Unpredictable** — derived from SHA-512 hashes of the type schema
 - **Connection-specific** — different connections produce different hashes
-- **Generated by the runtime** — you cannot create or reference them without `uip rpa get-default-activity-xaml --use-studio`
+- **Generated by the runtime** — you cannot create or reference them without `uip rpa get-default-activity-xaml`
 
-The corresponding namespace imports and assembly references MUST come from `uip rpa get-default-activity-xaml --use-studio` output. Never construct them.
+The corresponding namespace imports and assembly references MUST come from `uip rpa get-default-activity-xaml` output. Never construct them.
 
-### What `uip rpa get-default-activity-xaml --use-studio` Returns for Dynamic Activities
+### What `uip rpa get-default-activity-xaml` Returns for Dynamic Activities
 
-When you call `uip rpa get-default-activity-xaml --use-studio` with `isDynamicActivity: true`, it returns everything needed:
+When you call `uip rpa get-default-activity-xaml` with `isDynamicActivity: true`, it returns everything needed:
 1. The complete `<isactr:ConnectorActivity>` XAML element with `Configuration` blob, `UiPathActivityTypeId`, and `FieldObjects`
 2. All required `xmlns` declarations for the root `<Activity>` element
 3. All required namespace imports and references
