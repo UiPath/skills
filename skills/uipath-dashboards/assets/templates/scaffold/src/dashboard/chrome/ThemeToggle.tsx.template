@@ -1,0 +1,25 @@
+import { useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getStoredTheme, setTheme, type Theme } from '@/lib/theme';
+
+export function ThemeToggle() {
+  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
+
+  const toggle = () => {
+    const next: Theme = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);          // writes localStorage + toggles <html class="dark">
+    setThemeState(next);     // re-renders this component so the icon flips
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={toggle}
+      aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+    >
+      {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+    </Button>
+  );
+}

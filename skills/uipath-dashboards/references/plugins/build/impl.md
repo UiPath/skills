@@ -44,7 +44,8 @@ For each widget implied by the user's prompt:
 4. **Render query hook** — write `<project>/src/lib/queries/<kebab-name>.ts` calling the routed SDK method.
 5. **Compose `Dashboard.tsx`** per [../../aesthetic/layout-patterns.md](../../aesthetic/layout-patterns.md) — KPI row on top, primary chart next, secondaries in 2-up grid, tables last.
 6. **Render auth wiring** — `<project>/src/lib/auth-strategy.ts` per [../../primitives/auth-strategy.md](../../primitives/auth-strategy.md).
-7. **Render SECURITY.md** — warn about full-session-token scope per [../../primitives/security.md](../../primitives/security.md).
+7. **Render theme + toggle** — `<project>/src/lib/theme.ts` (getStoredTheme / setTheme helpers) and `<project>/src/dashboard/chrome/ThemeToggle.tsx` (Sun/Moon icon button, persists to `localStorage["uipath-dashboard-theme"]`). `Dashboard.tsx`'s `Header` wires `<ThemeToggle />` into the right-side cluster. Default = light; dark is opt-in. See [../../aesthetic/design-system.md § Light + dark mode](../../aesthetic/design-system.md) — this toggle is mandatory, not optional.
+8. **Render SECURITY.md** — warn about full-session-token scope per [../../primitives/security.md](../../primitives/security.md).
 
 ### Preview
 Delegate to [../../primitives/dev-server.md](../../primitives/dev-server.md). This:

@@ -1,0 +1,24 @@
+export type Theme = 'light' | 'dark';
+
+const STORAGE_KEY = 'uipath-dashboard-theme';
+
+/**
+ * Read the user's stored theme preference. Default is 'light' — dashboards
+ * default to light mode; users opt in to dark via the ThemeToggle in the Header.
+ */
+export function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'light';
+  const v = localStorage.getItem(STORAGE_KEY);
+  return v === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * Persist theme preference + apply the .dark class on <html>.
+ * index.html runs an inline script at page load that applies this before
+ * React mounts, so toggle clicks are the only path through here after boot.
+ */
+export function setTheme(theme: Theme): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY, theme);
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+}

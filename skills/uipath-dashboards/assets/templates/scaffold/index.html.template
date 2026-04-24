@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,6 +7,17 @@
     <meta name="uipath:basedomain" content="" />
     <meta name="uipath:secret" content="" />
     <title>{{name}}</title>
+    <script>
+      // Apply stored theme before React mounts to avoid flash-of-unthemed-content.
+      // Default = light. Dark only if explicitly stored by the toggle.
+      (function () {
+        try {
+          if (localStorage.getItem('uipath-dashboard-theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

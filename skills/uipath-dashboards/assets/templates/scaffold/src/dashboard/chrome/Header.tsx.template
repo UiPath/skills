@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 type Props = { title: string; lastRefreshed?: Date; onRefresh?: () => void };
 
@@ -15,11 +16,14 @@ export function Header({ title, lastRefreshed, onRefresh }: Props) {
           </p>
         )}
       </div>
-      {onRefresh && (
-        <Button variant="outline" size="sm" onClick={onRefresh}>
-          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        {onRefresh && (
+          <Button variant="outline" size="sm" onClick={onRefresh}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        )}
+      </div>
     </header>
   );
 }

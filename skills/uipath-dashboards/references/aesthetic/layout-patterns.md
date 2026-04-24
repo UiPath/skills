@@ -10,8 +10,8 @@ Rules the generator follows when composing `Dashboard.tsx`. These encode "beauti
 4. **Tables last.** Densest content; bottom placement.
 5. **Gutters uniform.** `gap-6` (24px). Card padding `p-6`. Page padding `p-8` lg / `p-4` sm. No per-card tuning.
 6. **Every widget in a Card.** No free-floating JSX.
-7. **`chrome/Header.tsx` at top** — humanized `state.app.name` + last-refreshed timestamp + refresh button.
-8. **Dark mode ships.** Every widget uses `dark:` Tailwind variants. Root can set `class="dark"`.
+7. **`chrome/Header.tsx` at top** — humanized `state.app.name` + last-refreshed timestamp + a right-side cluster containing `<ThemeToggle />` and (optionally) a Refresh button, both in a `flex items-center gap-2` wrapper.
+8. **Light mode default, dark mode toggleable.** `<html>` starts with no class; an inline script in `index.html` applies `.dark` if `localStorage["uipath-dashboard-theme"] === 'dark'` BEFORE React mounts. The `<ThemeToggle>` (Sun / Moon icon button) lives in the Header and is MANDATORY — not optional. Every widget template uses `dark:` Tailwind variants so both modes look correct. Never hardcode `class="dark"` on `<html>`. See [design-system.md § Light + dark mode](design-system.md).
 9. **Density "comfortable".** Table rows `py-3` not `py-1`. Breathing room matters more than density on first load.
 10. **No auto-generated dashboard title.** Humanize `state.app.name` (`agent-health-dashboard` → `Agent Health Dashboard`). Widget titles come from user intent, not SDK method name.
 

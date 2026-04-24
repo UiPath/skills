@@ -80,6 +80,21 @@ In `index.css.template`, the CSS variables:
 - Headings: `Card.CardTitle` uses shadcn default (`text-lg font-semibold`).
 - Numbers: `tabular-nums` for all numeric columns / KPI values.
 
-## Dark mode
+## Light + dark mode
 
-Ships by default — every widget template uses `dark:` Tailwind variants. Toggle is a class on `<html>` (`class="dark"`); the scaffold doesn't wire a toggle UI in v1 (can be added in v2). When the Apps host determines dark mode preference, it can set the class via postMessage (future).
+**Default is light mode.** Users opt in to dark via a toggle in the Header. Every widget template ships `dark:` Tailwind variants so both modes are first-class.
+
+### Mechanics
+
+- `<html>` starts with **no class** in `index.html.template`. An inline `<script>` in the `<head>` reads `localStorage["uipath-dashboard-theme"]` and adds `class="dark"` BEFORE React mounts (prevents flash-of-unthemed-content).
+- The toggle lives in `src/dashboard/chrome/ThemeToggle.tsx` — a `<Button variant="outline" size="icon">` with a `<Moon>` icon in light mode (click → go dark) and `<Sun>` icon in dark mode (click → go light).
+- State persists in `localStorage["uipath-dashboard-theme"] = 'light' | 'dark'`.
+- Logic lives in `src/lib/theme.ts` — `getStoredTheme()` and `setTheme(theme)` helpers.
+- Header wires the toggle into a `flex items-center gap-2` cluster alongside Refresh.
+
+### Rules the generator follows
+
+1. **Never hardcode `class="dark"` on `<html>`.** The inline script owns that class.
+2. **Always include `<ThemeToggle />` in the Header cluster** — not optional. A dashboard without a theme toggle breaks the "dashboards as code" contract.
+3. **No `prefers-color-scheme` auto-detection in v1.** Users pick; we honor. Auto-detect can land in v2 as a 3-state option (light/dark/system).
+4. **When the Apps host later dictates theme via postMessage (v2),** the host message will call `setTheme()` — no rewrite of the toggle needed; it becomes one more input to the same state.
