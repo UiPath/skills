@@ -34,8 +34,12 @@ initial_prompt: |
      "Hello from TestAutomation" using the Log helper.
   3. TestLoginSuccess.cs — a [TestCase] CodedWorkflow using the
      Given-When-Then (Arrange-Act-Assert) structure, invoking the main
-     workflow and asserting on its result with the testing service
-     (testing.VerifyExpression / testing.VerifyAreEqual / similar).
+     workflow and asserting on its result. Use the UiPath testing
+     service methods EXCLUSIVELY for assertions — `testing.VerifyExpression`,
+     `testing.VerifyAreEqual`, `testing.VerifyContains`, etc. The skill
+     teaches this as the canonical assertion API. Do NOT use xUnit /
+     NUnit / MSTest `Assert.*` APIs — those won't integrate with the
+     UiPath test runner, and the skill explicitly avoids them.
   4. CodedWorkflowHooks.cs — shared Before/After hooks that apply to
      every test case in the project. Use the partial-class CodedWorkflow
      pattern with IBeforeAfterRun (NOT a base class).
