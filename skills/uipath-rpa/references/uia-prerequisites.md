@@ -1,7 +1,7 @@
 # UiAutomation Prerequisites
 
 **Required package:** `UiPath.UIAutomation.Activities`
-**Minimum version (`<MIN_VERSION>`):** `26.4.1-beta.11749457`
+**Minimum version (`<MIN_VERSION>`):** `26.4.1-beta.11825358`
 
 The `uip rpa uia` CLI used by `uia-configure-target` requires `UiPath.UIAutomation.Activities` at `<MIN_VERSION>` or newer. Before configuring any target, check the installed version in `project.json` under `dependencies`.
 
