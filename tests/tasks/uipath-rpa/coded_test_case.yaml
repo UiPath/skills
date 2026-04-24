@@ -16,8 +16,8 @@ initial_prompt: |
   the invoice creation workflow.
 
   The project already exists at ./InvoiceProcessor with a project.json.
-  Studio Desktop is NOT available — skip any CLI commands that require
-  --use-studio. Focus on generating the correct files and project.json updates.
+  Focus on generating the correct files, updating project.json, and
+  validating with the CLI.
 
   Requirements:
   - Create a coded test case file TestInvoiceCreation.cs
@@ -26,6 +26,9 @@ initial_prompt: |
   - Update project.json with the correct entry point and fileInfoCollection
   - If the project needs shared Before/After hooks, set them up using the
     partial class CodedWorkflow pattern (NOT a base class)
+  - Run `uip rpa get-errors --project-dir ./InvoiceProcessor --output json`
+    after generating files, to verify the project compiles. The command
+    may take 30–60s because Studio Helm spins up. Do NOT skip this step.
 
   Save a summary to report.json:
     {
@@ -33,12 +36,14 @@ initial_prompt: |
       "test_case_class": "<class name>",
       "base_class": "<base class used>",
       "assertions_used": ["<list of testing.Verify* methods used>"],
-      "hooks_pattern": "<'partial_class' or 'base_class' or 'none'>"
+      "hooks_pattern": "<'partial_class' or 'base_class' or 'none'>",
+      "get_errors_exit_code": <exit code from `uip rpa get-errors`>
     }
 
   Important:
-  - The `uip` CLI is already available in the environment.
+  - The `uip` CLI and the `rpa` tool are already available in the environment.
   - Use `--output json` on any uip commands you run.
+  - Do NOT pass `--use-studio` (Studio Desktop is not running interactively).
 
 success_criteria:
   - type: file_exists
@@ -92,3 +97,11 @@ success_criteria:
         expected: "base_class"
     weight: 1.5
     pass_threshold: 0.75
+
+  - type: command_executed
+    description: "Agent ran uip rpa get-errors to validate the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+get-errors'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

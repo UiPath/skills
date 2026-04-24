@@ -15,14 +15,16 @@ initial_prompt: |
   after every test case — opening and closing the browser.
 
   The project already exists at ./LoginTests with a project.json.
-  Studio Desktop is NOT available — skip any CLI commands that require
-  --use-studio. Focus on generating the correct files.
+  Focus on generating the correct files, then validate with the CLI.
 
   Requirements:
   - Set up shared Before/After hooks that apply to ALL test cases
   - Use the recommended pattern from the skill (partial class, not base class)
   - Include browser open in Before and browser close in After
   - Create one example test case (TestLoginSuccess.cs) that benefits from the hooks
+  - Run `uip rpa get-errors --project-dir ./LoginTests --output json` after
+    generating files, to verify the project compiles. The command may take
+    30–60s because Studio Helm spins up. Do NOT skip this step.
 
   Save a summary to report.json:
     {
@@ -30,12 +32,14 @@ initial_prompt: |
       "hooks_pattern": "<'partial_class' or 'base_class'>",
       "hooks_class_declaration": "<the class declaration line>",
       "test_case_file": "<filename of the test case>",
-      "test_case_inherits_from": "<base class of the test case>"
+      "test_case_inherits_from": "<base class of the test case>",
+      "get_errors_exit_code": <exit code from `uip rpa get-errors`>
     }
 
   Important:
-  - The `uip` CLI is already available in the environment.
+  - The `uip` CLI and the `rpa` tool are already available in the environment.
   - Use `--output json` on any uip commands you run.
+  - Do NOT pass `--use-studio` (Studio Desktop is not running interactively).
 
 success_criteria:
   - type: file_exists
@@ -87,4 +91,14 @@ success_criteria:
         operator: contains
         expected: "partial class CodedWorkflow"
     weight: 2.0
+    pass_threshold: 1.0
+
+  # The reviewer needs to see that the agent actually validated the
+  # project via the CLI — not just produced plausible-looking files.
+  - type: command_executed
+    description: "Agent ran uip rpa get-errors to validate the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+get-errors'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
