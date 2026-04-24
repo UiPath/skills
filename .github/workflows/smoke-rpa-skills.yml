@@ -159,19 +159,40 @@ jobs:
           cd ../..
           uip tools list --output json || true
 
-      - name: Pre-install rpa-tool (published; best-effort)
+      # Install @uipath/rpa-tool by downloading the published tarball
+      # and extracting it directly into the npm-global @uipath dir,
+      # bypassing dependency resolution entirely. `uip tools install`
+      # and `npm install -g @uipath/rpa-tool@<ver>` both fail with
+      # `EUNSUPPORTEDPROTOCOL / Unsupported URL Type "workspace:"`:
+      # the published package carries unrebuilt `workspace:*` devDep
+      # specifiers that npm's resolver rejects outside a monorepo.
+      # `npm pack` doesn't resolve deps — it just fetches the tarball
+      # — so extracting it manually gets the tool's pre-built `dist/`
+      # onto disk where uipcli's ToolManager discovers it. Any
+      # transitive runtime deps the tool actually needs are already
+      # bundled (bun build target:node produces self-contained output).
+      - name: Pre-install rpa-tool via npm pack (workspace:* workaround)
         shell: bash
-        continue-on-error: true
+        env:
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
         run: |
+          set -e
           REGISTRY=https://npm.pkg.github.com
           FILTER='import json,sys; vs=[v for v in json.load(sys.stdin) if v.startswith("0.3.") and "-" not in v]; sys.exit("No 0.3.x stable version found") if not vs else print(vs[-1])'
           RPA_VERSION=$(npm view @uipath/rpa-tool versions --registry=$REGISTRY --json | python -c "$FILTER")
-          echo "Attempting: @uipath/rpa-tool@$RPA_VERSION"
-          if ! uip tools install @uipath/rpa-tool@$RPA_VERSION; then
-            echo "::warning::uip tools install failed — falling back to npm install -g --legacy-peer-deps"
-            npm install -g --legacy-peer-deps "@uipath/rpa-tool@$RPA_VERSION" || \
-              echo "::warning::rpa-tool install failed; tasks that need it will surface via reviewer gate"
-          fi
+          echo "Packing @uipath/rpa-tool@$RPA_VERSION from $REGISTRY"
+
+          PACK_DIR=$(mktemp -d)
+          (cd "$PACK_DIR" && npm pack "@uipath/rpa-tool@$RPA_VERSION" --registry=$REGISTRY)
+          TGZ=$(ls "$PACK_DIR"/*.tgz | head -1)
+          echo "Tarball: $TGZ"
+
+          GLOBAL_PREFIX=$(npm root -g)
+          TARGET="$GLOBAL_PREFIX/@uipath/rpa-tool"
+          mkdir -p "$TARGET"
+          tar -xzf "$TGZ" -C "$TARGET" --strip-components=1
+          echo "Extracted to $TARGET"
+          ls -la "$TARGET"
           uip tools list --output json || true
 
       - name: Pre-warm Helm (download NuGet package before tests)
