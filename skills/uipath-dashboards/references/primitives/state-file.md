@@ -24,7 +24,8 @@ Atomic on-disk state file.
   "env": "alpha",
   "orgName": "acme",
   "tenantName": "default",
-  "folderKey": "a3f2-...",
+  "folderKey": null,
+  "clientId": null,
   "app": {
     "name": "agent-health-dashboard",
     "routingName": "agent-health-dashboard",
@@ -45,7 +46,8 @@ Atomic on-disk state file.
 | Field | Written by | Notes |
 |---|---|---|
 | `schemaVersion`, `env`, `orgName`, `tenantName` | `intent-capture` (first Build) | derived from `auth-context`; never prompted |
-| `folderKey` | **Deploy** by default; Build only if the user's prompt explicitly scopes to a folder | Folder is a Deploy concern — which Orchestrator folder hosts the deployed app, not which folder's data the widgets query. See [../plugins/deploy/impl.md § Step 2](../plugins/deploy/impl.md). |
+| `folderKey` | **Deploy** by default; Build only if the user's prompt explicitly scopes to a folder | Folder is a Deploy concern — which Orchestrator folder hosts the deployed app. See [../plugins/deploy/impl.md § Step 2](../plugins/deploy/impl.md). |
+| `clientId` | **Deploy** (first deploy) | Required because `uip codedapp pack` rejects the sentinel — a real non-confidential External App clientId must be in `uipath.json` at pack time. Runtime auth (secret-mode / postMessage / PAT) does NOT use this clientId; it's only to satisfy CLI validation. One per tenant, reused across all dashboards. Persisted for upgrade deploys. See [../plugins/deploy/impl.md § Step 2a](../plugins/deploy/impl.md). |
 | `app.name`, `app.routingName`, `app.semver` | `intent-capture` (first Build), `deploy-cli` (semver bumps) | |
 | `deployment.*` | `deploy-cli` or `deploy-fallback` (on successful deploy/upgrade) | |
 

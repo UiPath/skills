@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
 import { LoadingState } from '@/dashboard/chrome/LoadingState';
 import { fmtNumber } from '@/lib/format';
@@ -6,13 +7,12 @@ import { cn } from '@/lib/utils';
 import type { UiPath } from '@uipath/uipath-typescript/core';
 
 /**
- * KPI tile — whole card is a clickable drill-down.
- * Ships: icon box (top-left), optional on-click nav, value (text-2xl), label (text-xs muted).
+ * KPI tile — whole card is a clickable drill-down via react-router <Link>.
  *
  * Substitutions:
  *   {{IconName}}   — lucide icon (e.g., `Briefcase`, `Zap`, `Clock`, `AlertTriangle`)
  *   {{title}}      — short label under the value ("Active agents")
- *   {{detailHref}} — placeholder route ("#active-agents")
+ *   {{detailRoute}} — plain route path ("/active-agents") — HashRouter prepends `#/`
  */
 import { {{IconName}} } from 'lucide-react';
 
@@ -26,8 +26,8 @@ export function {{ComponentName}}({ sdk }: Props) {
   const Icon: LucideIcon = {{IconName}};
 
   return (
-    <a
-      href="{{detailHref}}"
+    <Link
+      to="{{detailRoute}}"
       className={cn(
         'group block rounded-xl border bg-card p-5 transition-all',
         'hover:border-primary/50 hover:shadow-sm',
@@ -43,6 +43,6 @@ export function {{ComponentName}}({ sdk }: Props) {
         {fmtNumber(data ?? 0)}
       </p>
       <p className="text-xs text-muted-foreground">{{title}}</p>
-    </a>
+    </Link>
   );
 }

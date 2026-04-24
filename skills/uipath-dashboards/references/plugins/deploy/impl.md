@@ -10,9 +10,35 @@ Same as Build. Halt if not logged into `uip`.
 ### Step 1 — Require state
 Check `<cwd>/.uipath-dashboards/state.json`. Missing → halt: *"No dashboard built here. Run Build first."* Deploy never scaffolds.
 
-### Step 2 — Resolve deploy-time folder
-`state.json.folderKey` is typically `null` at this point — Build leaves it unset because folder is a Deploy concern (which Orchestrator folder hosts the app, not which folder's data the widgets query).
+### Step 2 — Resolve deploy-time folder AND clientId
+Two values are needed at Deploy time that Build doesn't collect:
 
+**(a) `folderKey`** — which Orchestrator folder hosts the deployed app (access control).
+**(b) `clientId`** — a real non-confidential External App clientId. Required even though our runtime auth is secret-mode (postMessage/PAT), because `uip codedapp pack` validates `uipath.json`'s clientId server-side at deploy and **rejects the sentinel `00000000-...-0000`**. Earlier drafts of this skill assumed the sentinel would pass; it doesn't. Until the Apps API supports a no-clientId deploy path, we collect a real one at Deploy.
+
+#### 2a — clientId
+If `state.json.clientId` is null (typical post-Build):
+1. Prompt the user:
+   ```
+   Deploying needs a non-confidential External App clientId (one-time per tenant).
+   Our runtime auth doesn't use OAuth — this is just to satisfy `uip codedapp`'s
+   server-side clientId validation. We'll reuse this value for future deploys.
+
+   Open: https://<env>.uipath.com/<orgName>/<tenantName>/portal_/externalapps
+
+     • Click "Add application" → Non-confidential → App type: "User"
+     • Any scope will do (OR.Folders.Read is fine — runtime doesn't exercise it)
+     • Copy the "App ID" and paste below.
+
+   clientId: >
+   ```
+2. Validate format (GUID-shaped: 8-4-4-4-12 hex characters).
+3. Write to `state.json.clientId` — persisted for all subsequent upgrades.
+4. **Update `<project>/uipath.json`** — replace the sentinel clientId with this real value. Pack reads this file; old sentinel will block deploy.
+
+If `state.json.clientId` is already set → skip; reuse the existing value; re-sync `uipath.json` to match in case the file was regenerated.
+
+#### 2b — folderKey
 If `state.json.folderKey` is null:
 1. Fetch folder list via SDK:
    ```ts
@@ -48,7 +74,9 @@ Pipeline: `Validate → Plan → Confirm → Build → Pack → Publish → Depl
 ### Validate
 - `<project>/package.json`, `vite.config.ts`, `uipath.json` exist.
 - `<project>/src/dashboard/` non-empty (at least `Dashboard.tsx` + 1 widget).
-- `state.json.folderKey` populated (after Step 2), `state.json.app.name`, `state.json.app.semver` populated.
+- `state.json.folderKey` and `state.json.clientId` both populated (after Step 2a + 2b).
+- `state.json.app.name`, `state.json.app.semver` populated.
+- `<project>/uipath.json` has clientId matching `state.json.clientId` (NOT the sentinel `00000000-0000-0000-0000-000000000000`). If sentinel still present, Step 2a wasn't applied — re-run.
 - Halt with targeted error + fix hint on any miss.
 
 ### Plan
@@ -142,7 +170,7 @@ Contents (sentinel `clientId` satisfies CLI schema; runtime never reads it):
   "scope": "",
   "orgName": "<from auth-context>",
   "tenantName": "<from auth-context>",
-  "baseUrl": "https://<env>.api.uipath.com",
+  "baseUrl": "https://<env>.uipath.com",
   "redirectUri": "https://<org>.<env-infix>uipath.host/<routingName>"
 }
 ```

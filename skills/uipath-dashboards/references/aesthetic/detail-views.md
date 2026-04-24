@@ -69,6 +69,7 @@ The generator specializes it per widget: column definitions match what's semanti
 - **Views that re-fetch different data than the widget** — breaks the "what you see behind the summary" contract.
 - **Per-view filter UIs in v1** — scope creep. Ship filterless views first.
 - **Nested routes** — `/widgets/active-agents/details` is noise. `/active-agents` is fine.
+- **Rendering SDK error objects directly as React children** — `{row.jobError}` crashes React with "Objects are not valid as a React child" because `jobError` is a structured `{code, title, detail, ...}` object. Always flatten: `{formatJobError(row.jobError)}` from `_shared.ts`. Same discipline for any field that might surface as an object (error payloads, trace details, bodyJson fields).
 
 ## Example — full flow for the agent-health case
 

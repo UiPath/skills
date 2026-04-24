@@ -20,7 +20,15 @@ This is the knowledge an expert human dashboards engineer would have. We encode 
 - `startTime` / `endTime` → duration = `endTime - startTime`
 - `createdTime` → when it was queued
 - `folderName` → which folder scope
-- `jobError` → fault details for Faulted jobs
+- `jobError` → fault details, **structured object** (not a string):
+  ```ts
+  { code?: string; title?: string; detail?: string; category?: string;
+    status?: number|string; timestamp?: string }
+  ```
+  **CRITICAL — never render raw `jobError` as a React child.** React crashes with "Objects are not valid as a React child" on objects. Always flatten via `formatJobError(job.jobError)` from `_shared.ts` (produces a human string like `"Timeout — retries exhausted after 3 attempts"`).
+
+**"What counts as faulted":**
+`state === 'Faulted'` is the narrow definition. For error-rate dashboards, callers usually want a broader predicate that also includes `Stopped` and `Cancelled` (both are non-success outcomes from the user's perspective). Use `FAULT_STATES` and `isFaulted()` from `_shared.ts` rather than hand-writing the state check — this keeps the definition consistent across a dashboard. `Abandoned` / `Suspended` are typically EXCLUDED from error counts.
 
 **Time axis:** yes — `CreationTime`, `StartTime`, `EndTime`. Filter on server-side PascalCase (see `invariants.md §2`).
 

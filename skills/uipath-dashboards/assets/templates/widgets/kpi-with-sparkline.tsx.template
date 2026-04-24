@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
 import { LoadingState } from '@/dashboard/chrome/LoadingState';
 import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
@@ -9,19 +10,11 @@ import { cn } from '@/lib/utils';
 import type { UiPath } from '@uipath/uipath-typescript/core';
 
 /**
- * KPI tile with sparkline — large value + optional delta + thin trend line below.
- * Whole card clicks through to detail.
+ * KPI tile with sparkline. Whole card is a <Link> drill-down.
  *
  * Substitutions:
- *   {{IconName}}      — lucide icon
- *   {{title}}         — "Error rate"
- *   {{detailHref}}    — "#error-rate"
- *   {{seriesKey}}     — sparkline series field
- *   {{seriesLabel}}   — "Error rate"
- *   {{colorIdx}}      — 1-5 semantic color
- *   {{deltaDirection}} — DeltaBadge direction
- *
- * Expected data: `{ value: number | string; deltaText?: string; points: Array<{ [seriesKey]: number }> }`
+ *   {{IconName}}, {{title}}, {{detailRoute}}, {{seriesKey}}, {{seriesLabel}},
+ *   {{colorIdx}}, {{deltaDirection}}
  */
 import { {{IconName}} } from 'lucide-react';
 
@@ -38,12 +31,13 @@ export function {{ComponentName}}({ sdk }: Props) {
 
   const value = data?.value ?? 0;
   const deltaText = data?.deltaText ?? '';
+  const deltaDirection = data?.deltaDirection ?? '{{deltaDirection}}';
   const points = data?.points ?? [];
   const Icon: LucideIcon = {{IconName}};
 
   return (
-    <a
-      href="{{detailHref}}"
+    <Link
+      to="{{detailRoute}}"
       className={cn(
         'group block rounded-xl border bg-card p-5 transition-all',
         'hover:border-primary/50 hover:shadow-sm',
@@ -54,7 +48,7 @@ export function {{ComponentName}}({ sdk }: Props) {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
-        {deltaText && <DeltaBadge direction="{{deltaDirection}}" text={deltaText} />}
+        {deltaText && <DeltaBadge direction={deltaDirection} text={deltaText} />}
       </div>
       <p className="mb-0.5 text-2xl font-semibold tabular-nums text-foreground">
         {typeof value === 'number' ? fmtNumber(value) : value}
@@ -71,6 +65,6 @@ export function {{ComponentName}}({ sdk }: Props) {
           />
         </LineChart>
       </ChartContainer>
-    </a>
+    </Link>
   );
 }

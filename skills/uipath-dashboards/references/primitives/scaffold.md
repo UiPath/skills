@@ -33,17 +33,27 @@ npm install
 Verify `node_modules/` exists + `@uipath/uipath-typescript` is present.
 
 ### 3. Initialize shadcn
-```bash
-npx shadcn@latest init --defaults
-```
-Uses `components.json.template` we've already rendered — `--defaults` accepts all defaults.
+**First, remove our pre-rendered `components.json`** — otherwise `shadcn init` sees it and prompts "overwrite? y/N" despite `--yes` (the `--yes` flag does NOT suppress that specific prompt; known shadcn CLI gotcha — agents hang silently waiting for input).
 
-**IMPORTANT:** `shadcn init` **overwrites `src/index.css`** with the current shadcn defaults (as of shadcn v5 / Tailwind v4 these are `oklch(L 0 0)` grayscale values, with dead `@import` lines to `tw-animate-css`, `shadcn/tailwind.css`, `@fontsource-variable/geist`). Do NOT accept that file as-is — Step 6 below restores our HSL-space vars that match the Tailwind config's `hsl(var(--X))` wrap.
+```bash
+rm -f <target>/components.json
+npx shadcn@latest init --yes --defaults
+```
+
+We keep `components.json.template` in the skill for reference only (so contributors can see what we'd configure if we had a choice) — but it's DELETED from the target before `shadcn init` runs so the CLI generates a fresh one matching its current expectations.
+
+**IMPORTANT — `shadcn init` overwrites these files:**
+- `src/index.css` → restored in Step 6 (our HSL-space chart tokens; shadcn's grayscale oklch defaults make every chart render black).
+- `src/lib/utils.ts` → shadcn regenerates with only `cn()`. We don't fight this. Dashboard primitives (`zeroFill`, `groupBy`, `fetchAllJobs`, `FAULT_STATES`, `formatJobError`, `isoHoursAgo`, `hourBucket`, `percentile`, `delta`, `jobsService`, `agentNameOf`, `jobDurationMs`, `meanOfNumbers`) live in **`src/lib/queries/_shared.ts`** instead — rendered as part of Step 1 via `_shared.ts.template`.
+- `components.json` → written fresh.
 
 ### 4. Add shadcn components
 ```bash
-npx shadcn@latest add --yes card badge table chart tooltip separator skeleton
+npx shadcn@latest add --yes card badge table chart separator skeleton
 ```
+
+**Note:** `tooltip` is NOT in this list. Recent shadcn versions ship Tooltip as `@base-ui/react` rather than `@radix-ui/react-tooltip`, with breaking API changes (`delayDuration` → `delay`, `asChild` removed). Our `InfoTooltip` chrome component uses a CSS-only tooltip (title attribute + Tailwind hover-peer) to sidestep this churn. If you genuinely need the shadcn Tooltip primitive, `shadcn add tooltip` works but pin shadcn to a Radix-era version or rewrite `InfoTooltip` to the base-ui API.
+
 These are the IN list from [../aesthetic/design-system.md](../aesthetic/design-system.md). Don't add more up front — users can `shadcn add` later if they need.
 
 ### 5. Write .gitignore

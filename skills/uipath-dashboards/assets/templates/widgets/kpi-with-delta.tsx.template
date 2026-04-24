@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
 import { LoadingState } from '@/dashboard/chrome/LoadingState';
 import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
@@ -7,15 +8,14 @@ import { cn } from '@/lib/utils';
 import type { UiPath } from '@uipath/uipath-typescript/core';
 
 /**
- * KPI tile with semantic delta. Whole card clicks through to the detail view.
+ * KPI tile with semantic delta. Whole card clicks through via react-router <Link>.
  *
  * Substitutions:
- *   {{IconName}}      — lucide icon matching the metric (see design-system.md § Icon catalog)
- *   {{title}}         — label under value ("Active agents")
- *   {{detailHref}}    — drill-down route ("#active-agents")
- *   {{deltaDirection}} — 'up-good' | 'up-bad' | 'down-good' | 'down-bad' | 'neutral' | 'status'
- *                       Picked by intent, not sign: "up-good" = increase is good (active agents),
- *                       "up-bad" = increase is bad (latency, cost). Never default to raw sign.
+ *   {{IconName}}       — lucide icon matching the metric
+ *   {{title}}          — label under value ("Active agents")
+ *   {{detailRoute}}    — plain route path ("/active-agents")
+ *   {{deltaDirection}} — default 'up-good' | 'up-bad' | 'down-good' | 'down-bad' | 'neutral' | 'status'
+ *                        Hook may override by returning its own deltaDirection.
  */
 import { {{IconName}} } from 'lucide-react';
 
@@ -27,12 +27,13 @@ export function {{ComponentName}}({ sdk }: Props) {
   if (error) throw error;
 
   const value = data?.value ?? 0;
-  const deltaText = data?.deltaText ?? '';     // e.g., "+3 this week", "+8% vs yesterday"
+  const deltaText = data?.deltaText ?? '';
+  const deltaDirection = data?.deltaDirection ?? '{{deltaDirection}}';
   const Icon: LucideIcon = {{IconName}};
 
   return (
-    <a
-      href="{{detailHref}}"
+    <Link
+      to="{{detailRoute}}"
       className={cn(
         'group block rounded-xl border bg-card p-5 transition-all',
         'hover:border-primary/50 hover:shadow-sm',
@@ -43,12 +44,12 @@ export function {{ComponentName}}({ sdk }: Props) {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
-        {deltaText && <DeltaBadge direction="{{deltaDirection}}" text={deltaText} />}
+        {deltaText && <DeltaBadge direction={deltaDirection} text={deltaText} />}
       </div>
       <p className="mb-0.5 text-2xl font-semibold tabular-nums text-foreground">
         {fmtNumber(value)}
       </p>
       <p className="text-xs text-muted-foreground">{{title}}</p>
-    </a>
+    </Link>
   );
 }
