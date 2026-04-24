@@ -16,6 +16,15 @@ tags: [uipath-rpa-legacy, smoke, create, validate]
 task_timeout: 1200
 agent:
   type: claude-code
+  # Override: Sonnet 4.6's output classifier trips on the legacy XAML
+  # baseline (21 namespaces + 16 assembly refs including the .NET
+  # Framework set: PresentationFramework/PresentationCore/WindowsBase/
+  # System.Xaml/mscorlib + Microsoft.VisualBasic.Activities). Observed
+  # deterministically at the Write(Main.xaml) step — 3/3 CI runs
+  # blocked with "Output blocked by content filtering policy". Opus 4.6
+  # emits the same baseline cleanly; modern-baseline XAML (ellipsed,
+  # System.Private.CoreLib) stays on Sonnet.
+  model: claude-opus-4-6
   max_turns: 40
   turn_timeout: 900
 
