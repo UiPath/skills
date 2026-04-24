@@ -1,0 +1,150 @@
+task_id: skill-rpa-uia-google-search
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to build a standard
+  (XAML, VB.NET) UiPath project that drives a web browser — opening google.com,
+  typing a query, and clicking the search button via Use Application/Browser,
+  Type Into, and Click UIA activities with pre-known selectors. Validates the
+  full XAML surface the skill teaches: project.json with VisualBasic expression
+  language, ApplicationCard / TypeInto / Click activity XML, and the
+  `uip rpa get-errors` compile gate.
+tags: [uipath-rpa, smoke, uia, xaml]
+
+# Standard XAML + UIA activities. First `uip rpa` call restores packages
+# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `get-errors`
+# on a XAML workflow with UIA activities can run another ~45s. Budget
+# accordingly.
+task_timeout: 1800
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a standard UiPath RPA project called "GoogleSearch" (XAML-based,
+  VisualBasic expression language) that automates a simple web search:
+  open google.com in Chrome, type a query into the search box, and
+  click the search button.
+
+  Deliverables, all under ./GoogleSearch:
+  1. project.json with `"expressionLanguage": "VisualBasic"` and any
+     activity packages needed for UI Automation.
+  2. Main.xaml — a Sequence that uses Use Application/Browser
+     (ApplicationCard) wrapping Type Into + Click, targeting:
+       * URL:     https://www.google.com
+       * Browser: chrome.exe
+       * Query:   UiPath automation
+     Use these selectors directly (wrap in angle brackets when placed
+     in XAML, do NOT call `uip rpa indicate`):
+       App:    html app='chrome.exe' url='https://www.google.com'
+       Input:  webctrl tag='textarea' name='q'
+       Button: webctrl tag='input' name='btnK' type='submit'
+
+  Validation:
+  - Create the project with `uip rpa create-project` (pass
+    `--expression-language VisualBasic`).
+  - Discover the activity XAML with `uip rpa get-default-activity-xaml`
+    (or equivalent discovery command the skill teaches) before
+    hand-authoring anything.
+  - After writing Main.xaml, run
+    `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
+    and fix anything it surfaces. The call takes 30–60s because Studio
+    Helm spins up — do NOT skip it.
+
+  Save a summary to report.json at the sandbox root:
+    {
+      "project_name": "GoogleSearch",
+      "expression_language": "VisualBasic",
+      "activities_used": ["<activity class names you emitted in XAML>"],
+      "commands_used": ["<uip commands you ran, full with flags>"],
+      "get_errors_exit_code": <exit code from the final get-errors call>
+    }
+
+  Important:
+  - The `uip` CLI and the `rpa` tool are already available in the environment.
+  - Use `--output json` on any uip commands you run.
+  - Do NOT pass `--use-studio` (Studio Desktop is not running interactively).
+
+success_criteria:
+  - type: file_exists
+    description: "project.json was created"
+    path: "GoogleSearch/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json targets VisualBasic"
+    path: "GoogleSearch/project.json"
+    includes:
+      - "VisualBasic"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.xaml workflow was created"
+    path: "GoogleSearch/Main.xaml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml contains the ApplicationCard/TypeInto/Click UIA activities"
+    path: "GoogleSearch/Main.xaml"
+    includes:
+      - "ApplicationCard"
+      - "TypeInto"
+      - "Click"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml targets google.com with the expected query and selectors"
+    path: "GoogleSearch/Main.xaml"
+    includes:
+      - "google.com"
+      - "UiPath automation"
+      - "btnK"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Require the agent's own `uip rpa get-errors` to have returned
+  # success. This captures the compile signal without paying a second
+  # Helm cold-start in the criterion runner.
+  - type: command_executed
+    description: "Agent ran uip rpa get-errors on Main.xaml successfully"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+get-errors.*Main\.xaml'
+    min_count: 1
+    require_success: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms VisualBasic + a working get-errors call + the activities used"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "GoogleSearch"
+      - expression: "expression_language"
+        operator: equals
+        expected: "VisualBasic"
+      - expression: "get_errors_exit_code"
+        operator: equals
+        expected: 0
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 2
+      - expression: "length(activities_used)"
+        operator: gte
+        expected: 2
+    weight: 1.5
+    pass_threshold: 0.8

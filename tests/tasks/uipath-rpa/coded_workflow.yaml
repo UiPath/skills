@@ -1,0 +1,174 @@
+task_id: skill-rpa-coded-workflow
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to build a coded
+  automation project end-to-end — a Main.cs workflow, a [TestCase] that
+  exercises it with Given-When-Then + testing.Verify, and shared Before/After
+  hooks via the partial-class CodedWorkflow pattern. Validates the full coded
+  surface: project.json wiring, the testing service, the hooks contract, and
+  `uip rpa get-errors` as the compile gate.
+tags: [uipath-rpa, smoke, coded]
+
+# `uip rpa get-errors` pays a 30–60s Helm cold-start on first call plus
+# additional time for package restore. Generating three .cs files and
+# validating lands around 10–20 min wall time; these budgets have room.
+task_timeout: 1500
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a coded UiPath automation project called "TestAutomation" that
+  exercises three parts of the coded surface in one go: a main workflow,
+  a test case that calls it, and shared Before/After hooks that run
+  around every test.
+
+  Deliverables, all under ./TestAutomation:
+  1. project.json with CSharp expression language and the right entry
+     points / fileInfoCollection so the test case is discoverable.
+  2. Main.cs — a CodedWorkflow with an Execute method that logs
+     "Hello from TestAutomation" using the Log helper.
+  3. TestLoginSuccess.cs — a [TestCase] CodedWorkflow using the
+     Given-When-Then (Arrange-Act-Assert) structure, invoking the main
+     workflow and asserting on its result with the testing service
+     (testing.VerifyExpression / testing.VerifyAreEqual / similar).
+  4. CodedWorkflowHooks.cs — shared Before/After hooks that apply to
+     every test case in the project. Use the partial-class CodedWorkflow
+     pattern with IBeforeAfterRun (NOT a base class).
+
+  Validation:
+  - Run `uip rpa get-errors --project-dir ./TestAutomation --output json`
+    after generating the files. The call takes 30–60s because Studio
+    Helm spins up — do NOT skip it. Fix any errors the skill surfaces
+    and rerun until clean.
+
+  Save a summary to report.json at the sandbox root:
+    {
+      "project_name": "TestAutomation",
+      "expression_language": "CSharp",
+      "files_created": ["<paths of the .cs files you created>"],
+      "test_case_class": "<class name of the test case>",
+      "hooks_pattern": "<'partial_class' or 'base_class'>",
+      "hooks_class_declaration": "<the class declaration line from the hooks file>",
+      "assertions_used": ["<list of testing.Verify* methods used>"],
+      "commands_used": ["<list of uip commands you ran>"],
+      "get_errors_exit_code": <exit code from the final uip rpa get-errors call>
+    }
+
+  Important:
+  - The `uip` CLI and the `rpa` tool are already available in the environment.
+  - Use `--output json` on any uip commands you run.
+  - Do NOT pass `--use-studio` (Studio Desktop is not running interactively).
+
+success_criteria:
+  - type: file_exists
+    description: "project.json was created"
+    path: "TestAutomation/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json targets CSharp and references the test case"
+    path: "TestAutomation/project.json"
+    includes:
+      - "CSharp"
+      - "TestLoginSuccess"
+      - "testCaseType"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.cs coded workflow file was created"
+    path: "TestAutomation/Main.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.cs is a CodedWorkflow with Execute() that logs the expected message"
+    path: "TestAutomation/Main.cs"
+    includes:
+      - "CodedWorkflow"
+      - "Execute"
+      - "Hello from TestAutomation"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "TestLoginSuccess coded test case was created"
+    path: "TestAutomation/TestLoginSuccess.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case uses [TestCase], CodedWorkflow, and testing.Verify* assertions"
+    path: "TestAutomation/TestLoginSuccess.cs"
+    includes:
+      - "[TestCase]"
+      - "CodedWorkflow"
+      - "testing.Verify"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "CodedWorkflowHooks.cs was created"
+    path: "TestAutomation/CodedWorkflowHooks.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Hooks file uses the partial class CodedWorkflow + IBeforeAfterRun pattern"
+    path: "TestAutomation/CodedWorkflowHooks.cs"
+    includes:
+      - "partial class CodedWorkflow"
+      - "IBeforeAfterRun"
+      - "Before("
+      - "After("
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Require the agent's own `uip rpa get-errors` to have returned
+  # success. This captures the compile signal without paying a second
+  # Helm cold-start in the criterion runner.
+  - type: command_executed
+    description: "Agent ran uip rpa get-errors successfully"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+get-errors'
+    min_count: 1
+    require_success: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms CSharp, partial-class hooks, and a working get-errors call"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "TestAutomation"
+      - expression: "expression_language"
+        operator: equals
+        expected: "CSharp"
+      - expression: "hooks_pattern"
+        operator: equals
+        expected: "partial_class"
+      - expression: "hooks_class_declaration"
+        operator: contains
+        expected: "partial class CodedWorkflow"
+      - expression: "get_errors_exit_code"
+        operator: equals
+        expected: 0
+      - expression: "length(files_created)"
+        operator: gte
+        expected: 3
+    weight: 1.5
+    pass_threshold: 0.8
