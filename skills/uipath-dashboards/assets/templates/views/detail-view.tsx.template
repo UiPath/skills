@@ -1,0 +1,104 @@
+import { useState } from 'react';
+import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { use{{HookName}}List } from '@/lib/queries/{{hookFile}}-list';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { cn } from '@/lib/utils';
+// Generator imports format helpers per column: fmtNumber, fmtTimeAgo, fmtPercent, fmtDuration, fmtDay...
+// import { fmtNumber } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * Per-widget detail view — rendered at route "/{{kebabSlug}}".
+ * Re-queries the underlying SDK data WITHOUT aggregation so the user sees
+ * the full list of records behind the widget, pre-filtered by the widget's
+ * metric semantics.
+ *
+ * Substitutions:
+ *   {{title}}           — "Active agents" (same as widget title)
+ *   {{description}}     — "All agents that ran at least one job in the last 24 hours."
+ *                         (filter semantics spelled out)
+ *   {{HookName}}        — drill-down query hook, often widget's hook + 'List' suffix
+ *                         (e.g., useActiveAgentsList vs useActiveAgents for the KPI)
+ *   {{hookFile}}        — underlying query file ("active-agents" — the list hook
+ *                         lives at `src/lib/queries/active-agents-list.ts`)
+ *   {{RowType}}         — e.g., `{ agent: string; invocations: number; lastSeen: string }`
+ *   {{defaultSortKey}}  — primary column to sort by on mount
+ *   {{emptyMessage}}    — widget-specific; mirrors the widget's own empty state
+ *   {{columnHeaders}}   — generator emits one <TableHead onClick={() => toggle('key')}>
+ *                         Label <Arrow k="key" /></TableHead> per column
+ *   {{columnCells}}     — generator emits one <TableCell> per column with appropriate
+ *                         formatter (fmtNumber, fmtTimeAgo, SeverityBadge, etc.)
+ */
+
+type Row = {{RowType}};
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}View({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}List(sdk);
+  const [sortKey, setSortKey] = useState<keyof Row>('{{defaultSortKey}}' as keyof Row);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggle = (key: keyof Row) => {
+    if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+  const Arrow = ({ k }: { k: keyof Row }) =>
+    sortKey !== k ? null : sortDir === 'asc'
+      ? <ChevronUp className="inline w-3 h-3 ml-1" />
+      : <ChevronDown className="inline w-3 h-3 ml-1" />;
+
+  let body;
+  if (isLoading) body = <LoadingState height="h-96" />;
+  else if (error) throw error;
+  else if (!data || data.length === 0) body = <EmptyState message="{{emptyMessage}}" />;
+  else {
+    const sorted = [...data].sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      if (typeof av === 'number' && typeof bv === 'number') return sortDir === 'asc' ? av - bv : bv - av;
+      return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+
+    body = (
+      <div className="rounded-xl border bg-card">
+        <div className="flex items-center justify-between px-5 py-3 border-b">
+          <p className="text-xs text-muted-foreground">
+            {sorted.length} {sorted.length === 1 ? 'record' : 'records'}
+          </p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b">
+              {{columnHeaders}}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sorted.map((row, i) => (
+              <TableRow key={i} className={cn('transition-colors hover:bg-muted/50')}>
+                {{columnCells}}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
+  return (
+    <DetailViewShell
+      title="{{title}}"
+      description="{{description}}"
+    >
+      {body}
+    </DetailViewShell>
+  );
+}

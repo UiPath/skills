@@ -85,7 +85,7 @@ Every chart widget renders this structure. KPI widgets collapse steps 3+4 into a
 ## Rules
 
 1. **Every widget gets a description.** If the generator can't derive one from the intent, halt and ask the user. Never ship a widget with just a title.
-2. **Every chart and table gets a `ViewAllLink`.** Default `href` is `#<kebab-name>` (placeholder route). User wires real routing in v2; the affordance is mandatory now.
+2. **Every chart and table gets a `ViewAllLink` that routes to a real detail view.** `href="/<kebab-slug>"` (HashRouter). A matching `src/dashboard/views/<WidgetName>View.tsx` MUST exist alongside the widget and render the widget's underlying records without aggregation. Placeholder hashes with nothing at the other end are banned — see [detail-views.md](detail-views.md).
 3. **Delta badges use semantic direction**, not signed values. Use `up-good` / `up-bad` / `down-good` / `down-bad` / `neutral` / `status` — the direction tells the reader whether the change is good, not just which way it's pointing.
 4. **InfoTooltip when the metric needs explanation.** "Error rate trend" doesn't need one; "PP vs %" (percentage points vs percent) usually does.
 5. **KPIs with deltas never show sign alone.** Always pair with period context — "+3 this week", "+8% vs yesterday", "-0.6pp this week", "On track".
@@ -98,7 +98,7 @@ Every chart widget renders this structure. KPI widgets collapse steps 3+4 into a
 - **Widget with only title, no description.** Banned.
 - **KPI with `+8%` and no period context.** Banned — use DeltaBadge with `text="+8% vs yesterday"`.
 - **Chart card with no inline headline.** The chart alone doesn't tell the "at a glance" story — the headline does.
-- **ViewAllLink with no actual route.** Use `#` + a placeholder route; don't ship links that crash.
+- **ViewAllLink pointing at a placeholder hash.** Banned — must navigate to a real detail view with the widget's unaggregated data. See [detail-views.md](detail-views.md).
 - **Using `Badge` (shadcn) directly for deltas.** Use `DeltaBadge` — it has semantic direction.
 - **Icon in the title text itself** (e.g., `title="📊 Volume"`). Icons live in the icon slot, not in the string.
 - **More than one action in the header right cluster.** Keep to: InfoTooltip + ViewAllLink, max.

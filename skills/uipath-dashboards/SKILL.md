@@ -50,6 +50,9 @@ Never preload both.
 10. **Ambiguous prompts get a clarifying question, not a guess.**
 11. **Tokens are full-user-session scoped — guardrails are mandatory.** CSP, in-memory-only tokens, gitignored `.env*`, no `console.log(sdk)`. See [references/primitives/security.md](references/primitives/security.md).
 12. **No `dangerouslySetInnerHTML` with tenant data. No token in URL. No localStorage for tokens.** Incremental-editor rejects edits that introduce these.
+13. **You are a dashboard expert, not a phrase-book.** For every metric the user asks about, classify it on four axes (shape / time framing / aggregation / service) per [references/sdk/metric-derivation.md](references/sdk/metric-derivation.md) and derive the SDK call from first principles. [references/sdk/intent-map.md](references/sdk/intent-map.md) is illustrative; it does not constrain what you can build. Novel metrics are the default case.
+14. **Every widget routes to a real detail view.** No placeholder hashes. Generator produces `<WidgetName>.tsx` + `<WidgetName>View.tsx` + aggregated hook + list hook + route registration — all in the same Generate step. See [references/aesthetic/detail-views.md](references/aesthetic/detail-views.md).
+15. **Columns in detail views are derived from service semantics, not hardcoded.** Read [references/sdk/service-semantics.md](references/sdk/service-semantics.md) "Semantic columns" for the widget's service and produce a column list covering identity + time + domain-specific dimensions.
 
 ## Workflow
 
@@ -90,9 +93,13 @@ Each plugin owns its end-to-end workflow and delegates to primitives.
 | Deploy CLI (uip codedapp chain) | [primitives/deploy-cli.md](references/primitives/deploy-cli.md) |
 | Deploy fallback (direct-API workaround) | [primitives/deploy-fallback.md](references/primitives/deploy-fallback.md) |
 | Security (threat model + guardrails) | [primitives/security.md](references/primitives/security.md) |
+| **Metric derivation (reasoning framework)** | [sdk/metric-derivation.md](references/sdk/metric-derivation.md) |
+| **Service semantics (SDK mental model)** | [sdk/service-semantics.md](references/sdk/service-semantics.md) |
 | SDK invariants (pagination, field drift, zero-fill) | [sdk/invariants.md](references/sdk/invariants.md) |
-| Intent map (phrase → SDK call) | [sdk/intent-map.md](references/sdk/intent-map.md) |
+| Intent map — **illustrative** worked examples | [sdk/intent-map.md](references/sdk/intent-map.md) |
 | Scope map (SDK class → OAuth scope) | [sdk/scope-map.md](references/sdk/scope-map.md) |
+| Widget anatomy (canonical structure) | [aesthetic/widget-anatomy.md](references/aesthetic/widget-anatomy.md) |
+| Detail views (drill-down contract) | [aesthetic/detail-views.md](references/aesthetic/detail-views.md) |
 | Design-system subset | [aesthetic/design-system.md](references/aesthetic/design-system.md) |
 | Charting taxonomy + rules | [aesthetic/charting.md](references/aesthetic/charting.md) |
 | Layout patterns | [aesthetic/layout-patterns.md](references/aesthetic/layout-patterns.md) |
