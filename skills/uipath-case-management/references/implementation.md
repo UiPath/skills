@@ -6,6 +6,8 @@ Execute the approved `tasks.md` plan, building `caseplan.json` via either `uip m
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
+> **Two sub-phases with a hard stop.** Execution is split into **Phase 2a** (skeleton build — structural nodes only) and **Phase 2b** (detail build — values, conditions, SLA). Between them, an **AskUserQuestion** hard stop lets the user optionally publish the skeleton to Studio Web for visual review before committing to detail work. Read [phased-execution.md](phased-execution.md) for the phase contract, informational Phase 2a validate, hard-stop prompt, re-entry protocol, and abort semantics. The step numbering below marks the phase boundary.
+
 ## Strategy selection (per plugin)
 
 Before executing each plugin's T-entries, consult the strategy matrix in [case-editing-operations.md](case-editing-operations.md).
@@ -14,6 +16,8 @@ Before executing each plugin's T-entries, consult the strategy matrix in [case-e
 - **`Strategy = CLI`** → use the plugin's `impl-cli.md` + [case-editing-operations-cli.md](case-editing-operations-cli.md) for cross-cutting mechanics.
 
 Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
+
+**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Rule #24](../SKILL.md) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
 > - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
@@ -37,6 +41,12 @@ Before any build step, initialize an empty issue list **in the agent's reasoning
 # pseudocode — kept in the agent's reasoning, not on disk
 issues = []  # shared across all steps
 ```
+
+---
+
+# Phase 2a — Skeleton build (Steps 6 – 9.5)
+
+Steps 6 through 9.5 build the structural skeleton: solution, project, root case, global variables, stages, edges, triggers, and tasks without value binding. Full contract in [phased-execution.md § Phase 2a](phased-execution.md).
 
 ## Step 6 — Create the Case project structure
 
@@ -70,22 +80,21 @@ For each edge in `tasks.md §4.5`, execute per [`plugins/edges/impl-json.md`](pl
 
 For multi-trigger cases, add the additional triggers first via the appropriate trigger plugin, then wire their IDs as edge sources.
 
-## Step 9 — Add tasks and bind inputs/outputs
+## Step 9 — Add tasks (Phase 2a shape)
 
-For each task entry in `tasks.md §4.6`, open the matching plugin's implementation doc per the strategy matrix in [case-editing-operations.md](case-editing-operations.md). For all tasks, use `impl-json.md` (direct JSON write). **Capture the `TaskId`** — cross-task references and conditions need it.
+For each task entry in `tasks.md §4.6`, open the matching plugin's `impl-json.md`. **Capture the `TaskId`** — cross-task references and conditions in Phase 2b need it.
 
-After adding a task, bind its inputs by editing `caseplan.json` directly per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
+**Phase 2a writes task shape but defers value binding to Phase 2b.** Per-class shape:
 
-1. Read `caseplan.json`, find the task's `data.inputs[]` by name.
-2. For literals/expressions (`input = "<value>"`): write the value string to `input.value`.
-3. For cross-task references (`input <- "Stage"."Task".output`): resolve the source output's `var` field from the JSON, then write `=vars.<var>` to the target input's `value`.
-4. Write `caseplan.json` back.
+| Task class | Phase 2a `data` content |
+|---|---|
+| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from `uip maestro case tasks describe --task-type-id <id>`. Each input's `value` is `""`. Outputs populated per plugin. |
+| Connector (`connector-activity`, `connector-trigger`) | `data.type-id` + `data.connection-id` set. `data.inputs` omitted. **Do NOT call `is resources describe` / `is triggers describe` in 2a** — schema discovery happens in Phase 2b. |
+| Unresolved (any class) | Skeleton task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
-For **connector tasks**, pass variable references inline in `--input-values` at creation time (e.g., `"=vars.amount"`). Resolve cross-task `var` IDs from `caseplan.json` before constructing the `--input-values` JSON.
+**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references are written in Phase 2b Step 9.6 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
-**Binding order.** Process tasks in the order listed in `tasks.md` (already dependency-sorted by `order: after T<n>`). Bind each task's inputs immediately after adding it. If a cross-task reference points to a task not yet added, halt — `tasks.md` ordering is wrong; report to the user.
-
-**Pass `--lane <n>` on every task add**, incrementing per task within a stage (starting at 0). Lane is a FE layout coordinate; it does not affect execution. Sequencing and parallelism come from task-entry conditions.
+**Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field), incrementing per task within a stage (starting at 0). Lane is a FE layout coordinate; it does not affect execution.
 
 ### Step 9.1 — Skeleton tasks for unresolved resources
 
@@ -109,6 +118,59 @@ Skeleton tasks integrate with the rest of the graph:
 - **Stage-exit `selected-tasks-completed`** rules reference skeleton `TaskId`s normally.
 - **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
 
+## Step 9.5 — Skeleton-mode validate + HARD STOP
+
+End of Phase 2a. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Hard stop](phased-execution.md). This section is a bridge — do NOT duplicate that contract here.
+
+1. Run informational validate (regular, no `--mode` flag):
+
+   ```bash
+   uip maestro case validate "<caseplan.json path>" --output json
+   ```
+
+   **Do NOT halt on errors or warnings.** Phase 2a output is expected invalid (unbound inputs, missing conditions, missing SLA — all filled in Phase 2b). Capture error + warning counts for the summary; do not attempt to classify "expected" vs "unexpected" errors.
+
+2. Print the hard-stop summary, including the captured validate counts ([phased-execution.md § Summary content](phased-execution.md)).
+
+3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #26.
+
+On continue (either `Skip publish and continue` or `Continue to phase 2b` after publish): proceed to Step 9.6.
+
+---
+
+# Phase 2b — Detail build (Steps 9.6 – 13)
+
+Steps 9.6 onwards wire connector task schemas, input/output values, conditions, and SLA. Full contract in [phased-execution.md § Phase 2b](phased-execution.md).
+
+## Step 9.6 — Phase 2b re-entry
+
+Before any 2b mutation:
+
+1. **Re-read `tasks.md`** — per Rule #10 of `SKILL.md`.
+2. **Re-read `caseplan.json`** — rebuild name → ID maps from the authoritative artifact. See [phased-execution.md § Phase 2b re-entry protocol](phased-execution.md) for which fields to index.
+
+Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — context may be compacted across the hard stop.
+
+## Step 9.7 — Connector task detail
+
+For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
+
+1. Run `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
+2. Write `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+
+Skip connector tasks that are skeletons (unresolved `type-id` / `connection-id`) — they stay bare.
+
+## Step 9.8 — Bind task input/output values
+
+For each task's inputs in `tasks.md` order, write values into the existing `data.inputs[i].value` fields per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
+
+1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
+2. Cross-task references (`input <- "Stage"."Task".output`): resolve source output's `var` field from `caseplan.json`, then write `=vars.<var>` to the target input's `value`.
+
+If a cross-task reference points to a task that does not exist in `caseplan.json`, halt — `tasks.md` ordering is wrong; report to the user.
+
+Skip skeleton tasks entirely — they have no inputs.
+
 ## Step 10 — Add conditions
 
 For each condition in `tasks.md §4.7`, open the matching plugin (`impl-cli.md` when the strategy matrix lists the scope as `CLI`; `impl-json.md` when `JSON`):
@@ -122,10 +184,12 @@ For each condition in `tasks.md §4.7`, open the matching plugin (`impl-cli.md` 
 
 SLA is on the **JSON** strategy per the matrix in [case-editing-operations.md](case-editing-operations.md). Group `tasks.md §4.8` entries by target (root or stage), then compose and write the full `slaRules[]` array per target in a single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). The JSON path supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules — all gap-fills over the CLI's capabilities. Fallback to [`plugins/sla/impl-cli.md`](plugins/sla/impl-cli.md) only if the JSON strategy fails empirically.
 
-## Step 12 — Validate
+## Step 12 — Full validate
+
+End of Phase 2b mutations. Run full-mode validate (no `--mode` flag):
 
 ```bash
-uip maestro case validate <file>
+uip maestro case validate <file> --output json
 ```
 
 On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to Step 13.

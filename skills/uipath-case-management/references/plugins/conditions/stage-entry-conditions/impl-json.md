@@ -1,5 +1,7 @@
 # stage-entry-conditions — Implementation (Direct JSON Write)
 
+> **Phase split.** Phase 2b only. Phase 2a does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Write the stage-entry condition directly to the target stage's `data.entryConditions[]`. No CLI command needed.
 
 ## Condition JSON Shape

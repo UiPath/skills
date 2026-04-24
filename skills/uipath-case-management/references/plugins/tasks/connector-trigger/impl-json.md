@@ -1,5 +1,7 @@
 # connector-trigger task — Implementation (Direct JSON Write)
 
+> **Phase split.** Runs across both phases. Phase 2a writes `data.type-id` + `data.connection-id` only; **do NOT call `is triggers describe` in 2a**. Phase 2b runs `is triggers describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Write a `wait-for-connector` task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md).
 
 For shared CLI calls, metadata construction, and anti-patterns, see [connector-trigger-common.md](../../../connector-trigger-common.md#implementation--shared-cli-calls). This doc covers only the **task-specific** parts.
