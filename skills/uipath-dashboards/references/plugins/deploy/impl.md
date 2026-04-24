@@ -118,10 +118,17 @@ Parse `Data.DeployVersion` (server-side integer); record as `state.json.deployme
 ### Deploy
 Try CLI happy path first:
 ```bash
-uip codedapp deploy --output json
+uip codedapp deploy -n <state.app.name> --folder-key <state.folderKey> --output json
 ```
+**Both flags are required in non-interactive mode.** The CLI's behavior:
+- Without `--folder-key`, `uip codedapp deploy` drops into an interactive folder picker. Agents running non-interactively hang and then fail with `User force closed the prompt`. Always pass the flag.
+- **Do NOT pass `-v <semver>`.** The `-v` flag on deploy expects a server-side `deployVersion` integer (from publish output), NOT the semver. Passing `-v 1.0.0` right after a successful publish of 1.0.0 still errors with `App has not been published yet`. Omitting `-v` entirely lets the CLI deploy the latest published version — which is what we want 99% of the time. Only pass `-v` if you're intentionally pinning to a specific `Data.DeployVersion` integer from a prior `uip codedapp publish`.
+
+Parse:
 - Success → record `systemName`, `deploymentId`, `appUrl`, `deployedAt` from result.
 - Stderr contains `clientId not found` → auto-hand off to [../../primitives/deploy-fallback.md](../../primitives/deploy-fallback.md) (direct-API).
+- Stderr contains `User force closed the prompt` → `--folder-key` wasn't passed; regenerate the command with the flag and retry.
+- Stderr contains `App has not been published yet` despite a successful publish → `-v` was passed with a semver; drop the `-v` flag and retry.
 - Any other error → surface, halt.
 
 ### Update state
