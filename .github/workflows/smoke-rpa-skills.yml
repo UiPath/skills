@@ -131,13 +131,26 @@ jobs:
           //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
           NPMRC
 
-      - name: Build and install uip CLI from source
+      # Build uipcli and install it GLOBALLY via `bun pm pack` +
+      # `npm install -g` rather than `npm link`. With `npm link`, the
+      # linked CLI's `import.meta.url` resolves to the monorepo source
+      # path, so uipcli's tool walk-up discovers `.uipcli/packages/`
+      # first (finds rpa-legacy-tool), short-circuits, and never falls
+      # back to the npm global `@uipath/` dir where
+      # `npm install -g @uipath/rpa-tool` lands. Installing the packed
+      # tarball puts the CLI at the same global prefix as the tools,
+      # so the walk-up sees both.
+      - name: Build, pack, and install uip CLI globally from source
         working-directory: .uipcli
         shell: bash
         run: |
           bun install
           bun run build
-          cd packages/cli && npm link
+          cd packages/cli
+          bun pm pack
+          TGZ=$(ls *.tgz | head -1)
+          npm install -g "$TGZ" --registry=https://registry.npmjs.org/
+          uip --version
 
       # Install both RPA tools from public npm.
       #
