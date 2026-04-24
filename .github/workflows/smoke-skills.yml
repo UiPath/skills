@@ -123,7 +123,9 @@ jobs:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 18 smoke tasks at ~1–2 min each + env setup — 30 min was getting
+    # cancelled mid-run. 60 min gives headroom even if a task retries.
+    timeout-minutes: 60
     name: Run skill smoke tests
     steps:
       - uses: actions/checkout@v4
@@ -248,5 +250,7 @@ jobs:
           retention-days: 14
 
       - name: Fail if tests failed
-        if: steps.smoke.outcome == 'failure'
+        # Also catch `cancelled` (the job timeout firing) so a truncated
+        # run is not silently reported green.
+        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
         run: exit 1
