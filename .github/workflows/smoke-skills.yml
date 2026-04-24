@@ -174,6 +174,10 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          # Reviewer + llm_judge backend: coder_eval's reviewer does not
+          # run on Bedrock today, so route LLM evaluation calls through
+          # the Anthropic API.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         working-directory: tests
         id: smoke
         run: |
@@ -182,17 +186,66 @@ jobs:
             -e experiments/default.yaml --tags smoke -j 1 -v
         continue-on-error: true
 
-      - name: Print experiment report
+      - name: Summarize results
         if: always()
         working-directory: tests
         run: |
-          for f in runs/*/experiment.md runs/*/default/variant.md runs/*/default/*/task.json; do
-            if [ -f "$f" ]; then
-              echo "=== $f ==="
-              cat "$f"
-              echo ""
-            fi
-          done
+          # Find the most recent run directory (tests may not have produced
+          # one on catastrophic install failures).
+          run_dir=$(ls -td runs/*/ 2>/dev/null | head -n 1)
+          if [ -z "$run_dir" ]; then
+            echo "::warning::No run directory found — nothing to summarize"
+            exit 0
+          fi
+          echo "Run directory: $run_dir"
+          echo ""
+          echo "## Task results"
+          python - <<'PY'
+          import json
+          import pathlib
+          run_dir = sorted(pathlib.Path('runs').glob('*/'))[-1]
+          rows = []
+          for p in sorted(run_dir.rglob('task.json')):
+              d = json.loads(p.read_text(encoding='utf-8'))
+              lr = d.get('llm_review') or {}
+              rows.append((
+                  d.get('task_id', '?'),
+                  d.get('final_status', '?'),
+                  d.get('weighted_score'),
+                  lr.get('score'),
+              ))
+          if not rows:
+              print('  (no task.json files found)')
+          width = max((len(r[0]) for r in rows), default=4)
+          for task_id, status, score, llm_score in rows:
+              score_s = f"{score:.2f}" if isinstance(score, (int, float)) else '   —'
+              llm_s = f"{llm_score:.2f}" if isinstance(llm_score, (int, float)) else '   —'
+              print(f"  {task_id:<{width}}  status={status:<8}  score={score_s}  llm={llm_s}")
+          PY
+          echo ""
+          echo "HTML report artifact: eval-report-${{ github.run_id }}"
+          echo "Download under the workflow run's Artifacts section and open experiment.html."
+
+      - name: Upload HTML / JSON eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ github.run_id }}
+          # Use ** so the pattern still matches the replicate-index segment
+          # that coder_eval adds to per-task run dirs (runs/<ts>/<variant>/<task>/<NN>/).
+          path: |
+            tests/runs/*/experiment.html
+            tests/runs/*/experiment.md
+            tests/runs/*/experiment.json
+            tests/runs/*/experiment.log
+            tests/runs/*/*/variant.html
+            tests/runs/*/*/variant.md
+            tests/runs/*/*/variant.json
+            tests/runs/**/task.html
+            tests/runs/**/task.json
+            tests/runs/**/task.log
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Fail if tests failed
         if: steps.smoke.outcome == 'failure'
