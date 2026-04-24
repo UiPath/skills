@@ -12,6 +12,22 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ---
 
+## Terminology — what "screen" means
+
+"Screen" appears across UIA docs in three distinct senses. Know which one a passage uses before acting on it.
+
+| Sense | Used in | What it is | Boundary / identity |
+|-------|---------|------------|---------------------|
+| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-multi-step-flows.md](uia-multi-step-flows.md) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (servo / `uia interact`) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
+| **OR screen** | Object Repository CLI, `.objects/` layout, `Descriptors.<App>.<Screen>.<Element>`, [uia-configure-target-workflows.md](uia-configure-target-workflows.md) | A data-model entity in the Object Repository, registered via `create-screen` / matched via `get-screens`. | Identified by its window selector. |
+| **Screen handle** (coded only) | "Screen Handle Affinity" under § For Coded Workflows | A runtime `UiTargetApp` returned by `uiAutomation.Open` / `Attach`, bound to one OR screen. | Element descriptors are valid only on the handle for their own OR screen. |
+
+**These senses are independent.** Multiple capture screens can map to one OR screen when they share a window selector (e.g., several URLs under the same browser tab if the window selector is URL-neutral). Conversely, one OR screen can produce many screen handles at runtime (one per `Open`/`Attach` call).
+
+**The Multi-Screen Authoring section (§ For XAML Workflows) uses the capture-screen sense.** "2 or more distinct screens" there means 2 or more distinct UI states requiring separate captures — regardless of how many OR screen entries end up getting created.
+
+---
+
 ## Mandatory: Generate Targets Before Writing Any UI Code
 
 Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors.App.Screen.Element`) or XAML (`<uix:TargetApp>`, `<uix:TargetAnchorable>`):
@@ -31,6 +47,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 - **Wrong Object Repository references** — never copy references from examples or other projects. Always use `uia-configure-target` to generate them for the current application state.
 - **Launching the app before configuring targets** — do NOT launch the target application before running `uia-configure-target`. The skill captures the window tree first and only launches if the app isn't found. Launching preemptively risks targeting the wrong window.
 - **Using `InjectJsScript` instead of standard activities** — do NOT use `InjectJsScript` when standard UI activities (GetText, Click, TypeInto, ExtractTableData, etc.) with configured targets would work. `InjectJsScript` is a last resort — it's hard to debug, fragile to page changes, and bypasses the Object Repository.
+- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient.
 
 ---
 
@@ -39,8 +56,6 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 See [uia-configure-target-workflows.md](uia-configure-target-workflows.md) for the full configure-target workflow, rules, indication fallback, and multi-step UI flows.
 
 ### Multi-Step UI Flows (Advancing Application State)
-
-To interact with targets between capture steps, prefer `uip rpa uia interact click/type` when the target is already registered in the OR (reuses the configured selector, no separate ref system). Fall back to `servo` only for ad-hoc interactions on elements that are not in OR.
 
 See [uia-multi-step-flows.md](uia-multi-step-flows.md).
 
@@ -76,7 +91,9 @@ For coded-specific API: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
 ### Screen Handle Affinity (Critical)
 
-**Each `UiTargetApp` handle is bound to a specific screen.** Element descriptors can ONLY be used with the handle for the screen they belong to. Using a descriptor from Screen A on a handle attached to Screen B will fail with `"Target name 'X' is not part of the current screen."`.
+> "Screen" in this section means the **OR screen** sense (see § Terminology) — the Object Repository entity addressed as `Descriptors.<App>.<Screen>.<Element>`. It is NOT the capture-screen sense used by the Multi-Screen Authoring section below.
+
+**Each `UiTargetApp` handle is bound to a specific OR screen.** Element descriptors can ONLY be used with the handle for the OR screen they belong to. Using a descriptor from OR Screen A on a handle attached to OR Screen B will fail with `"Target name 'X' is not part of the current screen."`.
 
 ```csharp
 // CORRECT — use Home elements on the homeScreen handle
@@ -146,6 +163,12 @@ ScreenPlay (`UITask`) is an AI-powered agent that performs UI interactions witho
 
 For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Activities/`.
 
+### Multi-Screen Authoring
+
+> "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by servo / `uia interact` advances, not the number of `.objects/` screen entries that get created.
+
+For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-multi-step-flows.md](uia-multi-step-flows.md) for the capture loop and the Complete-then-advance rule.
+
 ### Key Concepts
 
 #### Application Card (Use Application/Browser)
@@ -154,9 +177,9 @@ Every UI automation workflow starts with an **Application Card** (`uix:NApplicat
 
 #### Target Configuration
 
-Follow [uia-configure-target-workflows.md](uia-configure-target-workflows.md) to register the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per [uia-target-attachment-guide.md](uia-target-attachment-guide.md).
+Follow [uia-configure-target-workflows.md](uia-configure-target-workflows.md) to register the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
-Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Attach targets per [uia-target-attachment-guide.md](uia-target-attachment-guide.md) — never fabricate them.
+Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratch. Attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` — never fabricate them.
 
 ### Common Activities
 
