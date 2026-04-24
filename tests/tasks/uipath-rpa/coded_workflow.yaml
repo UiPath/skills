@@ -21,6 +21,40 @@ sandbox:
   driver: tempdir
   python: {}
 
+# Per-task reviewer prompt that contextualizes the CI auth caveat.
+# Without this, the reviewer falls back to the experiment default and
+# legitimately dings the agent for skipping auth-gated commands —
+# those commands genuinely can't run in this sandbox.
+llm_reviewer:
+  enabled: true
+  model: claude-sonnet-4-6
+  temperature: 0.0
+  max_tokens: 600
+  prompt: |
+    Evaluate whether the agent built a correct coded UiPath automation
+    project for this CI task.
+
+    CI environment caveat: this sandbox has NO UiPath sign-in. Any
+    `uip rpa` subcommand that requires Helm/Studio auth (create-project,
+    get-errors) will exit non-zero with "HelmFeatureNotAvailableException".
+    The task explicitly tells the agent to hand-author project.json and
+    treat get-errors exit 1 as expected — so do NOT penalize the agent
+    for either. The compile gate is `uip rpa build` (auth-free).
+
+    Focus scoring on:
+    - Are the four required files present with the right shape?
+      (project.json with CSharp + fileInfoCollection pointing at
+      TestLoginSuccess, Main.cs with CodedWorkflow + Execute + Log,
+      TestLoginSuccess.cs with [TestCase] + testing.Verify* assertions
+      — NOT xUnit/NUnit Assert.*, CodedWorkflowHooks.cs with
+      `partial class CodedWorkflow` + IBeforeAfterRun + Before/After)
+    - Did `uip rpa build` exit 0? (the one mandatory CI compile gate)
+    - Does report.json accurately reflect what the agent did?
+
+    Reply terse, developer-style. Score 1.0 if correct; lower only for
+    real issues (wrong files, wrong patterns, build failure). Ignore
+    the auth-gated command exit codes.
+
 initial_prompt: |
   Build a coded UiPath automation project called "TestAutomation" that
   exercises three parts of the coded surface in one go: a main workflow,
@@ -44,16 +78,29 @@ initial_prompt: |
      every test case in the project. Use the partial-class CodedWorkflow
      pattern with IBeforeAfterRun (NOT a base class).
 
-  Validation (run BOTH — they give complementary signal):
-  - `uip rpa get-errors --project-dir ./TestAutomation --output json`
-    is the skill-canonical validation step. It takes 30–60s (Helm
-    cold-start). In CI it may exit non-zero because Helm requires
-    UiPath sign-in that isn't wired up — that's expected. Capture
-    the exit code either way and continue.
-  - `uip rpa build --project-dir ./TestAutomation --output json`
-    is the hard compile gate — it doesn't need Studio/Helm auth and
-    must exit 0. Fix any compile errors it surfaces and rerun until
-    clean. This is the authoritative signal the project compiles.
+  CI environment note — IMPORTANT: this sandbox has NO UiPath sign-in
+  configured. Any `uip rpa` subcommand that needs Studio/Helm auth will
+  return "HelmFeatureNotAvailableException (sign-in required)" and exit
+  non-zero. This affects `uip rpa create-project` and `uip rpa get-errors`.
+  DO NOT retry those commands when they hit the auth error — instead:
+    * Hand-author `project.json` directly (use the skill's project.json
+      reference / template) instead of running `create-project`.
+    * Treat `uip rpa get-errors`' exit 1 as expected and move on — its
+      exit code is NOT the CI compile gate.
+
+  Validation — run these two commands in this order:
+
+  1. `uip rpa build --project-dir ./TestAutomation --output json`
+     This is the AUTHORITATIVE compile gate in CI. It does NOT need
+     Studio/Helm auth and must exit 0 before you declare the task done.
+     Fix every compile error it surfaces and rerun until it's clean.
+     This is mandatory — not optional.
+
+  2. `uip rpa get-errors --project-dir ./TestAutomation --output json`
+     The skill-canonical validation step — call it once for skill
+     fidelity, record the exit code, then move on. Its failure due to
+     auth is expected and does not block completion. Do NOT try to
+     work around the auth error (no `uip login`, no `--use-studio`).
 
   Save a summary to report.json at the sandbox root:
     {

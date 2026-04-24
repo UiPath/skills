@@ -16,12 +16,50 @@ tags: [uipath-rpa, smoke, uia, xaml]
 task_timeout: 1800
 agent:
   type: claude-code
-  max_turns: 40
+  # Bumped from 40 → 60: CI run 24903966636 hit error_max_turns at 40 on
+  # this task after spending many turns on `uip rpa create-project`
+  # auth-retry loops. Prompt now tells the agent to hand-author
+  # project.json directly, but give turn headroom for the XAML
+  # discovery/edit cycles regardless.
+  max_turns: 60
   turn_timeout: 1200
 
 sandbox:
   driver: tempdir
   python: {}
+
+# Per-task reviewer prompt contextualizing the CI auth caveat so the
+# reviewer doesn't dock for auth-gated command exit codes.
+llm_reviewer:
+  enabled: true
+  model: claude-sonnet-4-6
+  temperature: 0.0
+  max_tokens: 600
+  prompt: |
+    Evaluate whether the agent built a correct standard (XAML, VB.NET)
+    UiPath RPA project for this CI task.
+
+    CI environment caveat: this sandbox has NO UiPath sign-in. Any
+    `uip rpa` subcommand that requires Helm/Studio auth (create-project,
+    get-errors) will exit non-zero with "HelmFeatureNotAvailableException".
+    The task explicitly tells the agent to hand-author project.json and
+    treat get-errors exit 1 as expected — so do NOT penalize the agent
+    for either. The compile gate is `uip rpa build` (auth-free).
+
+    Focus scoring on:
+    - GoogleSearch/project.json exists with `"expressionLanguage":
+      "VisualBasic"` and UIA activity packages declared.
+    - GoogleSearch/Main.xaml is a well-formed VB.NET Sequence wrapping
+      ApplicationCard (Use Application/Browser) around TypeInto + Click,
+      with the three pre-known selectors (chrome.exe + google.com URL,
+      textarea name='q', input name='btnK').
+    - Main.xaml references "UiPath automation" as the query.
+    - `uip rpa build` exited 0 (the one mandatory CI compile gate).
+    - report.json accurately reflects activities + commands used.
+
+    Reply terse, developer-style. Score 1.0 if correct; lower only for
+    real issues (malformed XAML, wrong activities, wrong selectors,
+    build failure). Ignore auth-gated command exit codes.
 
 initial_prompt: |
   Build a standard UiPath RPA project called "GoogleSearch" (XAML-based,
@@ -43,21 +81,32 @@ initial_prompt: |
        Input:  webctrl tag='textarea' name='q'
        Button: webctrl tag='input' name='btnK' type='submit'
 
-  Validation:
-  - Create the project with `uip rpa create-project` (pass
-    `--expression-language VisualBasic`).
-  - Discover the activity XAML with `uip rpa get-default-activity-xaml`
-    (or equivalent discovery command the skill teaches) before
-    hand-authoring anything.
-  - After writing Main.xaml, run BOTH validation commands — they give
-    complementary signal:
-      * `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
-        is the skill-canonical validation. In CI it may exit non-zero
-        because Helm requires UiPath sign-in that isn't wired up — that's
-        expected. Capture the exit code either way and continue.
-      * `uip rpa build --project-dir ./GoogleSearch --output json`
-        is the hard compile gate — it doesn't need Studio/Helm auth and
-        must exit 0. Fix anything it surfaces until it's clean.
+  CI environment note — IMPORTANT: this sandbox has NO UiPath sign-in
+  configured. Any `uip rpa` subcommand that needs Studio/Helm auth will
+  return "HelmFeatureNotAvailableException (sign-in required)" and exit
+  non-zero. This affects `uip rpa create-project` and `uip rpa get-errors`.
+  DO NOT retry those commands when they hit the auth error — instead:
+    * Hand-author `project.json` directly (use the skill's project.json
+      reference / template) instead of running `create-project`.
+    * Treat `uip rpa get-errors`' exit 1 as expected and move on — its
+      exit code is NOT the CI compile gate.
+  `uip rpa get-default-activity-xaml` (activity discovery) does NOT need
+  auth — use it freely to look up the TypeInto / Click / ApplicationCard
+  XML skeletons before hand-authoring Main.xaml.
+
+  Validation — run these two commands in this order:
+
+  1. `uip rpa build --project-dir ./GoogleSearch --output json`
+     This is the AUTHORITATIVE compile gate in CI. It does NOT need
+     Studio/Helm auth and must exit 0 before you declare the task done.
+     Fix every XAML error it surfaces and rerun until it's clean. This
+     is mandatory — not optional.
+
+  2. `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
+     The skill-canonical validation step — call it once for skill
+     fidelity, record the exit code, then move on. Its failure due to
+     auth is expected and does not block completion. Do NOT try to
+     work around the auth error (no `uip login`, no `--use-studio`).
 
   Save a summary to report.json at the sandbox root:
     {
