@@ -118,6 +118,8 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 Node positioning is stored in a **top-level `layout` object**, not on individual nodes. Do NOT put `ui` or `position` on node instances.
 
+> **Size rule — `{ "width": 96, "height": 96 }` on every node.** The file format stores **expanded** dimensions. For every standard flow node (triggers, actions, decisions, switches, loops, merges, ends, scripts, HTTP, transforms, connectors, agents, RPA, subflows), size is always `{ "width": 96, "height": 96 }`. Do NOT use rectangular dimensions like `{ "width": 200, "height": 80 }` — those render as rectangles in Studio Web. Do NOT omit `size` — the canvas falls back to an expanded-shape default that may not be 96×96. Always emit size explicitly on every `layout.nodes.<id>` entry.
+
 ```json
 "layout": {
   "nodes": {
@@ -145,7 +147,7 @@ Each key in `layout.nodes` is a node `id`. Every node in the `nodes` array shoul
 **Layout rules:**
 - Horizontal canvas — place nodes left-to-right with increasing `x` (spacing ~200px) and a consistent `y` baseline (e.g., `y: 144`)
 - For decision branches, offset the `y` value for each branch path
-- Standard size is `{ "width": 96, "height": 96 }` for all node types
+- Size is **always** `{ "width": 96, "height": 96 }` (see Size rule above) — never rectangular, never omitted
 - Never use vertical (top-to-bottom) layout
 
 **Subflow layout is scoped.** Each subflow entry in `subflows.<id>` has its **own** `layout.nodes` map for the nodes inside that subflow. Do NOT put subflow node positions in the top-level `layout.nodes` — they live alongside the subflow's `nodes`/`edges`/`variables`. See [subflow/impl.md](plugins/subflow/impl.md).
