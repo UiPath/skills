@@ -45,14 +45,21 @@ Exit code 0 = valid, 1 = invalid.
 
 ## uip maestro flow tidy
 
-Auto-layout nodes in the `.flow` file for a clean horizontal arrangement. Run after validation passes and before publishing or debugging.
+Auto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without tidy, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.
 
 ```bash
 uip maestro flow tidy <path/to/file.flow>
 uip maestro flow tidy <path/to/file.flow> --output json
 ```
 
-Repositions nodes in the top-level `layout` section. Does not modify node logic, edges, or definitions — only layout coordinates. Always run tidy before `uip solution upload` or `uip maestro flow debug` to ensure the flow renders cleanly in Studio Web.
+Tidy:
+- Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
+- Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
+- Recurses into subflows and rewrites `subflows[<id>].layout` for each
+- Backfills missing `position`/`size` entries
+- Does not modify node logic, edges, definitions, or variables — only layout coordinates
+
+JSON output (`--output json`) reports counts in `Data`: `NodesTotal`, `EdgesTotal`, `NodesRepositioned`, `NodesResized`, `SubflowsTidied`.
 
 ## uip maestro flow pack
 

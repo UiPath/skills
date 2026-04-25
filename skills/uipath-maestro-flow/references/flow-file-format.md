@@ -116,9 +116,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, not on individual nodes. Do NOT put `ui` or `position` on node instances.
-
-> **Size rule — `{ "width": 96, "height": 96 }` on every node.** The file format stores **expanded** dimensions. For every standard flow node, size is always `{ "width": 96, "height": 96 }`. Do NOT use rectangular dimensions like `{ "width": 200, "height": 80 }` — those render as rectangles in Studio Web. Do NOT omit `size` — the canvas falls back to an expanded-shape default that may not be 96×96. Always emit size explicitly on every `layout.nodes.<id>` entry.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [flow-commands.md](flow-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
 
 ```json
 "layout": {
@@ -142,15 +140,15 @@ Node positioning is stored in a **top-level `layout` object**, not on individual
 }
 ```
 
-Each key in `layout.nodes` is a node `id`. Every node in the `nodes` array should have a corresponding entry.
+Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for every node and populates `position` + `size`.
 
-**Layout rules:**
-- Horizontal canvas — place nodes left-to-right with increasing `x` (spacing ~200px) and a consistent `y` baseline (e.g., `y: 144`)
-- For decision branches, offset the `y` value for each branch path
-- Size is **always** `{ "width": 96, "height": 96 }` (see Size rule above) — never rectangular, never omitted
-- Never use vertical (top-to-bottom) layout
+**What tidy does:**
+- Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
+- Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
+- Skips `stickyNote` nodes from layout (they keep their custom position and size)
+- Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows.<id>` has its **own** `layout.nodes` map for the nodes inside that subflow. Do NOT put subflow node positions in the top-level `layout.nodes` — they live alongside the subflow's `nodes`/`edges`/`variables`. See [subflow/impl.md](plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See [subflow/impl.md](plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
