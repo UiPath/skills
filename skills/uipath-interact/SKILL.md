@@ -26,9 +26,11 @@ Complete these steps in order before proceeding to the Entry Procedure. Do not s
 
 - **One found** — set `$PROJECT_DIR` to its containing directory.
 - **Multiple found** — `AskUserQuestion` which one to use; set `$PROJECT_DIR` to their selection.
-- **None found** — `AskUserQuestion` whether to create a new project via the `uipath-rpa` skill (set `$PROJECT_DIR` to the new project's path) or to use an existing project elsewhere (set `$PROJECT_DIR` to the path they provide).
+- **None found** — `AskUserQuestion` whether to create a new project here or use an existing project elsewhere.
+  - **Create new** — run `uip rpa create-project --name "<NAME>" --output json` with the user's chosen `<NAME>`, then set `$PROJECT_DIR` from the returned project directory.
+  - **Use existing** — set `$PROJECT_DIR` to the path they provide.
 
-**2. Execute the preflight.** Open [uia-prerequisites.md](references/uia-prerequisites.md) and follow it exactly against `$PROJECT_DIR`. Do not summarize, paraphrase, or improvise — that file is the source of truth.
+**2. Execute the preflight.** Open [uia-prerequisites.md](references/uia-prerequisites.md) and follow it exactly against `$PROJECT_DIR` — **regardless of whether you just created the project or it already existed**. Do not summarize, paraphrase, or improvise — that file is the source of truth.
 
 **3. Proceed to the Entry Procedure** only after the preflight passes.
 
