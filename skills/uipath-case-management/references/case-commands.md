@@ -46,27 +46,47 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the case in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
 
+## uip solution resource refresh
+
+Re-scan all projects in the solution and sync resource declarations from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
+
+```bash
+uip solution resource refresh <SolutionDir> --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `<SolutionDir>` | Path to the solution directory (containing `.uipx`) |
+
+**Always run before `uip solution upload` or `uip maestro case debug`** when the case uses connector tasks. Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
+
+> **Requires `bindings_v2.json` to be populated.** Connector plugins regenerate this file after writing root bindings (see [bindings-v2-sync.md](bindings-v2-sync.md)). If `bindings_v2.json` is still the empty scaffold (`resources: []`), no connection resources will be synced.
+
 ## uip solution upload
 
 Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
+uip solution resource refresh <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json
 ```
 
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the case from the browser.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution resource refresh` then `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
 
 ## uip maestro case debug
 
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`.**
 
 ```bash
+uip solution resource refresh <SolutionDir> --output json
 uip maestro case debug <projectDirectory>
 uip maestro case debug ./mySolution/myProject
 uip maestro case debug ./mySolution/myProject --folder-id 42 --poll-interval 3000
 ```
+
+> **Always run `uip solution resource refresh`** on the solution directory before debug when the case uses connector tasks.
 
 | Flag | Description |
 |------|-------------|

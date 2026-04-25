@@ -18,6 +18,8 @@ Every write must supply the fields below. Studio Web frontend expects them; miss
 | Connector task default entry condition | Inject `current-stage-entered` entry condition on every connector task |
 | Edge cleanup on node removal | Remove every edge whose `source` or `target` equals the removed node ID |
 | Root-level bindings cleanup | Prune `root.data.uipath.bindings` entries no longer referenced by any task |
+| `bindings_v2.json` sync | Each connector plugin regenerates after writing root bindings — see [bindings-v2-sync.md](bindings-v2-sync.md) |
+| Connection resource files | Connector plugins create under `resources/solution_folder/connection/` — see [bindings-v2-sync.md](bindings-v2-sync.md) |
 | Lane array expansion | Expand `stageNode.data.tasks` to cover `laneIndex` before pushing |
 | `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin; flush to disk |
 | `caseplan.json` file creation | T01 (case plugin) writes from scratch; downstream plugins mutate in place |

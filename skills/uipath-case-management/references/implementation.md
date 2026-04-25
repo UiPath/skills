@@ -137,8 +137,9 @@ Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — 
 
 For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
-1. Run `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
-2. Write `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+1. Run `get-connection` + `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
+2. Write root bindings, `data.context[]`, `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+3. **Sync `bindings_v2.json` and create connection resource files** per [bindings-v2-sync.md](bindings-v2-sync.md). This is part of each connector plugin's procedure (§ 3a-post for activities, § Root-level bindings post-sync for triggers).
 
 Skip connector tasks that are skeletons (unresolved `type-id` / `connection-id`) — they stay bare.
 

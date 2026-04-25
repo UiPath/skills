@@ -46,6 +46,7 @@ End-to-end guide for creating UiPath Case Management definitions. Takes a design
 19. **User questions use AskUserQuestion with a "Something else" escape hatch.** Whenever a decision has finite enumerable choices (≤5), present a dropdown with those options AND "Something else" as the last option. For open-ended inputs (e.g., `1h` vs `2h` vs `1d`), use a direct prompt. Never force a false choice. **Exception:** the Phase 2a→2b hard stop (Rule #25) is a strict gate — its prompts (`Publish for review` / `Skip publish and continue` / `Abort`, and `Continue to phase 2b` / `Abort`) use a closed option set with no escape hatch. The equivalent of "Something else" at that boundary is `Abort` followed by manual edits to `caseplan.json`.
 20. **Validate after build, not during.** Run `uip maestro case validate` only after all stages, edges, tasks, conditions, and SLA are added. Intermediate states are expected to be invalid. Retry up to 3× on failure; on the 3rd failure, halt and ask the user with options: `Retry with fix` / `Pause for manual edit` / `Abort`.
 21. **Never run `uip maestro case debug` automatically** — it executes the case for real (sends emails, posts messages, calls APIs). Only run on explicit user consent.
+22. **Always run `uip solution resource refresh` before `uip solution upload` or `uip maestro case debug`** — syncs connection resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
 22. **Edit `content/*.json` only** — `content/*.bpmn` is auto-generated and will be overwritten.
 23. **Execute CLI commands sequentially.** No parallel execution — each command may depend on IDs returned by the previous one.
 24. **Never create `caseplan.json` in one shot — mutate incrementally, one category per Read → modify → Write cycle.** Categories: stages, edges, triggers, tasks, conditions (per scope), SLA, variables. One cycle per category — Read, apply every T-entry in that category, Write, re-Read before the next category. Do NOT compose a monolithic in-memory JSON covering multiple categories and flush once — that hides intermediate state and breaks per-category rollback. **Prefer the `Edit` tool over Read+Write** when a mutation is a narrowly-scoped, unambiguous single-field change (e.g., binding a task input `value` in Phase 2b) — Edit's tool-call shows the exact diff and avoids the full-file Read cost. Use Read+Write when the mutation is structural (new node, new edge, new condition array) or when Edit's `old_string` can't be made unique.
@@ -79,7 +80,7 @@ Present `tasks.md` to the user for approval. **Do NOT proceed until the user exp
    - Unresolved: skeleton (empty `data: {}`) per Rule #11
 7. Informational validate (Step 9.5.1): `uip maestro case validate` — expected to report errors/warnings (unbound values, missing conditions/SLA). Do NOT halt; surface counts in the summary.
 8. **HARD STOP** (Step 9.5.2–9.5.5): AskUserQuestion — `Publish for review` / `Skip publish and continue` / `Abort`
-   - On `Publish`: `uip solution upload <SolutionDir>`, print DesignerUrl, then AskUserQuestion — `Continue to phase 2b` / `Abort`
+   - On `Publish`: `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json`, print DesignerUrl, then AskUserQuestion — `Continue to phase 2b` / `Abort`
    - On `Abort`: dump `build-issues.md`, print paths, exit (no cleanup)
 
 ### Phase 2b — Detail build (skeleton → validated caseplan.json)
@@ -150,7 +151,7 @@ uip maestro case validate <file> --output json
 
 **Do NOT halt on errors/warnings** — Phase 2a state is expected invalid (unbound inputs, missing conditions, missing SLA). Capture error/warning counts for the summary.
 
-Then **AskUserQuestion**: `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`, run `uip solution upload <SolutionDir>`, print `DesignerUrl`, then **AskUserQuestion**: `Continue to phase 2b` / `Abort`. On `Abort`, dump `tasks/build-issues.md`, print paths, exit.
+Then **AskUserQuestion**: `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`, run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json`, print `DesignerUrl`, then **AskUserQuestion**: `Continue to phase 2b` / `Abort`. On `Abort`, dump `tasks/build-issues.md`, print paths, exit.
 
 Full contract in [references/phased-execution.md](references/phased-execution.md).
 
@@ -166,7 +167,10 @@ Retry up to 3× on failure. On repeated failure, AskUserQuestion: `Retry with fi
 
 ### Step 9 — Post-build prompt
 
-**AskUserQuestion** with options: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`. Loop until the user selects `Done`. A final `Publish to Studio Web` here overwrites any volatile edits made during Step 7's review-time publish.
+**AskUserQuestion** with options: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`. Loop until the user selects `Done`.
+
+- `Run debug session` → ask for explicit consent, then run `uip solution resource refresh <SolutionDir> --output json` followed by `uip maestro case debug <ProjectDir>`
+- `Publish to Studio Web` → run `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload <SolutionDir> --output json` and share the Studio Web URL
 
 ## Reference Navigation
 
@@ -260,6 +264,7 @@ All `caseplan.json` mutation happens via Read/Write/Edit. The skill invokes shel
 | `is resources describe` / `is triggers describe` / `is resources execute list` | Connector schema discovery | Yes |
 | `uip maestro case validate` | Caseplan validation | No |
 | `uip maestro case debug` | Live debug execution (explicit consent only) | Yes |
+| `uip solution resource refresh` | Sync resource declarations from `bindings_v2.json` — run before `upload`/`debug` | No |
 | `uip solution new` / `uip solution project add` / `uip solution upload` | Solution scaffold / registration / publish | Yes (for `upload`) |
 | `uip maestro case instance`, `processes`, `incident`, `process`, `job` | Runtime query | Yes |
 

@@ -113,6 +113,7 @@ uip case registry get-connection \
 | `Config` | `.Data.Config` | `{ connectorKey, objectName, eventOperation, eventMode, version, supportsStreaming }` |
 | `folderKey` | `.Data.Connections[selected].folder.key` | `"87fd6cec-..."` |
 | `connectorName` | `.Data.Connections[selected].connector.name` | `"Microsoft Outlook 365"` |
+| `connectionName` | `.Data.Connections[selected].name` | `"my-outlook-connection"` |
 
 ### Step 2 — Get enriched metadata + outputs
 
@@ -207,6 +208,23 @@ Create 2 entries in `root.data.uipath.bindings[]`:
 | folderKey | `"folderKey"` | `folderKey` (from Step 1) |
 
 Both share `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
+
+### Root-level bindings post-sync
+
+After writing root bindings, run the shared sync procedure from [bindings-v2-sync.md](bindings-v2-sync.md):
+
+1. **Regenerate `bindings_v2.json`** from the full `root.data.uipath.bindings`.
+
+2. **Create connection resource file** using data from Step 1:
+   - `connectionName`: from Step 1 Save table
+   - `connectorKey`: from `tasks.md`
+   - `connectorName`: from Step 1 Save table
+   - `connectorVersion`: `enrichment.connectorVersion` from Step 2 (may be `null` if Step 2 failed)
+   - `connectionId`: from `tasks.md`
+
+   See [bindings-v2-sync.md](bindings-v2-sync.md) for the full resource file shape and deduplication rules.
+
+Skip both sync steps if `get-connection` failed (no bindings were written).
 
 ---
 

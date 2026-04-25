@@ -103,6 +103,8 @@ Use the Write tool for each. All 5 files go directly into `<SolutionDir>/<Projec
 }
 ```
 
+> **Starts empty.** Connector task plugins regenerate this file after writing root bindings — see [bindings-v2-sync.md](../../bindings-v2-sync.md).
+
 #### `package-descriptor.json`
 
 ```json
