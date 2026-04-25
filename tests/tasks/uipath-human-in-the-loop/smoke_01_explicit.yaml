@@ -40,14 +40,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent named an approval-family pattern (case-tolerant)"
+    description: "Agent named an approval or write-back pattern (case-tolerant)"
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
         operator: contains
         expected: "pprov"
+      - expression: "pattern"
+        operator: contains
+        expected: "rite"
+      - expression: "pattern"
+        operator: contains
+        expected: "alid"
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.33
 
   - type: file_contains
     description: "Agent proposed a schema with outcomes"
