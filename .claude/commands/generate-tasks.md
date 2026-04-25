@@ -106,7 +106,7 @@ Domain mapping:
 | uipath-platform | platform |
 | uipath-agents | agent |
 | uipath-rpa | rpa |
-| uipath-servo | servo |
+| uipath-interact | interact |
 | uipath-coded-apps | codedapp |
 | uipath-diagnostics | diagnostics |
 | uipath-feedback | feedback |
@@ -277,7 +277,7 @@ Infrastructure notes:
 3. **Minimal prompts.** Describe goals, not steps. The skill teaches the steps — that is what we are testing.
 4. **Realistic criteria.** Only assert on things that can actually be checked in the sandbox. Do not assert on cloud state if the test runs locally. Do not use `command_executed` for commands the agent might not need to run.
 5. **No duplicate task_ids.** Check all existing YAMLs across all skills before generating.
-6. **Respect infrastructure limits.** Note what each generated test requires (cloud auth, Windows, Servo CLI, etc.). Prefer local-only tests when possible — they are cheaper and can run in CI.
+6. **Respect infrastructure limits.** Note what each generated test requires (cloud auth, Windows, etc.). Prefer local-only tests when possible — they are cheaper and can run in CI.
 7. **Generate 2–5 tasks per invocation by default.** Focus on highest coverage impact from the gap analysis. The user can run the command again for more. Always generate at least 1 smoke + 1 e2e if the skill has zero tests (minimum bar from CONTRIBUTING.md).
 8. **Lean on coverage reports.** If `tests/reports/<skill>.md` exists, use its prioritized gap list directly rather than re-analyzing the skill from scratch.
 9. **Do not invent CLI commands.** Every `command_pattern` regex and `command` string must come from the skill's documentation. If unsure whether a command exists, read the skill's references to verify.

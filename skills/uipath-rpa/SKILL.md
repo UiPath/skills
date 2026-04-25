@@ -142,7 +142,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
-| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-multi-step-flows.md](references/uia-multi-step-flows.md) |
+| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md#multi-step-ui-flows) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [is-connector-xaml-guide.md](references/is-connector-xaml-guide.md) → [connector-capabilities.md](references/connector-capabilities.md) |
@@ -254,7 +254,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 ### Multi-Screen UI Automation Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `get-errors` after each batch. See [uia-multi-step-flows.md](references/uia-multi-step-flows.md) for the capture loop and the Complete-then-advance rule.
+For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets get registered in the OR — validating with `get-errors` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
 
 ## Resolving Packages & Activity Docs
 
@@ -283,9 +283,8 @@ uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir
 Additional UIA procedures and guides:
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements
 - [uia-debug-workflow.md](references/uia-debug-workflow.md) — Running and debugging UI automation workflows
-- [uia-multi-step-flows.md](references/uia-multi-step-flows.md) — Advancing application state between screens
 - [uia-selector-recovery.md](references/uia-selector-recovery.md) — Fixing selectors that fail at runtime
-- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow and indication fallback
+- [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) — Target configuration workflow, multi-step UI flows, and indication fallback
 
 ## Completion Output
 

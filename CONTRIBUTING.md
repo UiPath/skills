@@ -84,7 +84,7 @@ Skill folders follow the naming convention: `uipath-<domain>` or `uipath-<tool>`
 
 - Use **kebab-case** (lowercase, hyphens between words)
 - Prefix with `uipath-` for UiPath-related skills
-- Be descriptive but concise: `uipath-rpa`, `uipath-servo`, `uipath-maestro-flow`
+- Be descriptive but concise: `uipath-rpa`, `uipath-interact`, `uipath-maestro-flow`
 
 ### 2. Create the Folder Structure
 
@@ -123,7 +123,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ---
 ```
 
-> **250-character limit.** Claude Code truncates non-bundled skill descriptions at 250 characters in the system prompt — anything beyond is invisible to the model. The pre-commit hook enforces this. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters.
+> **250-character limit.** Claude Code truncates non-bundled skill descriptions at 250 characters in the system prompt — anything beyond is invisible to the model. The pre-commit hook enforces this. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 
@@ -311,7 +311,7 @@ Before submitting your PR, verify:
 ## Pull Request Process
 
 1. **Fork** this repository
-2. **Create a feature branch** from `main` (e.g., `feat/add-my-skill`, `fix/servo-snapshot-docs`)
+2. **Create a feature branch** from `main` (e.g., `feat/add-my-skill`, `fix/uia-snapshot-docs`)
 3. **Make your changes** following the guidelines above
 4. **Run through the Quality Checklist**
 5. **Submit a pull request** against `main`
@@ -325,7 +325,7 @@ Before submitting your PR, verify:
 | Type | Pattern | Example |
 |------|---------|---------|
 | New skill | `feat/add-<skill-name>` | `feat/add-uipath-data-service` |
-| Skill improvement | `feat/<skill-name>-<description>` | `feat/servo-add-drag-support` |
+| Skill improvement | `feat/<skill-name>-<description>` | `feat/uia-add-drag-support` |
 | Bug fix | `fix/<skill-name>-<description>` | `fix/flow-validate-edge-ports` |
 | Documentation | `docs/<description>` | `docs/update-platform-cli-reference` |
 

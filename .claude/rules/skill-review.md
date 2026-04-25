@@ -18,7 +18,7 @@ Does the skill follow the canonical layout and conventions?
 - SKILL.md has valid YAML frontmatter with `name` and `description`
 - `name` matches the folder name exactly
 - `description` is under 250 characters (Claude Code truncates non-bundled skill descriptions at 250 chars — run `hooks/validate-skill-descriptions.sh` to verify)
-- `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters
+- `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters
 - `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
 - `description` starts with `[PREVIEW]` for new/unstable skills
 - SKILL.md body follows the expected section order: Title, When to Use, Critical Rules, Workflow/Quick Start, Reference Navigation, Anti-patterns

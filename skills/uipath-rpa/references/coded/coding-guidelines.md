@@ -167,7 +167,6 @@ C) <user-driven approach>
 - Never skip the target configuration step when a descriptor is missing — use the `uia-configure-target` skill flow (fallback: indication commands per the UIA docs)
 - Never use UITask (ScreenPlay) as the primary approach — resolve descriptors via Finding Descriptors hierarchy first (Critical Rule #15)
 - Never skip configuring targets because it "seems tedious" — configure ALL missing elements
-- Never launch the target application before running `uia-configure-target` — the skill captures the window tree first; only launch if the app is not found
 - Never construct `TargetAppModel` with raw URL/BrowserType to bypass Object Repository
 - Never skip checking UILibrary/descriptor NuGet packages in `project.json`
 - Never use an element descriptor on the wrong screen handle — each `UiTargetApp` is bound to its screen. Wrong handle gives `"Target name 'X' is not part of the current screen."`

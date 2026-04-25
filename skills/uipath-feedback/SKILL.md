@@ -147,7 +147,7 @@ Product names:
 | Agents | `[Agents]` |
 | Apps | `[Apps]` |
 | Platform | `[Platform]` |
-| Servo | `[Servo]` |
+| Interact | `[Interact]` |
 
 #### Description body
 
