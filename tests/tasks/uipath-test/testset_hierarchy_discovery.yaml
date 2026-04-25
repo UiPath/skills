@@ -16,31 +16,23 @@ sandbox:
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.
 
-  I have a UiPath Test Manager project called "InvoiceAutomation" with project
-  key "INV". I want to see the test sets in it and, for the first test set,
-  the test cases inside it. Walk the full discovery hierarchy.
+  I have a UiPath Test Manager project called "InvoiceAutomation". I want to
+  see the test sets in it and, for the first test set, the test cases inside
+  it. Walk the full discovery hierarchy.
+
+  Note: the CLI is not connected to a live tenant here, so commands will fail
+  with auth errors — that's expected. Still run the full discovery chain and
+  record every command you attempted.
 
   Save a summary of what you did to report.json:
   {
-    "project_key_used": "INV",
+    "project_key_used": "<the project key you discovered or attempted>",
     "testsets_found": <number of testsets returned, or 0 if auth error>,
-    "first_testset_key": "<the test set key you used to list test cases, e.g. INV:1>",
+    "first_testset_key": "<the test set key you used to list test cases>",
     "testcases_found": <number of test cases in that test set, or 0 if auth error>,
     "commands_used": ["<list of uip tm commands you ran, verbatim>"]
   }
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live tenant in this
-    environment. Commands WILL fail with auth errors — that is expected.
-    You MUST still run the full discovery chain (project lookup, testset list,
-    testset list-testcases) and record each command in report.json.
-    Do NOT skip a command just because a previous one failed.
-    Do NOT retry or attempt to login.
-  - Use `--output json` on every uip command.
-  - Look up the project first with `--filter` (don't assume the key blindly).
-  - Pass `--project-key INV` when listing testsets.
-  - Test set keys use the format PROJECT:NUMBER. Use a placeholder like "INV:1"
-    if you cannot obtain a real one from the previous command's output.
 
 success_criteria:
   - type: command_executed
@@ -85,12 +77,6 @@ success_criteria:
     description: "report.json records the project key used and the full command chain"
     path: "report.json"
     assertions:
-      - expression: "project_key_used"
-        operator: equals
-        expected: "INV"
-      - expression: "contains(first_testset_key, 'INV:')"
-        operator: equals
-        expected: true
       - expression: "length(commands_used)"
         operator: gte
         expected: 3

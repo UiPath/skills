@@ -30,26 +30,11 @@ initial_prompt: |
     "commands_used": ["<list of uip tm commands you ran, verbatim>"]
   }
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live tenant in this
-    environment. Commands WILL fail with auth errors — that is expected.
-    Still run the analysis chain the skill prescribes (execution list,
-    execution list-testcaselogs) and record each command you ran.
-    Do NOT skip a command just because a previous one failed.
-    Do NOT retry or attempt to login.
-  - Use `--output json` on every uip command.
-  - Persona is "qa" and output directory is the current directory — do NOT
-    ask the user for these, they are specified above.
-  - Follow the skill's filename convention: `test-report-qa-<YYYY-MM-DD>.md`.
-  - Do NOT fabricate test results. If the API returns no data, write the
-    report file noting that no execution data was available, but still produce
-    the file with the required sections.
-
 success_criteria:
   - type: command_executed
     description: "Agent listed executions for the test set"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+execution\s+list.*(--test-set-id|--project-key)'
+    command_pattern: 'uip\s+tm\s+execution\s+list(\s|$).*(--test-set-id|--project-key)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
