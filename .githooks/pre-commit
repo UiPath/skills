@@ -2,4 +2,4 @@
 # Pre-commit hook: validate skill descriptions
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
-bash "$REPO_ROOT/hooks/validate-skill-descriptions.sh"
+bash "$REPO_ROOT/scripts/validate-skill-descriptions.sh"
