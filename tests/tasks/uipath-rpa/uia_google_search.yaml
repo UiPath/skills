@@ -199,9 +199,17 @@ success_criteria:
   # the agent's project directly and gates on exit code 0. Replaces
   # the old "did the agent call build" telemetry check — what matters
   # is that the project actually compiles.
+  #
+  # Path note: the @uipath/rpa-tool wrapper double-resolves a relative
+  # positional arg (chdir's into the project, then re-resolves the
+  # same relative arg from inside), producing a doubled path
+  # `<sandbox>\GoogleSearch\GoogleSearch` and a
+  # DirectoryNotFoundException out of WorkflowCompiler. Pass an
+  # absolute path via cmd.exe's %CD% to bypass it. coder_eval runs
+  # this through subprocess shell=True, which is cmd.exe on Windows.
   - type: run_command
     description: "uip rpa build exits 0 against the agent's GoogleSearch project"
-    command: 'uip rpa build "GoogleSearch" --output json'
+    command: 'uip rpa build "%CD%\GoogleSearch" --output json'
     expected_exit_code: 0
     timeout: 180
     weight: 2.0

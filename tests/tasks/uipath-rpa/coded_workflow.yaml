@@ -223,9 +223,17 @@ success_criteria:
   # the old "did the agent call build" telemetry check — what matters
   # is that the project actually compiles, not that the agent typed
   # the right command.
+  #
+  # Path note: the @uipath/rpa-tool wrapper double-resolves a relative
+  # positional arg (chdir's into the project, then re-resolves the
+  # same relative arg from inside), producing a doubled path
+  # `<sandbox>\TestAutomation\TestAutomation` and a
+  # DirectoryNotFoundException out of WorkflowCompiler. Pass an
+  # absolute path via cmd.exe's %CD% to bypass it. coder_eval runs
+  # this through subprocess shell=True, which is cmd.exe on Windows.
   - type: run_command
     description: "uip rpa build exits 0 against the agent's TestAutomation project"
-    command: 'uip rpa build "TestAutomation" --output json'
+    command: 'uip rpa build "%CD%\TestAutomation" --output json'
     expected_exit_code: 0
     timeout: 180
     weight: 2.0
