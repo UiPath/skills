@@ -22,40 +22,42 @@ initial_prompt: |
 
   Save your findings to registry_report.json with at minimum:
     {
-      "cache_files_inspected": ["<list of <type>-index.json file names you read>"],
-      "commands_used": ["<list of uip commands you ran>"],
+      "cache_files_inspected": ["<list of <type>-index.json file names you read or listed>"],
+      "commands_used": ["<list of uip commands you ran, exactly as invoked>"],
       "action_app_index_file": "<the cache index filename for HITL action-apps>",
-      "process_index_file": "<the cache index filename for processes>"
+      "process_index_file": "<the cache index filename for processes>",
+      "auth_state": "<authenticated | unauthenticated | unknown>",
+      "cache_populated": <true|false>
     }
 
   Important:
   - The `uip` CLI is already available in the environment.
+  - Always run the registry pull yourself with `--output json`, even if a
+    cache appears to exist. The pull command may report per-resource-type
+    "Not logged in. Run 'uip login' first." entries when the environment is
+    unauthenticated — that is expected. Record the auth state and continue.
   - Use `--output json` on uip read commands.
+  - If the cache directory at `~/.uipcli/case-resources/` is missing or the
+    expected `<type>-index.json` files were not populated by the pull, list
+    the directory and still report the expected filenames per the skill
+    reference (do not fabricate sample data).
   - Do not build a case — just explore the registry and report.
 
 success_criteria:
   - type: command_executed
-    description: "Agent pulled the case registry"
+    description: "Agent pulled the case registry with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull'
+    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull[^\n]*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inspected registry cache index files directly"
+    description: "Agent inspected the registry cache directory or its index files"
     tool_name: "Bash"
-    command_pattern: 'case-resources/.*-index\.json'
+    command_pattern: 'case-resources(/|\b)'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
@@ -80,6 +82,8 @@ success_criteria:
       - "commands_used"
       - "action_app_index_file"
       - "process_index_file"
+      - "auth_state"
+      - "cache_populated"
     weight: 1.5
     pass_threshold: 1.0
 
