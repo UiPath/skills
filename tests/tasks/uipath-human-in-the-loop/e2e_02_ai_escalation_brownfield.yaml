@@ -70,7 +70,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--format\s+json'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

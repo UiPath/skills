@@ -32,7 +32,7 @@ initial_prompt: |
 success_criteria:
   - type: file_contains
     description: "HITL node is present in the flow file"
-    path: "PurchaseOrderApproval/flow_files/PurchaseOrderApproval.flow"
+    path: "PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow"
     includes:
       - '"uipath.human-in-the-loop"'
     weight: 1.5
@@ -40,7 +40,7 @@ success_criteria:
 
   - type: file_contains
     description: "completed handle is wired in the flow file"
-    path: "PurchaseOrderApproval/flow_files/PurchaseOrderApproval.flow"
+    path: "PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow"
     includes:
       - '"completed"'
     weight: 2.0
@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated after wiring"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--format\s+json'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
