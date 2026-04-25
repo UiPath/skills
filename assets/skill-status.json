@@ -198,6 +198,14 @@
       },
       "last_synced": null
     },
+    "uipath-test-playwright": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-troubleshoot": {
       "status": "preview",
       "confluence": {

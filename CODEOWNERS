@@ -145,6 +145,10 @@
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
 /tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
 
+# Test — Playwright external test runner (pack → publish → run → fetch)
+/skills/uipath-test-playwright/ @vaishalisharma-uipath @amoluipath @ganeshborle
+/tests/tasks/uipath-test-playwright/ @vaishalisharma-uipath @amoluipath @ganeshborle
+
 
 # Tasks skill (Action Center Operate)
 /skills/uipath-tasks/ @UiPath/ActionCenterDev
