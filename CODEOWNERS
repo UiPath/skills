@@ -49,6 +49,9 @@
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 
+# Interact skill
+/skills/uipath-interact/ @danmunteanu1 @csvancea
+
 # Legacy RPA skill
 /skills/uipath-rpa-legacy/ @roalexandru
 
