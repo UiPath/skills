@@ -182,82 +182,17 @@ jobs:
             -e experiments/default.yaml --tags smoke -j 1 -v
         continue-on-error: true
 
-      - name: Summarize results
+      - name: Print experiment report
         if: always()
         working-directory: tests
         run: |
-          python3 - <<'EOF'
-          import json, os, glob, sys
-
-          summary_lines = []
-          passed = []
-          failed = []
-
-          for path in sorted(glob.glob("runs/*/default/*/task.json")):
-              try:
-                  with open(path) as f:
-                      t = json.load(f)
-              except Exception:
-                  continue
-              task_id = t.get("task_id", path)
-              status = t.get("final_status", "UNKNOWN")
-              score = t.get("weighted_score", 0)
-              criteria = t.get("success_criteria_results", [])
-
-              if status == "SUCCESS" and score >= 1.0:
-                  passed.append(task_id)
-              else:
-                  failed_criteria = [
-                      c for c in criteria if c.get("score", 0) < 1.0
-                  ]
-                  failed.append((task_id, status, score, failed_criteria))
-
-          # Console output
-          print(f"\n{'='*60}")
-          print(f"SMOKE TEST RESULTS: {len(passed)} passed, {len(failed)} failed")
-          print(f"{'='*60}\n")
-
-          for task_id, status, score, bad in failed:
-              print(f"FAIL  {task_id}  (status={status}, score={score:.2f})")
-              for c in bad:
-                  print(f"  ✗ {c['description']}")
-                  details = (c.get("details") or "").strip()
-                  error = (c.get("error") or "").strip()
-                  if error:
-                      print(f"    error: {error[:300]}")
-                  elif details:
-                      print(f"    details: {details[:300]}")
-              print()
-
-          for task_id in passed:
-              print(f"PASS  {task_id}")
-
-          # GitHub Actions job summary
-          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
-          if summary_path:
-              with open(summary_path, "a") as out:
-                  out.write(f"## Smoke Test Results — {len(passed)} passed, {len(failed)} failed\n\n")
-                  if failed:
-                      out.write("### Failed tasks\n\n")
-                      for task_id, status, score, bad in failed:
-                          out.write(f"**`{task_id}`** — status: `{status}`, score: `{score:.2f}`\n\n")
-                          for c in bad:
-                              out.write(f"- ✗ {c['description']}\n")
-                              error = (c.get("error") or "").strip()
-                              details = (c.get("details") or "").strip()
-                              if error:
-                                  out.write(f"  ```\n  {error[:500]}\n  ```\n")
-                              elif details:
-                                  out.write(f"  ```\n  {details[:500]}\n  ```\n")
-                          out.write("\n")
-                  if passed:
-                      out.write("### Passed tasks\n\n")
-                      for task_id in passed:
-                          out.write(f"- ✓ `{task_id}`\n")
-          EOF
-
-      - name: Fail if tests failed
-        if: steps.smoke.outcome == 'failure'
-        run: |
-          echo "Smoke tests failed — see 'Summarize results' step above for details."
-          exit 1
+          for f in runs/*/experiment.md runs/*/default/variant.md runs/*/default/*/task.json; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+              echo ""
+            fi
+          done
+          if [ "${{ steps.smoke.outcome }}" = "failure" ]; then
+            exit 1
+          fi
