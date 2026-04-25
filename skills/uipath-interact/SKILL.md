@@ -22,7 +22,11 @@ For anything else (building workflows, configuring Object Repository targets, cr
 
 Complete these steps in order before proceeding to the Entry Procedure. Do not skip, reorder, or improvise.
 
-**1. Ensure a UiPath project exists.** Look for `project.json` in or under the working directory. If found, set `$PROJECT_DIR` to its containing directory (if multiple are found, ask the user which to use). If none, prompt the user via `AskUserQuestion` to either create a new project via the `uipath-rpa` skill (set `$PROJECT_DIR` to the new project's path) or use an existing one (set `$PROJECT_DIR` to the path they provide).
+**1. Ensure a UiPath project exists.** Search for `project.json` files in or under the working directory and select one as `$PROJECT_DIR`:
+
+- **One found** — set `$PROJECT_DIR` to its containing directory.
+- **Multiple found** — `AskUserQuestion` which one to use; set `$PROJECT_DIR` to their selection.
+- **None found** — `AskUserQuestion` whether to create a new project via the `uipath-rpa` skill (set `$PROJECT_DIR` to the new project's path) or to use an existing project elsewhere (set `$PROJECT_DIR` to the path they provide).
 
 **2. Execute the preflight.** Open [uia-prerequisites.md](references/uia-prerequisites.md) and follow it exactly against `$PROJECT_DIR`. Do not summarize, paraphrase, or improvise — that file is the source of truth.
 
