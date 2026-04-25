@@ -1,5 +1,10 @@
 #!/bin/bash
-# Pre-commit hook: validate skill descriptions
+# Pre-commit hook: run repo validators before letting a commit through.
+# Each validator must exit 0 to allow the commit. Add new validators below.
+
+set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
+
 bash "$REPO_ROOT/scripts/validate-skill-descriptions.sh"
+bash "$REPO_ROOT/scripts/validate-synced-files.sh"

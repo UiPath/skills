@@ -65,3 +65,23 @@ The markdown body SHOULD follow this order:
 - All file links MUST use relative paths from the SKILL.md location
 - All file links MUST point to files that actually exist in the repo
 - No secrets, tokens, credentials, or personal filesystem paths
+
+## Sharing Content Across Skills
+
+Skills MUST be self-contained: no `../<other-skill>/...` paths in any markdown file. When a plugin user installs a skill, sibling skills may not be co-located, may not be installed at all, or may resolve to different paths than the agent expects. Cross-skill links break in those cases.
+
+When the same content genuinely needs to appear in two or more skills, register a synced copy:
+
+```bash
+bash scripts/sync-files.sh --add <source-path> <copy-path>
+```
+
+This appends an entry to `.github/synced-files.yml` and creates `<copy-path>` as a byte-for-byte clone of `<source-path>`. From that point on:
+
+1. **Always edit the source.** Never edit a copy directly.
+2. **Run `bash scripts/sync-files.sh --apply`** after editing the source to refresh every copy.
+3. **Commit the source and the refreshed copies together.**
+
+CI (`.github/workflows/validate-synced-files.yml`) blocks any PR where a copy diverges from its source. The local `.githooks/pre-commit` chain runs the same check and fails the commit early for contributors who ran `bash scripts/setup-hooks.sh`.
+
+Copies are pure clones — no headers, no markers, no transformations — so the agent reads them identically to the canonical version. The manifest is the only place that records the sync relationship; the copy file itself stays pristine.

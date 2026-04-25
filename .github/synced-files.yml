@@ -1,0 +1,18 @@
+# Synced files -- one source, many byte-identical copies.
+#
+# Each group declares a canonical source and one or more copies. Every copy
+# must be byte-for-byte equal to its source; CI validates this on every PR.
+#
+# Workflow:
+#   1. Edit the canonical source file.
+#   2. Run `bash scripts/sync-files.sh --apply` to refresh all copies.
+#   3. Commit the source AND its updated copies together.
+#
+# To register a new copy:
+#   bash scripts/sync-files.sh --add <source-path> <copy-path>
+#
+# See: .claude/rules/skill-structure.md ("Sharing content across skills")
+#      .github/workflows/validate-synced-files.yml (the CI gate)
+#      scripts/validate-synced-files.sh (the checker)
+
+groups: []
