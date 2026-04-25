@@ -43,16 +43,10 @@ initial_prompt: |
   that logs "Hello from legacy" using a LogMessage activity. Follow the skill's
   full workflow: create the project, generate the XAML, and attempt validation.
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "HelloLegacy",
-      "target_framework": "Legacy",
-      "commands_used": ["<list of uip commands you ran>"]
-    }
-
   Important:
   - The `uip` CLI is already available in the environment.
   - Do not run `uip rpa-legacy debug` — just attempt validation.
+  - Use `--output json` on the uip CLI commands you run.
   - The underlying CLI backend may not work on non-Windows hosts; that is
     acceptable — what matters is that you produce correct files and invoke
     the correct commands.
@@ -113,19 +107,3 @@ success_criteria:
       - "Hello from legacy"
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "HelloLegacy"
-      - expression: "target_framework"
-        operator: equals
-        expected: "Legacy"
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 1
-    weight: 1.5
-    pass_threshold: 0.75

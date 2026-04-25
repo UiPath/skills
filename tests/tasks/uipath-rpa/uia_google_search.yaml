@@ -57,9 +57,10 @@ llm_reviewer:
       three pre-known selectors (chrome.exe + google.com URL, textarea
       name='q', input name='btnK').
     - Main.xaml references "UiPath automation" as the query.
-    - Did the agent attempt both `uip rpa build` and
-      `uip rpa get-errors` for signal (regardless of exit codes)?
-    - Does report.json accurately reflect activities + commands used?
+    - Did the agent call `uip rpa get-errors` once for skill fidelity?
+    - The harness runs `uip rpa build` programmatically against the
+      project after the agent finishes; that's the compile gate, not
+      anything the agent typed.
 
     Reply terse, developer-style. Score 1.0 if the XAML structure +
     selectors + query are right; lower only for real agent issues
@@ -118,46 +119,22 @@ initial_prompt: |
     * Treat `uip rpa get-errors`' exit 1 as expected and move on — its
       exit code is NOT the CI compile gate.
 
-  Validation — call each command ONCE for signal, then move on:
+  Validation — call `uip rpa get-errors` ONCE for skill fidelity:
 
-  1. `uip rpa build "$PWD/GoogleSearch" --output json`
-     (the PROJECT_DIR is positional, NOT `--project-dir`; use the
-     absolute path — relative paths like `./GoogleSearch` hit a
-     path-resolution bug that duplicates the leaf directory.)
-     Record the exit code. Hand-authored UIA XAML without
-     `get-default-activity-xaml` discovery often emits invalid schema
-     fragments, and build can legitimately fail in this CI sandbox.
-     Record the exit code and move on. Do NOT iterate trying to fix
-     every XAML schema error — get the structure right (right
-     activities, right selectors) and accept build failure.
+    `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
 
-  2. `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
-     The skill-canonical validation step — call it once for skill
-     fidelity, record the exit code, then move on. Auth error is
-     expected; do NOT retry.
-
-  Save a summary to report.json at the sandbox root:
-    {
-      "project_name": "GoogleSearch",
-      "expression_language": "VisualBasic",
-      "activities_used": ["<activity class names you emitted in XAML>"],
-      "commands_used": ["<uip commands you ran, full with flags>"],
-      "get_errors_exit_code": <exit code from the final get-errors call>,
-      "build_exit_code": <exit code from the final uip rpa build call — record
-                          whatever it returned; non-zero is acceptable>
-    }
+  The skill-canonical validation step — call it once, then move on.
+  Auth error is expected in CI; do NOT retry. The build itself is
+  verified programmatically by the test harness after you finish, so
+  you don't need to invoke `uip rpa build` yourself.
 
   STOP CONDITIONS (declare the task done and stop iterating when):
   - You've written project.json, project.uiproj, and Main.xaml with the
     required activities + selectors + query.
-  - You've called `uip rpa build` once and recorded its exit code.
-  - You've called `uip rpa get-errors` once and recorded its exit code.
-  - You've written report.json with all the fields above.
-  DO NOT keep retrying build or get-errors hoping for a clean exit —
-  modern UIA activities need Object Repository setup that requires
-  UiPath auth (not available here), so build WILL fail on missing
-  `NApplicationCard.Selector` / `NTypeInto.ClearBefore` / similar.
-  That's an expected infrastructure limit, not an agent failure.
+  - You've called `uip rpa get-errors` once.
+  Do NOT spend turns trying to make `get-errors` succeed (it needs Helm
+  auth not provisioned in CI), and do NOT pre-emptively run `uip rpa build`
+  in a retry loop — the harness builds the project once after you stop.
 
   Important:
   - The `uip` CLI and the `rpa` tool are already available in the environment.
@@ -218,43 +195,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Soft compile signal: `uip rpa build` can fail in this CI sandbox
-  # because hand-authored UIA XAML without `get-default-activity-xaml`
-  # discovery often emits invalid schema fragments that surface as
-  # XAML parse errors. Require the agent to CALL build (skill
-  # discipline), but do NOT gate on its exit code.
-  - type: command_executed
-    description: "Agent invoked uip rpa build (compile signal)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+build'
-    min_count: 1
-    weight: 1.0
+  # Programmatic compile gate: harness invokes `uip rpa build` against
+  # the agent's project directly and gates on exit code 0. Replaces
+  # the old "did the agent call build" telemetry check — what matters
+  # is that the project actually compiles.
+  - type: run_command
+    description: "uip rpa build exits 0 against the agent's GoogleSearch project"
+    command: 'uip rpa build "GoogleSearch" --output json'
+    expected_exit_code: 0
+    timeout: 180
+    weight: 2.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms VisualBasic + activities used + commands invoked"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "GoogleSearch"
-      - expression: "expression_language"
-        operator: equals
-        expected: "VisualBasic"
-      # Both build_exit_code and get_errors_exit_code are signals, not
-      # gates — this CI sandbox has infrastructure limits on both (see
-      # prompt). The test gates on XAML structure/content instead.
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 2
-      - expression: "length(activities_used)"
-        operator: gte
-        expected: 2
-    weight: 1.5
-    pass_threshold: 0.8

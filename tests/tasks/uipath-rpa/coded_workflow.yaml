@@ -52,9 +52,11 @@ llm_reviewer:
       TestLoginSuccess.cs with [TestCase] + testing.Verify* assertions
       — NOT xUnit/NUnit Assert.*, CodedWorkflowHooks.cs with
       `partial class CodedWorkflow` + IBeforeAfterRun + Before/After)
-    - Did the agent attempt both `uip rpa build` and
-      `uip rpa get-errors` for signal (regardless of their exit codes)?
-    - Does report.json accurately reflect what the agent did?
+    - Does every .cs file declare `namespace TestAutomation;`?
+    - Did the agent call `uip rpa get-errors` once for skill fidelity?
+    - The harness runs `uip rpa build` programmatically against the
+      project after the agent finishes; that's the compile gate, not
+      anything the agent typed.
 
     Reply terse, developer-style. Score 1.0 if correct; lower only for
     real agent issues (wrong files, wrong patterns, skill-rule
@@ -112,51 +114,22 @@ initial_prompt: |
       resolve correctly. Missing or mismatched namespaces produce
       CS0234 ("type or namespace does not exist") at build time.
 
-  Validation — call each command ONCE for signal, then move on:
+  Validation — call `uip rpa get-errors` ONCE for skill fidelity:
 
-  1. `uip rpa build "$PWD/TestAutomation" --output json`
-     (the PROJECT_DIR is positional, NOT `--project-dir`; use the
-     absolute path — relative paths like `./TestAutomation` hit a
-     path-resolution bug that duplicates the leaf directory.)
-     Record the exit code. Build can fail in this CI sandbox due to
-     `UiPath.Testing.Activities` 25.10.0 auto-generating bootloader
-     .cs in `.local/` that references `UiPath.Robot.Activities.Api` —
-     that assembly lives in Helm Windows tools and isn't in the NuGet
-     cache here. If the build fails on that CS0234, that's expected;
-     record the exit code and move on. Do NOT iterate trying to fix
-     the infrastructure.
+    `uip rpa get-errors --project-dir ./TestAutomation --output json`
 
-  2. `uip rpa get-errors --project-dir ./TestAutomation --output json`
-     The skill-canonical validation step — call it once for skill
-     fidelity, record the exit code, then move on. Auth error is
-     expected; do NOT retry.
-
-  Save a summary to report.json at the sandbox root:
-    {
-      "project_name": "TestAutomation",
-      "expression_language": "CSharp",
-      "files_created": ["<paths of the .cs files you created>"],
-      "test_case_class": "<class name of the test case>",
-      "hooks_pattern": "<'partial_class' or 'base_class'>",
-      "hooks_class_declaration": "<the class declaration line from the hooks file>",
-      "assertions_used": ["<list of testing.Verify* methods used>"],
-      "commands_used": ["<list of uip commands you ran>"],
-      "get_errors_exit_code": <exit code from the final uip rpa get-errors call>,
-      "build_exit_code": <exit code from the final uip rpa build call — record
-                          whatever it returned; non-zero is acceptable>
-    }
+  The skill-canonical validation step — call it once, then move on.
+  Auth error is expected in CI; do NOT retry. The build itself is
+  verified programmatically by the test harness after you finish, so
+  you don't need to invoke `uip rpa build` yourself.
 
   STOP CONDITIONS (declare the task done and stop iterating when):
   - You've written project.json, project.uiproj, Main.cs, TestLoginSuccess.cs,
-    CodedWorkflowHooks.cs.
-  - You've called `uip rpa build` once and recorded its exit code.
-  - You've called `uip rpa get-errors` once and recorded its exit code.
-  - You've written report.json with all the fields above.
-  DO NOT keep retrying build or get-errors hoping for a clean exit —
-  `UiPath.Testing.Activities` 25.10 auto-generates bootloader code that
-  references `UiPath.Robot.Activities.Api` (not in the NuGet cache), so
-  build WILL fail with CS0234. That's an expected infrastructure limit,
-  not an agent failure.
+    CodedWorkflowHooks.cs — each .cs file with `namespace TestAutomation;`.
+  - You've called `uip rpa get-errors` once.
+  Do NOT spend turns trying to make `get-errors` succeed (it needs Helm
+  auth not provisioned in CI), and do NOT pre-emptively run `uip rpa build`
+  in a retry loop — the harness builds the project once after you stop.
 
   Important:
   - The `uip` CLI and the `rpa` tool are already available in the environment.
@@ -187,9 +160,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Main.cs is a CodedWorkflow with Execute() that logs the expected message"
+    description: "Main.cs declares namespace TestAutomation and is a CodedWorkflow with Execute()"
     path: "TestAutomation/Main.cs"
     includes:
+      - "namespace TestAutomation"
       - "CodedWorkflow"
       - "Execute"
       - "Hello from TestAutomation"
@@ -203,9 +177,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Test case uses [TestCase], CodedWorkflow, and testing.Verify* assertions"
+    description: "Test case declares namespace TestAutomation, uses [TestCase], CodedWorkflow, and testing.Verify*"
     path: "TestAutomation/TestLoginSuccess.cs"
     includes:
+      - "namespace TestAutomation"
       - "[TestCase]"
       - "CodedWorkflow"
       - "testing.Verify"
@@ -219,9 +194,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Hooks file uses the partial class CodedWorkflow + IBeforeAfterRun pattern"
+    description: "Hooks file declares namespace TestAutomation and uses partial class CodedWorkflow + IBeforeAfterRun"
     path: "TestAutomation/CodedWorkflowHooks.cs"
     includes:
+      - "namespace TestAutomation"
       - "partial class CodedWorkflow"
       - "IBeforeAfterRun"
       - "Before("
@@ -242,50 +218,15 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Soft compile signal: `uip rpa build` can fail in this CI sandbox
-  # because UiPath.Testing.Activities 25.10.0 auto-generates bootloader
-  # code that references UiPath.Robot.Activities.Api — that assembly
-  # lives in the Helm Windows tools and isn't in the NuGet cache here.
-  # Require the agent to CALL build (skill discipline), but do NOT
-  # gate on its exit code.
-  - type: command_executed
-    description: "Agent invoked uip rpa build (compile signal)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+build'
-    min_count: 1
-    weight: 1.0
+  # Programmatic compile gate: harness invokes `uip rpa build` against
+  # the agent's project directly and gates on exit code 0. Replaces
+  # the old "did the agent call build" telemetry check — what matters
+  # is that the project actually compiles, not that the agent typed
+  # the right command.
+  - type: run_command
+    description: "uip rpa build exits 0 against the agent's TestAutomation project"
+    command: 'uip rpa build "TestAutomation" --output json'
+    expected_exit_code: 0
+    timeout: 180
+    weight: 2.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 0.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms CSharp, partial-class hooks, and structured summary"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "TestAutomation"
-      - expression: "expression_language"
-        operator: equals
-        expected: "CSharp"
-      - expression: "hooks_pattern"
-        operator: equals
-        expected: "partial_class"
-      - expression: "hooks_class_declaration"
-        operator: contains
-        expected: "partial class CodedWorkflow"
-      # Both build_exit_code and get_errors_exit_code are signals, not
-      # gates — this CI sandbox has infrastructure limits on both (see
-      # prompt). The test gates on file structure/content instead.
-      - expression: "length(files_created)"
-        operator: gte
-        expected: 3
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 2
-    weight: 1.5
-    pass_threshold: 0.8
