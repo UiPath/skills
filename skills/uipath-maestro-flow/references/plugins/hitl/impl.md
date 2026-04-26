@@ -103,7 +103,7 @@ uip flow registry get "uipath.core.human-task.{key}" --output json
 uip flow registry get "uipath.core.human-task.{key}" --local --output json
 ```
 
-Confirm (these fields live in the **definition** — copied verbatim from the registry into `definitions[]`, never on the instance):
+Confirm:
 
 - Input port: `input`
 - Output port: `output`
@@ -176,9 +176,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> **Why the top-level `bindings[]` entries are required.** The definition's `model.context[].value` fields are template placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions. Before BPMN emit, the runtime rewrites each placeholder to `=bindings.<id>` by finding a top-level `bindings[]` entry whose `name` matches the placeholder and whose `resourceKey` matches the definition's `model.bindings.resourceKey`. Without matching top-level entries, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
-
-> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — they are the authoring template. Critical Rule #7 applies unchanged.
+> For the resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ### If the app does not exist yet
 

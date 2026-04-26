@@ -66,13 +66,13 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 **Required fields**: `id`, `type`, `typeVersion`
 
-> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). Putting a `model` block on an instance is legacy format; older files are auto-migrated by the workbench on first save.
+> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`).
 >
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
 
 ### Instance-specific fields that live in `inputs`
 
-A few fields that were historically authored under `model` are per-instance identity data, so they live in `inputs` now:
+A few per-instance identity fields live in `inputs`:
 
 | Field | Used by | Purpose |
 |-------|---------|---------|
