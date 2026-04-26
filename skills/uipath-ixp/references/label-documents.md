@@ -55,12 +55,31 @@ Save OCR output to `/tmp/ixp/text/doc_1.json`. Use unique filenames per document
 For each document, use the **Read tool** to view the image, then review each predicted field against the document:
 
 1. **Look at the image** to understand the document layout and where field values appear.
-2. **For each predicted field**, check:
+2. **For each predicted field**, decide: is the predicted value correct?
    - Does the predicted value match what is actually written in the document?
    - Is the value assigned to the correct field? (e.g., an invoice number is not in a date field)
    - Minor OCR-level differences (capitalization, whitespace) are acceptable — the value is correct if it identifies the right content
-3. **Build a list of approved field IDs** — the `FieldId` values for fields whose predictions are correct.
-4. **Skip fields whose predictions are wrong** — wrong value, missing value, or misassigned field. Do NOT attempt to correct them manually.
+3. **Report your verdict for every field.** Print a table per document:
+
+```text
+Document: <comment-uid>
+
+Field                    | Verdict       | Reason
+-------------------------|---------------|-----------------------------------------------
+Invoice Number           | CONFIRMED     | Predicted "QC006" matches document
+Invoice Date             | CONFIRMED     | Predicted "2018-02-28" matches document
+Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual value is "456 Oak Ave", found at top-left of page 1
+Terms of Payment         | NOT CONFIRMED | Field not visible in document, prediction appears hallucinated
+Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
+```
+
+For **NOT CONFIRMED** fields, always explain:
+
+- What the predicted value was
+- What the actual correct value is (if visible), and where it appears in the document (e.g., "top-right of page 1", "second row in the table on page 2")
+- Or that the field is not visible / the prediction is hallucinated
+
+5. **Build the list of confirmed field IDs** from the table above.
 
 ## Step 5 — Confirm Approved Fields
 
@@ -71,7 +90,7 @@ uip ixp labelling confirm <project-name> <comment-uid> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" --output json
 ```
 
-Pass the comma-separated list of approved `FieldId` values. Only those fields are labelled. Unapproved fields are left unannotated.
+Pass the comma-separated list of confirmed `FieldId` values. Only those fields are labelled. Not-confirmed fields are left unannotated.
 
 If ALL predicted fields for a document are correct, you can omit `--fields` to confirm everything:
 
@@ -88,4 +107,4 @@ Process all documents with predictions. Track progress and errors:
 - Do NOT stop on the first error — continue with remaining documents
 - If a download or text fetch fails, skip the document and note the failure
 - If confirmation fails, log the error and UID, then continue
-- At the end, report a summary: how many documents processed, how many fields confirmed vs skipped, and which UIDs failed
+- At the end, report a summary: how many documents processed, how many fields confirmed vs not confirmed, and which UIDs failed

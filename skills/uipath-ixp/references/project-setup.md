@@ -76,6 +76,6 @@ Check that `ModelVersion` has advanced. If not, wait another 60 seconds and retr
 Report project score, quality rating, and per-field F1/precision/recall. Highlight:
 
 - Fields with F1 < 0.5 that need prompt improvement
-- Typed fields (Date, Monetary Quantity) at F1 = 0 — likely a format mismatch. Re-label using the value as-written in the document.
+- Typed fields (Date, Monetary Quantity) at F1 = 0 — likely a format mismatch in the field instructions. Fix via the [Improve Prompts Guide](improve-prompts.md).
 
 If the user wants to improve scores, follow the [Improve Prompts Guide](improve-prompts.md).
