@@ -37,11 +37,34 @@ Interact with external services through UiPath Integration Service — discover 
 
 ---
 
+## Display Preferences — Names Over UUIDs
+
+**Always show human-readable names when presenting information to the user. Never surface raw UUIDs or internal keys unless the user explicitly asks for technical details.**
+
+UUIDs and keys are internal identifiers for CLI commands — the agent must use them in `--connection-id`, `--folder-key`, etc., but must **never** relay them to the user as the primary identifier.
+
+| CLI field | Show to user | Use internally (CLI args) |
+|---|---|---|
+| `Name` | **Yes** — always the primary identifier | — |
+| `Id` | No — use `Name` instead | `--connection-id` |
+| `ConnectorName` | **Yes** — show the vendor name | — |
+| `ConnectorKey` | No — use `ConnectorName` instead | first arg to `is connections list` |
+| `Folder` | **Yes** — show the folder name | — |
+| `FolderKey` | No — use `Folder` instead | `--folder-key` |
+| `Owner` | **Yes** — show the owner email | — |
+
+### When confirming a selection
+
+- **Good**: "Using connection **bai.li** (Slack, default, enabled) in **Shared** folder."
+- **Bad**: "Using connection fb06f30e-cde8-4e4a-a534-29cb485971d4."
+- **Good**: "Found 2 connections in the **Shared** folder."
+- **Bad**: "Found 2 connections in folder 692bbf4e-5754-4bdc-8ec6-d8e3a986dea2."
+
 ## How to Present Choices
 
-When multiple options exist, present them clearly:
-- **Connections**: "Which connection? 1) Salesforce Prod (default, enabled) 2) Salesforce Dev (enabled)"
-- **Reference fields**: "Which department? 1) Engineering (id: 123) 2) Sales (id: 456)"
+When multiple options exist, present them clearly using **names, not UUIDs**:
+- **Connections**: "Which connection? 1) **Salesforce Prod** (default, enabled, Shared folder) 2) **Salesforce Dev** (enabled, Shared folder)"
+- **Reference fields**: "Which department? 1) Engineering 2) Sales"
 
 ## Error Recovery
 
