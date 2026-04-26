@@ -48,7 +48,7 @@ Even though `uipath.agent.autonomous` is OOTB, validate it against the registry 
 uip maestro flow registry get uipath.agent.autonomous --output json
 ```
 
-Confirm (these fields live in the **definition** — copied verbatim from the registry into `definitions[]`, never on the instance):
+Confirm:
 
 - Input port: `input`
 - Output ports: `success`, `error`
