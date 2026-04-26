@@ -45,7 +45,7 @@ Do NOT re-read the taxonomy or sample documents between iterations — use what 
 ### 1a. Get baseline metrics
 
 ```bash
-mkdir -p /tmp/ixp/docs /tmp/ixp/text /tmp/ixp/taxonomies /tmp/ixp/prompts
+mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp project metrics <project-name> --output json
 ```
 
@@ -78,7 +78,7 @@ See the [Project Setup Guide](project-setup.md) Step 2 for the decision table.
 uip ixp project taxonomy <project-name> --output json
 ```
 
-Save to `/tmp/ixp/taxonomies/v1.json`. This includes `label_defs` → `moon_form` fields with their current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
+Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. This includes `label_defs` → `moon_form` fields with their current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
 
 The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `update-prompts --fields`.
 
@@ -88,11 +88,11 @@ The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what
 uip ixp document list <project-name> --output json
 
 # For each sample document:
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/docs/sample.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/<project-name>/docs/sample.png --output json
 uip ixp document text <project-name> <comment-uid> --output json
 ```
 
-Save OCR output to `/tmp/ixp/text/sample.json`. View the images with the **Read tool** and review the OCR text. This gives you visual and textual context for writing instructions. These files are reused — you will NOT re-download in subsequent iterations.
+Save OCR output to `/tmp/ixp/<project-name>/text/sample.json`. View the images with the **Read tool** and review the OCR text. These files persist across sessions — check for existing files before downloading.
 
 ### 1e. Check for unlabelled documents
 
@@ -163,22 +163,22 @@ Save the current field instructions before updating (for rollback).
 Use **field names** for `--fields` and **label_def names** for `--groups`:
 
 ```bash
-cat > /tmp/ixp/prompts/field_updates.json << 'FIELDS_EOF'
+cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 [
   {"name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
   {"name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
 ]
 FIELDS_EOF
 
-cat > /tmp/ixp/prompts/group_updates.json << 'GROUPS_EOF'
+cat > /tmp/ixp/<project-name>/prompts/group_updates.json << 'GROUPS_EOF'
 [
   {"name": "Invoice", "instructions": "General invoice header fields including number, dates, payment terms, and totals."}
 ]
 GROUPS_EOF
 
 uip ixp project update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/prompts/field_updates.json)" \
-  --groups "$(cat /tmp/ixp/prompts/group_updates.json)" \
+  --fields "$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)" \
+  --groups "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
   --output json
 ```
 
@@ -219,12 +219,12 @@ If any fields regressed, do a selective rollback:
 
 ```bash
 # Only include the regressed fields, not the whole iteration
-cat > /tmp/ixp/prompts/rollback.json << 'FIELDS_EOF'
+cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
 [{"name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
 uip ixp project update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/prompts/rollback.json)" \
+  --fields "$(cat /tmp/ixp/<project-name>/prompts/rollback.json)" \
   --output json
 ```
 

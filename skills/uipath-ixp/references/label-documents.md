@@ -5,17 +5,17 @@ Reusable workflow for labelling documents in an IXP project. Used by:
 - [Project Setup](project-setup.md) — initial labelling after creating a project
 - [Improve Prompts](improve-prompts.md) — reviewing predictions during optimization
 
-Claude acts as a **reviewer** — IXP generates predictions, Claude validates them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated.
+Claude acts as a **reviewer** — IXP generates predictions, Claude validates them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
 
 ## Step 1 — Get Documents and Taxonomy
 
 ```bash
-mkdir -p /tmp/ixp/docs /tmp/ixp/text /tmp/ixp/taxonomies /tmp/ixp/prompts
+mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp document list <project-name> --output json
 uip ixp project taxonomy <project-name> --output json
 ```
 
-Save the taxonomy to `/tmp/ixp/taxonomies/v1.json` (increment the version on each re-fetch).
+Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
 
 From the taxonomy, review the field groups and field types so you understand what each predicted field represents.
 
@@ -33,32 +33,30 @@ This returns each document's `CommentUid` with predicted `Labels` (grouped by fi
 
 For each document that has predictions, get the image and OCR text:
 
-- **If you just created the project in this same session** and already know the local file paths, use those files directly — do NOT download or search for them.
+- **If files already exist** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse them — do NOT re-download.
 - **Otherwise, download** each document image:
 
 ```bash
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/docs/doc_1.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/<project-name>/docs/doc_1.png --output json
 ```
 
-Do NOT search the filesystem for document files. Either you already have the paths from project creation in this session, or you download them.
-
-**Always fetch the OCR text:**
+**Always fetch the OCR text** (unless already saved from a previous session):
 
 ```bash
 uip ixp document text <project-name> <comment-uid> --output json
 ```
 
-Save OCR output to `/tmp/ixp/text/doc_1.json`. Use unique filenames per document (e.g., `doc_1`, `doc_2`). Download ALL documents before starting review. These files are reused across steps — do not re-download.
+Save OCR output to `/tmp/ixp/<project-name>/text/doc_1.json`. Use unique filenames per document (e.g., `doc_1`, `doc_2`). These files persist across sessions — check for existing files before downloading.
 
 ## Step 4 — Review Predictions Field-by-Field
 
 For each document, use the **Read tool** to view the image, then review each predicted field against the document:
 
 1. **Look at the image** to understand the document layout and where field values appear.
-2. **For each predicted field**, decide: is the predicted value correct?
-   - Does the predicted value match what is actually written in the document?
-   - Is the value assigned to the correct field? (e.g., an invoice number is not in a date field)
-   - Minor OCR-level differences (capitalization, whitespace) are acceptable — the value is correct if it identifies the right content
+2. **For each predicted field**, assign one of three verdicts:
+   - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.
+   - **CORRECTED** — the prediction found the right field in the right location, but the value is OCR-mangled (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`). The reference is correct but the text needs fixing.
+   - **NOT CONFIRMED** — the predicted value is wrong, the field is misassigned, or the field is not visible in the document. Left unannotated.
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
@@ -66,33 +64,43 @@ Document: <comment-uid>
 
 Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
-Invoice Number           | CONFIRMED     | Predicted "QC006" matches document
+Invoice Number           | CORRECTED     | OCR mangled "MSIÓÓÓ601020/" → "MSI0601020", top-right of page 1
 Invoice Date             | CONFIRMED     | Predicted "2018-02-28" matches document
-Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual value is "456 Oak Ave", found at top-left of page 1
+Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
 Terms of Payment         | NOT CONFIRMED | Field not visible in document, prediction appears hallucinated
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
 ```
 
-For **NOT CONFIRMED** fields, always explain:
+For **CORRECTED** fields: state the mangled predicted value, the corrected value, and where it appears.
+For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location, or that the field is not visible.
 
-- What the predicted value was
-- What the actual correct value is (if visible), and where it appears in the document (e.g., "top-right of page 1", "second row in the table on page 2")
-- Or that the field is not visible / the prediction is hallucinated
+4. **Build two lists from the table:**
+   - **Confirmed field IDs** — all CONFIRMED + CORRECTED fields
+   - **Corrections JSON** — only CORRECTED fields: `[{"field_id":"...","value":"corrected text"}]`
 
-5. **Build the list of confirmed field IDs** from the table above.
+## Step 5 — Confirm and Correct
 
-## Step 5 — Confirm Approved Fields
+For each document, submit confirmed and corrected fields together.
 
-For each document, confirm only the fields that passed review:
+**If there are corrections:**
+
+```bash
+uip ixp labelling confirm <project-name> <comment-uid> \
+  --fields "<all_confirmed_and_corrected_ids>" \
+  --corrections '[{"field_id":"<id>","value":"<corrected_value>"}]' \
+  --output json
+```
+
+The `--fields` list includes both CONFIRMED and CORRECTED field IDs. The `--corrections` JSON overrides the predicted value for corrected fields while keeping their document references (bounding boxes).
+
+**If there are no corrections (all approved fields are exact matches):**
 
 ```bash
 uip ixp labelling confirm <project-name> <comment-uid> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" --output json
 ```
 
-Pass the comma-separated list of confirmed `FieldId` values. Only those fields are labelled. Not-confirmed fields are left unannotated.
-
-If ALL predicted fields for a document are correct, you can omit `--fields` to confirm everything:
+If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm everything:
 
 ```bash
 uip ixp labelling confirm <project-name> <comment-uid> --output json
@@ -107,4 +115,21 @@ Process all documents with predictions. Track progress and errors:
 - Do NOT stop on the first error — continue with remaining documents
 - If a download or text fetch fails, skip the document and note the failure
 - If confirmation fails, log the error and UID, then continue
-- At the end, report a summary: how many documents processed, how many fields confirmed vs not confirmed, and which UIDs failed
+
+At the end, report a full summary:
+
+```text
+Labelling complete.
+
+Documents: N processed, M confirmed, K skipped (no predictions)
+Fields: X confirmed, Y corrected, Z not confirmed
+
+OCR Corrections Applied:
+  Doc <uid-1>: Invoice Number "MSIÓÓÓ601020/" → "MSI0601020"
+  Doc <uid-1>: Vendor Name "INGRAM NTCRO INC" → "INGRAM MICRO INC"
+  Doc <uid-3>: Bill-To Address "123 Mam St" → "123 Main St"
+
+Not Confirmed (skipped):
+  Doc <uid-2>: Terms of Payment — field not visible in document
+  Doc <uid-3>: Total Amount — predicted "500.00" but actual is "5000.00" (bottom-right, page 1)
+```

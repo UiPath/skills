@@ -22,16 +22,16 @@ When the user asks to improve scores/prompts for an existing project, follow the
 1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT source `~/.uipath/.auth`, do NOT load auth tokens, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase, do NOT run `--help` to discover options.
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
-4. **Use `/tmp/ixp/` as the working directory with this structure:**
+4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
    ```
-   /tmp/ixp/
-   ├── docs/         # Document images (doc_1.png, doc_2.png, …) — downloaded once, reused across steps
-   ├── text/         # OCR text files (doc_1.json, doc_2.json, …) — downloaded once, reused across steps
+   /tmp/ixp/<project-name>/
+   ├── docs/         # Document images (doc_1.png, doc_2.png, …) — downloaded once, reused across sessions
+   ├── text/         # OCR text files (doc_1.json, doc_2.json, …) — downloaded once, reused across sessions
    ├── taxonomies/   # Taxonomy snapshots (v1.json, v2.json, …) — new version after each update-prompts
    └── prompts/      # Instruction update payloads (field_updates.json, group_updates.json, …)
    ```
-   At the start of any workflow: `mkdir -p /tmp/ixp/docs /tmp/ixp/text /tmp/ixp/taxonomies /tmp/ixp/prompts`. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows it resolves to a different location than bash.
-5. **Use heredocs for `--fields`/`--groups`** — for `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/prompts/field_updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/prompts/field_updates.json)"`.
+   At the start of any workflow: `mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}`. If the directory already exists from a previous session, **reuse existing files** — do not re-download documents or OCR text that are already present. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows it resolves to a different location than bash.
+5. **Use heredocs for `--fields`/`--groups`** — for `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)"`.
 6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
 7. **Always use the project `Name`, never the `Title`** — the `project list` output has both `Name` (e.g., `my_invoices-f1afa9ef-ixp`) and `Title` (e.g., `My_Invoices`). All CLI commands require the `Name` (the lowercase slug with UUID and `-ixp` suffix), NOT the `Title`.
 8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated — do NOT attempt to manually extract or correct them.
@@ -70,7 +70,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 | Command | Description |
 |---------|-------------|
 | `uip ixp labelling predictions <project-name> [comment-uid] --output json` | Get IXP model predictions for all documents (or a single document). Returns predicted labels with `FieldId`, `FieldName`, and `FormattedValue`. |
-| `uip ixp labelling confirm <project-name> <comment-uid> [--fields <ids>] --output json` | Confirm predictions for a document. Use `--fields "id1,id2,id3"` to confirm only specific fields (omit to confirm all). |
+| `uip ixp labelling confirm <project-name> <comment-uid> [--fields <ids>] [--corrections <json>] --output json` | Confirm predictions for a document. `--fields "id1,id2,id3"` confirms only those fields. `--corrections '[{"field_id":"...","value":"..."}]'` overrides OCR-mangled values while keeping the prediction's document references. |
 
 ## Common Pitfalls
 
