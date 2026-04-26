@@ -10,8 +10,15 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a new UiPath Flow project called "WeatherAlert" and make sure it
-  validates successfully.
+  Create a new UiPath Flow project called "WeatherAlert" inside a UiPath
+  solution also called "WeatherAlert", then make sure the flow validates
+  successfully.
+
+  You must use the solution-first workflow:
+  1. Create the solution with `uip solution new WeatherAlert --output json`.
+  2. Create the Flow project inside that solution with `uip maestro flow init WeatherAlert --output json`.
+  3. Add the Flow project to the solution with `uip solution project add ... --output json`.
+  4. Validate `WeatherAlert/WeatherAlert/WeatherAlert.flow` with `uip maestro flow validate ... --output json`.
 
   Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
   inside a solution:
@@ -29,7 +36,7 @@ initial_prompt: |
   at minimum:
     {
       "project_name": "WeatherAlert",
-      "commands_used": ["<list of uip commands you ran>"],
+      "commands_used": ["<all uip commands you ran, including solution new, flow init, project add, and validate>"],
       "validation_passed": true
     }
 
