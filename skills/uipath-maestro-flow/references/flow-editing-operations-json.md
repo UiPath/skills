@@ -71,7 +71,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 > **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [flow-file-format.md — Node outputs](flow-file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
 
-> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields that used to live under `model` now live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [flow-file-format.md — Instance-specific fields that live in `inputs`](flow-file-format.md#instance-specific-fields-that-live-in-inputs).
+> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [flow-file-format.md — Instance-specific fields that live in `inputs`](flow-file-format.md#instance-specific-fields-that-live-in-inputs).
 
 > **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
 
