@@ -26,25 +26,24 @@ initial_prompt: |
   }
 
   Important:
-  - The `uip` CLI is available but is NOT connected to a live tenant in this
-    environment. Commands WILL fail with auth errors — that is expected.
-    Record what you did in report.json and move on.
-    Do NOT retry or attempt to login.
-  - Use `--output json` on every uip command whose output you would normally parse.
+  - This sandbox has no live tenant connection. Run each command once,
+    capture the full output (including any error) in report.json, then
+    continue to the next step. Do NOT retry or attempt interactive login.
+  - Use `--output json` on every uip command.
 
 success_criteria:
   - type: command_executed
     description: "Agent checked login status first (Critical Rule #1)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed Test Manager projects"
+    description: "Agent listed Test Manager projects with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+project\s+list'
+    command_pattern: 'uip\s+tm\s+project\s+list.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

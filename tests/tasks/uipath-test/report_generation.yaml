@@ -17,9 +17,15 @@ sandbox:
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.
 
-  Generate a **QA Engineer** test report for UiPath Test Manager test set
-  "INV:10" in project "INV". Save the report file in the current working
-  directory using the default filename convention from the skill.
+  Generate a **QA Engineer** test report for the UiPath Test Manager test set
+  with key "INV:10" in project "INV". Save the report file in the current
+  working directory using the default filename convention from the skill.
+
+  Important:
+  - This sandbox has no live tenant connection. Run each command once,
+    capture the full output (including any error) in report_meta.json, then
+    continue to the next step. Do NOT retry or attempt interactive login.
+  - Use `--output json` on every uip tm command.
 
   Also save a summary of what you did to report_meta.json:
   {
@@ -32,17 +38,25 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed executions for the test set"
+    description: "Agent checked login status first (Critical Rule #1)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+execution\s+list(\s|$).*(--test-set-id|--project-key)'
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions for the test set with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+execution\s+list(\s|$).*--test-set-id.*--output\s+json|uip\s+tm\s+execution\s+list(\s|$).*--output\s+json.*--test-set-id'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed testcase logs for an execution"
+    description: "Agent listed testcase logs for an execution with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+execution\s+list-testcaselogs'
+    command_pattern: 'uip\s+tm\s+execution\s+list-testcaselogs.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

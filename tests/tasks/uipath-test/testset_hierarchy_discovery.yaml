@@ -20,9 +20,12 @@ initial_prompt: |
   see the test sets in it and, for the first test set, the test cases inside
   it. Walk the full discovery hierarchy.
 
-  Note: the CLI is not connected to a live tenant here, so commands will fail
-  with auth errors — that's expected. Still run the full discovery chain and
-  record every command you attempted.
+  Important:
+  - This sandbox has no live tenant connection. Run each command once and
+    capture the full output in report.json. If a discovery step fails, use
+    the project/set name above as a placeholder key and continue to the next
+    command. Do NOT retry or attempt interactive login.
+  - Use `--output json` on every uip tm command.
 
   Save a summary of what you did to report.json:
   {
@@ -36,34 +39,34 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent looked up the project with --filter (discover-before-assume)"
+    description: "Agent looked up the project with --filter and --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+project\s+list.*--filter'
+    command_pattern: 'uip\s+tm\s+project\s+list.*--filter.*--output\s+json|uip\s+tm\s+project\s+list.*--output\s+json.*--filter'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed test sets scoped to the project"
+    description: "Agent listed test sets scoped to the project with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testset\s+list.*--project-key'
+    command_pattern: 'uip\s+tm\s+testset\s+list.*--project-key.*--output\s+json|uip\s+tm\s+testset\s+list.*--output\s+json.*--project-key'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed test cases in a test set using --test-set-key"
+    description: "Agent listed test cases using --test-set-key with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testset\s+list-testcases.*--test-set-key'
+    command_pattern: 'uip\s+tm\s+testset\s+list-testcases.*--test-set-key.*--output\s+json|uip\s+tm\s+testset\s+list-testcases.*--output\s+json.*--test-set-key'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on tm commands"
+    description: "Agent used --output json on all tm commands"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+.*--output\s+json'
-    min_count: 2
+    min_count: 3
     weight: 1.0
     pass_threshold: 1.0
 
@@ -77,6 +80,9 @@ success_criteria:
     description: "report.json records the project key used and the full command chain"
     path: "report.json"
     assertions:
+      - expression: "length(project_key_used)"
+        operator: gte
+        expected: 1
       - expression: "length(commands_used)"
         operator: gte
         expected: 3
