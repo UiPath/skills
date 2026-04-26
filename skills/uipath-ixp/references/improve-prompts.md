@@ -12,11 +12,7 @@ Before starting, understand the limits of prompt iteration:
 - Fields where the model misses the value entirely (recall problems) — location hints help the model find the field
 - Ambiguous fields where the model picks the wrong candidate — negative examples and disambiguation rules help
 
-**Prompts CANNOT fix (but re-labelling can):**
-
-- **Typed field format mismatches** — if Date or Monetary Quantity fields score F1 = 0, the issue is value format, not instructions. Fix by re-labelling with the value **as-written in the document** (the model predicts in the document's own format). The optimization loop handles this automatically — fields are classified as FIX FORMAT and included in re-labelling.
-
-**Neither prompts nor re-labelling can fix:**
+**Neither prompts nor reviewing can fix:**
 
 - **OCR quality issues** — if the OCR consistently garbles a field's text, no instruction will make the model extract it correctly. Report to the user.
 - **Missing fields** — if a field simply doesn't exist in the documents, no instruction will conjure it.
@@ -49,7 +45,7 @@ Do NOT re-read the taxonomy or sample documents between iterations — use what 
 ### 1a. Get baseline metrics
 
 ```bash
-mkdir -p /tmp/ixp
+mkdir -p /tmp/ixp/docs /tmp/ixp/text /tmp/ixp/taxonomies /tmp/ixp/prompts
 uip ixp project metrics <project-name> --output json
 ```
 
@@ -61,15 +57,6 @@ Save the full per-field `Fields` array as `baseline_metrics`. This is the starti
 - Find the matching `moon_form` entry in the taxonomy where `field_id == FieldId` — its `name` is the human-readable field name
 
 Build this mapping once and reuse it throughout the loop.
-
-**Check for format issues first.** If any typed fields (Date, Monetary Quantity) have F1 = 0, these are format mismatches — not prompt issues. This is the **only case** where re-labelling is needed during improvement (because the original labellings used the wrong format):
-
-1. Re-label all documents using the [Label Documents Guide](label-documents.md), submitting typed field values as-written in the document
-2. Wait ~2 minutes for retrain
-3. Re-fetch metrics — the typed fields should now have F1 > 0
-4. Use these refreshed metrics as `baseline_metrics` for the loop
-
-After this one-time format fix, use the refreshed metrics as `baseline_metrics` for the loop.
 
 ### 1b. Check model configuration
 
@@ -91,7 +78,7 @@ See the [Project Setup Guide](project-setup.md) Step 2 for the decision table.
 uip ixp project taxonomy <project-name> --output json
 ```
 
-Save the full taxonomy including `label_defs` → `moon_form` fields with their current `instructions`. These per-field instructions are what you'll be iterating on.
+Save to `/tmp/ixp/taxonomies/v1.json`. This includes `label_defs` → `moon_form` fields with their current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
 
 The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `update-prompts --fields`.
 
@@ -101,15 +88,15 @@ The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what
 uip ixp document list <project-name> --output json
 
 # For each sample document:
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/sample.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/docs/sample.png --output json
 uip ixp document text <project-name> <comment-uid> --output json
 ```
 
-View the images with the **Read tool** and review the OCR text. This gives you visual and textual context for writing instructions. You will NOT re-read these in subsequent iterations.
+Save OCR output to `/tmp/ixp/text/sample.json`. View the images with the **Read tool** and review the OCR text. This gives you visual and textual context for writing instructions. These files are reused — you will NOT re-download in subsequent iterations.
 
 ### 1e. Check for unlabelled documents
 
-Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Label them first using the [Label Documents Guide](label-documents.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
+Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
 
 ---
 
@@ -140,16 +127,14 @@ If no fields need REFINE, stop — the project is already at target quality.
 
 ### 2a-check. Check for labelling gaps (before writing instructions)
 
-For each REFINE field with **Recall < 0.5**, check whether the problem is a bad prompt or a missing/wrong labelling:
+For each REFINE field with **Recall < 0.5**, check whether the problem is a bad prompt or a missing label:
 
 1. Look at the sample document images you already have from Step 1d
 2. For each low-recall field, check: **can you see this field's value in the document?**
-   - If yes, and you didn't submit it (or submitted a wrong value) during the initial labelling → this is a **labelling gap**, not a prompt problem
+   - If yes, the model may have predicted it correctly but it wasn't confirmed in a previous round → re-fetch predictions and review those fields again
    - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
 
-**If you find labelling gaps**, re-label ONLY the specific documents where the field was missed or wrong — do NOT re-label all documents. Use the [Label Documents Guide](label-documents.md) for those specific documents only, submitting corrections for the gapped fields.
-
-After targeted re-labelling, wait ~2 minutes for retrain and re-fetch metrics before continuing. Remove fixed fields from the REFINE list.
+**If you find previously skipped predictions that are actually correct**, confirm them now using `labelling confirm --fields` for those specific documents and fields. Wait ~2 minutes for retrain and re-fetch metrics before continuing.
 
 **If no labelling gaps are found**, proceed directly to writing instructions.
 
@@ -178,22 +163,22 @@ Save the current field instructions before updating (for rollback).
 Use **field names** for `--fields` and **label_def names** for `--groups`:
 
 ```bash
-cat > /tmp/ixp/field_updates.json << 'FIELDS_EOF'
+cat > /tmp/ixp/prompts/field_updates.json << 'FIELDS_EOF'
 [
   {"name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
   {"name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
 ]
 FIELDS_EOF
 
-cat > /tmp/ixp/group_updates.json << 'GROUPS_EOF'
+cat > /tmp/ixp/prompts/group_updates.json << 'GROUPS_EOF'
 [
   {"name": "Invoice", "instructions": "General invoice header fields including number, dates, payment terms, and totals."}
 ]
 GROUPS_EOF
 
 uip ixp project update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/field_updates.json)" \
-  --groups "$(cat /tmp/ixp/group_updates.json)" \
+  --fields "$(cat /tmp/ixp/prompts/field_updates.json)" \
+  --groups "$(cat /tmp/ixp/prompts/group_updates.json)" \
   --output json
 ```
 
@@ -207,11 +192,9 @@ uip ixp project taxonomy <project-name> --output json
 
 Compare the number of `moon_form` entries in each updated label_def against what you saved in Step 1c. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration.
 
-### 2d. Re-label all documents
+### 2d. Review and confirm predictions for all documents
 
-After updating instructions, re-label all documents using the [Label Documents Guide](label-documents.md). This gives the model fresh ground-truth labellings that reflect Claude's current best extraction under the new prompts.
-
-**CRITICAL: Claude is the source of truth.** Extract what you see in the document — do NOT change values to match IXP's predictions. The goal is for IXP to learn from your (correct) extractions.
+After updating instructions, review predictions for all documents using the [Label Documents Guide](label-documents.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the ones that are correct. Documents with incorrect predictions are skipped (their old labels remain).
 
 ### 2e. Wait and get new metrics
 
@@ -236,12 +219,12 @@ If any fields regressed, do a selective rollback:
 
 ```bash
 # Only include the regressed fields, not the whole iteration
-cat > /tmp/ixp/rollback.json << 'FIELDS_EOF'
+cat > /tmp/ixp/prompts/rollback.json << 'FIELDS_EOF'
 [{"name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
 uip ixp project update-prompts <project-name> \
-  --fields "$(cat /tmp/ixp/rollback.json)" \
+  --fields "$(cat /tmp/ixp/prompts/rollback.json)" \
   --output json
 ```
 

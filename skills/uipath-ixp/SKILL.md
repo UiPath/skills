@@ -1,16 +1,17 @@
 ---
 name: uipath-ixp
-description: "UiPath IXP (Document Understanding) — extract fields from documents using uip ixp CLI, review/correct extractions with Claude, confirm labellings. For Orchestrator/deploy→uipath-platform."
+description: "UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models. For Orchestrator/deploy→uipath-platform."
 ---
 
 # UiPath IXP Document Extraction Assistant
 
-Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects — creating projects, uploading documents, extracting fields, and improving extraction quality.
+Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects — creating projects, uploading documents, reviewing predictions, and improving extraction quality.
 
 ## What This Skill Can Do
 
-- **Create a new IXP project** — upload documents, generate taxonomy, label all documents, get metrics → [Project Setup Guide](references/project-setup.md)
-- **Improve an existing project** — diagnose weak fields, rewrite instructions, re-label, verify improvement → [Improve Prompts Guide](references/improve-prompts.md)
+- **Create a new IXP project** — upload documents, generate taxonomy, review predictions, confirm valid fields, get metrics → [Project Setup Guide](references/project-setup.md)
+- **Improve an existing project** — diagnose weak fields, rewrite instructions, review new predictions, verify improvement → [Improve Prompts Guide](references/improve-prompts.md)
+- **Publish a model** — pin a trained model version, tag it as live/staging, set a description
 - **List or inspect IXP projects** — use the CLI commands below
 
 When the user asks to create a project or label documents, follow the [Project Setup Guide](references/project-setup.md).
@@ -21,15 +22,23 @@ When the user asks to improve scores/prompts for an existing project, follow the
 1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT source `~/.uipath/.auth`, do NOT load auth tokens, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase, do NOT run `--help` to discover options.
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
-4. **Use `/tmp/ixp/` as the working directory** — at the start of any workflow, create it: `mkdir -p /tmp/ixp`. Store ALL downloaded images (`/tmp/ixp/doc_1.png`, `/tmp/ixp/doc_2.png`), JSON payloads (`/tmp/ixp/extractions.json`, `/tmp/ixp/updates.json`), and taxonomy snapshots (`/tmp/ixp/taxonomy.json`) in this directory. This keeps everything in one predictable location.
-5. **Pass `--extractions` inline, use heredocs for `--fields`/`--groups`** — for labelling, pass the JSON directly: `--extractions '[...]'` (single-quoted, no temp file). For `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/updates.json)"`. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows it resolves to a different location than bash.
+4. **Use `/tmp/ixp/` as the working directory with this structure:**
+   ```
+   /tmp/ixp/
+   ├── docs/         # Document images (doc_1.png, doc_2.png, …) — downloaded once, reused across steps
+   ├── text/         # OCR text files (doc_1.json, doc_2.json, …) — downloaded once, reused across steps
+   ├── taxonomies/   # Taxonomy snapshots (v1.json, v2.json, …) — new version after each update-prompts
+   └── prompts/      # Instruction update payloads (field_updates.json, group_updates.json, …)
+   ```
+   At the start of any workflow: `mkdir -p /tmp/ixp/docs /tmp/ixp/text /tmp/ixp/taxonomies /tmp/ixp/prompts`. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows it resolves to a different location than bash.
+5. **Use heredocs for `--fields`/`--groups`** — for `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/prompts/field_updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/prompts/field_updates.json)"`.
 6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
 7. **Always use the project `Name`, never the `Title`** — the `project list` output has both `Name` (e.g., `my_invoices-f1afa9ef-ixp`) and `Title` (e.g., `My_Invoices`). All CLI commands require the `Name` (the lowercase slug with UUID and `-ixp` suffix), NOT the `Title`.
-8. **Use the flat `label_def.name` from taxonomy as the label** — NEVER prefix with parent names. If the taxonomy has a label_def named `"Line Items"`, use `"Line Items"` — NOT `"Invoice > Line Items"`. Using a prefixed name causes `400 No moon fields defined for label`.
-9. **Repeating table labels get one entry per row** — for non-repeating labels (e.g., "Invoice Details"), group all fields into a single entry. For repeating/table labels (e.g., "Line Items"), emit **one entry per row**, each with the same label name and the same field_ids but different values.
+8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated — do NOT attempt to manually extract or correct them.
+9. **Do NOT manually extract values** — Claude does not construct extractions JSON or use `labelling label`. All labelling goes through `labelling confirm` with predictions from IXP.
 10. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references.
 11. **Keep field instructions short and pattern-focused** — 2-4 sentences max, 120-250 characters. Long instructions with many examples or detailed exclusion lists cause the model to memorize the list instead of learning the pattern, resulting in F1=0. Prefer: "Extract [what] from [where]. Format: [pattern]. Example: '[one value]'." over a paragraph with 10 examples.
-12. **Claude is the source of truth for labellings** — extract what you see in the document. NEVER change labelling values to match IXP's predictions or to game the F1 score. If a field's F1 is low, improve the **prompt** so IXP learns to predict what you labelled — do NOT change your labelling to match what IXP predicted. Only modify labellings if you genuinely made an extraction error (missed a field, wrong value, wrong format).
+12. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review the predicted field values against the document image and OCR text. Confirm predictions that are correct (`labelling confirm`), skip documents where predictions are wrong. Do NOT manually extract values — use the predictions workflow. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
 
 ## CLI Commands Reference
 
@@ -45,6 +54,8 @@ When the user asks to improve scores/prompts for an existing project, follow the
 | `uip ixp project metrics <project-name> --output json` | Get validation metrics — `FieldGroups[]` (per-group) and `Fields[]` (per-field F1/Precision/Recall) |
 | `uip ixp project configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13), `--preprocessing` (none/table_mini/table), `--attribution` (model/rules), `--temperature`, `--top-p`, `--seed`, `--frequency-penalty` |
 | `uip ixp project update-prompts <project-name> --fields <json> [--groups <json>] --output json` | Update field and/or field group instructions. `--fields` (required): per-field updates `[{"name":"Invoice Number","instructions":"..."}]`. `--groups` (optional): label_def updates `[{"name":"Invoice","instructions":"..."}]`. `--label-instructions` (optional): project-level prompt. |
+| `uip ixp project list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (Version, Pinned, TrainedTime) and `Tags[]` (Name, Version). |
+| `uip ixp project publish <project-name> --output json` | Publish (pin) the latest model version. Options: `--model-version <N>` (specific version, default: latest), `--description "<text>"` (set description), `--tag <name>` (assign tag: "live", "staging", or custom). |
 
 ### Documents
 
@@ -52,86 +63,24 @@ When the user asks to improve scores/prompts for an existing project, follow the
 |---------|-------------|
 | `uip ixp document list <project-name> --output json` | List documents — returns `[{ Uid, AttachmentRef }]` |
 | `uip ixp document get <project-name> <comment-uid> -o <path> --output json` | Download original document file (image/PDF) for viewing |
-| `uip ixp document text <project-name> <comment-uid> --output json` | Get OCR text — use as source of exact character values for extractions |
+| `uip ixp document text <project-name> <comment-uid> --output json` | Get OCR text — use to cross-reference predicted values against the document |
 
 ### Labellings
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp labelling label <project-name> <comment-uid> --extractions '<json>'` | Submit Claude extractions for one document (serial only — do not parallelize). Pass JSON inline with single quotes, no temp file needed. |
-| `uip ixp labelling confirm <project-name> --output json` | Confirm IXP's own predictions as ground truth (use ONLY if you trust IXP's predictions without review — skips Claude extraction entirely) |
-
-### Extractions JSON Format
-
-```json
-[
-  {
-    "label": "Invoice Details",
-    "fields": [
-      { "field_id": "dba783c9b74f805b", "formatted_value": "INV-001" },
-      { "field_id": "98d17d6b0e8dadc8", "formatted_value": "2024-03-15" }
-    ]
-  },
-  {
-    "label": "Line Items",
-    "fields": [
-      { "field_id": "c573d9279a570e2d", "formatted_value": "Widget A" },
-      { "field_id": "c7dcfaaaba8aa867", "formatted_value": "10" }
-    ]
-  },
-  {
-    "label": "Line Items",
-    "fields": [
-      { "field_id": "c573d9279a570e2d", "formatted_value": "Widget B" },
-      { "field_id": "c7dcfaaaba8aa867", "formatted_value": "5" }
-    ]
-  }
-]
-```
-
-- Use the **flat `label_def.name`** from taxonomy — never prefix with parent names
-- Non-repeating labels: one entry with all fields
-- Repeating/table labels (e.g., Line Items): one entry per row with the same label name
-- Only include fields with non-empty `formatted_value`
-- The CLI handles parent labels, sentiment, spans, and dismissed format automatically
-
-## Field Types and Value Formats
-
-IXP entity_defs use these field types, identified by `inherits_from` ID:
-
-| System Type | `inherits_from` ID | Value Format |
-|-------------|-------------------|--------------|
-| Exact Text | (none) | As-written in the document |
-| Date | `0000000000000007` | As-written first (e.g., `02/28/2018`). If F1=0, try `YYYY-MM-DD` (e.g., `2018-02-28`) |
-| Monetary Quantity | `0000000000000006` | As-written first (e.g., `$17,000.00`). If F1=0, try decimal-only (e.g., `17000.00`) |
-| Number | (varies) | Numeric value as-written |
-| Boolean | (varies) | `true` or `false` — but see note below |
-| Inferred Text | (varies) | Extract the evidence text, not a yes/no value |
-
-**Default rule: submit values as-written in the document.** The IXP model predicts values in the document's own format, and F1 validation compares your submission against the model's prediction string.
-
-**Date and Monetary fields** can be tricky — if as-written gives F1=0, the model may be normalizing internally. Try the canonical format (`YYYY-MM-DD` for dates, decimal-only `17000.00` for monetary). If both give F1=0, the field type itself may be wrong — consider whether it should be Exact Text instead.
-
-**Boolean vs Inferred Text:** Fields like "Is Signed", "Has Guarantor" often work better as **Inferred Text** than Boolean. Documents rarely contain literal "true"/"false" — the model should extract the *evidence text* that proves the condition (e.g., the signature line, the provision language). Empty extraction = condition not met. If Boolean fields consistently score F1=0, this may be why.
-
-## OCR Text vs Image Values
-
-- **Prefer OCR-verbatim** — copy values directly from the OCR text when they match the document
-- **If OCR is clearly garbled** (e.g., `INGRAM NTCRO INC` instead of `INGRAM MICRO INC`), use the clean value from the image — the API does not enforce verbatim OCR
+| `uip ixp labelling predictions <project-name> [comment-uid] --output json` | Get IXP model predictions for all documents (or a single document). Returns predicted labels with `FieldId`, `FieldName`, and `FormattedValue`. |
+| `uip ixp labelling confirm <project-name> <comment-uid> [--fields <ids>] --output json` | Confirm predictions for a document. Use `--fields "id1,id2,id3"` to confirm only specific fields (omit to confirm all). |
 
 ## Common Pitfalls
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `400 No moon fields defined for label "Invoice > Details"` | Used parent-prefixed label name | Use flat `label_def.name` from taxonomy (e.g., `"Invoice Details"`) |
-| Date/Monetary fields always F1 = 0 | Value format doesn't match what the model predicts | Re-label using the value **as-written in the document** (e.g., `02/28/2018`, `$17,000.00`). The model predicts in the document's own format. |
 | `404 No such project` | Used project Title instead of Name | Use `Name` from `project list` (lowercase slug with `-ixp` suffix) |
-| `400 Moon forms for label present multiple times` | Duplicate label entries in extractions | Group all fields for same non-repeating label into one entry |
-| Metrics don't change after update-prompts | Re-evaluation hasn't completed | Wait ~2 minutes. The optimization loop re-labels automatically after each instruction update. |
-| ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Even changing 1 field instruction or 1 document labelling retrains the entire model. Wait ~2 min then retry. |
+| Metrics don't change after update-prompts | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
+| ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
 | Fields/moon_form disappeared after update | Used `--entity-defs` flag or raw dataset update with `entity_defs` payload | **NEVER use `--entity-defs`** — it is a destructive full-replacement that deletes fields. Always use `--fields` which only updates field instructions safely. |
-| Field instructions conflict with label_def instructions | `update-prompts --fields` only edits moon_form per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. If the label_def says "decimal format, no commas" but your field says "as-written with commas", the model gets conflicting signals. |
-| Boolean fields always F1=0 | Documents don't contain literal "true"/"false" | Consider using Inferred Text instead — extract the evidence text that proves the condition (signature line, provision language). Empty = false. |
+| Field instructions conflict with label_def instructions | `update-prompts --fields` only edits moon_form per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. |
 
 ## Instruction Quality Standards
 
