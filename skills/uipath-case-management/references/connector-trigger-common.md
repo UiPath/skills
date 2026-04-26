@@ -82,14 +82,64 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 {"parentFolderId": "AAMkADNm..."}
 ```
 
-**filter** — translate SDD filter criteria using `filterFields` from Step 3. Use JMESPath syntax. Supports `=vars.X` for runtime case variable references:
+**filter** — translate SDD filter criteria using `filterFields` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI converts the tree to a JMESPath expression automatically.
 
-| Pattern | JMESPath |
+#### Filter tree shape
+
+```json
+{
+  "groupOperator": 0,
+  "index": 0,
+  "filters": [
+    {
+      "id": "<fieldName from filterFields>",
+      "operator": "<PascalCase operator>",
+      "value": { "value": "<literal>", "rawString": "\"<literal>\"", "isLiteral": true }
+    }
+  ],
+  "groups": []
+}
+```
+
+- `groupOperator`: `0` (And) or `1` (Or) — combines sibling filters and groups
+- `filters[]`: leaf conditions. `id` must be a field name from `filterFields` (Step 3)
+- `groups[]`: nested sub-trees for mixed AND/OR logic (empty for simple cases)
+
+#### Operators
+
+| Pattern | Operator |
 |---|---|
-| Exact match (static) | `(fieldName == 'value')` |
-| Exact match (dynamic variable) | `(fieldName == '=vars.variableName')` |
-| Substring match | `(contains(fieldName, 'value'))` |
-| Multiple conditions | `(fieldA == 'x' && fieldB == 'y')` |
+| Exact match | `"Equals"` |
+| Not equal | `"NotEquals"` |
+| Substring match | `"Contains"` |
+| Does not contain | `"NotContains"` |
+| Starts with | `"StartsWith"` |
+| Greater than | `"GreaterThan"` |
+| Less than | `"LessThan"` |
+| Is empty | `"IsEmpty"` |
+
+#### Examples
+
+Single filter (AND with one leaf):
+```json
+{ "groupOperator": 0, "index": 0, "filters": [
+    { "id": "subject", "operator": "Contains", "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }
+], "groups": [] }
+```
+
+Multiple conditions (AND):
+```json
+{ "groupOperator": 0, "index": 0, "filters": [
+    { "id": "project", "operator": "Equals", "value": { "value": "PROJ", "rawString": "\"PROJ\"", "isLiteral": true } },
+    { "id": "issuetype", "operator": "Equals", "value": { "value": "Bug", "rawString": "\"Bug\"", "isLiteral": true } }
+], "groups": [] }
+```
+
+No filter (trigger fires on all events): omit `filter` from the tasks.md entry entirely.
+
+#### Dynamic variable limitation
+
+The filter tree only supports `isLiteral: true` values. When a filter requires runtime case variable references (`=vars.X`), write the `body.filters.expression` JMESPath string directly and leave `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
 
 Only use field names that appear in `filterFields`. If a filter cannot be translated unambiguously, **AskUserQuestion**.
 
@@ -178,16 +228,16 @@ uip case tasks describe --type connector-trigger \
 ### essentialConfiguration
 
 ```
-=jsonString:{"essentialConfiguration":{"instanceParameters":{"connectorKey":"<connector-key>","objectName":"<object-name>","activityType":"CuratedWaitFor","version":"<Config.version>","eventOperation":"<enrichment.operation>","eventMode":"<event-mode>","supportsStreaming":<Config.supportsStreaming>},"objectName":"<object-name>","packageVersion":"<Config.version>","connectorVersion":"<enrichment.connectorVersion>","executionType":null,"httpMethod":null,"path":null,"filter":null}}
+=jsonString:{"essentialConfiguration":{"instanceParameters":{"connectorKey":"<connector-key>","objectName":"<object-name>","activityType":"CuratedWaitFor","version":"<Config.version>","eventOperation":"<enrichment.operation>","eventMode":"<event-mode>","supportsStreaming":<Config.supportsStreaming>},"objectName":"<object-name>","packageVersion":"<Config.version>","connectorVersion":"<enrichment.connectorVersion>","executionType":null,"httpMethod":null,"path":null,"filter":<filter-tree-or-null>}}
 ```
 
 > **Critical:** `activityType` MUST be `"CuratedWaitFor"` — NOT `Config.activityType` (which is `"CuratedTrigger"`).
 
-> `filter` is always `null` in essentialConfiguration. The filter goes in `inputs[].body.filters.expression` only.
+> When a structured filter tree is provided (from §7), store it in `essentialConfiguration.filter` so Studio Web can round-trip the filter UI. The derived JMESPath expression goes in `inputs[].body.filters.expression`. When no filter is needed, `filter` stays `null`.
 
 ### Input body (from tasks.md values)
 
-If `input-values` has event parameters, convert to JMESPath + combine with `filter`:
+If `input-values` has event parameters, the CLI auto-generates the JMESPath expression from the structured filter tree. The body contains:
 
 ```json
 {
@@ -231,8 +281,10 @@ Skip both sync steps if `get-connection` failed (no bindings were written).
 ## What NOT to Do (shared)
 
 - **Do NOT use `CuratedTrigger`** in essentialConfiguration. It MUST be `CuratedWaitFor`.
-- **Do NOT put filter in `essentialConfiguration.filter`.** It stays `null`. Filter goes in `body.filters.expression`.
+- **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree (§7); the CLI derives the expression automatically.
+- **Do NOT use `filterExpression` as a CLI input.** The CLI rejects raw `filterExpression` strings (MST-8802).
 - **Do NOT add `body.parameters`.** Only `body.filters.expression` + `body.queryParams`.
+- **Never reuse a reference ID from a prior case or session.** Reference IDs (mailbox folders, Slack channels, Jira projects) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources execute list` against the current `--connection-id`.
 - **Do NOT auto-inject `entryConditions`** (for tasks). Step 10 handles them.
 
 ## Known Limitation (shared)

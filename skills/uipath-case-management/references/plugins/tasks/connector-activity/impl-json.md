@@ -287,6 +287,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT omit `file` input** when `enrichment.multipartParameters` has a file entry. Include it even when empty.
 - **Do NOT add `data.name`.** The FE does not use it for connector tasks.
 - **Do NOT auto-inject `entryConditions`.** Step 10 handles them — injecting here creates duplicates.
+- **Never reuse a reference ID from a prior case or session.** Reference IDs (e.g., Jira project keys, Slack channel IDs) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources execute list` against the current `--connection-id`.
 
 ## Known Limitation
 

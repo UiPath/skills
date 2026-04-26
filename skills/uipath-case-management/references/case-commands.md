@@ -44,7 +44,7 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 
 ---
 
-> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the case in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-platform](/uipath:uipath-platform) for `solution publish` commands.
+> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the case in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See the `uipath-platform` skill for `solution publish` commands.
 
 ## uip solution resource refresh
 

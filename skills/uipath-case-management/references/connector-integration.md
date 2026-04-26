@@ -114,6 +114,8 @@ uip maestro case triggers add-event <file> \
 
 ## Filter Expression Syntax
 
+> **Note:** The direct JSON write path uses structured filter trees (see [connector-trigger-common.md §7](connector-trigger-common.md#7-build-input-values-and-filter)) instead of flat filter expressions. The CLI `--filter` flag is retained for backward compatibility but is not used in the JSON write path. The CLI internally converts event parameters to a structured filter tree.
+
 Trigger `--filter` expressions use the connector's filter DSL. Common patterns:
 
 | Pattern | Example |
