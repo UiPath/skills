@@ -7,7 +7,7 @@ Complete workflow for creating a new IXP project, labelling all documents, and g
 If the user provides a name, use it. If not, generate a temporary name (e.g., `ixp_project_NNNN` with a random number) — the project will be renamed in Step 3 after the taxonomy reveals the document type.
 
 ```bash
-mkdir -p /tmp/ixp
+mkdir -p /tmp/ixp/docs /tmp/ixp/text /tmp/ixp/taxonomies /tmp/ixp/prompts
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
@@ -19,7 +19,7 @@ Before labelling, configure the extraction model based on what the documents loo
 
 ```bash
 uip ixp document list <project-name> --output json
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/sample.png --output json
+uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/docs/sample.png --output json
 ```
 
 View with the **Read tool**, then decide:
