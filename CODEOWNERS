@@ -64,3 +64,6 @@
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath
 /tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath
+
+# Access Policy Governance skill (CLI-based ToolUsePolicy management)
+/skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
