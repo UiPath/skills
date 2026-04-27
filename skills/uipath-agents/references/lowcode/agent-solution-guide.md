@@ -610,6 +610,7 @@ Create a tool resource file at `AgentA/resources/Agent B/resource.json`:
     "folderPath": "solution_folder"  // ← always solution_folder for solution resources
   },
   "guardrail": {
+    // Tool-level placeholder. Use agent.json guardrails[] for manual guardrail authoring.
     "policies": []
   },
   "argumentProperties": {}
