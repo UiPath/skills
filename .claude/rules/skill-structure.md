@@ -29,7 +29,7 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ### Validation Rules
 
 - `name` MUST exactly match the parent folder name
-- `description` MUST be under 250 characters. Claude Code truncates non-bundled skill descriptions at 250 chars in the system prompt — anything beyond is invisible to the model
+- `description` MUST be under 1024 characters. Claude Code truncates `description` + `when_to_use` at 1,536 chars in the skill listing ([source](https://code.claude.com/docs/en/skills.md)); 1024 is the repo cap to keep descriptions focused and leave headroom
 - `description` MUST start with `[PREVIEW]` when the skill is first created. Remove the tag only when the skill is considered stable
 - `description` MUST front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters
 - `description` MUST include compact redirects for commonly confused sibling skills using `→` notation (e.g., `For XAML→uipath-rpa`)

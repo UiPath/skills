@@ -123,14 +123,14 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ---
 ```
 
-> **250-character limit.** Claude Code truncates non-bundled skill descriptions at 250 characters in the system prompt — anything beyond is invisible to the model. The pre-commit hook enforces this. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters.
+> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 
 | Field | Description |
 |-------|-------------|
 | `name` | Exact skill identifier, must match the folder name |
-| `description` | Under 250 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
+| `description` | Under 1024 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
 
 **Optional frontmatter fields:**
 
@@ -213,7 +213,7 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 
 ### Git Hooks
 
-This repository uses pre-commit hooks to validate skill descriptions (250-character limit). To enable them:
+This repository uses pre-commit hooks to validate skill descriptions (1024-character limit). To enable them:
 
 ```bash
 bash scripts/setup-hooks.sh
@@ -283,7 +283,7 @@ Before submitting your PR, verify:
 
 ### SKILL.md
 - [ ] Frontmatter has `name` matching the folder name
-- [ ] Frontmatter `description` is under 250 characters (enforced by pre-commit hook)
+- [ ] Frontmatter `description` is under 1024 characters (enforced by pre-commit hook)
 - [ ] Frontmatter `description` front-loads identity and unique signals, uses `→` redirects (not verbose TRIGGER/DO NOT TRIGGER)
 - [ ] Critical Rules section exists with numbered, actionable rules
 - [ ] CLI commands include exact flags and `--output json` where appropriate
