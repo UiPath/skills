@@ -148,6 +148,10 @@ uip maestro flow job status <job-key> --output json
 uip maestro flow job traces <job-key> --output json
 ```
 
+## uip maestro flow instance / uip maestro flow incident
+
+See [troubleshooting-guide.md](troubleshooting-guide.md) for the full diagnostic workflow and command reference for `instance` and `incident` subcommands.
+
 ## uip maestro flow node / uip maestro flow edge
 
 See [flow-editing-operations-cli.md](flow-editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
