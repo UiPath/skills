@@ -125,18 +125,19 @@ Review the access policy to be created:
 </details>
 ```
 
-**Scope line — what to fill in.** The Scope line tells the user which organization + tenant the policy will be created in. Read all four values from `~/.uipath/.auth`:
+**Scope line — what to fill in.** The Scope line tells the user which organization + tenant the policy will be created in. Use [access-policy-commands.md — Auth context for policy payloads](./access-policy-commands.md#auth-context-for-policy-payloads):
 
 ```bash
-grep -E "UIPATH_ORGANIZATION_NAME|UIPATH_TENANT_NAME|UIPATH_ORGANIZATION_ID|UIPATH_TENANT_ID" ~/.uipath/.auth
+uip login status --output json
+awk -F= '$1 ~ /^UIPATH_(ORGANIZATION|TENANT)_(ID|NAME)$/ {print $1 "=" substr($0, index($0, "=") + 1)}' "$HOME/.uipath/.auth"
 ```
 
-- `UIPATH_ORGANIZATION_NAME` → `<ORG_NAME>`
-- `UIPATH_TENANT_NAME` → `<TENANT_NAME>`
+- `Data.Organization` (preferred) or `UIPATH_ORGANIZATION_NAME` → `<ORG_NAME>`
+- `Data.Tenant` (preferred) or `UIPATH_TENANT_NAME` → `<TENANT_NAME>`
 - `UIPATH_ORGANIZATION_ID` → `<ORG_UUID>` (matches `organizationId` in the JSON payload)
 - `UIPATH_TENANT_ID` → `<TENANT_UUID>` (matches `tenantId` in the JSON payload)
 
-If the org / tenant names are missing from `~/.uipath/.auth`, show only the UUIDs on the second line and note "(name unavailable)". Do **not** skip the Scope line — the user must always see which environment is about to be mutated. If the user expected a different org / tenant, they should `cancel` and re-login (`uip login --authority …` or `uip login --tenant …`).
+If the org / tenant names are unavailable, show only the UUIDs on the second line and note "(name unavailable)". Do **not** skip the Scope line — the user must always see which environment is about to be mutated. If the user expected a different org / tenant, they should `cancel` and re-login (`uip login --authority …` or tenant selection). Never print `UIPATH_ACCESS_TOKEN` or the full auth file while filling this line.
 
 Then output the full JSON as a ```json code block in the chat (do NOT rely on the file link alone — the user may not be able to open it).
 
@@ -265,7 +266,7 @@ Review access-policy update:
   Working file: [access-policy-<id>-working.json](/tmp/access-policy-<id>-working.json)
 ```
 
-The Scope line uses the same source as the create gate — read from `~/.uipath/.auth` (see [Step 4 — Single review gate](#step-4--single-review-gate) above for the full source-mapping). For an update, the values come from the policy's stored `organizationId` / `tenantId` (which must match the logged-in tenant — if they do not, the update will fail at the API).
+The Scope line uses the same safe auth-context workflow as the create gate (see [Step 4 — Single review gate](#step-4--single-review-gate) above for the full source mapping). For an update, display the stored `organizationId` / `tenantId` from the working file and the current login names from `uip login status --output json` when available. If the stored IDs do not match the active login context, stop before `update` and ask the user to switch tenants; otherwise the API will reject the mutation or target the wrong environment.
 
 For each row, show `(unchanged)` if the field was not modified. Output the full updated JSON as a ```json code block in the chat as well.
 

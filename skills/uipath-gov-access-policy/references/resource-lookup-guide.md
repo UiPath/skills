@@ -181,8 +181,8 @@ uip or users current --output json
 
 A robot is a kind of user in the UiPath identity model (Critical Rule #16). To use a robot in `actorRule`, the policy emits `type: "User"` with the robot's **linked user UUID**, never `type: "Robot"`. Resolve the robot to its user identity in three steps:
 
-1. **Find the robot** via the [REST API fallback](#5-rest-api-fallback-for-robot-lookups) below — read the `Username` field from the matching robot record.
-2. **Resolve the username to a User UUID** with `uip or users list --output json --output-filter "Data[?UserName == '<USERNAME>']"`. The user `Key` is the UUID to use in the policy.
+1. **Ask for the robot's linked username / email** from Orchestrator or Admin. Do not bypass the CLI by sourcing auth tokens into direct REST calls.
+2. **Resolve the username / email to a User UUID** with `uip or users list --output json --output-filter "Data[?UserName == '<USERNAME>']"`. The user `Key` is the UUID to use in the policy.
 3. **Emit `type: "User"`** in the policy JSON — see [plugins/actor/impl.md — Example E](./plugins/actor/impl.md#e-robot-only-trigger-resolves-to-user).
 
 If the robot has no linked user (rare for modern Orchestrator deployments), surface this as an Open question on the Phase 1 Spec and stop — do not invent a UUID.
@@ -210,7 +210,7 @@ Resource Catalog tags are tenant-scoped labels that feed `selectors[].tags.value
 uip admin rcs tag list --output json
 ```
 
-With no `--tenant`, the command targets the tenant in the current `uip login` context — and that is **also** the tenant the access policy will be authored in (the policy's `tenantId` is read from `~/.uipath/.auth`). This default is the only mode that proves a tag will resolve at evaluation time. Run it before approving any Spec or update that introduces a tag the user named; if the tag is missing from `Data.value[].displayName`, prompt the user to pick a returned tag, or to add the missing one to the Resource Catalog of the policy's tenant before retrying. Never invent a tag, and never silently substitute a near-match.
+With no `--tenant`, the command targets the tenant in the current `uip login` context — and that is **also** the tenant the access policy will be authored in (the policy's `tenantId` comes from the safe auth-context workflow). This default is the only mode that proves a tag will resolve at evaluation time. Run it before approving any Spec or update that introduces a tag the user named; if the tag is missing from `Data.value[].displayName`, prompt the user to pick a returned tag, or to add the missing one to the Resource Catalog of the policy's tenant before retrying. Never invent a tag, and never silently substitute a near-match.
 
 | Flag | Required? | Purpose |
 |------|-----------|---------|
@@ -240,40 +240,34 @@ With no `--tenant`, the command targets the tenant in the current `uip login` co
 
 ### Tenant alignment
 
-The access-policy `tenantId` is read from `~/.uipath/.auth` (`UIPATH_TENANT_ID`) and pinned at `create` time — the policy can only ever resolve tags from **that** tenant at evaluation.
+The access-policy `tenantId` is gathered from the safe auth-context workflow and pinned at `create` time — the policy can only ever resolve tags from **that** tenant at evaluation.
 
 - **Default (no `--tenant`)** — verify tags for the in-flight policy. Use this for every Phase 1 / Phase 2 confirmation prompt.
 - **`--tenant <OTHER_NAME>`** — comparison only (e.g. "do these tag names also exist in our staging tenant?"). Never use a result from another tenant as evidence that a tag will work in the policy's tenant. If the user explicitly asks to check a different tenant, run the call but surface a one-line warning: `Tags from <OTHER_NAME> do not affect a policy authored in <POLICY_TENANT>; copy the tag in the Resource Catalog of <POLICY_TENANT> if it is missing there.`
 
-To recover the policy's tenant name (for the warning above) without echoing the bearer token:
+To recover the policy's tenant name for the warning above, prefer login status:
 
 ```bash
-grep "^UIPATH_TENANT_NAME=" ~/.uipath/.auth | cut -d= -f2
+uip login status --output json
 ```
 
 ---
 
-## 5. REST API fallback (for Robot lookups)
+## 5. Robot lookups resolve to User identity
 
-`Robot` lookups are not wrapped by `uip or`. Fall back to Orchestrator REST directly to find the robot's `Username`, which then feeds a `uip or users list` call (see [Robots resolve to `type: User`](#robots-resolve-to-type-user) above). **Never `cat ~/.uipath/.auth` into the transcript** — the file contains the bearer token. Instead, source it into environment variables inside a sub-shell so the token stays out of logs:
+`Robot` lookups are not wrapped by `uip or` in all CLI versions. Do **not** bypass the CLI by sourcing auth tokens into direct REST calls from this skill. Instead, resolve robot intent through the linked user identity:
 
-```bash
-# SECURITY: sources the auth env into a sub-shell only; the token never prints.
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
-  "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Robots?\$top=50&\$select=Id,Key,Name,Username,Type" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "Accept: application/json"' \
-  | jq '.value[] | {Key, Name, Username, Type}'
-```
-
-The `Username` field is what you feed to `uip or users list` to get the User UUID for the policy.
+1. Ask the user for the robot's linked username, email, or user display name as shown in Orchestrator / Admin.
+2. Run `uip or users list --output json` with the broadest safe filter the CLI supports, then match the returned user record.
+3. Use the User UUID in `actorRule.values[]` with `type: "User"`.
+4. If the user cannot identify the linked user, treat the robot identity as a blocking Open question in the Phase 1 Spec. Do not fabricate a UUID and do not print auth tokens while troubleshooting.
 
 | Identity type | Endpoint / source | What to do with it |
 |---------------|------------------|--------------------|
-| **Robot** (intermediate lookup) | `orchestrator_/odata/Robots` — read `Username` | Resolve `Username` → User UUID via `uip or users list`, then emit `type: "User"`. |
+| **Robot** (intermediate lookup) | User-supplied linked username / email from Orchestrator or Admin | Resolve username / email → User UUID via `uip or users list`, then emit `type: "User"`. |
 | **Group** | Identity service — ask the user to paste the UUID from Admin portal | Use directly as `type: "Group"`. |
 
-If the call returns `401 Unauthorized`, the token expired — ask the user to `uip login` and retry. Never commit or echo the token.
+If `uip or users list` returns an authorization error, ask the user to `uip login` and retry. Never commit or echo tokens.
 
 ---
 
@@ -298,6 +292,6 @@ If the call returns `401 Unauthorized`, the token expired — ask the user to `u
 | A user UUID by username / display name | `uip or users list --output json` → filter on `UserName` or `Name` |
 | The currently authenticated user's UUID | `uip or users current --output json` |
 | A Resource Catalog tag name (for `tags.values[]`) | `uip admin rcs tag list --output json` — paste each row's `displayName` into `tags.values[]`. Do NOT pass `--tenant` when verifying tags for the policy under construction (see [§ 4 Tenant alignment](#tenant-alignment)). |
-| A robot's User UUID (for `actorRule`) | REST `GET /orchestrator_/odata/Robots` to find `Username` (see [§ 5](#5-rest-api-fallback-for-robot-lookups)), then `uip or users list` to resolve `Username` → User UUID |
+| A robot's User UUID (for `actorRule`) | Ask for the robot's linked username / email from Orchestrator or Admin (see [§ 5](#5-robot-lookups-resolve-to-user-identity)), then `uip or users list --output json` to resolve that identity → User UUID |
 | A group UUID | Admin portal — paste into the Phase 1 Spec as an Open question |
 | An external application UUID | **Not supported** by access policies today (Critical Rule #16) — route to a `User` or `Group` workaround |
