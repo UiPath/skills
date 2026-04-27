@@ -71,6 +71,70 @@ An agent or automation is about to write to an external system — a human must 
 
 ---
 
+### Agentic output review
+An AI agent produced a document, draft, classification, or recommendation — a human must verify it before the result is used or published.
+
+| Signal phrases | Examples |
+|---|---|
+| "review AI-generated content", "human verifies before sending" | Agent-drafted emails, RCA reports, meeting summaries |
+| "check before publishing", "validate AI output" | AI-written case notes, support ticket responses |
+| "human in the loop for AI decisions" | Any LLM output going to a system of record or customer |
+
+**Insertion point:** After the agent node, before the downstream action that consumes the output.
+
+---
+
+### IT / change management approval
+A change request or access request needs human authorization before the automation executes it.
+
+| Signal phrases | Examples |
+|---|---|
+| "CAB approval", "change request", "change window" | IT change management (ServiceNow, Jira Service Management) |
+| "access request", "provision access", "grant permission" | Identity and access management workflows |
+| "runbook approval", "deployment sign-off" | DevOps release gates |
+
+**Insertion point:** After the automation prepares the change record, before it applies the change.
+
+---
+
+### HR and offer / contract workflows
+A document or decision with legal or HR significance must be reviewed before it is sent to a third party.
+
+| Signal phrases | Examples |
+|---|---|
+| "offer letter", "employment contract", "onboarding approval" | HR hiring workflows |
+| "termination review", "performance decision" | HR case management |
+| "contract terms", "counter-sign", "legal review gate" | Procurement, vendor onboarding |
+
+**Insertion point:** After document generation, before the document is dispatched.
+
+---
+
+### Customer communication approval
+An automation is about to send a message on behalf of a person or brand — a human must review tone, accuracy, or content before it goes out.
+
+| Signal phrases | Examples |
+|---|---|
+| "approve before sending", "review draft email", "check before posting" | Customer support responses, marketing emails |
+| "agent-written reply", "draft response" | Helpdesk, CRM follow-ups |
+
+**Insertion point:** After the draft is generated, before the send/post action.
+
+---
+
+### Financial transaction approval
+A monetary action above a threshold or of a certain type requires human sign-off.
+
+| Signal phrases | Examples |
+|---|---|
+| "above threshold", "over limit", "exceeds budget" | PO approval, expense reimbursement over limit |
+| "wire transfer", "payment release", "credit note" | AP/AR workflows |
+| "price override", "discount approval" | Sales quote approval |
+
+**Insertion point:** After the automation determines the transaction details, before it submits the payment or posts the entry.
+
+---
+
 ## When NOT to Recommend HITL
 
 - The process description is fully automated with no decision point (e.g. "process all invoices automatically")

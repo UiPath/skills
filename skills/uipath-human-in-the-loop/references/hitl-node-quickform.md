@@ -1,16 +1,6 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON, **or uses the CLI command**:
-
-```bash
-uip maestro flow hitl add <path/to/file.flow> \
-  --label "Invoice Review" \
-  --priority High \
-  --assignee reviewer@company.com \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"},{"name":"amount","type":"number","binding":"fetchInvoice.result.amount"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}'
-```
-
-The CLI writes the correct node JSON, adds the definition entry, and updates `variables.nodes` automatically. Use the CLI when you want a single command to handle all wiring; use direct JSON when you need fine-grained control or are batch-editing multiple nodes at once.
+The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [flow-commands.md — uip maestro flow hitl add](../../../../uipath-maestro-flow/references/flow-commands.md#uip-maestro-flow-hitl-add).
 
 ---
 

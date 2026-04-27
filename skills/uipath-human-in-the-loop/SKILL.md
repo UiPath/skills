@@ -10,10 +10,15 @@ Recognizes when a business process needs a human decision point, designs the tas
 
 ## When to Use This Skill
 
-- User describes **approval gates** — invoice approval, offer letter review, compliance sign-off
-- User describes **exception escalation** — "if confidence is low, escalate to a human"
-- User describes **write-back validation** — "human approves before agent writes to ServiceNow"
+- User describes **approval gates** — invoice approval, offer letter review, compliance sign-off, PO authorization
+- User describes **exception escalation** — "if confidence is low, escalate to a human", fraud alert review
+- User describes **write-back validation** — "human approves before agent writes to ServiceNow / SAP / CRM"
 - User describes **data enrichment** — human fills in missing fields the automation cannot resolve
+- User describes **agentic output review** — "review AI-generated email/RCA/summary before it goes out"
+- User describes **IT change or access approval** — CAB gate, runbook sign-off, access provisioning review
+- User describes **HR or contract workflow** — offer letter review, contract approval, termination sign-off
+- User describes **financial transaction approval** — payment release, price override, expense over limit
+- User describes **customer communication approval** — agent-drafted reply that needs human sign-off before sending
 - User explicitly asks to **add a HITL node**, human review step, or Action Center task
 - User is building any automation where **a human must act before the process can continue**
 
@@ -145,7 +150,11 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 ### Surface: Flow — QuickForm (inline schema only)
 
-**Option A — CLI (preferred for new nodes):**
+Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`. **Direct JSON is the default.**
+
+Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quickform.md)** — complete node JSON, definition entry, edge format, `variables.nodes` regeneration algorithm, and four worked schema conversion examples.
+
+**CLI (opt-in):** When the user explicitly requests a CLI command:
 
 ```bash
 uip maestro flow hitl add <path/to/file.flow> \
@@ -156,13 +165,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --output json
 ```
 
-The CLI writes the node, adds the definition entry, and updates `variables.nodes` automatically. After the command returns, wire the `completed` port to the next node.
-
-**Option B — Direct JSON:**
-
-Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`.
-
-Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quickform.md)** — complete node JSON, definition entry, edge format, `variables.nodes` regeneration algorithm, and four worked schema conversion examples.
+The CLI writes the node, adds the definition entry, and updates `variables.nodes` automatically. Wire the `completed` port after it returns.
 
 After writing, validate:
 

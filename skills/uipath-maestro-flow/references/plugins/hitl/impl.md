@@ -6,14 +6,16 @@ Two node types implement human-in-the-loop checkpoints. Choose based on whether 
 
 ## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
 
-This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON, or use the CLI.
+This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
 
 **Full implementation guide, JSON examples, and schema conversion rules:**
 → [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
 
 > **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
 
-### CLI Command (preferred for new nodes)
+### Adding / Editing
+
+For add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). **Direct JSON is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
 
 ```bash
 uip maestro flow hitl add <path/to/file.flow> \
@@ -24,7 +26,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --output json
 ```
 
-The command handles the full lifecycle: writes the node, adds the `uipath.human-in-the-loop` definition entry once, and regenerates `variables.nodes`. Wire the `completed` port manually after the command returns (see Edge Wiring below). Full flag reference: [flow-commands.md — uip maestro flow hitl add](../../flow-commands.md#uip-maestro-flow-hitl-add).
+Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [flow-commands.md — uip maestro flow hitl add](../../flow-commands.md#uip-maestro-flow-hitl-add).
 
 ### Quick Reference
 
@@ -48,7 +50,7 @@ The command handles the full lifecycle: writes the node, adds the `uipath.human-
         { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "outcomeType": "Negative", "action": "End" }
       ]
     },
-    "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
+    "recipient": { "channels": ["Email", "ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "priority": "Low"
   },
   "outputs": {
