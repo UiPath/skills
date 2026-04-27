@@ -39,11 +39,12 @@ llm_reviewer:
       `uip rpa get-errors` return "HelmFeatureNotAvailableException"
       (exit non-zero). The task has the agent hand-author project.json
       and call get-errors once only for skill-fidelity.
-    - `uip rpa build` can also fail — `UiPath.Testing.Activities` 25.10.0
-      generates bootloader code in `.local/` referencing
-      `UiPath.Robot.Activities.Api`, which isn't in the NuGet cache.
-      Treat a build failure due to missing `UiPath.Robot.Activities.Api`
-      as an infrastructure issue, not an agent issue.
+    - `uip rpa build` can also fail — some versions of
+      `UiPath.Testing.Activities` generate bootloader code in `.local/`
+      referencing `UiPath.Robot.Activities.Api`, which isn't always in
+      the NuGet cache. Treat a build failure due to missing
+      `UiPath.Robot.Activities.Api` as an infrastructure issue, not
+      an agent issue.
 
     Focus scoring on what the agent CAN control:
     - Are the four required files present with the right shape?
