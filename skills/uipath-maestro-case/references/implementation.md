@@ -204,7 +204,15 @@ Write the issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.
 
 ## Step 13 — Post-build prompt
 
-Once validation passes, ask the user what to do next.
+Once validation passes, report results then ask user what to do next.
+
+### Report fields
+
+1. File path of `caseplan.json`
+2. What was built — summary of stages, edges, tasks, conditions, SLA
+3. Validation status — `validate` pass/fail + remaining errors
+4. Skeleton tasks + unresolved resources — list every skeleton (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [skeleton-tasks.md](skeleton-tasks.md).
+5. Missing connections — connector tasks needing IS connections that don't exist yet
 
 Use **AskUserQuestion** with options:
 

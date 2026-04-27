@@ -2,6 +2,14 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
+## Local vs cloud commands
+
+| Commands | What | Auth |
+|----------|------|------|
+| `cases`, `stages`, `tasks`, `edges`, `var`, `sla` | Edit local `caseplan.json` | No |
+| `registry pull/list/search`, `get-connector`, `get-connection` | Registry discovery (cached after `pull`) | Yes (for `pull`) |
+| `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
+
 ---
 
 ## uip maestro case init
