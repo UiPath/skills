@@ -46,10 +46,11 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
     The words "coded" and "low-code" describe the *implementation style* of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md)).
 15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
-16. **Always use horizontal layout** — Flow uses a horizontal canvas. Place nodes left-to-right with increasing `x` values and the same `y` baseline (e.g., `y: 144`). Never stack nodes vertically.
-17. **Node positioning goes in top-level `layout`, NOT on nodes** — Do not put a `ui` block on node instances. Store position/size in the `layout.nodes` object at the top level of the `.flow` file, keyed by node `id`. See [flow-file-format.md — Layout](references/flow-file-format.md#layout).
+16. **Always run `flow tidy` after edits** — `uip maestro flow tidy <ProjectName>.flow` is the canonical layout step (Step 6). Tidy arranges nodes horizontally, sets every node's `size` to `{ "width": 96, "height": 96 }`, and recurses into subflows (`subflows[<id>].layout`). Skipping tidy is the most common cause of misshapen rectangles in Studio Web.
+17. **Don't hand-write `layout.nodes` or `subflows[<id>].layout`** — these are owned by `flow tidy`. When authoring nodes, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save. Sticky notes (`type: "stickyNote"`) are the one exception — tidy preserves their custom size and position. See [flow-file-format.md — Layout](references/flow-file-format.md#layout).
 18. **Every node that produces data MUST have `outputs` on the node instance** — Without an `outputs` block, downstream `$vars` references will not resolve at runtime. Action nodes need `output` + `error`; trigger nodes need `output` only; end/terminate nodes do not use this pattern. See [flow-file-format.md — Node outputs](references/flow-file-format.md#node-outputs). **Wrong:** relying on `outputDefinition` in `definitions` alone. **Right:** `outputs` on the node instance itself.
 19. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
+20. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See Step 2.
 
 ## Common Edits (existing flows)
 
@@ -148,9 +149,11 @@ uip login                                          # interactive OAuth (opens br
 uip login --authority https://alpha.uipath.com     # non-production environments
 ```
 
-### Step 2 — Create a solution and Flow project
+### Step 2 — Create a solution, THEN a Flow project inside it
 
-Every Flow project lives inside a solution. Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See Critical Rule #19.
+> **A Flow project cannot exist outside a solution (Critical Rule #20).** You MUST scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
+
+Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See Critical Rule #19.
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -161,6 +164,8 @@ Every Flow project lives inside a solution. Check the current directory for exis
 uip solution new "<SolutionName>" --output json
 ```
 
+This creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **You must `cd` into the new solution directory before Step 2b.**
+
 > **Naming convention:** Use the same name for both the solution and the project unless the user specifies otherwise. If the user only provides a project name, use it as the solution name too.
 
 #### 2b. Create the Flow project inside the solution folder
@@ -168,6 +173,8 @@ uip solution new "<SolutionName>" --output json
 ```bash
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName>
 ```
+
+The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
 
 #### 2c. Add the project to the solution
 
@@ -177,7 +184,30 @@ uip solution project add \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-This scaffolds a complete project inside a solution. See [references/flow-file-format.md](references/flow-file-format.md) for the full project structure.
+#### Expected layout after Steps 2a–2c
+
+```
+<cwd>/
+└── <SolutionName>/                    ← from `uip solution new`
+    ├── <SolutionName>.uipx
+    └── <ProjectName>/                 ← from `uip maestro flow init` (run from inside <SolutionName>/)
+        ├── <ProjectName>.flow         ← the file you edit
+        ├── project.uiproj
+        ├── bindings_v2.json
+        ├── entry-points.json
+        ├── operate.json
+        └── package-descriptor.json
+```
+
+**Self-check — run this before Step 3:**
+
+```bash
+ls "<directory>/<SolutionName>/<ProjectName>/<ProjectName>.flow"
+```
+
+If the file does not exist at that exact path (double-nested), Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
+
+See [references/flow-file-format.md](references/flow-file-format.md) for the full project structure.
 
 ### Step 3 — Refresh the registry
 
@@ -226,7 +256,12 @@ Common error categories:
 
 ### Step 6 — Tidy node layout
 
-After validation passes, auto-layout nodes before publishing or debugging:
+After validation passes, **always** run tidy before publishing or debugging — this is the canonical layout step (Critical Rule #16). Tidy:
+
+- Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
+- Sets every non-stickyNote node's `size` to `{ "width": 96, "height": 96 }` so Studio Web renders square nodes (skipping this leaves any non-96 dimensions intact and produces misshapen rectangles — the MST-9061 failure mode)
+- Recurses into subflows and rewrites `subflows[<id>].layout`
+- Backfills missing `position`/`size` entries
 
 ```bash
 uip maestro flow tidy <ProjectName>.flow --output json
@@ -273,6 +308,8 @@ When the build completes, present the next-step dropdown described in the [Compl
 
 ## Anti-Patterns
 
+- **Never run `uip maestro flow init` outside a solution directory** — the resulting `.flow` file MUST sit at `<Solution>/<Project>/<Project>.flow` (double-nested). Running `flow init` from a bare cwd, from the user's home, or from the parent of `<Solution>/` produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and the `uip solution project add` wiring. Always complete Step 2a first, `cd` into the solution dir, then Step 2b. Run the Step-2 self-check (`ls <Solution>/<Project>/<Project>.flow`) before continuing.
+- **Never use `--format json` on any `uip` command** — the flag is `--output json` (Critical Rule #4). `--format` produces `error: unknown option '--format'` and exit code 3 on every `uip` subcommand, not a helpful message pointing you at `--output`.
 - **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
 - **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
@@ -281,7 +318,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 - **Never use `core.logic.mock` when the resource is in the same solution** — use `--local` discovery instead. Mock placeholders are only for resources that are not in the current solution and not yet published.
 - **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.
 - **Never leave `<bindings.name>` / `<bindings.folderPath>` template placeholders on resource-node instances** — these are registry templates for `model.context[]`, not runtime values. For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl): add `model.context[]` with `=bindings.<id>` refs on the node instance AND add matching entries to the top-level `bindings[]` array. The `definitions` entry stays verbatim from the registry (Critical Rule #7 still applies). Without both pieces, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." See the resource plugin's `impl.md`.
-- **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
+- **Never skip `flow tidy` before publish or debug** — tidy is the only thing that guarantees square 96×96 nodes and a clean horizontal layout in Studio Web. Hand-written `layout` data with non-96 sizes (e.g., `{ width: 200, height: 80 }`) renders as misshapen rectangles until tidy normalizes the file (the MST-9061 failure mode). See Critical Rule #16 and Step 6.
 - **Never omit `outputs` on nodes that produce data** — action nodes need `output` + `error`, trigger nodes need `output`. The `outputDefinition` in `definitions` is for the registry schema, not for runtime binding — without `outputs` on the node instance, `$vars` references downstream will fail silently.
 - **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip maestro flow validate` once after the full build is complete (Step 5).
 - **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
