@@ -17,7 +17,7 @@ Does the skill follow the canonical layout and conventions?
 
 - SKILL.md has valid YAML frontmatter with `name` and `description`
 - `name` matches the folder name exactly
-- `description` is under 250 characters (Claude Code truncates non-bundled skill descriptions at 250 chars — run `hooks/validate-skill-descriptions.sh` to verify)
+- `description` is under 1024 characters (repo cap; Claude Code's hard truncation for `description` + `when_to_use` is 1,536 chars — run `hooks/validate-skill-descriptions.sh` to verify)
 - `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters
 - `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
 - `description` starts with `[PREVIEW]` for new/unstable skills
@@ -26,7 +26,7 @@ Does the skill follow the canonical layout and conventions?
 - Folder organization is logical (references/, assets/, scripts/)
 - No orphaned files (every file is reachable from SKILL.md)
 
-**Red flags:** missing frontmatter fields, name mismatch, description over 250 chars, verbose TRIGGER/DO NOT TRIGGER clauses, frontmatter fields nested under `metadata:`, no Critical Rules section, unreachable files.
+**Red flags:** missing frontmatter fields, name mismatch, description over 1024 chars, verbose TRIGGER/DO NOT TRIGGER clauses, frontmatter fields nested under `metadata:`, no Critical Rules section, unreachable files.
 
 ### 2. Consistency (1-5)
 
@@ -89,13 +89,13 @@ Is the skill ready for public use as a plugin?
 
 - `description` in frontmatter is detailed enough for the plugin system to match it correctly — not too broad (false triggers on unrelated requests), not too narrow (misses valid use cases)
 - `description` uses compact `→` redirects to prevent conflicts with commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
-- `description` passes the 250-character validation hook (`hooks/validate-skill-descriptions.sh`)
+- `description` passes the 1024-character validation hook (`hooks/validate-skill-descriptions.sh`)
 - The skill does not assume any state that the plugin's SessionStart hook doesn't guarantee
 - No hardcoded paths, tokens, or environment-specific assumptions
 - Works on all platforms the skill claims to support
 - CODEOWNERS entry exists
 
-**Red flags:** description that triggers on generic terms, missing `→` redirects for sibling skills, description over 250 chars, hardcoded localhost URLs or personal paths, no CODEOWNERS entry.
+**Red flags:** description that triggers on generic terms, missing `→` redirects for sibling skills, description over 1024 chars, hardcoded localhost URLs or personal paths, no CODEOWNERS entry.
 
 ## Output Format
 

@@ -2,7 +2,7 @@
 description: Pull request review checklist for new skills, skill modifications, and hook changes — invoke when reviewing or creating a PR
 ---
 
-**New skill checklist:** folder under `skills/uipath-<kebab-case>/`; `SKILL.md` present with valid YAML frontmatter; `name` matches folder name; `description` under 250 chars; Critical Rules numbered; no cross-skill references; reference files kebab-case; all relative links resolve; CODEOWNERS updated; no secrets or personal paths committed.
+**New skill checklist:** folder under `skills/uipath-<kebab-case>/`; `SKILL.md` present with valid YAML frontmatter; `name` matches folder name; `description` under 1024 chars; Critical Rules numbered; no cross-skill references; reference files kebab-case; all relative links resolve; CODEOWNERS updated; no secrets or personal paths committed.
 
 **Existing skill modification checklist:** frontmatter still valid; Critical Rules not removed without justification in PR description; no new cross-skill dependencies; reference naming preserved; changes scoped to the skill being modified (no unrelated edits).
 
