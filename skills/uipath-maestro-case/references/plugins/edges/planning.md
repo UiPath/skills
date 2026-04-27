@@ -52,7 +52,7 @@ Handle directions control visual rendering (where the edge emerges from the sour
 
 ## Ordering
 
-Edges are created **after** all stages exist so both endpoints can resolve. Each edge references the initial Trigger node (created by `cases add` in T01) or stage IDs captured in the stages capture map.
+Edges are created **after** all stages exist so both endpoints can resolve. Each edge references the initial Trigger node (created by the triggers plugin at T02) or stage IDs captured in the stages capture map.
 
 ## tasks.md Entry Format
 

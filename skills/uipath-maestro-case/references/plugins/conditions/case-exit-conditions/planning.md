@@ -30,7 +30,7 @@ Allowed `--rule-type` values depend on `marks-case-complete`:
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
-| `required-stages-completed` | **Preferred.** Case completes when every stage with `isRequired: true` (set on `stages add` via planning metadata) has completed. No stage list needed. | — |
+| `required-stages-completed` | **Preferred.** Case completes when every stage with `isRequired: true` (set in the stage node's `data.isRequired`) has completed. No stage list needed. | — |
 | `wait-for-connector` | Wait for an external connector event to close the case. | `--condition-expression` |
 
 **When `marks-case-complete: false`** (the case exits without closing):

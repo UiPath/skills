@@ -6,7 +6,7 @@ direct-json: supported
 
 > **Phase split.** Phase 2b only. Phase 2a does not write SLA or escalation rules. See [`../../phased-execution.md`](../../phased-execution.md).
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `sla = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
 ## Purpose
 
@@ -22,7 +22,7 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Unl
 
 ## ID generation
 
-- Escalation: `esc_` + 6 chars. Per [`case-editing-operations-json.md § ID Generation`](../../case-editing-operations-json.md#id-generation).
+- Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
 - Conditional SlaRuleEntry: **no `id` field**. CLI never emits one; removal is by array index.
 
 Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", ruleExpression: "<parent rule expression>", target: "root" | "<stageId>"}`.
@@ -115,7 +115,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the table in [`impl-cli.md § Expression Translation`](impl-cli.md#expression-translation). If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" escape hatch.
+`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes in [SKILL.md Rule #14](../../../SKILL.md) and the helpers in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). Common patterns: `=js:<javascript>` for arbitrary boolean, `=vars.<id> === "<literal>"` for variable comparison, `=metadata.<field>` for case metadata. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md rule #19.
 
 ## Post-write validation
 

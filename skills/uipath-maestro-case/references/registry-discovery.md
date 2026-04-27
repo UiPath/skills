@@ -59,9 +59,9 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | EXTERNAL_AGENT | *(not in cache)* |
 | TIMER | *(not in cache)* |
 
-For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. Use the CLI `--type` value directly.
+For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. Use the JSON `type` value directly.
 
-**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search **all** cache files listed above for the task name. When a match is found in a different cache file than expected, use that cache file's identifier field and type mapping for the `--task-type-id`, but keep the sdd.md's component type for the CLI `--type` flag.
+**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search **all** cache files listed above for the task name. When a match is found in a different cache file than expected, use that cache file's identifier field and type mapping for the `taskTypeId`, but keep the sdd.md's component type for the JSON `type` field.
 
 ### 2. Search by Name and Folder Path
 
@@ -109,9 +109,9 @@ Collect all matching results for the `registry-resolved.json` debug output. Reco
 
 ## Type Mapping
 
-After finding a match, map the **cache file type** (not the sdd.md component type) to the CLI `--type` value for `uip maestro case tasks add`:
+After finding a match, map the **cache file type** (not the sdd.md component type) to the JSON `type` value written into the task node:
 
-| Cache file | `tasks add --type` | Identifier field |
+| Cache file | Task `type` | Identifier field |
 |---|---|---|
 | `agent-index.json` | `agent` | `entityKey` |
 | `process-index.json` | `process` | `entityKey` |
@@ -122,9 +122,9 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | `typecache-activities-index.json` | `execute-connector-activity` | `uiPathActivityTypeId` |
 | `typecache-triggers-index.json` | `wait-for-connector` | `uiPathActivityTypeId` |
 
-Additional `--type` values not discoverable through cache: `rpa`, `external-agent`, `wait-for-timer`.
+Additional `type` values not discoverable through cache: `rpa`, `external-agent`, `wait-for-timer`.
 
-**Important:** The sdd.md component type determines the CLI `--type` to use, but the **cache file** determines the `taskTypeId`. For example, if the sdd.md says "RPA" and the cache match is in `process-index.json`, use `--type rpa` (from sdd.md) but `--task-type-id <entityKey>` (from cache).
+**Important:** The sdd.md component type determines the JSON `type` to write, but the **cache file** determines the `taskTypeId`. For example, if the sdd.md says "RPA" and the cache match is in `process-index.json`, write `type: "rpa"` (from sdd.md) and `data.context.taskTypeId: "<entityKey>"` (from cache).
 
 ## Connector Tasks
 
@@ -134,4 +134,4 @@ For entries in `typecache-activities-index.json` or `typecache-triggers-index.js
 
 ## Output Contract
 
-The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so the task.md can reference it. The implementation agent will use this identifier when calling `uip maestro case tasks add --task-type-id`.
+The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so `tasks.md` can reference it. The implementation agent writes this identifier into `data.context.taskTypeId` (or `data.typeId` for connectors) on the task node.

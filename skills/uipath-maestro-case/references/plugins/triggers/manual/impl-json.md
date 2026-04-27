@@ -4,7 +4,7 @@ direct-json: supported
 
 # manual trigger — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../../case-editing-operations.md) lists `triggers/manual = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
 ## Purpose
 
@@ -19,20 +19,20 @@ The sibling-file sync is the main reason this plugin needs a dedicated JSON reci
 
 | Field | Required | Notes |
 |---|---|---|
-| `displayName` | yes | T-entry title or `display-name:` field. Fallback: `Trigger ${existingTriggerCount + 1}`. Because `cases add` seeds `trigger_1`, the first secondary trigger's default name is `"Trigger 2"`. |
-| `description` | yes | Always emitted into `data.description`. Sourced from the T-entry's `description:` field when present; otherwise the LLM infers a natural-language description from surrounding sdd.md context. **Deliberate divergence from CLI** — CLI emits `description` only when the flag is passed. |
+| `displayName` | yes | T-entry title or `display-name:` field. Fallback: `Trigger ${existingTriggerCount + 1}`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
+| `description` | yes | Always emitted into `data.description`. Sourced from the T-entry's `description:` field when present; otherwise the LLM infers a natural-language description from surrounding sdd.md context. |
 
 Position is not a user input. It is computed statefully (see below).
 
 ## Pre-flight
 
-1. **`caseplan.json` exists** at `<SolutionDir>/<ProjectName>/caseplan.json`. Created by the `case` plugin (scaffolding + `cases add`). If absent, run that plugin first — do not synthesize.
+1. **`caseplan.json` exists** at `<SolutionDir>/<ProjectName>/caseplan.json`. Created by the `case` plugin at T01. If absent, run that plugin first — do not synthesize.
 2. **`entry-points.json` exists** in the same directory (sibling of `caseplan.json`). Created by `uip maestro case init`. If absent, **fail hard with the same error message the CLI emits** (`entry-points.json not found in <dir>. Run 'uip maestro case init' to create a project first.`). Do not lazily create it — a missing `entry-points.json` indicates an incomplete project scaffold, not a recoverable state.
 3. Both files must be parseable JSON. Read → validate → modify → write.
 
 ## ID generation
 
-- **Trigger node ID** — `trigger_` + 6 random chars from `[A-Za-z0-9]`. Algorithm per [`case-editing-operations-json.md § ID Generation`](../../../case-editing-operations-json.md#id-generation).
+- **Trigger node ID** — `trigger_` + 6 random chars from `[A-Za-z0-9]`. Algorithm per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
 - **Entry-point `uniqueId`** — `crypto.randomUUID()`. Generate inline:
 
   ```bash

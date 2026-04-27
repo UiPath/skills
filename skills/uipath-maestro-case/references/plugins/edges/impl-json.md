@@ -4,7 +4,7 @@ direct-json: supported
 
 # edges — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `edges = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
 ## Purpose
 
@@ -34,7 +34,7 @@ The same recipe covers add / edit / remove — direct JSON writes state, so the 
 
 - Prefix: `edge_`
 - Suffix length: 6
-- Algorithm: per [`case-editing-operations-json.md § ID Generation`](../../case-editing-operations-json.md#id-generation)
+- Algorithm: per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation)
 
 Record `T<n> → edge_xxxxxx` in `id-map.json` for the audit trail, even though no downstream node references edges by ID.
 
@@ -132,7 +132,7 @@ Find the edge by `id` in `schema.edges` and mutate in place:
 schema.edges = schema.edges.filter(e => e.id !== edgeId)
 ```
 
-Nothing references edges by ID in `caseplan.json`, so no cascade cleanup is needed. A stage removal still cascades to its edges — that logic lives in the stages JSON recipe (`Delete a node` in [`case-editing-operations-json.md`](../../case-editing-operations-json.md#delete-a-node)), not here.
+Nothing references edges by ID in `caseplan.json`, so no cascade cleanup is needed. A stage removal still cascades to its edges — that logic lives in the stages JSON recipe (`Delete a node` in [`case-editing-operations.md`](../../case-editing-operations.md#delete-a-node)), not here.
 
 ## Semantic position
 

@@ -4,7 +4,7 @@ direct-json: supported
 
 # case (root) — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `case = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
 ## Purpose
 
@@ -13,13 +13,9 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly. Replaces `uip maestro case init`.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`). Replaces `uip maestro case cases add`.
 
-Solution setup (`uip solution new`) and project registration (`uip solution project add`) remain CLI — see [`impl-cli.md`](impl-cli.md) § Prerequisites. `cases edit` also remains CLI-only and is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 5).
+Solution setup (`uip solution new`) and project registration (`uip solution project add`) remain CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule #8); this recipe writes case fields directly into the initial `caseplan.json`.
 
-**No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 — either via direct JSON write (when migrated) or `uip maestro case triggers add-<manual|timer|event>` (current CLI path). This is a deliberate divergence from CLI `cases add`, which always emits a default `trigger_1` node.
-
-## Scope
-
-**Add only.** `cases edit` is out of scope for this recipe and stays on the CLI path. Phase 2 always regenerates `caseplan.json` from scratch after approval of `tasks.md`, so the edit code-path is not exercised at runtime.
+**No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
 ## Input spec (from `tasks.md`)
 
@@ -40,7 +36,7 @@ Runs before § Write caseplan.json. Replaces `uip maestro case init` with direct
 
 ### Pre-flight
 
-1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution new` — Step 6.0 / [`impl-cli.md`](impl-cli.md) § Prerequisites).
+1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution new` — Step 6.0).
 2. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
@@ -269,8 +265,5 @@ Direct-JSON-write is a superset of the CLI's `cases add`. The divergences below 
 Captured against CLI version `0.3.4` (caseplan.json shape) and `uip` 1.0.0 (scaffold file shapes).
 
 - [x] **Structural equivalence:** direct-JSON-write skeleton (`root` + `nodes: []` + `edges: []`) matches the CLI `cases add` output after stripping the CLI-side `trigger_1` node and normalizing the `description: ""` divergence.
-- [x] **Validation:** JSON-write output produces a known-invalid failure profile (`no trigger node` + `no stage nodes`). Different from CLI's profile (`no stage nodes` + `trigger has no outgoing edges`) because CLI emits `trigger_1` and JSON does not. Both are expected-invalid for a case-only caseplan; validation at this boundary is skipped per SKILL.md Anti-patterns ("Do NOT validate after each command").
-- [ ] **Downstream CLI trigger append:** `uip maestro case triggers add-manual` on a direct-JSON-written skeleton succeeds — exercised separately; verified in the `entry-points.json` coupling note above.
-- [ ] **Downstream CLI mutation append:** `uip maestro case stages add` on a direct-JSON-written skeleton caseplan succeeds — not yet exercised.
-- [ ] **Round-trip:** direct-JSON-write → `uip maestro case cases edit` accepts the file → subsequent mutations succeed — not yet exercised.
+- [x] **Validation:** JSON-write output produces a known-invalid failure profile (`no trigger node` + `no stage nodes`). Different from CLI's profile (`no stage nodes` + `trigger has no outgoing edges`) because CLI emits `trigger_1` and JSON does not. Both are expected-invalid for a case-only caseplan; validation at this boundary is skipped per SKILL.md Rule #20.
 - [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

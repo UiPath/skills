@@ -16,7 +16,7 @@ If the sdd.md says the case runs on a schedule, use [timer](../timer/planning.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md (optional at the T-entry; required in output) | Defaults to auto-generated `Trigger N` where `N = existingTriggerCount + 1`. Because `cases add` seeds `trigger_1`, the first secondary trigger defaults to `"Trigger 2"`. |
+| `display-name` | sdd.md (optional at the T-entry; required in output) | Defaults to auto-generated `Trigger N` where `N = existingTriggerCount + 1`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
 | `description` | sdd.md (optional at the T-entry; **required in output**) | Always emitted. If sdd.md omits it, the LLM infers a natural-language description from the surrounding context (e.g., trigger's role in the sdd flow diagram or narrative). |
 
 Position is NOT a T-entry input. It is auto-computed at execution time following the same stateful pattern as stages — see `impl-json.md` for the formula.

@@ -4,7 +4,7 @@ direct-json: supported
 
 # timer trigger — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../../case-editing-operations.md) lists `triggers/timer = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
 ## Purpose
 
@@ -104,7 +104,7 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 ## ID generation
 
 - First-trigger path: literal `trigger_1` (no randomness).
-- Secondary path: `trigger_` prefix + 6 random chars per [`case-editing-operations-json.md § ID Generation`](../../../case-editing-operations-json.md#id-generation).
+- Secondary path: `trigger_` prefix + 6 random chars per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
 
 Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference.
 

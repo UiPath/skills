@@ -4,7 +4,7 @@ direct-json: supported
 
 # stages — JSON Implementation
 
-Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `stages = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
+Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
 ## Input spec (from `tasks.md`)
 
@@ -19,7 +19,7 @@ Authoritative when the matrix in [`case-editing-operations.md`](../../case-editi
 
 - Prefix: `Stage_` (same for regular and exception stages)
 - Suffix length: 6
-- Algorithm: per [`case-editing-operations-json.md § ID Generation`](../../case-editing-operations-json.md#id-generation)
+- Algorithm: per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation)
 
 Record `T<n> → Stage_xxxxxx` in `id-map.json` for downstream cross-reference.
 

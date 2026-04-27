@@ -53,7 +53,7 @@ This constraint is also documented in the [edges plugin](../edges/planning.md).
 
 ### Note on `isRequired`
 
-`isRequired` is **not a CLI flag** on `uip maestro case stages add`. It is a planning-phase attribute used downstream by case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages flagged `isRequired: true` have completed.
+`isRequired` is written into the stage node's `data.isRequired` and is consumed downstream by case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages flagged `isRequired: true` have completed.
 
 Record `isRequired` in `tasks.md` for each stage. Use:
 - `true` — **Default for regular stages.** Stage is on the main flow path and must complete for case completion.
@@ -71,7 +71,7 @@ CLI auto-positions stages: `x = 100 + (existingStageCount * 500), y = 200`. Do n
 
 ## Ordering
 
-Stages are created **after** the root case (T01) and **before** any edges, tasks, or conditions reference them. Each `stages add` call returns a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (edges, tasks, conditions, SLA) use the stage **name** in `tasks.md`; the implementation phase resolves the name to the captured `StageId`.
+Stages are created **after** the root case (T01) and **before** any edges, tasks, or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (edges, tasks, conditions, SLA) use the stage **name** in `tasks.md`; the implementation phase resolves the name to the captured `StageId`.
 
 ## tasks.md Entry Format
 

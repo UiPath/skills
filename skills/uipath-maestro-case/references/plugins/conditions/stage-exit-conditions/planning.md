@@ -16,7 +16,7 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `<stage-id>` | Captured from `stages add` | Target stage |
+| `<stage-id>` | Captured from the stages plugin | Target stage |
 | `display-name` | sdd.md (optional) | |
 | `type` | sdd.md exit style | `exit-only` / `wait-for-user` / `return-to-origin` |
 | `exit-to-stage-id` | sdd.md routing target (optional) | Required when routing to a specific stage |

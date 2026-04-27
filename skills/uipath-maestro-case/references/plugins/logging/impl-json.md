@@ -2,7 +2,7 @@
 
 Unified issue log for the implementation phase. Initialized by `implementation.md`, written to by any plugin, dumped to markdown after build.
 
-> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent holds the issue list in its own reasoning during a run and emits `tasks/build-issues.md` with the Write tool at dump time. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations-json.md § Tool usage`](../../case-editing-operations-json.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
+> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent holds the issue list in its own reasoning during a run and emits `tasks/build-issues.md` with the Write tool at dump time. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations.md § Tool usage`](../../case-editing-operations.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
 
 ## Setup
 

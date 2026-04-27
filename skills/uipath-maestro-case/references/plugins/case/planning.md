@@ -30,9 +30,7 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
 ## Trigger Node — Emitted by Triggers Plugin (T02)
 
-The migrated JSON recipe writes a pure skeleton at T01 — no trigger node. The primary trigger is added by the triggers plugin at T02 via the matching [triggers plugin](../triggers/). Every case (single-trigger or multi-trigger) has at least one T02 entry for the primary trigger.
-
-Under the CLI fallback path, `uip maestro case cases add` still emits an implicit `trigger_1` node. The triggers plugin handles additional triggers for multi-trigger cases.
+The case plugin writes a pure skeleton at T01 — no trigger node. The primary trigger is added by the triggers plugin at T02 via the matching [triggers plugin](../triggers/). Every case (single-trigger or multi-trigger) has at least one T02 entry for the primary trigger.
 
 ## tasks.md Entry Format
 
@@ -66,4 +64,4 @@ The case file lives inside a solution + project structure. After T01 completes, 
 
 Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.2.
 
-See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence. CLI fallback: [impl-cli.md](impl-cli.md) § Prerequisites.
+See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.

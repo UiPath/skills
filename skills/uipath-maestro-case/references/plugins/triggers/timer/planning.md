@@ -74,4 +74,4 @@ When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat coun
 - verify: node added to schema.nodes with data.uipath.serviceType == Intsvc.TimerTrigger; entry-points.json has matching entry; timeCycle exact match
 ```
 
-`sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, consumed identically by both [`impl-cli.md`](impl-cli.md) (passed as `--time-cycle`) and [`impl-json.md`](impl-json.md) (written directly into `node.data.uipath.timeCycle`).
+`sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, written directly into `node.data.uipath.timeCycle` per [`impl-json.md`](impl-json.md).

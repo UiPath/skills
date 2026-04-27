@@ -16,7 +16,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `<stage-id>` | Previously captured from `stages add` | Target stage |
+| `<stage-id>` | previously captured from the stages plugin | Target stage |
 | `display-name` | sdd.md (optional) | e.g., "Pre-check", "Interrupt on Fraud" |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
