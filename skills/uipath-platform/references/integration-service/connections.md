@@ -35,20 +35,46 @@ Connections are authenticated sessions for a specific connector. They store cred
    - "I found these connections: 1) **Salesforce Prod** by user@example.com (default, enabled, Shared folder) ← recommended 2) **Salesforce Dev** by admin@example.com (enabled, Shared folder). Which should I use?"
 3. If only one enabled connection exists, still confirm: "I found connection **<Name>** by <Owner> in **<Folder>** folder (default, enabled). Should I use this one?"
 4. If not enabled → prompt user to re-authenticate via `is connections edit <id>`
-5. If no connections exist → prompt user to create one via `is connections create "<connector-key>"`
+5. If no connections exist → retry with `--refresh` (`uip is connections list "<connector-key>" --refresh --output json`) to bypass the CLI cache. If still empty, prompt user to create one via `is connections create "<connector-key>"`.
 
 ### For BYOA Connections (Webhook Triggers)
 
-Some webhook triggers require a BYOA (Bring Your Own Account) connection — the customer must have registered their own OAuth app with the external service. The `byoaConnection` flag on the trigger objects response indicates this requirement.
+BYOA (Bring Your Own Account) connections use an OAuth app the customer registered with the external service (e.g., a Slack app they own). Some webhook triggers require BYOA; many do not. **The requirement is per event object, not per connector** — read it from the `triggers objects` response.
 
-1. Filter to BYOA connections only:
+**Decision flow:**
+
+1. Get any enabled connection — needed only as `--connection-id` for the next call:
+
+   ```bash
+   uip is connections list "<connector-key>" --output json
+   ```
+
+2. Query trigger objects and read the `byoaConnection` flag for the matching event:
+
+   ```bash
+   uip is triggers objects "<connector-key>" "<OPERATION>" \
+     --connection-id "<id>" --output json
+   ```
+
+3. **If `byoaConnection: true`** — the connection from step 1 is not usable. Filter to BYOA only:
 
    ```bash
    uip is connections list "<connector-key>" --byoa --output json
    ```
 
-2. If no BYOA connections exist, tell the user they need to create one in the Integration Service portal
-3. BYOA connections have `ByoaConnection: Yes` in the response
+   If empty, retry with `--refresh` to bypass the CLI cache:
+
+   ```bash
+   uip is connections list "<connector-key>" --byoa --refresh --output json
+   ```
+
+   If still empty, **stop and tell the user**: "This trigger requires a BYOA connection for `<connector-key>`. None found. Create one in the Integration Service portal or with `uip is connections create "<connector-key>"`, then re-run."
+
+4. **If `byoaConnection: false`** — use the connection from step 1. Verify health with `uip is connections ping "<id>" --output json`.
+
+> Connector-specific OAuth-app setup instructions (e.g., what permissions a Slack app needs) come from the trigger's `design.textBlocks` field in the `triggers objects` response. Surface that text to the user verbatim — do not invent service-specific guidance.
+
+For webhook URL retrieval after the trigger is configured, see [triggers.md — Webhook URL Retrieval](triggers.md#webhook-url-retrieval).
 
 ### For HTTP Fallback
 

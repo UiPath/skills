@@ -10,59 +10,37 @@ Follow these steps for every IS trigger node.
 
 Extract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and the operation name from the `registry get` response (`model.context[].operation`).
 
-**1a. Get any enabled connection** (this is a temporary pick — you may need a different connection type after Step 1b):
+**1a. Get any enabled connection** — needed as `--connection-id` for `triggers objects` below. Pick any enabled one (prefer `IsDefault: Yes`):
 
 ```bash
 uip is connections list "<connector-key>" --output json
 ```
 
-Pick any enabled connection (prefer `IsDefault: Yes, State: Enabled`). You need its ID for the next call.
+If empty, follow the recovery in [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) (`--refresh` retry, then create-or-prompt).
 
-**If `connections list` returns empty**, retry with `--refresh` to force a fresh fetch from the API (bypasses cache):
-
-```bash
-uip is connections list "<connector-key>" --refresh --output json
-```
-
-If still empty, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If no connection exists in any folder, tell the user to create one via the IS portal or `uip is connections create "<connector-key>"`.
-
-**1b. Query trigger objects** — this is **mandatory** for every trigger node. Do NOT skip this step:
+**1b. Query trigger objects** — **mandatory** for every trigger node. Do NOT skip:
 
 ```bash
 uip is triggers objects "<connector-key>" "<OPERATION>" \
   --connection-id "<id>" --output json
 ```
 
-Save the response. It contains two critical flags per event object:
+Save the response. It carries two flags per event object that drive later steps:
 
-| Flag | Meaning |
-|------|---------|
-| `byoaConnection` | If `true`, this trigger requires a BYOA connection — standard connections will fail at runtime |
-| `isWebhookUrlVisible` | If `true`, the webhook URL must be retrieved (Step 6b) and presented to the user for registration in the external service |
+| Flag | Drives | Meaning |
+|------|--------|---------|
+| `byoaConnection` | Step 1c | If `true`, only BYOA connections are valid for this event |
+| `isWebhookUrlVisible` | Step 6b | If `true`, retrieve and present the webhook URL |
 
-It may also contain `design.textBlocks` with user-facing instructions specific to this trigger (e.g., "Add this webhook URL to your Slack app").
+It may also include `design.textBlocks` with connector-specific user-facing instructions (e.g., "Add this URL to your Slack app's Event Subscriptions"). Surface that text verbatim when applicable — do not invent service-specific guidance.
 
-> **Note:** The `byoaConnection` flag is per event object, not per connector. Some connectors support both BYOA and standard connections for different event types.
+> Both flags are per event object, not per connector. Some connectors require BYOA for some events but not others.
 
-### Step 1c — Select the final connection based on trigger objects
+### Step 1c — Select the final connection
 
-**If `byoaConnection: true`** — the connection from Step 1a is NOT usable. Filter to BYOA connections only:
+**If `byoaConnection: true`** — the Step 1a connection is not usable. Follow the BYOA selection workflow in [/uipath:uipath-platform — connections.md — For BYOA Connections](../../../../uipath-platform/references/integration-service/connections.md#for-byoa-connections-webhook-triggers) (filter with `--byoa`, `--refresh` retry, stop-and-ask if none exist).
 
-```bash
-uip is connections list "<connector-key>" --byoa --output json
-```
-
-If no BYOA connections are returned, retry with `--refresh`:
-
-```bash
-uip is connections list "<connector-key>" --byoa --refresh --output json
-```
-
-If still empty, **stop and tell the user**:
-> This trigger requires a BYOA (Bring Your Own App) connection for `<connector-key>`. No BYOA connections were found.
-> A BYOA connection requires registering your own OAuth app with the external service (e.g., a Slack app you own). Create one in the Integration Service portal or with `uip is connections create "<connector-key>"`, then re-run.
-
-**If `byoaConnection: false`** — proceed with the connection from Step 1a. Verify it is healthy:
+**If `byoaConnection: false`** — use the Step 1a connection. Verify health:
 
 ```bash
 uip is connections ping "<connection-id>" --output json
@@ -208,39 +186,15 @@ The command populates `inputs.detail` (including the internal `configuration` bl
 
 ### Step 6b — Retrieve and display webhook URL (webhooks only)
 
-**This step applies to triggers where `eventMode` is `"webhooks"`**, regardless of whether `byoaConnection` is true or false. **Do NOT skip this step for webhook triggers.**
+Applies when `eventMode` is `"webhooks"`, regardless of `byoaConnection`.
 
-> **Guard:** If the trigger object's `isWebhookUrlVisible` is `false` (from `triggers objects` output in Step 1b — which is mandatory), skip this step — the connector manages webhook registration automatically and does not expose a URL for manual registration. If you do not have the `triggers objects` output, you skipped Step 1b — go back and run it before proceeding.
+> **Guard:** If the trigger object's `isWebhookUrlVisible` is `false` (from Step 1b), skip this step — the connector manages webhook registration automatically and does not expose a URL. If you do not have `triggers objects` output, you skipped Step 1b — go back.
 
-1. Get the `ElementInstanceId` for the selected connection from the connections list output:
+Follow [/uipath:uipath-platform — triggers.md — Webhook URL Retrieval](../../../../uipath-platform/references/integration-service/triggers.md#webhook-url-retrieval) for the exact commands (`uip is connections list` → `ElementInstanceId` → `uip is webhooks config`).
 
-   ```bash
-   uip is connections list "<connector-key>" --connection-id "<connection-guid>" --output json
-   ```
+**Presenting the URL:** If the Step 1b `triggers objects` response included `design.textBlocks`, use that text verbatim (substituting `{webhookUrl}`) — it carries connector-specific registration instructions. Otherwise, use a generic message instructing the user to register the URL in their external service's app settings (e.g., Slack Event Subscriptions, Salesforce Outbound Messages). The trigger will not fire until the URL is registered and verified.
 
-   Note the `ElementInstanceId` field (a numeric value) from the response. If `ElementInstanceId` is empty, the connection may not support webhooks — verify it is the correct connection type (BYOA if required by Step 1b).
-
-2. Retrieve the webhook URL:
-
-   ```bash
-   uip is webhooks config "<connector-key>" \
-     --connection-id "<connection-guid>" \
-     --element-instance-id <number> \
-     --output json
-   ```
-
-3. Present the webhook URL to the user with clear instructions. If the `triggers objects` response included `design.textBlocks`, use that text (replacing `{webhookUrl}` with the actual URL). Otherwise, use the default message:
-
-   > **Webhook URL registration required.** Your webhook trigger is configured, but it will not fire until you register this URL in your external service's app settings:
-   >
-   > **Webhook URL:** `{webhookUrl}`
-   >
-   > Register this URL in your **[service name]** app configuration (e.g., Slack Event Subscriptions, Salesforce Outbound Messages). The trigger will not receive events until the URL is registered and verified by the external service.
-
-4. If the webhook config call fails, inform the user:
-   - Verify the connection is healthy with `uip is connections ping "<id>"`
-   - Confirm the `ElementInstanceId` is correct and non-empty (empty means wrong connection type)
-   - The user may need to re-authenticate the connection with `uip is connections edit "<id>"`
+**On failure:** if `ElementInstanceId` is empty, the connection is the wrong type — verify the `byoaConnection` flag from Step 1b and switch to a BYOA connection if required. If `webhooks config` itself fails, ping the connection (`uip is connections ping`) and re-authenticate via `uip is connections edit` if unhealthy.
 
 ---
 
@@ -393,18 +347,16 @@ uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAI
 uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json
 uip is triggers describe "<connector-key>" "<operation>" "<objectName>" --connection-id "<id>" --output json
 
-# Connections
-uip is connections list "<connector-key>" --output json               # list all connections
-uip is connections list "<connector-key>" --byoa --output json        # BYOA connections only (Step 1c)
-uip is connections list "<connector-key>" --refresh --output json     # force re-fetch, bypass cache
-uip is connections list "<connector-key>" --byoa --refresh --output json  # BYOA + force re-fetch
-uip is connections ping "<connection-id>" --output json               # verify connection health
+# Connections — see /uipath:uipath-platform — connections.md for selection rules (Native, BYOA, --refresh)
+uip is connections list "<connector-key>" --output json               # list connections
+uip is connections list "<connector-key>" --byoa --output json        # BYOA only (Step 1c)
+uip is connections ping "<connection-id>" --output json               # verify health
 
 # Reference resolution (same as IS activity)
 uip is resources execute list "<connector-key>" "<resource>" \
   --connection-id "<id>" --output json
 
-# Webhook URL retrieval (Step 6b — webhooks eventMode only)
+# Webhook URL retrieval — see /uipath:uipath-platform — triggers.md (Step 6b, webhooks only)
 uip is webhooks config "<connector-key>" \
   --connection-id "<connection-guid>" \
   --element-instance-id <number> --output json

@@ -127,8 +127,9 @@ When a trigger uses `eventMode: "webhooks"`, the webhook URL must be retrieved a
 
 ### When to retrieve the webhook URL
 
-- The trigger's `eventMode` is `"webhooks"` (from `triggers describe` or `triggers objects`)
-- This applies to ALL webhook-mode triggers, regardless of whether `byoaConnection` is true
+- `eventMode: "webhooks"` (from `triggers describe` or `triggers objects`)
+- `isWebhookUrlVisible: true` for the matching event object. When `false`, **skip retrieval** — the connector manages webhook registration automatically and does not expose a URL.
+- Independent of `byoaConnection` — applies whether BYOA is required or not.
 
 ### How to retrieve the webhook URL
 
@@ -137,6 +138,8 @@ When a trigger uses `eventMode: "webhooks"`, the webhook URL must be retrieved a
    ```bash
    uip is connections list "<connector-key>" --connection-id "<id>" --output json
    ```
+
+   Empty `ElementInstanceId` means the connection is the wrong type for webhooks. Check the `byoaConnection` flag on the matching event — if `true`, switch to a BYOA connection.
 
 2. Retrieve the webhook URL:
 
@@ -147,7 +150,9 @@ When a trigger uses `eventMode: "webhooks"`, the webhook URL must be retrieved a
      --output json
    ```
 
-3. The response contains the `WebhookUrl` — present this to the user and instruct them to register it in their external service's app settings (e.g., Slack Event Subscriptions, Salesforce Webhook configuration).
+3. The response contains the `WebhookUrl`. Present it to the user with registration instructions:
+   - **Prefer `design.textBlocks`** from the `triggers objects` response if present — it carries connector-specific text (e.g., "Add this URL to your Slack app's Event Subscriptions"). Substitute `{webhookUrl}` with the actual value.
+   - **Otherwise** use a generic message: register the URL in the external service's app settings (e.g., Slack Event Subscriptions, Salesforce Outbound Messages). The trigger does not fire until the URL is registered and verified by the external service.
 
 ---
 
