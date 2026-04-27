@@ -1,0 +1,67 @@
+task_id: skill-catalog-ambiguous-routing-smoke
+description: >
+  Skill-guided evaluation: agent uses the compact UiPath skill catalog to
+  route an ambiguous platform request before opening specialist skill bodies.
+  This guards the progressive-discovery path that keeps agents from loading
+  many full SKILL.md files just to choose a skill.
+tags: [uipath-skill-catalog, smoke]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A user says: "I need to create an Orchestrator queue, publish an existing
+  automation package, and deploy it to Orchestrator, but I do not know which
+  UiPath skill applies."
+
+  Use the UiPath skill catalog first to select the right specialist skill.
+  Do not run login, do not mutate any project files, and do not execute the
+  deployment. Save the routing decision to route.json in the current working
+  directory with at minimum:
+    {
+      "catalog_used": true,
+      "primary_skill": "<single best UiPath skill>",
+      "selected_skills": ["<ordered list of skills to open next>"],
+      "reason": "<brief explanation>",
+      "next_step": "<what the main agent should read or do next>"
+    }
+
+  Important:
+  - Prefer the most specific skill that owns the requested work.
+  - Keep the answer focused on routing; do not create implementation files.
+  - The correct output is the JSON file, not a prose-only answer.
+
+success_criteria:
+  - type: file_exists
+    description: "route.json was created"
+    path: "route.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "route.json routes the Orchestrator work to the platform skill"
+    path: "route.json"
+    includes:
+      - "uipath-platform"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "route.json confirms catalog-first routing to uipath-platform"
+    path: "route.json"
+    assertions:
+      - expression: "catalog_used"
+        operator: equals
+        expected: true
+      - expression: "primary_skill"
+        operator: equals
+        expected: "uipath-platform"
+      - expression: "selected_skills"
+        operator: contains
+        expected: "uipath-platform"
+      - expression: "length(reason)"
+        operator: gte
+        expected: 20
+    weight: 3.0
+    pass_threshold: 1.0

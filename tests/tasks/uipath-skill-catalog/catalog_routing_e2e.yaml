@@ -1,0 +1,60 @@
+task_id: skill-catalog-routing-e2e
+description: >
+  E2E routing evaluation: agent uses the compact UiPath skill catalog to route
+  a realistic multi-product UiPath request, then records the specialist skill
+  handoff without loading every full specialist skill body.
+tags: [uipath-skill-catalog, e2e]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A user says: "I have a UiPath automation package, need to create an
+  Orchestrator queue, deploy the package, and then know which skill should own
+  any follow-up deployment steps."
+
+  Use the UiPath skill catalog first. Do not run login, do not deploy anything,
+  and do not mutate project files. Save a routing handoff to handoff.json:
+    {
+      "catalog_used": true,
+      "primary_skill": "<single best specialist skill>",
+      "secondary_skills": ["<only skills that may be needed later>"],
+      "opened_all_skills": false,
+      "handoff": "<brief specialist handoff instruction>"
+    }
+
+success_criteria:
+  - type: file_exists
+    description: "handoff.json was created"
+    path: "handoff.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "handoff.json records catalog-first routing to the platform skill"
+    path: "handoff.json"
+    assertions:
+      - expression: "catalog_used"
+        operator: equals
+        expected: true
+      - expression: "primary_skill"
+        operator: equals
+        expected: "uipath-platform"
+      - expression: "opened_all_skills"
+        operator: equals
+        expected: false
+      - expression: "length(handoff)"
+        operator: gte
+        expected: 30
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "handoff names the specialist skill that owns Orchestrator work"
+    path: "handoff.json"
+    includes:
+      - "uipath-platform"
+      - "Orchestrator"
+    weight: 2.0
+    pass_threshold: 1.0
