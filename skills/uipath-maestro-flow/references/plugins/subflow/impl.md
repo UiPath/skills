@@ -44,7 +44,7 @@ Confirm: input port `input`, output ports `output` and `error`.
 
 ## Subflow Definition
 
-Subflow contents are stored in a top-level `subflows` object keyed by the parent node's ID:
+Subflow contents are stored in the root-level `subflows` object keyed by the corresponding `core.subflow` node ID:
 
 ```json
 {
@@ -183,6 +183,57 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 }
 ```
 
+### Nested subflows use a flat `subflows` map
+
+Subflows can contain `core.subflow` nodes, but their definitions are **not** nested inside the parent subflow definition. Every subflow definition, at every nesting depth, is a top-level peer under the root `subflows` object.
+
+Correct:
+
+```json
+{
+  "subflows": {
+    "outerSubflow": {
+      "nodes": [
+        { "id": "outerStart", "type": "core.trigger.manual" },
+        { "id": "innerSubflow", "type": "core.subflow" },
+        { "id": "outerEnd", "type": "core.control.end" }
+      ],
+      "edges": [],
+      "variables": { "globals": [], "nodes": [] },
+      "layout": { "nodes": {} }
+    },
+    "innerSubflow": {
+      "nodes": [
+        { "id": "innerStart", "type": "core.trigger.manual" },
+        { "id": "innerEnd", "type": "core.control.end" }
+      ],
+      "edges": [],
+      "variables": { "globals": [], "nodes": [] },
+      "layout": { "nodes": {} }
+    }
+  }
+}
+```
+
+Wrong:
+
+```json
+{
+  "subflows": {
+    "outerSubflow": {
+      "nodes": [
+        { "id": "innerSubflow", "type": "core.subflow" }
+      ],
+      "subflows": {
+        "innerSubflow": { "nodes": [] }
+      }
+    }
+  }
+}
+```
+
+The nesting relationship comes from the `core.subflow` node placed inside `outerSubflow.nodes`; the JSON definition for `innerSubflow` still lives at `subflows.innerSubflow`.
+
 ## Subflow Rules
 
 1. Every subflow **must** have its own Start node (`core.trigger.manual`) and End node (`core.control.end`)
@@ -192,8 +243,9 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 5. Parent-scope `$vars` are **not** visible inside the subflow — pass values explicitly via inputs
 6. Subflow nodes must have inline `outputs` defined on them (Start node needs `outputs.output`, Script nodes need `outputs.output` and `outputs.error`)
 7. Subflows can be nested (subflow inside subflow), up to 3 levels
-8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections
-9. Subflow node positions go in the subflow's own `layout.nodes` — NOT in the top-level `layout.nodes`. Each subflow scope is independent.
+8. Nested subflow definitions remain flat top-level peers in the root `subflows` map; never add a `subflows` object inside another subflow definition
+9. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections
+10. Subflow node positions go in the subflow's own `layout.nodes` — NOT in the top-level `layout.nodes`. Each subflow scope is independent.
 
 ## Creating a Subflow
 
