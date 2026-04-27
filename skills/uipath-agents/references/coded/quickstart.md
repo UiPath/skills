@@ -1,6 +1,6 @@
 # UiPath Coded Agents — Quickstart
 
-## CLI Setup (run once at start)
+## Environment Setup (run once at start)
 
 Before running any `uip codedagent` commands, ensure the environment is ready:
 
@@ -8,22 +8,25 @@ Before running any `uip codedagent` commands, ensure the environment is ready:
 # 1. Check uip is installed
 which uip > /dev/null 2>&1 && echo "uip found" || echo "uip NOT found — run: npm install -g @uipath/cli"
 
-# 2. Activate the virtual environment (required if .venv exists)
-if [ -d ".venv" ]; then source .venv/bin/activate; fi
+# 2. Install/sync Python dependencies from pyproject.toml
+uv sync
 
-# 3. Set up the Python environment (detects Python, installs uipath package if needed)
-uip codedagent setup --output json
+# 3. Activate the virtual environment
+source .venv/bin/activate
+
+# 4. Confirm coded-agent commands route to the Python CLI
+uip codedagent --help
 ```
 
 **Steps 2 and 3 are required.** Common errors if skipped:
-- `"uipath executable not found"` → run `uip codedagent setup` first
-- `"Found .venv but no virtual environment is activated"` → run `source .venv/bin/activate` before setup
+- `"uipath executable not found"` → run `uv sync`, then activate `.venv` and retry
+- `"Found .venv but no virtual environment is activated"` → run `source .venv/bin/activate` before `uip codedagent ...`
 
-Run these once per project environment. After setup succeeds, all `uip codedagent` commands will work.
+Run these once per project environment. There is no `uip codedagent setup` command; if an older note or error message suggests it, sync dependencies and activate the virtual environment instead.
 
 If `uip` is not found, install it with `npm install -g @uipath/cli`. If `npm` is missing, ask the user to install Node.js first. All commands in this skill use `uip codedagent <cmd>` — do **not** substitute with `uv run uipath`.
 
-**Do NOT add `--output json` to `uip codedagent` commands.** The `--output` flag is only valid for native `uip` commands (like `uip login`, `uip codedagent setup`). Commands forwarded to the Python CLI (`uip codedagent new`, `init`, `run`, `eval`, `deploy`, `push`, `pull`, `pack`, `publish`, `invoke`) do **not** accept `--output json` and will error.
+**Do NOT add `--output json` to `uip codedagent` commands.** The `--output` flag is only valid for native `uip` commands (like `uip login`). Commands forwarded to the Python CLI (`uip codedagent --help`, `new`, `init`, `run`, `eval`, `deploy`, `push`, `pull`, `pack`, `publish`, `invoke`) do **not** accept `--output json` and will error.
 
 ## Critical Rules
 
