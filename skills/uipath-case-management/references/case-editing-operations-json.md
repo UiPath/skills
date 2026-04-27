@@ -31,7 +31,7 @@ When editing `caseplan.json` directly, you are responsible for everything the CL
 Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
 
 1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
-   - **For the `case` plugin (T01)**: the file does NOT exist before the plugin runs. Scaffolding (`uip solution new` + `uip maestro case init` + `uip solution project add`) produces the project directory but not `caseplan.json`. The migrated `case` plugin writes `caseplan.json` from scratch per [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-write check: `project.uiproj` + `package-descriptor.json` must exist in the target directory — confirms scaffolding ran.
+   - **For the `case` plugin (T01)**: neither `caseplan.json` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution new` (Step 6.0, CLI) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.json writes the root skeleton. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
    - **For every other plugin**: `caseplan.json` must already exist (the `case` plugin always runs first as T01). If absent, run the `case` plugin first; do not attempt to synthesize a different JSON shape.
 
 2. **IDs match CLI format.** Generate IDs using the `prefixedId` algorithm (see "ID Generation" below). The frontend's `generateNextId(prefix, count)` expects this exact format — deviation risks Studio Web rejection.
@@ -150,6 +150,8 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 Always read `caseplan.json` fully with the Read tool, modify the in-memory object in reasoning, and write the whole file back with the Write tool. For narrowly-scoped, unambiguous single-field updates, the Edit tool is also acceptable. Re-read before the next mutation; do not hold the parsed object across tool calls.
 
+**One T-entry per cycle.** Each T-entry from `tasks.md` gets its own Read → mutate → Write round-trip. Do not batch multiple T-entries (e.g., "add all 5 stages in one write") — the transcript must show one tool-call pair per declarative unit, so every mutation is independently reviewable and revertable. Within a single T-entry, all fields that logically belong to that entry (a stage node plus its render fields, a task plus its default entry condition, etc.) are written together in that one Write.
+
 ### Generate a fresh ID
 
 Per the algorithm above. Use a Bash + `node -e` one-liner that **only prints the ID to stdout** — the agent consumes the printed value and embeds it via Write/Edit. No file I/O inside the subprocess.
@@ -250,3 +252,4 @@ On failure: fix the reported issue (usually a missing field, malformed handle, o
 - **Do NOT skip the default entry condition on connector tasks.** The frontend expects it.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Write (or Edit for narrowly-scoped unambiguous replacements).
 - **Do NOT run validation after every single write.** Validate at plugin boundaries, not per-field.
+- **Do NOT batch multiple T-entries into one JSON write.** Each T-entry from `tasks.md` gets its own Read → mutate → Write cycle. No "compose all stages + edges + tasks in memory, flush once" — that destroys the per-mutation audit trail.

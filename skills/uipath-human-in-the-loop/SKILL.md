@@ -26,7 +26,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
 2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle.
 3. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
-4. **Validate after every change.** Run `uip maestro flow validate <file> --format json` after writing the node and edges.
+4. **Validate after every change.** Run `uip maestro flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
 6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
 
@@ -68,14 +68,15 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 
 **If the user mentioned a specific file path**, use that directly.
 
-**If no `.flow` file exists and surface is Flow**, create one first:
+**If no `.flow` file exists and surface is Flow**, scaffold solution-first — Flow projects MUST live inside a solution:
 
 ```bash
-uip maestro flow init <ProjectName>
-# Creates: <ProjectName>/flow_files/<ProjectName>.flow
+uip solution new <SolutionName> --output json
+cd <SolutionName> && uip maestro flow init <ProjectName>
+# Creates: <SolutionName>/<ProjectName>/<ProjectName>.flow
 ```
 
-The flow file path will be `<ProjectName>/flow_files/<ProjectName>.flow`.
+The flow file path is `<SolutionName>/<ProjectName>/<ProjectName>.flow` (double-nested). `<SolutionName>/` is the solution directory (contains the `.uipx` file); `<ProjectName>/` inside it is the flow project. By convention `<SolutionName>` and `<ProjectName>` are often the same string, but they are two distinct scaffolding arguments. Running `uip maestro flow init` without first running `uip solution new` produces a broken single-nested `<ProjectName>/<ProjectName>.flow` layout that fails Studio Web upload, packaging, and downstream tooling.
 
 ---
 
@@ -151,7 +152,7 @@ Full reference: **[references/hitl-node-quickform.md](references/hitl-node-quick
 After writing, validate:
 
 ```bash
-uip maestro flow validate <file> --format json
+uip maestro flow validate <file> --output json
 ```
 
 ### Surface: Flow — Coded Action App (new inline)
@@ -179,7 +180,7 @@ Full reference: **[references/hitl-node-apptask.md](references/hitl-node-apptask
 After writing, validate:
 
 ```bash
-uip maestro flow validate <file> --format json
+uip maestro flow validate <file> --output json
 ```
 
 ### Surface: Coded Agent

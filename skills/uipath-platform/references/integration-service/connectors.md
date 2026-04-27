@@ -8,13 +8,13 @@ Connectors are pre-built integrations to external applications. Each connector h
 
 ## Response Fields
 
-| Field | Description |
-|---|---|
-| **`Key`** | Unique key used in all subsequent commands (e.g., `uipath-salesforce-sfdc`) |
-| `Id` | Connector ID |
-| `Name` | Display name (e.g., "Salesforce") |
-| `Active` | Whether the connector is active |
-| `DapCompatible` | Whether it supports Data Access Policy |
+| Field | Show to user? | Description |
+|---|---|---|
+| **`Name`** | **Yes** | Display name — always show this to the user (e.g., "Salesforce", "Slack") |
+| **`Key`** | **Yes** | Unique key used in all subsequent commands (e.g., `uipath-salesforce-sfdc`) — also shown to users since it's human-readable |
+| `Active` | **Yes** | Whether the connector is active |
+| `DapCompatible` | Optional | Whether it supports Data Access Policy |
+| `Id` | Internal | Connector UUID — never show to the user |
 
 ---
 

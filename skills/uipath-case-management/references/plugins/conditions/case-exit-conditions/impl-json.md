@@ -1,5 +1,7 @@
 # case-exit-conditions — Implementation (Direct JSON Write)
 
+> **Phase split.** Phase 2b only. Phase 2a does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Write the case-exit condition directly to `root.caseExitConditions[]` in `caseplan.json`. No CLI command needed.
 
 ## Condition JSON Shape

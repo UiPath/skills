@@ -26,9 +26,12 @@ Use an inline agent node when the reasoning/judgment task is tightly scoped to t
 
 Do not inline an agent you intend to reuse. Inline agents are private to the flow project — if you later need to call the same agent from another flow, you must re-scaffold and re-configure it, diverging over time. Use a published agent for shared logic.
 
+**Do NOT scaffold an inline agent to satisfy a prompt that names an existing agent.** If the prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to a published agent. Search the tenant registry by name first: `uip maestro flow registry search "<name>" --output json`. Only scaffold inline when the user explicitly asks to **embed / inline / include / create** an agent inside this flow. The words "coded" and "low-code" describe the implementation style of a published agent — they are NOT synonyms for "inline".
+
 ### When NOT to Use
 
 - **Agent already exists as a published tenant resource** — use the [published agent](../agent/planning.md) node instead
+- **User references the agent by name** (existing agent) — search the tenant registry first; scaffold inline only if the user explicitly asks to embed/inline a new agent
 - **Task is deterministic** — use [Script](../script/planning.md) or [Decision](../decision/planning.md)
 
 ## Ports

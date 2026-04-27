@@ -10,11 +10,11 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 
 | Plugin | Strategy | Notes |
 |---|---|---|
-| `case` (root + initial trigger) | **JSON** | Migrated. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Scaffolding (`uip solution new`, `uip maestro case init`, `uip solution project add`) stays CLI; only `cases add` flips to direct-JSON-write. `cases edit` remains CLI-only. |
-| `stages` | **JSON** (pilot) | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
+| `case` (root + initial trigger) | **JSON** | Migrated. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Plugin now owns both **project scaffolding** (replaces `uip maestro case init` — writes the 5 boilerplate files directly) and `cases add` (writes `caseplan.json`). Only `uip solution new` + `uip solution project add` remain CLI — they bookend the plugin as Step 6.0 and Step 6.2. `cases edit` remains CLI-only. |
+| `stages` | **JSON** | Migrated as the first pilot. See [plugins/stages/impl-json.md](plugins/stages/impl-json.md). |
 | `edges` | **JSON** | Migrated after stages. See [plugins/edges/impl-json.md](plugins/edges/impl-json.md). |
-| `triggers/manual` | CLI | Migration queued. |
-| `triggers/timer` | CLI | Migration queued. |
+| `triggers/manual` | JSON | See [plugins/triggers/manual/impl-json.md](plugins/triggers/manual/impl-json.md) |
+| `triggers/timer` | JSON | See [plugins/triggers/timer/impl-json.md](plugins/triggers/timer/impl-json.md) |
 | `triggers/event` | **JSON** | CLI fetches metadata, skill writes trigger JSON. See [plugins/triggers/event/impl-json.md](plugins/triggers/event/impl-json.md). |
 | `variables/global-vars` | **JSON** | No CLI exists for variable declaration — always written directly into `caseplan.json`. See [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md). |
 | `variables/io-binding` | **JSON** | Direct write to `task.data.inputs[i].value`. No CLI needed. See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md). |
@@ -27,11 +27,11 @@ Default strategy is **CLI**. Plugins opt in to direct JSON when they've been mig
 | `tasks/connector-activity` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md). |
 | `tasks/connector-trigger` | **JSON** | CLI fetches metadata, skill writes task JSON. See [plugins/tasks/connector-trigger/impl-json.md](plugins/tasks/connector-trigger/impl-json.md). |
 | `tasks/wait-for-timer` | **JSON** | Writes full task with `timerType` + duration. See [plugins/tasks/wait-for-timer/impl-json.md](plugins/tasks/wait-for-timer/impl-json.md). |
-| `conditions/stage-entry-conditions` | CLI | Migration queued. |
-| `conditions/stage-exit-conditions` | CLI | Migration queued. |
-| `conditions/task-entry-conditions` | CLI | Migration queued. |
-| `conditions/case-exit-conditions` | CLI | Migration queued. |
-| `sla` | CLI | Migration queued. |
+| `conditions/stage-entry-conditions` | JSON | See [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) |
+| `conditions/stage-exit-conditions` | JSON | See [plugins/conditions/stage-exit-conditions/impl-json.md](plugins/conditions/stage-exit-conditions/impl-json.md) |
+| `conditions/task-entry-conditions` | JSON | See [plugins/conditions/task-entry-conditions/impl-json.md](plugins/conditions/task-entry-conditions/impl-json.md) |
+| `conditions/case-exit-conditions` | JSON | See [plugins/conditions/case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md) |
+| `sla` | JSON | See [plugins/sla/impl-json.md](plugins/sla/impl-json.md) |
 
 ## How agents consume this matrix
 

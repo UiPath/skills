@@ -4,6 +4,8 @@ direct-json: supported
 
 # sla — JSON Implementation
 
+> **Phase split.** Phase 2b only. Phase 2a does not write SLA or escalation rules. See [`../../phased-execution.md`](../../phased-execution.md).
+
 Authoritative when the matrix in [`case-editing-operations.md`](../../case-editing-operations.md) lists `sla = JSON`. Cross-cutting direct-JSON rules live in [`case-editing-operations-json.md`](../../case-editing-operations-json.md). For the CLI fallback, see [`impl-cli.md`](impl-cli.md).
 
 ## Purpose
@@ -27,30 +29,48 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 
 ## Target resolution
 
-- `target: "root"` → `schema.root.data.slaRules`
-- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
+- `target: "root"` → `root.data.slaRules` (**inside `root.data`** — sibling of `intsvcActivityConfig` and `uipath`, NOT a top-level key and NOT a direct child of `root`)
+- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (inside the stage node's `data`)
 - Accepted node types: `case-management:Stage` **and `case-management:ExceptionStage`** (gap-fill, see Known CLI divergences)
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
 
 ## Recipe — one target
 
-After grouping T-entries by target, compose:
+After grouping T-entries by target, compose the `slaRules` array and write it into the target's **`data`** object (`root.data` for root target, `node.data` for stage target). The key is `slaRules` — a sibling of `intsvcActivityConfig` / `uipath` (root) or `label` / `tasks` (stage). It is **not** a top-level key in caseplan.json.
+
+For the root target, the resulting shape is:
 
 ```json
-"slaRules": [
-  {
-    "expression": "=js:<translated-condition-1>",
-    "count": <n>, "unit": "<min|h|d|w|m>",
-    "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
-  },
-  { "...additional conditional rules in sdd order..." },
-  {
-    "expression": "=js:true",
-    "count": <default.count>, "unit": "<default.unit>",
-    "escalationRule": [ <escalations with attach-to == default> ]
+{
+  "root": {
+    "id": "root",
+    "name": "<name>",
+    "type": "case-management:root",
+    "...": "...",
+    "data": {
+      "intsvcActivityConfig": "v2",
+      "uipath": { "...": "..." },
+      "slaRules": [
+        {
+          "expression": "=js:<translated-condition-1>",
+          "count": <n>, "unit": "<min|h|d|w|m>",
+          "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
+        },
+        { "...additional conditional rules in sdd order..." },
+        {
+          "expression": "=js:true",
+          "count": <default.count>, "unit": "<default.unit>",
+          "escalationRule": [ <escalations with attach-to == default> ]
+        }
+      ]
+    }
   }
-]
+}
 ```
+
+For a stage target, the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`, etc.).
+
+> **Common failure:** emitting `slaRules` at the caseplan top level (sibling of `root` / `nodes` / `edges`) or directly on `root` (sibling of `data`). Both are wrong — `uip maestro case validate` will not surface the rules, and runtime ignores them. Always nest inside `data`.
 
 Emission rules:
 
@@ -99,7 +119,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Post-write validation
 
-- Confirm `schema.root.data.slaRules` or `node.data.slaRules` exists with the expected entries.
+- Confirm `root.data.slaRules` or `node.data.slaRules` exists with the expected entries. **Verify the key is nested under `data`, not directly on `root` / on the stage node, and not at the caseplan top level.**
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
 - Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).

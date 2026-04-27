@@ -21,6 +21,14 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
+├── .gemini/                   # Google Gemini CLI project-level configuration
+│   ├── settings.json          # context.fileName → [GEMINI.md, AGENTS.md, CLAUDE.md]
+│   └── commands/              # Gemini custom slash commands (*.toml)
+├── .cursor/                   # Cursor IDE project-level configuration
+│   └── rules/                 # Cursor MDC rule files (one per concern, scoped by globs)
+├── .agents/                   # Codex CLI skill-discovery root
+│   └── skills -> ../skills    # Symlink (Codex scans .agents/skills for SKILL.md)
+├── AGENTS.md -> CLAUDE.md     # Symlink; read by Codex, Copilot coding agent, others
 ├── commands/                  # Plugin-namespaced slash commands shipped to end users
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
@@ -38,6 +46,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │   ├── tasks/                 # Test tasks organized by skill
 │   │   └── <skill-name>/     # One folder per skill
 │   └── reports/               # Generated coverage reports (/test-coverage)
+├── CLAUDE.md                  # Root project rules (source of truth)
 ├── CODEOWNERS                 # GitHub ownership by skill/path
 ├── README.md                  # Project overview and quick start
 ├── CONTRIBUTING.md            # This file
@@ -51,6 +60,22 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 - **References are supplementary.** Large reference material goes in `references/` subdirectories, linked from SKILL.md.
 - **No build system.** This is a documentation and skill-definitions repository. There is no compilation, bundling, or package publishing from this repo.
 
+### Multi-Tool Compatibility
+
+Skills work with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, **Cursor IDE**, and **GitHub Copilot coding agent**. Keep every `SKILL.md` file tool-agnostic markdown — no references to Claude-specific tool names, Anthropic-only plugin features, or vendor-specific slash commands inside skill bodies.
+
+Tool wiring lives outside `skills/`:
+
+| Tool | Integration file | Mechanism |
+|------|------------------|-----------|
+| Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | Plugin marketplace discovers `skills/` via plugin manifest |
+| Google Gemini CLI | `.gemini/settings.json` (`context.fileName`), `.gemini/commands/*.toml` | Gemini loads `GEMINI.md` / `AGENTS.md` / `CLAUDE.md` as project context; discovers `SKILL.md` files on-demand via `.agents/skills/` |
+| OpenAI Codex CLI | `AGENTS.md` (symlink → `CLAUDE.md`), `.agents/skills/` (symlink → `skills/`) | Codex scans `.agents/skills/` for `SKILL.md` files, reads `AGENTS.md` as project instructions |
+| Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
+| GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
+
+When adding a skill, only touch files under `skills/uipath-<name>/` — the root integration files already wire every tool up automatically.
+
 ## Adding a New Skill
 
 ### 1. Choose a Name
@@ -59,7 +84,7 @@ Skill folders follow the naming convention: `uipath-<domain>` or `uipath-<tool>`
 
 - Use **kebab-case** (lowercase, hyphens between words)
 - Prefix with `uipath-` for UiPath-related skills
-- Be descriptive but concise: `uipath-rpa`, `uipath-servo`, `uipath-maestro-flow`
+- Be descriptive but concise: `uipath-rpa`, `uipath-interact`, `uipath-maestro-flow`
 
 ### 2. Create the Folder Structure
 
@@ -98,14 +123,14 @@ description: "<identity> (<unique signal>). <core actions>. For <confusing-case>
 ---
 ```
 
-> **250-character limit.** Claude Code truncates non-bundled skill descriptions at 250 characters in the system prompt — anything beyond is invisible to the model. The pre-commit hook enforces this. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `servo`) within the first ~100 characters.
+> **1024-character limit.** Claude Code truncates the combined `description` + `when_to_use` at 1,536 characters in the skill listing ([source](https://code.claude.com/docs/en/skills.md)). This repo caps `description` at 1024 chars to leave headroom and keep descriptions focused; the pre-commit hook enforces it. Front-load the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters.
 
 **Required frontmatter fields:**
 
 | Field | Description |
 |-------|-------------|
 | `name` | Exact skill identifier, must match the folder name |
-| `description` | Under 250 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
+| `description` | Under 1024 chars. Front-load identity and unique signals, then core actions, then compact `→` redirects for commonly confused sibling skills. Do NOT use verbose `TRIGGER when:` / `DO NOT TRIGGER when:` clauses — they waste characters. |
 
 **Optional frontmatter fields:**
 
@@ -188,7 +213,7 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 
 ### Git Hooks
 
-This repository uses pre-commit hooks to validate skill descriptions (250-character limit). To enable them:
+This repository uses pre-commit hooks to validate skill descriptions (1024-character limit). To enable them:
 
 ```bash
 bash scripts/setup-hooks.sh
@@ -258,7 +283,7 @@ Before submitting your PR, verify:
 
 ### SKILL.md
 - [ ] Frontmatter has `name` matching the folder name
-- [ ] Frontmatter `description` is under 250 characters (enforced by pre-commit hook)
+- [ ] Frontmatter `description` is under 1024 characters (enforced by pre-commit hook)
 - [ ] Frontmatter `description` front-loads identity and unique signals, uses `→` redirects (not verbose TRIGGER/DO NOT TRIGGER)
 - [ ] Critical Rules section exists with numbered, actionable rules
 - [ ] CLI commands include exact flags and `--output json` where appropriate
@@ -286,7 +311,7 @@ Before submitting your PR, verify:
 ## Pull Request Process
 
 1. **Fork** this repository
-2. **Create a feature branch** from `main` (e.g., `feat/add-my-skill`, `fix/servo-snapshot-docs`)
+2. **Create a feature branch** from `main` (e.g., `feat/add-my-skill`, `fix/uia-snapshot-docs`)
 3. **Make your changes** following the guidelines above
 4. **Run through the Quality Checklist**
 5. **Submit a pull request** against `main`
@@ -300,7 +325,7 @@ Before submitting your PR, verify:
 | Type | Pattern | Example |
 |------|---------|---------|
 | New skill | `feat/add-<skill-name>` | `feat/add-uipath-data-service` |
-| Skill improvement | `feat/<skill-name>-<description>` | `feat/servo-add-drag-support` |
+| Skill improvement | `feat/<skill-name>-<description>` | `feat/uia-add-drag-support` |
 | Bug fix | `fix/<skill-name>-<description>` | `fix/flow-validate-edge-ports` |
 | Documentation | `docs/<description>` | `docs/update-platform-cli-reference` |
 

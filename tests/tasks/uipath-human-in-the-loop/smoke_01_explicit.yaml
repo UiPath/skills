@@ -39,13 +39,21 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent named a specific pattern (non-empty pattern field)"
+  - type: json_check
+    description: "Agent named an approval or write-back pattern (case-tolerant)"
     path: "recommendation.json"
-    includes:
-      - "approval"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "pprov"
+      - expression: "pattern"
+        operator: contains
+        expected: "rite"
+      - expression: "pattern"
+        operator: contains
+        expected: "alid"
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.33
 
   - type: file_contains
     description: "Agent proposed a schema with outcomes"

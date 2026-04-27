@@ -1,5 +1,7 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
+> **Phase split.** Runs across both phases. Phase 2a writes `data.type-id` + `data.connection-id` only; **do NOT call `is resources describe` in 2a**. Phase 2b runs `is resources describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Fetch connector metadata via CLI, then write the task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md`.
 
 ## Prerequisites from Planning
@@ -50,9 +52,11 @@ uip case tasks describe --type connector-activity \
 | `enrichment.operation` | `.Data.enrichment.operation` | `"SendEmailV2"` |
 | `enrichment.path` | `.Data.enrichment.path` | `"/hubs/productivity/send-mail-v2"` |
 | `enrichment.inputMetadata` | `.Data.enrichment.inputMetadata` | `{"type":"multipart","multipart":{"bodyFieldName":"body"}}` |
+| `enrichment.multipartParameters` | `.Data.enrichment.multipartParameters` | `[{"name":"file","dataType":"file"},{"name":"body","dataType":"string"}]` |
 | `outputs` | `.Data.outputs` | Array with response schema + Error |
+| `inputs` | `.Data.inputs` | Array — includes `pathParameters`, `queryParameters`, `file` entries when applicable |
 
-> **All three enrichment fields are critical.** Without `inputMetadata`, multipart activities fail. Without `path`, wrong endpoint. Without `operation`, incomplete essentialConfiguration.
+> **All enrichment fields are critical.** Without `inputMetadata`, multipart activities fail. Without `path`, wrong endpoint. Without `operation`, incomplete essentialConfiguration. Without `multipartParameters`, the runtime cannot parse multipart request bodies.
 
 > **Do NOT derive `path` or `operation` from `Config.objectName`.** The resolved values differ (e.g., `SendEmailV2` not `send-mail-v2`, `/hubs/productivity/send-mail-v2` not `/send-mail-v2`).
 
@@ -89,7 +93,7 @@ Both share `resourceKey` = `connection-id`. ID generation: `b` + 8 alphanumeric 
 
 ### 3b. `data.context[]`
 
-No `operation` context entry for activities — the FE only adds `operation` to context for triggers. Activity tasks use `enrichment.operation` inside `essentialConfiguration` and `designTimeMetadata` only.
+No `operation`, `_label`, or `designTimeMetadata` for activities — the FE only adds `operation` to context for triggers. Activity tasks use `enrichment.operation` inside `essentialConfiguration` only.
 
 | `name` | `value` source | Notes |
 |---|---|---|
@@ -100,24 +104,24 @@ No `operation` context entry for activities — the FE only adds `operation` to 
 | `objectName` | `object-name` (tasks.md) | |
 | `method` | `Config.httpMethod` (Step 1) | |
 | `path` | `enrichment.path` (Step 2) | From Swagger — includes hub prefix |
-| `_label` | `Entry.displayName` (Step 1) | |
 | `metadata` | *(see §3c)* | `type: "json"` with `body` |
 
 ### 3c. `metadata` context entry body
 
+Key order must match FE: `activityPropertyConfiguration` → `activityMetadata` → `inputMetadata` → `telemetryData`. No `designTimeMetadata` or top-level `errorState`.
+
 ```json
 {
+  "activityPropertyConfiguration": {
+    "multipartParameters": "<enrichment.multipartParameters from Step 2 — omit key entirely if absent>",
+    "configuration": "=jsonString:<see §3d>",
+    "uiPathActivityTypeId": "<type-id>",
+    "errorState": { "issues": [] }
+  },
   "activityMetadata": {
     "activity": "<Entry from Step 1 — copy full object>"
   },
-  "designTimeMetadata": {
-    "activityDisplayName": "<Entry.displayName>",
-    "connectorLogoUrl": "<Entry.svgIconUrl>",
-    "activityConfig": {
-      "isCurated": true,
-      "operation": "<enrichment.operation>"
-    }
-  },
+  "inputMetadata": "<enrichment.inputMetadata from Step 2 — copy as-is, or {} if absent>",
   "telemetryData": {
     "connectorKey": "<connector-key>",
     "connectorName": "<connectorName from Step 1>",
@@ -125,13 +129,6 @@ No `operation` context entry for activities — the FE only adds `operation` to 
     "objectName": "<object-name>",
     "objectDisplayName": "<Entry.displayName>",
     "primaryKeyName": ""
-  },
-  "inputMetadata": "<enrichment.inputMetadata from Step 2 — copy as-is, or {} if absent>",
-  "errorState": { "hasError": false },
-  "activityPropertyConfiguration": {
-    "configuration": "=jsonString:<see §3d>",
-    "uiPathActivityTypeId": "<type-id>",
-    "errorState": { "issues": [] }
   }
 }
 ```
@@ -158,7 +155,49 @@ A `=jsonString:` prefixed JSON string. Use `Config` from Step 1 + enrichment fro
 
 ### 3e. `data.inputs[]`
 
-Copy `input-values` from the `tasks.md` entry directly. Planning already resolved all field values, IDs, and built the nested JSON structure — implementation just writes it.
+Build inputs from `tasks describe` Step 2 output (`.Data.inputs`) and `input-values` from `tasks.md`. The `tasks describe` response already includes all required input entries (`pathParameters`, `queryParameters`, `file`, `body`) — use them as the skeleton and populate `body` values from `tasks.md`.
+
+Always include `pathParameters` (even when empty):
+
+```json
+{
+  "name": "pathParameters",
+  "type": "json",
+  "target": "pathParameters",
+  "var": "<v + 8 chars>",
+  "id": "<same as var>",
+  "elementId": "<elementId>"
+}
+```
+
+If `tasks describe` returns a `queryParameters` input, include it (populate `body` from `input-values.queryParameters` if present):
+
+```json
+{
+  "name": "queryParameters",
+  "type": "json",
+  "target": "queryParameters",
+  "body": "<input-values.queryParameters from tasks.md, or {} if absent>",
+  "var": "<v + 8 chars>",
+  "id": "<same as var>",
+  "elementId": "<elementId>"
+}
+```
+
+If `tasks describe` returns a `file` input (multipart activities), include it (even when empty):
+
+```json
+{
+  "name": "file",
+  "type": "file",
+  "target": "file",
+  "var": "<v + 8 chars>",
+  "id": "<same as var>",
+  "elementId": "<elementId>"
+}
+```
+
+The `body` input carries the actual task data from `input-values`:
 
 ```json
 {
@@ -166,20 +205,6 @@ Copy `input-values` from the `tasks.md` entry directly. Planning already resolve
   "type": "json",
   "target": "body",
   "body": "<input-values.body from tasks.md — already nested>",
-  "var": "<v + 8 chars>",
-  "id": "<same as var>",
-  "elementId": "<elementId>"
-}
-```
-
-If `input-values` includes `queryParameters`, add a separate entry:
-
-```json
-{
-  "name": "queryParameters",
-  "type": "json",
-  "target": "queryParameters",
-  "body": "<input-values.queryParameters from tasks.md>",
   "var": "<v + 8 chars>",
   "id": "<same as var>",
   "elementId": "<elementId>"
@@ -218,20 +243,28 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 1. `type` is `"execute-connector-activity"`
 2. `data.serviceType` is `"Intsvc.ActivityExecution"`
-3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `method`, `path`, `_label`, `metadata` — but NOT `operation`
+3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `method`, `path`, `metadata` — but NOT `operation` or `_label`
 4. `metadata.body.activityPropertyConfiguration.configuration` starts with `=jsonString:` and contains `enrichment.operation` + `enrichment.path`
-5. `metadata.body.inputMetadata` matches `enrichment.inputMetadata` (not empty `{}` if multipart)
-6. Root bindings exist for ConnectionId + folderKey
-7. `data.bindings[]` is empty `[]`
-8. `data.outputs[]` copied verbatim with `elementId` set
+5. `metadata.body.activityPropertyConfiguration.multipartParameters` matches `enrichment.multipartParameters` (present when multipart)
+6. `metadata.body.inputMetadata` matches `enrichment.inputMetadata` (not empty `{}` if multipart)
+7. Root bindings exist for ConnectionId + folderKey
+8. `data.bindings[]` is empty `[]`
+9. `data.outputs[]` copied verbatim with `elementId` set
+10. `data.inputs[]` includes `pathParameters` (always), `queryParameters` (when applicable), `file` (when multipart has file), `body`
 
 ## What NOT to Do
 
 - **Do NOT add `operation` to `data.context[]`.** The FE only adds `operation` for triggers — activity context must not have it.
+- **Do NOT add `_label` to `data.context[]`.** The FE does not include it.
+- **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
+- **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT derive `path` from `objectName`** (e.g., `/<objectName>`). The real path includes hub prefixes — use `enrichment.path`.
 - **Do NOT derive `operation` from `objectName`.** They differ (e.g., `SendEmailV2` vs `send-mail-v2`) — use `enrichment.operation`.
 - **Do NOT set `inputMetadata: {}`** when `enrichment.inputMetadata` has content. Multipart activities fail without it.
+- **Do NOT omit `multipartParameters`** from `activityPropertyConfiguration` when `enrichment.multipartParameters` exists. Without it, the runtime cannot parse multipart request bodies (400 "Unable to parse multipart body").
+- **Do NOT omit `pathParameters` input.** Always include it, even when empty — the FE always sends it.
+- **Do NOT omit `file` input** when `enrichment.multipartParameters` has a file entry. Include it even when empty.
 - **Do NOT add `data.name`.** The FE does not use it for connector tasks.
 - **Do NOT auto-inject `entryConditions`.** Step 10 handles them — injecting here creates duplicates.
 

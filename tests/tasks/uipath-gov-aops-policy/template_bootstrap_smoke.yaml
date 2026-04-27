@@ -1,0 +1,84 @@
+task_id: skill-gov-aops-policy-template-bootstrap-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-gov-aops-policy skill to
+  bootstrap AOps governance policy templates for all products into a
+  session directory. Tests whether the skill teaches the correct
+  `template list --output-dir` command (Critical Rule #3) — a single call
+  that writes `form-template.json`, `form-data.json`, and
+  `form-template-locale-resource.json` per product — instead of looping
+  `product list` + per-product `template get`.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov aops-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-gov-aops-policy, smoke, template, bootstrap]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I am starting a new AOps governance policy authoring session. Bootstrap
+  the policy-form templates for every product into `./session/products/`
+  so I can review which products are available and inspect their form
+  schemas. Use the uipath-gov-aops-policy skill.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "bootstrap_command": "<exact uip gov aops-policy template list command you ran>",
+      "output_dir": "./session/products",
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, record the result (success or
+    error) in report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip gov aops-policy command where applicable.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy template list` with --output-dir pointing at ./session/products"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+template\s+list\s+.*--output-dir\s+["'']?\.?/?session/products'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the current CLI namespace and did NOT fall back to per-product `template get` or `product list` bootstrap path (Critical Rule #3)"
+    path: "report.json"
+    includes:
+      - "uip gov aops-policy template list"
+    excludes:
+      - "uip admin aops-policy"
+      - "aops-policy product list"
+      - "aops-policy template get"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure and at least one command used"
+    path: "report.json"
+    assertions:
+      - expression: "length(bootstrap_command)"
+        operator: gte
+        expected: 10
+      - expression: "output_dir"
+        operator: contains
+        expected: "session/products"
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 1
+    weight: 1.5
+    pass_threshold: 0.75

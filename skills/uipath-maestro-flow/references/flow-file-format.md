@@ -148,6 +148,8 @@ Each key in `layout.nodes` is a node `id`. Every node in the `nodes` array shoul
 - Standard size is `{ "width": 96, "height": 96 }` for all node types
 - Never use vertical (top-to-bottom) layout
 
+**Subflow layout is scoped.** Each subflow entry in `subflows.<id>` has its **own** `layout.nodes` map for the nodes inside that subflow. Do NOT put subflow node positions in the top-level `layout.nodes` — they live alongside the subflow's `nodes`/`edges`/`variables`. See [subflow/impl.md](plugins/subflow/impl.md).
+
 ## Edge — both ports required
 
 ```json

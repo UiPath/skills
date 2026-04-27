@@ -1,0 +1,46 @@
+task_id: skill-flow-decision
+description: >
+  Create a UiPath Flow that takes a temperature in Fahrenheit and uses a Decision
+  node for binary branching: if the temperature is above 75 return "warm",
+  otherwise return "cool". Exercises Decision node discovery, boolean expression
+  configuration, and true/false branch wiring.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:decision]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "TemperatureChecker" that takes a
+  temperature in Fahrenheit as input. If the temperature is greater than 75,
+  the flow should output "warm". Otherwise it should output "cool".
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate TemperatureChecker/TemperatureChecker/TemperatureChecker.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Structural and execution checks --
+  - type: run_command
+    description: "Flow contains a Decision node and debug returns correct classification"
+    command: "python3 $TASK_DIR/check_decision_flow.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

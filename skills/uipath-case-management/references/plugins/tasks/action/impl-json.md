@@ -1,5 +1,7 @@
 # action task — Implementation (Direct JSON Write)
 
+> **Phase split.** Runs across both phases. Phase 2a writes shape: `data.taskTitle` + full `data.inputs[]` / `data.outputs[]` schema from `tasks describe`, each `value` empty (`""`). Phase 2b binds values via [`../../variables/io-binding/impl-json.md`](../../variables/io-binding/impl-json.md). See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Cross check the action (HITL) task metadata via CLI, then write the task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md`.
 
 ## Task JSON Shape

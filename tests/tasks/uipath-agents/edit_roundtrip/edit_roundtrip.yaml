@@ -15,6 +15,7 @@ agent:
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
+  max_turns: 30
 
 sandbox:
   driver: tempdir

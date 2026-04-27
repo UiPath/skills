@@ -1,5 +1,7 @@
 # task-entry-conditions — Implementation (Direct JSON Write)
 
+> **Phase split.** Phase 2b only. Phase 2a does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Write the task-entry condition directly to the target task's `entryConditions[]`. No CLI command needed.
 
 ## Condition JSON Shape
@@ -94,6 +96,7 @@ Expression syntax per [`../../../bindings-and-expressions.md`](../../../bindings
 | `selected-tasks-completed` | `selectedTasksIds` (array) |
 | `wait-for-connector` | — |
 | `adhoc` | — |
+| `runs-sequentially` | — |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
 

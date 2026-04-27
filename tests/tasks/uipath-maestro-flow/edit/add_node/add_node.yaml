@@ -3,7 +3,7 @@ description: >
   Add a script node to an existing BellevueWeather flow that converts the
   temperature from Fahrenheit to Celsius between the HTTP fetch and the
   format-summary step. Exercises inserting a node into an existing edge.
-tags: [uipath-maestro-flow, e2e, edit, ootb]
+tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 max_iterations: 1
 
 agent:

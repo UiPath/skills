@@ -55,6 +55,9 @@
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
+# AOps Governance skill
+/skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
 # Test skill (reports, manual test automation, manual test execution)
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath
 
@@ -64,4 +67,7 @@
 
 # Tasks skill (Action Center Operate)
 /skills/uipath-tasks/ @UiPath/ActionCenterDev
-/tests/tasks/uipath-tasks/ UiPath/ActionCenterDev
+/tests/tasks/uipath-tasks/ @UiPath/ActionCenterDev
+
+# Access Policy Governance skill (CLI-based ToolUsePolicy management)
+/skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2

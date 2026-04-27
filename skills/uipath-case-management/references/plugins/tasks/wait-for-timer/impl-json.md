@@ -1,5 +1,7 @@
 # wait-for-timer task — Implementation (Direct JSON Write)
 
+> **Phase split.** Written in Phase 2a only. The timer task has no variable inputs to bind — `timerType` + duration come from `tasks.md` planning. Phase 2b does not revisit this plugin. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Write the timer task directly to `caseplan.json`. No CLI command needed.
 
 ## Task JSON Shape
