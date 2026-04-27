@@ -94,7 +94,7 @@ Read: file_path="{projectRoot}/ExistingWorkflow.xaml"
 Use when you need to find which activity implements a user-described action:
 
 ```bash
-uip rpa find-activities --query "send mail" --limit 10 --output json```
+uip rpa find-activities --query "send mail" --limit 10 --output json
 ```
 
 - Results are **global** — not limited to installed packages
@@ -123,7 +123,8 @@ Use `uip rpa get-default-activity-xaml` when activity docs are insufficient:
 # Non-dynamic activity:
 uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json
+```
 
 For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"`. See [jit-custom-types-schema.md](jit-custom-types-schema.md).
 
@@ -132,10 +133,11 @@ For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSch
 Use when activity docs, `find-activities`, and `get-default-activity-xaml` don't provide enough context:
 
 ```bash
-uip rpa list-workflow-examples --tags web --limit 10 --output jsonuip rpa get-workflow-example --key "<BLOB_PATH>"```
+uip rpa list-workflow-examples --tags web --limit 10 --output json
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json
+```
 
 **Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
-```
 
 ### Step 1.8: Get Current Context (As Needed)
 
@@ -200,7 +202,8 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 ### Step 3.1: Check for Errors
 
 ```bash
-uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json```
+uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json
+```
 
 `--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks.
 

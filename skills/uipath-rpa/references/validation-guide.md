@@ -58,7 +58,8 @@ uip rpa run-file --file-path "<FILE>" --output json
 # Run with input arguments:
 uip rpa run-file --file-path "<FILE>" --input-arguments '{"key": "value"}' --output json
 # Run with verbose logging for debugging:
-uip rpa run-file --file-path "<FILE>" --log-level Verbose --output json```
+uip rpa run-file --file-path "<FILE>" --log-level Verbose --output json
+```
 
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior
@@ -92,7 +93,8 @@ C) <user-driven approach>
 ```
 Read: file_path="{projectRoot}/project.json"     -> check current dependencies
 
-Bash: uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'```
+Bash: uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'
+```
 
 Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
 
@@ -116,7 +118,8 @@ When `get-errors` returns an error referencing a specific activity (by IdRef or 
 # Focus a specific activity by its IdRef (from the error output):
 uip rpa focus-activity --activity-id "Assign_1"
 # Focus all activities sequentially (useful for walkthrough):
-uip rpa focus-activity```
+uip rpa focus-activity
+```
 
 This is especially useful when:
 - An error references an activity and you want the user to confirm the context

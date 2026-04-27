@@ -1,6 +1,6 @@
 # XAML Outlook Mail Activities (UiPath.Mail.Activities)
 
-Classic Outlook mail activity patterns for `UiPath.Mail.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml --use-studio` — this file covers confirmed namespace and attribute patterns from real workflows only. **Not for `UiPath.MicrosoftOffice365.Activities`** — see `msoffice365-outlook-activities.md` for O365.
+Classic Outlook mail activity patterns for `UiPath.Mail.Activities`. Always get full XAML from `uip rpa get-default-activity-xaml` — this file covers confirmed namespace and attribute patterns from real workflows only. **Not for `UiPath.MicrosoftOffice365.Activities`** — see `msoffice365-outlook-activities.md` for O365.
 
 ## Package
 
@@ -68,4 +68,4 @@ Without IS connection, omit `UseISConnection` and the child element entirely.
 | `ForEachEmailX` | Two args: `Argument1` (`snm:MailMessage` `"CurrentMail"`) + `Argument2` (`x:Int32` `"CurrentIndex"`) |
 | `SaveMailAttachments` | Uses `ui:` prefix even inside modern scope — it's a classic activity |
 | Email properties | `CurrentMail.Subject`, `CurrentMail.SenderEmailAddress()`, `CurrentMail.Date()`, `CurrentMail.Priority.AsText()`, `CurrentMail.Attachments.Count` |
-| Full XAML | Always use `uip rpa get-default-activity-xaml --use-studio` for complete activity XAML |
+| Full XAML | Always use `uip rpa get-default-activity-xaml` for complete activity XAML |

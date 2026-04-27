@@ -10,6 +10,7 @@ If the installed version is below the minimum, ask the user whether to upgrade:
 ```bash
 uip rpa get-versions --package-id UiPath.UIAutomation.Activities --project-dir "$PROJECT_DIR" --output json
 # If user approves the upgrade (substitute <MIN_VERSION> with the value declared above):
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "<MIN_VERSION>"}]' --project-dir "$PROJECT_DIR" --output json```
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "<MIN_VERSION>"}]' --project-dir "$PROJECT_DIR" --output json
+```
 
 If the user declines, warn that `uip rpa uia` commands will fail and fall back to indication (see [uia-configure-target-workflows.md](uia-configure-target-workflows.md) § Indication Fallback).

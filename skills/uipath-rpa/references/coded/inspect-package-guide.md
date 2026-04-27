@@ -8,13 +8,15 @@ The inspect-package tool is built into the UiPath CLI. No separate build step is
 
 ### Inspect a package from a NuGet feed
 ```bash
-uip rpa inspect-package --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]```
+uip rpa inspect-package --package-name <PackageName> --package-version <Version> [--feed-url <NuGetV3FeedUrl>]
+```
 
 When `--feed-url` is omitted, the tool downloads from the UiPath Official feed first and falls back to nuget.org.
 
 ### Inspect a local .nupkg file
 ```bash
-uip rpa inspect-package --nupkg-path <path/to/package.nupkg>```
+uip rpa inspect-package --nupkg-path <path/to/package.nupkg>
+```
 
 Use this when the package is already cached locally (e.g. from a private feed) or when you have a `.nupkg` file on disk.
 
@@ -30,7 +32,8 @@ uip rpa inspect-package --package-name MyPackage --package-version 1.0.0 --feed-
 # Inspect third-party package from nuget.org
 uip rpa inspect-package --package-name CsvHelper --package-version 33.0.1
 # Inspect a local .nupkg file directly
-uip rpa inspect-package --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg```
+uip rpa inspect-package --nupkg-path ~/.nuget/packages/csvhelper/33.0.1/csvhelper.33.0.1.nupkg
+```
 
 ## Finding the Latest Stable Version
 
