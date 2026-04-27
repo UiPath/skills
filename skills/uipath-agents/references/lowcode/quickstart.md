@@ -13,7 +13,7 @@
 
 ## Critical Rules
 
-1. **Edit JSON files directly** — the CLI supports `init` (scaffold) and `validate` (check + migrate). Agent configuration (prompts, schemas, settings) is done by editing `agent.json` and `entry-points.json`. Resources (tools, contexts, escalations) are added as individual files in `resources/{ResourceName}/resource.json` inside the agent project directory — **not** inline in `agent.json`. The root `agent.json` should not contain a `resources` field. The `validate` command reads these resource files and generates `.agent-builder/agent.json` which inlines them.
+1. **Use CLI commands for supported edits** — use `uip agent input add`, `uip agent output add`, `uip agent tool add`, `uip agent context add`, and `uip agent escalation add` whenever they cover the requested change. Edit `agent.json` / `entry-points.json` directly only for fields the CLI does not expose yet, then validate. The root `agent.json` should not contain a `resources` field. The `validate` command reads resource files and generates `.agent-builder/agent.json` with resources inlined.
 
 2. **Validate after every bulk of edits** — run `uip agent validate --output json` after completing a set of related changes. Validate: (1) statically checks `agent.json` structure, `contentTokens` consistency, `entry-points.json` schema sync, and `project.uiproj`; (2) applies all pending migrations in memory and returns errors without touching disk if migration fails; (3) post-migration validates `agent.json` schema, eval-sets, and evaluators; (4) writes migrated files back to disk only when all checks pass.
 
@@ -37,7 +37,7 @@
 
 12. **Agent tools have `"location": "solution"` or `"location": "external"`.** Solution-internal tools use `"location": "solution"`. External tools (already deployed in Orchestrator) use `"location": "external"`. Both use `"folderPath": "solution_folder"`.
 
-13. **External tools require solution-level resource files and debug_overwrites.json.** When adding an external tool (e.g., an RPA process, agent, API workflow, or agentic process already deployed in Orchestrator), you must create the agent-level `resources/{ToolName}/resource.json`, solution-level resource files under `resources/solution_folder/`, AND a `userProfile/<userId>/debug_overwrites.json` for folder resolution. Without these, Studio Web will show "resource is missing in this environment". See [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files for External Tools.
+13. **External tools require CLI authoring plus solution resource refresh.** When adding an external tool (e.g., an RPA process, agent, API workflow, or agentic process already deployed in Orchestrator), use `uip agent tool add`, then run `uip agent validate` and `uip solution resource refresh`. The CLI writes the agent-level tool resource and refresh imports supported solution-level files plus `debug_overwrites.json`. Without refresh, Studio Web may show "resource is missing in this environment". See [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files for External Tools for troubleshooting and advanced fallback details.
 
 14. **Never manually edit `storageVersion`.** It is managed by `uip agent validate` (which migrates files to the latest version on success) and by Studio Web on import. If validate reports that `storageVersion` is newer than supported, upgrade uipcli rather than editing the field by hand.
 
@@ -61,47 +61,89 @@
 
 ### Add an Input Field
 
-1. Add to `agent.json` → `inputSchema.properties` (and `.required` if mandatory)
-2. Mirror in `entry-points.json` → `entryPoints[0].input.properties` (and `.required`)
-3. Update `messages[1].content` and `contentTokens` if the field should appear in the user message
-4. Validate
+```bash
+uip agent input add "<fieldName>" --type string --description "<description>" --path "<AGENT_NAME>" --output json
+```
+
+Then update `messages[1].content` and `contentTokens` if the field should appear in the user message, and validate.
 
 ### Add an Output Field
 
-1. Add to `agent.json` → `outputSchema.properties`
-2. Mirror in `entry-points.json` → `entryPoints[0].output.properties`
-3. Validate
+```bash
+uip agent output add "<fieldName>" --type string --description "<description>" --path "<AGENT_NAME>" --output json
+```
 
-### Add an Escalation (hand off to a human via Action Center)
+Then validate.
 
-See Scenario 6 below for the full step-by-step workflow. The skill writes only the agent-level `resources/{EscalationName}/resource.json`; `uip solution resource refresh` writes the solution-level `app/workflow Action`, `appVersion`, and `package` files.
+### Add an Escalation (hand off to a human)
 
-### Add a Context (Context Grounding index / attachments / DataFabric entity set)
+Use the CLI:
 
-See Scenario 7 below. For `contextType: "index"` with a StorageBucket-backed ECS index, the skill writes only the agent-level `resources/{ContextName}/resource.json`; `uip solution resource refresh` auto-generates the solution-level `index/<N>.json`, `Bucket/OrchestratorBucket/<N>.json`, and `debug_overwrites.json` entries. `attachments` and `datafabricentityset` contexts do not require solution-level files (attachments) or are not yet auto-generated (DataFabric).
+```bash
+uip agent escalation add "<EscalationName>" \
+  --description "<when to escalate>" \
+  --path "<AGENT_NAME>" \
+  --output json
+```
+
+Then run `uip agent validate "<AGENT_NAME>" --output json`. If you need Action Center app wiring that the CLI cannot express yet, document the missing flag from `uip agent escalation add --help --output json` before using the advanced `resource.json` reference.
+
+### Add a Context (Context Grounding index)
+
+Use the CLI:
+
+```bash
+uip agent context add "<ContextName>" \
+  --index "<INDEX_NAME>" \
+  --retrieval-mode semantic \
+  --result-count 3 \
+  --path "<AGENT_NAME>" \
+  --output json
+```
+
+Then run `uip agent validate "<AGENT_NAME>" --output json`.
 
 ### Add a Tool (RPA process, agent, Integration Service)
 
 #### Integration Service tools
 
-See Scenario 5 below for the full step-by-step workflow.
+Discover and add with the CLI:
+
+```bash
+uip agent tool discover --connector "<CONNECTOR_KEY>" --output json
+
+uip agent tool add "<ToolName>" \
+  --type integration \
+  --connector "<CONNECTOR_KEY>" \
+  --object-name "<OBJECT_NAME>" \
+  --connection-id "<CONNECTION_ID>" \
+  --path "<AGENT_NAME>" \
+  --output json
+```
+
+Use `uip agent tool connect "<ToolName>" --connection-id "<CONNECTION_ID>" --path "<AGENT_NAME>" --output json` when a connection must be bound to an existing integration tool.
 
 #### Solution-internal tools (another project in the same solution)
 
-1. Create `resources/{ToolName}/resource.json` inside the agent project directory with `$resourceType: "tool"` — see [agent-json-format.md](agent-json-format.md) § Resources
-2. Set `"location": "solution"`, `"folderPath": "solution_folder"`, and `"referenceKey": ""` (validate resolves it and writes it back to disk)
-3. Validate — this generates `.agent-builder/` files and resolves `referenceKey`
+1. Run `uip agent tool add "<ToolName>" --type agent --process-name "<ProjectName>" --folder-path "solution_folder" --path "<AGENT_NAME>" --output json` (use `--type process`, `apiWorkflow`, or `processOrchestration` for other resource kinds).
+2. Validate — this generates `.agent-builder/` files and resolves solution references.
 
 #### External tools (already deployed in Orchestrator)
 
 Supports 4 types: RPA processes, agents, API workflows, and agentic processes.
 
 1. **Discover the process** — `uip solution resource list --kind Process --source remote --search "<NAME>" --output json`. Returns `Key` (release GUID → `referenceKey`), `Type` (maps 1:1 to the agent resource `type` — `process`/`agent`/`api`/`processOrchestration`; ignore `webApp` entries), `Folder`, `FolderKey`.
-2. **Get ProcessKey + ProcessVersion + FeedId via Releases API** — query `/odata/Releases?$filter=Key eq <RELEASE_KEY>` with `X-UIPATH-FolderKey: <FolderKey>`. See [agent-json-format.md](agent-json-format.md) § How to get the values.
-3. **Get argument schemas via `GetPackageEntryPointsV2`** — query `/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='<ProcessKey>:<Version>')?feedId=<FeedId>`. JSON Schema `InputArguments`/`OutputArguments` work for all 4 types. Parse them for the agent-level `inputSchema`/`outputSchema`.
-4. **Create agent-level resource** — create `resources/{ToolName}/resource.json` with `"location": "external"`, `"type"` from step 1, `"folderPath": "solution_folder"`, `"referenceKey"` = release `Key`. Set `inputSchema`/`outputSchema` from the parsed JSON Schema. Include `"exampleCalls": []` in `properties`.
-5. **Validate** — `uip agent validate "<AGENT_NAME>" --output json`. Generates `bindings_v2.json`.
-6. **Refresh solution resources** — `uip solution resource refresh --output json`. Imports the `Process` binding into the solution. If the rich solution-level files (`process/<type_dir>/<N>.json`, `package/<N>.json`, `debug_overwrites.json`) are not produced, hand-author them per [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files.
+2. **Add the tool** — run:
+   ```bash
+   uip agent tool add "<ToolName>" \
+     --type "<process|agent|apiWorkflow|processOrchestration>" \
+     --process-name "<PROCESS_OR_AGENT_NAME>" \
+     --folder-path "<FOLDER_PATH>" \
+     --path "<AGENT_NAME>" \
+     --output json
+   ```
+3. **Validate** — `uip agent validate "<AGENT_NAME>" --output json`. Generates `bindings_v2.json`.
+4. **Refresh solution resources** — `uip solution resource refresh --output json`. Imports the binding into the solution and generates available solution-level resource files.
 
 ### Change Model Settings
 
@@ -186,10 +228,15 @@ uip agent init "ToolAgent" --output json
 uip solution project add "ParentAgent" --output json
 uip solution project add "ToolAgent" --output json
 
-# 4. Create ParentAgent/resources/ToolAgent/resource.json with the tool definition
-# See agent-json-format.md § Resources for the full format.
-# Use location: "solution" + folderPath: "solution_folder" for solution-internal tools.
-# For external tools, see Scenario 4 — also requires solution-level resource files.
+# 4. Add ToolAgent as a solution-internal tool for ParentAgent
+uip agent tool add "ToolAgent" \
+  --type agent \
+  --process-name "ToolAgent" \
+  --folder-path "solution_folder" \
+  --path "ParentAgent" \
+  --output json
+
+# For external tools, see Scenario 4 — validate and refresh solution resources too.
 
 # 5. Validate both (generates .agent-builder/ files and resolves referenceKey)
 uip agent validate ParentAgent --output json
@@ -218,8 +265,8 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # - Set model in settings.model
 # - Configure outputSchema if needed
 
-# 4. Add tools to <FlowProjectDir>/<projectId>/resources/ (optional)
-# Same resource.json format as standalone agents
+# 4. Add tools to the inline agent (optional)
+# Use uip agent tool add with --path "<FlowProjectDir>/<projectId>"
 
 # 5. Validate the inline agent
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
@@ -320,7 +367,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 Use when the agent needs to call an Integration Service activity (e.g., Slack Send Message, Web Search, Jira Create Issue). Integration Service tools connect to external apps via pre-built connectors and authenticated connections.
 
-**Key difference from Orchestrator tools:** IS tools use connection resources (not package/process resources) at the solution level. You only need to create the agent-level `resource.json` — solution-level files are auto-generated by `uip solution resource refresh`.
+**Key difference from Orchestrator tools:** IS tools use connection resources (not package/process resources) at the solution level. Use `uip agent tool add` for the agent-level tool resource; solution-level files are auto-generated by `uip solution resource refresh`.
 
 ```bash
 # 1. Create solution and scaffold agent (if not already done)
@@ -380,11 +427,21 @@ The response includes a `metadataFile` path. Read that cached JSON file to get:
 - `method` → `properties.method`
 - `description` → tool description
 
-### Step 7 — Build and write the tool resource.json
+### Step 7 — Add the Integration Service tool
 
-**File:** `<AGENT_NAME>/resources/<ToolName>/resource.json`
+Use the CLI to create the tool resource:
 
-Build the `resource.json` from the metadata. See [agent-json-format.md](agent-json-format.md) § Integration Service tool resource for the full template and field mapping.
+```bash
+uip agent tool add "<ToolName>" \
+  --type integration \
+  --connector "<connector-key>" \
+  --object-name "<object-name>" \
+  --connection-id "<connection-id>" \
+  --path "<AGENT_NAME>" \
+  --output json
+```
+
+If the CLI lacks a metadata field required by Studio Web, document the missing flag from `uip agent tool add --help --output json`, then use [agent-json-format.md](agent-json-format.md) § Integration Service tool resource as the advanced JSON reference.
 
 Key rules for building `properties.parameters` from `requestFields`:
 - Each `requestField` becomes a parameter with `fieldLocation: "body"` and `value: "{{prompt}}"` (dynamic, filled by the LLM at runtime)
@@ -440,7 +497,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 Use when the agent needs to hand off to a human via a deployed UiPath Action Center app (a web app of kind `workflow Action`). The agent pauses, creates a task on the app, and resumes when the human picks an outcome.
 
-**Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resource refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
+**Key pattern:** use `uip agent escalation add`, then validate and refresh. The CLI writes the agent-level escalation resource; `uip solution resource refresh` imports the App binding and generates the supported solution-level files plus the `debug_overwrites.json` entries. No manual solution-level authoring is required for `actionCenter` channels when the CLI and refresh support the needed fields.
 
 ### Step 1 — Create solution and scaffold agent (if not already done)
 
@@ -547,16 +604,21 @@ Use other `type` values (1=UserId, 2=GroupId, 4=AssetUserEmail, 5=StaticGroupNam
 
 Default `taskTitle` / `taskTitleV2` to a short human-readable label — e.g., `"Approval request"`. `taskTitle` is a string; `taskTitleV2` is a `contentTokens`-style object (see § Messages).
 
-### Step 6 — Write the agent-level resource.json
+### Step 6 — Add the escalation
 
-**File:** `<AGENT_NAME>/resources/<EscalationName>/resource.json`
+```bash
+uip agent escalation add "<EscalationName>" \
+  --description "<when to escalate>" \
+  --path "<AGENT_NAME>" \
+  --output json
+```
 
-Use the full shape from [agent-json-format.md](agent-json-format.md) § Escalation resource. Generate fresh UUIDs for the top-level `id` AND the channel `id` — do not reuse.
+If the CLI lacks a channel field required by the app, document the missing flag from `uip agent escalation add --help --output json`, then use [agent-json-format.md](agent-json-format.md) § Escalation resource as the advanced JSON reference. Generate fresh UUIDs for any manually added advanced resource fields — do not reuse them.
 
 ### Step 7 — Validate and refresh solution resources
 
 ```bash
-# Validate — checks the agent and resource.json, migrates schema if needed
+# Validate — checks the agent and generated resource files, migrates schema if needed
 uip agent validate "<AGENT_NAME>" --output json
 
 # Refresh — imports the App binding from bindings_v2.json into the solution.
@@ -710,7 +772,7 @@ Key differences from standalone:
 4. **Do not batch edits before validating** — validate after each change
 5. **Do not publish/deploy without validating** — always validate first
 6. **Do not forget contentTokens** — editing `content` without updating `contentTokens` causes rendering issues
-7. **Do not forget `uip solution resource refresh` after adding external tools** — creating only the agent-level `resources/{ToolName}/resource.json` is not enough. After `uip agent validate` generates `bindings_v2.json`, run `uip solution resource refresh` from the solution root to import the bindings into the solution. For `Connection` bindings refresh also generates `debug_overwrites.json`. For `Process`, `App`, and `Index` bindings refresh imports the resource but does not hand-write the rich solution-level files — check the output and hand-author missing files per [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files.
+7. **Do not forget `uip solution resource refresh` after adding external tools** — `uip agent tool add` plus `uip agent validate` prepares the agent project, then `uip solution resource refresh` imports generated bindings into the solution. For `Connection` bindings refresh also generates `debug_overwrites.json`. For `Process`, `App`, and `Index` bindings, check the refresh output and use [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files only when an unsupported resource kind needs advanced manual completion.
 8. **Always use the Releases API + GetPackageEntryPointsV2 for argument schemas** — `uip solution resource list --kind Process` returns only identity (Key/Name/Type/Folder/FolderKey). Query `/odata/Releases` for ProcessKey/ProcessVersion/FeedId and raw .NET schemas (RPA), then `GetPackageEntryPointsV2` for JSON Schema input/output arguments. See Scenario 4.
 9. **Do not copy-paste UUIDs from one resource to another** — every resource needs a unique UUID.
 10. **Do not bump `storageVersion` manually** — breaks packager compatibility.
