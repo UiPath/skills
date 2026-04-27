@@ -286,18 +286,7 @@ The argument to `resource refresh` is the **solution directory** (containing the
 
 ### Step 7a — Troubleshoot failed flows
 
-When a debug or process run fails, diagnose in this order. All commands require `uip login`. Get the instance ID from debug output (`Data.instanceId`) or from `uip maestro flow job status <JOB_KEY> --output json`.
-
-1. **Incidents first** — failed flows always have an incident. This gives the error message and faulting element:
-   `uip maestro flow instance incidents <INSTANCE_ID> --output json`
-   Drill into a specific incident: `uip maestro flow incident get <INCIDENT_ID> --output json`
-2. **Runtime variables** — inspect variable state at time of failure:
-   `uip maestro flow instance variables <INSTANCE_ID> --output json`
-   Scope to an element: `uip maestro flow instance variables <INSTANCE_ID> --parent-element-id <ELEMENT_ID> --output json`
-3. **Correlate with the .flow file** — map the faulting element ID to its node, check `inputs`, upstream edges, and variable values. If the local file may differ from what ran, fetch the deployed definition: `uip maestro flow instance asset <INSTANCE_ID> --output json`
-4. **Traces (last resort)** — verbose full execution timeline: `uip maestro flow job traces <JOB_KEY> --output json`
-
-Always use CLI commands — never call the underlying APIs directly. See [flow-commands.md — instance / incident](references/flow-commands.md#uip-maestro-flow-instance) for full command reference.
+When a debug or process run fails, read **[references/troubleshooting-guide.md](references/troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → .flow correlation → traces (last resort).
 
 ### Step 8 — Publish to Studio Web
 
@@ -369,7 +358,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [references/plugins/delay/](references/plugins/delay/) or [references/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [references/plugins/queue/impl.md](references/plugins/queue/impl.md) |
-| **Troubleshoot a failed flow** | Step 7a + [references/flow-commands.md — instance / incident](references/flow-commands.md#uip-maestro-flow-instance) |
+| **Troubleshoot a failed flow** | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
 
 ## Key Concepts
 
@@ -422,6 +411,7 @@ When you finish building or editing a flow, report to the user:
 - **[Planning: Implementation Resolution](references/planning-impl.md)** — Registry lookups, connection binding, reference field resolution, wiring rules, and flow patterns.
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
+- **[Troubleshooting Guide](references/troubleshooting-guide.md)** — Diagnostic workflow for failed flows: incidents, runtime variables, definition correlation, traces, and `instance`/`incident` CLI reference
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
   - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
