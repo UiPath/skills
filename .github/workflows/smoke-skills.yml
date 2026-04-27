@@ -194,6 +194,43 @@ jobs:
           npm install -g @uipath/cli@latest
           uip --version
 
+      # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
+      # smoke tasks (orchestrator / integration-service / data-fabric / ...)
+      # have a logged-in CLI without the agent ever calling `uip login`.
+      # See smoke-rpa-skills.yml for the chain rationale; this Linux job
+      # doesn't go through Helm, but the same UIPATH_CLI_* env vars
+      # satisfy the JS CLI's general auth state too.
+      - name: Mint UiPath service-account token + enable env-auth
+        env:
+          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
+          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -fsS -X POST \
+            "https://cloud.uipath.com/identity_/connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=$UIPATH_CLIENT_ID" \
+            -d "client_secret=$UIPATH_CLIENT_SECRET" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read" \
+            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          {
+            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
+            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
+            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
+            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
+            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
+            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+          } >> "$GITHUB_ENV"
+          UIPATH_CLI_ENABLE_ENV_AUTH=true \
+          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
+          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
+          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
+          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
+          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
+            uip login status --output json
+
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}

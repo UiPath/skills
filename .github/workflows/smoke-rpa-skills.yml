@@ -144,6 +144,55 @@ jobs:
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
 
+      # Pre-auth uip via the CLI's documented env-var bypass
+      # (UIPATH_CLI_ENABLE_ENV_AUTH=true), so `uip rpa` subcommands
+      # don't hit `HelmFeatureNotAvailableException (sign-in required)`
+      # in CI. The flow:
+      #   1. POST client_credentials to UiPath identity → access_token (~1h life).
+      #   2. Stamp UIPATH_CLI_* env vars into $GITHUB_ENV so subsequent steps
+      #      see them — incl. coder-eval and any agent-spawned `uip` calls.
+      #   3. RpaTool's HelmAuthContextProvider calls @uipath/auth.getLoginStatusAsync(),
+      #      which short-circuits to the env branch (loginStatus.ts:117) and
+      #      returns "Logged in" without disk I/O. RpaTool then pushes the
+      #      token over IPC to Helm's CliAuthStore — clearing the sign-in
+      #      gate at HelmFeatureGate.CheckAsync().
+      # Token has no refresh in env-auth mode; mint here (right before
+      # `Run RPA smoke tests`), not at job start.
+      - name: Mint UiPath service-account token + enable env-auth
+        shell: bash
+        env:
+          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
+          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -fsS -X POST \
+            "https://cloud.uipath.com/identity_/connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=$UIPATH_CLIENT_ID" \
+            -d "client_secret=$UIPATH_CLIENT_SECRET" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read" \
+            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          {
+            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
+            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
+            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
+            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
+            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
+            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+          } >> "$GITHUB_ENV"
+          # Smoke check the auth context is recognized. Failure here fails
+          # the job — we'd rather not run smoke tasks against a broken
+          # login state and chase mysterious sign-in errors per task.
+          UIPATH_CLI_ENABLE_ENV_AUTH=true \
+          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
+          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
+          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
+          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
+          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
+            uip login status --output json
+
       - name: Run RPA smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
