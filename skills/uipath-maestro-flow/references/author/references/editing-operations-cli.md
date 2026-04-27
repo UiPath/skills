@@ -305,4 +305,4 @@ These operations require direct `.flow` JSON editing. Use the [JSON strategy gui
 1. **Workflow variables** — add/remove/update `variables.globals`
 2. **Variable updates** — add/modify `variables.variableUpdates` entries
 3. **Output mapping on End nodes** — add `outputs` object with `source` expressions
-4. **Subflows** — create `subflows.{nodeId}` with nested nodes, edges, variables
+4. **Subflows** — create `subflows.{nodeId}` with child nodes, edges, variables; nested subflow definitions remain flat top-level peers in the root `subflows` map
