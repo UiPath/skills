@@ -3,7 +3,7 @@ description: >
   Integration test: agent wires the HITL node's `completed` output port (not the
   old `cancelled` or `timeout` ports). Verifies correct edge structure in
   a three-node approval flow.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, smoke, "lifecycle:generate", "shape:multi-node", "node:hitl"]
 
 agent:
   type: claude-code
@@ -45,18 +45,11 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_contains
     description: "Flow uses completed as the HITL output handle"
-    command: |
-      python3 - <<'PY'
-      from pathlib import Path
-
-      flow = Path("PurchaseApproval/PurchaseApproval/PurchaseApproval.flow").read_text()
-      assert '"completed"' in flow, flow
-      print("OK")
-      PY
-    expected_stdout: "OK"
-    stdout_match: contains
+    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    includes:
+      - '"completed"'
     weight: 3.0
     pass_threshold: 1.0
 

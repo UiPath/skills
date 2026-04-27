@@ -3,7 +3,7 @@ description: >
   Integration test: agent builds a simple invoice approval flow containing an inline
   HITL node (uipath.human-in-the-loop). Verifies the node is written directly
   into the .flow file as JSON and the flow validates.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
+tags: [uipath-maestro-flow, smoke, "lifecycle:generate", "shape:single-node", "node:hitl"]
 
 agent:
   type: claude-code
@@ -43,33 +43,19 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_contains
     description: "Flow contains the inline HITL node type"
-    command: |
-      python3 - <<'PY'
-      from pathlib import Path
-
-      flow = Path("InvoiceApproval/InvoiceApproval/InvoiceApproval.flow").read_text()
-      assert '"uipath.human-in-the-loop"' in flow, flow
-      print("OK")
-      PY
-    expected_stdout: "OK"
-    stdout_match: contains
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
+  - type: file_contains
     description: "Flow uses quickform schema type"
-    command: |
-      python3 - <<'PY'
-      from pathlib import Path
-
-      flow = Path("InvoiceApproval/InvoiceApproval/InvoiceApproval.flow").read_text()
-      assert '"type": "quick"' in flow, flow
-      print("OK")
-      PY
-    expected_stdout: "OK"
-    stdout_match: contains
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    includes:
+      - '"type": "quick"'
     weight: 2.0
     pass_threshold: 1.0
 
