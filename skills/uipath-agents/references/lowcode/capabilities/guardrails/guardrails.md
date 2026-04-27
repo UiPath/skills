@@ -50,16 +50,7 @@ The `selector` field controls where the guardrail applies.
 
 ### Built-in Validator Scope Support
 
-Not all validators support all scopes. Use the output from [Step 0](#step-0--fetch-available-validators-mandatory-first-step) (`uip agent guardrails list --output json`) to determine valid scopes and stages.
-
-Each entry in the `Data` array contains:
-- `Status` — `"Available"` or `"Unauthorised"` — only use validators with `"Available"` status
-- `Validator` — the `validatorType` string (e.g., `"pii_detection"`)
-- `AllowedScopes` — array of valid scope values (e.g., `["Agent", "Llm", "Tool"]`)
-- `GuardrailStages` — object mapping each scope to its valid stages (e.g., `{"Agent": ["PreExecution", "PostExecution"]}`)
-- `Parameters` — array of parameter definitions with `Type`, `Id`, and `Required`
-
-Do not hardcode assumptions about scope/stage support or availability.
+Not all validators support all scopes. Current `uip agent` CLI versions expose `validate` for this schema but do not expose `uip agent guardrails list` or a guardrail add command. Do not invent guardrails CLI commands. For validator-specific scopes, stages, and parameters, use Studio Web-exported guardrail JSON or current product documentation, then run `uip agent validate <AGENT_PATH> --output json` after editing.
 
 ## Actions
 
@@ -198,13 +189,9 @@ Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or ass
 
 #### Adding an escalation guardrail — step-by-step
 
-**Step 0 — Discover available validators (MANDATORY — do not skip even when validator type is already known):**
+**Step 0 — Confirm the validator schema:**
 
-```bash
-uip agent guardrails list --output json
-```
-
-Confirm the target validator is listed. Record the exact parameter `id` values and `$parameterType` tags from the output — these must match precisely in the guardrail JSON. Skipping this step leads to invalid parameter shapes.
+Current `uip agent` CLI versions do not expose validator discovery. Use Studio Web-exported guardrail JSON or current product documentation to confirm the target validator, exact parameter `id` values, and `$parameterType` tags. These must match precisely in the guardrail JSON.
 
 **Step 1 — Discover the app** using `--kind App` from the solution root:
 
@@ -433,21 +420,11 @@ Each rule (except `always`) has a `fieldSelector` object with a `$selectorType` 
 | `fields[].source` | `"input"` \| `"output"` | Yes | Which side to inspect |
 | `fields[].title` | string | No | Human-readable label |
 
-## Step 0 — Fetch Available Validators (Mandatory First Step)
+## Step 0 — Confirm Validator Availability and Schema
 
-Before adding any built-in validator guardrail, run:
+Before adding any built-in validator guardrail, confirm the validator and parameters from Studio Web-exported guardrail JSON or current product documentation. Current `uip agent` CLI versions do not expose `uip agent guardrails list` or a guardrail add command.
 
-```bash
-uip agent guardrails list --output json
-```
-
-Before adding any built-in validator, check the `Data` array for the requested `Validator` value:
-
-1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail.
-2. **`Status: "Available"`** — validator is licensed and ready. Proceed with configuration.
-3. **`Status: "Unauthorised"`** — validator exists but the user is not entitled to use guardrails. Inform user: *"You are not entitled to use the `<name>` guardrail. You can view the configuration but cannot apply it to agents. Contact your UiPath administrator to enable guardrail entitlements."* Do not add the guardrail.
-
-Only configure guardrails for validators with `Status: "Available"`.
+If the validator cannot be confirmed for the tenant, do not add it. Inform the user that the built-in validator may be unavailable or not entitled for the tenant, and ask them to confirm in Studio Web or with their UiPath administrator.
 
 ## Built-in Validator Guardrails (`$guardrailType: "builtInValidator"`)
 
@@ -493,17 +470,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 | `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
 | `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
 
-Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
-**How to map `uip agent guardrails list` output to guardrail JSON:**
-
-| CLI field | Maps to |
-|-----------|---------|
-| `Status` | Gate check — only proceed if `"Available"` |
-| `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` |
-| `GuardrailStages[scope]` | Valid execution stages for that scope |
-| `Parameters[].Id` | `validatorParameters[].id` |
-| `Parameters[].Type` | `validatorParameters[].$parameterType` |
+Use Studio Web-exported guardrail JSON or current product documentation to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. Keep the exported discriminator and parameter names exactly as shown, then validate the project with `uip agent validate <AGENT_PATH> --output json`.
 
 > **Important:** PII entity names use PascalCase (`"Email"`, not `"email_address"`). Harmful content categories use PascalCase (`"Hate"`, not `"hate"`). Scope values use PascalCase (`"Agent"`, `"Llm"`, `"Tool"`).
 
@@ -895,7 +862,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 6. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
-9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
+9. **Do not invent validator metadata or guardrail CLI commands** — current `uip agent` CLI versions do not expose validator discovery or guardrail add commands. Use Studio Web-exported JSON or current product documentation for validator names, scopes, stages, and parameters.
 10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resource list --kind App` results by this type.
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
 12. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
@@ -909,7 +876,7 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
 >
-> **MANDATORY: Run `uip agent guardrails list --output json` before writing any `builtInValidator` guardrail**, even when you already know the `validatorType`. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes for that validator — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
+> **MANDATORY: Confirm built-in validator metadata before writing any `builtInValidator` guardrail**, even when you already know the `validatorType`. Current `uip agent` CLI versions do not expose validator discovery. Use Studio Web-exported JSON or current product documentation for exact `$parameterType` values, parameter `id` names, and allowed scopes.
 
 ### Step 1 — Verify existing agent
 
@@ -934,19 +901,9 @@ For each tool name you plan to put in `matchNames`:
 
 > `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
 
-### Step 3 — Fetch and verify available validators (mandatory)
+### Step 3 — Verify validator metadata (mandatory)
 
-```bash
-uip agent guardrails list --output json
-```
-
-Before adding any built-in validator, check the `Data` array for the requested validator:
-
-1. **Not found in list** — validator does not exist on this tenant. Inform user and stop.
-2. **`Status: "Available"`** — proceed with configuration.
-3. **`Status: "Unauthorised"`** — user is not entitled to use guardrails. Inform user they can view the configuration but cannot apply it to agents. Stop.
-
-Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
+Before adding any built-in validator, confirm the requested validator and parameters from Studio Web-exported guardrail JSON or current product documentation. If the validator cannot be confirmed, inform the user and stop. Do not hardcode assumptions about `validatorType` values, allowed scopes, stages, or required parameters.
 
 ### Step 4 — Add a guardrail to agent.json
 
@@ -1003,6 +960,5 @@ Confirm the guardrails appear in the validated output without errors.
 ## References
 
 - [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
-- [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
+- [../../project-lifecycle.md](../../project-lifecycle.md) § Guardrail authoring — current CLI limits and validation flow
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
-
