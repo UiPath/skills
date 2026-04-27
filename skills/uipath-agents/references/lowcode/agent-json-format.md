@@ -456,21 +456,27 @@ Solution-level connection resources and `debug_overwrites.json` are **auto-gener
 | `location` | `folderPath` | Meaning |
 |------------|-------------|---------|
 | `"solution"` | `"solution_folder"` | Resource is another project within this same solution. Creating this agent-level resource.json is sufficient. |
-| `"external"` | `"solution_folder"` | Resource is already deployed in Orchestrator, outside this solution. Creating this agent-level resource.json alone is NOT sufficient — you MUST also create solution-level resource files. |
+| `"external"` | `"solution_folder"` | Resource is already deployed in Orchestrator, outside this solution. Write the agent-level resource.json, then run `uip agent validate` followed by `uip solution resource refresh` — refresh auto-generates the solution-level process declaration, package declaration, and `debug_overwrites.json` entry. |
 
-**MANDATORY for `"location": "external"`:** This agent-level resource.json is only 1 of 4 files needed. Without the other 3 files, Studio Web will show "resource is missing in this environment". You MUST also create:
-1. **Process declaration:** `resources/solution_folder/process/<type_dir>/<ToolName>.json` at the solution root (see type-to-directory mapping below)
-2. **Package declaration:** `resources/solution_folder/package/<PackageName>.json` at the solution root
-3. **debug_overwrites.json:** `userProfile/<userId>/debug_overwrites.json` at the solution root — maps `solution_folder` to the actual Orchestrator folder
+**For `"location": "external"`:** one agent-level `resource.json` is all you author. The canonical flow is:
+
+1. Create `resources/{ToolName}/resource.json` inside the agent project (see § Tool resource above).
+2. `uip agent validate` — emits `bindings_v2.json` with a `resource: "process"` binding.
+3. `uip solution resource refresh` — for each Process binding, looks up the matching release in RCS and writes:
+   - `resources/solution_folder/process/<type_dir>/<ToolName>.json` (declaration)
+   - `resources/solution_folder/package/<PackageName>.json` (package declaration)
+   - an entry in `userProfile/<userId>/debug_overwrites.json` with real `folderKey`, `folderFullyQualifiedName`, and `folderPath` so Studio Web can resolve the process at runtime. An entry missing `folderFullyQualifiedName` or `folderPath` will cause "Could not find process for tool '<name>'" — refresh from current uipcli populates both correctly.
+
+Hand-authoring the templates below is only needed when refresh cannot run (offline, missing RCS match, custom deployment).
 
 **Type-to-directory mapping for process declarations:**
 
 | `ProcessType` (from Releases API) | Agent resource `type` | `spec.type` | Process declaration directory |
 |---|---|---|---|
-| `Process` | `process` | `Process` | `process/process/` |
+| `Process` | `process` | `Process` | `process/Process/` |
 | `Agent` | `agent` | `Agent` | `process/agent/` |
-| `Api` | `api` | `Api` | `process/api/` |
-| `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/processOrchestration/` |
+| `Api` | `api` | `Api` | `process/Api/` |
+| `ProcessOrchestration` | `processOrchestration` | `ProcessOrchestration` | `process/ProcessOrchestration/` |
 
 See § Solution-Level Resource Files for External Tools below for the full format, or [agent-solution-guide.md](agent-solution-guide.md) § External process tool.
 
@@ -810,6 +816,8 @@ The root `agent.json` does not contain a `resources` field. Resources are define
 
 When an agent uses an external tool (an RPA process, agent, or other resource already deployed in Orchestrator), the solution needs resource declarations so it can resolve the tool at deployment/runtime. These files live at the **solution root** level (not inside the agent project directory).
 
+**Canonical flow:** `uip agent validate` → `uip solution resource refresh`. Refresh reads `bindings_v2.json` and hand-writes the full solution-level declaration for every supported kind: `Process` (→ `process/<type>/<N>.json` + `package/<N>.json`), `Connection` (→ `connection/<connectorKey>/<Name>.json`), `Index` (→ `index/<N>.json` + `bucket/orchestratorBucket/<N>.json`), `App` (→ `app/workflow Action/<N>.json` + `appVersion/<N>.json` + `package/<N>.json` + `process/webApp/<N>.json`). All kinds also append entries to `userProfile/<userId>/debug_overwrites.json`. The templates below are the reference shapes refresh produces — included here for manual authoring of kinds refresh does not yet cover (DataFabric contexts, non-StorageBucket ECS data sources, non-`actionCenter` escalation channels).
+
 ### Directory structure
 
 ```
@@ -1005,7 +1013,7 @@ Construct a JSON array, then serialize it as a string. Use data from `GetPackage
 
 **Path:** `resources/solution_folder/package/<PackageName>.json`
 
-Declares the package for the external process. The `<PackageName>` is the `ProcessKey` from `uip or processes list` (e.g., `MyProcess.process.MyProcess`).
+Declares the package for the external process. The `<PackageName>` is the `ProcessKey` from the `/odata/Releases` response (Step 2 above) — e.g., `MyProcess.process.MyProcess`.
 
 ```jsonc
 {
@@ -1053,32 +1061,38 @@ Declares the package for the external process. The `<PackageName>` is the `Proce
 
 **SECURITY: Never read `~/.uipath/.auth` directly** — the access token must not appear in Claude's context. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
 
-**Step 1: Discover the folder**
+**Step 1: Discover the process and its folder**
 
 ```bash
-uip or folders list --output json
+uip solution resource list --kind Process --source remote --search "<NAME>" --output json
 ```
 
-Returns `ID` (numeric, used as `X-UIPATH-OrganizationUnitId` header), `Key` (GUID, used in `debug_overwrites.json`), `Path` (FullyQualifiedName). Note the parent folder's Key if the folder is nested.
+Returns, for each match:
+- `Key` — release Key GUID. Use as `referenceKey` in the agent resource and `key` in the process declaration.
+- `Type` — maps 1:1 to the agent resource `type` and the process declaration directory:
+  - `process` → `process/process/`
+  - `agent` → `process/agent/`
+  - `api` → `process/api/`
+  - `processOrchestration` → `process/processOrchestration/`
+  - `webApp` → not a runnable process tool; use `--kind App` for escalations instead.
+- `Folder` — fully-qualified folder name; record for debug_overwrites.
+- `FolderKey` — folder GUID. Use as `X-UIPATH-FolderKey` header in Steps 2-3 and as `folderKey` in `debug_overwrites.json`.
 
-**Step 2: Query `/odata/Releases` for release metadata and type**
+**Step 2: Query `/odata/Releases` for ProcessKey, ProcessVersion, FeedId, and raw .NET schemas (RPA)**
 
-Use a shell wrapper to query the Releases API — this keeps the access token inside the shell:
+Use a shell wrapper to query the Releases API — this keeps the access token inside the shell. Filter by `Key` (the release GUID from Step 1) for an exact match:
 
 ```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=Key%20eq%20<RELEASE_KEY_GUID>&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>"'
+  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
 ```
 
 Returns:
-- `Key` → release Key (GUID) — used as `referenceKey` in agent resource and `key` in process declaration
-- `ProcessVersion` → package version
-- `ProcessType` → determines the tool type: `"Process"` (RPA), `"Agent"`, `"Api"`, `"ProcessOrchestration"` — maps to agent resource `type` and process declaration directory
-- `FeedId` → package feed ID — needed for `GetPackageEntryPointsV2` query (Step 3)
+- `ProcessKey` / `ProcessVersion` → build `"<ProcessKey>:<Version>"` package key for Step 3
+- `FeedId` → package feed ID, required by `GetPackageEntryPointsV2` in Step 3
 - `TargetRuntime` → `"pythonAgent"` for agents, `null` for others — used in agent process declarations
-- `Arguments.Input` → raw .NET type array string (only populated for RPA processes, `null` for others) — used as `inputArgumentsSchema` in RPA process declarations
-- `Arguments.Output` → raw .NET type array string (only populated for RPA processes, `null` for others) — used as `outputArgumentsSchema` in RPA process declarations
+- `Arguments.Input` / `Arguments.Output` → raw .NET type array strings (only populated for RPA processes, `null` for others) — used as `inputArgumentsSchema` / `outputArgumentsSchema` in RPA process declarations
 
 **Step 3: Query `GetPackageEntryPointsV2` for schemas and entry point data**
 
@@ -1087,7 +1101,7 @@ This API returns JSON Schema format input/output arguments and entry point metad
 ```bash
 bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='\''<PROCESS_KEY>:<VERSION>'\'')?feedId=<FEED_ID>" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>"'
+  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
 ```
 
 - `<PROCESS_KEY>:<VERSION>` — e.g., `TestRPA.process.TestRPA:1.0.0` (from Step 2: `ProcessKey` + `ProcessVersion`)
@@ -1139,8 +1153,8 @@ Maps `solution_folder` to the actual Orchestrator folder so Studio Web can resol
           "overwrite": {
             "resourceKey": "<release-key-guid>",
             "resourceName": "<ToolName>",
-            "folderKey": "<folder-key-guid>",            // Key from uip or folders list
-            "folderFullyQualifiedName": "<folder-path>", // Path from uip or folders list (e.g., "Shared/MyFolder")
+            "folderKey": "<folder-key-guid>",            // FolderKey from `uip solution resource list --kind Process`
+            "folderFullyQualifiedName": "<folder-path>", // Folder from the same (e.g., "Shared/MyFolder")
             "folderPath": "<parent-key>.<folder-key>",   // If folder has parent: "parentKey.folderKey". If no parent: just "folderKey"
             "type": "Reference",
             "kind": "process"

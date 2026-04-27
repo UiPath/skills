@@ -1,0 +1,166 @@
+task_id: skill-agents-bindings-sync
+description: >
+  Skill-guided evaluation: agent uses the uipath-agents bindings skill to scan
+  all Python files in a project (including helper modules), resolve module-level
+  constants, and produce a correct bindings.json. Tests that the skill teaches
+  scanning beyond main.py and constant resolution.
+tags: [uipath-agents, smoke, bindings]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath coded agent project. Please set up these files, then sync
+  the bindings.json using the bindings skill.
+
+  Create the following project structure:
+
+  **pyproject.toml:**
+  ```toml
+  [project]
+  name = "invoice-processor"
+  version = "0.1.0"
+  requires-python = ">=3.11"
+  ```
+
+  **uipath.json:**
+  ```json
+  {"projectType": "CodedAgent"}
+  ```
+
+  **entry-points.json:**
+  ```json
+  {
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+      {
+        "filePath": "agent",
+        "uniqueId": "aaa11111-2222-3333-4444-555566667777",
+        "type": "agent",
+        "input": {"type": "object", "properties": {}, "required": []},
+        "output": {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]}
+      }
+    ]
+  }
+  ```
+
+  **graph.py** (main entry point):
+  ```python
+  from langgraph.graph import END, START, StateGraph
+  from langgraph.types import interrupt
+  from uipath.platform import UiPath
+  from uipath.platform.common import InvokeProcess
+  from storage import BUCKET_NAME
+
+  SCRAPER_PROCESS = "data-scraper"
+
+  def fetch_data(state):
+      response = interrupt(InvokeProcess(name=SCRAPER_PROCESS, input_arguments={}))
+      return {"data": response}
+
+  def save_results(state):
+      sdk = UiPath()
+      sdk.buckets.upload(name=BUCKET_NAME, blob_file_path="results.json", content="{}")
+      return state
+
+  def get_config(state):
+      sdk = UiPath()
+      api_key = sdk.assets.retrieve("api-key", folder_path="Shared")
+      return {"config": api_key}
+  ```
+
+  **storage.py** (helper module with constant):
+  ```python
+  from uipath.platform import UiPath
+
+  BUCKET_NAME = "invoice-data"
+
+  def download_template():
+      sdk = UiPath()
+      sdk.buckets.download(name=BUCKET_NAME, blob_file_path="template.xlsx", destination_path="/tmp/t.xlsx")
+  ```
+
+  **bindings.json** (start empty):
+  ```json
+  {"version": "2.0", "resources": []}
+  ```
+
+  After creating these files, sync the bindings.json so it reflects all resource
+  calls found across ALL Python files. The bindings skill should:
+  1. Scan graph.py AND storage.py (not just the main entry point)
+  2. Resolve the BUCKET_NAME constant from storage.py to "invoice-data"
+  3. Resolve the SCRAPER_PROCESS constant from graph.py to "data-scraper"
+  4. Produce bindings for: process (data-scraper), bucket (invoice-data), asset (api-key)
+  5. Bind all resources to the single entrypoint
+
+  Do NOT create any report file — just update bindings.json.
+
+success_criteria:
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "bindings.json is valid JSON"
+    command: "python -c \"import json; json.load(open('bindings.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "bindings.json contains all three resource types"
+    path: "bindings.json"
+    includes:
+      - '"process"'
+      - '"bucket"'
+      - '"asset"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Process binding has correct resolved name"
+    path: "bindings.json"
+    includes:
+      - "data-scraper"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Bucket binding has correct resolved constant value"
+    path: "bindings.json"
+    includes:
+      - "invoice-data"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Asset binding has correct name and folder"
+    path: "bindings.json"
+    includes:
+      - "api-key"
+      - "Shared"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Resources are bound to the entrypoint"
+    path: "bindings.json"
+    includes:
+      - "aaa11111-2222-3333-4444-555566667777"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "bindings.json has exactly 3 resources"
+    path: "bindings.json"
+    assertions:
+      - expression: "length(resources)"
+        operator: equals
+        expected: 3
+    weight: 2.0
+    pass_threshold: 1.0

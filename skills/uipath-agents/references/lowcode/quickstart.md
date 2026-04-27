@@ -96,12 +96,12 @@ See Scenario 5 below for the full step-by-step workflow.
 
 Supports 4 types: RPA processes, agents, API workflows, and agentic processes.
 
-1. **Discover the folder** — use `uip or folders list --output json` to find the folder where the process is deployed. Note the folder `ID`, `Key`, `Path` (FullyQualifiedName), and the parent folder's `Key`.
-2. **Discover the process via Releases API** — query the Orchestrator `/odata/Releases` endpoint with the folder ID as context header. Include `ProcessType,FeedId,TargetRuntime` in `$select` to determine the tool type and get the feed ID for schema discovery. See [agent-json-format.md](agent-json-format.md) § How to get the values for the exact command. The `ProcessType` field determines the resource `type`: `"Process"` → `process`, `"Agent"` → `agent`, `"Api"` → `api`, `"ProcessOrchestration"` → `processOrchestration`.
-3. **Get argument schemas via `GetPackageEntryPointsV2`** — query `/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='<ProcessKey>:<Version>')?feedId=<FeedId>` to get JSON Schema `InputArguments`/`OutputArguments`. This works for all 4 types. Parse the JSON Schema strings for the agent-level `inputSchema`/`outputSchema`. See [agent-json-format.md](agent-json-format.md) § How to get the values.
-4. **Create agent-level resource** — create `resources/{ToolName}/resource.json` with `"location": "external"`, `"type"` matching the mapped ProcessType (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath": "solution_folder"`, and `"referenceKey"` set to the release Key. Set `inputSchema`/`outputSchema` from the parsed JSON Schema. Include `"exampleCalls": []` in `properties`.
-5. **Validate** — `uip agent validate "<AGENT_NAME>" --output json`. This generates `bindings_v2.json` in the agent project directory.
-6. **Refresh solution resources** — from the solution root, run `uip solution resource refresh --output json`. This auto-generates solution-level resource files (packages, processes, debug_overwrites) from the `bindings_v2.json`.
+1. **Discover the process** — `uip solution resource list --kind Process --source remote --search "<NAME>" --output json`. Returns `Key` (release GUID → `referenceKey`), `Type` (maps 1:1 to the agent resource `type` — `process`/`agent`/`api`/`processOrchestration`; ignore `webApp` entries), `Folder`, `FolderKey`.
+2. **Get ProcessKey + ProcessVersion + FeedId via Releases API** — query `/odata/Releases?$filter=Key eq <RELEASE_KEY>` with `X-UIPATH-FolderKey: <FolderKey>`. See [agent-json-format.md](agent-json-format.md) § How to get the values.
+3. **Get argument schemas via `GetPackageEntryPointsV2`** — query `/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='<ProcessKey>:<Version>')?feedId=<FeedId>`. JSON Schema `InputArguments`/`OutputArguments` work for all 4 types. Parse them for the agent-level `inputSchema`/`outputSchema`.
+4. **Create agent-level resource** — create `resources/{ToolName}/resource.json` with `"location": "external"`, `"type"` from step 1, `"folderPath": "solution_folder"`, `"referenceKey"` = release `Key`. Set `inputSchema`/`outputSchema` from the parsed JSON Schema. Include `"exampleCalls": []` in `properties`.
+5. **Validate** — `uip agent validate "<AGENT_NAME>" --output json`. Generates `bindings_v2.json`.
+6. **Refresh solution resources** — `uip solution resource refresh --output json`. Imports the `Process` binding into the solution. If the rich solution-level files (`process/<type_dir>/<N>.json`, `package/<N>.json`, `debug_overwrites.json`) are not produced, hand-author them per [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files.
 
 ### Change Model Settings
 
@@ -252,31 +252,39 @@ cd "<SOLUTION_NAME>"
 uip agent init "<AGENT_NAME>" --output json
 uip solution project add "<AGENT_NAME>" --output json
 
-# 2. Discover the folder
-uip or folders list --output json
-# Note: ID (folderId), Key (folderKey), Path (folderFullyQualifiedName)
-# Also note the parent folder's Key if the folder is nested (e.g., "Shared/MyFolder")
+# 2. Discover the process via the Resource Catalog Service
+uip solution resource list --kind Process --source remote --search "<TOOL_NAME>" --output json
+# Each entry returns:
+#   Key       → release Key (GUID) — used as referenceKey in the agent resource
+#   Name      → process display name. Refresh resolves processes by name only,
+#               so pick a name that is unique in the tenant; when multiple
+#               processes share a name across folders, refresh imports the
+#               first RCS match.
+#   Type      → maps 1:1 to the agent resource type:
+#                  "process" → RPA (XAML)
+#                  "agent" → low-code / coded agent
+#                  "api" → API workflow
+#                  "processOrchestration" → agentic process
+#                  "webApp" → skip; use Scenario 6 (App kind) for escalations
+#   Folder    → fully-qualified folder path
+#   FolderKey → folder GUID — use as X-UIPATH-FolderKey header in steps 3-4
 
-# 3. Query Releases API for release metadata and type
+# 3. Query Releases API for ProcessKey, ProcessVersion, FeedId, and raw .NET arg schemas (RPA only)
 # SECURITY: Never read ~/.uipath/.auth directly — keep the token inside the shell.
 bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>"'
+  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
+# Orchestrator's OData rejects `Key eq <guid>` (Edm.Guid mismatch); filter
+# by the string ProcessKey or by Name instead.
 # Extract from response:
-#   Key          → releaseKey (used as referenceKey in all resource files)
-#   ProcessVersion → package version
-#   ProcessType  → determines tool type and process declaration directory:
-#                  "Process" → type "process", dir process/process/
-#                  "Agent" → type "agent", dir process/agent/
-#                  "Api" → type "api", dir process/api/
-#                  "ProcessOrchestration" → type "processOrchestration", dir process/processOrchestration/
-#   FeedId       → needed for GetPackageEntryPointsV2 query (step 4)
-#   Arguments.Input/Output → raw .NET type arrays (only for RPA, null for others)
+#   ProcessKey/ProcessVersion → build "<ProcessKey>:<Version>" key for step 4
+#   FeedId                    → needed for GetPackageEntryPointsV2 query (step 4)
+#   Arguments.Input/Output    → raw .NET type arrays (only for RPA, null for others)
 
 # 4. Query GetPackageEntryPointsV2 for JSON Schema arguments and entry point data
 bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='\''<PROCESS_KEY>:<VERSION>'\'')?feedId=<FEED_ID>" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>"'
+  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
 # Extract from response (take first entry):
 #   InputArguments  → JSON Schema string → agent-level inputSchema (parse JSON)
 #   OutputArguments → JSON Schema string → agent-level outputSchema (parse JSON)
@@ -286,7 +294,7 @@ Then create the agent-level resource file:
 
 **Agent-level resource** — `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json`
 
-Set `"location": "external"`, `"type"` matching the mapped ProcessType (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath": "solution_folder"`, `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See [agent-json-format.md](agent-json-format.md) § Tool resource for the full format.
+Set `"location": "external"`, `"type"` directly from `resource list`'s `Type` field (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath": "solution_folder"`, `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See [agent-json-format.md](agent-json-format.md) § Tool resource for the full format.
 
 ```bash
 # 5. Configure agent.json (system prompt, model, schemas)
@@ -294,8 +302,11 @@ Set `"location": "external"`, `"type"` matching the mapped ProcessType (`"proces
 # 6. Validate — generates bindings_v2.json in the agent project directory
 uip agent validate "<AGENT_NAME>" --output json
 
-# 7. Refresh solution resources — auto-generates solution-level files
-#    (packages, processes, debug_overwrites) from bindings_v2.json
+# 7. Refresh solution resources — resolves each Process binding against the
+#    Resource Catalog Service and produces the full solution-level declaration
+#    per kind: `resources/solution_folder/process/<type>/<Name>.json`,
+#    `resources/solution_folder/package/<PackageName>.json`, and an entry in
+#    `userProfile/<userId>/debug_overwrites.json`. No hand-authoring needed.
 uip solution resource refresh --output json
 
 # 8. Bundle + upload
@@ -322,8 +333,8 @@ uip solution project add "<AGENT_NAME>" --output json
 ### Step 2 — Find the connector
 
 ```bash
-uip is connectors list --for-low-code-agents --output json
-# Or filter: uip is connectors list --for-low-code-agents --filter "slack" --output json
+uip is connectors list --output json
+# Or filter: uip is connectors list --filter "slack" --output json
 ```
 
 Note the connector `Key` (e.g., `uipath-salesforce-slack`).
@@ -336,12 +347,12 @@ uip is connections list "<connector-key>" --output json
 
 Present connections to the user. Recommend the default enabled one but let the user confirm. Note the connection `Id`, `FolderKey`, `Name`. If no connection exists, prompt the user to create one via `uip is connections create "<connector-key>"`.
 
-This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resource refresh` to generate `debug_overwrites.json`.
+This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resource refresh` to generate `debug_overwrites.json`. Running it is mandatory even when you already found the connection via `uip solution resource list --kind Connection`, because refresh reads from the cache this command writes.
 
 ### Step 4 — Discover activities
 
 ```bash
-uip is activities list "<connector-key>" --for-low-code-agents --output json
+uip is activities list "<connector-key>" --output json
 ```
 
 Present activities to the user. Note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
@@ -429,7 +440,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 Use when the agent needs to hand off to a human via a deployed UiPath Action Center app (a web app of kind `workflow Action`). The agent pauses, creates a task on the app, and resumes when the human picks an outcome.
 
-**Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resource refresh` discovers the escalation's backing app via the Apps API and writes the three solution-level files (`app/workflow Action/`, `appVersion/`, `package/`) automatically. You do not hand-write those.
+**Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resource refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
 
 ### Step 1 — Create solution and scaffold agent (if not already done)
 
@@ -442,7 +453,19 @@ uip solution project add "<AGENT_NAME>" --output json
 
 ### Step 2 — Find the deployed Action Center app
 
-Query the Apps API for deployed action apps. The `state=deployed` filter is mandatory — only deployed apps can back an escalation.
+```bash
+uip solution resource list --kind App --source remote --search "<APP_NAME>" --output json
+```
+
+Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / CodedAction types cannot back an escalation today). Each entry carries:
+
+| `resource list` field | Use as |
+|-----------------------|--------|
+| `Key` | `channel.properties.resourceKey` (also becomes the app resource's `key`) |
+| `Name` | `channel.properties.appName` |
+| `Folder`, `FolderKey` | folder reference (informational — escalations set `folderName: null`) |
+
+`Key` gives you everything you need to identify the backing app, but `resource list` does not return `systemName` or `deployVersion` — both are required to fetch the action schema in Step 3. Query the Apps API once, filtered client-side by `id == <KEY>`, to extract them:
 
 ```bash
 # SECURITY: Never read ~/.uipath/.auth directly. Keep the token inside the shell.
@@ -453,19 +476,16 @@ bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
   -H "Accept: application/json"'
 ```
 
-From each entry in `.deployed[]`, extract:
+From the matching entry in `.deployed[]`, extract:
 
 | Field | Use as |
 |-------|--------|
-| `id` | `channel.properties.resourceKey` (also becomes the app resource's `key`) |
-| `deploymentTitle` | `channel.properties.appName` |
-| `deployVersion` | `channel.properties.appVersion` (integer) |
-
-Match by `deploymentTitle` or `systemName` — filter client-side with `jq` if needed.
+| `systemName` | `appSystemName` query parameter for action-schema (Step 3) |
+| `deployVersion` | `channel.properties.appVersion` (integer) AND `version` query parameter for action-schema |
 
 ### Step 3 — Fetch the app's action schema
 
-Use `systemName` (not `id`) and the integer `deployVersion` from Step 2.
+Use `systemName` and `deployVersion` from Step 2.
 
 ```bash
 bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
@@ -539,17 +559,18 @@ Use the full shape from [agent-json-format.md](agent-json-format.md) § Escalati
 # Validate — checks the agent and resource.json, migrates schema if needed
 uip agent validate "<AGENT_NAME>" --output json
 
-# Refresh — scans escalation resources, calls the Apps API, publish/versions,
-# Orchestrator /odata/Releases + GetPackageEntryPointsV2, and writes four
-# solution-level files per referenced Action Center app:
-#   resources/solution_folder/app/workflow Action/<AppName>.json
-#   resources/solution_folder/appVersion/<PkgName>.json
-#   resources/solution_folder/package/<PkgName>.json
-#   resources/solution_folder/process/webApp/<AppName>.json
+# Refresh — imports the App binding from bindings_v2.json into the solution.
 uip solution resource refresh --output json
 ```
 
-Check the refresh output's `Warnings` — if an escalation's `resourceKey` does not match any deployed action app, the warning will name the app id and the escalation it came from. Fix the resource.json and re-run.
+After refresh, confirm the four solution-level app files exist under `resources/solution_folder/`:
+
+- `app/workflow Action/<AppName>.json`
+- `appVersion/<PkgName>.json`
+- `package/<PkgName>.json`
+- `process/webApp/<AppName>.json`
+
+If any are missing, hand-author them using the templates in [agent-json-format.md](agent-json-format.md) § Escalation resource and the Apps API + `publish/versions` + Orchestrator `/odata/Releases` data. The `process/webApp/<AppName>.json` file is the one most commonly missing and its absence causes "Resource provisioning failed (#100)" on solution import.
 
 ### Step 8 — Bundle and upload
 
@@ -562,9 +583,11 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 ## Quick Start: Scenario 7 — Agent with Index-Backed Context (Context Grounding)
 
-Use when an agent needs to retrieve from an ECS Context Grounding index backed by an Orchestrator storage bucket. `uip solution resource refresh` auto-generates both the index and the bucket solution resources, plus the `debug_overwrites.json` entries.
+Use when an agent needs to retrieve from an ECS Context Grounding index backed by an Orchestrator storage bucket.
 
-**Only `contextType: "index"` with a StorageBucket data source is supported by the auto-generated refresh.** `attachments` and `datafabricentityset` contexts, and indexes backed by GoogleDrive / OneDrive / Dropbox / Confluence, are not auto-generated — refresh warns + skips them.
+`uip solution resource refresh` emits an `index` binding into `bindings_v2.json`, resolves the backing storage bucket via ECS + Orchestrator, and writes all three artifacts automatically: `resources/solution_folder/index/<IndexName>.json`, `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`, and two `debug_overwrites.json` entries (`kind: "index"`, `kind: "bucket"`). No manual solution-level authoring is required.
+
+**Only `contextType: "index"` with a StorageBucket data source is supported.** `attachments` and `datafabricentityset` contexts, and indexes backed by GoogleDrive / OneDrive / Dropbox / Confluence, emit a warning from refresh and must be hand-authored.
 
 ### Step 1 — Verify login and solution
 
@@ -573,23 +596,30 @@ uip login status --output json
 # If needed: uip solution new "<SOLUTION_NAME>"; cd "<SOLUTION_NAME>"; uip agent init "<AGENT_NAME>"; uip solution project add "<AGENT_NAME>"
 ```
 
-### Step 2 — Discover the ECS index
-
-The index must already exist in your tenant. If you don't know the exact name, list available indexes:
+### Step 2 — Discover the index
 
 ```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/ecs_/v2/indexes/AllAcrossFolders" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" | jq '\''.value[] | {name, id, folderFullyQualifiedName}'\'''
+uip solution resource list --kind Index --source remote --search "<INDEX_NAME>" --output json
 ```
 
-Pick the `name` of an index whose data source is a StorageBucket. To confirm the data source type and verify the bucket exists:
+Each entry returns:
+
+| Field | Use as |
+|-------|--------|
+| `Key` | index GUID (informational — not stored in the agent resource) |
+| `Name` | exact `indexName` to set in the context resource |
+| `Folder` / `FolderKey` | folder context for the ECS `$expand=dataSource` follow-up call below |
+
+`resource list` does not return the data source type. Query ECS once to confirm StorageBucket backing and get the bucket name:
 
 ```bash
 bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/ecs_/v2/indexes/AllAcrossFolders?\$filter=Name%20eq%20'\''<INDEX_NAME>'\''&\$expand=dataSource" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN"'
 ```
 
-Check `dataSource.@odata.type` — if it isn't `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource`, refresh will warn + skip.
+Check `dataSource.@odata.type`:
+- `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource` — StorageBucket-backed. Note the bucket name from `dataSource` and cross-reference with `uip solution resource list --kind Bucket --source remote --search "<BucketName>" --output json`.
+- Any other value — not supported by the templates in this skill; abort or escalate.
 
 ### Step 3 — Create the agent-level context resource
 
@@ -639,15 +669,16 @@ cat "<AGENT_NAME>/bindings_v2.json"
 uip solution resource refresh --output json
 ```
 
-This produces:
-- `resources/solution_folder/index/<INDEX_NAME>.json` — hand-written manifest (`kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name, kind: "bucket"}]`, `spec.storageBucketReference.{name,key}`).
-- `resources/solution_folder/Bucket/OrchestratorBucket/<BucketName>.json` — SDK-generated bucket manifest (same shape as regular `bucket` bindings).
-- `userProfile/<userId>/debug_overwrites.json` — two entries, `kind: "index"` and `kind: "bucket"`, with the correct `folderKey` and `folderFullyQualifiedName`.
+Refresh resolves the index via ECS `$expand=dataSource`, locates its backing StorageBucket in Orchestrator, and writes:
 
-Check the `Warnings` array in the command output. Common warnings:
-- `Index "<NAME>" not found in ECS (or multiple matches)` — exact-name mismatch. Re-check Step 2.
-- `Index "<NAME>" uses <type>, which is not yet supported` — data source is GoogleDrive/OneDrive/Dropbox/Confluence/Attachments. Not auto-generatable today.
-- `Storage bucket "<NAME>" ... not found in Orchestrator folder` — the bucket was deleted or lives in a different folder than the index.
+- `resources/solution_folder/index/<INDEX_NAME>.json` — manifest with `kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name, kind: "bucket"}]`, `spec.storageBucketReference.{name,key}`.
+- `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json` — standard bucket manifest.
+- `userProfile/<userId>/debug_overwrites.json` — two entries (`kind: "index"` and `kind: "bucket"`), both referencing the index's folder.
+
+Check the `Warnings` array in the refresh output. Common warnings:
+- `Index "<NAME>" not found in ECS` — exact-name mismatch. Re-check the index name.
+- `Index uses <type>, which is not yet supported` — data source is GoogleDrive/OneDrive/Dropbox/Confluence/Attachments; hand-author the solution-level files.
+- `Storage bucket "<NAME>" not found in Orchestrator folder` — the bucket was deleted or lives in a different folder than the index.
 
 ### Step 6 — Bundle and upload
 
@@ -679,13 +710,13 @@ Key differences from standalone:
 4. **Do not batch edits before validating** — validate after each change
 5. **Do not publish/deploy without validating** — always validate first
 6. **Do not forget contentTokens** — editing `content` without updating `contentTokens` causes rendering issues
-7. **Do not forget `uip solution resource refresh` after adding external tools** — creating only the agent-level `resources/{ToolName}/resource.json` is not enough. After `uip agent validate` generates `bindings_v2.json`, run `uip solution resource refresh` from the solution root to auto-generate solution-level resource files. Without this, Studio Web will show "resource is missing in this environment".
-8. **Always use the Releases API + GetPackageEntryPointsV2 for argument schemas** — query `/odata/Releases` for release metadata and type, then `/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2` for JSON Schema arguments. See Scenario 4 for the exact commands.
-9. **Do not copy-paste UUIDs from one resource to another** — every resource needs a unique UUID
-10. **Do not bump `storageVersion` manually** — breaks packager compatibility
-11. **Do not call raw Automation.Solutions REST APIs** — always use `uip solution` commands
+7. **Do not forget `uip solution resource refresh` after adding external tools** — creating only the agent-level `resources/{ToolName}/resource.json` is not enough. After `uip agent validate` generates `bindings_v2.json`, run `uip solution resource refresh` from the solution root to import the bindings into the solution. For `Connection` bindings refresh also generates `debug_overwrites.json`. For `Process`, `App`, and `Index` bindings refresh imports the resource but does not hand-write the rich solution-level files — check the output and hand-author missing files per [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files.
+8. **Always use the Releases API + GetPackageEntryPointsV2 for argument schemas** — `uip solution resource list --kind Process` returns only identity (Key/Name/Type/Folder/FolderKey). Query `/odata/Releases` for ProcessKey/ProcessVersion/FeedId and raw .NET schemas (RPA), then `GetPackageEntryPointsV2` for JSON Schema input/output arguments. See Scenario 4.
+9. **Do not copy-paste UUIDs from one resource to another** — every resource needs a unique UUID.
+10. **Do not bump `storageVersion` manually** — breaks packager compatibility.
+11. **Do not call raw Automation.Solutions REST APIs** — always use `uip solution` commands.
 12. **Do not camelCase `contextType` or `retrievalMode` values** — write `"datafabricentityset"`, `"deeprag"`, `"batchtransform"` (all lowercase). `uip agent validate` accepts camelCase but Studio Web silently drops the resource from the agent UI on import.
-13. **Do not expect `uip solution resource refresh` to wire non-StorageBucket index data sources** — GoogleDrive/OneDrive/Dropbox/Confluence/Attachments indexes, `attachments` contexts, and `datafabricentityset` contexts are not auto-generated. Refresh warns + skips them; any solution-level files for these must be hand-authored.
+13. **Do not pass `--for-low-code-agents` to `uip is connectors list` or `uip is activities list`** — this flag has been removed. Run the commands without it and filter yourself if needed.
 
 ## Task Navigation
 

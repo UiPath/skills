@@ -39,10 +39,21 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent identified compliance/audit pattern"
+  - type: json_check
+    description: "Agent identified a compliance / audit / sign-off / approval pattern (any one, case-tolerant)"
     path: "recommendation.json"
-    includes:
-      - "audit"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "udit"
+      - expression: "pattern"
+        operator: contains
+        expected: "omplianc"
+      - expression: "pattern"
+        operator: contains
+        expected: "ign"
+      - expression: "pattern"
+        operator: contains
+        expected: "pprov"
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.25

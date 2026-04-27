@@ -95,6 +95,7 @@ Use when you need to find which activity implements a user-described action:
 
 ```bash
 uip rpa find-activities --query "send mail" --limit 10 --output json```
+```
 
 - Results are **global** — not limited to installed packages
 - If a useful activity is in an uninstalled package, install it immediately
@@ -134,6 +135,7 @@ Use when activity docs, `find-activities`, and `get-default-activity-xaml` don't
 uip rpa list-workflow-examples --tags web --limit 10 --output jsonuip rpa get-workflow-example --key "<BLOB_PATH>"```
 
 **Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
+```
 
 ### Step 1.8: Get Current Context (As Needed)
 
@@ -163,7 +165,7 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 Before writing any XAML with UI activities, every UI element target **MUST** be configured through the `uia-configure-target` skill flow. See [uia-configure-target-workflows.md](../uia-configure-target-workflows.md).
 
-**NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow. **NEVER** launch the target application before running `uia-configure-target`.
+**NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
 ### For CREATE Requests
 

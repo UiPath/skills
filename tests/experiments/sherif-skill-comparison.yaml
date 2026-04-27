@@ -1,0 +1,48 @@
+# Experiment: Skills vs No-Skills evaluation (agent SDK tasks)
+#
+# Tests 4 conditions to measure the impact of documentation and skills:
+#   bare              — bare scaffolding only
+#   docs              — adds CLAUDE.md + .agent/ reference docs
+#   plugin            — docs + skills plugin
+#   bare-plugin       — skills plugin only, no docs
+#
+# Overrides default.yaml to use bypassPermissions (needed for unattended runs).
+# Plugin variants load the skills plugin; the model decides whether to invoke skills.
+#
+# Uses template overlays (appended after each task's base template):
+#   overlays/agent/docs — contains CLAUDE.md, AGENTS.md, .agent/ reference files
+#
+# Prerequisites:
+#   - Set SKILLS_PLUGIN_PATH env var to your skills plugin directory
+#     (e.g., ~/uipath/uipath-claude-plugins/plugins/uipath-coded-agents)
+#   - Task YAML files should use uipath-starter as base template (no docs baked in)
+
+experiment_id: skills-eval
+description: "Compare impact of docs and skills on agent SDK coding tasks"
+
+defaults:
+  max_iterations: 1
+  repeats: 1
+  agent:
+    type: claude-code
+    permission_mode: bypassPermissions
+    system_prompt: |
+      You are a coding agent. Work only inside your current working directory.
+      Do NOT read, list, or access any files outside your working directory.
+      In particular, do NOT access the plugin directories — those are loaded by
+      the skill system and you do not need to read them directly.
+
+variants:
+  - variant_id: bare
+
+  - variant_id: sherif-skills
+    agent:
+      plugins:
+        - type: "local"
+          path: "/Users/religa/src/exp/skills"
+
+  - variant_id: main-skills
+    agent:
+      plugins:
+        - type: "local"
+          path: "/Users/religa/src/skills"

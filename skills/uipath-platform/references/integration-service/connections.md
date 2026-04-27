@@ -8,17 +8,19 @@ Connections are authenticated sessions for a specific connector. They store cred
 
 ## Response Fields
 
-| Field | Description |
-|---|---|
-| **`Id`** | Connection ID (used in `--connection-id` for all operations) |
-| `Name` | Display name (e.g., "Salesforce Prod", "Apify") |
-| `ConnectorKey` | The connector this connection belongs to |
-| **`State`** | `Enabled` or other status. Only Enabled connections can be used. |
-| **`IsDefault`** | `Yes` or `No`. Recommend the default connection but always let the user confirm. |
-| `Owner` | Who created the connection |
-| `ByoaConnection` | `Yes` or `No`. Whether this is a BYOA (Bring Your Own Account) connection — the customer registered their own OAuth app with the external service. Required for some webhook triggers. |
-| `ElementInstanceId` | Numeric instance ID for this connection's element. Used with `uip is webhooks config` to retrieve webhook URLs. |
-| `Folder` | Folder this connection belongs to |
+| Field | Show to user? | Description |
+|---|---|---|
+| **`Name`** | **Yes** | Display name — always use this as the primary identifier when presenting to the user (e.g., "Salesforce Prod", "bai.li") |
+| **`State`** | **Yes** | `Enabled` or other status. Only Enabled connections can be used. |
+| **`IsDefault`** | **Yes** | `Yes` or `No`. Recommend the default connection but always let the user confirm. |
+| **`Owner`** | **Yes** | Who created the connection (email) |
+| **`Folder`** | **Yes** | Folder name this connection belongs to (e.g., "Shared", "Personal") |
+| `ConnectorName` | **Yes** | Human-readable connector name (e.g., "Slack", "Salesforce") |
+| `ByoaConnection` | **Yes** | `Yes` or `No`. BYOA (Bring Your Own Account) connection — customer registered their own OAuth app with the external service. Required for some webhook triggers. |
+| `Id` | Internal | Connection UUID — use only in `--connection-id` CLI args, never show to user |
+| `ConnectorKey` | Internal | Connector key — use only in CLI args |
+| `FolderKey` | Internal | Folder UUID — use only in `--folder-key` CLI args, never show to user |
+| `ElementInstanceId` | Internal | Numeric instance ID — use only in `--element-instance-id` for `uip is webhooks config` |
 
 ---
 
@@ -29,9 +31,9 @@ Connections are authenticated sessions for a specific connector. They store cred
 ### For Native Connectors
 
 1. List connections for the connector
-2. Present all enabled connections to the user, **recommending** the default (`IsDefault: Yes`, `State: Enabled`):
-   - "I found these connections: 1) **Salesforce Prod** (default, enabled) ← recommended 2) Salesforce Dev (enabled). Which should I use?"
-3. If only one enabled connection exists, still confirm: "I found connection **<name>** (default, enabled). Should I use this one?"
+2. Present all enabled connections to the user using **Name, Owner, and Folder** (never UUIDs), **recommending** the default (`IsDefault: Yes`, `State: Enabled`):
+   - "I found these connections: 1) **Salesforce Prod** by user@example.com (default, enabled, Shared folder) ← recommended 2) **Salesforce Dev** by admin@example.com (enabled, Shared folder). Which should I use?"
+3. If only one enabled connection exists, still confirm: "I found connection **<Name>** by <Owner> in **<Folder>** folder (default, enabled). Should I use this one?"
 4. If not enabled → prompt user to re-authenticate via `is connections edit <id>`
 5. If no connections exist → prompt user to create one via `is connections create "<connector-key>"`
 

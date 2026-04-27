@@ -48,11 +48,11 @@ uip is connectors list --filter "<vendor>" --output json
 uip is connections list "<connector-key>" --output json
 ```
 
-- **Always present options** to the user. Recommend the default enabled connection (`IsDefault: Yes`, `State: Enabled`) but let the user confirm or choose another.
+- **Always present options using names, not UUIDs** — show `Name`, `Owner`, `Folder`, `State`, and `IsDefault`. Never show `Id` or `FolderKey` to the user. Recommend the default enabled connection (`IsDefault: Yes`, `State: Enabled`) but let the user confirm or choose another.
 - **HTTP fallback**: Match connection by vendor **Name** (case-insensitive substring). Present matches to user.
 - **None**: Ask user to create via `is connections create "<connector-key>"`.
 
-> **Do NOT auto-select a connection silently.** Even if there is exactly one default enabled connection, present it to the user: "I found connection **<name>** (default, enabled). Should I use this one?"
+> **Do NOT auto-select a connection silently.** Even if there is exactly one default enabled connection, present it to the user: "I found connection **<Name>** by <Owner> in **<Folder>** folder (default, enabled). Should I use this one?"
 
 See [connections.md — Selecting a Connection](connections.md#selecting-a-connection) for full selection logic.
 

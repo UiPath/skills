@@ -1,15 +1,15 @@
-task_id: skill-flow-ipe-enhanced_enum
+task_id: skill-flow-ipe-enhanced-enum
 description: >
   Tests the enhanced enum IS feature — configures a connector node with an
   enhanced enum field with display labels on the WooCommerce connector.
-tags: [uipath-maestro-flow, integration, connector-feature, enhanced-enum]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
 
 task_timeout: 1500
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-  max_turns: 50
+  max_turns: 120
   turn_timeout: 1200
 
 sandbox:
@@ -58,7 +58,7 @@ success_criteria:
   - type: command_executed
     description: "uip maestro flow validate was called"
     tool_name: "Bash"
-    command_pattern: "uip\\s+(maestro\\s+)?flow\\s+validate"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

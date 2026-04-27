@@ -3,7 +3,7 @@ description: >
   Smoke test: agent wires the HITL node's `completed` output port (not the
   old `cancelled` or `timeout` ports). Verifies correct edge structure in
   a three-node approval flow.
-tags: [uipath-maestro-flow, smoke, hitl]
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
   type: claude-code
@@ -28,12 +28,15 @@ initial_prompt: |
 
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
+  **REQUIRED — before finishing, write report.json at the sandbox root** (not
+  inside any project subfolder) with exactly these keys:
   {
     "hitl_node_id": "<id>",
     "edge_from_hitl": "<sourceHandle used on the HITL edge>",
     "validation_passed": true
   }
+  The task is NOT complete until `uip maestro flow validate` has passed AND
+  report.json exists.
 
 success_criteria:
   - type: file_exists

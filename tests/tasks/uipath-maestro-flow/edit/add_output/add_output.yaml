@@ -2,7 +2,7 @@ task_id: skill-flow-add-output
 description: >
   Add a "location" field to the end node outputs in the BellevueWeather flow.
   Exercises modifying node output mappings.
-tags: [uipath-maestro-flow, e2e, edit, ootb]
+tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 max_iterations: 1
 
 agent:
