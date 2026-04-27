@@ -52,6 +52,56 @@ function generatePKCE() {
   return { verifier, challenge };
 }
 
+/** Where to drop screenshots + DOM dumps for post-mortem. */
+function debugDir() {
+  return process.env.AUTH_DEBUG_DIR
+    || process.env.BUILD_ARTIFACTSTAGINGDIRECTORY
+    || process.env.TEMP
+    || "/tmp";
+}
+
+/** Screenshot the org-select page + log every clickable / data-cy element. */
+async function dumpOrgSelectDom(page) {
+  try {
+    const dir = debugDir();
+    mkdirSync(dir, { recursive: true });
+    const ssPath = join(dir, "auth-debug-orgselect.png");
+    await page.screenshot({ path: ssPath, fullPage: true });
+    console.log(`Org-select screenshot: ${ssPath}`);
+  } catch (err) {
+    console.error(`Org-select screenshot failed: ${err.message}`);
+  }
+  try {
+    const items = await page.evaluate(() => {
+      const out = [];
+      const els = document.querySelectorAll(
+        'a, button, [role="link"], [role="button"], [data-cy], [data-test-id]'
+      );
+      for (const el of els) {
+        const text = el.textContent?.trim().replace(/\s+/g, " ").slice(0, 80) || "";
+        out.push({
+          tag: el.tagName.toLowerCase(),
+          text,
+          href: el.getAttribute("href"),
+          dataCy: el.getAttribute("data-cy"),
+          dataTestId: el.getAttribute("data-test-id"),
+          ariaLabel: el.getAttribute("aria-label"),
+        });
+      }
+      return out;
+    });
+    console.log(`Org-select clickable elements (${items.length}):`);
+    for (const it of items) {
+      console.log(
+        `  [${it.tag}] data-cy=${it.dataCy} data-test-id=${it.dataTestId} ` +
+        `aria-label=${JSON.stringify(it.ariaLabel)} href=${it.href} text=${JSON.stringify(it.text)}`
+      );
+    }
+  } catch (err) {
+    console.error(`Org-select DOM dump failed: ${err.message}`);
+  }
+}
+
 /** Start HTTP server and return a promise that resolves with the auth code. */
 function startCallbackServer() {
   return new Promise((resolve, reject) => {
@@ -147,19 +197,81 @@ async function main() {
       page.click("button[data-cy='login-button']"),
     ]);
 
-    // Handle organization selection if the user belongs to multiple orgs
+    // Handle organization selection if the user belongs to multiple orgs.
+    // Originally a single `a[href*="${ORG}"]` selector — that worked on
+    // staging but matches nothing on alpha (different DOM). Replaced with
+    // a selector cascade + diagnostic dump so the next failure tells us
+    // exactly what to target.
     const TARGET_ORG = process.env.ORG;
-    if (TARGET_ORG) {
-      try {
-        await page.waitForFunction(
-          () => window.location.href.includes("organization-select"),
-          { timeout: 15000 }
+    let onOrgSelect = false;
+    try {
+      await page.waitForFunction(
+        () => window.location.href.includes("organization-select"),
+        { timeout: 15000 }
+      );
+      onOrgSelect = true;
+    } catch {
+      console.log("Org-select page not detected within 15s — assuming single-org auto-redirect.");
+    }
+
+    if (onOrgSelect) {
+      console.log(`Organization selection detected (target=${TARGET_ORG || "<unset>"}). Dumping DOM…`);
+      await dumpOrgSelectDom(page);
+
+      if (!TARGET_ORG) {
+        throw new Error("Org-select page appeared but ORG env var is empty. Set ORG to the target org slug.");
+      }
+
+      // Try CSS selectors in order from most specific to most permissive.
+      const cssSelectors = [
+        `a[href*="${TARGET_ORG}"]`,
+        `[data-cy*="${TARGET_ORG}"]`,
+        `[data-test-id*="${TARGET_ORG}"]`,
+        `[aria-label*="${TARGET_ORG}"]`,
+      ];
+      let clicked = false;
+      for (const sel of cssSelectors) {
+        const el = await page.$(sel);
+        if (el) {
+          console.log(`Picking org via CSS selector: ${sel}`);
+          await Promise.all([
+            page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {}),
+            el.click(),
+          ]);
+          clicked = true;
+          break;
+        }
+      }
+
+      // Last-resort: text-content match on any clickable element.
+      if (!clicked) {
+        const matched = await page.evaluate((org) => {
+          const candidates = document.querySelectorAll(
+            'a, button, [role="link"], [role="button"], [data-cy], [class*="org"]'
+          );
+          for (const el of candidates) {
+            const t = el.textContent?.trim();
+            if (t && (t === org || t.toLowerCase() === org.toLowerCase() || t.includes(org))) {
+              el.scrollIntoView();
+              el.click();
+              return true;
+            }
+          }
+          return false;
+        }, TARGET_ORG);
+        if (matched) {
+          console.log(`Picked org via text-content match for "${TARGET_ORG}".`);
+          // Give the SPA a moment to navigate.
+          await new Promise(r => setTimeout(r, 2000));
+          clicked = true;
+        }
+      }
+
+      if (!clicked) {
+        throw new Error(
+          `Could not find a clickable element for org "${TARGET_ORG}" on alpha's org-select page. ` +
+          `See the DOM dump above and the screenshot saved to AUTH_DEBUG_DIR.`
         );
-        console.log(`Organization selection detected, picking ${TARGET_ORG}...`);
-        await page.waitForSelector(`a[href*="${TARGET_ORG}"]`, { timeout: 5000 });
-        await page.click(`a[href*="${TARGET_ORG}"]`);
-      } catch {
-        console.log("No org selection needed or already redirected.");
       }
     }
 
@@ -172,9 +284,11 @@ async function main() {
     console.log("Redirect received!");
   } catch (err) {
     try {
-      const screenshotPath = join(process.env.BUILD_ARTIFACTSTAGINGDIRECTORY || process.env.TEMP || "/tmp", "helm-auth-error.png");
+      const dir = debugDir();
+      mkdirSync(dir, { recursive: true });
+      const screenshotPath = join(dir, "auth-debug-error.png");
       await page.screenshot({ path: screenshotPath, fullPage: true });
-      console.error(`Screenshot saved to ${screenshotPath}`);
+      console.error(`Error screenshot: ${screenshotPath}`);
       console.error(`Current URL: ${page.url()}`);
     } catch (ssErr) {
       console.error(`Could not take screenshot: ${ssErr.message}`);
