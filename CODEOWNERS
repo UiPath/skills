@@ -48,6 +48,8 @@
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/references/plugins/hitl/ @dushyant-uipath @rohan-uipath @parasgera @rockymadden @gozhang2
+/tests/tasks/uipath-maestro-flow/hitl/ @dushyant-uipath @rohan-uipath @parasgera @rockymadden @gozhang2
 
 # Legacy RPA skill
 /skills/uipath-rpa-legacy/ @roalexandru
