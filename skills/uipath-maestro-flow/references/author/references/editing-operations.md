@@ -6,6 +6,12 @@ Strategy selection and shared concepts for modifying `.flow` files. Two implemen
 
 > **Default to Direct JSON for all `.flow` edits.** Use CLI only when the user explicitly requests CLI, or for connector, connector-trigger, or inline-agent nodes (see carve-out rows in the matrix below).
 
+For common manual-trigger branching flows, use
+[examples/decision-branch.flow](examples/decision-branch.flow) as the starting
+template instead of adding each non-connector node through `node add`. It avoids
+inline JSON shell escaping for `$vars`, backticks, quotes, and multiline scripts
+while preserving a validator-clean topology that can be adapted in-place.
+
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
 | **Direct JSON** (default) | [editing-operations-json.md](editing-operations-json.md) | Default for all `.flow` edits — node/edge CRUD, variables, subflows, output mapping, in-place input updates. |
@@ -73,6 +79,12 @@ These apply regardless of which strategy you use.
 - Do not validate after each individual edit — intermediate states are expected to be invalid
 - Validation checks: JSON schema, definitions coverage, edge references, unique IDs
 - Validation does NOT check: connector configuration, connection health, expression correctness, required field completeness
+- If a validation warning claims a required node input is missing, inspect the
+  actual node `inputs` and the registry definition before changing working JSON.
+  Older CLI versions have reported `REQUIRED_FIELD` warnings for fields that
+  were present, especially after complex inline `--input` values. Prefer direct
+  JSON edits when the input contains `$vars`, quotes, backticks, or multiline
+  script.
 
 ### Expression prefix rules
 
