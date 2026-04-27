@@ -137,13 +137,28 @@ Present the user with three options. Do not choose on their behalf or perform an
 ## Step 4 — Common configuration
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
-| Priority | "What priority should this task have? Options: Low, Medium, High (default: Medium)" |
+| Priority | "What priority should this task have? Options: Low, Medium, High (default: Low)" |
 
 ---
 
 ## Step 5 — Write the Node Directly
 
 ### Surface: Flow — QuickForm (inline schema only)
+
+**Option A — CLI (preferred for new nodes):**
+
+```bash
+uip maestro flow hitl add <path/to/file.flow> \
+  --label "<TaskLabel>" \
+  --priority <Low|Medium|High> \
+  --assignee <email-or-group> \
+  --schema '<json>' \
+  --output json
+```
+
+The CLI writes the node, adds the definition entry, and updates `variables.nodes` automatically. After the command returns, wire the `completed` port to the next node.
+
+**Option B — Direct JSON:**
 
 Write the node JSON directly into `workflow.nodes`, add the definition to `workflow.definitions` (once), wire edges into `workflow.edges`, and regenerate `workflow.variables.nodes`.
 
