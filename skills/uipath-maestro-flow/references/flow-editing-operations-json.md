@@ -65,12 +65,13 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "<BPMN_TYPE>" }
+  }
 }
 ```
 
 > **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [flow-file-format.md — Node outputs](flow-file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
+
+> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [flow-file-format.md — Instance-specific fields that live in `inputs`](flow-file-format.md#instance-specific-fields-that-live-in-inputs).
 
 > **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
 
@@ -79,10 +80,10 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
    - One definition per unique `type` — not one per node instance
 
 > **Resource nodes — extra step.** If the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`:
-> 1. Add `model.context[]` on the node instance with `=bindings.<id>` refs for `name` and `folderPath` (plus a static `_label`)
-> 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`)
+> 1. The instance stays minimal — just `inputs`/`outputs`/`display`.
+> 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`): two entries per resource (`name` + `folderPath`) with `resourceKey` exactly matching the definition's `model.bindings.resourceKey`.
 >
-> Without these, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
+> The BPMN emit layer rewrites the definition's `<bindings.{name}>` placeholders to `=bindings.{id}` by matching on `(resourceKey, name)`. Without matching entries in top-level `bindings[]`, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
 
 4. Add node output variables to `variables.nodes` (optional — the CLI regenerates these, but direct builds should include them for completeness):
 
@@ -269,35 +270,31 @@ Only `inout` variables can be updated. `in` variables are read-only.
 5. Add the real resource node to `nodes` with:
    - Correct `type` and `typeVersion`
    - `inputs` with resolved field values
-   - `model.bindings` with `resourceSubType`, `resourceKey`, etc.
+   - `outputs` block (action nodes: `output` + `error`)
+   - No `model` block — binding/context templates come from the definition
 6. Copy the definition from registry into `definitions`
-7. Re-create all edges using the new node's `id`
-8. Add node variables to `variables.nodes`
-9. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
+7. Add entries to the top-level `bindings[]` array — two per resource (`name` + `folderPath`), with `resourceKey` matching the definition's `model.bindings.resourceKey`
+8. Re-create all edges using the new node's `id`
+9. Add node variables to `variables.nodes`
+10. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Replace manual trigger with scheduled trigger
 
 Edit the start node in-place (no delete/re-add needed):
 
 1. Change `type` from `core.trigger.manual` to `core.trigger.scheduled`
-2. Add timer inputs:
+2. Add timer inputs (keep the existing `entryPointId` in `inputs`):
    ```json
    "inputs": {
+     "entryPointId": "<existing-uuid>",
      "timerType": "timeCycle",
      "timerPreset": "R/PT1H"
    }
    ```
-3. Add `eventDefinition` to `model`:
-   ```json
-   "model": {
-     "type": "bpmn:StartEvent",
-     "eventDefinition": "bpmn:TimerEventDefinition"
-   }
-   ```
-4. Update the definition in `definitions`:
+3. Update the definition in `definitions`:
    - Remove the `core.trigger.manual` definition
-   - Add the `core.trigger.scheduled` definition from `uip maestro flow registry get core.trigger.scheduled --output json`
-5. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
+   - Add the `core.trigger.scheduled` definition from `uip maestro flow registry get core.trigger.scheduled --output json` (the new definition carries the correct `model.type` and `model.eventDefinition`)
+4. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Create a subflow
 
@@ -324,8 +321,7 @@ Edit the start node in-place (no delete/re-add needed):
          "source": "=result.Error",
          "var": "error"
        }
-     },
-     "model": { "type": "bpmn:SubProcess" }
+     }
    }
    ```
 

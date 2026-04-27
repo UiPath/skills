@@ -100,10 +100,12 @@ The response contains three trigger-specific sections:
 
 **`eventMode`** — `"webhooks"` or `"polling"`.
 
-The response also includes `model.context` with:
+The response (which becomes the `definitions[]` entry verbatim) includes `model.context` with:
 - `connectorKey` — the connector identifier
 - `operation` — the event operation name (e.g., `"EMAIL_RECEIVED"`, `"ISSUE_CREATED"`)
 - `objectName` — the IS object (e.g., `"Message"`, `"Issue"`)
+
+These live in the **definition**, not on the node instance. The instance carries only `inputs` (event filter fields) and `outputs`.
 
 ### Step 3 — Resolve reference fields in event parameters
 
@@ -421,7 +423,7 @@ uip maestro flow debug . --output json
 | `Filter references field '<name>' which is not present in trigger metadata` | Leaf `id` does not match any `filterFields.fields[].name` | Re-run `registry get` and use a valid field name |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
 | Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../SKILL.md). |
-| `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
+| Definition's `model.context` missing operation | Definition not copied correctly, or node added before registry pull | Re-run `uip maestro flow registry pull --force`, then verify the `definitions[]` entry contains `model.context` with `connectorKey`/`operation`/`objectName` as returned by `registry get` |
 | Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list "<connector-key>" --byoa --output json`. If no BYOA connections exist, user must create one. |
 | `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list "<connector-key>" --refresh --output json` |
 | `ElementInstanceId` is empty on the selected connection | Connection is not a BYOA connection, or connector does not support webhooks on this connection type | Verify the trigger requires BYOA (Step 1b `byoaConnection` flag). If `true`, switch to a BYOA connection. |

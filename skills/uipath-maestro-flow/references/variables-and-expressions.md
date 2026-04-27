@@ -287,8 +287,7 @@ Workflow output variables (`direction: "out"`) must be mapped on End nodes. The 
     "summary": {
       "source": "=js:$vars.formatResult.output.text"
     }
-  },
-  "model": { "type": "bpmn:EndEvent" }
+  }
 }
 ```
 
@@ -594,7 +593,9 @@ A flow with input, state, and output variables:
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
-      "inputs": {},
+      "inputs": {
+        "entryPointId": "<uuid>"
+      },
       "outputs": {
         "output": {
           "type": "object",
@@ -602,8 +603,7 @@ A flow with input, state, and output variables:
           "source": "=result.response",
           "var": "output"
         }
-      },
-      "model": { "type": "bpmn:StartEvent" }
+      }
     },
     {
       "id": "transform1",
@@ -625,8 +625,7 @@ A flow with input, state, and output variables:
           "source": "=result.Error",
           "var": "error"
         }
-      },
-      "model": { "type": "bpmn:ScriptTask" }
+      }
     },
     {
       "id": "end1",
@@ -637,8 +636,7 @@ A flow with input, state, and output variables:
         "result": {
           "source": "=js:({ total: $vars.processedCount, data: $vars.transform1.output })"
         }
-      },
-      "model": { "type": "bpmn:EndEvent" }
+      }
     }
   ],
   "edges": [

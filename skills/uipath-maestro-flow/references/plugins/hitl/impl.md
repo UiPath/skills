@@ -56,10 +56,11 @@ Handles full lifecycle: writes node, adds definition entry once, regenerates `va
   "outputs": {
     "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
     "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
-  },
-  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
+  }
 }
 ```
+
+BPMN type (`bpmn:UserTask`) and serviceType (`Actions.HITL`) come from the `uipath.human-in-the-loop` entry in `definitions[]` — the instance carries no `model` block.
 
 **Ports:** `input` (target) → `completed` (source)
 
@@ -108,14 +109,17 @@ Confirm:
 - Output port: `output`
 - `model.serviceType` — `Actions.HITL`
 - `model.bindings.resourceSubType` — the app type
+- `model.bindings.resourceKey` — the `<FolderPath>.<AppName>` string used to scope binding resolution
 
 ### Node JSON
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
 
 The human task node's output (`$vars.{nodeId}.output`) contains the form data submitted by the user.
 
 **Node instance (inside `nodes[]`):**
+
+The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and binding/context templates come from the definition in `definitions[]`.
 
 ```json
 {
@@ -137,32 +141,11 @@ The human task node's output (`$vars.{nodeId}.output`) contains the form data su
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": {
-    "type": "bpmn:ServiceTask",
-    "serviceType": "Actions.HITL",
-    "version": "v2",
-    "section": "Published",
-    "bindings": {
-      "resource": "process",
-      "resourceSubType": "<appType>",
-      "resourceKey": "Shared.Review Form App",
-      "orchestratorType": "human-task",
-      "values": {
-        "name": "Review Form App",
-        "folderPath": "Shared"
-      }
-    },
-    "context": [
-      { "name": "name",       "type": "string", "value": "=bindings.bReviewExtractionName",       "default": "Review Form App" },
-      { "name": "folderPath", "type": "string", "value": "=bindings.bReviewExtractionFolderPath", "default": "Shared" },
-      { "name": "_label",     "type": "string", "value": "Review Form App" }
-    ]
   }
 }
 ```
 
-> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip flow registry get` output.
+> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip flow registry get` output. Both values come from the definition's `model.bindings`, never from the node instance.
 
 **Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`):**
 
@@ -193,9 +176,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip flow validate` passes but `uip flow debug` fails with "Folder does not exist or the user does not have access to the folder."
-
-> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
+> For the resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ### If the app does not exist yet
 

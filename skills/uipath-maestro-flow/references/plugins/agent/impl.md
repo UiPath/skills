@@ -36,15 +36,19 @@ Confirm:
 - `outputDefinition.output.schema` — contains `content` (string)
 - `outputDefinition.error.schema` — contains `code`, `message`, `detail`, `category`, `status`
 - `model.serviceType` — `Orchestrator.StartAgentJob`
+- `model.bindings.resourceSubType` — `Agent`
+- `model.bindings.resourceKey` — the `<FolderPath>.<AgentName>` string used to scope binding resolution
 - `inputDefinition` — typically empty (agents accept free-form input via the flow's wiring)
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
 
 ## JSON Structure
 
 ### Node instance (inside `nodes[]`)
+
+The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and binding/context templates come from the definition in `definitions[]`.
 
 ```json
 {
@@ -66,32 +70,9 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": {
-    "type": "bpmn:ServiceTask",
-    "serviceType": "Orchestrator.StartAgentJob",
-    "version": "v2",
-    "section": "Published",
-    "bindings": {
-      "resource": "process",
-      "resourceSubType": "Agent",
-      "resourceKey": "Shared.Apple Genius Agent",
-      "orchestratorType": "agent",
-      "values": {
-        "name": "Apple Genius Agent",
-        "folderPath": "Shared"
-      }
-    },
-    "context": [
-      { "name": "name",       "type": "string", "value": "=bindings.bClassifyIntentName",       "default": "Apple Genius Agent" },
-      { "name": "folderPath", "type": "string", "value": "=bindings.bClassifyIntentFolderPath", "default": "Shared" },
-      { "name": "_label",     "type": "string", "value": "Apple Genius Agent" }
-    ]
   }
 }
 ```
-
-> `resourceKey` takes the form `<FolderPath>.<AgentName>` — confirm the exact value from `uip maestro flow registry get` output.
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 
@@ -122,9 +103,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder."
-
-> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
+> For the resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ## Accessing Output
 
