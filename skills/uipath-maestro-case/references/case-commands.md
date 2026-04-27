@@ -6,10 +6,13 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 ## Local vs cloud commands
 
+`caseplan.json` mutations are direct file edits (Read + Write/Edit). CLI is used only for the operations below:
+
 | Commands | What | Auth |
 |----------|------|------|
-| `cases`, `stages`, `tasks`, `edges`, `var`, `sla` | Edit local `caseplan.json` | No |
-| `registry pull/list/search`, `get-connector`, `get-connection` | Registry discovery (cached after `pull`) | Yes (for `pull`) |
+| `solution new`, `solution project add`, `solution upload` | Solution scaffold + Studio Web upload | Yes (for `upload`) |
+| `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
+| `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
 ---
