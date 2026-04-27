@@ -242,11 +242,11 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ```bash
 # Confirm the node supports error handling
-uip flow registry get <nodeType> --output json \
+uip maestro flow registry get <nodeType> --output json \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Data']['Node'].get('supportsErrorHandling'))"
 
 # Add an outgoing edge with sourcePort: "error"
-uip flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
+uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
 ```
 

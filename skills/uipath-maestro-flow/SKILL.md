@@ -105,9 +105,9 @@ Planning is NOT needed when:
 
 These steps are for **creating a new flow from scratch**. For existing projects, use the Common Edits section above or skip to the relevant step.
 
-### Step 0 — Resolve the `uip` binary and detect command prefix
+### Step 0 — Resolve the `uip` binary and verify Maestro Flow commands
 
-The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments) and detect the command namespace:
+The `uip` CLI is installed via npm. Resolve the binary first because it may not be on `PATH` in nvm environments:
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
@@ -116,24 +116,22 @@ CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
 
 If `uip` is not found at all, install it: `npm install -g @uipath/cli@latest`. If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges — do not retry automatically.
 
-**Determine the command prefix based on installed version:**
-
-| Installed version | Command prefix | Example |
-|---|---|---|
-| **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
-| **< 0.3.4** | `uip flow` | `uip flow init MyProject` |
+Maestro Flow commands are exposed under `uip maestro flow ...`. Verify the installed CLI supports that namespace before continuing:
 
 ```bash
 MIN_VERSION="0.3.4"
-if [ "$(printf '%s\n%s\n' "$MIN_VERSION" "$CURRENT" | sort -V | head -n1)" = "$MIN_VERSION" ]; then
-  FLOW_CMD="uip maestro flow"
-else
-  FLOW_CMD="uip flow"
+if [ -z "$CURRENT" ] || [ "$(printf '%s\n%s\n' "$MIN_VERSION" "$CURRENT" | sort -V | head -n1)" != "$MIN_VERSION" ]; then
+  echo "Install @uipath/cli >= $MIN_VERSION to use 'uip maestro flow ...' commands."
+  exit 1
 fi
-echo "Using: $FLOW_CMD (CLI version $CURRENT)"
-```
 
-> **All commands in this skill are written as `uip maestro flow ...` (the ≥ 0.3.4 form).** If Step 0 detects a version below 0.3.4, replace `uip maestro flow` with `uip flow` when running any command. The arguments and flags are identical — only the prefix differs. See UiPath/cli#841 for background on the restructuring.
+HELP=$($UIP maestro flow --help --output json 2>/dev/null || true)
+printf '%s' "$HELP" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('Data', {}).get('Command') == 'flow' else 1)" || {
+  echo "Installed CLI does not expose 'uip maestro flow'. Run: npm install -g @uipath/cli@latest"
+  exit 1
+}
+echo "Using: $UIP maestro flow (CLI version $CURRENT)"
+```
 
 ### Step 1 — Check login status
 
@@ -410,7 +408,7 @@ When you finish building or editing a flow, report to the user:
 - **[Planning: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery, plugin index, topology design, wiring rules, and common patterns.
 - **[Planning: Implementation Resolution](references/planning-impl.md)** — Registry lookups, connection binding, reference field resolution, wiring rules, and flow patterns.
 - **[.flow File Format](references/flow-file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
-- **[CLI Command Reference](references/flow-commands.md)** — All `uip flow` subcommands with flags and options
+- **[CLI Command Reference](references/flow-commands.md)** — All `uip maestro flow` subcommands with flags and options
 - **[Troubleshooting Guide](references/troubleshooting-guide.md)** — Diagnostic workflow for failed flows: incidents, runtime variables, definition correlation, traces, and `instance`/`incident` CLI reference
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):

@@ -11,10 +11,10 @@ sandbox:
 initial_prompt: |
   You are authoring a UiPath Flow that is triggered by an Outlook email with subject containing "good day" and sent from
   abc@xyz.com.
-  Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
+  Use the `uipath-maestro-flow` skill. Do NOT run `uip maestro flow node configure`
   or any command that requires a live connection — this sandbox has no UiPath
   tenant. Instead, plan the exact `--detail` JSON you would pass to
-  `uip flow node configure` for the trigger.
+  `uip maestro flow node configure` for the trigger.
   Write the planned trigger `--detail` JSON to `trigger_detail.json`. It must
   contain, at minimum:
     - connectionId, folderKey, eventMode (placeholder values are fine)

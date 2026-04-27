@@ -17,7 +17,7 @@ Read `~/.uip/case-resources/typecache-triggers-index.json` directly. Match on `d
 ### 2. Resolve the connection
 
 ```bash
-uip case registry get-connection \
+uip maestro case registry get-connection \
   --type typecache-triggers \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
@@ -100,7 +100,7 @@ Only use field names that appear in `filterFields`. If a filter cannot be transl
 ### Step 1 — Get connection details + Entry
 
 ```bash
-uip case registry get-connection \
+uip maestro case registry get-connection \
   --type typecache-triggers \
   --activity-type-id "<type-id>" --output json
 ```
@@ -117,7 +117,7 @@ uip case registry get-connection \
 ### Step 2 — Get enriched metadata + outputs
 
 ```bash
-uip case tasks describe --type connector-trigger \
+uip maestro case tasks describe --type connector-trigger \
   --id "<type-id>" \
   --connection-id "<connection-id>" --output json
 ```
