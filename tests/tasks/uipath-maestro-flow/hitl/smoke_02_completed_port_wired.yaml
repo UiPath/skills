@@ -8,7 +8,7 @@ tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hi
 agent:
   type: claude-code
   permission_mode: acceptEdits
-  max_turns: 40
+  max_turns: 80
   turn_timeout: 600
 
 sandbox:
