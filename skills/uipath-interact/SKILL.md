@@ -1,6 +1,7 @@
 ---
 name: uipath-interact
-description: "[PREVIEW] Read and drive any open desktop window or browser tab — inspect UI, screenshot, extract text/tables, click, type, fill forms, verify behavior. Authoring workflows or selectors→uipath-rpa."
+description: "[PREVIEW] Read and drive a running desktop window or browser tab — inspect, screenshot, extract, click, type, fill forms, verify. NOT for authoring UiPath projects. Workflows, activities, selectors, Object
+  Repository, project.json→uipath-rpa."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 ---
 
@@ -8,15 +9,15 @@ allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 
 Drive live desktop applications and browser tabs via the `uip rpa uia` CLI: discover applications and interact with elements using stable refs.
 
+## When NOT to use — STOP and switch to `uipath-rpa`
+
+This skill drives a **live, running** application. It does **NOT** author or modify UiPath projects. If the task is to **create, edit, build, or run a workflow**, **configure Object Repository targets**, **create or fix selectors**, or **modify `project.json`**, STOP — switch to the `uipath-rpa` skill. Do not improvise here. `uipath-rpa` is the entry point for all workflow-authoring work and routes to the appropriate sub-skills.
+
 ## When to use
 
 - Probing a running application -- read values, inspect state, explore a UI tree.
 - Driving a UI end-to-end (click, type, fill form, extract table).
 - Verifying behavior after a change.
-
-## When NOT to use
-
-For anything else (building workflows, configuring Object Repository targets, creating or fixing selectors, etc.) -- use the `uipath-rpa` skill. It is the entry point for all non-interactive UIA work and routes to the appropriate sub-skills.
 
 ## Critical Rules
 
