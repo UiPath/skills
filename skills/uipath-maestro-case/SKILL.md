@@ -135,6 +135,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 
 ## Anti-patterns
 
+- **Do NOT leave stages without an inbound edge.** Orphaned and unreachable. Every stage needs ≥1 inbound edge from Trigger or another stage.
 - **Do NOT validate after each command.** Intermediate states expected invalid. Run `validate` once after full build (Phase 2b).
 - **Do NOT execute CLI commands in parallel.** Each may depend on IDs from the previous — sequential only.
 - **Do NOT batch multiple T-entries into one JSON write.** Each T-entry: own Read → mutate → Write cycle. Composing large in-memory JSON across stages/edges/tasks hides intermediate state, breaks review.
