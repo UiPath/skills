@@ -1,0 +1,65 @@
+task_id: skill-uipath-case-management-registry-discovery
+description: >
+  Skill-guided evaluation: `uipath-case-management` should direct the agent to
+  the `uip maestro case` registry surface when discovering how Case Management
+  definitions are built.
+tags: [uipath-case-management, smoke, registry]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Using the `uipath-case-management` skill, determine the correct CLI command
+  to inspect the Case Management registry and check its help output.
+
+  Stay at the help/discovery layer only:
+  - do not authenticate
+  - do not create remote resources
+  - do not run the actual registry pull
+  - if you parse any structured `uip` output, use `--output json`
+  - plain `--help` output is sufficient for this task
+
+  Save a summary to case_registry_report.json with at minimum:
+    {
+      "registry_pull_command": "uip maestro case registry pull",
+      "help_checked": true,
+      "auth_required_for_this_task": false
+    }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked the maestro case registry pull help"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull\s+--help'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Registry pull help uses the maestro namespace"
+    command: 'uip maestro case registry pull --help'
+    expected_stdout: 'uip maestro case registry pull'
+    stdout_match: contains
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "case_registry_report.json records the correct discovery result"
+    command: |
+      python3 - <<'PY'
+      import json
+      from pathlib import Path
+
+      report = json.loads(Path("case_registry_report.json").read_text())
+      ok = (
+          report.get("registry_pull_command") == "uip maestro case registry pull"
+          and report.get("help_checked") is True
+          and report.get("auth_required_for_this_task") is False
+      )
+      print("OK" if ok else "FAIL")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
+    weight: 1.5
+    pass_threshold: 1.0

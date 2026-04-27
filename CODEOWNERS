@@ -40,6 +40,7 @@
 
 # Case Management skill
 /skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
