@@ -117,6 +117,13 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 | Greater than | `"GreaterThan"` |
 | Less than | `"LessThan"` |
 | Is empty | `"IsEmpty"` |
+| Is not empty | `"IsNotEmpty"` |
+| One of (multi-value) | `"In"` |
+| Not one of | `"NotIn"` |
+| Is null | `"IsNull"` |
+| Is not null | `"IsNotNull"` |
+
+> See the IS SDK `FilterOperator` enum for the complete list (includes `Like`, `NotLike`, datetime operators, etc.).
 
 #### Examples
 
@@ -133,6 +140,18 @@ Multiple conditions (AND):
     { "id": "project", "operator": "Equals", "value": { "value": "PROJ", "rawString": "\"PROJ\"", "isLiteral": true } },
     { "id": "issuetype", "operator": "Equals", "value": { "value": "Bug", "rawString": "\"Bug\"", "isLiteral": true } }
 ], "groups": [] }
+```
+
+Nested AND/OR (e.g., "status is Open AND (priority > 3 OR assignee is null)"):
+```json
+{ "groupOperator": 0, "index": 0, "filters": [
+    { "id": "status", "operator": "Equals", "value": { "value": "Open", "rawString": "\"Open\"", "isLiteral": true } }
+], "groups": [
+    { "groupOperator": 1, "index": 1, "filters": [
+        { "id": "priority", "operator": "GreaterThan", "value": { "value": 3, "rawString": "\"3\"", "isLiteral": true } },
+        { "id": "assignee", "operator": "IsNull", "value": null }
+    ], "groups": [] }
+] }
 ```
 
 No filter (trigger fires on all events): omit `filter` from the tasks.md entry entirely.
