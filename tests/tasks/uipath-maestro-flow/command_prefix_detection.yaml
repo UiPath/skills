@@ -1,0 +1,59 @@
+task_id: skill-flow-command-prefix-detection
+description: >
+  Skill-guided evaluation: `uipath-maestro-flow` should help the agent
+  determine the correct Flow command prefix for the installed CLI and then
+  create and validate a local Flow project with that prefix.
+tags: [uipath-maestro-flow, smoke, namespace, validate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Using the `uipath-maestro-flow` skill, determine the correct Flow command
+  prefix for the installed UiPath CLI, then create and validate a new Flow
+  project named `NamespaceCheck`.
+
+  Do not run debug.
+
+  Save a summary to namespace_report.json with at minimum:
+    {
+      "flow_command_prefix": "<the prefix you chose>",
+      "commands_used": ["<list of uip commands you ran>"],
+      "validation_passed": true
+    }
+
+success_criteria:
+  - type: file_exists
+    description: "Generated flow file exists"
+    path: "NamespaceCheck/NamespaceCheck/NamespaceCheck.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "namespace_report.json matches the installed CLI version"
+    command: |
+      python3 - <<'PY'
+      import json
+      import re
+      import subprocess
+      from pathlib import Path
+
+      report = json.loads(Path("namespace_report.json").read_text())
+      version_out = subprocess.check_output(["uip", "--version"], text=True)
+      match = re.search(r"(\d+)\.(\d+)\.(\d+)", version_out)
+      version = tuple(int(part) for part in match.groups()) if match else (0, 0, 0)
+      expected = "uip maestro flow" if version >= (0, 3, 4) else "uip flow"
+      commands = report.get("commands_used", [])
+      ok = (
+          report.get("flow_command_prefix") == expected
+          and report.get("validation_passed") is True
+          and any(str(cmd).startswith(f"{expected} init") for cmd in commands)
+          and any(str(cmd).startswith(f"{expected} validate") for cmd in commands)
+      )
+      print("OK" if ok else "FAIL")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
+    weight: 2.0
+    pass_threshold: 1.0

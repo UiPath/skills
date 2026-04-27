@@ -1,9 +1,9 @@
 task_id: skill-flow-hitl-smoke-completed-port
 description: >
-  Smoke test: agent wires the HITL node's `completed` output port (not the
+  Integration test: agent wires the HITL node's `completed` output port (not the
   old `cancelled` or `timeout` ports). Verifies correct edge structure in
   a three-node approval flow.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, smoke, lifecycle-generate, shape-multi-node, node-hitl]
 
 agent:
   type: claude-code
@@ -69,10 +69,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "report.json records completed as the edge handle"
     path: "report.json"
-    includes:
-      - "completed"
+    assertions:
+      - expression: "edge_from_hitl"
+        operator: equals
+        expected: "completed"
     weight: 1.5
     pass_threshold: 1.0
