@@ -39,7 +39,7 @@ Use this table to determine which strategy to follow for each operation. **Direc
 
 ### Mixing strategies
 
-The default strategy is Direct JSON. Mixing is still common: for connector, connector-trigger, or inline-agent nodes, use the CLI as documented in their respective plugin `impl.md`. For everything else, use Direct JSON unless the user explicitly asks for CLI.
+The default strategy is Direct JSON. Mixing is still common: for connector, connector-trigger, or inline-agent nodes, use the CLI as documented in their respective plugin `guide.md`. For everything else, use Direct JSON unless the user explicitly asks for CLI.
 
 ---
 

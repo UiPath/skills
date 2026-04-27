@@ -22,7 +22,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
 
-> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](plugins/connector/impl.md) for the connector-binding shape.
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector/guide.md](plugins/connector/guide.md) for the connector-binding shape.
 
 ## Project structure (from `uip maestro flow init`)
 
@@ -112,7 +112,7 @@ Trigger nodes (manual, scheduled, connector triggers) have a single output — n
 }
 ```
 
-End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](plugins/end/impl.md)).
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/guide.md](plugins/end/guide.md)).
 
 ## Layout
 
@@ -148,7 +148,7 @@ Each key in `layout.nodes` is a node `id`. Every node in the `nodes` array shoul
 - Standard size is `{ "width": 96, "height": 96 }` for all node types
 - Never use vertical (top-to-bottom) layout
 
-**Subflow layout is scoped.** Each subflow entry in `subflows.<id>` has its **own** `layout.nodes` map for the nodes inside that subflow. Do NOT put subflow node positions in the top-level `layout.nodes` — they live alongside the subflow's `nodes`/`edges`/`variables`. See [subflow/impl.md](plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows.<id>` has its **own** `layout.nodes` map for the nodes inside that subflow. Do NOT put subflow node positions in the top-level `layout.nodes` — they live alongside the subflow's `nodes`/`edges`/`variables`. See [subflow/guide.md](plugins/subflow/guide.md).
 
 ## Edge — both ports required
 
@@ -189,7 +189,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 | `core.control.end` | Graceful end | `bpmn:EndEvent` | — |
 | `core.logic.terminate` | Abort workflow | `bpmn:EndEvent` | — |
 
-For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](planning-impl.md).
+For full details on each node (ports, inputs, outputs, when to use, implementation), see [flow.md](flow.md).
 
 Discover all available types:
 ```bash
@@ -431,7 +431,7 @@ Each entry gives a node instance's `model.context[]` a resolvable target for the
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
-See each resource plugin's `impl.md` for the full JSON per node type: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [flow](plugins/flow/impl.md), [agentic-process](plugins/agentic-process/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md).
+See each resource plugin's `guide.md` for the full JSON per node type: [rpa](plugins/rpa/guide.md), [agent](plugins/agent/guide.md), [flow](plugins/flow/guide.md), [agentic-process](plugins/agentic-process/guide.md), [api-workflow](plugins/api-workflow/guide.md), [hitl](plugins/hitl/guide.md).
 
 **Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 
