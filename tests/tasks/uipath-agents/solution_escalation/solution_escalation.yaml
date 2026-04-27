@@ -29,6 +29,9 @@ initial_prompt: |
   UiPath ActionCenter — model this as an escalation resource called
   "HumanReview" on the agent.
 
+  When writing the escalation resource.json, set `isEnabled` to true so
+  the escalation is active for the agent.
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.

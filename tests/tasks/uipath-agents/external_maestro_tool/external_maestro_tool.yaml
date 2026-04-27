@@ -26,6 +26,11 @@ initial_prompt: |
   "Shared" folder — not inside this solution. Expose it to the agent
   as a tool resource.
 
+  When writing the tool resource.json, set the `properties.folderPath`
+  field to the literal string "Shared" (the live Orchestrator folder
+  where ProcessClaim is deployed). Do NOT use placeholder values such
+  as "solution_folder" — those are reserved for `location=="solution"`.
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
