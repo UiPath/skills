@@ -1,0 +1,163 @@
+task_id: skill-tasks-e2e-fetch-tasks
+description: >
+  E2E read-only fetch test: agent uses the uipath-tasks skill to verify the
+  active tenant, list tasks across folders, retrieve details for a discovered
+  task using both the generic and type-hint endpoints, and list assignable
+  users for the folder. Tests the full Discover workflow against a live
+  Action Center tenant. Read-only — does not assign, reassign, unassign,
+  complete, or otherwise mutate any task.
+tags: [uipath-tasks, e2e, discovery, fetch]
+
+agent:
+  type: claude-code
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-tasks skill and follow its workflow.
+
+  Perform a complete Action Center task fetch lifecycle against the live
+  tenant. This run is READ-ONLY — do not mutate any task.
+
+  Steps (run in order, use `--output json` on every uip tasks command):
+
+  1. Verify login: run `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active. Record `UIPATH_URL`,
+     `Organization`, and `Tenant` from the response.
+
+  2. List all tasks across folders: `uip tasks list --output json`.
+     Capture the total count returned.
+
+  3. If at least one task exists in step 2:
+       a. Pick the first task. Record its `id`, `type`, `status`, and folder
+          ID (`organizationUnitId`).
+       b. Fetch full details with the generic endpoint:
+          `uip tasks get <task-id> --output json`.
+       c. Re-fetch using the type-hint endpoint (faster, type-specific route):
+          `uip tasks get <task-id> --task-type <type> --folder-id <folder-id> --output json`.
+       d. List assignable users in that folder:
+          `uip tasks users <folder-id> --output json`.
+       e. List tasks scoped to that folder:
+          `uip tasks list --folder-id <folder-id> --output json`.
+
+     If NO tasks exist:
+       a. Skip 3a–3e. Set the corresponding report fields to null.
+       b. Still run `uip tasks list --as-admin --output json` to exercise the
+          elevated path.
+
+  Save a report to report.json:
+  {
+    "tenant_url": "<UIPATH_URL from login status>",
+    "organization": "<Organization from login status>",
+    "tenant": "<Tenant from login status>",
+    "tasks_total": <total count from step 2>,
+    "first_task_id": <numeric id, or null if no tasks>,
+    "first_task_type": "<type, or null>",
+    "first_task_status": "<status, or null>",
+    "folder_id": <numeric folder id used for scoped queries, or null>,
+    "type_hint_used": <true if step 3c executed, false otherwise>,
+    "users_count": <number from step 3d, or null>,
+    "folder_tasks_count": <number from step 3e, or null>,
+    "commands_used": ["<list of uip commands you ran, in order>"],
+    "mutations_attempted": false
+  }
+
+  Do NOT ask for approval or confirmation.
+  Do NOT pause between steps.
+  Do NOT call `tasks assign`, `tasks reassign`, `tasks unassign`, or
+    `tasks complete` — this run is read-only.
+  Do NOT re-login. Use the active session as-is.
+  Task IDs are numeric, not GUIDs.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before any tasks operation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed tasks across folders"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list\s+--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved a task with tasks get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+get\s+\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the type-hint endpoint (--task-type + --folder-id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+get\s+\d+\s+.*--task-type\s+\w+.*--folder-id\s+\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed assignable users for the discovered folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+users\s+\d+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed tasks scoped to the discovered folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list\s+.*--folder-id\s+\d+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on every tasks command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+.*--output\s+json'
+    min_count: 4
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Report confirms a real-tenant fetch completed end-to-end"
+    path: "report.json"
+    assertions:
+      - expression: "tasks_total"
+        operator: gte
+        expected: 0
+      - expression: "type_hint_used"
+        operator: equals
+        expected: true
+      - expression: "mutations_attempted"
+        operator: equals
+        expected: false
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 5
+    weight: 3.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "Report captured a tenant URL from login status"
+    path: "report.json"
+    includes:
+      - "uipath.com"
+    weight: 1.0
+    pass_threshold: 1.0
