@@ -200,6 +200,14 @@ For complex flows with multiple services or ambiguous requirements, consider pla
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
+**Fast path for common branching flows:** Start from
+[references/examples/decision-branch.flow](references/examples/decision-branch.flow)
+when the requested topology is a manual trigger → script/action → decision →
+branch handlers → End nodes. This example is a complete `.flow` file with
+registry-derived definitions, node outputs, End output mappings, and horizontal
+layout already wired. Copy it into the scaffolded project, update the top-level
+`name`, labels, scripts, and outputs, then validate once at the end.
+
 **Read [references/flow-editing-operations.md](references/flow-editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
