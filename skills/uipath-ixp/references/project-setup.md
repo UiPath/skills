@@ -6,12 +6,35 @@ Complete workflow for creating a new IXP project, labelling all documents, and g
 
 If the user provides a name, use it. If not, generate a temporary name (e.g., `ixp_project_NNNN` with a random number) — the project will be renamed in Step 3 after the taxonomy reveals the document type.
 
+**Option A — Auto-suggest taxonomy (default):**
+
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
 ```
 
-Use the `ProjectName` from the output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
+This uploads documents and auto-suggests a taxonomy based on the document content.
+
+**Option B — Blank project + import taxonomy from file:**
+
+If the user provides a taxonomy file, create a blank project and import separately:
+
+```bash
+uip ixp project create "<name>" <folder-path> --skip-taxonomy --output json
+uip ixp project import-taxonomy <project-name> <taxonomy-file> --output json
+```
+
+The taxonomy file can be in either format:
+
+- `{ "field_types": [...], "label_group": {...} }` — suggest-taxonomy output
+- `{ "entity_defs": [...], "label_groups": [...] }` — taxonomy endpoint output
+
+Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
+
+Create the working directory using the returned `ProjectName`:
+
+```bash
+mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
+```
 
 ## Step 2 — Configure the Model
 
