@@ -1,6 +1,6 @@
 ---
 name: uipath-project-discovery-agent
-description: "Auto-discover UiPath project structure, dependencies, conventions, and generate context files for Claude Code and UiPath Autopilot. This agent is a prerequisite for the uipath-rpa skill — it MUST run before it. TRIGGER when: User asks to create, edit, or work with UiPath workflows (coded or RPA) and project context has not been established yet in this session; User explicitly asks to generate project context or project documentation, analyze project structure, create AGENTS.md, or regenerate/refresh context or documentation. DO NOT TRIGGER when: Project context is already loaded in the conversation (visible as project-context.md rules content); User explicitly asked to regenerate but context already exists and they did not confirm."
+description: "Auto-discover UiPath project structure, dependencies, and conventions; returns context document for Claude Code/Autopilot. Spawn before workflow authoring or when user asks to refresh project context / regenerate AGENTS.md."
 model: sonnet
 tools: Bash, Read, Glob, Grep
 ---

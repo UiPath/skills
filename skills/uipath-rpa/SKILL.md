@@ -45,12 +45,35 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 
 ## Precondition: Analyzer Rules
 
-Check if `.claude/rules/analyzer-rules.md` exists in the project directory.
+The `uipath-analyzer-rules-agent` owns the contents and formatting of the rules document. This skill only decides **when** to spawn it and **where** to write the document it returns. Do not edit, summarise, or reformat the agent's output — write it verbatim.
 
-- **If it exists** → it is already in context via `.claude/rules/` auto-loading. Generated code must satisfy every `error` and `warning` rule listed there. Only regenerate when the user explicitly asks, or when `get-errors` / `uip rpa build` surfaces a rule ID not present in the file.
-- **If it does NOT exist** → trigger the `uipath-analyzer-rules-agent`, wait for its response, and write the returned document to:
-  - `.claude/rules/analyzer-rules.md` (create `.claude/rules/` if needed)
-  - `AGENTS.md` at project root, between `<!-- ANALYZER-RULES:START -->` / `<!-- ANALYZER-RULES:END -->` markers. If markers are absent, append the block (below `PROJECT-CONTEXT` if present). Skip `AGENTS.md` if the agent returned the Error Case block — surface the CLI error to the user instead.
+### When to spawn `uipath-analyzer-rules-agent`
+
+Spawn if **any** of these is true:
+
+1. `.claude/rules/analyzer-rules.md` does not exist in the project directory.
+2. The user explicitly asks to refresh, regenerate, or re-list the analyzer rules.
+3. `uip rpa analyze` returns errors/warnings whose rule IDs (e.g. `ST-*`, `MA-*`, `SY-*`, `TA-*`, `UI-*`, `UX-*`, `XL-*`) are NOT present in `.claude/rules/analyzer-rules.md`.
+4. `uip rpa get-errors` returns analyzer-rule diagnostics with rule IDs missing from the file.
+5. `uip rpa run-file` / `uip rpa build` output surfaces analyzer rule IDs (rule-prefixed diagnostics, not runtime/selector/auth/build failures) absent from the file.
+
+Do NOT spawn for runtime, build, selector, or auth errors that have no analyzer rule ID prefix.
+
+### How to spawn
+
+Pass in the prompt:
+- `project_dir` — resolved absolute path to the UiPath project.
+- `observed_rule_ids` — required for cases 3–5: the list of rule IDs that triggered the regeneration. The agent uses this list to verify the regenerated document contains them.
+
+### Where to write the agent's response
+
+When the agent returns, write its output verbatim to **both**:
+- `.claude/rules/analyzer-rules.md` — overwrite (create `.claude/rules/` if needed). Auto-loaded by Claude Code in future sessions.
+- `AGENTS.md` at project root, between `<!-- ANALYZER-RULES:START -->` / `<!-- ANALYZER-RULES:END -->` markers. If markers are absent, append the block (below `PROJECT-CONTEXT` if present). Read by UiPath Autopilot in Studio Desktop.
+
+If the agent returns the Error Case block (its output begins with `<!-- analyzer-rules-metadata: error=true -->`), skip both writes and surface the CLI error to the user instead. If the agent's output contains a `<!-- missing-rules: ... -->` comment, surface those IDs to the user — they were observed in CLI output but did not appear in the regenerated rule list.
+
+While `.claude/rules/analyzer-rules.md` is in context (auto-loaded), generated code must satisfy every `error` and `warning` rule listed there.
 
 ## Step 0: Resolve PROJECT_DIR and Environment
 
