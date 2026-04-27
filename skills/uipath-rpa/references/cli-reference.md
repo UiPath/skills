@@ -174,6 +174,22 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
 
 ---
 
+### get-analyzer-rules
+
+List the Workflow Analyzer rules currently **enabled** for the project — the best-practice rules that `get-errors` and `uip rpa build` will enforce. Reports rules only, not violations.
+
+```bash
+uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--project-dir` | No | Project directory. Defaults to CWD. |
+
+Each rule returns `severity` (`error` / `warning` / `info`), rule ID (e.g. `ST-DBP-010`, `MA-DBP-028`), scope (`Activity` / `Workflow` / `Coded Workflow` / `Project`), title, and — when available — `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
+
+---
+
 ## Commands -- Package Management
 
 ### install-or-update-packages

@@ -5,7 +5,10 @@
 /.github/ @uipreliga
 
 # Hooks
-/hooks/ @DragosUnguru
+/hooks/ @DragosUnguru @RaduAna-Maria
+
+# Plugin agents
+/agents/ @RaduAna-Maria
 
 # Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
 /commands/ @DragosUnguru @tmatup
