@@ -40,15 +40,19 @@ llm_reviewer:
     Score on:
     - GoogleSearch/project.json exists with `"expressionLanguage":
       "VisualBasic"` and UIA activity packages in dependencies.
-    - GoogleSearch/Main.xaml uses ApplicationCard (Use Application/
-      Browser) wrapping Type Into + Click, with the right selectors
-      (chrome.exe + google.com, textarea name='q', input name='btnK')
-      and the query "UiPath automation".
+    - GoogleSearch/Main.xaml opens chrome.exe at google.com, types
+      "UiPath automation" into the search box, and clicks the search
+      button, using the three known selectors (chrome.exe URL,
+      textarea name='q', input name='btnK'). Either modern
+      (NApplicationCard + NTypeInto + NClick) or classic
+      (OpenBrowser + TypeInto + Click) is acceptable in CI — the
+      modern Object Repository / configure-target pipeline can't run
+      without an interactive Studio session.
     - The harness runs `uip rpa build` programmatically; the build's
       exit code is the compile gate.
 
-    Reply terse, developer-style. Score 1.0 if structure + selectors
-    + query are right and the project compiles.
+    Reply terse, developer-style. Score 1.0 if selectors + query are
+    right and the project compiles.
 
 initial_prompt: |
   Build a standard UiPath RPA project named "GoogleSearch" (XAML
@@ -66,17 +70,20 @@ initial_prompt: |
     Input:  webctrl tag='textarea' name='q'
     Button: webctrl tag='input' name='btnK' type='submit'
 
-  Use the modern `Use Application/Browser` activity (`NApplicationCard`
-  from `UiPath.UIAutomation.Activities`) as the scope, with `TypeInto`
-  and `Click` activities inside it. Do NOT use the legacy `OpenBrowser`
-  activity — the skill teaches `NApplicationCard` as the canonical
-  scope for all UI automation.
+  Use whichever `UiPath.UIAutomation.Activities` activities you need
+  to open the browser, type the query, and click search — both modern
+  (`NApplicationCard` + `NTypeInto` + `NClick`) and classic
+  (`OpenBrowser` + `TypeInto` + `Click`) shapes are acceptable as long
+  as the project compiles. Author the XAML directly with the selectors
+  above; do NOT engage the multi-phase `uia-configure-target` /
+  Object Repository pipeline — Studio is not running interactively in
+  CI, so its OR registration steps can't complete and will time out.
 
   Follow the uipath-rpa skill's normal flow for everything else
-  (project scaffolding, XAML authoring, validation). The `uip` CLI
-  is authenticated against the sandbox tenant in this CI step, so
-  Helm-backed commands (`create-project`, `get-default-activity-xaml`,
-  `get-errors`) work as documented in the skill.
+  (project scaffolding, validation). The `uip` CLI is authenticated
+  against the sandbox tenant, so Helm-backed commands
+  (`create-project`, `get-default-activity-xaml`, `get-errors`)
+  work as documented in the skill.
 
   Use `--output json` on any uip commands you run.
 
@@ -102,10 +109,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Main.xaml contains the ApplicationCard/TypeInto/Click UIA activities"
+    description: "Main.xaml contains TypeInto + Click UIA activities (modern or classic)"
     path: "GoogleSearch/Main.xaml"
     includes:
-      - "ApplicationCard"
       - "TypeInto"
       - "Click"
     weight: 2.0

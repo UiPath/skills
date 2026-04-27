@@ -43,13 +43,19 @@ initial_prompt: |
   that logs "Hello from legacy" using a LogMessage activity. Follow the skill's
   full workflow: create the project, generate the XAML, and attempt validation.
 
+  Deliverables (place all files inside a `./HelloLegacy/` subdirectory):
+  - `./HelloLegacy/project.json`
+  - `./HelloLegacy/Main.xaml`
+
+  Whether you scaffold via `uip rpa-legacy create-project` (which creates
+  the HelloLegacy/ folder for you) or hand-author, the files MUST end up
+  under `./HelloLegacy/` — that's where the validator looks.
+
   Important:
-  - The `uip` CLI is already available in the environment.
+  - The `uip` CLI is already available in the environment and is
+    authenticated against the sandbox tenant in this CI step.
   - Do not run `uip rpa-legacy debug` — just attempt validation.
   - Use `--output json` on the uip CLI commands you run.
-  - The underlying CLI backend may not work on non-Windows hosts; that is
-    acceptable — what matters is that you produce correct files and invoke
-    the correct commands.
 
 success_criteria:
   - type: command_executed
