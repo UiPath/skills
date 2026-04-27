@@ -73,7 +73,7 @@ When you need user input, write a file `.investigation/needs_input.json` and the
 }
 ```
 
-The orchestrator reads this file, presents the question via `AskUserQuestion`, and re-spawns you with the answer.
+The orchestrator reads this file, asks the user with the host's normal user-input mechanism, and resumes this role with the answer. If the host cannot resume the same role, it starts a new role run with the user's answer plus the existing `.investigation/` files as context, without rediscovering unrelated data.
 
 **`needs_input.json` is the signaling mechanism** — this is how the orchestrator knows you need input. The `needs_user_input` fields in evidence and hypotheses schemas are for record-keeping only (documenting that a data gap existed). Always write `needs_input.json` to actually request user input.
 

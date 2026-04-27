@@ -1,0 +1,57 @@
+task_id: skill-diagnostics-portable-orchestration
+description: >
+  Skill-guided smoke test: agent uses the uipath-diagnostics skill in a host
+  without background sub-agents, follows the sequential role-execution adapter,
+  and produces investigation artifacts from supplied incident data.
+tags: [uipath-diagnostics, smoke, lifecycle:execute]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Use the uipath-diagnostics skill to investigate this supplied incident.
+
+  Host constraint: assume this environment cannot spawn background sub-agents
+  and cannot resume tasks. Follow the skill's single-agent/sequential role
+  execution adapter instead of stopping.
+
+  Incident data:
+  - Process: InvoicePortal_Login
+  - Job ID: job-1842
+  - Symptom: UI Automation selector recovery was offered, but the job failed
+    again on the next run.
+  - Log excerpt:
+      2026-04-21T14:03:10Z INFO Open browser: https://invoices.example.test
+      2026-04-21T14:03:14Z WARN Healing Agent proposed a fuzzy selector
+      2026-04-21T14:03:16Z ERROR ActivityRefId LoginButton_Click failed:
+        selector matched 0 elements after page navigation
+      2026-04-21T14:03:17Z ERROR Browser title changed to "Session expired"
+
+  Do not call external UiPath services. Do not run `uip` commands. Use only
+  the supplied incident data.
+
+  Write the investigation state under `.investigation/` and save the final
+  user-facing answer to `diagnostics-report.md`.
+
+success_criteria:
+  - type: file_exists
+    description: "Investigation state was written"
+    path: ".investigation/state.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Final diagnostic report was written"
+    path: "diagnostics-report.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report explains evidence and likely root cause"
+    path: "diagnostics-report.md"
+    includes:
+      - "LoginButton_Click"
+      - "Session expired"
+    weight: 2.0
+    pass_threshold: 1.0
