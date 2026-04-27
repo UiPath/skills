@@ -15,18 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **`Edit` / `Write` is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
-
-```bash
-uip maestro flow hitl add <path/to/file.flow> \
-  --label "Invoice Review" \
-  --priority High \
-  --assignee finance-approvers \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
-  --output json
-```
-
-Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [cli-commands.md — uip maestro flow hitl add](../../../../shared/cli-commands.md#uip-maestro-flow-hitl-add).
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Edit / Write is the required path.** Current `uip maestro flow` CLI builds do not expose a HITL-specific add command.
 
 ### Quick Reference
 
@@ -175,6 +164,10 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
   }
 ]
 ```
+
+> **Why both are required.** The registry's `Data.Node.model.context[].value` fields ship as template placeholders (`<bindings.name>`, `<bindings.folderPath>`) — not runtime-resolvable expressions. The runtime reads the node instance's `model.context` and resolves `=bindings.<id>` against the top-level `bindings[]` array. Without these two pieces, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder."
+
+> **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
 > For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
