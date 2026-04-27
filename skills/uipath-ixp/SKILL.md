@@ -9,12 +9,12 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 
 ## What This Skill Can Do
 
-- **Create a new IXP project** — upload documents, generate taxonomy, review predictions, confirm valid fields, get metrics → [Project Setup Guide](references/project-setup.md)
+- **Create a new IXP project** — upload documents, generate or import taxonomy, review predictions, confirm valid fields, get metrics → [Project Setup Guide](references/project-setup.md)
 - **Improve an existing project** — diagnose weak fields, rewrite instructions, review new predictions, verify improvement → [Improve Prompts Guide](references/improve-prompts.md)
 - **Publish a model** — pin a trained model version, tag it as live/staging, set a description
 - **List or inspect IXP projects** — use the CLI commands below
 
-When the user asks to create a project or label documents, follow the [Project Setup Guide](references/project-setup.md).
+When the user asks to create a project or label documents, follow the [Project Setup Guide](references/project-setup.md). If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the guide).
 When the user asks to improve scores/prompts for an existing project, follow the [Improve Prompts Guide](references/improve-prompts.md).
 
 ## Critical Rules
@@ -32,7 +32,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
    ```
    At the start of any workflow: `mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}`. If the directory already exists from a previous session, **reuse existing files** — do not re-download documents or OCR text that are already present. Do NOT use the Write tool for `/tmp/ixp/` paths — on Windows it resolves to a different location than bash.
 5. **Use heredocs for `--fields`/`--groups`** — for `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)"`.
-6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
+6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_ID`, `DOCUMENT_ID`, etc.
 7. **Always use the project `Name`, never the `Title`** — the `project list` output has both `Name` (e.g., `my_invoices-f1afa9ef-ixp`) and `Title` (e.g., `My_Invoices`). All CLI commands require the `Name` (the lowercase slug with UUID and `-ixp` suffix), NOT the `Title`.
 8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated. Fields with OCR-mangled values can be corrected using `--corrections` (keeps the prediction's document reference but fixes the text).
 9. **Do NOT manually extract values** — Claude does not construct extractions JSON or use `labelling label`. All labelling goes through `labelling confirm` with predictions from IXP.
@@ -62,44 +62,42 @@ When the user asks to improve scores/prompts for an existing project, follow the
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp document list <project-name> --output json` | List documents — returns `[{ Uid, AttachmentRef }]` |
-| `uip ixp document get <project-name> <comment-uid> -o <path> --output json` | Download original document file (image/PDF) for viewing |
-| `uip ixp document text <project-name> <comment-uid> --output json` | Get OCR text — use to cross-reference predicted values against the document |
+| `uip ixp document list <project-name> --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]` |
+| `uip ixp document image <project-name> <document-id> -o <path> --output json` | Download original document file (image/PDF) for viewing |
+| `uip ixp document text <project-name> <document-id> --output json` | Get OCR text — use to cross-reference predicted values against the document |
 
 ### Labellings
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp labelling predictions <project-name> [comment-uid] --output json` | Get IXP model predictions for all documents (or a single document). Returns predicted labels with `FieldId`, `FieldName`, and `FormattedValue`. |
-| `uip ixp labelling confirm <project-name> <comment-uid> [--fields <ids>] [--corrections <json>] --output json` | Confirm predictions for a document. `--fields "id1,id2,id3"` confirms only those fields. `--corrections '[{"field_id":"...","value":"..."}]'` overrides OCR-mangled values while keeping the prediction's document references. |
+| `uip ixp labelling predictions <project-name> [document-id] --output json` | Get IXP model predictions for all documents (or a single document). Returns predicted labels with `FieldId`, `FieldName`, and `FormattedValue`. |
+| `uip ixp labelling confirm <project-name> <document-id> [--fields <ids>] [--corrections <json>] --output json` | Confirm predictions for a document. `--fields "id1,id2,id3"` confirms only those fields. `--corrections '[{"field_id":"...","value":"..."}]'` overrides OCR-mangled values while keeping the prediction's document references. |
 
 ## Common Pitfalls
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `404 No such project` | Used project Title instead of Name | Use `Name` from `project list` (lowercase slug with `-ixp` suffix) |
 | Metrics don't change after update-prompts | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
-| Fields/moon_form disappeared after update | Used `--entity-defs` flag or raw dataset update with `entity_defs` payload | **NEVER use `--entity-defs`** — it is a destructive full-replacement that deletes fields. Always use `--fields` which only updates field instructions safely. |
 | Field instructions conflict with label_def instructions | `update-prompts --fields` only edits moon_form per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. |
 
 ## Instruction Quality Standards
 
-When writing or improving field instructions, aim for these benchmarks (from the production taxonomy system):
+When writing or improving field instructions, focus on **what** to extract and **where** to find it. Do NOT specify format — the entity_def (field type) already handles that.
 
 - **Minimum length**: 120+ characters. Short instructions like "Extract the date" are too vague.
 - **Location hint**: describe WHERE in the document (section, header area, table, near a label). Keywords: "section", "header", "table", "top of", "labeled", "near".
-- **Format pattern**: specify the EXACT format (e.g., "Format: MM/DD/YYYY", "Format: $N,NNN.NN").
 - **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
 - **Disambiguation**: if similar fields exist, clarify what NOT to extract (e.g., "Do NOT confuse with PO Number").
+- **No format patterns**: do NOT include "Format: MM/DD/YYYY" or similar — the entity_def type (Date, Monetary, Text) already defines the format. Adding format in instructions creates conflicting signals.
 
-**Good instruction** (165 chars):
-> "The unique invoice identifier, found in the header area near the top-right, labeled 'Invoice #' or 'Invoice Number'. Format: alphanumeric. Example: '2106732'."
+**Good instruction** (145 chars):
+> "The unique invoice identifier, found in the header area near the top-right, labeled 'Invoice #' or 'Invoice Number'. Example: '2106732'."
 
 **Bad instruction** (25 chars):
 > "Extract the invoice number"
 
-**For fields visible in documents** — include location, format, and a real example from the actual documents.
+**For fields visible in documents** — include location and a real example from the actual documents.
 **For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
 
 ## Guides
