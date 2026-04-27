@@ -1,6 +1,6 @@
 # Planning Phase: sdd.md → tasks.md
 
-Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`). This phase discovers registry resources, resolves task type IDs, and produces a declarative specification that the [Implementation Phase](implementation.md) executes via the `uip maestro case` CLI.
+Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`). This phase discovers registry resources, resolves task type IDs, and produces a declarative specification that the [Implementation Phase](implementation.md) executes via direct JSON writes to `caseplan.json`.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
@@ -98,9 +98,9 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.4 Unresolved resources
 
-When a resource cannot be resolved (CLI gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
+When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
 
-1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `type-id` / `connection-id` slot.
+1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
 2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [skeleton-tasks.md § `tasks.md` Planning-Entry Shape](skeleton-tasks.md).
 3. Keep every other structural field (display-name, isRequired, runOnlyOnce, order). Task-entry conditions still emit normally.
 4. **Continue planning — do not halt.**
@@ -109,7 +109,7 @@ At execution time, unresolved tasks become **skeleton tasks** in `caseplan.json`
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
-Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only, no CLI commands. The implementation phase translates each entry into the matching plugin's CLI.
+Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
@@ -182,11 +182,11 @@ Every task entry includes at least:
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
-> **No `uip` commands in task entries.** Each task is a declarative specification. Never write shell commands inside a task body — the execution phase translates specs into CLI calls.
+> **No shell commands in task entries.** Each task is a declarative specification. Never write `uip` invocations or any other shell commands inside a task body — the execution phase translates specs into JSON mutations.
 
 > **Record `lane: <n>` per task** (incrementing within each stage, starting at 0). Lane is a FE layout coordinate with no execution semantics — task ordering and parallelism are expressed via task-entry conditions, not lanes.
 
-> **Skeleton shape for unresolved resources.** If `taskTypeId` / `type-id` / `connection-id` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [skeleton-tasks.md](skeleton-tasks.md) for the full pattern and upgrade path.
+> **Skeleton shape for unresolved resources.** If `taskTypeId` / `typeId` / `connectionId` is `<UNRESOLVED: …>`, omit `inputs:` and `outputs:` entirely and capture wiring intent in a trailing comment block. Execution creates a bare task node — structural only. See [skeleton-tasks.md](skeleton-tasks.md) for the full pattern and upgrade path.
 
 ### 4.7 Configure conditions
 
@@ -202,11 +202,11 @@ For per-scope fields, consult the corresponding condition plugin:
 
 ### 4.8 Set SLA and escalation rules
 
-SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (`sla set`, `sla rules add`, `sla escalation add`), per-target ordering, and the constraint that conditional SLA rules are root-only.
+SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules), per-target ordering, and the constraint that conditional SLA rules are root-only.
 
 ### 4.9 Not Covered section
 
-Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of the `uip maestro case` CLI (e.g., Data Fabric entity schemas). These stay as notes for the user.
+Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of `caseplan.json` (e.g., Data Fabric entity schemas). These stay as notes for the user.
 
 ---
 

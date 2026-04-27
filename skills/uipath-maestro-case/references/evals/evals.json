@@ -3,15 +3,15 @@
     "evals": [
         {
             "id": 1,
-            "prompt": "I have an sdd.md and spec.json for a loan approval case. Generate the implementation tasks from these spec files so I can build it with the case CLI.",
-            "expected_output": "Skill triggers, produces a tasks.md with ordered task entries covering case creation, stages, edges, tasks, and conditions, then executes CLI commands after user approval",
+            "prompt": "I have an sdd.md and spec.json for a loan approval case. Generate the implementation tasks from these spec files so I can build it.",
+            "expected_output": "Skill triggers, produces a tasks.md with ordered task entries covering case creation, stages, edges, tasks, and conditions, then writes caseplan.json directly after user approval",
             "expectations": [
                 "The case-management skill was triggered",
                 "References uip maestro case registry pull for upfront caching",
                 "Produces a tasks.md file with numbered task sections (T01, T02, etc.)",
                 "Includes registry lookups to resolve taskTypeIds",
                 "Generates a registry-resolved.json for audit",
-                "Asks user for approval before executing CLI commands"
+                "Asks user for approval before executing the build"
             ]
         },
         {
@@ -29,12 +29,12 @@
         {
             "id": 3,
             "prompt": "Convert this case specification into a step-by-step plan and build the case",
-            "expected_output": "Skill triggers, produces an actionable tasks.md, then executes uip maestro case CLI commands after user approval",
+            "expected_output": "Skill triggers, produces an actionable tasks.md, then writes caseplan.json directly via the matching plugins after user approval",
             "expectations": [
                 "The case-management skill was triggered",
-                "Produces tasks.md with declarative task entries (no CLI commands in tasks.md)",
+                "Produces tasks.md with declarative task entries (no shell commands in tasks.md)",
                 "Cross-references use human-readable format like Stage.Task.field",
-                "Executes uip maestro case CLI commands after user approves tasks.md"
+                "Writes caseplan.json directly via plugin impl-json.md recipes after user approves tasks.md"
             ]
         },
         {

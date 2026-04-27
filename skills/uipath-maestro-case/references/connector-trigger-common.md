@@ -4,7 +4,7 @@ Shared planning and implementation logic for connector-based triggers. Used by b
 - [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector`
 - [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger`
 
-Both use the same TypeCache (`typecache-triggers-index.json`), same IS CLI commands, same metadata structure, and same enrichment pipeline. Only the target (task vs trigger node), serviceType, and output format differ — see each plugin's own docs for those specifics.
+Both use the same TypeCache (`typecache-triggers-index.json`), same read-only IS metadata fetches, same metadata structure, and same enrichment pipeline. Only the target (task vs trigger node), serviceType, and output format differ — see each plugin's own docs for those specifics.
 
 ---
 
@@ -95,7 +95,7 @@ Only use field names that appear in `filterFields`. If a filter cannot be transl
 
 ---
 
-## Implementation — Shared CLI Calls
+## Implementation — Shared Metadata Fetches (read-only CLI)
 
 ### Step 1 — Get connection details + Entry
 

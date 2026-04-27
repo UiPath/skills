@@ -13,45 +13,45 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 
 ## Three Sub-Operations (one plugin, three workflows)
 
-| Sub-op | CLI | Purpose |
-|--------|-----|---------|
-| **Default SLA** | `sla set` | The time-based catch-all SLA. One per target (root or stage). |
-| **Conditional SLA rules** | `sla rules add` | Expression-driven SLA overrides. Root-only (CLI). |
-| **Escalation rules** | `sla escalation add` | Notifications triggered at-risk or on breach. |
+| Sub-op | Purpose |
+|--------|---------|
+| **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into `data.slaRules[]` with `expression: "=js:true"`. |
+| **Conditional SLA rules** | Expression-driven SLA overrides. Root-only. Prepended to `root.data.slaRules[]` ahead of the default. |
+| **Escalation rules** | Notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`. |
 
 ## Applying SLA at Root vs Stage
 
-- **Root** — the default SLA for the whole case. Omit `--stage-id` (CLI) / target `"root"` (JSON).
-- **Stage** — stage-specific SLA. Pass `--stage-id <id>` (CLI) / target `"<stage-name>"` (JSON). Overrides the root default while the stage is active.
+- **Root** — the default SLA for the whole case. Target `"root"`; written to `root.data.slaRules[]`.
+- **Stage** — stage-specific SLA. Target `"<stage-name>"`; written to the stage node's `data.slaRules[]`. Overrides the root default while the stage is active.
 
 Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage > root.
 
-> **Conditional SLA rules are root-only (CLI limitation).** `sla rules add` does not accept `--stage-id`. If the sdd.md describes a per-stage conditional SLA under the CLI strategy, flag to the user. The JSON strategy has the same restriction for now.
+> **Conditional SLA rules are root-only.** They live in `root.data.slaRules[]`; per-stage conditional SLA is not supported. If the sdd.md describes one, flag to the user.
 
-> **ExceptionStage SLA is JSON-only.** CLI's `sla set --stage-id` rejects `case-management:ExceptionStage`. If the sdd.md puts SLA on an exception stage, this plugin must run under the JSON strategy — see [`impl-json.md` § Known CLI divergences](impl-json.md).
+> **ExceptionStage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:ExceptionStage` node. See [`impl-json.md`](impl-json.md).
 
-> **Per-conditional-rule escalations are JSON-only.** CLI's `sla escalation add` always attaches to the default (`=js:true`) rule. If the sdd.md attaches an escalation to a conditional rule, the plugin must run under the JSON strategy.
+> **Per-conditional-rule escalations are supported.** Attach an escalation rule to any entry in `slaRules[]`, not only the default `"=js:true"` rule.
 
 ## Required Fields from sdd.md
 
-### Default SLA (`sla set`)
+### Default SLA
 
 | Field | Source | Notes |
 |-------|--------|-------|
 | `count` | sdd.md duration number | Positive integer |
 | `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
-| `stage-id` | sdd.md target (root vs stage) | Omit for root |
+| `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 
-### Conditional SLA rule (`sla rules add`)
+### Conditional SLA rule
 
 | Field | Source | Notes |
 |-------|--------|-------|
 | `expression` | sdd.md condition | Natural-language in planning; the execution phase translates. **Do not fabricate syntax during planning.** |
 | `count`, `unit` | sdd.md duration for this condition | Same units as default |
 
-Rules are evaluated in insertion order — first truthy expression wins. The default SLA (set via `sla set`) acts as the fallback.
+Rules are evaluated in insertion order — first truthy expression wins. The default SLA acts as the fallback.
 
-### Escalation rule (`sla escalation add`)
+### Escalation rule
 
 | Field | Source | Notes |
 |-------|--------|-------|
@@ -61,16 +61,16 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `recipient-target` | sdd.md | Recipient UUID. Mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>` when sdd gives an email / group name but no UUID. |
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
 | `display-name` | sdd.md (optional) | |
-| `stage-id` | sdd.md target (root vs stage) | Omit for root |
-| `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. JSON strategy only — CLI always attaches to default. |
+| `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
+| `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
 
 ## Ordering
 
 SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each target, order within the target:
 
-1. `sla set` — default SLA
-2. `sla rules add` — conditional rules (root only)
-3. `sla escalation add` — one call per escalation rule
+1. Default SLA T-entry
+2. Conditional SLA rule T-entries (root only)
+3. Escalation rule T-entries (one per rule)
 
 ## tasks.md Entry Format
 
@@ -114,10 +114,10 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 
 **Recipient format:** `<target> / <value>` where `<target>` is the UUID (or `<UNRESOLVED: …>` sentinel when sdd only has an email / group name) and `<value>` is the display string. Skeleton recipients stay in `tasks.md` through execution; the user patches the UUID externally after the build and the completion report lists every unresolved recipient.
 
-**`attach-to: default`** is the default. Use `T<m>` only when sdd.md attaches an escalation to a conditional SLA rule — JSON strategy only.
+**`attach-to: default`** is the default. Use `T<m>` when sdd.md attaches an escalation to a specific conditional SLA rule.
 
 ## Anti-Patterns
 
 - **Do not fabricate expression syntax.** Describe conditional SLA rules in natural language during planning; the execution phase handles the exact syntax.
-- **Do not put conditional SLA rules on stages.** The CLI does not support `sla rules add --stage-id`. Flag to the user if the sdd.md describes one.
+- **Do not put conditional SLA rules on stages.** Conditional SLA rules live in `root.data.slaRules[]` only. Flag to the user if the sdd.md describes a per-stage conditional SLA.
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.

@@ -6,9 +6,9 @@ Procedure for resolving connector activity and connector trigger tasks against U
 
 Consult this reference when planning or implementing any of:
 
-- `connector-activity` task (added via `uip maestro case tasks add-connector --type activity`)
-- `connector-trigger` task (added via `uip maestro case tasks add-connector --type trigger`)
-- `event` case-level trigger (added via `uip maestro case triggers add-event`)
+- `connector-activity` task — see [`plugins/tasks/connector-activity/impl-json.md`](plugins/tasks/connector-activity/impl-json.md)
+- `connector-trigger` task — see [`plugins/tasks/connector-trigger/impl-json.md`](plugins/tasks/connector-trigger/impl-json.md)
+- `event` case-level trigger — see [`plugins/triggers/event/impl-json.md`](plugins/triggers/event/impl-json.md)
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ Consult this reference when planning or implementing any of:
 
 ## Three-Step Resolution Pipeline
 
-For every connector task or event trigger, run these three CLI calls in order. Each call feeds required inputs into the next.
+For every connector task or event trigger, run these three CLI metadata fetches in order. Each call feeds required inputs into the next. The values they return are written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
 
 ### Step 1 — Find the activity-type-id
 
@@ -58,7 +58,7 @@ Output: `{ Entry, Config, Connections }` where `Connections` is an array of `{ i
 1. If the sdd.md names a specific connection, match by `name`. Use that `id`.
 2. If the sdd.md is silent and exactly one connection exists, use it.
 3. If multiple connections exist and sdd.md is silent, use **AskUserQuestion** with a bounded list of connection names + "Something else".
-4. If `Connections` is empty, mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `input-values:`. Execution creates a skeleton connector task (bare `tasks add-connector --type <activity|trigger> --display-name …`). Tell the user in the completion report to create the connection in the IS portal before the task can run. See [skeleton-tasks.md](skeleton-tasks.md).
+4. If `Connections` is empty, mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `inputValues:`. Execution writes a skeleton connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Tell the user in the completion report to create the connection in the IS portal before the task can run. See [skeleton-tasks.md](skeleton-tasks.md).
 
 ### Step 4 — (Optional) Describe inputs/outputs
 
@@ -75,46 +75,24 @@ The `--connection-id` is required — without it, custom fields and dynamic enum
 
 ---
 
-## Applying Results to CLI Commands
+## Applying Results to caseplan.json
 
-### Connector activity task
+The resolved values map to JSON fields under the connector task's `data` object. Per-class wiring lives in each plugin's `impl-json.md` — the table below is a quick reference.
 
-```bash
-uip maestro case tasks add-connector <file> <stage-id> \
-  --type activity \
-  --type-id "<uiPathActivityTypeId>" \
-  --connection-id "<connection-id>" \
-  --input-values '{"body":{"field":"value"},"queryParameters":{"key":"val"}}'
-```
+| Resolved value | Connector activity / trigger task field | Event trigger field |
+|---|---|---|
+| `uiPathActivityTypeId` | `data.typeId` | `node.data.uipath.typeId` |
+| Selected `connection.id` | `data.connectionId` | `node.data.uipath.connectionId` |
+| Connector input values from sdd.md | `data.inputs[i].value` (one entry per discovered input name) | `node.data.uipath.eventParams` |
+| Filter expression (trigger only) | `data.filter` | `node.data.uipath.filter` |
 
-`--input-values` is a JSON object. Keys come from the `describe` response (Step 4). Use `body`, `queryParameters`, `pathParameters` as top-level keys depending on what the operation expects.
-
-### Connector trigger task (inside a stage)
-
-```bash
-uip maestro case tasks add-connector <file> <stage-id> \
-  --type trigger \
-  --type-id "<uiPathActivityTypeId>" \
-  --connection-id "<connection-id>" \
-  --input-values '{"body":{"project":"PROJ"}}' \
-  --filter '((fields.status=`Open`))'
-```
-
-### Event trigger (case-level, outside any stage)
-
-```bash
-uip maestro case triggers add-event <file> \
-  --type-id "<uiPathActivityTypeId>" \
-  --connection-id "<connection-id>" \
-  --event-params '{"project":"PROJ"}' \
-  --filter '((fields.status=`Open`))'
-```
+Input keys come from the `describe` response (Step 4): typically `body`, `queryParameters`, `pathParameters` are top-level groupings depending on what the operation expects.
 
 ---
 
 ## Filter Expression Syntax
 
-Trigger `--filter` expressions use the connector's filter DSL. Common patterns:
+Trigger `data.filter` (or `node.data.uipath.filter` for event triggers) uses the connector's filter DSL. Common patterns:
 
 | Pattern | Example |
 |---------|---------|
@@ -135,11 +113,11 @@ Record the resolved values in `tasks.md` under the task entry:
 
 ```markdown
 ## T25: Add connector-activity task "Create Jira Issue" to "Triage"
-- type-id: 718fdc36-73a8-3607-8604-ddef95bb9967
-- connection-id: 7622a703-5d85-4b55-849b-6c02315b9e6e
-- connector-key: uipath-atlassian-jira
-- object-name: issue
-- input-values: {"body":{"fields.project.key":"PROJ","fields.issuetype.id":"10004"}}
+- typeId: 718fdc36-73a8-3607-8604-ddef95bb9967
+- connectionId: 7622a703-5d85-4b55-849b-6c02315b9e6e
+- connectorKey: uipath-atlassian-jira
+- objectName: issue
+- inputValues: {"body":{"fields.project.key":"PROJ","fields.issuetype.id":"10004"}}
 ```
 
 Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata.

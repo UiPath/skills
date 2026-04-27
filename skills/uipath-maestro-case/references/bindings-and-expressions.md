@@ -54,7 +54,7 @@ Run `tasks describe` during planning to list available outputs for a given task 
 
 ```bash
 uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
-# for connectors: also pass --connection-id
+uip maestro case tasks describe --type connector-activity --id "<typeId>" --connection-id "<uuid>" --output json
 ```
 
 Output names appear in the response under the output schema. Record them in the source task's `outputs:` field in `tasks.md` so downstream references can be validated.

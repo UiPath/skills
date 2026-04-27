@@ -10,14 +10,14 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md task name | CLI flag `--display-name` |
-| `task-type-id` | Registry resolution (below) | CLI flag `--task-type-id` — the action-app ID |
-| `task-title` | sdd.md task title or description (see fallback below) | CLI flag `--task-title`. Required for `action` type. |
-| `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`. CLI flag `--priority`. |
-| `recipient` | sdd.md assignee email; **prompt the user if silent** | CLI flag `--recipient`. See Recipient Handling below. |
+| `display-name` | sdd.md task name |  |
+| `task-type-id` | Registry resolution (below) | Action-app ID |
+| `task-title` | sdd.md task title or description (see fallback below) | Required for `action` type. |
+| `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`.  |
+| `recipient` | sdd.md assignee email; **prompt the user if silent** | See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | Decision, comments, structured form fields |
-| `isRequired` | sdd.md (default `true`) | CLI flag `--is-required` |
+| `isRequired` | sdd.md (default `true`) |  |
 
 ## Task Title Fallback
 

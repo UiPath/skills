@@ -15,7 +15,7 @@ Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are c
   "value": "=vars.customerId" }
 ```
 
-Inputs are auto-populated with empty `value` after `tasks add --task-type-id`. Input IDs are random (`v` + 8 chars).
+Inputs are populated with empty `value` from the `tasks describe` schema when `data.context.taskTypeId` is set during the task plugin's impl-json write. Input IDs are random (`v` + 8 chars).
 
 ## Task Output Shape
 

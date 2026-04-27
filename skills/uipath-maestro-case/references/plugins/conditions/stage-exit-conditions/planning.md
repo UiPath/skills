@@ -16,7 +16,7 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `<stage-id>` | Captured from `stages add` | Target stage |
+| `<stage-id>` | Captured from the stages plugin | Target stage |
 | `display-name` | sdd.md (optional) | |
 | `type` | sdd.md exit style | `exit-only` / `wait-for-user` / `return-to-origin` |
 | `exit-to-stage-id` | sdd.md routing target (optional) | Required when routing to a specific stage |
@@ -35,19 +35,19 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 
 ## Rule-Type Catalog (stage-exit scope)
 
-Allowed `--rule-type` values depend on `marks-stage-complete`:
+Allowed `ruleType` values depend on `marks-stage-complete`:
 
 **When `marks-stage-complete: true`:**
 | Rule type | Extra fields |
 |-----------|--------------|
 | `required-tasks-completed` | — |
-| `wait-for-connector` | `--condition-expression` |
+| `wait-for-connector` | `conditionExpression` |
 
 **When `marks-stage-complete: false` (exit-only, routing):**
 | Rule type | Extra fields |
 |-----------|--------------|
-| `selected-tasks-completed` | `--selected-tasks-ids` (comma-separated) |
-| `wait-for-connector` | `--condition-expression` |
+| `selected-tasks-completed` | `selectedTasksIds` (comma-separated) |
+| `wait-for-connector` | `conditionExpression` |
 
 ## Ordering
 

@@ -1,12 +1,12 @@
 ---
 name: uipath-maestro-case
-description: "[PREVIEW] Case Management authoring from sdd.md. Produces tasks.md plan, executes uip maestro case CLI to build caseplan.json. For .xaml→uipath-rpa, .flow→uipath-maestro-flow."
+description: "[PREVIEW] Case Management authoring from sdd.md. Produces tasks.md plan, writes caseplan.json directly via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Case Management Authoring Assistant
 
-Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, executes via `uip maestro case` CLI to produce `caseplan.json`.
+Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, is describe) and solution boundary operations (`uip solution new` / `project add` / `upload`).
 
 **Scope:** new case from `sdd.md` only. Modifying existing case not supported (no remote fetch tooling).
 
@@ -25,15 +25,15 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 1. **sdd.md is sole input.** Trust as written. Skill does not validate or gap-fill. If ambiguous, use AskUserQuestion — never infer silently.
 2. **Run `uip maestro case registry pull` before planning.** Discovery reads cache files at `~/.uipcli/case-resources/<type>-index.json` directly. `registry search` has known gaps (esp. action-apps). See [references/registry-discovery.md](references/registry-discovery.md).
 3. **`--output json` on every parsed read.**
-4. **Follow plugin per node type.** Open matching `planning.md` during planning + `impl-cli.md` or `impl-json.md` per matrix in [`references/case-editing-operations.md`](references/case-editing-operations.md). Never guess CLI flags or JSON shapes from memory.
-5. **`tasks.md` declarative only.** No CLI commands inside. One T-entry per sdd.md declaration — every stage, edge, task, trigger, condition, SLA rule gets own T-number, even when value looks like default (`current-stage-entered`, `case-entered`, `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). Never group, never silently omit. Always regenerate from scratch. See [`references/planning.md` §4.0](references/planning.md).
+4. **Follow plugin per node type.** Open matching `planning.md` during planning + `impl-json.md` during execution. Never guess JSON shapes from memory.
+5. **`tasks.md` declarative only.** No shell commands inside. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. One T-entry per sdd.md declaration — every stage, edge, task, trigger, condition, SLA rule gets own T-number, even when value looks like default (`current-stage-entered`, `case-entered`, `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). Never group, never silently omit. Always regenerate from scratch. See [`references/planning.md` §4.0](references/planning.md).
 6. **HARD STOP after `tasks.md`.** AskUserQuestion: `Approve and proceed` / `Request changes`. Re-read `tasks.md` before executing.
-7. **Unresolved resource → skeleton task. Never fabricate IDs.** Keep `<UNRESOLVED: ...>` on `taskTypeId` / `type-id` / `connection-id`. Omit `inputs:` / `outputs:`. Execute with `--type` + `--display-name` only. Conditions still reference skeleton's TaskId. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
+7. **Unresolved resource → skeleton task. Never fabricate IDs.** Keep `<UNRESOLVED: ...>` on `taskTypeId` / `typeId` / `connectionId`. Omit `inputs:` / `outputs:`. Execute by writing the task JSON node with `type` + `displayName` + structural fields, `data: {}`, no `taskTypeId` / `connectionId` keys. Conditions still reference skeleton's TaskId. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
 8. **Persist every registry resolution to `registry-resolved.json`** — search query, all matches, selected result, rationale.
 9. **Cross-task refs:** `"Stage Name"."Task Name".output_name` in planning, resolve to `=vars.<outputVarId>` at execution by reading source's `var` field. Discover output names via `uip maestro case tasks describe` — never fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md).
 10. **HARD STOP between Phase 2a and Phase 2b — unconditional, every run.** Run informational `validate` (no `--mode`), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2a validate errors — unbound inputs/missing conditions/missing SLA expected. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 11. **Never run `uip maestro case debug` automatically.** Executes case for real — emails, messages, API calls. Explicit user consent only.
-12. **JSON-strategy mutations: Read + Write/Edit only.** No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save `caseplan.json`. Bash subprocesses OK for stdout-only helpers (e.g., id generation) and CLI mutations on non-migrated plugins. See [references/case-editing-operations-json.md § Tool usage](references/case-editing-operations-json.md#tool-usage--mandatory).
+12. **`caseplan.json` mutations: Read + Write/Edit only.** No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save the file. Bash subprocesses OK for stdout-only helpers (e.g., id generation), CLI metadata fetches, validate, debug, and solution scaffold/upload. See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
 
 ## Workflow
 
@@ -55,7 +55,7 @@ Read [references/implementation.md](references/implementation.md) + [references/
 1. Solution + project + root case (Step 6)
 2. Global variables + arguments (Step 6.1)
 3. Stages (Step 7), edges (Step 8), triggers
-4. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `type-id` + `connection-id` only (no `is describe`); unresolved as skeletons per Rule 7
+4. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `is describe`); unresolved as skeletons per Rule 7
 5. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
 6. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 2b` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
@@ -78,11 +78,9 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
 | Phase 2a/2b split + hard stop contract | [references/phased-execution.md](references/phased-execution.md) |
-| Strategy (CLI vs JSON) per plugin | [references/case-editing-operations.md](references/case-editing-operations.md) |
-| Edit caseplan.json directly (JSON strategy) | [references/case-editing-operations-json.md](references/case-editing-operations-json.md) |
-| Run mutations via CLI (CLI strategy) | [references/case-editing-operations-cli.md](references/case-editing-operations-cli.md) |
+| Edit caseplan.json directly | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
-| All CLI flags + local-vs-cloud table | [references/case-commands.md](references/case-commands.md) |
+| Surviving CLI commands (registry, validate, debug, runtime) | [references/case-commands.md](references/case-commands.md) |
 | Resolve task types from registry | [references/registry-discovery.md](references/registry-discovery.md) |
 | Wire inputs/outputs + cross-task refs + expression prefixes | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | Configure connector activity / trigger / event | [references/connector-integration.md](references/connector-integration.md) |
@@ -136,10 +134,9 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 ## Anti-patterns
 
 - **Do NOT leave stages without an inbound edge.** Orphaned and unreachable. Every stage needs ≥1 inbound edge from Trigger or another stage.
-- **Do NOT validate after each command.** Intermediate states expected invalid. Run `validate` once after full build (Phase 2b).
-- **Do NOT execute CLI commands in parallel.** Each may depend on IDs from the previous — sequential only.
+- **Do NOT validate after each T-entry.** Intermediate states expected invalid. Run `validate` once at end of Phase 2a (informational) and once at end of Phase 2b (authoritative).
 - **Do NOT batch multiple T-entries into one JSON write.** Each T-entry: own Read → mutate → Write cycle. Composing large in-memory JSON across stages/edges/tasks hides intermediate state, breaks review.
-- **Do NOT place multiple tasks in same `--lane`.** FE renders same-lane tasks stacked — unreadable. Each task own `--lane n`. Lane is layout only, no execution semantics.
+- **Do NOT place multiple tasks in same lane.** FE renders same-lane tasks stacked — unreadable. Each task own `lane` index in `stageNode.data.tasks[laneIndex][]`. Lane is layout only, no execution semantics.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe condition in natural language; execution phase determines exact form.
 - **Do NOT invoke other skills automatically.** If case needs process/agent/action that doesn't exist, emit skeleton task (Rule 7) and list missing resources in completion report. On-demand resource creation is future milestone.
