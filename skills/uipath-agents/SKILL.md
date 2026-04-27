@@ -42,7 +42,8 @@ Determine the agent mode before proceeding:
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
 | Create or scaffold a new low-code agent project | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Quick Start | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
-| Edit `agent.json` (prompts, model, schemas, contentTokens, entry-points.json) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md` |
+| Edit `agent.json` prompts, model, contentTokens, or advanced fields | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md`; prefer CLI commands for supported schema/resource edits |
+| Add or remove low-code input/output fields | Low-code | [lowcode/project-lifecycle.md](references/lowcode/project-lifecycle.md) § Schema and Resource Authoring Commands | `uip agent input add`, `uip agent output add` |
 | Add a low-code tool (Orchestrator process — RPA / agent / API / agentic — or Integration Service) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/process/*`, `lowcode/capabilities/integration-service/*` |
 | Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
