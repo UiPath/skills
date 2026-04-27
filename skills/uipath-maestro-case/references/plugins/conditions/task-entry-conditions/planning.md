@@ -27,10 +27,10 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `current-stage-entered` | Fires when the containing stage is entered | — |
-| `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `--selected-tasks-ids` |
-| `wait-for-connector` | Waits for a connector event | `--condition-expression` |
-| `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `--condition-expression` (optional) |
-| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. | `--condition-expression` (optional) |
+| `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
+| `wait-for-connector` | Waits for a connector event | `conditionExpression` |
+| `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. | `conditionExpression` (optional) |
+| `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. | `conditionExpression` (optional) |
 
 ## Ordering
 

@@ -11,14 +11,14 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 | Field | Source | Notes |
 |-------|--------|-------|
 | `display-name` | Agent Reference "Name" | Shown in the UI |
-| `name` | Agent Reference "Name" | CLI flag `--name` |
-| `folder-path` | Agent Reference "Folder" | CLI flag `--folder-path` |
-| `task-type-id` | Registry resolution (below) | CLI flag `--task-type-id`, enables enrichment |
+| `name` | Agent Reference "Name" |  |
+| `folder-path` | Agent Reference "Folder" |  |
+| `task-type-id` | Registry resolution (below) | Enables auto-enrichment via `tasks describe` |
 | `element-id` | (optional) | Required only when the agent has multiple element bindings |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | For downstream cross-task references |
-| `runOnlyOnce` | sdd.md (default `true`) | CLI flag `--should-run-only-once` |
-| `isRequired` | sdd.md (default `true`) | CLI flag `--is-required` |
+| `runOnlyOnce` | sdd.md (default `true`) |  |
+| `isRequired` | sdd.md (default `true`) |  |
 
 ## Registry Resolution
 

@@ -10,12 +10,12 @@ Always. This plugin is invoked for the very first T-entry (`T01`) in every `task
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `name` | sdd.md case title | CLI flag `--name`. Human-readable. |
+| `name` | sdd.md case title | Human-readable. |
 | `file` | Derived: `<SolutionDir>/<ProjectName>/caseplan.json` | **Literal filename `caseplan.json`** — do not substitute project name. |
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
-| `description` | sdd.md case description | CLI flag `--description`. |
+| `description` | sdd.md case description |  |
 
 ## identifier-type Guidance
 

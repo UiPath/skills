@@ -11,8 +11,8 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 | Field | Source | Notes |
 |-------|--------|-------|
 | `display-name` | API Workflow Reference "Name" | |
-| `name` | API Workflow Reference "Name" | CLI flag `--name` |
-| `folder-path` | API Workflow Reference "Folder" | CLI flag `--folder-path` |
+| `name` | API Workflow Reference "Name" |  |
+| `folder-path` | API Workflow Reference "Folder" |  |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | |

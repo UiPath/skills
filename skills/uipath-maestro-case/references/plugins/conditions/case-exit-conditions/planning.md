@@ -24,22 +24,22 @@ Every case-exit condition declared in sdd.md gets its own T-task — **including
 
 ## Rule-Type Catalog (case-exit scope)
 
-Allowed `--rule-type` values depend on `marks-case-complete`:
+Allowed `ruleType` values depend on `marks-case-complete`:
 
 **When `marks-case-complete: true`** (the case completes):
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `required-stages-completed` | **Preferred.** Case completes when every stage with `isRequired: true` (set in the stage node's `data.isRequired`) has completed. No stage list needed. | — |
-| `wait-for-connector` | Wait for an external connector event to close the case. | `--condition-expression` |
+| `wait-for-connector` | Wait for an external connector event to close the case. | `conditionExpression` |
 
 **When `marks-case-complete: false`** (the case exits without closing):
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
-| `selected-stage-completed` | Exit triggered by a specific stage completing. | `--selected-stage-id` |
-| `selected-stage-exited` | Exit triggered by a specific stage being exited (even without completing). | `--selected-stage-id` |
-| `wait-for-connector` | Wait for an external connector event. | `--condition-expression` |
+| `selected-stage-completed` | Exit triggered by a specific stage completing. | `selectedStageId` |
+| `selected-stage-exited` | Exit triggered by a specific stage being exited (even without completing). | `selectedStageId` |
+| `wait-for-connector` | Wait for an external connector event. | `conditionExpression` |
 
 ## Preferred Pattern
 
@@ -49,7 +49,7 @@ Add non-completing exit conditions only when the sdd.md explicitly describes an 
 
 ## Ordering
 
-Case exit conditions are created **after** all stages exist (so `--selected-stage-id` can resolve via the stage capture map). In `tasks.md`, place these between stage conditions and SLA.
+Case exit conditions are created **after** all stages exist (so `selectedStageId` can resolve via the stage capture map). In `tasks.md`, place these between stage conditions and SLA.
 
 ## tasks.md Entry Format
 

@@ -25,15 +25,15 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 
 ## Rule-Type Catalog (stage-entry scope)
 
-Allowed `--rule-type` values and when to pick each:
+Allowed `ruleType` values and when to pick each:
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `case-entered` | Fires the moment the case is entered (first stage pattern) | — |
-| `selected-stage-completed` | Fires when a specific upstream stage completes | `--selected-stage-id` |
-| `selected-stage-exited` | Fires when a specific upstream stage exits (even without completing) | `--selected-stage-id` |
+| `selected-stage-completed` | Fires when a specific upstream stage completes | `selectedStageId` |
+| `selected-stage-exited` | Fires when a specific upstream stage exits (even without completing) | `selectedStageId` |
 | `user-selected-stage` | Fires when an upstream stage exits via a `wait-for-user` exit condition and the user selects this stage as the next one. Only stages carrying this rule appear in the picker. | — |
-| `wait-for-connector` | Waits for a connector event | `--condition-expression` |
+| `wait-for-connector` | Waits for a connector event | `conditionExpression` |
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use for exception/interrupt flows.
 

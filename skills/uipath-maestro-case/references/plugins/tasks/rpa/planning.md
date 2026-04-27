@@ -1,6 +1,6 @@
 # rpa task — Planning
 
-An RPA robot task. The sdd.md component type is `RPA`. At the CLI level, RPA tasks use `--type rpa` but the cached entity typically lives in `process-index.json` — the registry does not separate "process" from "rpa" at storage time.
+An RPA robot task. The sdd.md component type is `RPA`. The task node's `type` field is `"rpa"`, but the cached registry entity typically lives in `process-index.json` — the registry does not separate "process" from "rpa" at storage time.
 
 ## When to Use
 
@@ -24,7 +24,7 @@ Same shape as [process/planning.md](../process/planning.md):
 
 1. **Primary cache file:** `process-index.json` (yes — RPA tasks share this cache with `process`).
 2. **Identifier field:** `entityKey`.
-3. Use the sdd.md `RPA` label to set `--type rpa` on the CLI; use the cache `entityKey` for `--task-type-id`.
+3. Use the sdd.md `RPA` label to set `type: "rpa"` on the task node; use the cache `entityKey` for `data.context.taskTypeId`.
 4. If no match in `process-index.json`, search all other cache files as a fallback.
 5. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
