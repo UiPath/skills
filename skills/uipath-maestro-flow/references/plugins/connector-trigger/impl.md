@@ -6,44 +6,67 @@ How to configure connector trigger nodes: connection binding, enriched metadata,
 
 Follow these steps for every IS trigger node.
 
-### Step 1 — Fetch and bind a connection
+### Step 1 — Fetch a preliminary connection and query trigger objects
 
-Same as IS activity nodes. Extract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and fetch a connection.
+Extract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and the operation name from the `registry get` response (`model.context[].operation`).
+
+**1a. Get any enabled connection** (this is a temporary pick — you may need a different connection type after Step 1b):
 
 ```bash
-# 1. List available connections
 uip is connections list "<connector-key>" --output json
-
-# 2. Pick the default enabled connection (IsDefault: Yes, State: Enabled)
-
-# 3. Verify the connection is healthy
-uip is connections ping "<connection-id>" --output json
 ```
 
-**If `connections list` returns empty**, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
+Pick any enabled connection (prefer `IsDefault: Yes, State: Enabled`). You need its ID for the next call.
 
-### Step 1b — BYOA connection filtering (webhooks only)
+**If `connections list` returns empty**, retry with `--refresh` to force a fresh fetch from the API (bypasses cache):
 
-If you already know (from discovery or the `triggers objects` response) that the trigger uses `eventMode: "webhooks"` **and** `byoaConnection: true`:
+```bash
+uip is connections list "<connector-key>" --refresh --output json
+```
 
-1. Check the `byoaConnection` flag from trigger objects output:
+If still empty, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If no connection exists in any folder, tell the user to create one via the IS portal or `uip is connections create "<connector-key>"`.
 
-   ```bash
-   uip is triggers objects "<connector-key>" "<OPERATION>" \
-     --connection-id "<id>" --output json
-   ```
+**1b. Query trigger objects** — this is **mandatory** for every trigger node. Do NOT skip this step:
 
-2. If `byoaConnection: true` for the matching event object, filter connections to only BYOA connections:
+```bash
+uip is triggers objects "<connector-key>" "<OPERATION>" \
+  --connection-id "<id>" --output json
+```
 
-   ```bash
-   uip is connections list "<connector-key>" --byoa --output json
-   ```
+Save the response. It contains two critical flags per event object:
 
-3. If no BYOA connections exist, tell the user they need to create a BYOA connection for this connector in the Integration Service portal. A BYOA connection requires the customer to have registered their own OAuth app with the external service.
+| Flag | Meaning |
+|------|---------|
+| `byoaConnection` | If `true`, this trigger requires a BYOA connection — standard connections will fail at runtime |
+| `isWebhookUrlVisible` | If `true`, the webhook URL must be retrieved (Step 6b) and presented to the user for registration in the external service |
 
-4. If `byoaConnection: false`, proceed with normal connection selection (Step 1).
+It may also contain `design.textBlocks` with user-facing instructions specific to this trigger (e.g., "Add this webhook URL to your Slack app").
 
 > **Note:** The `byoaConnection` flag is per event object, not per connector. Some connectors support both BYOA and standard connections for different event types.
+
+### Step 1c — Select the final connection based on trigger objects
+
+**If `byoaConnection: true`** — the connection from Step 1a is NOT usable. Filter to BYOA connections only:
+
+```bash
+uip is connections list "<connector-key>" --byoa --output json
+```
+
+If no BYOA connections are returned, retry with `--refresh`:
+
+```bash
+uip is connections list "<connector-key>" --byoa --refresh --output json
+```
+
+If still empty, **stop and tell the user**:
+> This trigger requires a BYOA (Bring Your Own App) connection for `<connector-key>`. No BYOA connections were found.
+> A BYOA connection requires registering your own OAuth app with the external service (e.g., a Slack app you own). Create one in the Integration Service portal or with `uip is connections create "<connector-key>"`, then re-run.
+
+**If `byoaConnection: false`** — proceed with the connection from Step 1a. Verify it is healthy:
+
+```bash
+uip is connections ping "<connection-id>" --output json
+```
 
 ### Step 2 — Get enriched trigger metadata
 
@@ -116,7 +139,7 @@ uip is resources execute list "<connector-key>" "<reference.objectName>" \
   --connection-id "<id>" --output json
 ```
 
-The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs — from this very `execute list` call — in the trigger's event parameter configuration.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `execute list` call — in the trigger's event parameter configuration.
 
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
@@ -171,7 +194,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 
 | Field | Required | Description |
 |---|---|---|
-| `connectionId` | Yes | Connection UUID from Step 1 |
+| `connectionId` | Yes | Connection UUID from Step 1c (the final connection — BYOA if required) |
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
 | `eventParameters` | No | JSON object of resolved event parameter values from Steps 3-4 |
@@ -185,9 +208,9 @@ The command populates `inputs.detail` (including the internal `configuration` bl
 
 ### Step 6b — Retrieve and display webhook URL (webhooks only)
 
-**This step applies to triggers where `eventMode` is `"webhooks"`**, regardless of whether `byoaConnection` is true or false.
+**This step applies to triggers where `eventMode` is `"webhooks"`**, regardless of whether `byoaConnection` is true or false. **Do NOT skip this step for webhook triggers.**
 
-> **Guard:** If the trigger object's `isWebhookUrlVisible` is `false` (from `triggers objects` output in Step 1b), skip this step — the connector manages webhook registration automatically and does not expose a URL for manual registration.
+> **Guard:** If the trigger object's `isWebhookUrlVisible` is `false` (from `triggers objects` output in Step 1b — which is mandatory), skip this step — the connector manages webhook registration automatically and does not expose a URL for manual registration. If you do not have the `triggers objects` output, you skipped Step 1b — go back and run it before proceeding.
 
 1. Get the `ElementInstanceId` for the selected connection from the connections list output:
 
@@ -195,7 +218,7 @@ The command populates `inputs.detail` (including the internal `configuration` bl
    uip is connections list "<connector-key>" --connection-id "<connection-guid>" --output json
    ```
 
-   Note the `ElementInstanceId` field (a numeric value) from the response.
+   Note the `ElementInstanceId` field (a numeric value) from the response. If `ElementInstanceId` is empty, the connection may not support webhooks — verify it is the correct connection type (BYOA if required by Step 1b).
 
 2. Retrieve the webhook URL:
 
@@ -206,7 +229,7 @@ The command populates `inputs.detail` (including the internal `configuration` bl
      --output json
    ```
 
-3. Present the webhook URL to the user with clear instructions:
+3. Present the webhook URL to the user with clear instructions. If the `triggers objects` response included `design.textBlocks`, use that text (replacing `{webhookUrl}` with the actual URL). Otherwise, use the default message:
 
    > **Webhook URL registration required.** Your webhook trigger is configured, but it will not fire until you register this URL in your external service's app settings:
    >
@@ -216,7 +239,7 @@ The command populates `inputs.detail` (including the internal `configuration` bl
 
 4. If the webhook config call fails, inform the user:
    - Verify the connection is healthy with `uip is connections ping "<id>"`
-   - Confirm the `ElementInstanceId` is correct
+   - Confirm the `ElementInstanceId` is correct and non-empty (empty means wrong connection type)
    - The user may need to re-authenticate the connection with `uip is connections edit "<id>"`
 
 ---
@@ -366,14 +389,16 @@ uip maestro flow node delete <PROJECT>.flow start --output json       # remove m
 uip maestro flow node add <PROJECT>.flow <triggerNodeType> --label "<LABEL>" --position 200,144 --output json
 uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
-# Trigger object metadata
+# Trigger object metadata (MANDATORY — Step 1b)
 uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json
 uip is triggers describe "<connector-key>" "<operation>" "<objectName>" --connection-id "<id>" --output json
 
-# Connections (same as IS activity)
-uip is connections list "<connector-key>" --output json
-uip is connections list "<connector-key>" --byoa --output json    # BYOA connections only (Step 1b)
-uip is connections ping "<connection-id>" --output json
+# Connections
+uip is connections list "<connector-key>" --output json               # list all connections
+uip is connections list "<connector-key>" --byoa --output json        # BYOA connections only (Step 1c)
+uip is connections list "<connector-key>" --refresh --output json     # force re-fetch, bypass cache
+uip is connections list "<connector-key>" --byoa --refresh --output json  # BYOA + force re-fetch
+uip is connections ping "<connection-id>" --output json               # verify connection health
 
 # Reference resolution (same as IS activity)
 uip is resources execute list "<connector-key>" "<resource>" \
@@ -445,6 +470,9 @@ uip maestro flow debug . --output json
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources execute list` |
 | Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources execute list "<connector-key>" "<objectName>" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../SKILL.md). |
 | `model.context` missing operation | Node added without context entries | Delete and re-add the node — `node add` populates `model.context` from the registry definition |
+| Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list "<connector-key>" --byoa --output json`. If no BYOA connections exist, user must create one. |
+| `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list "<connector-key>" --refresh --output json` |
+| `ElementInstanceId` is empty on the selected connection | Connection is not a BYOA connection, or connector does not support webhooks on this connection type | Verify the trigger requires BYOA (Step 1b `byoaConnection` flag). If `true`, switch to a BYOA connection. |
 
 ### Debug Tips
 

@@ -42,7 +42,13 @@ uip is connections ping "<connection-id>" --output json
 
 **If a connector key fails**, list all available connectors to find the correct key: `uip is connectors list --output json`. Connector keys are often prefixed (e.g., `uipath-<service>`).
 
-**If `connections list` returns empty**, the CLI scoped to Personal Workspace by default — check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
+**If `connections list` returns empty**, first retry with `--refresh` to bypass the CLI cache and force a fresh fetch from the API:
+
+```bash
+uip is connections list "<connector-key>" --refresh --output json
+```
+
+If still empty, check other folders with `uip or folders list` + `--folder-key <key>` (Shared is the common case). If still not found, the connection doesn't exist — tell the user, and have them create one via the IS portal or `uip is connections create "<connector-key>"`.
 
 **Read [/uipath:uipath-platform — Integration Service — connections.md](../../../../uipath-platform/references/integration-service/connections.md) for connection selection rules** (default preference, HTTP fallback, multi-connection disambiguation, no-connection recovery, ping verification).
 
