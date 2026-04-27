@@ -1,0 +1,97 @@
+task_id: skill-case-registry-discovery
+description: >
+  Skill-guided evaluation: agent uses the uipath-case-management skill to
+  explore available case task resources via the registry. Tests whether the
+  skill teaches the correct discovery workflow (pull + direct cache-file
+  inspection at ~/.uipcli/case-resources/, not relying on registry search).
+tags: [uipath-case-management, smoke, registry]
+
+agent:
+  type: claude-code
+  max_turns: 20
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to build a UiPath Case Management definition that includes a HITL
+  action-app task and an RPA-style process task. Before planning, explore
+  what resources are available in the case registry to see which task types
+  I can use.
+
+  Save your findings to registry_report.json with at minimum:
+    {
+      "cache_files_inspected": ["<list of <type>-index.json file names you read or listed>"],
+      "commands_used": ["<list of uip commands you ran, exactly as invoked>"],
+      "action_app_index_file": "<the cache index filename for HITL action-apps>",
+      "process_index_file": "<the cache index filename for processes>",
+      "auth_state": "<authenticated | unauthenticated | unknown>",
+      "cache_populated": <true|false>
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Always run the registry pull yourself with `--output json`, even if a
+    cache appears to exist. The pull command may report per-resource-type
+    "Not logged in. Run 'uip login' first." entries when the environment is
+    unauthenticated — that is expected. Record the auth state and continue.
+  - Use `--output json` on uip read commands.
+  - If the cache directory at `~/.uipcli/case-resources/` is missing or the
+    expected `<type>-index.json` files were not populated by the pull, list
+    the directory and still report the expected filenames per the skill
+    reference (do not fabricate sample data).
+  - Do not build a case — just explore the registry and report.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent pulled the case registry with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull[^\n]*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the registry cache directory or its index files"
+    tool_name: "Bash"
+    command_pattern: 'case-resources(/|\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "registry_report.json exists"
+    path: "registry_report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "registry_report.json is valid JSON"
+    command: "python -c \"import json; json.load(open('registry_report.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report contains expected fields"
+    path: "registry_report.json"
+    includes:
+      - "cache_files_inspected"
+      - "commands_used"
+      - "action_app_index_file"
+      - "process_index_file"
+      - "auth_state"
+      - "cache_populated"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report identifies the correct cache index filenames"
+    path: "registry_report.json"
+    includes:
+      - "action-apps-index.json"
+      - "process-index.json"
+    weight: 1.5
+    pass_threshold: 1.0
