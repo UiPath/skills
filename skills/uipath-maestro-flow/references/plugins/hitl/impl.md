@@ -38,6 +38,10 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
     "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "priority": "Low"
   },
+  "outputs": {
+    "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
+  },
   "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
 }
 ```

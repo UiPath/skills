@@ -31,6 +31,9 @@ Validate a `.flow` file locally — no auth, no network.
 uip maestro flow validate <path/to/file.flow>
 uip maestro flow validate <path/to/file.flow> --output json
 uip maestro flow validate <path/to/file.flow> --verbose --output json
+
+# With governance policy checks (requires login)
+uip maestro flow validate <path/to/file.flow> --governance --output json
 ```
 
 Checks:
@@ -42,6 +45,10 @@ Checks:
 - Node `id`s are unique; edge `id`s are unique
 
 Exit code 0 = valid, 1 = invalid.
+
+### `--governance` flag
+
+Validates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.
 
 ## uip maestro flow tidy
 
