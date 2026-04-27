@@ -1,4 +1,6 @@
-# stage-exit-conditions — Implementation
+# stage-exit-conditions — Implementation (CLI)
+
+> Direct-JSON alternative: [`impl-json.md`](impl-json.md).
 
 ## CLI Command
 
@@ -84,7 +86,6 @@ The stage node's `data.exitConditions` array gains:
   "id": "cond00000002",
   "displayName": "All tasks done",
   "type": "exit-only",
-  "exitToStageId": null,
   "marksStageComplete": true,
   "rules": [
     [ { "rule": "required-tasks-completed", "id": "..." } ]

@@ -16,17 +16,21 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 | Sub-op | CLI | Purpose |
 |--------|-----|---------|
 | **Default SLA** | `sla set` | The time-based catch-all SLA. One per target (root or stage). |
-| **Conditional SLA rules** | `sla rules add` | Expression-driven SLA overrides. Root-only. |
+| **Conditional SLA rules** | `sla rules add` | Expression-driven SLA overrides. Root-only (CLI). |
 | **Escalation rules** | `sla escalation add` | Notifications triggered at-risk or on breach. |
 
 ## Applying SLA at Root vs Stage
 
-- **Root** — the default SLA for the whole case. Omit `--stage-id`.
-- **Stage** — stage-specific SLA. Pass `--stage-id <id>`. Overrides the root default while the stage is active.
+- **Root** — the default SLA for the whole case. Omit `--stage-id` (CLI) / target `"root"` (JSON).
+- **Stage** — stage-specific SLA. Pass `--stage-id <id>` (CLI) / target `"<stage-name>"` (JSON). Overrides the root default while the stage is active.
 
 Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage > root.
 
-> **Conditional SLA rules are root-only.** `sla rules add` does not accept `--stage-id`. If the sdd.md describes a per-stage conditional SLA, that semantics is not supported by the CLI — flag to the user.
+> **Conditional SLA rules are root-only (CLI limitation).** `sla rules add` does not accept `--stage-id`. If the sdd.md describes a per-stage conditional SLA under the CLI strategy, flag to the user. The JSON strategy has the same restriction for now.
+
+> **ExceptionStage SLA is JSON-only.** CLI's `sla set --stage-id` rejects `case-management:ExceptionStage`. If the sdd.md puts SLA on an exception stage, this plugin must run under the JSON strategy — see [`impl-json.md` § Known CLI divergences](impl-json.md).
+
+> **Per-conditional-rule escalations are JSON-only.** CLI's `sla escalation add` always attaches to the default (`=js:true`) rule. If the sdd.md attaches an escalation to a conditional rule, the plugin must run under the JSON strategy.
 
 ## Required Fields from sdd.md
 
@@ -54,10 +58,11 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `trigger-type` | sdd.md | `at-risk` \| `sla-breached` |
 | `at-risk-percentage` | sdd.md | Required when `trigger-type: at-risk` (1–99) |
 | `recipient-scope` | sdd.md | `User` \| `UserGroup` |
-| `recipient-target` | sdd.md | Identifier for the recipient |
-| `recipient-value` | sdd.md | Display value for the recipient |
+| `recipient-target` | sdd.md | Recipient UUID. Mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>` when sdd gives an email / group name but no UUID. |
+| `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
 | `display-name` | sdd.md (optional) | |
 | `stage-id` | sdd.md target (root vs stage) | Omit for root |
+| `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. JSON strategy only — CLI always attaches to default. |
 
 ## Ordering
 
@@ -96,15 +101,20 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ```markdown
 ## T<n>: Add escalation rule for "<target>" — <trigger summary>
 - target: "<root>" | "<stage-name>"
+- attach-to: default | T<m>
 - trigger-type: at-risk
 - at-risk-percentage: 80
 - recipients:
-  - User: manager@corp.com
-  - UserGroup: "Order Management Team"
+  - User: <UNRESOLVED: user-uuid for manager@corp.com> / manager@corp.com
+  - UserGroup: <UNRESOLVED: group-uuid for "Order Management Team"> / "Order Management Team"
 - display-name: "Notify Manager"
 - order: after T<m>
 - verify: Confirm Result: Success, capture EscalationRuleId
 ```
+
+**Recipient format:** `<target> / <value>` where `<target>` is the UUID (or `<UNRESOLVED: …>` sentinel when sdd only has an email / group name) and `<value>` is the display string. Skeleton recipients stay in `tasks.md` through execution; the user patches the UUID externally after the build and the completion report lists every unresolved recipient.
+
+**`attach-to: default`** is the default. Use `T<m>` only when sdd.md attaches an escalation to a conditional SLA rule — JSON strategy only.
 
 ## Anti-Patterns
 

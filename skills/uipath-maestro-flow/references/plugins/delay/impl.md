@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.delay --output json
+uip maestro flow registry get core.logic.delay --output json
 ```
 
 Confirm: input port `input`, output port `output`, required inputs `timerType` and `timerPreset`.

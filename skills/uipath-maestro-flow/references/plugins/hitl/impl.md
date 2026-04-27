@@ -1,8 +1,61 @@
 # HITL Node — Implementation
 
-HITL nodes pause the flow for human input via a UiPath App. Pattern: `uipath.core.human-task.{key}`.
+Two node types implement human-in-the-loop checkpoints. Choose based on whether you need an inline form or an existing deployed app.
 
-## Discovery
+---
+
+## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
+
+This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
+
+**Full implementation guide, JSON examples, and schema conversion rules:**
+→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
+
+> **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
+
+### Quick Reference
+
+**Node JSON (minimum viable):**
+
+```json
+{
+  "id": "hitlReview1",
+  "type": "uipath.human-in-the-loop",
+  "typeVersion": "1.0.0",
+  "display": { "label": "Invoice Review" },
+  "inputs": {
+    "type": "quick",
+    "schema": {
+      "fields": [
+        { "id": "invoiceId", "label": "Invoice ID", "type": "text",   "direction": "input" },
+        { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input" }
+      ],
+      "outcomes": [
+        { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
+        { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "outcomeType": "Negative", "action": "End" }
+      ]
+    },
+    "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
+    "priority": "Low"
+  },
+  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
+}
+```
+
+**Ports:** `input` (target) → `completed` (source)
+
+**Output variables:**
+- `$vars.{nodeId}.result` — object with all `output` / `inOut` fields the human filled in
+- `$vars.{nodeId}.result.{fieldName}` — individual field value
+- `$vars.{nodeId}.status` — `"completed"`
+
+---
+
+## Option 2 — `uipath.core.human-task.{key}` (App-Based)
+
+Use when there is an existing deployed Action Center app that should serve as the task form.
+
+### Discovery
 
 **Published (tenant registry):**
 
@@ -20,7 +73,7 @@ uip flow registry get "<nodeType>" --local --output json
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
 
-## Registry Validation
+### Registry Validation
 
 ```bash
 # Published (tenant registry)
@@ -37,15 +90,13 @@ Confirm:
 - `model.serviceType` — `Actions.HITL`
 - `model.bindings.resourceSubType` — the app type
 
-## Adding / Editing
+### Node JSON
 
 For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
 
 The human task node's output (`$vars.{nodeId}.output`) contains the form data submitted by the user.
 
-## JSON Structure
-
-### Node instance (inside `nodes[]`)
+**Node instance (inside `nodes[]`):**
 
 ```json
 {
@@ -94,7 +145,7 @@ The human task node's output (`$vars.{nodeId}.output`) contains the form data su
 
 > `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip flow registry get` output.
 
-### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+**Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`):**
 
 Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same app — do NOT create duplicates.
 
@@ -127,11 +178,11 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 
 > **Definition stays verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — it is a schema copy, not a runtime input. Critical Rule #7 applies unchanged.
 
-## Use Cases
+### If the app does not exist yet
 
-- **Approval workflows** — manager approval before processing
-- **Data validation** — human reviews extracted data before submission
-- **Exception handling** — human resolves items the automation cannot handle
+Note as `[CREATE NEW] <description>` in the node table and use `core.logic.mock` as a placeholder. The app itself is out of scope for this skill — use the `uipath-coded-apps` skill to build it.
+
+---
 
 ## Common Pattern — Human-in-the-Loop
 
@@ -145,6 +196,7 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | App not published or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip flow registry list --local`. Otherwise: `uip login` then `uip flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
+| `completed` port unwired (Option 1) | Missing edge on output handle | Wire the `completed` output handle — an unwired `completed` blocks the flow indefinitely |

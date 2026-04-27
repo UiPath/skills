@@ -47,6 +47,18 @@ Applies in both directions:
 
 **Severity:** Medium by default. High when the duplication is substantial (multi-paragraph overlap, step lists, or mechanism descriptions) or touches Critical Rules — silent drift between copies can mislead agents.
 
+### UIA Boundary Discipline (uipath-rpa skill)
+
+The `skills/uipath-rpa/` subtree must work against every future version of `UiPath.UIAutomation.Activities`. UIA-version-coupled content — CLI subcommand names, skill invocation arguments, internal step numbering, artifact filenames, and `uip rpa uia ...` bash blocks — belongs in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` (shipped by the UIA package), not in the skill.
+
+**How to check:**
+
+`skills/uipath-rpa/CLAUDE.md` lists every forbidden pattern (with carve-outs for generic `uip rpa` commands that are stable across UIA versions). For each changed file under `skills/uipath-rpa/`, check added or modified lines for any instance of those patterns and flag hits.
+
+**Severity:**
+- **Medium** — a new UIA-coupling bullet or sentence introduced in this PR
+- **High** — coupling **restored** that was previously extracted to UIA docs (the duplicate will drift and mislead agents)
+
 ### Repository Hygiene
 
 - `CODEOWNERS` has an entry for any new or moved skill path (e.g., `/skills/uipath-<name>/`)

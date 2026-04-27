@@ -2,7 +2,7 @@ task_id: skill-flow-move-node
 description: >
   Move the decision node before formatSummary so both branches merge back into
   formatSummary, then a single end node. Exercises reordering nodes and merging branches.
-tags: [uipath-maestro-flow, e2e, edit, ootb]
+tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:decision]
 max_iterations: 1
 
 agent:
@@ -27,8 +27,8 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "uip flow validate passes on the flow file"
-    command: "uip flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow"
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

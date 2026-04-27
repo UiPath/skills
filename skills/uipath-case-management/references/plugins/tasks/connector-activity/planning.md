@@ -2,7 +2,7 @@
 
 A connector activity task inside a stage. Calls an external service (Jira, Slack, Salesforce, Gmail, etc.) via UiPath Integration Service.
 
-This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered at runtime via `tasks describe --connection-id`, not baked into this plugin. See [connector-integration.md](../../../connector-integration.md) for the shared resolution pipeline.
+This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered via IS CLI commands, not baked into this plugin.
 
 ## When to Use
 
@@ -12,39 +12,91 @@ For **connector-based triggers** inside a stage (wait for an external event), us
 
 For **case-level event triggers** (outside any stage), use [`plugins/triggers/event/`](../../triggers/event/planning.md).
 
-## Required Fields from sdd.md
-
-| Field | Source | Notes |
-|-------|--------|-------|
-| `display-name` | sdd.md task name | |
-| `type-id` | `uiPathActivityTypeId` from TypeCache | See pipeline below |
-| `connection-id` | Connection UUID from `get-connection` | See pipeline below |
-| `connector-key` | `Config.connectorKey` | Recorded for debugging |
-| `object-name` | `Config.objectName` | Recorded for debugging |
-| `input-values` | sdd.md task data mapping | JSON object matching schema from `describe` |
-| `isRequired` | sdd.md (default `true`) | |
-
 ## Resolution Pipeline
 
-Follow the full procedure in [connector-integration.md](../../../connector-integration.md). Summary of planning-time decisions:
+Run these steps during planning. Each step feeds into the `tasks.md` entry.
 
-1. **Find `uiPathActivityTypeId`** by reading `~/.uipcli/case-resources/typecache-activities-index.json` directly. Match on `displayName`. Skip entries without `uiPathActivityTypeId`.
-2. **Resolve connector metadata** (`connectorKey`, `objectName`) via the `get-connector` call documented in [connector-integration.md § Step 2](../../../connector-integration.md).
-3. **Resolve the connection** via the `get-connection` call documented in [connector-integration.md § Step 3](../../../connector-integration.md):
-   - Single connection → use it.
-   - Multiple connections → **AskUserQuestion** with names + "Something else".
-   - Empty `Connections` → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a skeleton connector task — see [skeleton-tasks.md](../../../skeleton-tasks.md).
-4. **(Optional) Describe the input schema** when sdd.md requires specific field wiring — see [connector-integration.md § Step 4](../../../connector-integration.md).
+### 1. Find the connector in TypeCache
 
-## Input-Values Shape
+Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
-The `--input-values` JSON is connector-specific. Common top-level keys:
+### 2. Resolve the connection
 
-- `body` — request body fields
-- `queryParameters` — query string parameters
-- `pathParameters` — URL path parameters
+```bash
+uip case registry get-connection \
+  --type typecache-activities \
+  --activity-type-id "<uiPathActivityTypeId>" --output json
+```
 
-Discover exact keys from the `describe` response. Use resolved IDs (not display names) where the connector schema requires references — see [connector-integration.md](../../../connector-integration.md#step-4--optional-describe-inputsoutputs).
+Returns `Entry`, `Config`, and `Connections`.
+
+- **Single connection** → use it.
+- **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
+- **Empty `Connections`** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:`. Execution creates a skeleton task — see [skeleton-tasks.md](../../../skeleton-tasks.md).
+
+Record `connection-id`, `connector-key`, `object-name` from the response.
+
+### 3. Describe the resource — discover fields and references
+
+```bash
+uip is resources describe "<connector-key>" "<object-name>" \
+  --connection-id "<connection-id>" --operation Create --output json
+```
+
+> **Operation mapping for `--operation`:** Use `Create` for POST, `Retrieve` for GET, `Update` for PATCH/PUT, `Delete` for DELETE. If unsure, omit `--operation`.
+
+Returns:
+- **`requestFields`** — body fields with `type`, `required`, `description`, and `reference` objects
+- **`parameters`** — query and path parameters (may include required params not in `requestFields`)
+
+**This step is mandatory** — not optional. Without it, the agent cannot:
+- Know which fields are required (causes runtime errors if missing)
+- Discover reference fields that need ID resolution (display names fail at runtime)
+- Build correct `input-values` for the tasks.md entry
+
+### 4. Resolve reference fields
+
+Check `requestFields` for fields with a `reference` object. For each, resolve display names from sdd.md to IDs:
+
+```bash
+uip is resources execute list "<connector-key>" "<reference.objectName>" \
+  --connection-id "<connection-id>" --output json
+```
+
+Match the sdd.md value to `displayName` in the results. Use the resolved `id` in `input-values`.
+
+> **Paginate when looking up by name.** If `Pagination.HasMore` is `true`, re-run with `--query "nextPage=<NextPageToken>"` until found.
+
+If a reference cannot be resolved, **AskUserQuestion** with the available options. Do not guess.
+
+### 5. Validate required fields
+
+For each `requestFields` and `parameters` entry with `required: true`:
+1. Check if sdd.md provides a value (literal, variable reference, or cross-task output)
+2. If missing and no `defaultValue`, **AskUserQuestion** — list the missing field with its `displayName` and description
+3. Only after all required fields have values, proceed to writing the tasks.md entry
+
+### 6. Map SDD inputs to connector fields
+
+SDD input names don't match connector field names. Match each SDD input to a `requestFields` or `parameters` entry by comparing the SDD field name against the `displayName` (or `name`) from Step 3.
+
+For each **required** field in `requestFields`/`parameters`, there must be a matching SDD input. If a required field has no match in the SDD, **AskUserQuestion** — do not leave required fields unmapped.
+
+Values can be:
+- **Static literals** — `"Payment__c"`, `"Text"`
+- **Resolved reference IDs** — from Step 4
+- **Case variable references** — `=vars.X` for runtime values
+- **Expressions** — `=js:()` only when operators are needed
+
+### 7. Build input-values
+
+Using the mapped fields from Step 6, build the `input-values` JSON with dot-path field names from `requestFields`:
+
+```json
+{"body":{"message":{"toRecipients":"=vars.managerEmail","subject":"=vars.caseId","body":{"content":"=vars.description","contentType":"Text"}}}}
+```
+
+`queryParameters` and `pathParameters` go as separate top-level keys if the connector uses them.
 
 ## tasks.md Entry Format
 
@@ -56,7 +108,15 @@ Discover exact keys from the `describe` response. Use resolved IDs (not display 
 - object-name: <objectName>
 - input-values: {"body":{"field":"value"},"queryParameters":{"key":"val"}}
 - isRequired: true
+- runOnlyOnce: false
 - order: after T<m>
-- lane: <n>  # FE layout coordinate; increment per task within the stage
-- verify: Confirm Result: Success, capture TaskId
+- lane: <n>
+- verify: Confirm task created with correct inputs
 ```
+
+## Unresolved Fallback
+
+If the connector or connection cannot be resolved:
+- Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
+- Omit `input-values:` entirely — no schema to wire against
+- Execution creates a skeleton task (display-name + type only) per [skeleton-tasks.md](../../../skeleton-tasks.md)

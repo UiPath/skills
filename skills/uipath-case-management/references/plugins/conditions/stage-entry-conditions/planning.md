@@ -32,7 +32,7 @@ Allowed `--rule-type` values and when to pick each:
 | `case-entered` | Fires the moment the case is entered (first stage pattern) | — |
 | `selected-stage-completed` | Fires when a specific upstream stage completes | `--selected-stage-id` |
 | `selected-stage-exited` | Fires when a specific upstream stage exits (even without completing) | `--selected-stage-id` |
-| `user-selected-stage` | Fires when a user manually selects/routes to this stage (e.g., via a `return-to-origin` or stage-picker exit) | — |
+| `user-selected-stage` | Fires when an upstream stage exits via a `wait-for-user` exit condition and the user selects this stage as the next one. Only stages carrying this rule appear in the picker. | — |
 | `wait-for-connector` | Waits for a connector event | `--condition-expression` |
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use for exception/interrupt flows.

@@ -4,7 +4,7 @@ description: >
   named "fetchAndFormat". The subflow returns the formatted temperature data
   and the main flow keeps the decision and end nodes. Exercises subflow creation
   from existing nodes.
-tags: [uipath-maestro-flow, e2e, edit, ootb]
+tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:subflow]
 max_iterations: 1
 
 agent:
@@ -30,8 +30,8 @@ initial_prompt: |
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
-    description: "uip flow validate passes on the flow file"
-    command: "uip flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow"
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -3,32 +3,31 @@ description: >
   Skill-guided evaluation: agent uses the uipath-agents skill to scaffold
   a new low-code agent inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-agents, smoke, init, validate]
+tags: [uipath-agents, smoke, low-code]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 30
 
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
-  Create a new low-code UiPath agent called "EchoAgent" inside a
-  solution called "EchoSolution" and make sure it validates
-  successfully.
+  Create a UiPath solution "EchoSol" containing a low-code agent
+  "EchoAgent" and make sure it validates successfully.
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "EchoAgent",
-      "solution_name": "EchoSolution",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
-
-  Important:
-  - The `uip` CLI is already available in the environment.
-  - Do NOT publish, upload, or deploy. Just create and validate locally.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
-    description: "Agent created a solution with uip solution new"
+    description: "Agent created the solution with uip solution new"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+new'
     min_count: 1
@@ -36,7 +35,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent scaffolded an agent project with uip agent init"
+    description: "Agent scaffolded the agent project with uip agent init"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init'
     min_count: 1
@@ -44,15 +43,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent linked the agent project to the solution"
+    description: "Agent linked the project to the solution with uip solution project add"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+project\s+add'
     min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the agent project"
+    description: "Agent validated the project"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
@@ -68,50 +67,50 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "agent.json was created inside the solution"
-    path: "EchoSolution/EchoAgent/agent.json"
+    description: "EchoAgent/agent.json was created"
+    path: "EchoSol/EchoAgent/agent.json"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
     description: "entry-points.json was created inside the agent project"
-    path: "EchoSolution/EchoAgent/entry-points.json"
+    path: "EchoSol/EchoAgent/entry-points.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "flow-layout.json was created inside the agent project"
-    path: "EchoSolution/EchoAgent/flow-layout.json"
+    path: "EchoSol/EchoAgent/flow-layout.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "project.uiproj was created inside the agent project"
-    path: "EchoSolution/EchoAgent/project.uiproj"
+    path: "EchoSol/EchoAgent/project.uiproj"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Default evaluation set scaffolded (evaluation-set-default.json)"
-    path: "EchoSolution/EchoAgent/evals/eval-sets/evaluation-set-default.json"
+    path: "EchoSol/EchoAgent/evals/eval-sets/evaluation-set-default.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Default evaluator scaffolded (evaluator-default.json)"
-    path: "EchoSolution/EchoAgent/evals/evaluators/evaluator-default.json"
+    path: "EchoSol/EchoAgent/evals/evaluators/evaluator-default.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Default trajectory evaluator scaffolded (evaluator-default-trajectory.json)"
-    path: "EchoSolution/EchoAgent/evals/evaluators/evaluator-default-trajectory.json"
+    path: "EchoSol/EchoAgent/evals/evaluators/evaluator-default-trajectory.json"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "features/ directory exists and is empty"
-    command: "test -d EchoSolution/EchoAgent/features && [ -z \"$(ls -A EchoSolution/EchoAgent/features)\" ]"
+    command: "test -d EchoSol/EchoAgent/features && [ -z \"$(ls -A EchoSol/EchoAgent/features)\" ]"
     timeout: 5
     expected_exit_code: 0
     weight: 1.0
@@ -119,45 +118,26 @@ success_criteria:
 
   - type: run_command
     description: "resources/ directory exists and is empty"
-    command: "test -d EchoSolution/EchoAgent/resources && [ -z \"$(ls -A EchoSolution/EchoAgent/resources)\" ]"
+    command: "test -d EchoSol/EchoAgent/resources && [ -z \"$(ls -A EchoSol/EchoAgent/resources)\" ]"
     timeout: 5
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
-    description: ".agent-builder/agent.json generated by uip agent validate"
-    path: "EchoSolution/EchoAgent/.agent-builder/agent.json"
+    description: ".agent-builder/agent.json was regenerated by validate"
+    path: "EchoSol/EchoAgent/.agent-builder/agent.json"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
     description: ".agent-builder/bindings.json generated by uip agent validate"
-    path: "EchoSolution/EchoAgent/.agent-builder/bindings.json"
+    path: "EchoSol/EchoAgent/.agent-builder/bindings.json"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: file_exists
     description: ".agent-builder/entry-points.json generated by uip agent validate"
-    path: "EchoSolution/EchoAgent/.agent-builder/entry-points.json"
+    path: "EchoSol/EchoAgent/.agent-builder/entry-points.json"
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "EchoAgent"
-      - expression: "solution_name"
-        operator: equals
-        expected: "EchoSolution"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
-    weight: 2.0
-    pass_threshold: 0.75

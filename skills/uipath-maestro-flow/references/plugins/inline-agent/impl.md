@@ -45,7 +45,7 @@ For detailed agent configuration (contentTokens format, model settings, resource
 Even though `uipath.agent.autonomous` is OOTB, validate it against the registry during Phase 2 to confirm the current product state:
 
 ```bash
-uip flow registry get uipath.agent.autonomous --output json
+uip maestro flow registry get uipath.agent.autonomous --output json
 ```
 
 Confirm:
@@ -66,7 +66,7 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
 ### Add the node via CLI
 
 ```bash
-uip flow node add <FlowName>.flow uipath.agent.autonomous \
+uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
   --source <PROJECTID_UUID> \
   --label "<LABEL>" \
   --position <X>,<Y> \
@@ -85,14 +85,14 @@ uip flow node add <FlowName>.flow uipath.agent.autonomous \
 
 ```bash
 # List nodes to get IDs
-uip flow node list <FlowName>.flow --output json
+uip maestro flow node list <FlowName>.flow --output json
 
 # Sequence input (upstream -> agent)
-uip flow edge add <FlowName>.flow <upstreamNodeId> <agentNodeId> \
+uip maestro flow edge add <FlowName>.flow <upstreamNodeId> <agentNodeId> \
   --source-port output --target-port input --output json
 
 # Sequence output (agent success -> downstream)
-uip flow edge add <FlowName>.flow <agentNodeId> <nextNodeId> \
+uip maestro flow edge add <FlowName>.flow <agentNodeId> <nextNodeId> \
   --source-port success --target-port input --output json
 ```
 
@@ -163,7 +163,7 @@ Validate the inline agent definition, then the flow:
 
 ```bash
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
-uip flow validate <FlowName>.flow --output json
+uip maestro flow validate <FlowName>.flow --output json
 ```
 
 The agent validate step checks `agent.json`, `contentTokens`, schemas, and resource files. The flow validate step checks the node wiring and definitions. Both must pass before publishing.

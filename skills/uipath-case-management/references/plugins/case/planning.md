@@ -1,6 +1,6 @@
 # case (root) — Planning
 
-The root case definition — the top-level container that every other node lives inside. Created exactly once per `caseplan.json` via `uip maestro case cases add`.
+The root case definition — the top-level container that every other node lives inside. Created exactly once per project. Under the JSON strategy the case plugin **also owns project scaffolding** (the 5 boilerplate files written by `uip maestro case init` on the CLI path) — see [impl-json.md](impl-json.md).
 
 ## When to Use
 
@@ -28,9 +28,11 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
 **None.** The root case has no registry representation — no `taskTypeId`, no enrichment.
 
-## Trigger Node is Auto-Created
+## Trigger Node — Emitted by Triggers Plugin (T02)
 
-`uip maestro case cases add` creates an implicit `case-management:Trigger` node inside `caseplan.json.nodes`. Do not add another trigger unless the case has multiple entry points (multi-trigger — see [triggers plugins](../triggers/)).
+The migrated JSON recipe writes a pure skeleton at T01 — no trigger node. The primary trigger is added by the triggers plugin at T02 via the matching [triggers plugin](../triggers/). Every case (single-trigger or multi-trigger) has at least one T02 entry for the primary trigger.
+
+Under the CLI fallback path, `uip maestro case cases add` still emits an implicit `trigger_1` node. The triggers plugin handles additional triggers for multi-trigger cases.
 
 ## tasks.md Entry Format
 
@@ -42,21 +44,26 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 - case-app-enabled: false
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm Result: Success, capture file path and initial Trigger node ID
+- verify: Confirm caseplan.json written and parses; root.id == "root", nodes == [], edges == []
 ```
 
 ## Project Structure Prerequisites
 
-The case file lives inside a solution + project structure. Before T01 runs, the execution phase creates:
+The case file lives inside a solution + project structure. After T01 completes, the layout is:
 
 ```
 <directory>/
   <SolutionName>/
-    <SolutionName>.uipx
-    <ProjectName>/
-      project.uiproj
-      content/...
-      caseplan.json   ← this file
+    <SolutionName>.uipx            ← created by `uip solution new` (Step 6.0, CLI)
+    <ProjectName>/                 ← created + populated by T01 (case plugin)
+      project.uiproj               ← § Scaffold writes
+      operate.json                 ← § Scaffold writes
+      entry-points.json            ← § Scaffold writes (empty entryPoints[])
+      bindings_v2.json             ← § Scaffold writes
+      package-descriptor.json      ← § Scaffold writes
+      caseplan.json                ← § Write caseplan.json writes
 ```
 
-See [implementation.md Step 6](../../implementation.md) for the `uip solution new` / `uip maestro case init` / `uip solution project add` sequence that must run before `cases add`.
+Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.2.
+
+See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence. CLI fallback: [impl-cli.md](impl-cli.md) § Prerequisites.

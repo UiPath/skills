@@ -1,0 +1,91 @@
+task_id: skill-flow-registry-discovery
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore
+  available Flow node types via the registry. Tests whether the skill teaches
+  the correct registry workflow (pull, list/search, get).
+tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
+
+agent:
+  type: claude-code
+  max_turns: 14
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to build a UiPath Flow that makes an HTTP request and processes the
+  response with a script. Before building anything, explore what node types
+  are available in the Flow registry and find the right ones for this task.
+
+  Save your findings to registry_report.json with at minimum:
+    {
+      "node_types_found": ["<list of relevant node types>"],
+      "commands_used": ["<list of uip registry commands you ran>"],
+      "http_node_type": "<the node type for HTTP requests>",
+      "script_node_type": "<the node type for scripts>"
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Use `--output json` on all uip commands.
+  - Do not build the flow — just explore and report.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent pulled registry data"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed or searched registry nodes"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+(list|search)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on registry commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+registry\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "registry_report.json exists"
+    path: "registry_report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "registry_report.json is valid JSON"
+    command: "python -c \"import json; json.load(open('registry_report.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report contains expected fields"
+    path: "registry_report.json"
+    includes:
+      - "node_types_found"
+      - "commands_used"
+      - "http_node_type"
+      - "script_node_type"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Report identifies the correct HTTP and script node types"
+    path: "registry_report.json"
+    includes:
+      - "core.action.http"
+      - "core.action.script"
+    weight: 1.0
+    pass_threshold: 1.0

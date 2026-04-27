@@ -1,11 +1,17 @@
-# UiPath CLI (uip) Command Reference
+# UiPath CLI (`uip`) Command Reference
 
-> **Quick reference index.** Use `--help` only as a fallback when something doesn't work as expected.
+> **Quick reference index.** Use `--help` for full option details on any command.
 
-**Global flags for list commands:**
-- `--limit <N>` / `--offset <N>` — Pagination. Check `Pagination.HasMore` in output; fetch next page if true.
-- `--all-fields` — (Orchestrator tool only) Return full API response instead of curated fields. Use when you need fields not in the default output.
-- `--output json` — Always use this when calling programmatically.
+**Global flags:**
+- `--output json` — always use when calling programmatically
+- `--output-filter <expr>` — JMESPath filter for JSON output
+- `--tenant <name>` — tenant override (defaults to authenticated tenant)
+- `--verbose` — enable debug logging
+
+**List command flags:**
+- `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
+- `--order-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
+- `--all-fields` — (Orchestrator tool + libraries only) return full API response
 
 ---
 
@@ -21,114 +27,80 @@
 
 ---
 
-## Orchestrator (`or`)
+## Orchestrator (`uip or`)
 
-Manage folders, jobs, processes, machines, users, packages, and more. See [orchestrator-guide.md](orchestrator-guide.md). Use `uip or --help` for all subcommands.
+Manage folders, jobs, processes, machines, users, packages, and more. See [orchestrator/](orchestrator/orchestrator.md).
 
-| Command | Description |
-|---|---|
-| `uip or folders list` | List folders the current user has access to |
-| `uip or folders list --all` | List all folders in tenant (Standard + Solution). Supports `--type`, `--name`, `--path`, `--top-level`, `--order-by` |
-| `uip or folders create <name>` | Create a folder |
-| `uip or processes list` | List processes in folder (`--folder-path`) |
-| `uip or processes create <name>` | Create process binding |
-| `uip or jobs start <process-key>` | Start a job (`--folder-path`, `--input-arguments`) |
-| `uip or jobs list` | List jobs (`--folder-path`, `--state`, `--process-name`) |
-| `uip or jobs stop <key>` | Stop a running job |
-| `uip or machines list` | List machines — tenant-wide or per-folder (`--folder-path`) |
-| `uip or machines assign <key>` | Assign machine to folder |
-| `uip or users list` | List users (`--username`, `--email`, `--key`) |
-| `uip or users set-unattended-execution <key>` | Configure unattended robot for user |
-| `uip or packages list` | List automation packages in feed |
-| `uip or packages upload <file>` | Upload .nupkg to feed |
-| `uip or packages download <key>` | Download .nupkg (`--destination`, key: `PackageId:Version`) |
-| `uip or settings list` | List tenant settings |
-| `uip or roles list-roles` | List all roles |
-| `uip or licenses info` | Get license information |
-| `uip or audit-logs list` | View audit logs |
+| Group | Key Commands | Workflow Guide |
+|---|---|---|
+| **Folders** | `list [--all]`, `get`, `create`, `edit`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Processes** | `list`, `get`, `create`, `edit`, `update-version`, `rollback` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Machines** | `list`, `get`, `create`, `edit`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `edit`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Roles** | `list-roles`, `list-permissions`, `get-role`, `create-role`, `edit-role`, `delete-role`, `list-role-users`, `set-role-users`, `list-user-roles`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Sessions** | `list-attended-sessions`, `list-unattended-sessions`, `list-machines-sessions`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
+| **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Licenses** | `list --type`, `toggle`, `info` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Audit Logs** | `list [--export]` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Credential Stores** | `list`, `get` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Feeds** | `list` | [Tenant Admin](orchestrator/tenant-admin.md) |
+| **Attachments** | `list --job-key`, `download` | [Tenant Admin](orchestrator/tenant-admin.md) |
 
 ---
 
-## Resource (`resource`)
+## Resource (`uip resource`)
 
-Manage assets, queues, triggers, storage buckets, libraries, and webhooks. See [resources/resources-guide.md](resources/resources-guide.md). Use `uip resource --help` for all subcommands.
+Manage assets, queues, triggers, buckets, libraries, and webhooks. See [resources/](resources/resources.md).
 
-| Command | Description |
-|---|---|
-| `uip resource assets list` | List assets (`--folder-path`) |
-| `uip resource assets create <name>` | Create an asset (`--folder-path`, `--type`) |
-| `uip resource queues list` | List queues (`--folder-path`) |
-| `uip resource queues create <name>` | Create a queue |
-| `uip resource queue-items list` | List queue items (`--folder-path`, `--queue-name`) |
-| `uip resource queue-items add <queue-key> <ref>` | Add item to queue |
-| `uip resource triggers list` | List triggers (`--type time\|queue\|api`, `--folder-path`) |
-| `uip resource triggers create` | Create trigger (`--type`, `--name`, `--cron`, etc.) |
-| `uip resource storage-buckets list` | List storage buckets (`--folder-path`) |
-| `uip resource storage-buckets create <name>` | Create a bucket |
-| `uip resource libraries list` | List libraries in tenant feed |
-| `uip resource libraries download <key>` | Download library .nupkg |
-| `uip resource webhooks list` | List webhooks |
-| `uip resource webhooks create` | Create webhook (`--name`, `--url`, `--events`) |
+| Group | Key Commands | Workflow Guide |
+|---|---|---|
+| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](resources/manage-assets.md) |
+| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare` | [Process Queues](resources/process-queues.md) |
+| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `set-progress`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](resources/process-queues.md) |
+| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](resources/work-with-storage.md) |
+| **Bucket Files** | `list`, `list-dirs`, `get`, `read`, `write`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](resources/work-with-storage.md) |
+| **Triggers** | `list`, `get`, `create`, `update`, `delete`, `enable`, `disable`, `history` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
+| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](resources/resources.md) |
+| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
 
 ---
 
-## Solution (`solution`)
+## Solution (`uip solution`)
 
-Create, pack, publish, and deploy solutions. See [solution-guide.md](solution-guide.md). Use `uip solution --help` for all subcommands.
+Create, pack, publish, and deploy solutions. See [solution/](solution/solution.md).
 
-| Command | Description |
-|---|---|
-| `uip solution pack <solutionPath> <outputPath>` | Pack solution into .zip |
-| `uip solution publish <packagePath>` | Publish solution package |
-| `uip solution deploy run` | Deploy a solution |
-
----
-
-## Integration Service (`is`)
-
-Manage connectors, connections, and resources. See [integration-service/](integration-service/). Use `uip is --help` for all subcommands.
-
-| Command | Description |
-|---|---|
-| `uip is connectors list` | List all connectors |
-| `uip is connections list [connector-key]` | List connections |
-| `uip is connections create <connector-key>` | Create a connection |
-| `uip is connections ping <connection-id>` | Test connection health |
+| Group | Key Commands | Workflow Guide |
+|---|---|---|
+| **Lifecycle** | `new`, `delete`, `upload` | [Develop Solution](solution/develop-solution.md) |
+| **Project** | `add`, `remove`, `import` | [Develop Solution](solution/develop-solution.md) |
+| **Resource** | `list`, `refresh` | [Develop Solution](solution/develop-solution.md) |
+| **Pack/Publish** | `pack`, `publish` | [Pack & Deploy](solution/pack-and-deploy.md) |
+| **Deploy** | `run`, `status`, `list`, `activate`, `uninstall` | [Pack & Deploy](solution/pack-and-deploy.md) |
+| **Deploy Config** | `config get`, `config set`, `config link`, `config unlink` | [Pack & Deploy](solution/pack-and-deploy.md) |
+| **Packages** | `list`, `delete` | [Activate & Manage](solution/activate-and-manage.md) |
 
 ---
 
-## Test Manager (`tm`)
+## Traces (`uip traces`)
 
-Manage test projects, test sets, test cases, and executions. See [test-manager/test-manager-guide.md](test-manager/test-manager-guide.md). Use `uip tm --help` for all subcommands.
-
-| Command | Description |
-|---|---|
-| `uip tm project list` | List test projects |
-| `uip tm project create` | Create test project |
-| `uip tm testset create` | Create test set |
-| `uip tm testset execute` | Execute a test set |
-| `uip tm testcase create` | Create test case |
-| `uip tm wait` | Wait for execution to complete |
-| `uip tm report get` | Get execution report |
-
----
-
-## Tools Management (`tools`)
+LLM execution trace observability. See [traces.md](traces.md).
 
 | Command | Description |
 |---|---|
-| `uip tools list` | List installed tools |
-| `uip tools search` | Search available tools |
-| `uip tools install <package-name>` | Install a tool |
+| `uip traces spans get [trace-id]` | Get spans by trace ID or `--job-key` |
 
 ---
 
 ## Other Tool Groups
 
-Use `--help` to explore these:
-
 | Group | Command | Description |
 |---|---|---|
-| **RPA** | `uip rpa --help` | RPA workflow management (XAML) |
+| **Integration Service** | `uip is --help` | Connectors, connections, activities |
+| **Test Manager** | `uip tm --help` | Test projects, sets, cases, executions |
+| **RPA** | `uip rpa --help` | RPA workflow management |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
-| **Coded Agents** | `uip codedagent --help` | Python-based agent development |
+| **Coded Agents** | `uip codedagent --help` | Python agent development |
+| **Tools** | `uip tools list/search/install` | CLI tool management |

@@ -5,11 +5,27 @@ How to resolve reference fields — fields whose values must be looked up from a
 > Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
 
 ## Contents
+- Reference IDs Are Connection-Scoped (CRITICAL)
 - Reference Fields (CRITICAL)
 - Search References (filterPattern)
 - Field Dependency Chains
 - Inferring References Without Describe
 - Validate Required Fields Before Executing
+
+---
+
+## Reference IDs Are Connection-Scoped (CRITICAL)
+
+Every reference ID resolves only within the account authenticated by the connection used to resolve it. A `MailFolder` ID from one Outlook mailbox is invalid in another. A Slack channel ID from one workspace is invalid in another. A Jira project ID from one Atlassian site is invalid in another.
+
+**Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run `uip is resources execute list` against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
+
+A reused reference ID:
+- Passes `uip is resources describe` / `node configure` / `flow validate` cleanly (no API call checks the value against the connection).
+- Faults at runtime when the connector tries to use the ID against a mailbox/workspace/site that does not contain it.
+- Surfaces as a silent fault or generic "no matching resource" error — hard to diagnose without tracing back to the authoring step.
+
+**Rule:** resolve every reference ID fresh, against the current connection, every time. Treat any ID from your context or memory as unverified until re-listed.
 
 ---
 

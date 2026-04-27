@@ -84,16 +84,22 @@ Choose the appropriate operation from the Task Navigation table below.
 
 | I need to... | Read these |
 |---|---|
-| **Authenticate / manage tenants** | [references/uip-commands.md - Authentication](references/uip-commands.md) |
-| **Manage Orchestrator folders** | [references/orchestrator-guide.md - Folders](references/orchestrator-guide.md) |
-| **Manage assets** (via `resource assets`, NOT `or`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
-| **Manage resources** (assets, queues, queue items, storage buckets, files via `resource`) | [references/resources/resources-guide.md](references/resources/resources-guide.md) |
-| **Understand Orchestrator concepts** | [references/orchestrator-guide.md - Concepts](references/orchestrator-guide.md) |
-| **Create / pack / publish solutions** | [references/solution-guide.md](references/solution-guide.md) |
-| **Deploy / activate solutions** | [references/solution-guide.md - Deploy](references/solution-guide.md) |
-| **Install / manage CLI tools** | [references/uip-commands.md - Tools](references/uip-commands.md) |
-| **Set up CI/CD pipeline** | [references/solution-guide.md - CI/CD](references/solution-guide.md) |
-| **Use Integration Service** (connectors, connections, activities, resources) | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
+| **Authenticate / manage tenants** | [references/uip-commands.md](references/uip-commands.md) |
+| **Set up folders, users, machines** | [references/orchestrator/setup-environment.md](references/orchestrator/setup-environment.md) |
+| **Run and monitor jobs** | [references/orchestrator/run-jobs.md](references/orchestrator/run-jobs.md) |
+| **Manage sessions and runtimes** | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md) |
+| **Tenant settings, calendars, audit logs** | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md) |
+| **Understand Orchestrator concepts** | [references/orchestrator/orchestrator.md](references/orchestrator/orchestrator.md) |
+| **Manage assets** | [references/resources/manage-assets.md](references/resources/manage-assets.md) |
+| **Work with queues and queue items** | [references/resources/process-queues.md](references/resources/process-queues.md) |
+| **Work with storage buckets and files** | [references/resources/work-with-storage.md](references/resources/work-with-storage.md) |
+| **Set up triggers and webhooks** | [references/resources/triggers-and-webhooks.md](references/resources/triggers-and-webhooks.md) |
+| **Develop a solution** | [references/solution/develop-solution.md](references/solution/develop-solution.md) |
+| **Pack, publish, deploy solutions** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
+| **Activate / uninstall deployments** | [references/solution/activate-and-manage.md](references/solution/activate-and-manage.md) |
+| **Set up CI/CD pipeline** | [references/solution/pack-and-deploy.md](references/solution/pack-and-deploy.md) |
+| **Debug LLM/agent traces** | [references/traces.md](references/traces.md) |
+| **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
@@ -221,7 +227,7 @@ The typical deployment workflow for a UiPath automation:
 ### Practical Deployment Notes
 
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator-guide.md - REST API](references/orchestrator-guide.md).
+- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
 
 ## Orchestrator REST API (Fallback)
 
@@ -255,11 +261,12 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 
 ## References
 
-- **[Complete CLI Command Reference](references/uip-commands.md)** — Every `uip` command with parameters
-- **[Orchestrator Guide](references/orchestrator-guide.md)** — Concepts, folders, assets, and planned features
-- **[Resources Guide](references/resources/resources-guide.md)** — Assets, queues, queue items, storage buckets, bucket files
-- **[Solution Guide](references/solution-guide.md)** — Solution lifecycle: create, pack, publish, deploy
-- **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources for third-party services
+- **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
+- **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
+- **[Resources](references/resources/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
+- **[Solutions](references/solution/solution.md)** — Solution lifecycle: create, pack, publish, deploy
+- **[Traces](references/traces.md)** — LLM execution trace observability
+- **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

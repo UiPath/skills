@@ -1,0 +1,85 @@
+task_id: skill-gov-access-policy-get-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-gov-access-policy skill
+  to fetch a single access policy by UUID. Tests whether the skill
+  teaches the correct CLI namespace (`uip gov access-policy`), the
+  positional UUID argument on `get`, and the `--output json` convention.
+  Per the skill's policy-manage-guide, `get` is the canonical first step
+  before any update or delete.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov access-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-gov-access-policy, smoke, get]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A tenant admin wants to inspect the full PolicyDefinition (selectors,
+  rules, enforcement) of the access policy with id
+  `00000000-0000-0000-0000-000000000001` before deciding whether to edit
+  it. Use the uipath-gov-access-policy skill.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "policy_id": "00000000-0000-0000-0000-000000000001",
+      "get_command": "<exact uip gov access-policy get command you ran>",
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, record the result (success or
+    error) in report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip gov access-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip gov access-policy get <UUID>` with --output json against the requested UUID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+access-policy\s+get\s+["'']?00000000-0000-0000-0000-000000000001["'']?\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the current CLI namespace and avoids removed/legacy evaluate flag names"
+    path: "report.json"
+    includes:
+      - "uip gov access-policy get"
+    excludes:
+      - "uip admin access-policy"
+      - "--actor-identifier"
+      - "--executable-type"
+      - "--executable-identifier"
+      - "--resource-identifier"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure"
+    path: "report.json"
+    assertions:
+      - expression: "policy_id"
+        operator: equals
+        expected: "00000000-0000-0000-0000-000000000001"
+      - expression: "length(get_command)"
+        operator: gte
+        expected: 10
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 1
+    weight: 1.5
+    pass_threshold: 0.75

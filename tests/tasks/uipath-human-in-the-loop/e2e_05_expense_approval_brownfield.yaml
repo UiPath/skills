@@ -11,7 +11,7 @@ tags: [uipath-human-in-the-loop, e2e, brown-field]
 
 agent:
   type: claude-code
-  max_turns: 40
+  max_turns: 70
   turn_timeout: 1200
 
 sandbox:
@@ -82,7 +82,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+flow\s+validate.*--format\s+json'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -40,18 +40,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Agent identified an escalation pattern"
     path: "recommendation.json"
-    includes:
-      - "escalat"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "scalat"
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent proposed an insertion point after the AI classifier"
+  - type: json_check
+    description: "Agent proposed an insertion point after the AI classifier (case-tolerant)"
     path: "recommendation.json"
-    includes:
-      - "classif"
+    assertions:
+      - expression: "insertion_point"
+        operator: contains
+        expected: "lassif"
     weight: 1.0
     pass_threshold: 1.0

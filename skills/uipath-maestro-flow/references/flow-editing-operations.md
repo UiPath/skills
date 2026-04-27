@@ -33,7 +33,7 @@ Use this table to determine which strategy to follow for each operation. **Direc
 | Insert node between two existing nodes | **Direct JSON** | CLI (opt-in) | |
 | Insert a decision branch | **Direct JSON** | CLI (opt-in) | |
 | Remove a node and reconnect | **Direct JSON** | CLI (opt-in) | |
-| **Configure a connector node** | **CLI** (carve-out) | Direct JSON (fallback) | `uip flow node configure --detail` auto-populates `inputs.detail` + `bindings_v2.json`. |
+| **Configure a connector node** | **CLI** (carve-out) | Direct JSON (fallback) | `uip maestro flow node configure --detail` auto-populates `inputs.detail` + `bindings_v2.json`. |
 | **Configure a connector trigger** | **CLI** (carve-out) | Direct JSON (fallback) | Same as above. |
 | **Add an inline agent node** | **CLI** (carve-out) | — | Scaffolded via `uip agent init --inline-in-flow`. |
 
@@ -50,7 +50,7 @@ These apply regardless of which strategy you use.
 ### Definitions
 
 - Every unique `type:typeVersion` pair in `nodes` must have a matching entry in `definitions`
-- Definitions come from `uip flow registry get <NODE_TYPE> --output json` — copy the `Data.Node` object
+- Definitions come from `uip maestro flow registry get <NODE_TYPE> --output json` — copy the `Data.Node` object
 - **Never hand-write definitions** — hand-written definitions cause validation failures
 - One definition per unique type, not one per node instance
 
@@ -69,7 +69,7 @@ These apply regardless of which strategy you use.
 
 ### Validation
 
-- Run `uip flow validate <ProjectName>.flow --output json` **once** after all edits complete
+- Run `uip maestro flow validate <ProjectName>.flow --output json` **once** after all edits complete
 - Do not validate after each individual edit — intermediate states are expected to be invalid
 - Validation checks: JSON schema, definitions coverage, edge references, unique IDs
 - Validation does NOT check: connector configuration, connection health, expression correctness, required field completeness

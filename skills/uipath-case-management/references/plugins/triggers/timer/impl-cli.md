@@ -1,88 +1,71 @@
-# timer trigger — Implementation
+# timer trigger — CLI Implementation
+
+> **Authoritative strategy:** JSON. See [`impl-json.md`](impl-json.md). This file is the fallback path, kept for plugins still in migration transit or for debugging CLI parity.
 
 ## CLI Command
 
 ```bash
 uip maestro case triggers add-timer <file> \
-  --every "<duration>" \
-  --at "<iso-datetime>" \
-  --repeat <count> \
+  --time-cycle "<iso-8601-repeating-interval>" \
   --display-name "<display-name>" \
   --output json
 ```
 
-Or use a raw ISO 8601 repeating interval:
+Always use `--time-cycle` with the canonical `timeCycle` string from the `tasks.md` T-entry. The `--every` / `--at` / `--repeat` flags exist for human ergonomics at the shell; the skill's tasks.md format stores the already-composed ISO 8601 expression (see [`planning.md`](planning.md)), so we pass it through directly.
 
-```bash
-uip maestro case triggers add-timer <file> \
-  --time-cycle "<R/PT...>" \
-  --display-name "<display-name>" \
-  --output json
-```
-
-### Flag rules
-
-| Flag | Notes |
-|------|-------|
-| `--every <duration>` | Required unless `--time-cycle` is set |
-| `--at <iso>` | Optional start datetime |
-| `--repeat <n>` | Optional; omit for infinite |
-| `--time-cycle <expr>` | Overrides `--every`/`--at`/`--repeat` |
-
-## Example — Every hour, forever
+## Example
 
 ```bash
 uip maestro case triggers add-timer caseplan.json \
-  --every 1h \
-  --display-name "Hourly Poll" \
-  --output json
-```
-
-## Example — Every day at 9 AM UTC, for 30 days
-
-```bash
-uip maestro case triggers add-timer caseplan.json \
-  --every 1d \
-  --at 2026-04-26T09:00:00.000Z \
-  --repeat 30 \
-  --display-name "Daily 9 AM Check" \
-  --output json
-```
-
-## Example — Raw ISO 8601
-
-```bash
-uip maestro case triggers add-timer caseplan.json \
-  --time-cycle "R/PT1H" \
-  --display-name "Raw Hourly" \
+  --time-cycle "R12/2026-04-21T22:00:00.000-07:00/PT10M" \
+  --display-name "10-min Poll" \
   --output json
 ```
 
 ## Resulting JSON Shape
 
+CLI `triggers add-timer` always emits a **secondary** trigger — it does not modify or replace `trigger_1`. The `buildBaseTriggerNode` helper ([`cli/packages/case-tool/src/commands/triggers.ts`](https://github.com/UiPath/uipath-cli) `buildBaseTriggerNode`) generates the ID via `prefixedId("trigger_")` (prefix + 6 random chars from `[A-Za-z0-9]`) and computes the position from existing trigger count.
+
+Appended to `schema.nodes`:
+
 ```json
 {
-  "id": "trig0000002",
+  "id": "trigger_aB3kLp",
   "type": "case-management:Trigger",
-  "position": { "x": -100, "y": 480 },
+  "position": { "x": -100, "y": 140 },
+  "style": { "width": 96, "height": 96 },
+  "measured": { "width": 96, "height": 96 },
   "data": {
-    "label": "Hourly Poll",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "label": "10-min Poll",
     "uipath": {
       "serviceType": "Intsvc.TimerTrigger",
-      "timeCycle": "R/PT1H"
+      "timerType": "timeCycle",
+      "timeCycle": "R12/2026-04-21T22:00:00.000-07:00/PT10M"
     }
   }
 }
 ```
 
-`serviceType: "Intsvc.TimerTrigger"` marks this as a timer trigger. Duration fields (`--every`, `--at`, `--repeat`) are composed into a `timeCycle` ISO 8601 string.
+**ID format.** `trigger_` + 6 random chars from `[A-Za-z0-9]` (e.g. `trigger_aB3kLp`).
+
+**Position (auto-computed).**
+- `x`: fixed `-100`.
+- `y`: `200` when no existing triggers (`findTriggerNodes` returns length 0), else `max(existingTriggerY) + 140`. With the initial `trigger_1` already at `{x: 0, y: 0}` from `cases add`, the first secondary trigger lands at `y = 140`.
+
+**Dual-file write.** `triggers add-timer` updates both `caseplan.json` (pushes node to `schema.nodes`) and `entry-points.json` (appends an entry with a random `uniqueId` UUID, `filePath: /content/<basename>.bpmn#<triggerId>`, `type: "CaseManagement"`, empty `input`/`output` schemas, `displayName`). Both writes must succeed; `saveTrigger` exits with failure on `entry-points.json` error.
 
 ## Post-Add Validation
 
-Capture `TriggerId`. Use it as the `--source` when wiring an edge to the first stage.
+Capture `TriggerId` from `--output json`. Use it as the `--source` when wiring an edge to the first stage.
 
-Confirm:
-- `data.uipath.serviceType == "Intsvc.TimerTrigger"`
-- `data.uipath.timeCycle` non-empty and matches the intended schedule
+Confirm in `caseplan.json`:
+- New Trigger node appended to `schema.nodes` with `data.uipath.serviceType == "Intsvc.TimerTrigger"`
+- `data.uipath.timerType == "timeCycle"`
+- `data.uipath.timeCycle` matches the input `--time-cycle` string exactly
 
-The response includes a `TimeCycle` field — cross-check it against the sdd.md phrasing to catch translation errors.
+Confirm in `entry-points.json`:
+- A new `entryPoints[]` entry whose `filePath` embeds the new `TriggerId`
+- `displayName` matches the trigger's display name
+
+Cross-check the CLI response's `TimeCycle` field against the sdd.md schedule to catch translation errors in the planning phase.

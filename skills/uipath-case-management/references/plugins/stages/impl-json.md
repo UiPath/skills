@@ -119,15 +119,16 @@ Run `uip maestro case validate <file> --output json` after all stages for this p
 
 Direct-JSON-write is a superset of the CLI's `stages add`. The divergences below are deliberate — they fill gaps the CLI cannot express at stage creation time.
 
-- **`data.isRequired` is always emitted.** `stages add` has no `--is-required` flag, so the CLI omits the key entirely. The JSON recipe always writes `isRequired: <bool>` because downstream `required-stages-completed` logic needs an explicit value and there is no other CLI path to set it at creation time. The golden diff normalizes `isRequired: false` ↔ absent so equivalence still holds.
+- **`data.isRequired` is always emitted.** `stages add` has no `--is-required` flag, so the CLI omits the key entirely. The JSON recipe always writes `isRequired: <bool>` because downstream `required-stages-completed` logic needs an explicit value and there is no other CLI path to set it at creation time. A structural comparison normalizes `isRequired: false` ↔ absent so equivalence still holds.
 - **CLI `.unshift()`s new stages** so most-recent-added appears first in `schema.nodes`. Direct-JSON-write matches this ordering for byte-closer diffs. Both append and prepend are semantically valid for the frontend.
 
 ## Compatibility
 
-Captured against CLI version `0.1.21`. See [`docs/uipath-case-management/migration-fixtures/stages/`](../../../../../docs/uipath-case-management/migration-fixtures/stages/) for fixtures.
+Captured against CLI version `0.1.21`.
 
-- [x] **Golden diff:** normalized `json-write-output.json` matches `cli-output.json` after ID normalization — `docs/uipath-case-management/migration-fixtures/stages/diff.sh` passes
-- [x] **Validation parity:** both outputs produce the same set of 3 errors + 3 warnings from `uip maestro case validate` (the expected failure profile for a stages-only fragment with no edges/tasks)
-- [ ] **Downstream CLI mutation append:** `uip maestro case edges add --source <json-written-stage-id>` and `uip maestro case tasks add <file> <json-written-stage-id>` both succeed — not yet exercised (edges plugin not migrated)
-- [ ] **Round-trip:** CLI-written stage → direct-JSON-write adds a second stage → `uip maestro case validate` passes with only the expected failures — not yet exercised
-- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised
+- [x] **Structural equivalence:** direct-JSON-write produces a stage node set that matches the CLI's `stages add` output after ID normalization and the `isRequired: false` ↔ absent normalization.
+- [x] **Validation parity:** both outputs produce the same set of 3 errors + 3 warnings from `uip maestro case validate` (the expected failure profile for a stages-only fragment with no edges/tasks).
+- [x] **Downstream direct-JSON-write append:** direct-JSON-write edges can target JSON-written stage IDs (proven by the edges plugin sharing this recipe).
+- [ ] **Downstream CLI mutation append:** `uip maestro case edges add --source <json-written-stage-id>` and `uip maestro case tasks add <file> <json-written-stage-id>` both succeed — not yet exercised against the installed binary.
+- [ ] **Round-trip:** CLI-written stage → direct-JSON-write adds a second stage → `uip maestro case validate` passes with only the expected failures — not yet exercised.
+- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

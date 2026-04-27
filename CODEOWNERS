@@ -10,6 +10,9 @@
 # Plugin agents
 /agents/ @RaduAna-Maria
 
+# Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
+/commands/ @DragosUnguru @tmatup
+
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
@@ -27,6 +30,9 @@
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
+
+# Solution Design skill
+/skills/uipath-solution-design/ @RaduAna-Maria
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
@@ -52,9 +58,15 @@
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
+# AOps Governance skill
+/skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
 # Test skill (reports, manual test automation, manual test execution)
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath
 
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath
 /tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath
+
+# Access Policy Governance skill (CLI-based ToolUsePolicy management)
+/skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2

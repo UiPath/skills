@@ -1,0 +1,106 @@
+task_id: skill-flow-hitl-smoke-multi-outcome-routing
+description: >
+  Smoke test: agent builds a flow where a Decision node reads the HITL
+  reviewer's boolean field and routes to two separate downstream branches.
+  Verifies both true and false edges of the Decision node are wired.
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 20
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "LeaveRequest" with this structure:
+
+  1. Manual trigger
+  2. HITL node — manager reviews leave request:
+       - Reviewer sees (read-only): employee name, number of days
+       - Reviewer fills in: approved (boolean)
+       - Outcomes: Approve (primary), Reject
+  3. Decision node — branches on the reviewer's approved field from the HITL result
+  4. true branch  → Script node that logs "Leave approved" → End
+  5. false branch → Script node that logs "Leave rejected" → End
+
+  Use the inline quickform HITL node (uipath.human-in-the-loop).
+  Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
+
+  The Decision node condition must reference the HITL result using the
+  correct runtime variable path ($vars.<nodeId>.result.<fieldName>).
+
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "decision_node_id": "<id of the Decision node>",
+    "decision_expression": "<full expression used, e.g. $vars.hitl1.result.approved>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes"
+    command: "uip maestro flow validate LeaveRequest/LeaveRequest/LeaveRequest.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains inline HITL node"
+    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains a Decision node"
+    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
+    includes:
+      - '"core.logic.decision"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Decision node references HITL result variable"
+    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
+    includes:
+      - "$vars."
+      - ".result"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Both Decision branches are wired (true and false handles present)"
+    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
+    includes:
+      - '"true"'
+      - '"false"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures node IDs and decision expression"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "hitl_node_id"
+        operator: not_equals
+        expected: ""
+      - expression: "decision_node_id"
+        operator: not_equals
+        expected: ""
+      - expression: "decision_expression"
+        operator: contains
+        expected: "$vars."
+    weight: 2.0
+    pass_threshold: 0.75

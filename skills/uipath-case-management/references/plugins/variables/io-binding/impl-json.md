@@ -1,5 +1,7 @@
 # I/O Binding — Implementation
 
+> **Phase split.** Phase 2b only (Step 9.8). Phase 2a writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+
 Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
 
 ## Task Input Shape
@@ -43,7 +45,8 @@ For each task input in `tasks.md`:
 2. Find output by `name` in `task.data.outputs[]`, read its `var` field
 3. Write `=vars.<var>` to target input's `value`
 
-```python
+```text
+# pseudocode — not executed. Realize via Read → reason → Write/Edit.
 src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
@@ -58,7 +61,7 @@ Connector inputs are set at creation time via `--input-values`, not post-creatio
 --input-values '{"body":{"email":"=vars.employeeEmail","caseRef":"=metadata.ExternalId"}}'
 ```
 
-Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-cli.md](../../../plugins/tasks/connector-activity/impl-cli.md).
+Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-json.md](../../../plugins/tasks/connector-activity/impl-json.md).
 
 ## End-to-End: Task A Output → Task B Input
 
@@ -94,9 +97,10 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | `=vars.X` not in `inputs[]`/`outputs[]`/`inputOutputs[]` | `ERROR` | Skip binding |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
-Example log entry:
+Example log entry (pseudocode — record in-reasoning, not via subprocess):
 
-```python
+```text
+# pseudocode — not executed
 issues.append({"severity": "ERROR", "step": "9", "plugin": "io-binding",
     "message": f'input "{name}" not found on task "{task}" — available: {available}',
     "context": {"task": task, "stage": stage, "input": name, "available": available}})

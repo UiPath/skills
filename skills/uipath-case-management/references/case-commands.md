@@ -19,7 +19,9 @@ uip maestro case init my-case-project --force
 | `<name>` | **(required)** Project name (letters, numbers, `_`, `-` only) |
 | `--force` | Overwrite existing directory (does not clear existing files) |
 
-Creates: `<name>/project.uiproj`, `<name>/content/operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`, and a starter `.bpmn` file.
+Creates 5 files flat under `<name>/` (no `content/` subdirectory on disk): `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`. No `.bpmn` is emitted at init time — downstream tooling (`validate` / `pack` / `publish`) generates `caseplan.json.bpmn` later. The `content/` prefix in `package-descriptor.json.files` describes the packed `.nupkg` layout, not the on-disk layout.
+
+> **Note.** The `case` plugin is on the JSON strategy per [case-editing-operations.md](case-editing-operations.md) — in the primary path, the skill writes these 5 files directly without invoking `uip maestro case init`. This command is the CLI fallback path; see [plugins/case/impl-json.md § Scaffold](plugins/case/impl-json.md) for the direct-write recipe.
 
 ---
 
@@ -621,7 +623,7 @@ Options for `add`:
 | `<stage-id>` | **(required)** ID of the stage node |
 | `<task-id>` | **(required)** ID of the task |
 | `-d, --display-name <name>` | Display name for the condition |
-| `--rule-type <type>` | Initial rule type: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc` |
+| `--rule-type <type>` | Initial rule type: `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `adhoc`, `runs-sequentially` |
 | `--condition-expression <expr>` | Condition expression for the initial rule |
 | `--selected-tasks-ids <ids>` | Comma-separated task IDs. **Required** when `--rule-type` is `selected-tasks-completed` |
 

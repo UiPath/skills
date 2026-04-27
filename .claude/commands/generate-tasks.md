@@ -46,7 +46,55 @@ For each gap, design a task:
 | Multi-step workflow with error handling, cross-component integration | integration |
 | Full build -> validate -> run lifecycle, artifact correctness | e2e |
 
-### 2b. Choose task_id
+### 2b. Choose tags
+
+Every generated task must carry tags from the **Tag Taxonomy** documented in [`tests/README.md`](../../tests/README.md#tag-taxonomy). The tags aren't decoration — they drive `make tags`, `/skill-compare`, and coverage slicing. Assemble the `tags:` list by picking one value per applicable dimension:
+
+| Dimension | Pick | Notes |
+|---|---|---|
+| **skill** (required, flat) | `uipath-<name>` | Must match the target skill folder. Always first. |
+| **tier** (required, flat) | `smoke`, `integration`, `e2e` | Always second. From Phase 2a. |
+| **lifecycle** (required, `lifecycle:X`) | `generate`, `edit`, `validate`, `discover`, `activate`, `execute`, `deploy` | What the agent is asked to do. Most smoke tests are `lifecycle:validate` or `lifecycle:discover`; most e2e are `lifecycle:generate` or `lifecycle:edit`; `lifecycle:execute` applies when the task actually runs the built artifact. |
+| **shape** (`shape:X`, on flow-building tests) | `single-node`, `multi-node` | Omit for smoke tests that don't build a flow. Use intent (test focus) not node count when borderline. |
+| **node** (`node:X`, repeatable) | `decision`, `switch`, `subflow`, `terminate`, `loop`, `transform`, `hitl` | Node type(s) under test. Omit `script`/`http` — too ubiquitous. Do not tag incidental/plumbing nodes. |
+| **resource** (flat, present iff applicable) | `resource` | Boolean marker for tasks that exercise any resource-node type (coded-agent / lowcode-agent / api-workflow / rpa). The specific resource is identifiable from the file path / `task_id`. |
+| **connector** (flat, present iff applicable) | `connector` | Boolean marker for tasks that use any IS connector. The specific connector is in the YAML body / file path. |
+| **feature** (`feature:X`, repeatable) | `http`, `trigger`, `registry`, `transform`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks` | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary — do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature`. If none fit, flag in Phase 4 summary for taxonomy extension. |
+
+**Selection rules:**
+1. **Always include `skill` + `tier` + `lifecycle:*`.** These drive `make` targets, coverage reports, and evalboard drilldown.
+2. **Pick the most specific `lifecycle` that fits.** If the task both generates and validates (common), use `lifecycle:generate` — validation is implicit in success criteria.
+3. **`node:` and `feature:` are repeatable.** A flow exercising decision and switch nodes gets both `node:decision` and `node:switch`.
+4. **`connector` and `resource` are flat boolean markers**, not enumerations. Use them once per task; the specific connector/resource is identifiable from the file path / `task_id`.
+5. **Do not tag incidental / plumbing nodes.** If every test in a category adds a Decision node purely to gate success/failure, do not tag `node:decision` — it pollutes drilldowns. Only tag when the node type is the point.
+6. **Do not repeat the skill name as a feature tag.** Don't tag `uipath-agents` tasks with `feature:agent`.
+7. **Order tags consistently:** `[skill, tier, lifecycle:X, shape:X, node:..., resource, connector, feature:...]`. Makes grep/review easier.
+
+**Worked examples:**
+
+```yaml
+# Green-field flow authoring that hits HITL + approval-gate + write-back
+tags: [uipath-human-in-the-loop, e2e, lifecycle:generate, shape:multi-node, node:hitl, feature:approval-gate, feature:write-back]
+
+# Smoke test that lists IS connector activities
+tags: [uipath-platform, smoke, lifecycle:discover, feature:activities]
+
+# E2E Data Fabric CRUD cycle on a live tenant
+tags: [uipath-data-fabric, e2e, lifecycle:execute, feature:entities, feature:records]
+
+# Brown-field RPA test case authored on an existing project
+tags: [uipath-rpa, integration, lifecycle:edit, feature:test-case]
+
+# Smoke test that exercises the Flow node registry
+tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
+
+# Flow using a connector + HTTP, decision-node under test
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
+```
+
+Before writing the YAML, verify the assembled tag list against `grep -r "^tags:" tests/tasks/` output to confirm the combination isn't obviously wrong (e.g. `lifecycle:generate` on a smoke test that doesn't create a project).
+
+### 2c. Choose task_id
 
 Convention: `skill-<domain>-<capability>`
 
@@ -58,7 +106,7 @@ Domain mapping:
 | uipath-platform | platform |
 | uipath-agents | agent |
 | uipath-rpa | rpa |
-| uipath-servo | servo |
+| uipath-interact | interact |
 | uipath-coded-apps | codedapp |
 | uipath-diagnostics | diagnostics |
 | uipath-feedback | feedback |
@@ -70,7 +118,7 @@ If a skill is not listed, derive `<domain>` by stripping the `uipath-` prefix an
 
 Verify the chosen `task_id` does not appear in any existing task YAML (collected in Phase 1 step 5).
 
-### 2c. Write initial_prompt
+### 2d. Write initial_prompt
 
 General principles:
 1. Describe the GOAL, not the steps — the skill teaches the steps, and that is what we are testing.
@@ -79,7 +127,7 @@ General principles:
 
 **Learn the prompt style from existing tests.** Read all existing task YAMLs for the skill (and for other skills if this skill has none yet) to pick up the conventions currently in use — what instructions are included, how skill loading is handled, what constraints are specified. Mirror those conventions in the generated prompts rather than inventing new patterns.
 
-### 2d. Design success criteria
+### 2e. Design success criteria
 
 **Learn from existing tests.** Read the criteria patterns used in existing task YAMLs (collected in Phase 1 step 5–6) and use the same criterion types, weight scales, and threshold values for the same tier of test.
 
@@ -97,7 +145,7 @@ Operators for `json_check` assertions: `equals`, `gte`, `lte`, `gt`, `lt`, `cont
 
 **Criteria must be verifiable.** Only assert on things that can actually be checked in the sandbox. Do not assert on cloud-dependent state if the test is local-only. Do not use `command_executed` for commands the agent might not need to run.
 
-### 2e. Configure agent and sandbox
+### 2f. Configure agent and sandbox
 
 **Learn from existing tests.** Read the experiment configs and existing task YAMLs to determine what needs to be specified vs. what can be inherited. Only include `agent:` and `max_iterations` fields when they differ from the experiment defaults for the chosen test type.
 
@@ -197,7 +245,7 @@ For skills without a common artifact format, keep check scripts self-contained. 
 For each generated YAML file:
 1. Read the file back and verify the YAML structure is correct (proper indentation, no unescaped colons in values, matching quotes). If `pyyaml` is available, run `python3 -c "import yaml; yaml.safe_load(open('<path>'))"` as an additional check.
 2. Verify `task_id` is unique across all existing task YAMLs in the repo.
-3. Verify `tags` array includes the skill name as first element and test type as second.
+3. Verify `tags` array conforms to the Tag Taxonomy: skill name first, tier (`smoke`/`integration`/`e2e`) second, followed by optional `lifecycle`, `scenario`, and `feature` values drawn from the closed vocabularies in Phase 2b. Any tag outside those sets must be flagged in the summary, not silently emitted.
 4. Verify `sandbox.driver` is set to `tempdir`.
 5. Verify file paths in `success_criteria` are consistent with what `initial_prompt` asks the agent to create.
 6. For check scripts: verify they are syntactically valid Python (`python3 -c "import py_compile; py_compile.compile('<path>', doraise=True)"`).
@@ -225,10 +273,11 @@ Infrastructure notes:
 
 1. **Read the skill thoroughly.** Every SKILL.md, every reference file. Generated prompts must use correct CLI commands, flags, project structures, and naming conventions from the skill.
 2. **Follow existing test patterns.** Read existing task YAMLs (both for the target skill and other skills) to learn current conventions for agent config, prompt style, and criteria patterns. Mirror those conventions rather than hardcoding assumptions that may become stale.
+3. **Honor the Tag Taxonomy.** Emitted `tags:` must draw from the closed vocabularies in [`tests/README.md`](../../tests/README.md#tag-taxonomy). Never invent new feature tags inline — if no existing value fits, omit the feature dimension and raise it in the Phase 4b summary so the taxonomy can be extended deliberately.
 3. **Minimal prompts.** Describe goals, not steps. The skill teaches the steps — that is what we are testing.
 4. **Realistic criteria.** Only assert on things that can actually be checked in the sandbox. Do not assert on cloud state if the test runs locally. Do not use `command_executed` for commands the agent might not need to run.
 5. **No duplicate task_ids.** Check all existing YAMLs across all skills before generating.
-6. **Respect infrastructure limits.** Note what each generated test requires (cloud auth, Windows, Servo CLI, etc.). Prefer local-only tests when possible — they are cheaper and can run in CI.
+6. **Respect infrastructure limits.** Note what each generated test requires (cloud auth, Windows, etc.). Prefer local-only tests when possible — they are cheaper and can run in CI.
 7. **Generate 2–5 tasks per invocation by default.** Focus on highest coverage impact from the gap analysis. The user can run the command again for more. Always generate at least 1 smoke + 1 e2e if the skill has zero tests (minimum bar from CONTRIBUTING.md).
 8. **Lean on coverage reports.** If `tests/reports/<skill>.md` exists, use its prioritized gap list directly rather than re-analyzing the skill from scratch.
 9. **Do not invent CLI commands.** Every `command_pattern` regex and `command` string must come from the skill's documentation. If unsure whether a command exists, read the skill's references to verify.

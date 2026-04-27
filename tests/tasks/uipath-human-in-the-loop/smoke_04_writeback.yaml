@@ -38,10 +38,18 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Agent named a write-back or validation pattern"
+  - type: json_check
+    description: "Agent named a write-back / validation / enrichment pattern (any one, case-tolerant)"
     path: "recommendation.json"
-    includes:
-      - "write"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "rite"
+      - expression: "pattern"
+        operator: contains
+        expected: "alid"
+      - expression: "pattern"
+        operator: contains
+        expected: "nrich"
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.33

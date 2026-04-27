@@ -61,21 +61,26 @@ If you encounter auth errors (401, 403, "not authenticated") during any phase, p
 ### For XAML Projects
 
 ```bash
-uip rpa new \
+uip rpa create-project \
   --name "MyAutomation" \
   --location "/path/to/parent/directory" \
   --template-id "BlankTemplate" \
   --expression-language "VisualBasic" \
   --target-framework "Windows" \
   --description "Automates invoice processing" \
-  --output json```
+  --studio-dir "<STUDIO_DIR>" \
+  --output json
+```
 
 **Expression language for XAML projects:** Prefer `VisualBasic` for Windows target framework projects.
+
+**`--studio-dir`:** Pass the Studio installation directory explicitly (e.g. `C:\Program Files\UiPathPlatform\Studio\<version>`) if the CLI fails to resolve it from the registry. Resolve it once per session and reuse for every subsequent `uip rpa` command.
 
 ### For Coded Projects
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json
+```
 
 Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
 
@@ -90,7 +95,7 @@ Use `--template-id TestAutomationProjectTemplate` for test projects, or `--templ
 | `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
 | `--description` | Any string | (none) | Project description in project.json |
 
-**Note:** `uip rpa new` / `uip rpa create-project` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+**Note:** `uip rpa create-project` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
 
 ### From a NuGet Template Package
 
@@ -127,12 +132,14 @@ Does not require a project to be open. Returns a JSON array of `TemplateSearchRe
 **2. Create from the chosen template:**
 
 ```bash
-uip rpa new \
+uip rpa create-project \
   --name "MySAPAutomation" \
   --location "/path/to/parent/directory" \
   --template-package-id "<PACKAGE_ID>" \
   --template-package-version "<VERSION>" \
-  --output json```
+  --studio-dir "<STUDIO_DIR>" \
+  --output json
+```
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|

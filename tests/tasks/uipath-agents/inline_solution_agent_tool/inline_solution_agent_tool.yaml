@@ -1,0 +1,107 @@
+task_id: skill-agent-inline-solution-agent-tool
+description: >
+  Add agent tool (inline agent, solution resource). End-to-end test:
+  scaffold a flow project with an inline low-code agent that calls
+  another agent living inside the same solution as a separate
+  project. Verifies the tool resource.json under the inline agent's
+  UUID subdirectory uses `type: "agent"`, `location: "solution"`,
+  `folderPath: "solution_folder"`, and that a
+  `uipath.agent.resource.tool.agent.<process-key>` flow node is wired
+  to the autonomous agent node's `tool` handle.
+tags: [uipath-agents, e2e, low-code, inline-flow]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "OrchestratorFlowSol" containing a flow
+  project "OrchestratorFlow" and a low-code agent "ToolAgent" that
+  echoes back any string it receives. The flow should use an inline
+  low-code agent that delegates to "ToolAgent" as a tool.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent linked the project to the solution with uip solution project add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+project\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a flow node"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "OrchestratorFlowSol/OrchestratorFlow/OrchestratorFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow project descriptor was created"
+    path: "OrchestratorFlowSol/OrchestratorFlow/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ToolAgent/agent.json was created"
+    path: "OrchestratorFlowSol/ToolAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline solution agent tool: resource.json shape + flow node (tool.agent.*) + tool-handle edge"
+    command: "python3 $TASK_DIR/check_inline_solution_agent_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

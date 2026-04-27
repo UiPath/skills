@@ -2,21 +2,23 @@
 
 Unified issue log for the implementation phase. Initialized by `implementation.md`, written to by any plugin, dumped to markdown after build.
 
+> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent holds the issue list in its own reasoning during a run and emits `tasks/build-issues.md` with the Write tool at dump time. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations-json.md § Tool usage`](../../case-editing-operations-json.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
+
 ## Setup
 
-Initialize before Step 6:
+Initialize the in-reasoning issue list before Step 6:
 
-```python
-issues = []
+```text
+issues = []   # pseudocode — kept in the agent's reasoning, not on disk
 ```
 
 ## Entry Format
 
-```python
-issues.append({
-    "severity": "ERROR",       # "ERROR" | "WARNING" | "SKIPPED"
-    "step": "9",               # implementation step number
-    "plugin": "io-binding",    # plugin name — used for grouping in the output file
+```text
+issues.append({                 # pseudocode — not executed
+    "severity": "ERROR",        # "ERROR" | "WARNING" | "SKIPPED"
+    "step": "9",                # implementation step number
+    "plugin": "io-binding",     # plugin name — used for grouping in the output file
     "message": "human-readable description"
 })
 ```

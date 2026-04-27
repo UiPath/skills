@@ -26,7 +26,7 @@ The XAML attribute parser defaults to VB for expression-bearing attribute values
 | `Assign` | `Value` | `InArgument<T>` | Child element `<Assign.Value>` with `<InArgument>` + `<CSharpValue>` |
 | `If` | `Condition` | `InArgument<Boolean>` | Child element with `<CSharpValue x:TypeArguments="x:Boolean">` |
 | `uix:NTypeInto` | `Text` | `InArgument<String>` | Attribute for literals; child element for variables |
-| `uix:NTypeInto` | `Target` | `TargetAnchorable` | Child element `<uix:NTypeInto.Target>` — see [uia-target-attachment-guide.md](../uia-target-attachment-guide.md) |
+| `uix:NTypeInto` | `Target` | `TargetAnchorable` | Child element `<uix:NTypeInto.Target>` — see `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` |
 | `uix:NClick` | `Target` | `TargetAnchorable` | Child element `<uix:NClick.Target>` |
 | `uix:NClick` | `ClickType` | enum | Attribute: `ClickType="Single"` |
 | `uix:NClick` | `MouseButton` | enum | Attribute: `MouseButton="Left"` |

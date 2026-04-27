@@ -1,0 +1,117 @@
+task_id: skill-flow-hitl-quality-schema-design
+description: >
+  Quality test: agent correctly maps a business description to a quickform
+  schema — right field directions (input/output/inOut), correct outcomes,
+  and priority. Tests C1 (field design) and C2 (outcome design).
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 25
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "VendorPOReview" for purchase order review:
+
+  - A manual trigger starts the flow
+  - A script node fetches PO data (mock it — just set variables)
+  - A HITL node lets the procurement officer review the PO:
+      - They can SEE (read-only): PO number, vendor name, total amount
+      - They must FILL IN: their decision (Approve/Reject) and optional notes
+      - They click: Approve (primary) or Reject
+  - A decision node routes on the officer's decision:
+      - Approve → Script node that logs "PO approved"
+      - Reject  → End node
+
+  Use the inline quickform node (uipath.human-in-the-loop).
+  Set priority to High.
+  Wire completed → decision node.
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "schema": {
+      "input_fields":  ["<names of read-only fields>"],
+      "output_fields": ["<names of fields the officer fills in>"],
+      "outcomes":      ["<outcome names>"]
+    },
+    "priority": "<priority set>",
+    "result_variable": "<how the decision node reads the officer's decision>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate VendorPOReview/VendorPOReview/VendorPOReview.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node has input-direction fields (read-only context for reviewer)"
+    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
+    includes:
+      - '"direction": "input"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node has output-direction fields (reviewer fills in)"
+    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
+    includes:
+      - '"direction": "output"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow has Approve and Reject outcomes"
+    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
+    includes:
+      - "Approve"
+      - "Reject"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Priority is set to High"
+    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
+    includes:
+      - '"High"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "result_variable references $vars.<nodeId>.result"
+    path: "report.json"
+    includes:
+      - "$vars."
+      - ".result"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Schema has at least 2 input fields, at least 1 output field, 2 outcomes"
+    path: "report.json"
+    assertions:
+      - expression: "length(schema.input_fields)"
+        operator: gte
+        expected: 2
+      - expression: "length(schema.output_fields)"
+        operator: gte
+        expected: 1
+      - expression: "length(schema.outcomes)"
+        operator: gte
+        expected: 2
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 2.5
+    pass_threshold: 0.75

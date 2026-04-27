@@ -1,4 +1,6 @@
-# task-entry-conditions — Implementation
+# task-entry-conditions — Implementation (CLI)
+
+> Direct-JSON alternative: [`impl-json.md`](impl-json.md).
 
 ## CLI Command
 
@@ -19,6 +21,7 @@ uip maestro case task-entry-conditions add <file> <stage-id> <task-id> \
 | `selected-tasks-completed` | `--selected-tasks-ids "<comma-separated task IDs>"` |
 | `wait-for-connector` | `--condition-expression` |
 | `adhoc` | `--condition-expression` |
+| `runs-sequentially` | `--condition-expression` |
 
 ## Translation from tasks.md
 
