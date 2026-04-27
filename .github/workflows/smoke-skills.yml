@@ -178,20 +178,16 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      # All @uipath/* npm packages come from GitHub Packages (where the
-      # UiPath CLI line is published), not public npm.
-      - name: Configure npm for GitHub Packages (@uipath)
-        env:
-          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+      # Install from public npm at @latest. `--@uipath:registry=`
+      # forces the @uipath scope to public npm regardless of any
+      # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
+      # feed, which carries divergent 1.0.0-alpha.* prereleases). See
+      # smoke-rpa-skills.yml for the full rationale.
+      - name: Install uip CLI (public npm @latest)
         run: |
-          cat > ~/.npmrc <<NPMRC
-          @uipath:registry=https://npm.pkg.github.com
-          //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
-          NPMRC
-
-      - name: Install uip CLI from GitHub Packages
-        run: |
-          npm install -g @uipath/cli@latest
+          npm install -g \
+            --@uipath:registry=https://registry.npmjs.org/ \
+            @uipath/cli@latest
           uip --version
 
       # Pre-auth uip via the CLI's documented env-var bypass so non-RPA

@@ -107,33 +107,23 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # All @uipath/* npm packages come from GitHub Packages, not
-      # public npm. Configure the registry globally so `npm install -g`
-      # and uipcli's own `uip tools install` auto-install both route
-      # through GH Packages.
-      - name: Configure npm for GitHub Packages (@uipath)
-        shell: bash
-        env:
-          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
-        run: |
-          cat > ~/.npmrc <<NPMRC
-          @uipath:registry=https://npm.pkg.github.com
-          //npm.pkg.github.com/:_authToken=$GH_NPM_REGISTRY_TOKEN
-          NPMRC
-
-      # Install the CLI + RPA tools from GitHub Packages at the
-      # `latest` dist-tag. Each package follows its own version line
-      # (cli → 1.0.x, rpa-tool → 0.9.x, rpa-legacy-tool → 1.0.x), so
-      # `@latest` is simpler and more resilient than pinning a
-      # specific major.minor. `npm install -g` lands everything under
-      # `<npm-global-prefix>/@uipath/` — exactly where uipcli's
-      # ToolManager walks up to discover tools — so `uip rpa …` /
-      # `uip rpa-legacy …` work without triggering auto-install.
-      - name: Install uip CLI + RPA tools from GitHub Packages
+      # Install from public npm at @latest. The `--@uipath:registry=`
+      # flag forces the @uipath scope to public npm even if some
+      # `.npmrc` (runner image, user-level, or future setup-node config)
+      # maps it elsewhere — notably the internal GitHub Packages feed,
+      # which carries divergent 1.0.0-alpha.* prereleases under the
+      # same scope. Plain `--registry=` does NOT bypass scope mappings;
+      # only the scope-specific override does. `npm install -g` lands
+      # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
+      # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
+      # without triggering auto-install.
+      - name: Install uip CLI + RPA tools (public npm @latest)
         shell: bash
         run: |
           set -e
-          npm install -g @uipath/cli@latest @uipath/rpa-tool@latest @uipath/rpa-legacy-tool@latest
+          npm install -g \
+            --@uipath:registry=https://registry.npmjs.org/ \
+            @uipath/cli@latest @uipath/rpa-tool@latest @uipath/rpa-legacy-tool@latest
           uip --version
           uip tools list --output json
 
