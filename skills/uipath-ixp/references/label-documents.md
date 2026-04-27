@@ -27,7 +27,7 @@ Fetch IXP's model predictions for all documents:
 uip ixp labelling predictions <project-name> --output json
 ```
 
-This returns each document's `CommentUid` with predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
+This returns each document's `DocumentId` with predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
 
 ## Step 3 — Download Images and OCR Text
 
@@ -37,13 +37,13 @@ For each document that has predictions, get the image and OCR text:
 - **Otherwise, download** each document image:
 
 ```bash
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/<project-name>/docs/doc_1.png --output json
+uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/doc_1.png --output json
 ```
 
 **Always fetch the OCR text** (unless already saved from a previous session):
 
 ```bash
-uip ixp document text <project-name> <comment-uid> --output json
+uip ixp document text <project-name> <document-id> --output json
 ```
 
 Save OCR output to `/tmp/ixp/<project-name>/text/doc_1.json`. Use unique filenames per document (e.g., `doc_1`, `doc_2`). These files persist across sessions — check for existing files before downloading.
@@ -60,7 +60,7 @@ For each document, use the **Read tool** to view the image, then review each pre
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
-Document: <comment-uid>
+Document: <document-id>
 
 Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
@@ -85,7 +85,7 @@ For each document, submit confirmed and corrected fields together.
 **If there are corrections:**
 
 ```bash
-uip ixp labelling confirm <project-name> <comment-uid> \
+uip ixp labelling confirm <project-name> <document-id> \
   --fields "<all_confirmed_and_corrected_ids>" \
   --corrections '[{"field_id":"<id>","value":"<corrected_value>"}]' \
   --output json
@@ -96,14 +96,14 @@ The `--fields` list includes both CONFIRMED and CORRECTED field IDs. The `--corr
 **If there are no corrections (all approved fields are exact matches):**
 
 ```bash
-uip ixp labelling confirm <project-name> <comment-uid> \
+uip ixp labelling confirm <project-name> <document-id> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" --output json
 ```
 
 If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm everything:
 
 ```bash
-uip ixp labelling confirm <project-name> <comment-uid> --output json
+uip ixp labelling confirm <project-name> <document-id> --output json
 ```
 
 Submit confirmations in **serial** — do not parallelize.

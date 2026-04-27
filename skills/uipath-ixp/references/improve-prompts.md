@@ -88,8 +88,8 @@ The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what
 uip ixp document list <project-name> --output json
 
 # For each sample document:
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/<project-name>/docs/sample.png --output json
-uip ixp document text <project-name> <comment-uid> --output json
+uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
+uip ixp document text <project-name> <document-id> --output json
 ```
 
 Save OCR output to `/tmp/ixp/<project-name>/text/sample.json`. View the images with the **Read tool** and review the OCR text. These files persist across sessions — check for existing files before downloading.
@@ -150,7 +150,7 @@ For each field marked REFINE, rewrite its moon_form field `instructions`:
 **Rules** (see also "Instruction Quality Standards" in the main skill):
 
 1. NEVER reference specific page numbers — use section headings or labels
-2. Each instruction must be **120+ characters** with location hint, format pattern, and real example from the documents
+2. Each instruction must be **120+ characters** with location hint and real example from the documents. Do NOT specify format — the entity_def type handles that
 3. For fields visible in the sample documents, use the real data you observed (location, label on page, format, example value)
 4. For fields NOT visible in the sample documents, use a generic instruction with no example
 5. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")

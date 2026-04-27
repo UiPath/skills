@@ -42,7 +42,7 @@ Before labelling, configure the extraction model based on what the documents loo
 
 ```bash
 uip ixp document list <project-name> --output json
-uip ixp document get <project-name> <comment-uid> -o /tmp/ixp/<project-name>/docs/sample.png --output json
+uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
 ```
 
 View with the **Read tool**, then decide:
