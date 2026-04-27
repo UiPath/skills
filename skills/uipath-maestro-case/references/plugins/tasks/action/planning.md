@@ -54,7 +54,7 @@ Mark `<UNRESOLVED: action-app "<deploymentTitle>" in folder "<folder>" not found
   - Group / role name → omit recipient; record a note in `tasks.md` reminding the user to configure group assignment externally.
   - `Skip` or empty → omit recipient.
 
-This follows Critical Rule #19 — for open-ended inputs like an email address, use a direct prompt rather than AskUserQuestion with a finite option list.
+For open-ended inputs like an email address, use a direct prompt rather than AskUserQuestion with a finite option list.
 
 ## tasks.md Entry Format
 
