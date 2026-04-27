@@ -56,7 +56,12 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
 
-The CLI delivers the compiled CEQL to the runtime via **`queryParameters.where`** on the activity detail — the IS connector reads the `where` query parameter when executing list/query operations. Pass `filter` (the structured tree) and the CLI populates `queryParameters.where` for you; passing both `filter` and `queryParameters.where` is rejected at validation time.
+The CLI persists both halves of the contract from a single `filter` input:
+
+- **Runtime side** — the compiled CEQL string lands at `inputs.detail.queryParameters.where`. The IS connector reads `queryParameters.where` when executing List All Records and similar list/query operations.
+- **Design-time side** — the structured tree is embedded under `inputs.detail.configuration`'s `essentialConfiguration.savedFilterTrees.where`. Studio Web reads this on open to re-render the filter widget; without it the filter UI shows up empty even though the runtime call still works.
+
+Pass `filter` (the structured tree) and the CLI emits both halves in lockstep. Passing both `filter` and `queryParameters.where` is rejected at validation time — single source of truth.
 
 ### Tree shape
 
