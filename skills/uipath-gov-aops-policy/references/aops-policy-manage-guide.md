@@ -61,10 +61,10 @@ After bootstrap completes, choose the product using the matrix below:
 
 #### Case A — user named the product
 
-1. Match the user's phrase case-insensitively against `.product.label` or `.product.name` across `$SESSION_DIR/products/*/form-template.json` (use the `Glob` tool, then `Read` each `.product`). Call the matched entry the **chosen product**.
+1. Match the user's phrase case-insensitively against `.product.label` or `.product.name` across every `$SESSION_DIR/products/*/form-template.json` file. Call the matched entry the **chosen product**.
 2. Extract **intent keywords** from the user's prompt (e.g. "Gemini", "feedback", "region", "default action").
-3. Use the **`Grep` tool** (Claude's built-in — NOT `Bash(grep …)`, which prompts for permission every call) to search `$SESSION_DIR/products/<CHOSEN>/form-template-locale-resource.json` for fields whose `label` or `description` matches any intent keyword. Set `glob` to the specific file path, `-i: true`, `output_mode: "content"`.
-4. Use the **`Grep` tool** again across `$SESSION_DIR/products/*/form-template-locale-resource.json` to find the same keywords in every other product's locale resource.
+3. Search `$SESSION_DIR/products/<CHOSEN>/form-template-locale-resource.json` case-insensitively for fields whose `label` or `description` matches any intent keyword.
+4. Search every `$SESSION_DIR/products/*/form-template-locale-resource.json` file for the same keywords so you can detect whether another product fits the intent better.
 5. Decide:
    - Chosen product matches the intent (or the user gave no specific intent) → proceed silently. Store the chosen product's `name` as `$PRODUCT_NAME`.
    - Another product matches and the chosen product does not → ask:
@@ -77,7 +77,7 @@ After bootstrap completes, choose the product using the matrix below:
 
 #### Case B — user did not name a product
 
-1. If the user's prompt contains intent keywords, use the **`Grep` tool** across `$SESSION_DIR/products/*/form-template-locale-resource.json` with `-i: true` and `output_mode: "count"` to rank every product by how many keywords match. Show the top 3 with a short reason:
+1. If the user's prompt contains intent keywords, search every `$SESSION_DIR/products/*/form-template-locale-resource.json` file case-insensitively and rank every product by how many keywords match. Show the top 3 with a short reason:
    ```text
    Best matches for your request:
       1. AI Trust Layer        (name: AITrustLayer)    — matched: "Gemini", "Claude"
@@ -85,7 +85,7 @@ After bootstrap completes, choose the product using the matrix below:
       3. StudioX               (name: Business)        — no direct match
    Which product would you like to create a policy for? (1-3, or ask to see all)
    ```
-2. If there are no intent keywords, enumerate products via `Glob` on `$SESSION_DIR/products/*/form-template.json` and `Read` `.product.{name,label}` from each. Display only `label` and `name`:
+2. If there are no intent keywords, enumerate `$SESSION_DIR/products/*/form-template.json` and read `.product.{name,label}` from each. Display only `label` and `name`:
    ```text
    Available products:
       1. AI Trust Layer        (name: AITrustLayer)

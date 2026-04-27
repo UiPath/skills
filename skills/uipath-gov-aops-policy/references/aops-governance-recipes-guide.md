@@ -21,7 +21,7 @@ These platform-level conditions affect whether a deployed policy actually takes 
 
 Each recipe lists:
 
-- **Intent keywords** — user phrases that trigger it (feed these to `Grep` against the locale resource).
+- **Intent keywords** — user phrases that trigger it (use these for keyword search against the locale resource).
 - **Product** — the `product.name` to pass to `--product-name` on `create`.
 - **Fields** — candidate component `key`s and the values that implement the rule.
 - **Notes** — empty-parameter warnings, license-type compatibility, template-version hints.
