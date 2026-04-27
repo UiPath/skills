@@ -10,7 +10,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 Connect two nodes (Trigger → Stage or Stage → Stage) by appending an edge object to `schema.edges`. Edge type is **inferred from the source node** — never specified explicitly.
 
-The same recipe covers add / edit / remove — direct JSON writes state, so the three CLI commands collapse into a single declarative operation: "make `schema.edges` match the desired set."
+The same recipe covers add / edit / remove — direct JSON writes state declaratively: "make `schema.edges` match the desired set."
 
 ## Input spec (from `tasks.md`)
 
@@ -25,7 +25,7 @@ The same recipe covers add / edit / remove — direct JSON writes state, so the 
 
 ## Guardrails (enforce before writing)
 
-1. **Both endpoints exist in `schema.nodes`.** Match the CLI's pre-check (`cli/packages/case-tool/src/commands/edges.ts:99-123`). If either `source` or `target` is missing, halt — do not write a dangling edge.
+1. **Both endpoints exist in `schema.nodes`.** If either `source` or `target` is missing, halt — do not write a dangling edge.
 2. **Neither endpoint is an `case-management:ExceptionStage`.** Exception stages have no edges (see [`planning.md` § Wiring Constraints](planning.md#wiring-constraints)). They are reached via an interrupting `stage-entry-conditions` rule and exited via a `return-to-origin` `stage-exit-conditions` rule. Reject the write and flag to the user.
 3. **`target` is not a Trigger.** Edges always flow into a Stage (regular Stage only).
 4. **No duplicate edge with the same `source`+`target` pair** unless the sdd.md explicitly declares parallel edges. Warn if one already exists.
@@ -47,7 +47,7 @@ edgeType   = sourceNode.type === "case-management:Trigger"
              : "case-management:Edge"
 ```
 
-Matches `cli/packages/case-tool/src/commands/edges.ts:44-50`. Do NOT accept a caller-supplied `type` — always derive it.
+Do NOT accept a caller-supplied `type` — always derive it from the source node.
 
 ## Handle strings
 
@@ -60,7 +60,7 @@ targetHandle = `${target}____target____${targetDir}`   # targetDir default: "lef
 
 ## Recipe — Add
 
-Append this object to `schema.edges`. CLI uses `.push()` — always append, never prepend (differs from stages which uses `.unshift()`).
+Append this object to `schema.edges` — always append, never prepend.
 
 ### TriggerEdge (source is a Trigger)
 
@@ -92,7 +92,7 @@ Append this object to `schema.edges`. CLI uses `.push()` — always append, neve
 
 ### Optional-field emission rules
 
-Mirror CLI exactly — `JSON.stringify` drops `undefined` values, so omitted inputs yield absent keys:
+Omitted inputs yield absent keys (matches `JSON.stringify`'s drop-undefined behavior):
 
 | Input | Emission |
 |---|---|
@@ -101,13 +101,11 @@ Mirror CLI exactly — `JSON.stringify` drops `undefined` values, so omitted inp
 | `sourceHandle` direction unset | Still emit the key with default `right` |
 | `targetHandle` direction unset | Still emit the key with default `left` |
 
-Key insertion order (CLI output, preserved by `JSON.stringify(..., null, 4)`):
+Key insertion order (cosmetic — frontends accept any order):
 
 ```text
 id, source, target, sourceHandle, targetHandle, [zIndex], data, type
 ```
-
-The golden diff normalizer sorts keys alphabetically — so exact insertion order is cosmetic for equivalence.
 
 ## Recipe — Edit
 
@@ -124,7 +122,7 @@ Find the edge by `id` in `schema.edges` and mutate in place:
 | `targetHandle` | yes | Re-construct with new direction, keep same `target` ID. |
 | `zIndex` | yes | Set or `delete` to clear. |
 
-> To re-wire an edge (change `source` or `target`), **remove and re-add**. This matches the CLI contract (`edges edit` rejects source/target changes) and preserves the invariant that `sourceHandle`/`targetHandle` always reference the current endpoints.
+> To re-wire an edge (change `source` or `target`), **remove and re-add**. This preserves the invariant that `sourceHandle`/`targetHandle` always reference the current endpoints.
 
 ## Recipe — Remove
 
@@ -136,7 +134,7 @@ Nothing references edges by ID in `caseplan.json`, so no cascade cleanup is need
 
 ## Semantic position
 
-Edges live in the top-level `schema.edges` array. CLI appends (`.push()`) — direct-JSON-write matches: always append new edges to the end.
+Edges live in the top-level `schema.edges` array. Always append new edges to the end.
 
 ## Post-write validation
 
@@ -151,18 +149,3 @@ After writing, confirm:
 
 Run `uip maestro case validate <file> --output json` after all edges for this plugin's batch are added.
 
-## Known CLI divergences
-
-None. Direct-JSON-write is a structural mirror of `edges add`. `JSON.stringify`'s drop-undefined behavior is reproduced by omitting keys for unset optional fields.
-
-The one subtle point: CLI `edges edit` refuses to touch `source`/`target`. Direct-JSON-write honors the same contract by documenting them as immutable — even though the JSON format itself imposes no such constraint.
-
-## Compatibility
-
-Captured against CLI version `0.1.21`.
-
-- [x] **Structural equivalence:** direct-JSON-write produces edge objects that match the CLI's `edges add` output after ID normalization.
-- [ ] **Validation parity:** both outputs produce the same set of validation errors/warnings — not yet run against the installed binary.
-- [ ] **Downstream CLI mutation append:** `uip maestro case edges edit <json-written-edge-id>` and `uip maestro case edges remove <json-written-edge-id>` both succeed — not yet exercised.
-- [ ] **Round-trip:** CLI-written edge coexists with direct-JSON-written edge in the same file; validate passes — not yet exercised.
-- [ ] **Studio Web render:** `uip solution upload` and visual confirmation — not yet exercised.

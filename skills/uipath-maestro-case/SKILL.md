@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath Case Management Authoring Assistant
 
-Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, executes via `uip maestro case` CLI to produce `caseplan.json`.
+End-to-end guide for creating UiPath Case Management definitions. Takes a design document (`sdd.md`), generates a reviewable task plan (`tasks.md`), and executes the plan via direct JSON writes per plugin recipe to produce `caseplan.json`.
 
 **Scope:** new case from `sdd.md` only. Modifying existing case not supported (no remote fetch tooling).
 
