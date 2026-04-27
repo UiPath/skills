@@ -491,6 +491,130 @@ Run `uip agent guardrails list --output json` to get the full list of available 
 }
 ```
 
+### Example 6: Escalate PII Violations to Action Center — Multiple Tool Targets
+
+Escalates to an Action Center app when PII is detected in output from specific tools. Uses `matchNames` to target multiple tools and `escalate` action with `app` and `recipient`.
+
+```json
+{
+  "$guardrailType": "builtInValidator",
+  "id": "10d5f10f-da4e-4bf1-ace9-dd880e33d9be",
+  "name": "PII detection guardrail",
+  "description": "This validator is designed to detect personally identifiable information using Azure Cognitive Services",
+  "validatorType": "pii_detection",
+  "validatorParameters": [
+    {
+      "$parameterType": "enum-list",
+      "id": "entities",
+      "value": ["Email", "Address"]
+    },
+    {
+      "$parameterType": "map-enum",
+      "id": "entityThresholds",
+      "value": {
+        "Email": 0.5,
+        "Address": 0.5
+      }
+    }
+  ],
+  "action": {
+    "$actionType": "escalate",
+    "app": {
+      "id": "<APP_ID>",
+      "name": "<APP_NAME>",
+      "version": "0",
+      "folderId": "<FOLDER_ID>",
+      "folderName": "solution_folder"
+    },
+    "recipient": {
+      "type": 1,
+      "value": "<USER_GUID>",
+      "displayName": "<DISPLAY_NAME>"
+    }
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Agent", "Tool"],
+    "matchNames": ["Agent", "Get Instance Details"]
+  }
+}
+```
+
+### Example 7: Custom Word Rule — Specific Fields with Titles on a Named Tool
+
+Inspects specific output fields (with human-readable `title`) of an Integration Service tool. Logs a violation when the field value contains a forbidden string.
+
+```json
+{
+  "$guardrailType": "custom",
+  "id": "68005ea0-9d46-4094-8113-d497f53fd17f",
+  "name": "Log sensitive URLs in Jira output",
+  "description": "",
+  "rules": [
+    {
+      "$ruleType": "word",
+      "fieldSelector": {
+        "$selectorType": "specific",
+        "fields": [
+          {
+            "path": "baseUrl",
+            "source": "output",
+            "title": "Base url"
+          },
+          {
+            "path": "scmInfo",
+            "source": "output",
+            "title": "Scm info"
+          }
+        ]
+      },
+      "operator": "contains",
+      "value": "internal.corp"
+    }
+  ],
+  "action": {
+    "$actionType": "log",
+    "severityLevel": "Info"
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Tool"],
+    "matchNames": ["Get Instance Details"]
+  }
+}
+```
+
+### Example 8: Filter — Redact Fields from Tool Output
+
+Redacts specific fields from a tool's output instead of blocking or logging. Use when you want the agent to continue but with sensitive data removed.
+
+```json
+{
+  "$guardrailType": "custom",
+  "id": "f6a7b8c9-d0e1-2345-abcd-678901234567",
+  "name": "Redact SSN from output",
+  "description": "Removes SSN field from tool output before returning to user",
+  "rules": [
+    {
+      "$ruleType": "always",
+      "applyTo": "output"
+    }
+  ],
+  "action": {
+    "$actionType": "filter",
+    "fields": [
+      { "path": "ssn", "source": "output", "title": "SSN" },
+      { "path": "taxId", "source": "output", "title": "Tax ID" }
+    ]
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Tool"],
+    "matchNames": ["GetCustomerProfile"]
+  }
+}
+```
+
 ## agent.json with Guardrails
 
 Add the `guardrails` array at the agent.json root level alongside `settings`, `messages`, etc.:

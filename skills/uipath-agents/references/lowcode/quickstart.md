@@ -751,38 +751,7 @@ Add a guardrail object to the `guardrails` array in `agent.json`:
 ]
 ```
 
-### Step 3 — Add a custom word rule guardrail
-
-Append a second guardrail to the same `guardrails` array:
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "<GENERATE_UUID>",
-  "name": "Block forbidden terms",
-  "description": "",
-  "rules": [
-    {
-      "$ruleType": "word",
-      "fieldSelector": {
-        "$selectorType": "all"
-      },
-      "operator": "contains",
-      "value": "CONFIDENTIAL"
-    }
-  ],
-  "action": {
-    "$actionType": "block",
-    "reason": "Forbidden term detected."
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Agent", "Llm"]
-  }
-}
-```
-
-### Step 4 — Validate
+### Step 3 — Validate
 
 ```bash
 uip agent validate "<AGENT_NAME>" --output json
