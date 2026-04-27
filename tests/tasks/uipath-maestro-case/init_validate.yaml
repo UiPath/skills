@@ -10,7 +10,7 @@ tags: [uipath-maestro-case, smoke, init, validate]
 
 agent:
   type: claude-code
-  max_turns: 40
+  max_turns: 80
 
 sandbox:
   driver: tempdir

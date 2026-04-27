@@ -8,7 +8,7 @@ tags: [uipath-maestro-case, smoke, registry]
 
 agent:
   type: claude-code
-  max_turns: 20
+  max_turns: 65
 
 sandbox:
   driver: tempdir

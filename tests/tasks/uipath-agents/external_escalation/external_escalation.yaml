@@ -29,6 +29,12 @@ initial_prompt: |
   already deployed to the Orchestrator "Shared" folder (not inside
   this solution). Model this as an escalation resource on the agent.
 
+  When writing the escalation resource.json, set `isEnabled` to true so
+  the escalation is active for the agent. Set `properties.folderPath`
+  to the literal string "Shared" (the live Orchestrator folder where
+  FraudEscalationQueue is deployed) — never use placeholder values
+  like "solution_folder".
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
