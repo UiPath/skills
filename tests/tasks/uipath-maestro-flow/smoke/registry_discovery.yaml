@@ -7,7 +7,7 @@ tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
 
 agent:
   type: claude-code
-  max_turns: 14
+  max_turns: 28
 
 sandbox:
   driver: tempdir
