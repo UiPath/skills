@@ -1,11 +1,9 @@
 task_id: skill-rpa-coded-jira-create-group
 description: >
-  Smoke test: validate code-generation logic for a UiPath coded workflow (C#)
-  that creates a new Jira group "CodedWorkflowTestGroup" via the Jira
-  Integration Service connector. Asserts the agent runs `uip is` discovery
-  commands and generates correct source; does not depend on Studio Desktop or
-  the `uip rpa` plugin.
-tags: [uipath-rpa, coded, jira, smoke]
+  Create a UiPath coded workflow (C#) that creates a new Jira group named
+  "CodedWorkflowTestGroup" using the Jira Integration Service connector.
+  Exercises coded workflow scaffolding and connector usage.
+tags: [uipath-rpa, coded, jira, integration]
 max_iterations: 1
 
 agent:
@@ -14,70 +12,64 @@ agent:
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.
 
-    ENVIRONMENT — Studio Desktop is NOT available in this sandbox. Skip every
-    uip CLI command that requires `--use-studio` or that auto-installs a Studio
-    plugin, including:
-    - `uip rpa create-project`
-    - `uip rpa install-or-update-packages`
+    ABSOLUTE RULES — these commands are banned, never run them under any circumstances,
+    even if a skill or reference guide suggests them:
     - `uip rpa get-errors`
     - `uip rpa build`
     - `uip pack`
-
-    DO use the `uip is` Integration Service commands to discover connectors,
-    activities, and resource schemas before writing the C# source. Generate the
-    source code files directly with the Write tool. Do not build, validate, or
-    diagnose.
+    Your job is ONLY to scaffold the project, install required packages, and write the
+    source code. Stop as soon as the .cs file is written. Do not build, validate, or diagnose.
 
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
-  Generate a UiPath coded workflow (C#) that creates a new Jira group named
-  "CodedWorkflowTestGroup" using the Jira Integration Service connector.
+  Create a UiPath coded workflow project named "JiraCreateGroup" and generate
+  JiraCreateGroup.cs file that creates a new Jira group named "CodedWorkflowTestGroup".
 
-  Studio Desktop is NOT available — do NOT run `uip rpa create-project`,
-  `uip rpa install-or-update-packages`, or any other `--use-studio` command.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the project end-to-end in a single pass.
 
-  USE `uip is` commands to discover the Jira connector, its connections,
-  activities, and the `group` resource schema (e.g. `uip is connectors list`,
-  `uip is connections list`, `uip is activities list`, `uip is resources list`,
-  `uip is resources describe`). Use what you learn to write the correct C# code.
-
-  Then write these files at exactly these paths (relative to the working
-  directory) using the Write tool:
-    - JiraCreateGroup.cs   — the coded workflow class
-    - ISConnections.cs     — Integration Service connections wrapper
-
-  JiraCreateGroup.cs must:
-    - target the Jira "group" resource: `objectName: "group"`
-    - pass the group name "CodedWorkflowTestGroup"
-    - use `Operation.Create` and `ActivityType.Generic`
-    - reference `ISConnections` and call `ExecuteAsync`
-
-  Do NOT ask for approval, confirmation, or feedback. Stop once both files are
-  written.
+  Your goal is to scaffold the project, install
+  required packages, and write the source code. Stop once the .cs file is written.
 
 success_criteria:
-  - type: run_command
-    description: "Agent ran the required uip is discovery commands"
-    command: >-
-      python $TASK_DIR/validate_commands_executed.py
-      "uip\\s+is\\s+connectors\\s+list"
-      "uip\\s+is\\s+connections\\s+list"
-      "uip\\s+is\\s+activities\\s+list"
-      "uip\\s+is\\s+resources\\s+list"
-      "uip\\s+is\\s+resources\\s+describe"
-    timeout: 30
-    expected_exit_code: 0
+  # ── Project scaffolding ────────────────────────────────────────────────
+  - type: command_executed
+    description: "Agent created a coded workflow project via uip CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+create-project'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "project.json exists for the coded workflow project"
+    path: "JiraCreateGroup/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent installed the IntegrationService Activities package"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+install-or-update-packages'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Coded workflow source ──────────────────────────────────────────────
+  - type: file_exists
+    description: "Coded workflow .cs file exists in the project"
+    path: "JiraCreateGroup/JiraCreateGroup.cs"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Generated JiraCreateGroup.cs contains group resource, group name, and IS wiring"
+    description: "Coded workflow contains group resource, group name, and IS wiring"
     command: >-
       python $TASK_DIR/validate_file_contains.py
-      "JiraCreateGroup.cs"
+      "JiraCreateGroup/JiraCreateGroup.cs"
       "objectName: \"group\""
       "CodedWorkflowTestGroup"
       "Operation.Create"
@@ -89,14 +81,33 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # ── Integration Service discovery ─────────────────────────────────────
   - type: run_command
-    description: "Generated ISConnections.cs exposes the IS connections wrapper class"
+    description: "Agent ran all required IS discovery commands"
     command: >-
-      python $TASK_DIR/validate_file_contains.py
-      "ISConnections.cs"
-      "ISConnections"
+      python $TASK_DIR/validate_commands_executed.py
+      "uip\\s+rpa\\s+create-project"
+      "uip\\s+rpa\\s+install-or-update-packages"
+      "uip\\s+is\\s+connectors\\s+list"
+      "uip\\s+is\\s+connections\\s+list"
+      "uip\\s+is\\s+activities\\s+list"
+      "uip\\s+is\\s+resources\\s+list"
+      "uip\\s+is\\s+resources\\s+describe"
     timeout: 30
     expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Integration Service wiring ─────────────────────────────────────────
+  - type: file_exists
+    description: "IS connections wrapper .codedworkflows/ISConnections.cs exists"
+    path: "JiraCreateGroup/.codedworkflows/ISConnections.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "IS binding metadata .project/ISBindingMetadata.json exists"
+    path: "JiraCreateGroup/.project/ISBindingMetadata.json"
     weight: 1.0
     pass_threshold: 1.0
 
