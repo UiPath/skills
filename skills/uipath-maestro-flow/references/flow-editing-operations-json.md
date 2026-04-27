@@ -80,7 +80,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
    - One definition per unique `type` — not one per node instance
 
 > **Resource nodes — extra step.** If the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`:
-> 1. The instance stays minimal — just `inputs`/`outputs`/`display`. No `model.context[]`, no `model.bindings`.
+> 1. The instance stays minimal — just `inputs`/`outputs`/`display`.
 > 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`): two entries per resource (`name` + `folderPath`) with `resourceKey` exactly matching the definition's `model.bindings.resourceKey`.
 >
 > The BPMN emit layer rewrites the definition's `<bindings.{name}>` placeholders to `=bindings.{id}` by matching on `(resourceKey, name)`. Without matching entries in top-level `bindings[]`, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
