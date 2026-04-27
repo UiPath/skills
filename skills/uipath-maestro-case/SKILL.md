@@ -1,5 +1,5 @@
 ---
-name: uipath-case-management
+name: uipath-maestro-case
 description: "[PREVIEW] Case Management authoring from sdd.md. Produces tasks.md plan, executes uip maestro case CLI to build caseplan.json. For .xaml→uipath-rpa, .flow→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---

@@ -112,7 +112,7 @@ Domain mapping:
 | uipath-feedback | feedback |
 | uipath-planner | planner |
 | uipath-human-in-the-loop | hitl |
-| uipath-case-management | case |
+| uipath-maestro-case | case |
 
 If a skill is not listed, derive `<domain>` by stripping the `uipath-` prefix and using the shortest unambiguous segment (e.g., `uipath-new-thing` → `newthing`). Check existing `task_id` values for the skill's domain prefix and follow suit.
 
