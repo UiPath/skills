@@ -58,7 +58,6 @@ The repository contains skills for building and managing UiPath automation proje
 | Agent | Description |
 |-------|-------------|
 | **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
-| **Analyzer Rules** (`uipath-analyzer-rules-agent`) | Runs `uip rpa get-analyzer-rules` and generates a best-practices rules file for Claude Code (`.claude/rules/analyzer-rules.md`) and UiPath Autopilot (`AGENTS.md`) so generated workflows already satisfy the project's enabled Workflow Analyzer rules. Triggered automatically when analyzer-rules context is missing, or on explicit user request. |
 
 ## Multi-Tool Support
 

@@ -188,8 +188,6 @@ uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json
 
 Each rule returns `severity` (`error` / `warning` / `info`), rule ID (e.g. `ST-DBP-010`, `MA-DBP-028`), scope (`Activity` / `Workflow` / `Coded Workflow` / `Project`), title, and — when available — `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
 
-The `uipath-analyzer-rules-agent` runs this command and materializes the output to `.claude/rules/analyzer-rules.md` (auto-loaded by Claude Code) so it becomes part of session context without an explicit Read.
-
 ---
 
 ## Commands -- Package Management

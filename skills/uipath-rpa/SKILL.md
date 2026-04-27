@@ -43,38 +43,6 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
    - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
 4. Then proceed with the skill workflow
 
-## Precondition: Analyzer Rules
-
-The `uipath-analyzer-rules-agent` owns the contents and formatting of the rules document. This skill only decides **when** to spawn it and **where** to write the document it returns. Do not edit, summarise, or reformat the agent's output — write it verbatim.
-
-### When to spawn `uipath-analyzer-rules-agent`
-
-Spawn if **any** of these is true:
-
-1. `.claude/rules/analyzer-rules.md` does not exist in the project directory.
-2. The user explicitly asks to refresh, regenerate, or re-list the analyzer rules.
-3. `uip rpa analyze` returns errors/warnings whose rule IDs (e.g. `ST-*`, `MA-*`, `SY-*`, `TA-*`, `UI-*`, `UX-*`, `XL-*`) are NOT present in `.claude/rules/analyzer-rules.md`.
-4. `uip rpa get-errors` returns analyzer-rule diagnostics with rule IDs missing from the file.
-5. `uip rpa run-file` / `uip rpa build` output surfaces analyzer rule IDs (rule-prefixed diagnostics, not runtime/selector/auth/build failures) absent from the file.
-
-Do NOT spawn for runtime, build, selector, or auth errors that have no analyzer rule ID prefix.
-
-### How to spawn
-
-Pass in the prompt:
-- `project_dir` — resolved absolute path to the UiPath project.
-- `observed_rule_ids` — required for cases 3–5: the list of rule IDs that triggered the regeneration. The agent uses this list to verify the regenerated document contains them.
-
-### Where to write the agent's response
-
-When the agent returns, write its output verbatim to **both**:
-- `.claude/rules/analyzer-rules.md` — overwrite (create `.claude/rules/` if needed). Auto-loaded by Claude Code in future sessions.
-- `AGENTS.md` at project root, between `<!-- ANALYZER-RULES:START -->` / `<!-- ANALYZER-RULES:END -->` markers. If markers are absent, append the block (below `PROJECT-CONTEXT` if present). Read by UiPath Autopilot in Studio Desktop.
-
-If the agent returns the Error Case block (its output begins with `<!-- analyzer-rules-metadata: error=true -->`), skip both writes and surface the CLI error to the user instead. If the agent's output contains a `<!-- missing-rules: ... -->` comment, surface those IDs to the user — they were observed in CLI output but did not appear in the regenerated rule list.
-
-While `.claude/rules/analyzer-rules.md` is in context (auto-loaded), generated code must satisfy every `error` and `warning` rule listed there.
-
 ## Step 0: Resolve PROJECT_DIR and Environment
 
 Before creating or modifying anything, determine which project to work with and ensure Studio is running. See [references/environment-setup.md](references/environment-setup.md) for the full procedure.
@@ -120,7 +88,8 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
 2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
-3. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Two-phase validation:
+3. **ALWAYS list project analyzer rules before generating workflows, validate files as you go, AND verify the project builds before declaring done.** Three-phase validation:
+   - **Pre-generation** (before creating or editing any workflow file — `.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`): `uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json` to list the enabled Workflow Analyzer rules. Apply every `error` and `warning` rule during authoring so generated code passes `analyze` and `build` on the first attempt. Run once at the start of the task; re-run only when project dependencies change (a newly added package can ship its own `MA-*` rules).
    - **Per-file** (after every create or edit): `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts.
    - **Project-level end-goal** (before reporting done): `uip rpa build "<PROJECT_DIR>" --output json`. Projects returned to the user must compile. `get-errors` is static analysis and misses compile-time failures — notably attribute-form XAML expressions in projects with `expressionLanguage: CSharp`. A successful `uip rpa run-file` smoke test covers this; if no smoke test runs, `uip rpa build` is mandatory.
 
@@ -182,7 +151,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [is-connector-xaml-guide.md](references/is-connector-xaml-guide.md) → [connector-capabilities.md](references/connector-capabilities.md) |
 | **Build/run/validate** | Both | [cli-reference.md](references/cli-reference.md) → [validation-guide.md](references/validation-guide.md) |
-| **List project best-practice / analyzer rules** | Both | [cli-reference.md § get-analyzer-rules](references/cli-reference.md) → `.claude/rules/analyzer-rules.md` |
+| **List project best-practice / analyzer rules** | Both | [cli-reference.md § get-analyzer-rules](references/cli-reference.md) |
 | **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
 | **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |
 | **Troubleshoot coded errors** | Coded | [coded/coding-guidelines.md § Common Issues](references/coded/coding-guidelines.md) |
@@ -260,6 +229,7 @@ Check `expressionLanguage` in `project.json`. VB.NET uses `[brackets]` for expre
 |---------|---------|
 | `find-activities --query "<keyword>"` | Discover activities by keyword |
 | `get-default-activity-xaml --activity-class-name "<class>"` | Get starter XAML for an activity |
+| `get-analyzer-rules --project-dir "<dir>"` | List enabled Workflow Analyzer rules — run before generating |
 | `get-errors --file-path "<file>"` | Validate a workflow file |
 
 ### Common Activities
