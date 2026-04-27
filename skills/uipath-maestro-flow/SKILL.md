@@ -284,6 +284,56 @@ The argument to `resource refresh` is the **solution directory** (containing the
 
 **Debug summary format:** Start the report with `Studio Web URL: <url>` and `Instance ID: <instanceId>` on the first two lines (parse `Data.studioWebUrl` / `Data.instanceId` from the JSON output). Use `<not returned by CLI>` if missing — never omit the line. See [flow-commands.md — uip maestro flow debug](references/flow-commands.md#uip-maestro-flow-debug).
 
+### Step 7a — Troubleshoot failed flows
+
+When a debug run or a deployed process run fails, use the following diagnostic workflow. All commands require `uip login`.
+
+**1. Get the instance ID.** The debug output (`Data.instanceId`) or `job status` response contains the instance ID. If you only have a job key:
+
+```bash
+uip maestro flow job status <JOB_KEY> --output json
+```
+
+Parse the instance ID from the response.
+
+**2. Fetch incidents for the instance.** Failed flows always have an incident associated with them. Start here — incidents give you the error category, message, and the faulting element:
+
+```bash
+uip maestro flow instance incidents <INSTANCE_ID> --output json
+```
+
+If you need more detail on a specific incident:
+
+```bash
+uip maestro flow incident get <INCIDENT_ID> --output json
+```
+
+**3. Fetch runtime variable state.** Get the variable values at the time of failure to understand what data each node was working with:
+
+```bash
+uip maestro flow instance variables <INSTANCE_ID> --output json
+```
+
+To scope variables to a specific element (node/subflow):
+
+```bash
+uip maestro flow instance variables <INSTANCE_ID> --parent-element-id <ELEMENT_ID> --output json
+```
+
+**4. Correlate with the flow definition.** Use the incident's faulting element ID and the variable state to locate the failure point in the `.flow` file. Map the element ID to the corresponding node, check its `inputs`, upstream edges, and the variable values flowing into it. If the local `.flow` file may differ from what was deployed, fetch the deployed BPMN definition:
+
+```bash
+uip maestro flow instance asset <INSTANCE_ID> --output json
+```
+
+**5. (Last resort) Fetch execution traces.** Traces are verbose but contain the full execution timeline. Use them only when incidents and variables are insufficient:
+
+```bash
+uip maestro flow job traces <JOB_KEY> --output json
+```
+
+> **Always use CLI commands for troubleshooting — never call the underlying APIs directly.**
+
 ### Step 8 — Publish to Studio Web
 
 **This is the default publish target.** After tidy (Step 6), when the user wants to publish, view, or share the flow, **refresh solution resources first**, then upload:
@@ -354,6 +404,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [references/plugins/delay/](references/plugins/delay/) or [references/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [references/plugins/queue/impl.md](references/plugins/queue/impl.md) |
+| **Troubleshoot a failed flow** | Step 7a + [references/flow-commands.md — instance / incident](references/flow-commands.md#uip-maestro-flow-instance) |
 
 ## Key Concepts
 
