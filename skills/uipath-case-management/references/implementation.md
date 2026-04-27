@@ -8,25 +8,20 @@ Execute the approved `tasks.md` plan, building `caseplan.json` via either `uip m
 
 > **Two sub-phases with a hard stop.** Execution is split into **Phase 2a** (skeleton build — structural nodes only) and **Phase 2b** (detail build — values, conditions, SLA). Between them, an **AskUserQuestion** hard stop lets the user optionally publish the skeleton to Studio Web for visual review before committing to detail work. Read [phased-execution.md](phased-execution.md) for the phase contract, informational Phase 2a validate, hard-stop prompt, re-entry protocol, and abort semantics. The step numbering below marks the phase boundary.
 
-## Strategy selection (per plugin)
+## Execution model
 
-Before executing each plugin's T-entries, consult the strategy matrix in [case-editing-operations.md](case-editing-operations.md).
+All `caseplan.json` mutations go through Read/Write/Edit per [caseplan-editing.md](caseplan-editing.md) — ID generation, Pre-flight Checklist, primitive ops all live there.
 
-- **`Strategy = JSON`** → use the plugin's `impl-json.md` + [case-editing-operations-json.md](case-editing-operations-json.md) for cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops).
-- **`Strategy = CLI`** → use the plugin's `impl-cli.md` + [case-editing-operations-cli.md](case-editing-operations-cli.md) for cross-cutting mechanics.
+**Incremental write per category.** Process `tasks.md` one category at a time (stages → edges → triggers → tasks → conditions → SLA → variables): Read `caseplan.json` → apply every T-entry in that category → Write → re-Read before the next category. Prefer the `Edit` tool for narrowly-scoped single-field changes (task input `value` binding in Phase 2b, etc.) — avoids full-file Read cost. Use Read+Write for structural adds. Do NOT compose a monolithic cross-category JSON in memory and flush once. See [SKILL.md Rule #24](../SKILL.md) and [caseplan-editing.md § Read → modify → write](caseplan-editing.md#read--modify--write).
 
-Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
-
-**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Rule #24](../SKILL.md) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
-
-> **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
-> - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
-> - Stages → `plugins/stages/impl-json.md` (pilot) — `plugins/stages/impl-cli.md` is the fallback
-> - Edges → `plugins/edges/impl-json.md` (JSON strategy) — `plugins/edges/impl-cli.md` is the fallback
-> - Tasks → `plugins/tasks/<type>/impl-cli.md` (or `impl-json.md` for connector-activity and connector-trigger)
-> - Triggers → `plugins/triggers/<type>/impl-cli.md` (or `impl-json.md` for event triggers)
-> - Conditions → `plugins/conditions/<scope>/impl-cli.md`
-> - SLA → `plugins/sla/impl-json.md` (primary) — `plugins/sla/impl-cli.md` is the fallback
+> **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-json.md`:
+> - Root case → `plugins/case/impl-json.md`
+> - Stages → `plugins/stages/impl-json.md`
+> - Edges → `plugins/edges/impl-json.md`
+> - Tasks → `plugins/tasks/<type>/impl-json.md`
+> - Triggers → `plugins/triggers/<type>/impl-json.md`
+> - Conditions → `plugins/conditions/<scope>/impl-json.md`
+> - SLA → `plugins/sla/impl-json.md`
 > - Global variables & arguments → `plugins/variables/global-vars/impl-json.md`
 > - Task I/O binding → `plugins/variables/io-binding/impl-json.md`
 > - Logging → `plugins/logging/impl-json.md`
@@ -50,19 +45,15 @@ Steps 6 through 9.5 build the structural skeleton: solution, project, root case,
 
 ## Step 6 — Create the Case project structure
 
-The case file must live inside a solution + project. Strategy per the matrix in [case-editing-operations.md](case-editing-operations.md) — `case` is on the **JSON** strategy; [`plugins/case/impl-cli.md`](plugins/case/impl-cli.md) is the fallback.
-
-Under the JSON strategy, the case plugin owns project scaffolding **and** the root caseplan write. Only solution setup and project registration remain CLI:
+The case file must live inside a solution + project. The case plugin owns project scaffolding **and** the root caseplan write. Only solution setup and project registration use shell CLI:
 
 1. **Step 6.0 (CLI)** — `uip solution new <SolutionName>` — creates the solution directory + `.uipx`.
 2. **T01 (plugin)** — execute [`plugins/case/impl-json.md`](plugins/case/impl-json.md) in full:
-   - § Scaffold writes 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly into `<SolutionDir>/<ProjectName>/`. No `uip maestro case init` invocation.
+   - § Scaffold writes 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly into `<SolutionDir>/<ProjectName>/`.
    - § Write caseplan.json writes the root skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 3. **Step 6.2 (CLI)** — `uip solution project add <ProjectName> <SolutionName>.uipx` — registers the project in `.uipx.Projects[]`. Runs after `project.uiproj` exists.
 
-**No trigger is emitted at T01.** The primary trigger is added by the triggers plugin at T02 — its ID is generated by that plugin (no `trigger_1` literal to capture). `entry-points.json` is scaffolded with an empty `entryPoints[]` array — the triggers plugin owns every insertion.
-
-Under the CLI fallback path, replace T01 with the full [`plugins/case/impl-cli.md`](plugins/case/impl-cli.md) § Prerequisites (which re-invokes `uip maestro case init`) + `cases add`. The CLI's `cases add` still emits the legacy `trigger_1` literal, and `entry-points.json` still contains the dangling `trigger_1` reference — accept those under CLI fallback only.
+**No trigger is emitted at T01.** The primary trigger is added by the triggers plugin at T02 — its ID is generated by that plugin. `entry-points.json` is scaffolded with an empty `entryPoints[]` array — the triggers plugin owns every insertion.
 
 ## Step 6.1 — Declare global variables and arguments
 
@@ -70,13 +61,13 @@ For each variable/argument T-entry from `tasks.md §4.2.1`, write entries direct
 
 ## Step 7 — Add stages
 
-For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). Strategy per the matrix in [case-editing-operations.md](case-editing-operations.md) — currently `stages` is on the **JSON** strategy (pilot); [`plugins/stages/impl-cli.md`](plugins/stages/impl-cli.md) is the fallback. **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json` for JSON strategy) — downstream edges, tasks, conditions, and SLA all reference it.
+For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json`) — downstream edges, tasks, conditions, and SLA all reference it.
 
-`isRequired` from `tasks.md` is planning-only metadata; it is not passed on `stages add`. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
+`isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed later by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
 ## Step 8 — Connect stages with edges
 
-For each edge in `tasks.md §4.5`, execute per [`plugins/edges/impl-json.md`](plugins/edges/impl-json.md). Strategy per the matrix in [case-editing-operations.md](case-editing-operations.md) — currently `edges` is on the **JSON** strategy; [`plugins/edges/impl-cli.md`](plugins/edges/impl-cli.md) is the fallback. Edge type is inferred automatically from the source node's `type` in `schema.nodes`.
+For each edge in `tasks.md §4.5`, execute per [`plugins/edges/impl-json.md`](plugins/edges/impl-json.md). Edge type is inferred automatically from the source node's `type` in `schema.nodes`.
 
 For multi-trigger cases, add the additional triggers first via the appropriate trigger plugin, then wire their IDs as edge sources.
 
@@ -100,18 +91,9 @@ For each task entry in `tasks.md §4.6`, open the matching plugin's `impl-json.m
 
 When a task entry's `taskTypeId` (or `type-id` / `connection-id` for connector tasks) is `<UNRESOLVED: …>`, create a **skeleton task** instead of halting. See [skeleton-tasks.md](skeleton-tasks.md) for the canonical reference.
 
-**Process / agent / rpa / action / api-workflow / case-management (JSON strategy):** follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`) directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`. Omit `data.context`, `data.inputs`, `data.outputs`.
+**All task classes:** follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`) directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`. Omit `data.context`, `data.inputs`, `data.outputs`. For connector tasks, also omit `data.type-id` and `data.connection-id`.
 
-**Connector activity / trigger (CLI strategy):**
-
-```bash
-uip maestro case tasks add-connector <file> <stage-id> \
-  --type <activity|trigger> \
-  --display-name "<name>" \
-  --output json
-```
-
-**Skip all input binding for skeleton tasks** — they have no inputs (empty `data` / no `--task-type-id`). Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
+**Skip all input binding for skeleton tasks** — they have no inputs. Capture the intended wiring from the fenced `wiring notes` code block in `tasks.md` into the completion report so the user knows what to hook up after registering the resource.
 
 Skeleton tasks integrate with the rest of the graph:
 - **Task-entry conditions** use the captured skeleton `TaskId` normally.
@@ -132,7 +114,7 @@ End of Phase 2a. Full contract (summary content, prompt options, publish branch,
 
 2. Print the hard-stop summary, including the captured validate counts ([phased-execution.md § Summary content](phased-execution.md)).
 
-3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #26.
+3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #25.
 
 On continue (either `Skip publish and continue` or `Continue to phase 2b` after publish): proceed to Step 9.6.
 
@@ -155,8 +137,9 @@ Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — 
 
 For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
-1. Run `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
-2. Write `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+1. Run `get-connection` + `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
+2. Write root bindings, `data.context[]`, `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+3. **Sync `bindings_v2.json` and create connection resource files** per [bindings-v2-sync.md](bindings-v2-sync.md). This is part of each connector plugin's procedure (§ 3a-post for activities, § Root-level bindings post-sync for triggers).
 
 Skip connector tasks that are skeletons (unresolved `type-id` / `connection-id`) — they stay bare.
 
@@ -173,16 +156,16 @@ Skip skeleton tasks entirely — they have no inputs.
 
 ## Step 10 — Add conditions
 
-For each condition in `tasks.md §4.7`, open the matching plugin (`impl-cli.md` when the strategy matrix lists the scope as `CLI`; `impl-json.md` when `JSON`):
+For each condition in `tasks.md §4.7`, open the matching plugin's `impl-json.md`:
 
-- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-cli.md`](plugins/conditions/stage-entry-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/stage-entry-conditions/impl-json.md)
-- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-cli.md`](plugins/conditions/stage-exit-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
-- Task entry → [`plugins/conditions/task-entry-conditions/impl-cli.md`](plugins/conditions/task-entry-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
-- Case exit → [`plugins/conditions/case-exit-conditions/impl-cli.md`](plugins/conditions/case-exit-conditions/impl-cli.md) / [`impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
+- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-json.md`](plugins/conditions/stage-entry-conditions/impl-json.md)
+- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
+- Task entry → [`plugins/conditions/task-entry-conditions/impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
+- Case exit → [`plugins/conditions/case-exit-conditions/impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
 
 ## Step 11 — SLA and escalation
 
-SLA is on the **JSON** strategy per the matrix in [case-editing-operations.md](case-editing-operations.md). Group `tasks.md §4.8` entries by target (root or stage), then compose and write the full `slaRules[]` array per target in a single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). The JSON path supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules — all gap-fills over the CLI's capabilities. Fallback to [`plugins/sla/impl-cli.md`](plugins/sla/impl-cli.md) only if the JSON strategy fails empirically.
+Group `tasks.md §4.8` entries by target (root or stage), then compose and write the full `slaRules[]` array per target in a single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules.
 
 ## Step 12 — Full validate
 

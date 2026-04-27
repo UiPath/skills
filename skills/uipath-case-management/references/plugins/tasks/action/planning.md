@@ -2,22 +2,18 @@
 
 A human-in-the-loop (HITL) action task. Assigns a task to a user or group for manual review, approval, or data entry via the Actions app.
 
-## When to Use
-
-Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring manual user interaction: approval, review, sign-off, correction, classification by a person.
-
 ## Required Fields from sdd.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md task name | CLI flag `--display-name` |
-| `task-type-id` | Registry resolution (below) | CLI flag `--task-type-id` — the action-app ID |
-| `task-title` | sdd.md task title or description (see fallback below) | CLI flag `--task-title`. Required for `action` type. |
-| `priority` | sdd.md (default `Medium`) | `Low` / `Medium` / `High` / `Critical`. CLI flag `--priority`. |
-| `recipient` | sdd.md assignee email; **prompt the user if silent** | CLI flag `--recipient`. See Recipient Handling below. |
+| `display-name` | sdd.md task name | Written to `task.displayName` |
+| `task-type-id` | Registry resolution (below) | Written to `task.data.context.taskTypeId`. The action-app ID. |
+| `task-title` | sdd.md task title or description (see fallback below) | Written to `task.data.taskTitle`. Required for `action` type. |
+| `priority` | sdd.md (default `Medium`) | Written to `task.data.priority`. `Low` / `Medium` / `High` / `Critical`. |
+| `recipient` | sdd.md assignee email; **prompt the user if silent** | Written to `task.data.recipient`. See Recipient Handling below. |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | Decision, comments, structured form fields |
-| `isRequired` | sdd.md (default `true`) | CLI flag `--is-required` |
+| `isRequired` | sdd.md (default `true`) | Written to `task.isRequired` |
 
 ## Task Title Fallback
 
@@ -33,10 +29,10 @@ Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring 
 2. **Identifier field:** `id` (NOT `entityKey` — action-apps use a different field).
 3. **Name field:** `deploymentTitle` (not `name`).
 4. **Folder field:** `deploymentFolder.fullyQualifiedName`.
-5. **CLI search known to fail** for action-apps — always use direct cache-file inspection.
+5. **Registry search known to fail** for action-apps — always use direct cache-file inspection.
 6. Discover form fields / inputs / outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
-See [registry-discovery.md](../../../registry-discovery.md#cli-search-gaps) for the fallback rationale.
+See [registry-discovery.md](../../../registry-discovery.md) for the fallback rationale.
 
 ## Unresolved Fallback
 

@@ -36,6 +36,7 @@ uip case registry get-connection \
 | `Config` | `.Data.Config` | `{ connectorKey, objectName, httpMethod, activityType, version }` |
 | `folderKey` | `.Data.Connections[selected].folder.key` | `"87fd6cec-..."` |
 | `connectorName` | `.Data.Connections[selected].connector.name` | `"Microsoft Outlook 365"` |
+| `connectionName` | `.Data.Connections[selected].name` | `"song.zhao@uipath.com #1"` |
 
 ### Step 2 — Get enriched metadata + outputs
 
@@ -90,6 +91,23 @@ Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](..
 | folderKey | `"folderKey"` | `folderKey` (from Step 1) |
 
 Both share `resourceKey` = `connection-id`. ID generation: `b` + 8 alphanumeric chars.
+
+### 3a-post. Sync bindings_v2.json and connection resource
+
+After writing root bindings in § 3a, run the shared sync procedure from [bindings-v2-sync.md](../../../bindings-v2-sync.md):
+
+1. **Regenerate `bindings_v2.json`** — read `root.data.uipath.bindings` from `caseplan.json` (which now includes the ConnectionId + folderKey entries from § 3a), write `bindings_v2.json` with `{ "version": "2.0", "resources": <bindings array> }`.
+
+2. **Create connection resource file** — using data from Step 1:
+   - `connectionName`: from Step 1 Save table
+   - `connectorKey`: from `tasks.md`
+   - `connectorName`: from Step 1 Save table
+   - `connectorVersion`: `null` (activities do not have connectorVersion)
+   - `connectionId`: from `tasks.md`
+
+   Write to `<SolutionDir>/resources/solution_folder/connection/<connectorKey>/<connectionName>.json`. Create directory via `mkdir -p` if needed. Skip if the file already exists (same connectionId).
+
+See [bindings-v2-sync.md](../../../bindings-v2-sync.md) for the full resource file shape and deduplication rules.
 
 ### 3b. `data.context[]`
 
@@ -233,9 +251,9 @@ Append the task to the target stage's `tasks[]` array in its own task set (one t
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| get-connection | Context from tasks.md values only. No bindings — folderKey unknown | `[SKIPPED] get-connection failed — bindings/folderKey omitted` |
-| tasks describe | Context + bindings. No outputs/enrichment. Use Config fallbacks | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
-| All succeed | Full population per §3a-3h | — |
+| get-connection | Context from tasks.md values only. No bindings, no bindings_v2 sync, no connection resource — folderKey/connectionName unknown | `[SKIPPED] get-connection failed — bindings/folderKey/resource omitted` |
+| tasks describe | Context + bindings + bindings_v2 + connection resource. No outputs/enrichment. Use Config fallbacks | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
+| All succeed | Full population per §3a-3h including bindings_v2 sync and connection resource | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).
 
@@ -251,6 +269,8 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 8. `data.bindings[]` is empty `[]`
 9. `data.outputs[]` copied verbatim with `elementId` set
 10. `data.inputs[]` includes `pathParameters` (always), `queryParameters` (when applicable), `file` (when multipart has file), `body`
+11. `bindings_v2.json` `resources` array matches `root.data.uipath.bindings` (unless get-connection failed)
+12. Connection resource file exists at `resources/solution_folder/connection/<connectorKey>/<connectionName>.json` (unless get-connection failed / skeleton)
 
 ## What NOT to Do
 
@@ -267,6 +287,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT omit `file` input** when `enrichment.multipartParameters` has a file entry. Include it even when empty.
 - **Do NOT add `data.name`.** The FE does not use it for connector tasks.
 - **Do NOT auto-inject `entryConditions`.** Step 10 handles them — injecting here creates duplicates.
+- **Never reuse a reference ID from a prior case or session.** Reference IDs (e.g., Jira project keys, Slack channel IDs) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources execute list` against the current `--connection-id`.
 
 ## Known Limitation
 

@@ -55,3 +55,11 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`). Generated via `cr
 1. Create binding entries in `root.data.uipath.bindings[]` before or during task creation
 2. Reference from task data via `=bindings.<id>` (e.g., `data.context[].value` for connectors, `data.name` / `data.folderPath` for process tasks)
 3. Apply deduplication check before creating new bindings
+
+## bindings_v2.json Sync
+
+`bindings_v2.json` must mirror `root.data.uipath.bindings[]`. It is NOT automatically managed — each plugin that writes to root bindings is responsible for regenerating it as a side effect (same pattern as `id-map.json`).
+
+See [bindings-v2-sync.md](../../../bindings-v2-sync.md) for the canonical procedure. Currently, only connector plugins write to root bindings in the JSON path:
+- connector-activity ([impl-json.md](../../tasks/connector-activity/impl-json.md) § 3a → § 3a-post)
+- connector-trigger / event trigger (via [connector-trigger-common.md](../../../connector-trigger-common.md) § Root-level bindings post-sync)

@@ -19,10 +19,10 @@ Distinguish from:
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md task name | |
-| Either `timeDuration` (`--every`) OR `timeCycle` OR `timeDate` (`--at`) | sdd.md timer semantics | At least one required |
+| `display-name` | sdd.md task name | Written to `task.displayName` |
+| Either `timeDuration` (`every`) OR `timeCycle` OR `timeDate` (`at`) | sdd.md timer semantics | At least one required. Written to `task.data.timerType` + corresponding field. |
 | `repeat` | sdd.md (optional) | Number of repetitions — omit for infinite |
-| `isRequired` | sdd.md (default `true`) | |
+| `isRequired` | sdd.md (default `true`) | Written to `task.isRequired` |
 
 ## Registry Resolution
 
@@ -30,7 +30,7 @@ Distinguish from:
 
 ## Duration Formats
 
-Accepted `--every` values:
+Accepted `every` values:
 
 | Format | Example | Meaning |
 |--------|---------|---------|
@@ -42,16 +42,16 @@ Accepted `--every` values:
 | Months | `3mo` | 3 months |
 | ISO 8601 | `PT10S` | 10 seconds (raw ISO) |
 
-Accepted `--at` values: ISO 8601 datetime (e.g., `2026-04-26T10:00:00.000Z`).
+Accepted `at` values: ISO 8601 datetime (e.g., `2026-04-26T10:00:00.000Z`).
 
-Accepted `--time-cycle` values: raw ISO 8601 repeating interval (e.g., `R/PT1H` = repeat every hour, infinite). Overrides `--every`, `--at`, `--repeat` if set.
+Accepted `timeCycle` values: raw ISO 8601 repeating interval (e.g., `R/PT1H` = repeat every hour, infinite). Overrides `every`, `at`, `repeat` if set.
 
 ## Translation Guidance
 
-- "Wait X hours" → `--every Xh`, no `--at`, no `--repeat`.
-- "Every day at 9 AM" → `--every 1d --at <ISO datetime with 09:00>`.
-- "Every hour, up to N times" → `--every 1h --repeat N`.
-- "Run repeatedly forever every N" → `--time-cycle R/PT<N>`.
+- "Wait X hours" → `every: Xh`, no `at`, no `repeat`.
+- "Every day at 9 AM" → `every: 1d`, `at: <ISO datetime with 09:00>`.
+- "Every hour, up to N times" → `every: 1h`, `repeat: N`.
+- "Run repeatedly forever every N" → `timeCycle: R/PT<N>`.
 
 Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations + "Something else".
 

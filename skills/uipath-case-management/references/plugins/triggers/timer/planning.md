@@ -19,8 +19,8 @@ Compose a single canonical `timeCycle` string (ISO 8601 repeating interval) from
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `timeCycle` | sdd.md schedule phrasing → ISO 8601 repeating interval | Canonical format: `R[<count>]/[<start-iso>/]<duration>` |
-| `displayName` | sdd.md (optional) | Defaults to `Trigger N` where N = existing-trigger-count + 1 |
+| `timeCycle` | sdd.md schedule phrasing → ISO 8601 repeating interval | Written to `node.data.uipath.timeCycle`. Canonical format: `R[<count>]/[<start-iso>/]<duration>` |
+| `displayName` | sdd.md (optional) | Written to `node.data.label`. Defaults to `Trigger N` where N = existing-trigger-count + 1 |
 
 ## Registry Resolution
 
@@ -74,4 +74,4 @@ When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat coun
 - verify: node added to schema.nodes with data.uipath.serviceType == Intsvc.TimerTrigger; entry-points.json has matching entry; timeCycle exact match
 ```
 
-`sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, consumed identically by both [`impl-cli.md`](impl-cli.md) (passed as `--time-cycle`) and [`impl-json.md`](impl-json.md) (written directly into `node.data.uipath.timeCycle`).
+`sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, consumed by [`impl-json.md`](impl-json.md) and written directly into `node.data.uipath.timeCycle`.
