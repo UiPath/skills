@@ -260,6 +260,10 @@ When editing XAML:
 - Do not reformat or re-indent the entire file
 - Only modify the specific section you need to change
 - Use the `Edit` tool for targeted replacements (match exact `old_string`, replace with `new_string`)
+- For structural edits such as activity insertion, arguments, variables,
+  namespace imports, or assembly references, follow
+  [semantic-editing-guide.md](semantic-editing-guide.md) before applying the
+  targeted replacement.
 
 ### Validate After Every Change
 Run `uip rpa get-errors` after every XAML modification. Do not batch multiple edits without validation — catching errors early is much easier than debugging compound issues.

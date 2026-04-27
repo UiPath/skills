@@ -94,7 +94,7 @@ Read: file_path="{projectRoot}/ExistingWorkflow.xaml"
 Use when you need to find which activity implements a user-described action:
 
 ```bash
-uip rpa find-activities --query "send mail" --limit 10 --output json```
+uip rpa find-activities --query "send mail" --limit 10 --output json
 ```
 
 - Results are **global** — not limited to installed packages
@@ -123,7 +123,8 @@ Use `uip rpa get-default-activity-xaml` when activity docs are insufficient:
 # Non-dynamic activity:
 uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json
+```
 
 For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"`. See [jit-custom-types-schema.md](jit-custom-types-schema.md).
 
@@ -132,10 +133,11 @@ For JIT custom types: `Read: file_path="{projectRoot}/.project/JitCustomTypesSch
 Use when activity docs, `find-activities`, and `get-default-activity-xaml` don't provide enough context:
 
 ```bash
-uip rpa list-workflow-examples --tags web --limit 10 --output jsonuip rpa get-workflow-example --key "<BLOB_PATH>"```
-
-**Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `intacct`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
+uip rpa list-workflow-examples --tags web --limit 10 --output json
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json
 ```
+
+**Complete tag list:** `adobe-sign`, `asana`, `box`, `concur`, `confluence`, `database`, `document-understanding`, `docusign`, `dropbox`, `email-generic`, `excel`, `excel-online`, `freshbooks`, `freshdesk`, `github`, `gmail`, `google-calendar`, `google-docs`, `google-drive`, `google-sheets`, `gsuite`, `hubspot`, `jira`, `mailchimp`, `marketo`, `microsoft-365`, `onedrive`, `outlook`, `outlook-calendar`, `pdf`, `powerpoint`, `productivity`, `quickbooks`, `salesforce`, `servicenow`, `sharepoint`, `shopify`, `slack`, `smartsheet`, `stripe`, `teams`, `testing`, `trello`, `web`, `webex`, `word`, `workday`, `zendesk`, `zoom`
 
 ### Step 1.8: Get Current Context (As Needed)
 
@@ -191,6 +193,12 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 **Critical:** `old_string` must match exactly and be unique. Include surrounding context if needed.
 
+For structural edits (activity insertions, arguments, variables, namespace
+imports, assembly references, or anchor-based changes), follow
+[semantic-editing-guide.md](semantic-editing-guide.md) before applying the diff.
+Choose the operation first, collect existing prefixes/IdRefs/anchors, apply the
+smallest targeted replacement, then validate.
+
 ---
 
 ## Phase 3: Validate & Fix Loop
@@ -200,7 +208,8 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 ### Step 3.1: Check for Errors
 
 ```bash
-uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json```
+uip rpa get-errors --file-path "Workflows/MyWorkflow.xaml" --output json
+```
 
 `--file-path` must be **relative to the project directory**. Use `--skip-validation` only for quick cached-error checks.
 
@@ -247,3 +256,4 @@ For detailed procedures, see [../validation-guide.md](../validation-guide.md).
 - **NEVER** use connector activities without checking connection existence
 - **NEVER** ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
 - **NEVER** generate full XAML from scratch without using `get-default-activity-xaml` as a starting point
+- **NEVER** perform broad text rewrites for structural edits; use the semantic editing guide and preserve prefixes, IdRefs, and anchors
