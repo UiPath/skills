@@ -14,7 +14,7 @@ Before starting, understand the limits of prompt iteration:
 
 **Neither prompts nor reviewing can fix:**
 
-- **OCR quality issues** — if the OCR consistently garbles a field's text, no instruction will make the model extract it correctly. Report to the user.
+- **OCR quality issues** — if the OCR consistently garbles a field's text, no instruction will fix it. However, during the review step, OCR-mangled predictions can be corrected using `labelling confirm --corrections` (keeps the reference, fixes the text). If many fields are OCR-mangled across multiple documents, report this to the user as a data quality issue rather than burning prompt iterations.
 - **Missing fields** — if a field simply doesn't exist in the documents, no instruction will conjure it.
 
 ## How update-prompts Works

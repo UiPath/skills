@@ -19,7 +19,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 
 ## Critical Rules
 
-1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT source `~/.uipath/.auth`, do NOT load auth tokens, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase, do NOT run `--help` to discover options.
+1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase.
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
@@ -34,11 +34,11 @@ When the user asks to improve scores/prompts for an existing project, follow the
 5. **Use heredocs for `--fields`/`--groups`** — for `update-prompts --fields` and `--groups`, use heredocs (`cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'EOF' ... EOF`) then `"$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)"`.
 6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_UID`, `COMMENT_UID`, etc.
 7. **Always use the project `Name`, never the `Title`** — the `project list` output has both `Name` (e.g., `my_invoices-f1afa9ef-ixp`) and `Title` (e.g., `My_Invoices`). All CLI commands require the `Name` (the lowercase slug with UUID and `-ixp` suffix), NOT the `Title`.
-8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated — do NOT attempt to manually extract or correct them.
+8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated. Fields with OCR-mangled values can be corrected using `--corrections` (keeps the prediction's document reference but fixes the text).
 9. **Do NOT manually extract values** — Claude does not construct extractions JSON or use `labelling label`. All labelling goes through `labelling confirm` with predictions from IXP.
 10. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references.
 11. **Keep field instructions short and pattern-focused** — 2-4 sentences max, 120-250 characters. Long instructions with many examples or detailed exclusion lists cause the model to memorize the list instead of learning the pattern, resulting in F1=0. Prefer: "Extract [what] from [where]. Format: [pattern]. Example: '[one value]'." over a paragraph with 10 examples.
-12. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review the predicted field values against the document image and OCR text. Confirm predictions that are correct (`labelling confirm`), skip documents where predictions are wrong. Do NOT manually extract values — use the predictions workflow. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
+12. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review predicted field values against the document image and OCR text. Confirm correct fields (`labelling confirm --fields`), correct OCR-mangled values (`--corrections`), and skip wrong fields. Do NOT manually extract values. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
 
 ## CLI Commands Reference
 
@@ -48,7 +48,8 @@ When the user asks to improve scores/prompts for an existing project, follow the
 |---------|-------------|
 | `uip ixp project list --output json` | List all IXP projects |
 | `uip ixp project get <project-name> --output json` | Get a project |
-| `uip ixp project create "<name>" <folder-path> -d "<description>" --output json` | Create project, upload docs, suggest+import taxonomy. Use `ProjectName` from output for all subsequent commands. |
+| `uip ixp project create "<name>" <folder-path> -d "<description>" [--skip-taxonomy] --output json` | Create project and upload docs. By default suggests+imports taxonomy. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
+| `uip ixp project import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. |
 | `uip ixp project rename <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp project taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
 | `uip ixp project metrics <project-name> --output json` | Get validation metrics — `FieldGroups[]` (per-group) and `Fields[]` (per-field F1/Precision/Recall) |
