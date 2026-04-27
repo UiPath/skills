@@ -17,9 +17,9 @@ Before inspecting or interacting with any live app:
 3. Ensure `UiPath.UIAutomation.Activities` is installed at the minimum version from that file. If it is absent or older and the user asked you to build/fix/explore UI automation, upgrade it before continuing unless the user explicitly forbids dependency changes.
 4. Run `uip rpa restore "$PROJECT_DIR" --output json`.
 5. Verify `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md` exists and read it inline.
-6. Verify `uip rpa uia --help` exposes the interaction commands described by the package docs.
+6. Verify `uip rpa --project-dir "$PROJECT_DIR" uia --help` exposes the interaction commands described by the package docs. Put `--project-dir` before `uia`; `uip rpa uia --project-dir ...` is the wrong shape.
 
-If any check fails after the prerequisite version and restore, stop and report the exact blocker. Do not use PowerShell UIAutomation, `Get-Process`, window-title scraping, Playwright, Selenium, browser devtools, or guessed selectors to compensate.
+If the UIA command surface is still unavailable after the prerequisite version and restore, stop and report the exact blocker. If package skill docs are missing but the UIA command surface exists, proceed from CLI help and package activity docs and record the missing-docs issue. Do not use PowerShell UIAutomation, `Get-Process`, window-title scraping, Playwright, Selenium, browser devtools, or guessed selectors to compensate.
 
 ## When to use
 

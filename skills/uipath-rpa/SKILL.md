@@ -61,10 +61,10 @@ Do this before choosing a UIAutomation package version, before writing XAML/C# U
    - [references/uia-configure-target-workflows.md](references/uia-configure-target-workflows.md)
 2. Check `project.json` for `UiPath.UIAutomation.Activities`. If it is absent or below the minimum in `uia-prerequisites.md`, install or upgrade to that minimum before UIA exploration or selector authoring unless the user explicitly forbids dependency changes.
 3. Run `uip rpa restore "<PROJECT_DIR>" --output json`, then verify the UIA command/docs surface:
-   - `uip rpa uia --help`
+   - `uip rpa --project-dir "<PROJECT_DIR>" uia --help`
    - `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`
    - `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md`
-4. If the command/docs surface is missing after the prerequisite version and restore, stop UI exploration and report the exact blocker. Do not substitute PowerShell UIAutomation scripts, Playwright, Selenium, OS process/window scraping, hand-written selectors, or guessed browser selectors.
+4. If the UIA command surface is missing after the prerequisite version and restore, stop UI exploration and report the exact blocker. If generated docs are missing but the `uia` commands are available, proceed from CLI help and package activity docs and record the missing-docs issue. Do not substitute PowerShell UIAutomation scripts, Playwright, Selenium, OS process/window scraping, hand-written selectors, or guessed browser selectors.
 5. For live-app exploration, use the `uip rpa uia` flow from the package docs. The first app-state probe must be `uia snapshot inspect`; subsequent UI advancement must use `uia interact` commands. For target creation, use `uia-configure-target`; do not call its internal selector-building commands directly.
 6. Use `indicate-application` / `indicate-element` only as the documented fallback after the UIA readiness gate has passed or when the user explicitly chooses Studio indication.
 

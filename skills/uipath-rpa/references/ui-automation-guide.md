@@ -4,7 +4,7 @@ Quick reference for UI automation in UiPath workflows — covers both coded work
 
 ## Prerequisites
 
-Read and apply [uia-prerequisites.md](uia-prerequisites.md) before doing anything else for UI automation. Do not inspect a live app, select a UIAutomation package version, write UIA XAML/C#, or configure targets until the package minimum and generated UIA docs are in place.
+Read and apply [uia-prerequisites.md](uia-prerequisites.md) before doing anything else for UI automation. Do not inspect a live app, select a UIAutomation package version, write UIA XAML/C#, or configure targets until the package minimum is installed and the `uip rpa --project-dir "$PROJECT_DIR" uia` command surface is available. If generated UIA docs are missing but the command surface exists, proceed from CLI help and package activity docs and record the missing-docs issue.
 
 **Required package:** `UiPath.UIAutomation.Activities`
 

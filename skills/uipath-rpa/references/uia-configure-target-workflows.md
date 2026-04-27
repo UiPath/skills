@@ -2,11 +2,15 @@
 
 ## Prerequisite Gate
 
-Before following this workflow, complete [uia-prerequisites.md](uia-prerequisites.md). If `UiPath.UIAutomation.Activities` is below the required minimum, upgrade it and restore before capture. If `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` or `uia-interact/SKILL.md` is missing after restore, stop and report the blocker. Do not replace this workflow with hand-written selectors, OS-level UI probing, or PowerShell/browser automation scripts.
+If generated package docs are missing after restore but `uip rpa --project-dir "$PROJECT_DIR" uia --help` exposes `snapshot`, `interact`, `target-app`, `target-anchorable`, `object-repository`, and `selector-intelligence`, proceed from CLI help and package activity docs and record the missing-docs issue. Stop only when the UIA command surface itself is unavailable.
+
+Before following this workflow, complete [uia-prerequisites.md](uia-prerequisites.md). If `UiPath.UIAutomation.Activities` is below the required minimum, upgrade it and restore before capture. If generated docs are missing after restore and the UIA command surface is also unavailable, stop and report the blocker. Do not replace this workflow with hand-written selectors, OS-level UI probing, or PowerShell/browser automation scripts.
 
 **Always use the `uia-configure-target` skill** to create or find targets in the Object Repository. This skill handles the full flow: capturing the application, discovering elements, generating selectors, improving them, and registering them in the OR.
 
 > **Working directory:** run every `uip rpa uia` CLI call from the project directory — the folder containing `project.json`.
+
+> **Project option shape:** when adding an explicit project directory, use `uip rpa --project-dir "$PROJECT_DIR" uia ...`; do not put `--project-dir` after `uia`.
 
 ## Execution Model
 
