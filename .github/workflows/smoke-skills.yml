@@ -207,7 +207,7 @@ jobs:
         run: |
           set -euo pipefail
           TOKEN=$(curl -fsS -X POST \
-            "https://cloud.uipath.com/identity_/connect/token" \
+            "https://alpha.uipath.com/identity_/connect/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "grant_type=client_credentials" \
             -d "client_id=$UIPATH_CLIENT_ID" \
