@@ -1,0 +1,214 @@
+task_id: skill-rpa-coded-workflow
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to build a coded
+  automation project end-to-end — a Main.cs workflow, a [TestCase] that
+  exercises it with Given-When-Then + testing.Verify, and shared Before/After
+  hooks via the partial-class CodedWorkflow pattern. Validates the full coded
+  surface: project.json wiring, the testing service, the hooks contract, and
+  `uip rpa get-errors` as the compile gate.
+tags: [uipath-rpa, smoke, coded]
+
+# `uip rpa get-errors` pays a 30–60s Helm cold-start on first call plus
+# additional time for package restore. Generating three .cs files and
+# validating lands around 10–20 min wall time; these budgets have room.
+task_timeout: 1500
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+# Per-task reviewer prompt that contextualizes the CI auth caveat.
+# Without this, the reviewer falls back to the experiment default and
+# legitimately dings the agent for skipping auth-gated commands —
+# those commands genuinely can't run in this sandbox.
+llm_reviewer:
+  enabled: true
+  model: claude-sonnet-4-6
+  temperature: 0.0
+  max_tokens: 600
+  prompt: |
+    Evaluate whether the agent built a correct coded UiPath automation
+    project for this CI task.
+
+    Focus scoring on coded-surface correctness:
+    - Are the four required files present with the right shape?
+      (project.json with fileInfoCollection pointing at
+      TestLoginSuccess; Main.cs with CodedWorkflow + Execute + Log;
+      TestLoginSuccess.cs with [TestCase] + testing.Verify* assertions
+      — NOT xUnit/NUnit Assert.*; CodedWorkflowHooks.cs with
+      `partial class CodedWorkflow` + IBeforeAfterRun + Before/After)
+    - Does every .cs file declare `namespace TestAutomation;`?
+    - Did the agent call `uip rpa get-errors` once for skill fidelity?
+
+    The harness runs `uip rpa build` programmatically against the
+    project after the agent finishes; that's the compile gate.
+
+    Reply terse, developer-style. Score 1.0 if correct; lower only for
+    real agent issues (wrong files, wrong patterns, skill-rule
+    violations).
+
+initial_prompt: |
+  Build a coded UiPath automation project called "TestAutomation" that
+  exercises three parts of the coded surface in one go: a main workflow,
+  a test case that calls it, and shared Before/After hooks that run
+  around every test.
+
+  Deliverables, all under ./TestAutomation:
+  1. project.json with the right entry points / fileInfoCollection so
+     the test case is discoverable. Follow the skill's package-version
+     guidance verbatim — that file calls out a bootloader trap on
+     earlier `UiPath.Testing.Activities` patches.
+  2. Main.cs — a CodedWorkflow with an Execute method that logs
+     "Hello from TestAutomation" using the Log helper.
+  3. TestLoginSuccess.cs — a [TestCase] CodedWorkflow using the
+     Given-When-Then (Arrange-Act-Assert) structure, invoking the main
+     workflow and asserting on its result. Use the UiPath testing
+     service methods EXCLUSIVELY for assertions — `testing.VerifyExpression`,
+     `testing.VerifyAreEqual`, `testing.VerifyContains`, etc. The skill
+     teaches this as the canonical assertion API. Do NOT use xUnit /
+     NUnit / MSTest `Assert.*` APIs — those won't integrate with the
+     UiPath test runner, and the skill explicitly avoids them.
+  4. CodedWorkflowHooks.cs — shared Before/After hooks that apply to
+     every test case in the project. Use the partial-class CodedWorkflow
+     pattern with IBeforeAfterRun (NOT a base class).
+
+  Constraints:
+  - Every `.cs` file MUST declare `namespace TestAutomation;` at the
+    top so the auto-generated `<ClassName>+<ClassName>Activity` wrappers
+    resolve correctly — missing or mismatched namespaces produce CS0234.
+  - When scaffolding via `uip rpa create-project`, use
+    `--template-id BlankTemplate` (the default — Process project),
+    then add `TestLoginSuccess.cs` to project.json's `fileInfoCollection`.
+    Do NOT use `--template-id TestAutomationProjectTemplate` — it
+    scaffolds XAML test files (not C#) AND generates a
+    `.local/install/PerformanceTestingBootloader*.cs` bootloader that
+    references `UiPath.Robot.Activities.Api`, which isn't on the build
+    classpath in CI and breaks the build with CS0234. Test cases work
+    fine in a Process project (the skill calls this out explicitly).
+  - `TestAutomation/project.uiproj` is required by `uip rpa build`
+    alongside project.json. `create-project` writes it for you; if you
+    hand-author, use this minimal shape:
+      {
+        "Name": "TestAutomation",
+        "ProjectType": "Process",
+        "Description": "Smoke test project",
+        "MainFile": "Main.cs"
+      }
+
+  Validation — call `uip rpa get-errors` once for skill fidelity:
+
+    `uip rpa get-errors --project-dir ./TestAutomation --output json`
+
+  The harness then runs `uip rpa build` programmatically; you don't
+  need to invoke build yourself.
+
+  Important:
+  - The `uip` CLI and the `rpa` tool are already available in the
+    environment, and the CI step has authenticated `uip` against the
+    sandbox tenant — `uip rpa create-project`, `get-errors`, and
+    other Helm-backed commands will work.
+  - Use `--output json` on any uip commands you run.
+
+success_criteria:
+  - type: file_exists
+    description: "project.json was created"
+    path: "TestAutomation/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json references the test case"
+    path: "TestAutomation/project.json"
+    includes:
+      - "TestLoginSuccess"
+      - "testCaseType"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.cs coded workflow file was created"
+    path: "TestAutomation/Main.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.cs declares namespace TestAutomation and is a CodedWorkflow with Execute()"
+    path: "TestAutomation/Main.cs"
+    includes:
+      - "namespace TestAutomation"
+      - "CodedWorkflow"
+      - "Execute"
+      - "Hello from TestAutomation"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "TestLoginSuccess coded test case was created"
+    path: "TestAutomation/TestLoginSuccess.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case declares namespace TestAutomation, uses [TestCase], CodedWorkflow, and testing.Verify*"
+    path: "TestAutomation/TestLoginSuccess.cs"
+    includes:
+      - "namespace TestAutomation"
+      - "[TestCase]"
+      - "CodedWorkflow"
+      - "testing.Verify"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "CodedWorkflowHooks.cs was created"
+    path: "TestAutomation/CodedWorkflowHooks.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Hooks file declares namespace TestAutomation and uses partial class CodedWorkflow + IBeforeAfterRun"
+    path: "TestAutomation/CodedWorkflowHooks.cs"
+    includes:
+      - "namespace TestAutomation"
+      - "partial class CodedWorkflow"
+      - "IBeforeAfterRun"
+      - "Before("
+      - "After("
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # the canonical validation step. We don't gate on its exit code —
+  # the actual compile gate is the `uip rpa build` run_command below.
+  - type: command_executed
+    description: "Agent ran uip rpa get-errors (skill-canonical validation step)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+get-errors'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Programmatic compile gate: harness invokes `uip rpa build` against
+  # the agent's project directly and gates on exit code 0. Replaces
+  # the old "did the agent call build" telemetry check — what matters
+  # is that the project actually compiles, not that the agent typed
+  # the right command.
+  #
+  # Path note: the @uipath/rpa-tool wrapper double-resolves a relative
+  # positional arg (chdir's into the project, then re-resolves the
+  # same relative arg from inside), producing a doubled path
+  # `<sandbox>\TestAutomation\TestAutomation` and a
+  # DirectoryNotFoundException out of WorkflowCompiler. Pass an
+  # absolute path via cmd.exe's %CD% to bypass it. coder_eval runs
+  # this through subprocess shell=True, which is cmd.exe on Windows.
+  - type: run_command
+    description: "uip rpa build exits 0 against the agent's TestAutomation project"
+    command: 'uip rpa build "%CD%\TestAutomation" --output json'
+    expected_exit_code: 0
+    timeout: 180
+    weight: 2.0
+    pass_threshold: 1.0
