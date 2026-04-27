@@ -7,6 +7,7 @@ tags: [uipath-rpa, coded, netsuite, integration]
 max_iterations: 1
 
 agent:
+  type: claude-code
   setting_sources: ["user", "project"]
   system_prompt: |
     You are a UiPath automation coding agent. Complete tasks efficiently and directly.
