@@ -80,14 +80,21 @@ initial_prompt: |
   - Every `.cs` file MUST declare `namespace TestAutomation;` at the
     top so the auto-generated `<ClassName>+<ClassName>Activity` wrappers
     resolve correctly — missing or mismatched namespaces produce CS0234.
+  - When scaffolding via `uip rpa create-project`, use
+    `--template-id BlankTemplate` (the default — Process project),
+    then add `TestLoginSuccess.cs` to project.json's `fileInfoCollection`.
+    Do NOT use `--template-id TestAutomationProjectTemplate` — it
+    scaffolds XAML test files (not C#) AND generates a
+    `.local/install/PerformanceTestingBootloader*.cs` bootloader that
+    references `UiPath.Robot.Activities.Api`, which isn't on the build
+    classpath in CI and breaks the build with CS0234. Test cases work
+    fine in a Process project (the skill calls this out explicitly).
   - `TestAutomation/project.uiproj` is required by `uip rpa build`
-    alongside project.json (omit it and build fails with
-    "No project.uiproj or webAppManifest.json"). If you scaffold via
-    `uip rpa create-project` it's generated automatically; if you
+    alongside project.json. `create-project` writes it for you; if you
     hand-author, use this minimal shape:
       {
         "Name": "TestAutomation",
-        "ProjectType": "Tests",
+        "ProjectType": "Process",
         "Description": "Smoke test project",
         "MainFile": "Main.cs"
       }

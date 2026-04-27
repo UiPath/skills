@@ -66,6 +66,12 @@ initial_prompt: |
     Input:  webctrl tag='textarea' name='q'
     Button: webctrl tag='input' name='btnK' type='submit'
 
+  Use the modern `Use Application/Browser` activity (`NApplicationCard`
+  from `UiPath.UIAutomation.Activities`) as the scope, with `TypeInto`
+  and `Click` activities inside it. Do NOT use the legacy `OpenBrowser`
+  activity — the skill teaches `NApplicationCard` as the canonical
+  scope for all UI automation.
+
   Follow the uipath-rpa skill's normal flow for everything else
   (project scaffolding, XAML authoring, validation). The `uip` CLI
   is authenticated against the sandbox tenant in this CI step, so
