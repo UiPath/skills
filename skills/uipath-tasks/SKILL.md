@@ -1,7 +1,7 @@
 ---
 name: uipath-tasks
-description: "[PREVIEW] Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, manage assignments, or user mentions 'Action Center'/'tasks'/'uip tasks'. For Orchestrator-> uipath-platform, skip for Document Understanding, or codedapp."
-user-invokable: true
+description: "[PREVIEW] Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, or user mentions 'Action Center'/'tasks'/'uip tasks'. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+user-invocable: true
 ---
 
 # UiPath Tasks (Action Center) — Agent Skill
@@ -199,6 +199,6 @@ uip tasks get <task-id> --output json
 
 For deeper guidance, read these files only when needed:
 
-- `references/task-lifecycle.md` — Assign and complete task workflows with examples
+- `references/task-lifecycle.md` — Listing and getting tasks, type-hint endpoint routing, and the full discover→assign→complete workflow
 - `references/task-completion.md` — Completion endpoint routing, required fields per task type
 - `references/task-assignment.md` — Assign, reassign, unassign patterns and user discovery

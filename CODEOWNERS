@@ -61,3 +61,7 @@
 # Data Fabric skill (CLI entity/record management)
 /skills/uipath-data-fabric/ @aditi-goyal-uipath
 /tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath
+
+# Tasks skill (Action Center Operate)
+/skills/uipath-tasks/ @UiPath/ActionCenterDev
+/tests/tasks/uipath-tasks/ UiPath/ActionCenterDev
