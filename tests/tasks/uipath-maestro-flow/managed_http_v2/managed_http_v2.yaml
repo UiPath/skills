@@ -1,0 +1,51 @@
+task_id: skill-flow-managed-http-v2
+description: >
+  Create a UiPath Flow that calls the open-meteo weather API using Managed HTTP
+  Request (core.action.http.v2) in manual mode. Exercises the deprecation of
+  core.action.http v1 — the http plugin mandates v2 for all HTTP requests,
+  including manual-auth calls. Verifies the agent chooses v2 and does not fall
+  back to the legacy v1 node type.
+tags: [uipath-maestro-flow, integration, generate, ootb]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "ManagedHttpWeather" that fetches the
+  current temperature for Seattle from the open-meteo API
+  (https://api.open-meteo.com/v1/forecast?latitude=47.6&longitude=-122.3&current=temperature_2m&temperature_unit=fahrenheit)
+  and returns the temperature as a number output.
+
+  Use the Managed HTTP Request node in manual mode (no connector connection
+  needed — open-meteo is a public API).
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip flow validate passes on the flow file"
+    command: "uip flow validate ManagedHttpWeather/ManagedHttpWeather/ManagedHttpWeather.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Structural and execution checks --
+  - type: run_command
+    description: "Flow uses core.action.http.v2 (not deprecated v1) and returns a plausible temperature"
+    command: "python3 $TASK_DIR/check_managed_http_v2.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

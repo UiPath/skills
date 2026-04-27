@@ -1,0 +1,75 @@
+task_id: skill-flow-plan-artifacts
+description: >
+  Build a multi-node Flow and verify the agent produces BOTH planning
+  artifacts — <Solution>.arch.plan.md (Phase 1) and <Solution>.impl.plan.md
+  (Phase 2). Step 4 and Critical Rule 2 mandate these artifacts for multi-node
+  flows, but no existing test checks for them. The agent currently passes
+  every e2e by jumping straight to Step 5 — this test closes that gap.
+  Local-only: no cloud debug is performed.
+tags: [uipath-maestro-flow, e2e, generate, ootb, planning]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "OrderPipeline" that does the following:
+    1. Triggers manually with a numeric "orderId" input
+    2. Calls an HTTP endpoint to fetch order details (use open-meteo as a stub:
+       https://api.open-meteo.com/v1/forecast?latitude=47.6&longitude=-122.3&current=temperature_2m)
+    3. Uses a Script node to extract the temperature field as a numeric score
+    4. Branches on a Decision node: score >50 -> "priority" path, else -> "standard" path
+    5. Each path ends with its own End node outputting the label and score
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass, but follow the skill's workflow and produce BOTH planning artifacts along the way.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # -- Flow file validity --
+  - type: run_command
+    description: "uip flow validate passes on the flow file"
+    command: "uip flow validate OrderPipeline/OrderPipeline/OrderPipeline.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # -- Phase 1: architectural plan exists with mermaid diagram --
+  - type: file_exists
+    description: "Phase 1 architectural plan was written to the solution directory"
+    path: "OrderPipeline/OrderPipeline.arch.plan.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Arch plan contains a horizontal mermaid diagram per planning-arch.md rules"
+    path: "OrderPipeline/OrderPipeline.arch.plan.md"
+    includes:
+      - "graph LR"
+      - "mermaid"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # -- Phase 2: implementation plan exists --
+  - type: file_exists
+    description: "Phase 2 implementation plan was written to the solution directory"
+    path: "OrderPipeline/OrderPipeline.impl.plan.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # -- Structural check on the built flow --
+  - type: run_command
+    description: "Built flow has the expected decision + end topology from the plan"
+    command: "python3 $TASK_DIR/check_plan_artifacts.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
