@@ -20,6 +20,7 @@ Use this table to determine which strategy to follow for each operation. **Direc
 | Operation | Default | Alternative | Notes |
 |-----------|---------|-------------|-------|
 | Add a node | **Direct JSON** | CLI (opt-in) | CLI still auto-manages definitions/variables when opted in. |
+| Add a HITL QuickForm node | **Direct JSON** | CLI (opt-in) via `uip maestro flow hitl add` | Dedicated command also handles definition + `variables.nodes`. Wire `completed` port after. See [hitl/impl.md](plugins/hitl/impl.md). |
 | Delete a node | **Direct JSON** | CLI (opt-in) | |
 | Add an edge | **Direct JSON** | CLI (opt-in) | Remember `targetPort` (Rule #6). |
 | Delete an edge | **Direct JSON** | CLI (opt-in) | |

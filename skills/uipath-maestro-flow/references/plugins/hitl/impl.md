@@ -13,6 +13,21 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 > **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
 
+### Adding / Editing
+
+For add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). **Direct JSON is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
+
+```bash
+uip maestro flow hitl add <path/to/file.flow> \
+  --label "Invoice Review" \
+  --priority High \
+  --assignee finance-approvers \
+  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
+  --output json
+```
+
+Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [flow-commands.md — uip maestro flow hitl add](../../flow-commands.md#uip-maestro-flow-hitl-add).
+
 ### Quick Reference
 
 **Node JSON (minimum viable):**
@@ -35,8 +50,12 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
         { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "outcomeType": "Negative", "action": "End" }
       ]
     },
-    "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
+    "recipient": { "channels": ["Email", "ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "priority": "Low"
+  },
+  "outputs": {
+    "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
   },
   "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
 }
