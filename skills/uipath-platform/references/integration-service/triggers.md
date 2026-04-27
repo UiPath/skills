@@ -13,6 +13,7 @@ Triggers are event-based activities that fire when something happens in an exter
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
+- [Webhook URL Retrieval](#webhook-url-retrieval)
 - [Happy-Path Example](#happy-path-example)
 
 ---
@@ -96,11 +97,62 @@ Returns field definitions with names, types, and descriptions. Always requests `
 
 ### Trigger Objects (from `triggers objects`)
 
-Array of objects — each has a **name** to use in the describe command.
+Array of objects — each has a **name** to use in the describe command. Also includes:
+
+| Field | Description |
+|---|---|
+| `name` | Object name (use in describe command) |
+| `displayName` | Human-readable name |
+| `byoaConnection` | `true` if this event requires a BYOA connection |
+| `isWebhookUrlVisible` | `true` if the webhook URL should be shown to the user |
+| `eventMode` | `"webhooks"` or `"polling"` — how the trigger receives events |
 
 ### Trigger Metadata (from `triggers describe`)
 
 Object with field definitions. Structure varies by connector but typically includes field names, types, display names, and descriptions.
+
+Additional fields:
+
+| Field | Description |
+|---|---|
+| `eventMode` | `"webhooks"` or `"polling"` |
+| `byoaConnection` | `true` if this trigger requires a BYOA connection |
+| `isWebhookUrlVisible` | `true` if the webhook URL should be shown |
+
+---
+
+## Webhook URL Retrieval
+
+When a trigger uses `eventMode: "webhooks"`, the webhook URL must be retrieved and registered on the customer's external service. Without this step, the trigger will never fire.
+
+### When to retrieve the webhook URL
+
+- `eventMode: "webhooks"` (from `triggers describe` or `triggers objects`)
+- `isWebhookUrlVisible: true` for the matching event object. When `false`, **skip retrieval** — the connector manages webhook registration automatically and does not expose a URL.
+- Independent of `byoaConnection` — applies whether BYOA is required or not.
+
+### How to retrieve the webhook URL
+
+1. Get the `ElementInstanceId` from the connection:
+
+   ```bash
+   uip is connections list "<connector-key>" --connection-id "<id>" --output json
+   ```
+
+   Empty `ElementInstanceId` means the connection is the wrong type for webhooks. Check the `byoaConnection` flag on the matching event — if `true`, switch to a BYOA connection.
+
+2. Retrieve the webhook URL:
+
+   ```bash
+   uip is webhooks config "<connector-key>" \
+     --connection-id "<connection-guid>" \
+     --element-instance-id <number> \
+     --output json
+   ```
+
+3. The response contains the `WebhookUrl`. Present it to the user with registration instructions:
+   - **Prefer `design.textBlocks`** from the `triggers objects` response if present — it carries connector-specific text (e.g., "Add this URL to your Slack app's Event Subscriptions"). Substitute `{webhookUrl}` with the actual value.
+   - **Otherwise** use a generic message: register the URL in the external service's app settings (e.g., Slack Event Subscriptions, Salesforce Outbound Messages). The trigger does not fire until the URL is registered and verified by the external service.
 
 ---
 
