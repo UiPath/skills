@@ -286,53 +286,18 @@ The argument to `resource refresh` is the **solution directory** (containing the
 
 ### Step 7a — Troubleshoot failed flows
 
-When a debug run or a deployed process run fails, use the following diagnostic workflow. All commands require `uip login`.
+When a debug or process run fails, diagnose in this order. All commands require `uip login`. Get the instance ID from debug output (`Data.instanceId`) or from `uip maestro flow job status <JOB_KEY> --output json`.
 
-**1. Get the instance ID.** The debug output (`Data.instanceId`) or `job status` response contains the instance ID. If you only have a job key:
+1. **Incidents first** — failed flows always have an incident. This gives the error message and faulting element:
+   `uip maestro flow instance incidents <INSTANCE_ID> --output json`
+   Drill into a specific incident: `uip maestro flow incident get <INCIDENT_ID> --output json`
+2. **Runtime variables** — inspect variable state at time of failure:
+   `uip maestro flow instance variables <INSTANCE_ID> --output json`
+   Scope to an element: `uip maestro flow instance variables <INSTANCE_ID> --parent-element-id <ELEMENT_ID> --output json`
+3. **Correlate with the .flow file** — map the faulting element ID to its node, check `inputs`, upstream edges, and variable values. If the local file may differ from what ran, fetch the deployed definition: `uip maestro flow instance asset <INSTANCE_ID> --output json`
+4. **Traces (last resort)** — verbose full execution timeline: `uip maestro flow job traces <JOB_KEY> --output json`
 
-```bash
-uip maestro flow job status <JOB_KEY> --output json
-```
-
-Parse the instance ID from the response.
-
-**2. Fetch incidents for the instance.** Failed flows always have an incident associated with them. Start here — incidents give you the error category, message, and the faulting element:
-
-```bash
-uip maestro flow instance incidents <INSTANCE_ID> --output json
-```
-
-If you need more detail on a specific incident:
-
-```bash
-uip maestro flow incident get <INCIDENT_ID> --output json
-```
-
-**3. Fetch runtime variable state.** Get the variable values at the time of failure to understand what data each node was working with:
-
-```bash
-uip maestro flow instance variables <INSTANCE_ID> --output json
-```
-
-To scope variables to a specific element (node/subflow):
-
-```bash
-uip maestro flow instance variables <INSTANCE_ID> --parent-element-id <ELEMENT_ID> --output json
-```
-
-**4. Correlate with the flow definition.** Use the incident's faulting element ID and the variable state to locate the failure point in the `.flow` file. Map the element ID to the corresponding node, check its `inputs`, upstream edges, and the variable values flowing into it. If the local `.flow` file may differ from what was deployed, fetch the deployed BPMN definition:
-
-```bash
-uip maestro flow instance asset <INSTANCE_ID> --output json
-```
-
-**5. (Last resort) Fetch execution traces.** Traces are verbose but contain the full execution timeline. Use them only when incidents and variables are insufficient:
-
-```bash
-uip maestro flow job traces <JOB_KEY> --output json
-```
-
-> **Always use CLI commands for troubleshooting — never call the underlying APIs directly.**
+Always use CLI commands — never call the underlying APIs directly. See [flow-commands.md — instance / incident](references/flow-commands.md#uip-maestro-flow-instance) for full command reference.
 
 ### Step 8 — Publish to Studio Web
 
