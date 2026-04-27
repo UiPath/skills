@@ -42,6 +42,26 @@ Every `uip rpa` invocation accepts these flags:
 
 `--project-dir` defaults to the current working directory. When the project is elsewhere, pass the absolute path to the folder containing `project.json`.
 
+### Studio IPC Compatibility Preflight
+
+At the start of RPA work, record the CLI and Studio versions before running validation or execution commands:
+
+```bash
+uip --version
+uip rpa list-instances --output json
+```
+
+If Studio is running, read the Studio version and project directory from `list-instances`. If the project is not open, run `open-project` once, then list instances again. Keep these versions in mind for every Studio-backed validation, execution, build, and analysis command.
+
+Treat these as compatibility dead ends, not ordinary workflow errors:
+- `"Studio <version> does not support rpa-tool"`
+- `"does not have interop support"` or `"Requires Studio ..."`
+- `"Too many parameters for Task<string> ExecuteCommand"` from an IPC call
+- `get-errors`, `run-file`, `build`, or `analyze` hangs with no output after the configured timeout
+- standalone `build`/`analyze` fails because the project is already open in Studio while the Studio-backed command also fails or hangs
+
+When any of these appears, do **not** retry the same command in a loop and do not switch blindly between Studio-backed and standalone variants. Capture the exact command, `uip` version, Studio version, and error text, then tell the user that CLI/Studio compatibility is blocking automated validation or execution. Continue only with work that can be done safely without that command, and report the verification gap explicitly.
+
 ---
 
 ## Installed Package Activity Documentation
@@ -461,10 +481,14 @@ When `uip` commands fail, diagnose by error category:
 | Error Pattern | Cause | Recovery |
 |---------------|-------|----------|
 | `"connection refused"`, `"EPIPE"`, `"pipe not found"` | Studio IPC not available | Run `uip rpa start-studio`, then `uip rpa open-project --project-dir "..."` |
+| `"does not support rpa-tool"`, `"does not have interop support"`, `"Requires Studio"` | Studio build does not support the CLI IPC protocol needed by the command | Stop retrying; record CLI/Studio versions and tell the user Studio must be updated or the command cannot be used in this environment |
+| `"Too many parameters for Task<string> ExecuteCommand"` | CLI and Studio IPC contract mismatch | Stop retrying; record CLI/Studio versions and report validation/execution as blocked by compatibility |
 | `"timeout"`, `"ETIMEDOUT"` | Command took too long | Increase timeout: `uip rpa --timeout 600 <command>`, or use `--skip-validation` for `get-errors` |
+| Command produces no output until your shell timeout expires | Possible Studio IPC hang or package restore/build deadlock | Retry once with a larger `--timeout`; if it hangs again, treat as a compatibility/environment blocker and report it |
 | `"not authenticated"`, `401`, `403` | Auth required for cloud features | Run `uip login` and re-try |
 | `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uip rpa find-activities`; omit `version` to auto-resolve latest |
 | `"project not found"`, `"no project open"` | Wrong project-dir or project not open | Verify `--project-dir` path, run `uip rpa open-project` |
+| `"project is already opened in another Studio instance"` | Standalone compiler or wrong Studio instance is competing with an open project | Use the intended `--project-dir`, close idle Studio instances or ask the user to do so, then retry once |
 | `"file not found"` in `get-errors` | Wrong `--file-path` (must be relative to project) | Use path relative to project root, not absolute |
 | `"Studio is busy"`, `"operation in progress"` | Studio is processing a previous request | Wait a few seconds and retry the command |
 | Any unrecognized error | Unknown | Check `--verbose` flag: `uip rpa --verbose <command>` for debug details, inform the user |
