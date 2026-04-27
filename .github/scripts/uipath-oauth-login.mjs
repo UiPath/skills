@@ -222,57 +222,64 @@ async function main() {
         throw new Error("Org-select page appeared but ORG env var is empty. Set ORG to the target org slug.");
       }
 
-      // Try CSS selectors in order from most specific to most permissive.
+      // Resolve an ElementHandle for the org tile, trying CSS selectors
+      // first then falling back to text-content match. We click via the
+      // ElementHandle (Puppeteer's real-mouse CDP path), NOT inside
+      // page.evaluate — alpha's org-select uses Angular Material buttons
+      // that listen for pointerdown/mousedown, which a synthetic
+      // HTMLElement.click() does not dispatch.
       const cssSelectors = [
         `a[href*="${TARGET_ORG}"]`,
         `[data-cy*="${TARGET_ORG}"]`,
         `[data-test-id*="${TARGET_ORG}"]`,
         `[aria-label*="${TARGET_ORG}"]`,
       ];
-      let clicked = false;
+      let handle = null;
+      let pickedBy = null;
       for (const sel of cssSelectors) {
         const el = await page.$(sel);
         if (el) {
-          console.log(`Picking org via CSS selector: ${sel}`);
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {}),
-            el.click(),
-          ]);
-          clicked = true;
+          handle = el;
+          pickedBy = `CSS:${sel}`;
           break;
         }
       }
-
-      // Last-resort: text-content match on any clickable element.
-      if (!clicked) {
-        const matched = await page.evaluate((org) => {
-          const candidates = document.querySelectorAll(
-            'a, button, [role="link"], [role="button"], [data-cy], [class*="org"]'
+      if (!handle) {
+        // Text-content match. Returns the element node; if no match,
+        // returns null — checked via .asElement() below.
+        const candidate = await page.evaluateHandle((org) => {
+          const lower = org.toLowerCase();
+          const els = document.querySelectorAll(
+            'a, button, [role="link"], [role="button"]'
           );
-          for (const el of candidates) {
-            const t = el.textContent?.trim();
-            if (t && (t === org || t.toLowerCase() === org.toLowerCase() || t.includes(org))) {
-              el.scrollIntoView();
-              el.click();
-              return true;
-            }
+          for (const el of els) {
+            const t = el.textContent?.trim().toLowerCase() || "";
+            if (t === lower || t.includes(lower)) return el;
           }
-          return false;
+          return null;
         }, TARGET_ORG);
-        if (matched) {
-          console.log(`Picked org via text-content match for "${TARGET_ORG}".`);
-          // Give the SPA a moment to navigate.
-          await new Promise(r => setTimeout(r, 2000));
-          clicked = true;
+        if (candidate.asElement()) {
+          handle = candidate.asElement();
+          pickedBy = `text-match("${TARGET_ORG}")`;
+        } else {
+          await candidate.dispose();
         }
       }
 
-      if (!clicked) {
+      if (!handle) {
         throw new Error(
           `Could not find a clickable element for org "${TARGET_ORG}" on alpha's org-select page. ` +
           `See the DOM dump above and the screenshot saved to AUTH_DEBUG_DIR.`
         );
       }
+
+      console.log(`Picking org via ${pickedBy}…`);
+      await handle.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      // Real mouse click via CDP — fires pointerdown/mousedown/mouseup/click.
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {}),
+        handle.click(),
+      ]);
     }
 
     console.log("Waiting for OAuth callback...");
