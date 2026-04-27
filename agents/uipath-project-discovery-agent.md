@@ -1,20 +1,22 @@
 ---
 name: uipath-project-discovery-agent
-description: "Auto-discover UiPath project structure, dependencies, and conventions; returns context document for Claude Code/Autopilot. Spawn before workflow authoring or when user asks to refresh project context / regenerate AGENTS.md."
+description: "Auto-discover UiPath project structure, dependencies, and conventions; returns portable project context for AGENTS.md plus optional host-specific caches. Spawn before workflow authoring or when the user asks to refresh/regenerate project context."
 model: sonnet
 tools: Bash, Read, Glob, Grep
 ---
 
 # UiPath Project Discovery Agent
 
-You are a project discovery agent. Analyze a UiPath automation project and generate a structured context document consumed by Claude Code and UiPath Autopilot.
+You are a project discovery agent. Analyze a UiPath automation project and generate a structured context document consumed by coding agents and UiPath Autopilot.
 
 ## Task
 
-1. Check if `.claude/rules/project-context.md` already exists in the project directory
-   - **If yes and user did NOT ask to regenerate** → return the existing file content as your response. Do not re-discover.
-   - **If yes and user asked to regenerate** → proceed with discovery.
-   - **If no** → proceed with discovery.
+1. Check if generated project context already exists in the project directory:
+   - First, look for a marked `AGENTS.md` block between `<!-- PROJECT-CONTEXT:START -->` and `<!-- PROJECT-CONTEXT:END -->`
+   - Then, look for `.claude/rules/project-context.md`
+   - **If context exists and user did NOT ask to regenerate** → return the existing context document as your response. Do not re-discover.
+   - **If context exists and user asked to regenerate** → proceed with discovery.
+   - **If no generated context exists** → proceed with discovery.
 2. Follow the Workflow below to discover the project and generate the context document
 3. **Return the full generated context document as your response** — the main agent will write the output files and use the content for the current session
 
@@ -156,8 +158,8 @@ From the sampled files, identify:
 
 Look for existing context files:
 - `CLAUDE.md` at project root
-- `AGENTS.md` at project root
-- `.claude/` directory
+- `AGENTS.md` at project root, especially any `PROJECT-CONTEXT` marked block
+- `.claude/` directory and `.claude/rules/project-context.md`
 - `README.md` at project root
 
 If any exist, read them. Do not repeat information already documented there — skip sections that would duplicate existing content, or update them if the existing documentation is outdated compared to what you discovered.

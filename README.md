@@ -57,7 +57,7 @@ The repository contains skills for building and managing UiPath automation proje
 
 | Agent | Description |
 |-------|-------------|
-| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates context files for Claude Code (`.claude/rules/project-context.md`) and UiPath Autopilot (`AGENTS.md`). Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
+| **Project Discovery** (`uipath-project-discovery-agent`) | Auto-discovers UiPath project structure, dependencies, conventions, and generates portable project context for `AGENTS.md`, with an optional `.claude/rules/project-context.md` cache for Claude Code workspaces. Triggered automatically when a UiPath project is detected without existing context, or on explicit user request. |
 
 ## Multi-Tool Support
 
