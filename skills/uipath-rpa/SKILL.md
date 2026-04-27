@@ -49,6 +49,25 @@ Before creating or modifying anything, determine which project to work with and 
 
 **Quick check:** Find `project.json` to establish `{projectRoot}`, run `uip rpa list-instances --output json` to verify Studio, and `uip rpa open-project` if needed.
 
+## Mandatory UIA Readiness Gate
+
+Apply this gate before any UI automation work: any browser/desktop app automation, selector work, Object Repository target capture, screen scraping, clicking, typing, reading UI text, SAP/WebGUI automation, or live-app inspection.
+
+Do this before choosing a UIAutomation package version, before writing XAML/C# UI activities, and before inspecting a running application:
+
+1. Read these references in this order:
+   - [references/uia-prerequisites.md](references/uia-prerequisites.md)
+   - [references/ui-automation-guide.md](references/ui-automation-guide.md)
+   - [references/uia-configure-target-workflows.md](references/uia-configure-target-workflows.md)
+2. Check `project.json` for `UiPath.UIAutomation.Activities`. If it is absent or below the minimum in `uia-prerequisites.md`, install or upgrade to that minimum before UIA exploration or selector authoring unless the user explicitly forbids dependency changes.
+3. Run `uip rpa restore "<PROJECT_DIR>" --output json`, then verify the UIA command/docs surface:
+   - `uip rpa --project-dir "<PROJECT_DIR>" uia --help`
+   - `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`
+   - `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md`
+4. If the UIA command surface is missing after the prerequisite version and restore, stop UI exploration and report the exact blocker. If generated docs are missing but the `uia` commands are available, proceed from CLI help and package activity docs and record the missing-docs issue. Do not substitute PowerShell UIAutomation scripts, Playwright, Selenium, OS process/window scraping, hand-written selectors, or guessed browser selectors.
+5. For live-app exploration, use the `uip rpa uia` flow from the package docs. The first app-state probe must be `uia snapshot inspect`; subsequent UI advancement must use `uia interact` commands. For target creation, use `uia-configure-target`; do not call its internal selector-building commands directly.
+6. Use `indicate-application` / `indicate-element` only as the documented fallback after the UIA readiness gate has passed or when the user explicitly chooses Studio indication.
+
 ## Project Type Detection
 
 After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAML** project:
@@ -91,7 +110,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 3. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Per-file `get-errors` after every create or edit; project-level `build` (or a passing `run-file` smoke test) before reporting done. See [references/validation-guide.md](references/validation-guide.md).
 4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
-6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
+6. **For UI automation workflows**, MUST complete the Mandatory UIA Readiness Gate above and follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors - use `uia-configure-target` exclusively.
 7. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 
 ### Execution Discipline (Both Modes)
@@ -141,8 +160,8 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
-| **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
-| **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md#multi-step-ui-flows) |
+| **Write UI automation** | Both | [uia-prerequisites.md](references/uia-prerequisites.md) → [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
+| **Build multi-screen UIA XAML workflow** | XAML | [uia-prerequisites.md](references/uia-prerequisites.md) → [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md#multi-step-ui-flows) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
 | **Call an IS connector (XAML)** | XAML | [is-connector-xaml-guide.md](references/is-connector-xaml-guide.md) → [connector-capabilities.md](references/connector-capabilities.md) |
@@ -278,7 +297,7 @@ uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir
 
 ## UI Automation References
 
-**MUST read [references/ui-automation-guide.md](references/ui-automation-guide.md) before any UI automation work** — mode-specific UIA patterns (coded vs XAML).
+**MUST run the Mandatory UIA Readiness Gate before any UI automation work**. This means reading the prerequisite and UIA guides before package selection, live-app inspection, target capture, or workflow authoring.
 
 Additional UIA procedures and guides:
 - [uia-prerequisites.md](references/uia-prerequisites.md) — Package version requirements
