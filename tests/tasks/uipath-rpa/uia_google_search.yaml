@@ -28,8 +28,6 @@ sandbox:
   driver: tempdir
   python: {}
 
-# Per-task reviewer prompt contextualizing the CI auth caveat so the
-# reviewer doesn't dock for auth-gated command exit codes.
 llm_reviewer:
   enabled: true
   model: claude-sonnet-4-6
@@ -37,109 +35,44 @@ llm_reviewer:
   max_tokens: 600
   prompt: |
     Evaluate whether the agent built a correct standard (XAML, VB.NET)
-    UiPath RPA project for this CI task.
+    UiPath RPA project for this CI task using the canonical skill flow.
 
-    CI environment caveats (DO NOT penalize the agent for these):
-    - No UiPath sign-in. `uip rpa create-project`, `uip rpa get-errors`,
-      and `uip rpa get-default-activity-xaml` all hit
-      "HelmFeatureNotAvailableException" in this sandbox. The task
-      has the agent hand-author project.json and consult bundled
-      skill reference files instead.
-    - `uip rpa build` can also fail — hand-authored UIA XAML without
-      discovery tools often emits invalid schema fragments. Build
-      failure in this CI is not automatically an agent quality issue.
-
-    Focus scoring on what the agent CAN control:
+    Score on:
     - GoogleSearch/project.json exists with `"expressionLanguage":
-      "VisualBasic"` and UIA activity packages declared.
-    - GoogleSearch/Main.xaml is a Sequence wrapping ApplicationCard
-      (Use Application/Browser) around TypeInto + Click, with the
-      three pre-known selectors (chrome.exe + google.com URL, textarea
-      name='q', input name='btnK').
-    - Main.xaml references "UiPath automation" as the query.
-    - Did the agent call `uip rpa get-errors` once for skill fidelity?
-    - The harness runs `uip rpa build` programmatically against the
-      project after the agent finishes; that's the compile gate, not
-      anything the agent typed.
+      "VisualBasic"` and UIA activity packages in dependencies.
+    - GoogleSearch/Main.xaml uses ApplicationCard (Use Application/
+      Browser) wrapping Type Into + Click, with the right selectors
+      (chrome.exe + google.com, textarea name='q', input name='btnK')
+      and the query "UiPath automation".
+    - The harness runs `uip rpa build` programmatically; the build's
+      exit code is the compile gate.
 
-    Reply terse, developer-style. Score 1.0 if the XAML structure +
-    selectors + query are right; lower only for real agent issues
-    (wrong activities, wrong selectors, wrong expression language).
-    Ignore auth-gated and infrastructure-driven exit codes.
+    Reply terse, developer-style. Score 1.0 if structure + selectors
+    + query are right and the project compiles.
 
 initial_prompt: |
-  Build a standard UiPath RPA project called "GoogleSearch" (XAML-based,
-  VisualBasic expression language) that automates a simple web search:
-  open google.com in Chrome, type a query into the search box, and
-  click the search button.
+  Build a standard UiPath RPA project named "GoogleSearch" (XAML
+  workflow, VisualBasic expression language) under ./GoogleSearch
+  that automates a simple Google search:
 
-  Deliverables, all under ./GoogleSearch:
-  1. project.json with `"expressionLanguage": "VisualBasic"` and any
-     activity packages needed for UI Automation.
-  2. Main.xaml — a Sequence that uses Use Application/Browser
-     (ApplicationCard) wrapping Type Into + Click, targeting:
-       * URL:     https://www.google.com
-       * Browser: chrome.exe
-       * Query:   UiPath automation
-     Use these selectors directly (wrap in angle brackets when placed
-     in XAML, do NOT call `uip rpa indicate`):
-       App:    html app='chrome.exe' url='https://www.google.com'
-       Input:  webctrl tag='textarea' name='q'
-       Button: webctrl tag='input' name='btnK' type='submit'
+    * Open https://www.google.com in Chrome
+    * Type the query "UiPath automation" into the search box
+    * Click the search button
 
-  CI environment note — IMPORTANT: this sandbox has NO UiPath sign-in
-  configured. Any `uip rpa` subcommand that needs Studio/Helm auth will
-  return "HelmFeatureNotAvailableException (sign-in required)" and exit
-  non-zero. This affects `uip rpa create-project`, `uip rpa get-errors`,
-  `uip rpa get-default-activity-xaml`, and related Helm-backed tools.
-  Do NOT retry those commands when they hit the auth error. Do NOT run
-  `uip login` (no creds to sign in with). Do NOT pass `--use-studio`.
-  Instead:
-    * Hand-author the project scaffolding directly — do NOT call
-      `uip rpa create-project`:
-        - `GoogleSearch/project.json` — set `"expressionLanguage":
-          "VisualBasic"` and declare UiPath.UIAutomation.Activities in
-          `dependencies`. Follow the skill's project.json reference.
-        - `GoogleSearch/project.uiproj` — required by `uip rpa build`.
-          Minimal shape:
-            {
-              "Name": "GoogleSearch",
-              "ProjectType": "Process",
-              "Description": "Google search smoke test",
-              "MainFile": "Main.xaml"
-            }
-    * For the ApplicationCard / TypeInto / Click XAML, consult the
-      skill's reference files directly (no CLI needed):
-        references/ui-automation-guide.md
-        references/uia-configure-target-workflows.md
-        references/uia-multi-step-flows.md
-        references/xaml/xaml-basics-and-rules.md
-      Do NOT try `uip rpa get-default-activity-xaml` — it hits the
-      Helm auth wall in this sandbox and wastes turns.
-    * Treat `uip rpa get-errors`' exit 1 as expected and move on — its
-      exit code is NOT the CI compile gate.
+  Selectors (use these directly — Studio is not running interactively
+  so `uip rpa indicate` is not available):
 
-  Validation — call `uip rpa get-errors` ONCE for skill fidelity:
+    App:    html app='chrome.exe' url='https://www.google.com'
+    Input:  webctrl tag='textarea' name='q'
+    Button: webctrl tag='input' name='btnK' type='submit'
 
-    `uip rpa get-errors --file-path Main.xaml --project-dir ./GoogleSearch --output json`
+  Follow the uipath-rpa skill's normal flow for everything else
+  (project scaffolding, XAML authoring, validation). The `uip` CLI
+  is authenticated against the sandbox tenant in this CI step, so
+  Helm-backed commands (`create-project`, `get-default-activity-xaml`,
+  `get-errors`) work as documented in the skill.
 
-  The skill-canonical validation step — call it once, then move on.
-  Auth error is expected in CI; do NOT retry. The build itself is
-  verified programmatically by the test harness after you finish, so
-  you don't need to invoke `uip rpa build` yourself.
-
-  STOP CONDITIONS (declare the task done and stop iterating when):
-  - You've written project.json, project.uiproj, and Main.xaml with the
-    required activities + selectors + query.
-  - You've called `uip rpa get-errors` once.
-  Do NOT spend turns trying to make `get-errors` succeed (it needs Helm
-  auth not provisioned in CI), and do NOT pre-emptively run `uip rpa build`
-  in a retry loop — the harness builds the project once after you stop.
-
-  Important:
-  - The `uip` CLI and the `rpa` tool are already available in the environment.
-  - Use `--output json` on any uip commands you run.
-  - Do NOT pass `--use-studio` (Studio Desktop is not running interactively).
+  Use `--output json` on any uip commands you run.
 
 success_criteria:
   - type: file_exists
@@ -183,10 +116,8 @@ success_criteria:
     pass_threshold: 1.0
 
   # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
-  # the canonical validation step, so require the agent to call it.
-  # We do NOT gate on its exit code — Helm/Studio auth isn't wired up
-  # in CI, so get-errors legitimately exits non-zero even when the XAML
-  # is well-formed.
+  # the canonical validation step. We don't gate on its exit code —
+  # the actual compile gate is the `uip rpa build` run_command below.
   - type: command_executed
     description: "Agent ran uip rpa get-errors on Main.xaml (skill-canonical validation)"
     tool_name: "Bash"

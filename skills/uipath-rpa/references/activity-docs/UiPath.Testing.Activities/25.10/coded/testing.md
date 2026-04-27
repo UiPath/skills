@@ -2,7 +2,7 @@
 
 Reference for the `testing` service from `UiPath.Testing.Activities` package.
 
-**Required package:** `"UiPath.Testing.Activities": "[25.10.0]"`
+**Required package:** `"UiPath.Testing.Activities": "[25.10.2]"`
 
 **Auto-imported namespaces:** `System`, `System.Collections.Generic`, `UiPath.Testing.Activities.TestDataQueues.Enums`, `UiPath.Testing.Activities.TestData`, `UiPath.Testing.Enums`, `UiPath.Testing`, `UiPath.Testing.Activities.Models`, `UiPath.Testing.Activities.Api.Models`
 

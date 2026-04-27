@@ -16,7 +16,7 @@ Ready-to-use templates for all UiPath coded automation project files. Replace pl
   "main": "Main.cs",
   "dependencies": {
     "UiPath.System.Activities": "[25.12.2]",
-    "UiPath.Testing.Activities": "25.10.*",
+    "UiPath.Testing.Activities": "[25.10.2]",
     "UiPath.UIAutomation.Activities": "[25.10.21]"
   },
   "webServices": [],
@@ -86,7 +86,7 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
   "description": "{{DESCRIPTION}}",
   "dependencies": {
     "UiPath.System.Activities": "[25.12.2]",
-    "UiPath.Testing.Activities": "25.10.*",
+    "UiPath.Testing.Activities": "[25.10.2]",
     "UiPath.UIAutomation.Activities": "[25.10.21]"
   },
   "webServices": [],

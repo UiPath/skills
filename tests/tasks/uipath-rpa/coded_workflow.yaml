@@ -34,34 +34,22 @@ llm_reviewer:
     Evaluate whether the agent built a correct coded UiPath automation
     project for this CI task.
 
-    CI environment caveats (DO NOT penalize the agent for these):
-    - No UiPath sign-in. `uip rpa create-project` and
-      `uip rpa get-errors` return "HelmFeatureNotAvailableException"
-      (exit non-zero). The task has the agent hand-author project.json
-      and call get-errors once only for skill-fidelity.
-    - `uip rpa build` can also fail — some versions of
-      `UiPath.Testing.Activities` generate bootloader code in `.local/`
-      referencing `UiPath.Robot.Activities.Api`, which isn't always in
-      the NuGet cache. Treat a build failure due to missing
-      `UiPath.Robot.Activities.Api` as an infrastructure issue, not
-      an agent issue.
-
-    Focus scoring on what the agent CAN control:
+    Focus scoring on coded-surface correctness:
     - Are the four required files present with the right shape?
-      (project.json with CSharp + fileInfoCollection pointing at
-      TestLoginSuccess, Main.cs with CodedWorkflow + Execute + Log,
+      (project.json with fileInfoCollection pointing at
+      TestLoginSuccess; Main.cs with CodedWorkflow + Execute + Log;
       TestLoginSuccess.cs with [TestCase] + testing.Verify* assertions
-      — NOT xUnit/NUnit Assert.*, CodedWorkflowHooks.cs with
+      — NOT xUnit/NUnit Assert.*; CodedWorkflowHooks.cs with
       `partial class CodedWorkflow` + IBeforeAfterRun + Before/After)
     - Does every .cs file declare `namespace TestAutomation;`?
     - Did the agent call `uip rpa get-errors` once for skill fidelity?
-    - The harness runs `uip rpa build` programmatically against the
-      project after the agent finishes; that's the compile gate, not
-      anything the agent typed.
+
+    The harness runs `uip rpa build` programmatically against the
+    project after the agent finishes; that's the compile gate.
 
     Reply terse, developer-style. Score 1.0 if correct; lower only for
     real agent issues (wrong files, wrong patterns, skill-rule
-    violations). Ignore auth-gated and infrastructure-driven exit codes.
+    violations).
 
 initial_prompt: |
   Build a coded UiPath automation project called "TestAutomation" that
@@ -70,8 +58,10 @@ initial_prompt: |
   around every test.
 
   Deliverables, all under ./TestAutomation:
-  1. project.json with CSharp expression language and the right entry
-     points / fileInfoCollection so the test case is discoverable.
+  1. project.json with the right entry points / fileInfoCollection so
+     the test case is discoverable. Follow the skill's package-version
+     guidance verbatim — that file calls out a bootloader trap on
+     earlier `UiPath.Testing.Activities` patches.
   2. Main.cs — a CodedWorkflow with an Execute method that logs
      "Hello from TestAutomation" using the Log helper.
   3. TestLoginSuccess.cs — a [TestCase] CodedWorkflow using the
@@ -86,56 +76,35 @@ initial_prompt: |
      every test case in the project. Use the partial-class CodedWorkflow
      pattern with IBeforeAfterRun (NOT a base class).
 
-  CI environment note — IMPORTANT: this sandbox has NO UiPath sign-in
-  configured. Any `uip rpa` subcommand that needs Studio/Helm auth will
-  return "HelmFeatureNotAvailableException (sign-in required)" and exit
-  non-zero. This affects `uip rpa create-project`, `uip rpa get-errors`,
-  `uip rpa get-default-activity-xaml`, and related Helm-backed tools.
-  Do NOT retry those commands when they hit the auth error. Do NOT run
-  `uip login` (no creds to sign in with). Do NOT pass `--use-studio`.
-  Instead:
-    * Hand-author the project scaffolding directly:
-        - `TestAutomation/project.json` — follow the skill's project.json
-          reference / template. Must set `"expressionLanguage": "CSharp"`
-          and declare `TestLoginSuccess.cs` in `fileInfoCollection` with
-          `"testCaseType"`.
-        - `TestAutomation/project.uiproj` — required by `uip rpa build`
-          (without it build fails with "No project.uiproj or
-          webAppManifest.json"). Minimal shape:
-            {
-              "Name": "TestAutomation",
-              "ProjectType": "Tests",
-              "Description": "Smoke test project",
-              "MainFile": "Main.cs"
-            }
-    * Treat `uip rpa get-errors`' exit 1 as expected and move on — its
-      exit code is NOT the CI compile gate.
-    * Every `.cs` file MUST declare `namespace TestAutomation;` at the
-      top so the synthesized `<ClassName>+<ClassName>Activity` wrappers
-      resolve correctly. Missing or mismatched namespaces produce
-      CS0234 ("type or namespace does not exist") at build time.
+  Constraints:
+  - Every `.cs` file MUST declare `namespace TestAutomation;` at the
+    top so the auto-generated `<ClassName>+<ClassName>Activity` wrappers
+    resolve correctly — missing or mismatched namespaces produce CS0234.
+  - `TestAutomation/project.uiproj` is required by `uip rpa build`
+    alongside project.json (omit it and build fails with
+    "No project.uiproj or webAppManifest.json"). If you scaffold via
+    `uip rpa create-project` it's generated automatically; if you
+    hand-author, use this minimal shape:
+      {
+        "Name": "TestAutomation",
+        "ProjectType": "Tests",
+        "Description": "Smoke test project",
+        "MainFile": "Main.cs"
+      }
 
-  Validation — call `uip rpa get-errors` ONCE for skill fidelity:
+  Validation — call `uip rpa get-errors` once for skill fidelity:
 
     `uip rpa get-errors --project-dir ./TestAutomation --output json`
 
-  The skill-canonical validation step — call it once, then move on.
-  Auth error is expected in CI; do NOT retry. The build itself is
-  verified programmatically by the test harness after you finish, so
-  you don't need to invoke `uip rpa build` yourself.
-
-  STOP CONDITIONS (declare the task done and stop iterating when):
-  - You've written project.json, project.uiproj, Main.cs, TestLoginSuccess.cs,
-    CodedWorkflowHooks.cs — each .cs file with `namespace TestAutomation;`.
-  - You've called `uip rpa get-errors` once.
-  Do NOT spend turns trying to make `get-errors` succeed (it needs Helm
-  auth not provisioned in CI), and do NOT pre-emptively run `uip rpa build`
-  in a retry loop — the harness builds the project once after you stop.
+  The harness then runs `uip rpa build` programmatically; you don't
+  need to invoke build yourself.
 
   Important:
-  - The `uip` CLI and the `rpa` tool are already available in the environment.
+  - The `uip` CLI and the `rpa` tool are already available in the
+    environment, and the CI step has authenticated `uip` against the
+    sandbox tenant — `uip rpa create-project`, `get-errors`, and
+    other Helm-backed commands will work.
   - Use `--output json` on any uip commands you run.
-  - Do NOT pass `--use-studio` (Studio Desktop is not running interactively).
 
 success_criteria:
   - type: file_exists
@@ -145,10 +114,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "project.json targets CSharp and references the test case"
+    description: "project.json references the test case"
     path: "TestAutomation/project.json"
     includes:
-      - "CSharp"
       - "TestLoginSuccess"
       - "testCaseType"
     weight: 1.5
@@ -207,10 +175,8 @@ success_criteria:
     pass_threshold: 1.0
 
   # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
-  # the canonical validation step, so require the agent to call it.
-  # We do NOT gate on its exit code — Helm/Studio auth isn't wired up
-  # in CI, so get-errors legitimately exits non-zero even when the code
-  # compiles fine.
+  # the canonical validation step. We don't gate on its exit code —
+  # the actual compile gate is the `uip rpa build` run_command below.
   - type: command_executed
     description: "Agent ran uip rpa get-errors (skill-canonical validation step)"
     tool_name: "Bash"
