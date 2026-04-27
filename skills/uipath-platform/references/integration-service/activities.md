@@ -56,7 +56,7 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
 
-> **Status:** the CLI ships the `CeqlHelper` compiler in `@uipath/integrationservice-sdk` (`dap/helpers/filter-builder/ceql-helper.ts`). Activity-side `--detail.filter` validation is rolling out per [ENGCE-57404](https://uipath.atlassian.net/browse/ENGCE-57404); until your installed CLI advertises it, fall back to the connector's literal `$filter` parameter.
+The CLI delivers the compiled CEQL to the runtime via **`queryParameters.where`** on the activity detail — the IS connector reads the `where` query parameter when executing list/query operations. Pass `filter` (the structured tree) and the CLI populates `queryParameters.where` for you; passing both `filter` and `queryParameters.where` is rejected at validation time.
 
 ### Tree shape
 
