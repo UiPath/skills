@@ -179,6 +179,8 @@ uip rpa list-instances --output json   # hidden diagnostic — confirms a Studio
 uip rpa start-studio --project-dir "{projectRoot}" --output json   # launches Studio Desktop if none is running
 ```
 
+If `list-instances` returns multiple Studio Desktop processes, choose the instance whose `ProjectDirectory` exactly matches `{projectRoot}`. If no instance clearly matches, ask the user which Studio window owns the project or ask them to close idle Studio windows before retrying.
+
 If `start-studio` cannot resolve Studio's install directory from the registry, pass `--studio-dir` pointing to the Studio installation root.
 
 You can also force Studio Desktop for any other command by setting `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is not needed for the standard authoring loop and gives up the headless benefits.

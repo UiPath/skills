@@ -116,7 +116,13 @@ Some properties are only required when another property has a specific value:
 **Wrong:** `ShortcutsArgument="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → VB parser error
 **Correct:** `Shortcuts="[d(hk)][d(ctrl)]a[u(ctrl)][u(hk)]"` → literal string, works fine
 
-See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
+`Shortcuts="enter"` is not valid shortcut encoding even if the XAML designer accepts it. Use the installed `UiPath.UIAutomation.Activities` docs/default XAML for the exact shortcut grammar. If the interaction is "type text, then submit", prefer a single `NTypeInto` with the documented special-key text token for Enter when that matches the app behavior.
+
+## UIA VerifyOptions Blocks
+
+Some UIA activities include optional `VerifyOptions` children such as `VerifyExecutionTypeIntoOptions`. Do not set `Mode="None"` to disable verification: that value can pass static XAML validation but fail at runtime when the package parses the enum.
+
+If verification is not needed, or the UI intentionally navigates away before verification can observe the target, omit the whole `VerifyOptions` child block. Only set verification properties when the installed package's activity docs or generated default XAML show the supported values.
 
 ## ActivityAction/ActivityFunc Initialization
 
@@ -723,6 +729,14 @@ All `uip rpa` commands default to the current working directory as the project r
 2. **Raise the timeout for the first call.** Cold NuGet restore of the headless Studio package can take 30–90 s — `uip rpa --timeout 600 <command>`.
 3. **`uip rpa open-project --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
 4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa list-instances --output json` and run `uip rpa start-studio --project-dir "..."` if no instance is up.
+
+### Stale validation after external XAML edits
+
+When a XAML file is edited outside Studio, `get-errors` may occasionally report errors from Studio's cached copy instead of the current file contents. Before chasing phantom line numbers, compare the reported error to the file on disk. If it is stale, close and reopen the project in Studio, then rerun validation once.
+
+### Multiple Studio instances
+
+When `list-instances` shows more than one Studio process, commands can attach to an idle instance while the project is already open elsewhere, producing "project is already opened in another Studio instance" errors. Resolve the intended `{projectRoot}` first, pass `--project-dir` consistently, and use the command's Studio-targeting option when available. If ambiguity remains, ask the user to close the idle Studio instance before retrying.
 
 ### CLI output format for parsing
 
