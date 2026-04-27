@@ -182,7 +182,7 @@ jobs:
             -e experiments/default.yaml --tags smoke -j 1 -v
         continue-on-error: true
 
-      - name: Print experiment report
+      - name: Print results and fail if tests failed
         if: always()
         working-directory: tests
         run: |
@@ -193,7 +193,6 @@ jobs:
               echo ""
             fi
           done
-
-      - name: Fail if tests failed
-        if: steps.smoke.outcome == 'failure'
-        run: exit 1
+          if [ "${{ steps.smoke.outcome }}" = "failure" ]; then
+            exit 1
+          fi
