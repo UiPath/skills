@@ -238,7 +238,7 @@ Edges are immutable on source/target at the CLI level (`edges edit` only allows 
 
 Run `uip maestro case validate <file> --output json` after every plugin's batch of mutations — not after every individual write. Intermediate states can be invalid (e.g., an edge pointing at a target that will be added next); the CLI handles this tolerably well but validate is authoritative at the plugin boundary.
 
-On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion per the skill's Critical Rule #20.
+On failure: fix the reported issue (usually a missing field, malformed handle, or orphan ID) and re-validate. Up to 3 retries per plugin; if still failing, halt and AskUserQuestion: `Retry with fix` / `Pause for manual edit` / `Abort` (per SKILL.md Anti-patterns — "Do NOT validate after each command").
 
 ---
 

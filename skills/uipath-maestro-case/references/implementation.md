@@ -17,7 +17,7 @@ Before executing each plugin's T-entries, consult the strategy matrix in [case-e
 
 Mixing strategies within a single skill run is expected during the migration. Both paths conform to the same spec, so output is interchangeable.
 
-**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Rule #24](../SKILL.md) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
+**Incremental write per T-entry (JSON strategy).** Process `tasks.md` one T-entry at a time: Read `caseplan.json` → apply that single T-entry's mutation → Write `caseplan.json` → re-Read before the next T-entry. Do NOT accumulate multiple stages/edges/tasks/conditions in memory and flush a single monolithic JSON. Per-T-entry round-trips keep the tool-call transcript reviewable, preserve rollback granularity, and prevent silent cross-entry interference. See [SKILL.md Anti-patterns — "Do NOT batch multiple T-entries"](../SKILL.md#anti-patterns) and [case-editing-operations-json.md § Read → modify → write](case-editing-operations-json.md#read--modify--write).
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting execution workflow. For how to execute a specific node, consult the matching plugin's `impl-cli.md` or `impl-json.md` per the strategy matrix:
 > - Root case → `plugins/case/impl-json.md` (migrated) — `plugins/case/impl-cli.md` is the fallback
@@ -132,7 +132,7 @@ End of Phase 2a. Full contract (summary content, prompt options, publish branch,
 
 2. Print the hard-stop summary, including the captured validate counts ([phased-execution.md § Summary content](phased-execution.md)).
 
-3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #26.
+3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule 10.
 
 On continue (either `Skip publish and continue` or `Continue to phase 2b` after publish): proceed to Step 9.6.
 
@@ -146,7 +146,7 @@ Steps 9.6 onwards wire connector task schemas, input/output values, conditions, 
 
 Before any 2b mutation:
 
-1. **Re-read `tasks.md`** — per Rule #10 of `SKILL.md`.
+1. **Re-read `tasks.md`** — per Rule 6 of `SKILL.md`.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from the authoritative artifact. See [phased-execution.md § Phase 2b re-entry protocol](phased-execution.md) for which fields to index.
 
 Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — context may be compacted across the hard stop.
@@ -204,7 +204,15 @@ Write the issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.
 
 ## Step 13 — Post-build prompt
 
-Once validation passes, ask the user what to do next.
+Once validation passes, report results then ask user what to do next.
+
+### Report fields
+
+1. File path of `caseplan.json`
+2. What was built — summary of stages, edges, tasks, conditions, SLA
+3. Validation status — `validate` pass/fail + remaining errors
+4. Skeleton tasks + unresolved resources — list every skeleton (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [skeleton-tasks.md](skeleton-tasks.md).
+5. Missing connections — connector tasks needing IS connections that don't exist yet
 
 Use **AskUserQuestion** with options:
 

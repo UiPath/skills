@@ -115,7 +115,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the table in [`impl-cli.md § Expression Translation`](impl-cli.md#expression-translation). If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md rule #19.
+`tasks.md` entries carry natural-language conditions. Translate at execution using the table in [`impl-cli.md § Expression Translation`](impl-cli.md#expression-translation). If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" escape hatch.
 
 ## Post-write validation
 

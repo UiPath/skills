@@ -35,7 +35,7 @@ This gives the user a review checkpoint on the shape of the case before the agen
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs populated per plugin. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data` contains `type-id` and `connection-id` only. `data.inputs` omitted or empty. **No `is resources describe` / `is triggers describe` call in 2a** — schema discovery is deferred to 2b. |
-| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Skeleton task per Rule #11 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [skeleton-tasks.md](skeleton-tasks.md). |
+| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Skeleton task per Rule 7 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [skeleton-tasks.md](skeleton-tasks.md). |
 
 ### What does NOT get written in Phase 2a
 
@@ -98,13 +98,13 @@ Proceed directly to Phase 2b.
 2. Print paths of `caseplan.json`, `tasks.md`, `registry-resolved.json`, and the solution directory.
 3. Exit the skill.
 
-Do **not** delete any artifacts. The user may want to inspect them, or re-run the skill later (which regenerates `tasks.md` from scratch per Rule #8).
+Do **not** delete any artifacts. The user may want to inspect them, or re-run the skill later (which regenerates `tasks.md` from scratch per Rule 5).
 
 ## Phase 2b re-entry protocol
 
 Phase 2b begins after the user selects `Continue to phase 2b` (or `Skip publish and continue`). Before executing any 2b step:
 
-1. **Re-read `tasks.md`** — per Rule #10. The declarative plan is the handoff.
+1. **Re-read `tasks.md`** — per Rule 6. The declarative plan is the handoff.
 2. **Re-read `caseplan.json`** — the authoritative source of all IDs generated in Phase 2a:
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"` or `"case-management:ExceptionStage"`, keyed on `data.label`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
@@ -126,7 +126,7 @@ After re-entry:
    - Task entry conditions (depends on TaskIds from Phase 2a)
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
-5. **Full validate** — `uip maestro case validate "<file>" --output json` (no `--mode` flag; defaults to full). Retry policy per `SKILL.md` Rule #20.
+5. **Full validate** — `uip maestro case validate "<file>" --output json` (no `--mode` flag; defaults to full). Retry policy per `SKILL.md` Anti-patterns ("Do NOT validate after each command"): validate once after full Phase 2b build; up to 3 retries.
 6. **Dump `build-issues.md`** per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
 7. **Post-build prompt** — existing Step 13 from [implementation.md](implementation.md): `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`.
 
@@ -158,5 +158,5 @@ No artifact deletion. No rollback. The user owns the partial state.
 ## Out of scope
 
 - **Re-ingesting Studio Web edits.** If the user edits the published skeleton in Studio Web during review, those edits are not round-tripped back into local `caseplan.json`. Phase 2b writes on top of local state; the final Step 13 re-publish overwrites Studio Web with the completed local build.
-- **Resuming an aborted session.** Re-running the skill regenerates `tasks.md` from scratch (Rule #8) and re-executes both phases from Phase 2a Step 1.
+- **Resuming an aborted session.** Re-running the skill regenerates `tasks.md` from scratch (Rule 5) and re-executes both phases from Phase 2a Step 1.
 - **A dedicated skeleton validation mode.** The skill does not depend on a `--mode skeleton` CLI flag. Regular `uip maestro case validate` runs at end of Phase 2a for informational output only; expected Phase 2a errors are not filtered or classified here.
