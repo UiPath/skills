@@ -88,20 +88,17 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
 2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
-<<<<<<< feat/agent/create_analyzer_rules_file
 3. **ALWAYS list project analyzer rules before generating workflows, validate files as you go, AND verify the project builds before declaring done.** Three-phase validation:
    - **Pre-generation** (before creating or editing any workflow file — `.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`): `uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json` to list the enabled Workflow Analyzer rules. Apply every `error` and `warning` rule during authoring so generated code passes `analyze` and `build` on the first attempt. Run once at the start of the task; re-run only when project dependencies change (a newly added package can ship its own `MA-*` rules).
    - **Per-file** (after every create or edit): `uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json` until 0 errors. Cap at 5 fix attempts.
    - **Project-level end-goal** (before reporting done): `uip rpa build "<PROJECT_DIR>" --output json`. Projects returned to the user must compile. `get-errors` is static analysis and misses compile-time failures — notably attribute-form XAML expressions in projects with `expressionLanguage: CSharp`. A successful `uip rpa run-file` smoke test covers this; if no smoke test runs, `uip rpa build` is mandatory.
 
    See [references/validation-guide.md](references/validation-guide.md).
-=======
-3. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Per-file `get-errors` after every create or edit; project-level `build` (or a passing `run-file` smoke test) before reporting done. See [references/validation-guide.md](references/validation-guide.md).
->>>>>>> main
-4. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
-5. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
-6. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
-7. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
+4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** Per-file `get-errors` after every create or edit; project-level `build` (or a passing `run-file` smoke test) before reporting done. See [references/validation-guide.md](references/validation-guide.md).
+5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
+6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
+7. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
+8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 
 ### Execution Discipline (Both Modes)
 
