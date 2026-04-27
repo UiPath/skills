@@ -4,7 +4,7 @@ Quick reference for UI automation in UiPath workflows — covers both coded work
 
 ## Prerequisites
 
-See [uia-prerequisites.md](uia-prerequisites.md).
+Read and apply [uia-prerequisites.md](uia-prerequisites.md) before doing anything else for UI automation. Do not inspect a live app, select a UIAutomation package version, write UIA XAML/C#, or configure targets until the package minimum and generated UIA docs are in place.
 
 **Required package:** `UiPath.UIAutomation.Activities`
 
@@ -14,14 +14,14 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via the `uia snapshot inspect` CLI to check whether the target app is open. Two outcomes:
+After prerequisites pass, and before configuring any target or writing any UIA workflow, list top-level windows **once** via the `uia snapshot inspect` CLI to check whether the target app is open. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
 
 Do not re-inspect or keep polling after the initial check — subsequent capture and attach are `uia-configure-target`'s job. This single pre-flight exists only to drive the launch decision.
 
-**Never use `Get-Process`, `tasklist`, `ps`, WMI, window-title scraping, or any other OS-level process command** to infer app state. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions.
+**Never use `Get-Process`, `tasklist`, `ps`, WMI, PowerShell UIAutomation scripts, browser automation frameworks, window-title scraping, or any other OS-level process command** to infer app state or explore the app. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions. If `uip rpa uia` is unavailable, fix the prerequisites or stop with a concrete blocker.
 
 ---
 

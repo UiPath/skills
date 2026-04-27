@@ -32,7 +32,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — Studio Web by default; `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth, Orchestrator resources, solution lifecycle (pack/publish/deploy), Integration Service, Test Manager | Yes (auth hub) | **Yes** — the deploy destination |
-| `uipath-interact` | Inspect and interact with live desktop/browser UI: click, type, screenshot, inspect. For app launching, ad-hoc exploration, post-build verification. Does NOT author workflows or generate selectors — that's `uipath-rpa`. | No auth | **No** |
+| `uipath-interact` | Inspect and interact with live desktop/browser UI through `uip rpa uia`: snapshot, click, type, screenshot, inspect. Use for upfront live-app exploration and post-build verification. Does NOT author workflows or register Object Repository selectors - that's `uipath-rpa`. | No auth | **No** |
 
 ## RPA skill routing
 
@@ -171,14 +171,15 @@ Replace steps 2–3 with `uipath-agents` if the missing resource is an agent.
 
 `uipath-maestro-flow` publishes to Studio Web by default; Orchestrator deploy requires `uipath-platform`.
 
-### Build + verify UI automation on the live app
+### UI automation with a live app to inspect
 
-User wants to build a UI automation AND observe it running on the live app.
+User wants to build a UI automation and the app is already open, or asks the agent to inspect/capture/explore the live app.
 
 ```
-1. uipath-rpa      → build the workflow end-to-end
-2. uipath-interact → observe the live app, capture screenshots/snapshots to diagnose issues
-3. uipath-rpa      → apply fixes from findings; repeat 2–3 as needed
+1. uipath-interact → run the UIA prerequisite/readiness gate, inspect the live app with `uip rpa uia`, and record current screens/states without generating workflow code
+2. uipath-rpa      → configure Object Repository targets and build the workflow end-to-end from those findings
+3. uipath-interact → observe the completed workflow against the live app, capture screenshots/snapshots to diagnose issues
+4. uipath-rpa      → apply fixes from findings; repeat 3-4 as needed
 ```
 
 ### Verify or fix existing automation against a running app
@@ -196,7 +197,7 @@ User wants to build a UI automation AND observe it running on the live app.
 3. uipath-agents   → create the agent, bind the published processes as tools, deploy
 ```
 
-> **Important:** Single-app UI automation (one project, one live app, one workflow) is **not** a multi-skill pattern — it's a single-skill `uipath-rpa` task. `uipath-rpa` owns UI automation authoring end-to-end. Do not plan a separate "uipath-interact discovery" step.
+> **Important:** `uipath-rpa` owns UI automation authoring and selector registration. `uipath-interact` owns live-app exploration and verification through `uip rpa uia`. For a single-app UI workflow where the app is not open and no live inspection is requested, a single `uipath-rpa` task is enough. When the app is open or the user asks the agent to inspect/capture/explore it, include `uipath-interact` before `uipath-rpa`.
 
 ## Step 3 — Filesystem detection (single-skill requests)
 
@@ -365,7 +366,7 @@ Save as `YYYY-MM-DD-<feature-name>.md`:
 4. **Do not recommend a skill that contradicts the filesystem signals.** `.flow` files → `uipath-maestro-flow`, not `uipath-rpa`.
 5. **Do not skip Step 2.** Check multi-skill patterns before filesystem detection.
 6. **Do not ask the UI-targeting question (Step 4) unless the plan includes a UI automation workflow.** Gate on the presence of UI element targeting, NOT on whether `uipath-interact` is loaded — most UI plans are single-skill `uipath-rpa`.
-7. **Do not route UI automation through `uipath-interact` for element discovery or selector work.** `uipath-rpa` is the sole workflow authoring skill. `uipath-interact` is only for live-app interaction and post-build verification.
+7. **Do not use `uipath-interact` to author workflows or register selectors.** Use it for live-app exploration and post-build verification through `uip rpa uia`; use `uipath-rpa` for Object Repository target configuration and workflow authoring.
 8. **Do not describe specialist-internal flows in the plan** (target-configuration procedures, OR registration, scaffolding/write-agent pipelines, auth steps, pack/publish details). Route to the skill and let it follow its own documentation — inlining those flows creates drift.
 9. **Do not save a plan with placeholders** (TBD, TODO, as needed, similar to Task N).
 10. **Do not ask the user to choose between XAML and C#.** Project type is inferred from the request (see "Project type: infer first, ask only if vague" in Step 1). RPA workflows are XAML by default. Coded mode is only set when the user explicitly says "coded workflow", "C# workflow", or "create a .cs file" — record the choice directly, no question needed.
