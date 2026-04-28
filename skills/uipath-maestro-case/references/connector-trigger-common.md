@@ -136,17 +136,19 @@ uip case tasks describe --type connector-trigger \
 
 ### Context array
 
-| `name` | `value` source | Notes |
-|---|---|---|
-| `connectorKey` | `connector-key` (tasks.md) | |
-| `connection` | `=bindings.<connBindingId>` | Reference — not raw UUID |
-| `resourceKey` | `connection-id` (tasks.md) | |
-| `folderKey` | `=bindings.<folderBindingId>` | Reference — not raw UUID |
-| `method` | *(no value)* | Empty placeholder. Do not omit. |
-| `path` | *(no value)* | Empty placeholder. Do not omit. |
-| `objectName` | `object-name` (tasks.md) | |
-| `operation` | `enrichment.operation` (Step 2) | |
-| `metadata` | *(see below)* | `type: "json"` with `body` |
+Every context entry MUST include `"type": "string"` (or `"type": "json"` for metadata). Omitting `type` causes Studio Web to fail to render the case.
+
+| `name` | `type` | `value` source | Notes |
+|---|---|---|---|
+| `connectorKey` | `"string"` | `connector-key` (tasks.md) | |
+| `connection` | `"string"` | `=bindings.<connBindingId>` | Reference — not raw UUID |
+| `resourceKey` | `"string"` | `connection-id` (tasks.md) | |
+| `folderKey` | `"string"` | `=bindings.<folderBindingId>` | Reference — not raw UUID |
+| `method` | `"string"` | *(no value)* | Empty placeholder. Do not omit entry. |
+| `path` | `"string"` | *(no value)* | Empty placeholder. Do not omit entry. |
+| `objectName` | `"string"` | `object-name` (tasks.md) | |
+| `operation` | `"string"` | `enrichment.operation` (Step 2) | |
+| `metadata` | `"json"` | *(see below)* | Uses `body` not `value` |
 
 ### Metadata body
 
