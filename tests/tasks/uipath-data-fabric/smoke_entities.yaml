@@ -63,11 +63,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created entity using entities create --body"
+    description: "Agent used fieldName (not name) in entity create body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create\s+.*--body'
+    command_pattern: 'uip\s+df\s+entities\s+create.*fieldName'
     min_count: 1
-    weight: 2.0
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -79,10 +79,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran entities update at least twice (addFields + updateFields)"
+    description: "Agent used addFields key in entities update body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+update'
-    min_count: 2
+    command_pattern: 'uip\s+df\s+entities\s+update.*addFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used updateFields with lowercase id key in entities update body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update.*updateFields.*\"id\"'
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 

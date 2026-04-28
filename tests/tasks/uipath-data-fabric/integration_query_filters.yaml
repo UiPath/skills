@@ -126,6 +126,38 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used logicalOperator in filterGroup body (AND=0 / OR=1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*logicalOperator'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used sortOptions with isDescending in query body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*sortOptions'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used selectedFields projection in query body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*selectedFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "report.json was created"
     path: "report.json"

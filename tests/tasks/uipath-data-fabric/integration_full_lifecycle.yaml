@@ -144,6 +144,46 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent used fieldName (not name) in entity create body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create.*fieldName'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used addFields key in entities update body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update.*addFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used updateFields with lowercase id key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update.*updateFields.*\"id\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included Id key in records update body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update.*\"Id\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "report.json was created"
     path: "report.json"
