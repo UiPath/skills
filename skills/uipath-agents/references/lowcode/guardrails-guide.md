@@ -125,20 +125,21 @@ Removes or masks specific fields from the input/output.
 
 Creates a task in an Action Center app for human review.
 
+**Minimum required from user:** app name + recipient (email is the simplest form).
+
 ```json
 "action": {
   "$actionType": "escalate",
   "app": {
-    "id": "<APP_ID>",
-    "name": "<APP_NAME>",
-    "version": "0",
-    "folderId": "<FOLDER_ID>",
-    "folderName": "solution_folder"
+    "id": "<Key from uip solution resource list --kind App>",
+    "name": "<app Name>",
+    "version": "<deployVersion as string from Apps API>",
+    "folderId": "<FolderKey from uip solution resource list --kind App>",
+    "folderName": "<Folder from uip solution resource list --kind App>"
   },
   "recipient": {
-    "type": 1,
-    "value": "<USER_GUID>",
-    "displayName": "<DISPLAY_NAME>"
+    "type": 3,
+    "value": "reviewer@example.com"
   }
 }
 ```
@@ -146,16 +147,113 @@ Creates a task in an Action Center app for human review.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `$actionType` | `"escalate"` | Yes | Action discriminator |
-| `app` | object | Yes | Action Center app reference |
-| `app.id` | string | Yes | Deployed app ID |
-| `app.name` | string | Yes | Deployed app name |
-| `app.version` | string | Yes | App version (e.g., `"0"`) |
-| `app.folderId` | string | Yes | Folder ID where the app is deployed |
-| `app.folderName` | string | Yes | Use `"solution_folder"` |
-| `recipient` | object | Yes | Task recipient |
-| `recipient.type` | integer | Yes | Recipient type: 1=UserId, 2=GroupId, 3=Email, 4=AssetUserEmail, 5=StaticGroupName, 6=AssetGroupName |
-| `recipient.value` | string | Yes | User GUID, group GUID, or email address (depends on `type`) |
-| `recipient.displayName` | string | No | Human-readable name (omit for `type: 3` email recipients) |
+| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
+| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
+| `app.version` | string | Yes | `deployVersion` from the Apps API as a string (e.g., `"1"`) — **never use `"0"`** |
+| `app.folderId` | string | No | Deployment folder GUID — the `FolderKey` field from `uip solution resource list --kind App` |
+| `app.folderName` | string | No | Deployment folder path — the `Folder` field from `uip solution resource list --kind App` (e.g., `"Shared"`) |
+| `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
+| `recipient.type` | integer | Yes | 1=UserId (GUID), 2=GroupId (GUID), 3=UserEmail, 4=AssetUserEmail, 5=StaticGroupName, 6=AssetGroupName |
+| `recipient.value` | string | Yes | Depends on `type` — see recipient types table below |
+| `recipient.displayName` | string | No | Omit for `type: 3` (email); include for `type: 1` (user GUID) |
+
+**Recipient types:**
+
+| `type` | `value` format | `displayName` | Example |
+|--------|---------------|---------------|---------|
+| 1 (UserId) | UiPath user GUID | Recommended | `{ "type": 1, "value": "5ed432f8-76d3-4ed3-80f1-6ce371501574", "displayName": "Jane Doe" }` |
+| 2 (GroupId) | UiPath group GUID | Optional | `{ "type": 2, "value": "<group-uuid>" }` |
+| 3 (UserEmail) | Email address | Omit | `{ "type": 3, "value": "reviewer@example.com" }` |
+| 4 (AssetUserEmail) | UiPath asset name | Optional | `{ "type": 4, "value": "ReviewerEmailAsset" }` |
+| 5 (StaticGroupName) | Group name string | Optional | `{ "type": 5, "value": "Reviewers" }` |
+| 6 (AssetGroupName) | UiPath asset name | Optional | `{ "type": 6, "value": "ReviewGroupAsset" }` |
+
+Prefer `type: 3` (email) when adding manually — it requires no GUID lookup. Studio Web uses `type: 1` (UserId) when the user is selected via the UI.
+
+#### Adding an escalation guardrail — step-by-step
+
+**Step 1 — Discover the app** using `--kind App` from the solution root:
+
+```bash
+uip solution resource list --kind App --source remote --search "<app-name>" --output json
+```
+
+Filter results for `"Type": "Workflow Action"` (skip `"VB Action"` and `"Coded"` entries — they cannot back a guardrail escalation). Each matching entry directly provides all fields you need:
+
+| Resource list field | Maps to `app.*` field |
+|---------------------|----------------------|
+| `Key` | `app.id` |
+| `Name` | `app.name` |
+| `FolderKey` | `app.folderId` |
+| `Folder` | `app.folderName` |
+
+If multiple entries share the same name in different folders, ask the user which deployment to target. Prefer the entry in `"Shared"` when no preference is stated.
+
+Example entry:
+```json
+{
+  "Source": "Remote",
+  "Key": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+  "Name": "Tool.Guardrail.Escalation.Action.App",
+  "Kind": "app",
+  "Type": "Workflow Action",
+  "Folder": "Shared",
+  "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19"
+}
+```
+
+> **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
+
+**Step 2 — Get `deployVersion`** from the Apps API (the only field `resource list` does not return):
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-apps?state=deployed&pageNumber=0&limit=100" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"' | python3 -c "
+import sys, json
+for a in json.load(sys.stdin).get('deployed', []):
+    if a.get('id') == '<KEY_FROM_STEP_1>':
+        print('version:', str(a['deployVersion']))
+"
+```
+
+Use `str(deployVersion)` as the `app.version` string (e.g., `1` → `"1"`).
+
+> **Auth note:** Use `set -a; source ~/.uipath/.auth; set +a` — the `source <(grep = ~/.uipath/.auth)` pattern used in other docs fails here because process substitution does not export variables to the surrounding shell in all environments.
+
+**Step 3 — Construct and add the escalate action** in `agent.json`'s `guardrails` array:
+
+```json
+{
+  "$actionType": "escalate",
+  "app": {
+    "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+    "name": "Tool.Guardrail.Escalation.Action.App",
+    "version": "1",
+    "folderId": "627fe423-5c73-464a-abff-41fdaad6ac19",
+    "folderName": "Shared"
+  },
+  "recipient": { "type": 3, "value": "reviewer@example.com" }
+}
+```
+
+**Step 4 — Validate and refresh:**
+
+```bash
+uip agent validate <AgentName> --output json
+uip solution resource refresh --output json
+```
+
+`resource refresh` uses the escalation resource file (if present) to auto-generate the four solution-level app files under `resources/solution_folder/`:
+`app/workflow Action/<AppName>.json`, `appVersion/<AppName>.json`, `package/<AppName>.json`, `process/webApp/<AppName>.json`.
+
+**Step 5 — Upload:**
+
+```bash
+uip solution upload . --output json
+```
 
 ## Custom Guardrails (`$guardrailType: "custom"`)
 
@@ -491,54 +589,62 @@ Run `uip agent guardrails list --output json` to get the full list of available 
 }
 ```
 
-### Example 6: Escalate PII Violations to Action Center — Multiple Tool Targets
+### Example 6: Escalate PII Violations to Action Center — Agent Level
 
-Escalates to an Action Center app when PII is detected in output from specific tools. Uses `matchNames` to target multiple tools and `escalate` action with `app` and `recipient`.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. All `app.*` fields are populated from `uip solution resource list --kind App` (Step 1) and the Apps API `deployVersion` (Step 2) — no guessing required.
 
 ```json
 {
   "$guardrailType": "builtInValidator",
   "id": "10d5f10f-da4e-4bf1-ace9-dd880e33d9be",
-  "name": "PII detection guardrail",
-  "description": "This validator is designed to detect personally identifiable information using Azure Cognitive Services",
+  "name": "PII Email and Credit Card escalation guardrail",
+  "description": "Detects email addresses and credit card numbers, escalates to human review",
   "validatorType": "pii_detection",
   "validatorParameters": [
     {
       "$parameterType": "enum-list",
       "id": "entities",
-      "value": ["Email", "Address"]
+      "value": ["Email", "CreditCardNumber"]
     },
     {
       "$parameterType": "map-enum",
       "id": "entityThresholds",
       "value": {
         "Email": 0.5,
-        "Address": 0.5
+        "CreditCardNumber": 0.5
       }
     }
   ],
   "action": {
     "$actionType": "escalate",
     "app": {
-      "id": "<APP_ID>",
-      "name": "<APP_NAME>",
-      "version": "0",
-      "folderId": "<FOLDER_ID>",
-      "folderName": "solution_folder"
+      "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+      "name": "Tool.Guardrail.Escalation.Action.App",
+      "version": "1",
+      "folderId": "627fe423-5c73-464a-abff-41fdaad6ac19",
+      "folderName": "Shared"
     },
     "recipient": {
-      "type": 1,
-      "value": "<USER_GUID>",
-      "displayName": "<DISPLAY_NAME>"
+      "type": 3,
+      "value": "reviewer@example.com"
     }
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Tool"],
-    "matchNames": ["Agent", "Get Instance Details"]
+    "scopes": ["Agent"]
   }
 }
 ```
+
+Where the `app` field values come from:
+
+| `app.*` field | Source | Value in example |
+|---|---|---|
+| `id` | `resource list --kind App` → `Key` | `8137af9d-...` |
+| `name` | `resource list --kind App` → `Name` | `Tool.Guardrail.Escalation.Action.App` |
+| `version` | Apps API `deployVersion` as string | `"1"` |
+| `folderId` | `resource list --kind App` → `FolderKey` | `627fe423-...` |
+| `folderName` | `resource list --kind App` → `Folder` | `"Shared"` |
 
 ### Example 7: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
@@ -663,3 +769,6 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 11. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
 12. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Always configure guardrails at the agent.json root `guardrails` array.
 13. **Do not reuse UUIDs across guardrails** — each guardrail needs a unique `id`.
+14. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
+15. **Do not use `"version": "0"` or `"folderName": "solution_folder"` in a guardrail escalate action** — `version` must be the `deployVersion` string from the Apps API (e.g., `"1"`), and `folderName` must be the actual deployment folder (e.g., `"Shared"`), not the placeholder `"solution_folder"`.
+16. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
