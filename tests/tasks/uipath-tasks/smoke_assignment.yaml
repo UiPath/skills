@@ -1,0 +1,113 @@
+task_id: skill-tasks-smoke-assignment
+description: >
+  Smoke test: agent uses the uipath-tasks skill to exercise all assignment
+  command variants offline — discover assignable users with tasks users,
+  assign by email (--user), assign by numeric user ID (--user-id),
+  reassign a task, and unassign a task. Verifies correct CLI routing and
+  flag usage against fake IDs. Auth errors expected; the agent must not
+  retry or login.
+tags: [uipath-tasks, smoke, assignment]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-tasks skill and follow its workflow.
+
+  Use --output json on every uip tasks command. Task IDs and folder IDs
+  are numeric (not GUIDs).
+
+  Do the following in order:
+  1. List assignable users for folder 123 — use tasks users.
+  2. Assign task 1111111 to alice@company.com using the email form (--user).
+  3. Assign task 2222222 to user ID 54321 using the numeric form (--user-id).
+  4. Reassign task 1111111 to bob@company.com.
+  5. Unassign task 2222222.
+
+  Save a summary to report.json:
+  {
+    "commands_used": ["<list of uip tasks commands in order>"],
+    "assign_by_email": <true>,
+    "assign_by_user_id": <true>,
+    "reassigned": <true>,
+    "unassigned": <true>,
+    "used_mutually_exclusive_flags": <true if you used --user OR --user-id per call, never both>
+  }
+
+  Important:
+  - --user and --user-id are mutually exclusive. Do not combine them on the
+    same command.
+  - The CLI is not connected to a live tenant. Auth errors are expected.
+    Run each command once and move on. Do NOT retry or login.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed folder users with tasks users"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+users\s+\d+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent assigned a task by email (--user)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+assign\s+\d+\s+.*--user\s+\S+@\S+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent assigned a task by user ID (--user-id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+assign\s+\d+\s+.*--user-id\s+\d+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent reassigned a task"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+reassign\s+\d+\s+.*--user\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent unassigned a task"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+unassign\s+\d+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on every tasks command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+.*--output\s+json'
+    min_count: 4
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Report confirms both --user and --user-id variants used, mutually exclusive"
+    path: "report.json"
+    assertions:
+      - expression: "assign_by_email"
+        operator: equals
+        expected: true
+      - expression: "assign_by_user_id"
+        operator: equals
+        expected: true
+      - expression: "used_mutually_exclusive_flags"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
