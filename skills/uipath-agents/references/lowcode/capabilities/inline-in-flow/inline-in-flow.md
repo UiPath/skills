@@ -212,7 +212,6 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index` |
 | Escalation | `uipath.agent.resource.escalation` |
-| MCP server | `uipath.agent.resource.mcp.*` |
 | Memory space | `uipath.agent.resource.memory.*` |
 
 ## Walkthrough — End-to-End
@@ -277,7 +276,6 @@ uipath.agent.resource.tool.api                        ← Tool: API
 uipath.agent.resource.tool.builtin                    ← Tool: built-in
 uipath.agent.resource.context.index                   ← Context: semantic index
 uipath.agent.resource.escalation                      ← Escalation: HITL
-uipath.agent.resource.mcp.*                           ← MCP server
 uipath.agent.resource.memory.*                        ← Memory space
 ```
 

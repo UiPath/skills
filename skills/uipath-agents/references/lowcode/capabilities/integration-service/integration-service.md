@@ -2,7 +2,7 @@
 
 Walkthrough for adding a tool that calls an Integration Service connector activity (e.g., Slack Send Message, Web Search, Jira Create Issue). Integration Service tools connect to external apps via pre-built connectors and authenticated connections.
 
-For Orchestrator process tools (RPA / agent / API / agentic process), see [../process/process.md](../process/process.md). MCP server tools are not yet documented in this skill.
+For Orchestrator process tools (RPA / agent / API / agentic process), see [../process/process.md](../process/process.md).
 
 ## When to Use
 

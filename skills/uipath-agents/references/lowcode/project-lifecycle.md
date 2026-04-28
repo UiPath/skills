@@ -285,10 +285,10 @@ To promote from dev to production:
 
 ```bash
 # 1. Pack solution
-uip solution pack ./MySolution ./output -v "2.0.0"
+uip solution pack ./MySolution ./output -v "2.0.0" --output json
 
 # 2. Publish to Orchestrator
-uip solution publish ./output/MySolution.2.0.0.zip
+uip solution publish ./output/MySolution.2.0.0.zip --output json
 
 # 3. Deploy to production folder
 uip solution deploy run \
@@ -296,7 +296,8 @@ uip solution deploy run \
   --package-name "MySolution" \
   --package-version "2.0.0" \
   --folder-name "MySolution" \
-  --folder-path "Production"
+  --folder-path "Production" \
+  --output json
 ```
 
 ## Quick Reference

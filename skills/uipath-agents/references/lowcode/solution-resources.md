@@ -168,6 +168,8 @@ When Studio Web or uipcli generates bindings for a solution-aware agent, resourc
 
 The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment and the folder path should be resolved dynamically. External tools use `"solution_folder"` because they are registered as solution resources via the process and package declaration files under `resources/solution_folder/`.
 
+> Note: `solutionsSupport` is a stringified boolean (`"true"`, not `true`). `uip agent validate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
+
 ## Debug Overwrites
 
 Each developer can have personal resource overrides for debug sessions. This avoids reprovisioning existing resources.
