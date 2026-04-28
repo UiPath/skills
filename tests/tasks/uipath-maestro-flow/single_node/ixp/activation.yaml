@@ -1,0 +1,119 @@
+task_id: skill-flow-ixp-activation
+description: >
+  IxP activation — dataset-backed version of the 6 positive activation tests
+  (explicit, invoice-extraction, receipt-processing, contract-extraction,
+  form-extraction, generic).  Each row carries a distinct user prompt; the
+  success criteria are identical across all rows.
+
+  This file exists to exercise coder_eval's dataset fan-out path (RE-11937 fix).
+  The individual activation_0{1..6}_*.yaml files remain as the canonical
+  standalone variants.
+
+  Scope: did the skill get called, not did it work. Assertions verify the agent
+  invoked the uipath-maestro-flow Skill and ran the right CLI-command patterns
+  (registry search for uipath.ixp.*, node-add against uipath.ixp.* or
+  core.logic.mock) — NOT whether the resulting flow is correct or would execute.
+
+  Failure here is signal about SKILL.md or the IxP Plugin Index entry —
+  do NOT relax assertions; feed findings back in.
+
+tags: [uipath-maestro-flow, smoke, activation, ixp]
+
+# Same rationale as activation_01_explicit.yaml — room for agent_crash + retry.
+task_timeout: 900
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+dataset:
+  rows:
+    - id: explicit
+      prompt: >-
+        I have a UiPath Flow. Add an IXP node that reads PDF invoices from a
+        SharePoint folder and extracts the structured fields so the next step
+        can post them to SAP.
+
+    - id: invoice-extraction
+      prompt: >-
+        Build a UiPath Flow that pulls vendor name, invoice number, invoice
+        date, total amount, and line items out of PDF invoices saved in a
+        SharePoint folder, then posts the result to our accounting system.
+
+    - id: receipt-processing
+      prompt: >-
+        Employees upload photos and PDFs of expense receipts. We need to pull
+        out the merchant name, transaction date, total, currency, and category
+        from each receipt and feed those into our expense reimbursement system.
+
+    - id: contract-extraction
+      prompt: >-
+        Build a flow that reads our vendor contracts and pulls out the
+        counterparty name, effective date, term length in months, governing
+        law, and renewal clause text — then writes the results to a contracts
+        tracking spreadsheet.
+
+    - id: form-extraction
+      prompt: >-
+        New vendors submit W-9 tax forms before we can pay them. Build a flow
+        that reads each submitted W-9 PDF, extracts the legal name, business
+        name, taxpayer ID number (TIN/SSN/EIN), tax classification, and
+        address, and writes the results to our vendor master record.
+
+    - id: generic
+      prompt: >-
+        I want to extract 3 fields from an invoice that I store in my Google Drive.
+
+initial_prompt: |
+  ${row.prompt}
+
+  Important:
+  - The `uip` CLI is already available.
+  - Use `--output json` on all uip commands.
+  - Work inside the stated working directory — do NOT `cd` to a parent.
+  - Do NOT run `uip flow debug` or `uip flow deploy`.
+  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+  - Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
+  - Exploration + an attempted node-add is enough — you do not need to build a working flow.
+
+success_criteria:
+  - type: skill_triggered
+    expected: "yes"
+    skill_name: "uipath:uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched the registry for IxP node types"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Greps the actual .flow artifact rather than the command stream — the
+  # command_executed checker truncates tool params at 2000 chars, which hides
+  # `"type": "core.logic.mock"` when the agent writes a large flow file in a
+  # single Write call.  Per references/plugins/ixp/impl.md, the agent must land
+  # either an `uipath.ixp.*` node or a `core.logic.mock` placeholder.
+  #
+  # Searches `../..` rather than `.` so the assertion still passes if the agent
+  # `cd`s out of the stated sandbox dir before creating the solution. The cwd
+  # for run_command is the sandbox dir (coder_eval Sandbox.run_command), which
+  # for dataset-fanout tasks resolves to
+  #   <run_dir>/artifacts/<outer_task_id>/<row_id>/
+  # so `../..` is the row's iteration `artifacts/` root and stays isolated
+  # from other rows. ASSUMES dataset fan-out (2-segment task_id); flattening
+  # this task to a non-dataset form would require dropping a `..`.
+  - type: run_command
+    description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
+    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" ../..'
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

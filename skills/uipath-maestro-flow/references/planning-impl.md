@@ -56,6 +56,7 @@ uip maestro flow registry get <nodeType> --output json
 | `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
+| `uipath.ixp.*`                  | [ixp/impl.md](plugins/ixp/impl.md)                             |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
 
@@ -99,6 +100,14 @@ uip maestro flow registry search "<resource-name>" --output json
 ```
 
 If found in neither, keep the `core.logic.mock` placeholder and note the gap.
+
+#### IxP nodes — context-dispatched, no bindings
+
+IxP extraction nodes (`uipath.ixp.*`) skip binding resolution. Design-time configuration (`folderKey`, `modelName`, `digitizationMode`) is emitted into the BPMN `model.context[]` array at build time, not into a separate `bindings_v2.json` file or a top-level `bindings[]` entry. Consequence for Phase 2:
+
+- No connection ID to bind — the node carries its tenant context inline.
+- `inputs.*` is the source of truth for runtime values; validate against `registry get` `inputDefinition.properties` rather than against a binding schema.
+- See [plugins/ixp/impl.md](plugins/ixp/impl.md) for the full JSON shape.
 
 ### Step 4 — Replace Mock Nodes
 

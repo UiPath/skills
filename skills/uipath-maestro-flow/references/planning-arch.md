@@ -144,6 +144,9 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 | Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/planning.md) |
 | API Workflow | `uipath.core.api-workflow.{key}` | [api-workflow](plugins/api-workflow/planning.md) |
 | Human Task (app-based) | `uipath.core.human-task.{key}` | [hitl](plugins/hitl/planning.md) |
+| Document Extraction | `uipath.ixp.{modelName}.{fullyQualifiedName}` | [ixp](plugins/ixp/planning.md) |
+
+> The IxP entry uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike the other resource nodes which use a single-segment `{key}` tail. Both segments are sanitized at registry-emit time. See [plugins/ixp/planning.md](plugins/ixp/planning.md) for the sanitization rule.
 
 ### Placeholders
 
@@ -191,6 +194,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.core.flow.*` | `input` | `output`, `error` |
 | `uipath.core.agentic-process.*` | `input` | `output`, `error` |
 | `uipath.core.api-workflow.*` | `input` | `output`, `error` |
+| `uipath.ixp.*` | `input` | `success` |
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
@@ -495,6 +499,13 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 
 - Agent is tightly coupled to this flow, not reused -> [inline-agent](plugins/inline-agent/planning.md) (`uipath.agent.autonomous`)
 - Agent is a published tenant resource, reused across flows -> [agent](plugins/agent/planning.md) (`uipath.core.agent.{key}`)
+
+### "I need to extract structured fields from documents"
+
+- Source is a PDF, scanned form, photo, or email attachment with **variable layout** across inputs (invoices from many vendors, receipts, contracts, forms) -> [ixp](plugins/ixp/planning.md) (`uipath.ixp.{modelName}.{fullyQualifiedName}`)
+- Source is already structured (CSV, JSON, database row) -> [script](plugins/script/planning.md) or [transform](plugins/transform/planning.md)
+- Need free-form summarization, classification, or open-ended reasoning -> [agent](plugins/agent/planning.md) or [inline-agent](plugins/inline-agent/planning.md)
+- IxP model not yet trained -> use `core.logic.mock` and surface in Open Questions
 
 ### "The flow needs something outside flow capabilities"
 
