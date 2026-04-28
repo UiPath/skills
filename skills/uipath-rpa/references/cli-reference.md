@@ -98,9 +98,32 @@ uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json``
 | `--name` | Yes | -- | Name of the project |
 | `--location` | Yes | -- | Parent directory where the project folder will be created |
 | `--template-id` | No | `BlankTemplate` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` |
+| `--template-package-id` | No | -- | NuGet template package ID from `search-templates`. Overrides `--template-id` when set |
+| `--template-package-version` | No | (latest) | Version of the template package |
+| `--allow-prerelease-packages` | No | false | Allow prerelease activity package versions |
 | `--description` | No | -- | Project description |
 | `--expression-language` | No | -- | `VisualBasic` or `CSharp` |
 | `--target-framework` | No | -- | `Legacy`, `Windows`, or `Portable` |
+
+For template selection logic (when to use `--template-package-id` vs `--template-id`), see [environment-setup.md § Template selection](environment-setup.md#template-selection).
+
+---
+
+### search-templates
+
+Search NuGet feeds for available project templates. Use before `create-project` when the user names a template or asks for a domain-specific starter.
+
+```bash
+uip rpa search-templates --query "<TERM>" --output json
+```
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--query` | No | -- | Filter by name/description. Omit to list all |
+| `--limit` | No | 20 | Maximum results |
+| `--include-prerelease` | No | false | Include prerelease template versions |
+
+Returns `Data[*]` with `packageId`, `version`, `title`, `description`, `authors`, `source` (`"Official"` / `"Marketplace"` / feed URL), `tags`. Pass `packageId` and `version` to `create-project --template-package-id` / `--template-package-version`.
 
 ---
 
