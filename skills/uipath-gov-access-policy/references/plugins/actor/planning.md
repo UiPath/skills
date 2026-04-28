@@ -4,7 +4,7 @@
 
 The `actorRule` block is the policy's **Actor Identity Rule** — it identifies **who** (which user or group) is allowed (or blocked) from triggering the Actor Process that invokes the Resource. The access policy has at most one `actorRule` block, which can hold at most two entries — one `User` and one `Group` (Critical Rule #16).
 
-> **Supported types: `User` and `Group` only** (Critical Rule #16). `ExternalApplication` is **not supported** today; reject any intent that names a service principal / registered app and route the user to use a User or Group instead, or to omit Actor Identity entirely. **Robot intent maps to `User`** — look up the robot via [resource-lookup-guide.md § Robots](../../resource-lookup-guide.md#robots-resolve-to-type-user) (REST → `Username` → `uip or users list`), resolve to its linked User UUID, and emit a `User`-typed entry. Never emit `type: "Robot"` or `type: "ExternalApplication"`.
+> **Supported types: `User` and `Group` only** (Critical Rule #16). `ExternalApplication` is **not supported** today; reject any intent that names a service principal / registered app and route the user to use a User or Group instead, or to omit Actor Identity entirely. **Robot intent maps to `User`** — ask for the robot's linked username / email from Orchestrator or Admin, resolve it with `uip or users list --output json`, and emit a `User`-typed entry. Never emit `type: "Robot"` or `type: "ExternalApplication"`.
 
 > **Terminology recap.** The access policy has three rule parts:
 > - **Selection Rule** → `selectors[]` — which Resource/Tool the policy applies to.
@@ -86,12 +86,11 @@ Present matched users as a numbered picker (see [resource-lookup-guide.md § 3](
 
 A robot in UiPath identity is **a kind of user** (Critical Rule #16). When the user says "robot R can trigger…":
 
-1. Look up the robot via the REST fallback `GET /orchestrator_/odata/Robots` — see [resource-lookup-guide.md § Robots](../../resource-lookup-guide.md#robots-resolve-to-type-user) for the secure token-sourcing pattern.
-2. Read the `Username` field on the matched robot record.
-3. Resolve that username to a User UUID with `uip or users list --output json` filtered on `UserName`.
-4. Emit `{ "type": "User", "values": ["<USER_UUID>"], "operator": "Or" }` — never `type: "Robot"`.
+1. Ask the user for the robot's linked username, email, or user display name from Orchestrator / Admin — see [resource-lookup-guide.md § 5](../../resource-lookup-guide.md#5-robot-lookups-resolve-to-user-identity). Do not bypass the CLI by sourcing auth tokens into direct REST calls.
+2. Resolve that username / email to a User UUID with `uip or users list --output json`.
+3. Emit `{ "type": "User", "values": ["<USER_UUID>"], "operator": "Or" }` — never `type: "Robot"`.
 
-If the robot has no linked user (rare), surface as an Open question and stop — do not invent a UUID.
+If the robot has no linked user or the user cannot identify it, surface as an Open question and stop — do not invent a UUID.
 
 ## Multi-type actor rules
 

@@ -42,7 +42,7 @@ The Resource Catalog tag set is tenant-specific, but these names recur across Ui
 - **Team / org:** `Finance`, `Marketing`, `HR`, `Platform`
 - **Product / domain:** user-specific product names
 
-> Tags the user mentions must actually exist in the Resource Catalog of the **policy's own tenant** (the tenant in `~/.uipath/.auth`). A policy that references `DoesNotExist` silently matches nothing. **Confirm tag names during Phase 1** before approving the Spec by running `uip admin rcs tag list --output json` (no `--tenant` — the default targets the policy's tenant; see [resource-lookup-guide.md § 4](../../resource-lookup-guide.md#4-resource-catalog-tags)). If the tag is missing, surface it as an Open question and ask the user to either pick a returned tag or add the missing one to the Resource Catalog before the JSON is composed.
+> Tags the user mentions must actually exist in the Resource Catalog of the **policy's own tenant** (the active tenant from the safe auth-context workflow). A policy that references `DoesNotExist` silently matches nothing. **Confirm tag names during Phase 1** before approving the Spec by running `uip admin rcs tag list --output json` (no `--tenant` — the default targets the policy's tenant; see [resource-lookup-guide.md § 4](../../resource-lookup-guide.md#4-resource-catalog-tags)). If the tag is missing, surface it as an Open question and ask the user to either pick a returned tag or add the missing one to the Resource Catalog before the JSON is composed.
 
 ## Deny-to-Allow flip
 

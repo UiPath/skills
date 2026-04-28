@@ -8,9 +8,9 @@ Compose the concrete `PolicyDefinition` JSON from an **approved Phase 1 Spec** (
 
 ## Step 1 — Gather identity
 
-Every `PolicyDefinition` requires `organizationId` and `tenantId` at the top level. Read them from `~/.uipath/.auth` — see [access-policy-commands.md — Reading `organizationId` and `tenantId`](./access-policy-commands.md#reading-organizationid-and-tenantid) for the exact command. Use the two UUIDs verbatim in the assembled JSON; never hardcode (Critical Rule #3).
+Every `PolicyDefinition` requires `organizationId` and `tenantId` at the top level. Gather them with [access-policy-commands.md — Auth context for policy payloads](./access-policy-commands.md#auth-context-for-policy-payloads): verify `uip login status --output json`, use that response for display names, and extract only the non-secret org / tenant UUID fields if the CLI does not expose them. Use the two UUIDs verbatim in the assembled JSON; never hardcode and never keep placeholders (Critical Rule #3).
 
-If the file is missing or the IDs are not present, the user is not logged in — stop and route them to [access-policy-commands.md — Authentication](./access-policy-commands.md#authentication).
+If the auth context is missing, tenant-less, or does not expose both UUIDs, stop and route the user to [access-policy-commands.md — Authentication](./access-policy-commands.md#authentication). Do not source or print the full auth file and do not expose tokens while troubleshooting.
 
 ---
 

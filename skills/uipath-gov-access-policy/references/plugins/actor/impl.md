@@ -138,8 +138,8 @@ This allows every User **except** `alice-uuid`. (See [../tags/planning.md — De
 **Intent:** "Only the unattended robot `build-bot` can trigger this".
 
 Resolution flow (see [planning.md — Robot intent](./planning.md#robot-intent-resolves-to-user)):
-1. `GET /orchestrator_/odata/Robots` → match `build-bot` → read `Username`.
-2. `uip or users list` filtered on that `UserName` → get the User UUID `bot-user-uuid`.
+1. Ask the user for the linked username / email shown for `build-bot` in Orchestrator or Admin.
+2. `uip or users list --output json` filtered on that username / email → get the User UUID `bot-user-uuid`.
 3. Emit:
 
 ```json
