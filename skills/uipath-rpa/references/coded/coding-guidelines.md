@@ -120,7 +120,7 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
 ### Validation Loop (Critical Rule #14)
-uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>" --output json
+uip rpa get-errors --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 @../validation-guide.md
 
 ### Error Handling
@@ -197,12 +197,12 @@ C) <user-driven approach>
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| **"Studio X.X.X does not have interop support"** | Auto-detected Studio is too old (< 26.2) | Always pass `--studio-dir "<STUDIO_DIR>"` pointing to the dev build |
-| **No Studio instances found** | Studio is not running | Run `uip rpa start-studio --project-dir "<PROJECT_DIR>" --studio-dir "<STUDIO_DIR>"` |
-| **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, restart Studio |
+| **"Studio X.X.X does not have interop support"** | Surfaces only when running against Studio Desktop and the auto-detected install is too old (< 26.2). Headless Studio is unaffected. | Pass `--studio-dir "<STUDIO_DIR>"` pointing to a 26.2+ build, or drop the Studio Desktop override and let the command run headless |
+| **No Studio instances found** | Only relevant for `diff` / `focus-activity` — they need Studio Desktop. Every other command runs headless and doesn't need a Desktop instance. | Run `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if you actually need Studio Desktop; otherwise re-run the command — headless Studio relaunches automatically |
+| **Stale pipe / ENOENT** | Studio instance crashed or was closed | The tool retries automatically; if persistent, re-run the command (headless) or restart Studio Desktop |
 | **Workflow cannot be found** | Entrypoint not in project.json | Verify project.json entrypoint has the file listed (Process projects only — Tests and Library projects do not use `entryPoints`) |
 | **Service property not available** | Missing package dependency | Add required package to project.json dependencies |
-| **Timeout** | Studio took too long to start | Increase timeout: `--timeout 600` |
+| **Timeout** | Studio took too long to start. First headless call on a cold NuGet cache can take 30–90 s. | Increase timeout: `--timeout 600` |
 | **"Target name 'X' is not part of the current screen"** | Element descriptor used on wrong screen handle | Use the `UiTargetApp` handle from `Open`/`Attach` for the screen that owns the element |
 | **"Cannot select item. It was not found among existing items"** | `SelectItem` fails on web dropdowns | Use `TypeInto` instead of `SelectItem` for web `<select>` elements |
 | **inspect-package cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
