@@ -58,6 +58,8 @@ If you encounter auth errors (401, 403, "not authenticated") during any phase, p
 
 **ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
 
+**First, decide which template to use** — see [§ Template selection](#template-selection) below **before** running any `create-project` command. Defaulting to `--template-id BlankTemplate` is correct only when the user did not name a template or domain pattern.
+
 ### For XAML Projects
 
 ```bash
@@ -96,6 +98,33 @@ Use `--template-id TestAutomationProjectTemplate` for test projects, or `--templ
 | `--description` | Any string | (none) | Project description in project.json |
 
 **Note:** `uip rpa create-project` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+
+### Template selection
+
+Before running `create-project`, decide which template to use.
+
+**1. Trigger keywords**
+
+| User says... | Action |
+|---|---|
+| "REFramework", "ERP template", "SAP template", "based on X template", or any specific template name | Run `uip rpa search-templates --query "<term>" --output json` (see § "Search and select" below) |
+| "library", "library project" | Use `--template-id LibraryProcessTemplate` (built-in, no search) |
+| "test project", "test automation" | Use `--template-id TestAutomationProjectTemplate` (built-in, no search) |
+| Nothing template-related | Use `--template-id BlankTemplate` (default) |
+
+**2. Search and select**
+
+Run `uip rpa search-templates --query "<term>" --output json`. Apply this rule against `Data[*]`, top-down:
+
+- **User named a specific non-Official template** (e.g. "Enhanced REFramework", "Lite ReFrameWork", a specific package name) AND a `Marketplace` item's `title` or `packageId` substring-matches the user's specific qualifier ("Enhanced", "Lite", etc.) → ask the user (treat Official + that Marketplace item as candidates). Do NOT auto-pick.
+- **Exactly one item with `source == "Official"`** AND user did not name a non-Official template → pick it. No user prompt.
+- **Multiple `Official` items** → present candidates (`packageId`, `version`, `title`, `description`) and ask the user.
+- **Zero `Official` items, ≥1 `Marketplace` item** → present and ask. Never silently pick a Marketplace template.
+- **No results** → tell the user, then create with `--template-id BlankTemplate`.
+
+**3. Create from package**
+
+For Official/Marketplace templates, pass `--template-package-id` (and optionally `--template-package-version` — omit for latest) to `create-project`. When `--template-package-id` is set, `--template-id` is ignored.
 
 ### From a NuGet Template Package
 
