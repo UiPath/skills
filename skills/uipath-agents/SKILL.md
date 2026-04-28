@@ -41,7 +41,13 @@ Determine the agent mode before proceeding:
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
-| Anything low-code (scaffold, edit `agent.json`, add tool/context/escalation, validate, deploy, embed in a flow, multi-agent solutions, CLI reference) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | follow the Capability Registry there |
+| Create or scaffold a new low-code agent project | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Quick Start | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
+| Edit `agent.json` (prompts, model, schemas, contentTokens, entry-points.json) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md` |
+| Add a low-code tool (Orchestrator process — RPA / agent / API / agentic — or Integration Service) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/process/*`, `lowcode/capabilities/integration-service/*` |
+| Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
+| Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
+| Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/solution-agent.md` |
+| Validate, pack, publish, upload, or deploy a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/solution-resources.md` |
 
 ## Resources
 
