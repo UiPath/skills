@@ -1,6 +1,6 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. No CLI command needed to add the node.
+The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [flow-commands.md — uip maestro flow hitl add](../../../../uipath-maestro-flow/references/flow-commands.md#uip-maestro-flow-hitl-add).
 
 ---
 
@@ -56,20 +56,17 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
   "type": "uipath.human-in-the-loop",
   "typeVersion": "1.0.0",
   "display": { "label": "Invoice Review" },
-  "ui": { "position": { "x": 474, "y": 144 } },
   "inputs": {
     "type": "quick",
-    "channels": [],
+    "title": "Invoice Review",
     "recipient": {
-      "channels": ["ActionCenter"],
+      "channels": ["Email", "ActionCenter"],
       "connections": {},
       "assignee": { "type": "group" }
     },
-    "priority": "Normal",
-    "timeout": "PT24H",
+    "priority": "Low",
     "schema": {
       "id": "a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c",
-      "title": "Invoice Review",
       "fields": [
         {
           "id": "invoiceid",
@@ -108,11 +105,11 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
       ]
     }
   },
-  "model": { "type": "bpmn:UserTask" }
+  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
 }
 ```
 
-**Required fields:** `id`, `type`, `typeVersion`, `ui.position`
+**Required fields:** `id`, `type`, `typeVersion`. Position goes in the top-level `layout.nodes` object (keyed by node id), not on the node itself.
 
 **Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `"Invoice Review"` → `invoiceReview1`.
 

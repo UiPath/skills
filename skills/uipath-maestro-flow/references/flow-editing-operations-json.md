@@ -96,13 +96,13 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 }
 ```
 
-5. Add a layout entry for the node in the top-level `layout.nodes` object:
+5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow tidy` rewrites both `position` and `size` on save:
 
 ```json
 "layout": {
   "nodes": {
     "<UNIQUE_NODE_ID>": {
-      "position": { "x": <X>, "y": <Y> },
+      "position": { "x": 0, "y": 0 },
       "size": { "width": 96, "height": 96 },
       "collapsed": false
     }
@@ -110,7 +110,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 }
 ```
 
-**Layout rule:** Use horizontal layout — increasing `x` values left-to-right, consistent `y` baseline (e.g., `y: 144`). Space nodes ~200px apart on the x-axis.
+**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow tidy <ProjectName>.flow` after edits. Tidy arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
 
 ### Delete a node
 

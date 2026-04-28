@@ -1,0 +1,106 @@
+task_id: skill-flow-hitl-quality-boolean-decision
+description: >
+  Quality test: agent correctly wires a boolean HITL output field into a
+  Decision node condition using the exact runtime path
+  $vars.<nodeId>.result.<fieldName>. Tests field-level variable access
+  and that both Decision branches are wired to distinct downstream nodes.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 110
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "VendorApproval" for vendor onboarding:
+
+  1. Manual trigger
+  2. Script node — sets vendor context (mock: vendorName = "Acme Corp", creditScore = 720)
+  3. HITL node — compliance officer reviews the vendor:
+       - Sees (read-only): vendor name, credit score
+       - Fills in: approved (boolean, required), risk_notes (text, optional)
+       - Outcomes: Approve (primary), Reject
+  4. Decision node — branches on the `approved` boolean from the HITL result:
+       - true  → Script node that logs "Vendor onboarded" → End
+       - false → Script node that logs "Vendor rejected" → End
+
+  Wire: Trigger → Script → HITL →|completed| Decision → (two branches) → End
+
+  The Decision node condition MUST use the exact field-level runtime variable
+  path — not just $vars.<nodeId>.result but specifically the approved field.
+
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "decision_condition": "<full expression used, e.g. $vars.complianceReview1.result.approved>",
+    "result_path_used": "<same or equivalent path referenced in the Decision>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes"
+    command: "uip maestro flow validate VendorApproval/VendorApproval/VendorApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node has a boolean output field"
+    path: "VendorApproval/VendorApproval/VendorApproval.flow"
+    includes:
+      - '"boolean"'
+      - '"direction": "output"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Decision node condition references field-level HITL result"
+    path: "VendorApproval/VendorApproval/VendorApproval.flow"
+    includes:
+      - "$vars."
+      - ".result.approved"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Both Decision branches wired (true and false handles)"
+    path: "VendorApproval/VendorApproval/VendorApproval.flow"
+    includes:
+      - '"true"'
+      - '"false"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json decision_condition references field-level variable"
+    path: "report.json"
+    includes:
+      - "$vars."
+      - ".result.approved"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has hitl_node_id and validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "hitl_node_id"
+        operator: not_equals
+        expected: ""
+      - expression: "decision_condition"
+        operator: contains
+        expected: "$vars."
+    weight: 2.0
+    pass_threshold: 0.75

@@ -98,7 +98,7 @@ LLM execution trace observability. See [traces.md](traces.md).
 
 | Group | Command | Description |
 |---|---|---|
-| **Integration Service** | `uip is --help` | Connectors, connections, activities |
+| **Integration Service** | `uip is --help` | Connectors, connections, activities, triggers, webhooks |
 | **Test Manager** | `uip tm --help` | Test projects, sets, cases, executions |
 | **RPA** | `uip rpa --help` | RPA workflow management |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |

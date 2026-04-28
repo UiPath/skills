@@ -1,0 +1,103 @@
+task_id: skill-flow-hitl-quality-brownfield-insert
+description: >
+  Quality test: agent inserts a HITL node into an existing flow without
+  breaking the existing nodes or wiring. Tests that the agent can correctly
+  remove an existing edge and re-wire it through a new HITL node.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 150
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  You are working on an existing UiPath Flow named "ContractReview".
+
+  Step 1 — Build the base flow:
+  Create ContractReview as a 3-node flow:
+    Manual Trigger → Script (id: "extractMeta", logs "Extracting contract metadata") → End
+
+  Step 2 — Insert HITL into the existing flow:
+  Between the extractMeta Script node and the End node, insert a HITL node
+  where a legal reviewer approves the contract:
+    - Reviewer sees (read-only): contract_id (text), contract_value (number)
+    - Reviewer fills in: approved (boolean, required), legal_notes (text, optional)
+    - Outcomes: Approve (primary), Reject
+
+  After insertion the wiring must be:
+    Trigger → extractMeta →|output| HITL →|completed| End
+
+  The original extractMeta → End edge must be removed.
+  The extractMeta → HITL edge and HITL → End edge must be added.
+
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id of the new HITL node>",
+    "original_script_id": "extractMeta",
+    "edges_after_insert": ["<list all edge source→target pairs>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes after brownfield insert"
+    command: "uip maestro flow validate ContractReview/ContractReview/ContractReview.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains the original script node"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - '"extractMeta"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains the inserted HITL node"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL completed handle is wired"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - '"completed"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL has a boolean output field for the approval decision"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - '"boolean"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms HITL node inserted and validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "hitl_node_id"
+        operator: not_equals
+        expected: ""
+      - expression: "length(edges_after_insert)"
+        operator: gte
+        expected: 2
+    weight: 2.0
+    pass_threshold: 0.75

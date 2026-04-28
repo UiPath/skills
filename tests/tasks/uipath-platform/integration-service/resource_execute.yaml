@@ -77,7 +77,7 @@ success_criteria:
   - type: command_executed
     description: "Agent executed a create operation with --body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+execute\s+create.*--body'
+    command_pattern: 'uip\s+is\s+resources\s+execute\s+create[\s\S]*--body'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

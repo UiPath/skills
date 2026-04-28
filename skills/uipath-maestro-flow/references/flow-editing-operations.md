@@ -20,6 +20,7 @@ Use this table to determine which strategy to follow for each operation. **Direc
 | Operation | Default | Alternative | Notes |
 |-----------|---------|-------------|-------|
 | Add a node | **Direct JSON** | CLI (opt-in) | CLI still auto-manages definitions/variables when opted in. |
+| Add a HITL QuickForm node | **Direct JSON** | CLI (opt-in) via `uip maestro flow hitl add` | Dedicated command also handles definition + `variables.nodes`. Wire `completed` port after. See [hitl/impl.md](plugins/hitl/impl.md). |
 | Delete a node | **Direct JSON** | CLI (opt-in) | |
 | Add an edge | **Direct JSON** | CLI (opt-in) | Remember `targetPort` (Rule #6). |
 | Delete an edge | **Direct JSON** | CLI (opt-in) | |
@@ -56,10 +57,9 @@ These apply regardless of which strategy you use.
 
 ### Layout
 
-- Flow uses a horizontal canvas — place nodes left-to-right with increasing `x` values
-- Use a consistent `y` baseline (e.g., `y: 144`) for linear flows
-- Offset `y` for branch paths (e.g., true branch at `y: 44`, false branch at `y: 244`)
-- Space nodes ~200px apart on the x-axis
+- Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow tidy` — do not hand-compute coordinates
+- When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save
+- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [flow-commands.md](flow-commands.md#uip-maestro-flow-tidy)
 
 ### Edge rules
 

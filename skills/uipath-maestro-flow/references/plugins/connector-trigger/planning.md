@@ -90,6 +90,14 @@ The agent does not need to configure the mode — it is determined by the connec
 
 > **Debug impact:** Only `polling` triggers can be debugged in Studio Web. `webhooks` triggers cannot be tested via `uip maestro flow debug` — they require deployment to Orchestrator. Flag this in the plan if the trigger uses webhook mode.
 
+### Webhook Triggers — Extra Steps
+
+When `eventMode` is `"webhooks"`, two additional considerations apply:
+
+1. **BYOA (Bring Your Own Account) connections.** Some webhook events require BYOA — the customer must register their own OAuth app with the external service. The `byoaConnection` flag on the `triggers objects` response indicates this **per event object**, not per connector. Selection workflow (filter, `--refresh`, stop-and-ask) lives in [/uipath:uipath-platform — connections.md — For BYOA Connections](../../../../uipath-platform/references/integration-service/connections.md#for-byoa-connections-webhook-triggers). Flag in the plan if BYOA is required so the user can prepare.
+
+2. **Webhook URL registration.** After the trigger is configured (Step 6 in implementation), the webhook URL must be retrieved and registered on the customer's external service. Without registration, the trigger never fires. See [implementation Step 6b](impl.md#step-6b--retrieve-and-display-webhook-url-webhooks-only) and [/uipath:uipath-platform — triggers.md — Webhook URL Retrieval](../../../../uipath-platform/references/integration-service/triggers.md#webhook-url-retrieval).
+
 ## Planning Annotation
 
 In the architectural plan, annotate connector trigger nodes as:

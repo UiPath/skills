@@ -8,7 +8,7 @@ tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:h
 agent:
   type: claude-code
   permission_mode: acceptEdits
-  max_turns: 20
+  max_turns: 80
   turn_timeout: 600
 
 sandbox:
@@ -29,12 +29,15 @@ initial_prompt: |
 
   Do NOT run flow debug. Validate the flow after building it.
 
-  Save a summary to report.json:
+  **REQUIRED — before finishing, write report.json at the sandbox root** (not
+  inside any project or solution subfolder) with exactly these keys:
   {
     "flow_file": "<path to the .flow file>",
     "hitl_node_id": "<id of the HITL node>",
     "validation_passed": true
   }
+  The task is NOT complete until `uip maestro flow validate` has passed AND
+  report.json exists at the sandbox root.
 
 success_criteria:
   - type: file_exists
