@@ -1,0 +1,146 @@
+task_id: skill-datafabric-integration-files
+description: >
+  Integration test: agent performs a complete file attachment lifecycle against a
+  live tenant — checks login, creates or reuses an entity with a FILE-type field,
+  inserts a record, uploads a file, downloads it back and verifies byte integrity
+  via SHA-256 hash, uploads a second version to confirm overwrite, deletes the
+  attachment, and verifies the field is empty post-delete. Covers the full files
+  upload/download/delete workflow including overwrite semantics and byte integrity.
+tags: [uipath-data-fabric, integration, files]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  Perform a complete file attachment lifecycle. Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login — use
+     whatever tenant is currently active.
+
+  2. List native-only entities. Use an entity named "IntegrationAssets" if it
+     already exists. If not, create it with fields:
+       - AssetName (STRING)
+       - Document (FILE)
+
+  3. Insert one record: { "AssetName": "TestAsset" }
+     Save the record ID from the response.
+
+  4. Create a local file named original.txt with content "hello data fabric v1".
+
+  5. Upload original.txt to the Document field of the record:
+       uip df files upload <entity-id> <record-id> Document --file original.txt
+
+  6. Download the file back, saving to downloaded.txt:
+       uip df files download <entity-id> <record-id> Document --destination downloaded.txt
+
+  7. Verify byte integrity: compute SHA-256 hashes of original.txt and downloaded.txt
+     using `shasum -a 256` or Python's hashlib. Confirm they match.
+
+  8. Create a second file named updated.txt with content "hello data fabric v2".
+
+  9. Upload updated.txt to the same Document field (overwrite v1):
+       uip df files upload <entity-id> <record-id> Document --file updated.txt
+
+  10. Download the file again to verify_update.txt and confirm the SHA-256 now
+      matches updated.txt, not original.txt.
+
+  11. Delete the file attachment:
+        uip df files delete <entity-id> <record-id> Document
+
+  12. Attempt to download again. The download should fail since the file was deleted.
+      Record the result (expected: error or empty response).
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<entity ID used>",
+    "record_id": "<record ID inserted>",
+    "v1_sha256": "<SHA-256 of original.txt>",
+    "download_sha256_matches_v1": <true if downloaded.txt SHA-256 == original.txt>,
+    "v2_sha256": "<SHA-256 of updated.txt>",
+    "overwrite_download_matches_v2": <true if verify_update.txt SHA-256 == updated.txt>,
+    "post_delete_download_failed": <true if download after delete returned an error>
+  }
+
+  Do NOT delete the entity — only delete the file attachment.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted a record"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded file at least twice (v1 and v2 overwrite)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded file at least twice (after v1 and after v2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+download\s+.*--destination'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the file attachment"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+delete\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "original.txt was created"
+    path: "original.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "downloaded.txt was created from download"
+    path: "downloaded.txt"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Byte integrity confirmed for v1, overwrite confirmed for v2, post-delete download failed"
+    path: "report.json"
+    assertions:
+      - expression: "download_sha256_matches_v1"
+        operator: equals
+        expected: true
+      - expression: "overwrite_download_matches_v2"
+        operator: equals
+        expected: true
+      - expression: "post_delete_download_failed"
+        operator: equals
+        expected: true
+    weight: 4.0
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60
