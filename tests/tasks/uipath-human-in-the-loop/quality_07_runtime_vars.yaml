@@ -5,7 +5,9 @@ description: >
   $vars.<NodeId>.status. Tests G1 and G2.
 tags: [uipath-human-in-the-loop, integration, runtime-variables]
 
-max_turns: 100
+agent:
+  type: claude-code
+  max_turns: 50
 
 sandbox:
   driver: tempdir

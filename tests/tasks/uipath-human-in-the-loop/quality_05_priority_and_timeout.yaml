@@ -5,7 +5,9 @@ description: >
   and C4 (timeout ISO 8601).
 tags: [uipath-human-in-the-loop, integration, options]
 
-max_turns: 100
+agent:
+  type: claude-code
+  max_turns: 50
 
 sandbox:
   driver: tempdir
