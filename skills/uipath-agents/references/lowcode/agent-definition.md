@@ -74,9 +74,12 @@ Primary configuration file. Edit directly.
       ]
     }
   ],
+  "guardrails": [],
   "projectId": "<AUTO_GENERATED_UUID>"
 }
 ```
+
+> **`guardrails`** — array of guardrail objects that inspect agent inputs/outputs for policy violations. See [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) for the full schema, validator reference, and examples.
 
 ### Settings
 

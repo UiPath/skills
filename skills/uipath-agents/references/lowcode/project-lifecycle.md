@@ -44,6 +44,22 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 
 After scaffolding, add a `uipath.agent.autonomous` node to the flow with `model.source = <ProjectId>`. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
 
+### `uip agent guardrails list`
+
+List available guardrail validator definitions with their allowed scopes, stages, and parameters.
+
+```bash
+uip agent guardrails list --output json
+```
+
+Returns an array of validator definitions. Each entry contains:
+- `Validator` — the `validatorType` string to use in `builtInValidator` guardrails
+- `AllowedScopes` — valid values for `selector.scopes`
+- `GuardrailStages` — object mapping each scope to its valid execution stages
+- `Parameters` — array of parameter definitions (`Type`, `Id`, `Required`)
+
+Run this before adding built-in validator guardrails to discover which validators are available and what parameters they accept. See [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md).
+
 ### `uip agent validate`
 
 Validate agent project structure and schema, then migrate all project files to the latest schema version.
@@ -312,6 +328,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Register project | `uip solution project add "<PATH>" --output json` | Solution directory | — |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any with path | — |
+| List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |

@@ -73,7 +73,7 @@ Same schema as a standalone agent (see [../../agent-definition.md](../../agent-d
 - `projectId` matches the folder name UUID
 - `inputSchema.properties` is empty (flow wires data via node connections)
 - `messages` have empty `content` and `contentTokens` initially (edit agent.json to set prompts with `type: "simpleText"` and `rawString`)
-- `guardrails: []` at root level
+- `guardrails: []` at root level — can be populated with guardrail objects. See [../guardrails/guardrails.md](../guardrails/guardrails.md)
 - No `metadata.targetRuntime` field
 
 Example:

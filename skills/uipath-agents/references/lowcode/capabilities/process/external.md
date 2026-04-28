@@ -91,7 +91,7 @@ Extract from response (take first entry):
     "exampleCalls": []                // Required for external tools
   },
   "guardrail": {
-    "policies": []
+    "policies": []              // Auto-populated by `uip agent validate` from root-level guardrails. Do not edit manually. See ../guardrails/guardrails.md.
   },
   "id": "<uuid>",              // Stable; generate once, never change
   "referenceKey": "<release-key-guid>", // For external: the release Key (lowercase GUID from /odata/Releases API). For solution-internal: leave empty, validate resolves it.
