@@ -45,14 +45,13 @@ Confirm: input port `input`, output port `success`.
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ServiceTask" }
+  }
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Wait Variant
 
@@ -81,8 +80,7 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ServiceTask" }
+  }
 }
 ```
 

@@ -20,14 +20,13 @@ Confirm: input port `input`, no output ports.
   "type": "core.logic.terminate",
   "typeVersion": "1.0.0",
   "display": { "label": "Abort" },
-  "inputs": {},
-  "model": { "type": "bpmn:EndEvent" }
+  "inputs": {}
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Common Pattern — Error Handler
 
