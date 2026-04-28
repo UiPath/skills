@@ -21,14 +21,12 @@ Before starting, understand the limits of prompt iteration:
 
 `update-prompts` supports two levels of instruction updates:
 
-- **`--fields`** (required): per-field instructions (moon_form fields like "Invoice Number", "Invoice Date"). Match by field name.
+- **`--fields`** (required): per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field name.
 - **`--groups`** (optional): field group instructions (label_defs like "Invoice", "Line Items"). Match by label_def name.
 
 Both can be used together in a single call. The CLI fetches the taxonomy, merges changes, and sends updates per label_def — preserving all fields and definitions you didn't change.
 
-Omitting `--label-instructions` preserves the existing project-level prompt — it is NOT wiped.
-
-**Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model also sees alongside per-field instructions. If the group instruction says "Monetary fields: decimal format, no currency symbol" but a per-field instruction says "submit as-written with commas", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `--groups` if it contradicts.
+**Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model also sees alongside per-field instructions. If the group instruction says "Extract only fields visible on the first page" but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `--groups` if it contradicts.
 
 ## Before Starting
 
@@ -36,9 +34,9 @@ The user may specify a max number of iterations (default: 3). Track:
 
 - **Baseline metrics** — the per-field F1 scores before any changes
 - **Previous iteration metrics** — the per-field F1 scores from the last successful iteration
-- **Previous instructions** — the per-field (moon_form) instructions from the last successful iteration (for rollback)
+- **Previous instructions** — the per-field (field) instructions from the last successful iteration (for rollback)
 
-Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle.
+Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle. This assumes no one modifies the taxonomy or documents externally during the loop. If the user mentions changes were made in the web UI, re-fetch the taxonomy and document list before continuing.
 
 ## Step 1 — Setup (once, before the loop)
 
@@ -51,10 +49,10 @@ uip ixp project metrics <project-name> --output json
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
 
-**Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `moon_form` entries:
+**Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `field` entries:
 
-- For each metric entry: `FieldGroup` = label_def name, `FieldId` = moon_form `field_id`
-- Find the matching `moon_form` entry in the taxonomy where `field_id == FieldId` — its `name` is the human-readable field name
+- For each metric entry: `FieldGroup` = label_def name, `FieldId` = the field's `field_id`
+- Find the matching field entry in the taxonomy where `field_id == FieldId` — its `name` is the human-readable field name
 
 Build this mapping once and reuse it throughout the loop.
 
@@ -78,9 +76,9 @@ See the [Project Setup Guide](project-setup.md) Step 2 for the decision table.
 uip ixp project taxonomy <project-name> --output json
 ```
 
-Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. This includes `label_defs` → `moon_form` fields with their current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
+Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. This includes `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
 
-The `moon_form` field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `update-prompts --fields`.
+The field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to `update-prompts --fields`.
 
 ### 1d. Read sample documents (2-3 documents)
 
@@ -104,11 +102,13 @@ Compare the document list against the metrics. If the metrics show fewer `Valida
 
 Repeat the following for each iteration (up to max iterations):
 
-### 2a. Diagnose fields
+### 2a. Diagnose fields and field groups
 
-Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations).
+Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations). The metrics include both `FieldGroups` (per-group scores) and `Fields` (per-field scores).
 
-Identify individual fields with F1 < 0.7 as targets. Diagnose each:
+**Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `--groups` rather than fixing individual fields.
+
+**Per-field diagnosis:** Identify individual fields with F1 < 0.7 as targets. Diagnose each:
 
 1. **Classify the action:**
    - `Documents = 0` AND `F1 = 0` → **SKIP**
@@ -118,10 +118,9 @@ Identify individual fields with F1 < 0.7 as targets. Diagnose each:
 2. **Diagnose the problem type** (use F1 as primary signal with few documents):
    - `Precision < Recall` significantly → **PRECISION** — model extracts wrong values
    - `Recall < Precision` significantly → **RECALL** — model misses the field
-   - Both low → **BOTH** — rewrite entirely
-   - Otherwise → **MIXED** — improve generally
+   - Otherwise → **BOTH** — rewrite entirely
 
-Print a diagnosis summary showing each field's name, F1, precision/recall, and diagnosis.
+Print a diagnosis summary showing each field group's score and each field's name, F1, precision/recall, and diagnosis.
 
 If no fields need REFINE, stop — the project is already at target quality.
 
@@ -140,12 +139,11 @@ For each REFINE field with **Recall < 0.5**, check whether the problem is a bad 
 
 ### 2b. Write improved instructions
 
-For each field marked REFINE, rewrite its moon_form field `instructions`:
+For each field marked REFINE, rewrite its `instructions`:
 
 - **PRECISION** → Be more specific about WHAT to extract and what NOT to extract
 - **RECALL** → Better describe WHERE to find the field
-- **BOTH** → Full rewrite — what, where, format, what to avoid
-- **MIXED** → Fill quality gaps (location hints, examples, format guidance)
+- **BOTH** → Full rewrite — what, where, what to avoid
 
 **Rules** (see also "Instruction Quality Standards" in the main skill):
 
@@ -155,8 +153,6 @@ For each field marked REFINE, rewrite its moon_form field `instructions`:
 4. For fields NOT visible in the sample documents, use a generic instruction with no example
 5. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")
 6. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, add negative examples)
-
-Save the current field instructions before updating (for rollback).
 
 ### 2c. Update instructions
 
@@ -184,27 +180,27 @@ uip ixp project update-prompts <project-name> \
 
 `--groups` is optional — omit it if the group instructions don't need changing.
 
-**Post-update verification:** After `update-prompts`, re-fetch the taxonomy and verify that `moon_form` field counts per label_def are unchanged:
+**Post-update verification:** After `update-prompts`, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
 
 ```bash
-uip ixp project taxonomy <project-name> --output json
+uip ixp project taxonomy <project-name> --output json > /tmp/ixp/<project-name>/taxonomies/v<N>.json
 ```
 
-Compare the number of `moon_form` entries in each updated label_def against what you saved in Step 1c. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration.
+Compare the number of fields in each updated label_def against the previous version. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration. The previous taxonomy version has the old instructions for rollback.
 
 ### 2d. Review and confirm predictions for all documents
 
-After updating instructions, review predictions for all documents using the [Label Documents Guide](label-documents.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the ones that are correct. Documents with incorrect predictions are skipped (their old labels remain).
+Wait ~2 minutes for the model to retrain with the updated instructions, then review predictions for all documents using the [Label Documents Guide](label-documents.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
 
 ### 2e. Wait and get new metrics
 
-Wait ~2 minutes for server-side retraining, then:
+Wait ~2 minutes for the model to retrain with the new labellings, then:
 
 ```bash
 uip ixp project metrics <project-name> --output json
 ```
 
-If `ModelVersion` hasn't advanced, wait another 60 seconds and retry. **What triggers retrain:** Any change to model inputs — labellings OR instructions — triggers a full model retrain. Even changing 1 field's instruction retrains the whole model. Retrain typically takes ~2 minutes. If no advance after 5 minutes, stop polling.
+If `ModelVersion` hasn't advanced since the last check, wait another 60 seconds and retry.
 
 ### 2f. Compare and decide
 
@@ -236,9 +232,9 @@ Wait ~2 minutes for retrain. On the next iteration, try a **different approach**
 
 **Stopping criteria — stop the loop if:**
 
-- All fields have F1 >= 0.7 (target reached)
+- All fields meet the user's target F1 (default: 0.7)
 - Max iterations reached
-- No fields improved in the last iteration (diminishing returns)
+- No fields improved in the last 2 consecutive iterations (diminishing returns)
 
 ---
 
