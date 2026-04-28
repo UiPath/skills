@@ -56,6 +56,17 @@ REPEAT:
 
 See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` command documentation.
 
+### When Validation Is Blocked by Studio IPC Compatibility
+
+The requirement to validate does not permit indefinite retries. Before the validation loop, record `uip --version` and `uip rpa list-instances --output json` so you know the CLI and Studio versions involved.
+
+If `get-errors`, `run-file`, `build`, or `analyze` reports a Studio/rpa-tool compatibility error, an IPC contract mismatch such as `Too many parameters for Task<string> ExecuteCommand`, or hangs with no output after the configured timeout, follow [cli-reference.md § Studio IPC Compatibility Preflight](cli-reference.md#studio-ipc-compatibility-preflight):
+
+1. Stop retrying the same command after one diagnostic retry.
+2. Do not claim the workflow is validated or runnable.
+3. Continue only with edits that can be made safely without that command.
+4. In the final response, state the exact command that was blocked, the CLI/Studio versions, and that validation or execution could not be completed in this environment.
+
 ## Project Build Verification (Required Before Returning a Project)
 
 Every project returned to the user must compile. After all files pass `get-errors`, run:
