@@ -1,6 +1,50 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. No CLI command needed to add the node.
+The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [flow-commands.md — uip maestro flow hitl add](../../../../uipath-maestro-flow/references/flow-commands.md#uip-maestro-flow-hitl-add).
+
+---
+
+## Step 1 — Extract the Schema Through Conversation
+
+Before designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**
+
+| What you need to know | Question to ask |
+|---|---|
+| What the reviewer sees | "What information does the reviewer need to make their decision?" |
+| What they fill in | "Does the reviewer need to enter any data, or just click Approve/Reject?" |
+| What actions they take | "What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?" |
+
+**Common business descriptions → schema translations:**
+
+| Business description | Schema shape |
+|---|---|
+| "Human reviews and approves/rejects an invoice" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |
+| "Reviewer checks agent-drafted email before sending" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |
+| "Escalate to human when confidence < 0.7" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |
+| "Human fills in missing vendor data" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |
+| "Approve before writing to ServiceNow" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |
+
+---
+
+## Step 2 — Design the Schema
+
+The node schema uses `fields[]` entries inside `inputs.schema`. Use these conceptual roles to plan the fields before writing the node JSON:
+
+| Role | `direction` value | Human can… | Use for |
+|---|---|---|---|
+| Input field | `"input"` | Read only | Context the human needs to make a decision |
+| Output field | `"output"` | Write | Data the automation needs back |
+| InOut field | `"inOut"` | Read + modify | Data the human can see and optionally correct |
+
+**Supported field types:** `text` (maps from `string`), `number`, `boolean`, `date`
+
+**Design rules:**
+- Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
+- Output fields: only what downstream nodes actually use; set `required: true` for mandatory outputs
+- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)
+- Keep it focused — don't add fields the automation won't use
+
+**Show the designed schema to the user and confirm before writing the node.**
 
 ---
 
@@ -12,20 +56,17 @@ The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` f
   "type": "uipath.human-in-the-loop",
   "typeVersion": "1.0.0",
   "display": { "label": "Invoice Review" },
-  "ui": { "position": { "x": 474, "y": 144 } },
   "inputs": {
     "type": "quick",
-    "channels": [],
+    "title": "Invoice Review",
     "recipient": {
-      "channels": ["ActionCenter"],
+      "channels": ["Email", "ActionCenter"],
       "connections": {},
       "assignee": { "type": "group" }
     },
-    "priority": "normal",
-    "timeout": "PT24H",
+    "priority": "Low",
     "schema": {
       "id": "a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c",
-      "title": "Invoice Review",
       "fields": [
         {
           "id": "invoiceid",
@@ -64,11 +105,11 @@ The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` f
       ]
     }
   },
-  "model": { "type": "bpmn:UserTask" }
+  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" }
 }
 ```
 
-**Required fields:** `id`, `type`, `typeVersion`, `ui.position`
+**Required fields:** `id`, `type`, `typeVersion`. Position goes in the top-level `layout.nodes` object (keyed by node id), not on the node itself.
 
 **Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `"Invoice Review"` → `invoiceReview1`.
 
@@ -109,26 +150,29 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
     {
       "position": "right",
       "handles": [
-        { "id": "completed", "label": "Completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } },
-        { "id": "cancelled", "label": "Cancelled", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } },
-        { "id": "timeout",   "label": "Timeout",   "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
+        { "id": "completed", "label": "Completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
       ],
       "visible": true
     }
   ],
   "model": { "type": "bpmn:UserTask" },
   "inputDefinition": {
-    "channels": [],
+    "type": "quick",
     "schema": {
-      "inputs": [], "outputs": [], "inOuts": [],
-      "outcomes": [{ "name": "Submit", "type": "string" }]
+      "fields": [],
+      "outcomes": [{ "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }]
+    },
+    "recipient": {
+      "channels": ["Email", "ActionCenter"],
+      "connections": {},
+      "assignee": { "type": "group" }
     },
     "timeout": "PT24H",
-    "priority": "normal"
+    "priority": "Normal"
   },
   "outputDefinition": {
     "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
-    "status": { "type": "string", "description": "Task completion status (completed, cancelled, timeout)", "source": "=status", "var": "status" }
+    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
   }
 }
 ```
@@ -137,15 +181,13 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
 
 ## Edge Wiring
 
-Wire all three output handles. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
+Wire the `completed` output handle to the downstream node. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
 
 ```json
-{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" },
-{ "id": "invoiceReview1-cancelled-end1-input",             "sourceNodeId": "invoiceReview1", "sourcePort": "cancelled", "targetNodeId": "end1",             "targetPort": "input" },
-{ "id": "invoiceReview1-timeout-end2-input",               "sourceNodeId": "invoiceReview1", "sourcePort": "timeout",   "targetNodeId": "end2",             "targetPort": "input" }
+{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" }
 ```
 
-**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever. Wire `cancelled` and `timeout` to end nodes if no specific handler exists.
+**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever.
 
 ---
 
@@ -266,7 +308,7 @@ After the HITL node, downstream nodes can reference:
 |---|---|---|
 | `$vars.<nodeId>.result` | object | All `output` and `inOut` fields the human filled in |
 | `$vars.<nodeId>.result.<fieldVariable>` | varies | Individual field value (e.g. `$vars.invoiceReview1.result.decision`) |
-| `$vars.<nodeId>.status` | string | `"completed"`, `"cancelled"`, or `"timeout"` |
+| `$vars.<nodeId>.status` | string | `"completed"` when the human submits the task |
 
 **In a downstream script node:**
 ```javascript

@@ -1,3 +1,7 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -71,3 +75,10 @@ tests/reports/
 tests/runs/
 tmp/
 c/
+
+# Canary .uipx is managed by canary.py — bootstrapped before each run,
+# server-side solution deleted and local file removed on teardown.
+tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
+
+# macOS Finder metadata
+**/.DS_Store

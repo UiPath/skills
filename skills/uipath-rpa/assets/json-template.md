@@ -16,7 +16,7 @@ Ready-to-use templates for all UiPath coded automation project files. Replace pl
   "main": "Main.cs",
   "dependencies": {
     "UiPath.System.Activities": "[25.12.2]",
-    "UiPath.Testing.Activities": "[25.10.0]",
+    "UiPath.Testing.Activities": "[25.10.2]",
     "UiPath.UIAutomation.Activities": "[25.10.21]"
   },
   "webServices": [],
@@ -76,16 +76,17 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
 - `outputType` → `"Tests"`
 - `fileInfoCollection` → one entry per test case file (add more entries as you add test cases)
 - No `processOptions` block
+- **No `main`** — Tests projects do not have a main entry point file
+- **No `entryPoints`** — Tests projects do not use entry points
 
 ```json
 {
   "name": "{{PROJECT_NAME}}",
   "projectId": "{{UUID_V4}}",
   "description": "{{DESCRIPTION}}",
-  "main": "Main.cs",
   "dependencies": {
     "UiPath.System.Activities": "[25.12.2]",
-    "UiPath.Testing.Activities": "[25.10.0]",
+    "UiPath.Testing.Activities": "[25.10.2]",
     "UiPath.UIAutomation.Activities": "[25.10.21]"
   },
   "webServices": [],
@@ -129,14 +130,7 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
     "saveToCloud": false
   },
   "expressionLanguage": "CSharp",
-  "entryPoints": [
-    {
-      "filePath": "{{TestCase}}.cs",
-      "uniqueId": "{{UUID_V4}}",
-      "input": [],
-      "output": []
-    }
-  ],
+  "entryPoints": [],
   "isTemplate": false,
   "templateProjectData": {},
   "publishData": {},
@@ -144,11 +138,14 @@ Replace the `designOptions` block and `targetFramework` as shown. Key difference
 }
 ```
 
+> **`editingStatus` lifecycle:** Set `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
+
 ### Variant: Library Project (Reference Only)
 
 Replace the `designOptions` block. Key differences from the Process template:
 - `outputType` → `"Library"`
 - `libraryOptions.privateWorkflows` lists any workflows that should NOT be exposed as activities
+- **No `entryPoints`** — Library projects do not use entry points
 
 ```json
 {
@@ -195,14 +192,7 @@ Replace the `designOptions` block. Key differences from the Process template:
     "saveToCloud": false
   },
   "expressionLanguage": "CSharp",
-  "entryPoints": [
-    {
-      "filePath": "Main.cs",
-      "uniqueId": "{{UUID_V4}}",
-      "input": [],
-      "output": []
-    }
-  ],
+  "entryPoints": [],
   "isTemplate": false,
   "templateProjectData": {},
   "publishData": {},

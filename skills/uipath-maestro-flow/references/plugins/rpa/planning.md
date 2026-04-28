@@ -1,6 +1,6 @@
 # RPA Node — Planning
 
-RPA nodes invoke published RPA processes (XAML or coded C# workflows) from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+RPA nodes invoke RPA processes (XAML or coded C# workflows) from within a flow. Published processes appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) processes in sibling projects are discovered via `--local` — no login or publish required.
 
 ## Node Type Pattern
 
@@ -16,14 +16,17 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 | --- | --- |
 | Desktop/browser automation via a published RPA process | Yes |
 | Target system has a REST API | No — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md) |
-| RPA process not yet published | No — use `core.logic.mock` placeholder, tell user to create with `uipath-rpa` |
+| RPA process in the same solution but not yet published | Yes — use `--local` discovery (see below) |
+| RPA process does not exist yet | Create it in the same solution with `uipath-rpa`, then use `--local` discovery |
 | Need AI reasoning, not desktop automation | No — use [Agent](../agent/planning.md) |
 
 ## Ports
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `output` |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 
@@ -32,12 +35,23 @@ Use an RPA node when the flow needs desktop/browser automation via a published R
 
 ## Discovery
 
+**Published (tenant registry):**
+
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.rpa-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.rpa-workflow" --output json
 ```
 
 Requires `uip login`. Only published processes from your tenant appear.
+
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling RPA projects in the same `.uipx` solution.
 
 ## Planning Annotation
 

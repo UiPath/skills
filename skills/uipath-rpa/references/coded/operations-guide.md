@@ -11,8 +11,7 @@ Creates a complete UiPath coded automation project from scratch. **ALWAYS use `u
 **1. Create the project with `uip rpa create-project`:**
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json --use-studio
-```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
 
 **Template options:**
 - `--template-id BlankTemplate` (default) — standard process project
@@ -40,8 +39,8 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 
 **5. Add workflow/test case/source files:**
 - Generate `.cs` files (workflows, test cases, source files)
-- Update `project.json` entry points for each workflow/test case file
-- If test project and shared setup is needed, create a base class (e.g. `CodedWorkflowBase.cs`) that implements `IBeforeAfterRun`
+- Update `project.json` entry points for each workflow/test case file (**Process projects only** — Tests and Library projects do NOT use `entryPoints`)
+- If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
 
@@ -50,7 +49,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
 ## Add a Workflow File to Existing Project
 
 **Steps:**
-1. Read existing `project.json` to get project name (for namespace) and current entry points
+1. Read existing `project.json` to get project name (for namespace), `outputType`, and current entry points
 2. Create the new `.cs` file:
    - Use the project name as namespace
    - Class name = file name (without .cs)
@@ -67,7 +66,7 @@ These contain valid defaults (correct schema version, runtime options, dependenc
    | No return | `public void Execute(string input)` | `input` = In |
 
    > **NEVER use C# `out` or `ref` keywords** on `Execute` parameters — the auto-generated `*+Activity.cs` wrapper does not handle them correctly, causing compile error CS1620. Studio regenerates the wrapper on every save, so manual fixes are reverted. Use return values or tuples for outputs instead.
-4. Update `project.json`:
+4. Update `project.json` (**Process projects only** — skip `entryPoints` for Tests and Library projects):
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
 5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
@@ -79,16 +78,18 @@ Coded test cases automate and validate application behavior using a structured *
 **Test cases can exist in any project type** — not just `"Tests"` projects. It's common to add test cases directly inside a `"Process"` project for testing purposes.
 
 **Steps:**
-1. Read existing `project.json` to get project name and current entry points
+1. Read existing `project.json` to get project name, `outputType`, and current entry points
 2. Create the `.cs` file following the same rules as workflows, but with:
    - `[TestCase]` attribute instead of `[Workflow]` on the `Execute` method
    - Structured code in three phases: **Arrange**, **Act**, **Assert**
 3. Update `project.json`:
-   - Add entry to `entryPoints` array
-   - Add entry to `designOptions.fileInfoCollection` with `testCaseType: "TestCase"`, `publishAsTestCase: true`
-5. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
+   - Add entry to `entryPoints` array (**Process projects only** — skip `entryPoints` for Tests and Library projects)
+   - Add entry to `designOptions.fileInfoCollection` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`
+4. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
    - Optionally create `.variations/` data file for parameterized test data
-6. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+   - For CLI-based data sources (variations files, Test Data Queues, Data Service), see [../testing-guide.md § Data-Driven Testing](../testing-guide.md)
+5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+6. **Update `editingStatus`** — When the user asks to mark a test case as ready/publishable, update its `editingStatus` in `fileInfoCollection` from `"InProgress"` to `"Publishable"`. Do NOT change this automatically — only when explicitly requested
 
 **Test case structure — Given/When/Then:**
 
@@ -158,7 +159,6 @@ namespace MyTestProject
 - `testing.VerifyAreEqual<T>(T expected, T actual, string outputMessage = null)` — assert equality
 - `testing.VerifyAreNotEqual<T>(T notExpected, T actual, string outputMessage = null)` — assert inequality
 - `testing.VerifyContains(string full, string part, string outputMessage = null)` — assert string containment
-- `testing.VerifyIsTrue(bool condition, string outputMessage = null)` — alias for VerifyExpression
 - `testing.VerifyRange(double value, double min, double max, string outputMessage = null)` — assert value in range
 - `testing.SetTestDataQueueItems(...)` — set up test data from data queues
 - `testing.GetTestDataQueueItem(...)` — get next test data item
@@ -181,7 +181,7 @@ public void Execute()
 ```
 
 **Shared Before/After hooks for all test cases:**
-Create a base class (e.g. `CodedWorkflowBase.cs`) that implements `IBeforeAfterRun`, then have all test cases inherit from it instead of `CodedWorkflow`. See `references/codedworkflow-reference.md#extending-with-hooks` for details.
+Create a Coded Source File (e.g. `CodedWorkflowHooks.cs`) with `public partial class CodedWorkflow : IBeforeAfterRun` — the compiler merges it with the auto-generated CodedWorkflow partial, so all workflows and test cases get the hooks automatically. See `assets/before-after-hooks-template.md` for the full template.
 
 ## Add a Coded Source File (Helper Class / Model / Utility)
 
@@ -276,8 +276,8 @@ public void Execute()
    - Class structure and base class (`CodedWorkflow`)
    - Attribute (`[Workflow]` or `[TestCase]`)
    - Method name (`Execute`)
-3. If parameters changed (added/removed/renamed/retyped):
-   - Update `project.json` `entryPoints` input/output definitions for this file
+3. If parameters changed (added/removed/renamed/retyped) and this is a **Process** project:
+   - Update `project.json` `entryPoints` input/output definitions for this file (Tests and Library projects do not use `entryPoints`)
 4. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
 
 ## Remove a Workflow File
@@ -285,8 +285,8 @@ public void Execute()
 **Steps:**
 1. Delete the `.cs` file
 2. Update `project.json`:
-   - Remove from `entryPoints` array
-   - If it was the `main` file, update `main` field to another entry point
+   - **Process projects:** Remove from `entryPoints` array. If it was the `main` file, update `main` field to another entry point
+   - **Tests and Library projects:** No `entryPoints` to update
    - If Tests project, remove from `fileInfoCollection`
 
 ## API Discovery (Before Creating Workflows)
@@ -404,7 +404,7 @@ namespace MyProjectName
 2. Add the package to `dependencies` with version in bracket notation: `"PackageName": "[version]"`
 3. Only add packages the project actually needs. Available UiPath packages and their latest v25.x versions:
    - `"UiPath.System.Activities": "[25.12.2]"` — system activities (assets, queues, credentials)
-   - `"UiPath.Testing.Activities": "[25.10.0]"` — testing and assertions
+   - `"UiPath.Testing.Activities": "[25.10.2]"` — testing and assertions. Pin this exact patch — `[25.10.0]` and `[25.10.1]` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
    - `"UiPath.UIAutomation.Activities": "[25.10.21]"` — UI automation
    - `"UiPath.Excel.Activities": "[3.3.1]"` — Excel automation
    - `"UiPath.Word.Activities": "[2.3.1]"` — Word automation

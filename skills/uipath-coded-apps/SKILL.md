@@ -1,319 +1,169 @@
 ---
 name: uipath-coded-apps
-description: "[PREVIEW] UiPath Coded Web Applications (.uipath dir, app.config.json). Create, push/pull source to Studio Web, package .nupkg, publish, deploy via uip codedapp CLI. For C# workflows or XAML→uipath-rpa."
+description: "[PREVIEW] UiPath Coded Web Apps & Coded Action Apps (uip codedapp, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Coded Apps
 
-Comprehensive guide for building, syncing, packaging, publishing, and deploying UiPath Coded Web Applications using the `uip codedapp` CLI.
+Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
 
 ## When to Use This Skill
 
-- User wants to **push local code to Studio Web** or **pull code from Studio Web**
-- User wants to **package a web app** into a `.nupkg` for Orchestrator
-- User wants to **publish a coded app** to Orchestrator and register it
-- User wants to **deploy or upgrade** a coded app in UiPath
+- User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
+- User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
+- User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
+- User wants to **push/pull source** between local and Studio Web
+- User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
-- User asks about `uip codedapp` commands, `.uipath/` directory, or `app.config.json`
-- User wants to **sync files** between local development and Studio Web
+
+## App Types
+
+| Type | Description | Key Difference |
+|------|-------------|----------------|
+| **Coded Web App** | React/Vue/other frontend hosted on UiPath CDN | User-facing app accessed via a URL |
+| **Coded Action App** | React form wired to UiPath Action Center | Rendered inside human task reviews in Maestro/Agent workflows |
 
 ## Critical Rules
 
-- **Always check login status before any cloud command.** Run `uip login status --output json` first. If not authenticated, ask the user for their environment and run `uip login`.
-- **Never skip the build step.** The `dist/` directory must exist before `pack` or `push`. Always verify with `ls dist/`.
-- **Pack before publish, publish before deploy.** The commands form a pipeline — each step depends on the previous one producing its output.
-- **The `publish` command creates `app.config.json`.** This file is used by `deploy` to resolve the app name. Don't delete `.uipath/` between publish and deploy.
-- **Push auto-creates projects.** If no `UIPATH_PROJECT_ID` exists, `push` will interactively prompt to create a new Coded App project and save the ID to `.env`.
-- **Version must be bumped for re-publish.** If the same version already exists in Orchestrator, publish will fail. Bump the version in the `pack` step.
+1. **Identify the app type before doing anything else.** Ask: *"Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"* The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
+3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
+4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
+5. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
+6. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
+7. **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
+8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
+9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
+10. **Use `getAppBase()` for client-side router basename.** Import from `@uipath/uipath-typescript`. It reads `uipath:app-base` at runtime and falls back to `'/'` locally. Never hardcode a path as the router basename.
 
-## Lifecycle Stages
+## Task Navigation
 
-| Stage | Description | CLI Command |
-|-------|-------------|-------------|
-| **Auth** | Authenticate with UiPath Cloud | `uip login` |
-| **Build** | Build the web application | `npm run build` (or project-specific) |
-| **Push** | Upload source code to Studio Web | `uip codedapp push [project-id]` |
-| **Pull** | Download project files from Studio Web | `uip codedapp pull [project-id]` |
-| **Pack** | Package build output into `.nupkg` | `uip codedapp pack <dist>` |
-| **Publish** | Upload to Orchestrator + register app | `uip codedapp publish` |
-| **Deploy** | Deploy or upgrade app in UiPath | `uip codedapp deploy` |
+| I want to... | Read this |
+|---|---|
+| **Create a new Coded Web App** | [references/create-web-app.md](references/create-web-app.md) |
+| **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
+| **Debug auth or config issues** | [references/debug.md](references/debug.md) |
+| **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
+| **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
+| **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
+| **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
+| **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
+| **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
+| **SDK: Data Fabric (Entities, ChoiceSets)** | [references/sdk/data-fabric.md](references/sdk/data-fabric.md) |
+| **SDK: Maestro (Processes, Cases)** | [references/sdk/maestro.md](references/sdk/maestro.md) |
+| **SDK: Action Center (Tasks)** | [references/sdk/action-center.md](references/sdk/action-center.md) |
+| **SDK: Conversational Agent** | [references/sdk/conversational-agent.md](references/sdk/conversational-agent.md) |
+| **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
+| **UI Patterns (polling, BPMN, HITL)** | [references/patterns.md](references/patterns.md) |
 
-## Quick Start
-
-### Step 0 — Resolve the `uip` binary
-
-The `uip` CLI is installed via npm. If `uip` is not on PATH, resolve it first:
+## CLI Setup
 
 ```bash
+# Install the UiPath CLI (run once)
+npm install -g @uipath/cli
+
+# Install the coded apps tool
+uip tools install @uipath/codedapp-tool
+
+# Resolve uip if not on PATH
 UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
 $UIP --version
 ```
 
-Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
-
-### Step 1 — Authenticate
+Authenticate before any cloud command:
 
 ```bash
-uip login status --output json
+uip login status --output json         # check if logged in
+uip login                              # interactive OAuth (opens browser)
+uip login --authority https://alpha.uipath.com   # non-production environments
 ```
 
-If not logged in:
-
-```bash
-uip login                                          # interactive OAuth (opens browser)
-uip login --authority https://alpha.uipath.com     # non-production environments
-```
-
-### Step 2 — Choose your workflow
-
-| I want to... | Go to |
-|---|---|
-| **Sync code with Studio Web** (push/pull) | [File Sync](#file-sync) |
-| **Package and deploy to production** (pack/publish/deploy) | [Ship It](#ship-it-full-pipeline) |
-| **Just package for testing** | [Pack](#pack) |
-
-## Task Navigation
-
-| I need to... | Read these |
-|---|---|
-| **Push code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
-| **Pull code from Studio Web** | [references/file-sync.md](references/file-sync.md) |
-| **Package app into .nupkg** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
-| **Publish to Orchestrator** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
-| **Deploy or upgrade an app** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
-| **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
-| **Manage Orchestrator resources** | [/uipath:uipath-platform](/uipath:uipath-platform) |
-
----
-
-## File Sync
-
-Sync source code between local development and UiPath Studio Web using `push` and `pull`.
-
-### Push — Upload Local Code to Studio Web
-
-```bash
-# Push using project ID from .env
-uip codedapp push
-
-# Push with explicit project ID
-uip codedapp push my-project-id
-
-# Push a custom build directory
-uip codedapp push --buildDir build
-
-# Push without importing resources
-uip codedapp push --ignoreResources
-```
-
-If no `UIPATH_PROJECT_ID` exists, the command auto-creates a new Coded App project interactively and saves the ID to `.env`.
-
-### Pull — Download Files from Studio Web
-
-```bash
-# Pull using project ID from .env
-uip codedapp pull
-
-# Pull to a specific directory
-uip codedapp pull my-project-id --targetDir ./my-app
-
-# Pull and overwrite without prompting
-uip codedapp pull --overwrite
-```
-
-### File Sync Workflow
-
-**First-time push (new project):**
-```bash
-npm run build
-uip codedapp push
-# → Prompts to create project, saves UIPATH_PROJECT_ID to .env
-```
-
-**Ongoing development:**
-```bash
-# Push local changes to Studio Web
-uip codedapp push
-
-# Pull remote changes to local
-uip codedapp pull
-```
-
-**Reference:** [File Sync Guide](references/file-sync.md) — Push/pull commands, auto-project creation, conflict handling, common workflows.
-
----
-
-## Pack
-
-Package the app build output into a `.nupkg` file with UiPath metadata.
-
-```bash
-# Pack the dist directory
-uip codedapp pack dist
-
-# Pack with explicit name and version
-uip codedapp pack dist -n my-webapp -v 2.0.0
-
-# Preview packaging without creating the file
-uip codedapp pack dist --dry-run
-```
-
-The pack command generates UiPath metadata files inside the `.nupkg`: `operate.json`, `bindings.json`, `entry-points.json`, and `package-descriptor.json`.
-
-**Reference:** [Pack / Publish / Deploy Guide](references/pack-publish-deploy.md) — All pack options, content types, metadata files.
-
----
-
-## Publish
-
-Upload the `.nupkg` to Orchestrator and register the coded app with the Apps service.
-
-```bash
-# Publish (auto-selects if only one .nupkg exists)
-uip codedapp publish
-
-# Publish a specific package
-uip codedapp publish -n my-webapp -v 2.0.0
-
-# Publish as an Action app type
-uip codedapp publish -t Action
-```
-
-Creates `.uipath/app.config.json` with registration metadata used by `deploy`.
-
-**Reference:** [Pack / Publish / Deploy Guide](references/pack-publish-deploy.md) — Publish options, app types, app.config.json.
-
----
-
-## Deploy
-
-Deploy or upgrade a coded app in UiPath. Auto-detects fresh deploy vs. upgrade.
-
-```bash
-# Deploy (uses app name from .uipath/app.config.json)
-uip codedapp deploy
-
-# Deploy with explicit app name
-uip codedapp deploy -n my-webapp
-
-# Deploy with folder key
-uip codedapp deploy -n my-webapp --folderKey my-folder-key
-```
-
-**Reference:** [Pack / Publish / Deploy Guide](references/pack-publish-deploy.md) — Deploy options, fresh vs upgrade, folder key.
-
----
-
-## Ship It (Full Pipeline)
-
-Run the complete pipeline end-to-end: build → pack → publish → deploy.
-
-**IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?". Execute the entire flow automatically. Only pause when you genuinely need information from the user (auth credentials, app name). After getting that info, resume immediately.**
-
-1. **Auth** — Check `uip login status --output json`. If not logged in, ask the user for their environment (Production/Alpha/Staging) and run `uip login`.
-
-2. **Build** — Run the project's build command:
-   ```bash
-   npm run build
-   ```
-   Verify: `ls dist/` (or the custom build directory).
-
-3. **Pack** — Package the build output:
-   ```bash
-   uip codedapp pack dist -n <name> -v <version>
-   ```
-   If a previous version exists in `.uipath/app.config.json`, suggest bumping the version. Verify: `ls .uipath/*.nupkg`.
-
-4. **Publish** — Upload and register:
-   ```bash
-   uip codedapp publish
-   ```
-   Verify: `cat .uipath/app.config.json`.
-
-5. **Deploy** — Deploy or upgrade:
-   ```bash
-   uip codedapp deploy
-   ```
-   Share the App URL from the output with the user.
-
-**Update cycle (version bump):**
-```bash
-npm run build
-uip codedapp pack dist -n my-webapp -v 2.0.0
-uip codedapp publish
-uip codedapp deploy
-```
-
----
-
-## Key Concepts
-
-### Environment Variables
-
-The tool reads credentials from `.env` (created by `uip login` or `uip login`):
+## Environment Variables
 
 | Variable | Used By | Description |
 |----------|---------|-------------|
-| `UIPATH_ACCESS_TOKEN` | All commands | Bearer token for API calls |
-| `UIPATH_URL` / `UIPATH_BASE_URL` | All commands | UiPath Cloud base URL |
-| `UIPATH_ORGANIZATION_ID` | All commands | Organization ID |
-| `UIPATH_ORGANIZATION_NAME` | deploy | Organization name (for app URL) |
-| `UIPATH_TENANT_ID` | All commands | Tenant ID |
-| `UIPATH_TENANT_NAME` | publish | Tenant name |
-| `UIPATH_FOLDER_KEY` | deploy | Folder key |
-| `UIPATH_PROJECT_ID` | push, pull | Studio Web project ID |
+| `VITE_UIPATH_CLIENT_ID` | Web App SDK | OAuth Client ID from External Application |
+| `VITE_UIPATH_SCOPE` | Web App SDK | Space-separated OAuth scopes |
+| `VITE_UIPATH_ORG_NAME` | Web App SDK | UiPath organization slug |
+| `VITE_UIPATH_TENANT_NAME` | Web App SDK | UiPath tenant name |
+| `VITE_UIPATH_BASE_URL` | Web App SDK | Must use API subdomain (see below) |
+| `UIPATH_PROJECT_ID` | push / pull | Studio Web project ID |
 
-### App Configuration (`.uipath/app.config.json`)
+**Base URL by environment:**
 
-Created by `publish`, consumed by `deploy`:
+| Environment | Correct Base URL |
+|---|---|
+| Production (cloud) | `https://api.uipath.com` |
+| Staging | `https://staging.api.uipath.com` |
+| Alpha | `https://alpha.api.uipath.com` |
 
-```json
-{
-  "appName": "my-webapp",
-  "appVersion": "1.0.0",
-  "systemName": "my-webapp_abc123",
-  "appUrl": null,
-  "registeredAt": "2025-02-26T10:00:00.000Z",
-  "appType": "Web",
-  "deploymentId": "dep-xyz",
-  "deployedAt": "2025-02-26T10:05:00.000Z"
-}
-```
+## Quick Deploy (Full Pipeline)
 
-### Content Types
+**Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-| Type | Description |
-|------|-------------|
-| `webapp` | Standard web application (default) |
-| `library` | Reusable UI component library |
-| `process` | Process-driven application |
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`.
+2. **Build** — `npm run build`. Verify `ls dist/`.
+3. **Pack** — `uip codedapp pack dist -n <name> -v <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
+4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
+5. **Deploy** — `uip codedapp deploy`. Share the app URL with the user.
 
-### App Types
+## SDK Module Imports
 
-| Type | Description |
-|------|-------------|
-| `Web` | Standard web app (default) |
-| `Action` | Action app triggered by automation |
+See [references/sdk/imports.md](references/sdk/imports.md) for the subpath ↔ class mapping, type import conventions, and anti-pattern examples. Core rules are listed under **Anti-patterns** below.
 
----
+## Key Concepts
+
+### App Config (`.uipath/app.config.json`)
+
+Created by `publish`, consumed by `deploy`. Contains `appName`, `systemName`, `appType`, `deploymentId`, `appUrl`. Do not delete `.uipath/` between publish and deploy.
+
+### Action Schema (`action-schema.json`)
+
+Action apps define a data contract between the form and the Maestro/Agent workflow. It has four sections: `inputs` (read-only data from automation), `outputs` (user-filled fields), `inOuts` (pre-populated but editable), and `outcomes` (submission buttons like Approve/Reject).
 
 ## Troubleshooting
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `Not authenticated` | No valid session | Run `uip login` or `uip login` |
-| `Project not found` | Invalid project ID | Check `UIPATH_PROJECT_ID` or create a new project via `push` |
-| `dist/ not found` | App not built | Run `npm run build` first |
-| `Version already exists` | Same version published | Bump version in `pack` step (e.g., `-v 2.0.0`) |
-| `No packages found` | No `.nupkg` in `.uipath/` | Run `uip codedapp pack` first |
-| `Folder key required` | Missing `UIPATH_FOLDER_KEY` | Set in `.env` or pass `--folderKey` |
-| `App not found` on deploy | App not published | Run `uip codedapp publish` first |
-| File conflicts on pull | Local files would be overwritten | Use `--overwrite` or manually resolve |
+See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 
-## References
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Not authenticated` | No valid session | Run `uip login` |
+| `dist/ not found` | App not built | Run `npm run build` |
+| `Version already exists` | Same version re-published | Bump version in `pack` |
+| `Folder key required` | Missing folder for CLI deploy | Set `UIPATH_FOLDER_KEY` or pass `--folderKey`. See note below. |
+| `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
+| Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
+| API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
 
-- **[CLI Command Reference](references/commands-reference.md)** — Every `uip codedapp` command with parameters and examples
-- **[File Sync Guide](references/file-sync.md)** — Push/pull workflows, auto-project creation, conflict handling
-- **[Pack / Publish / Deploy Guide](references/pack-publish-deploy.md)** — Full deployment pipeline, options, metadata files
-- **[Platform Operations](/uipath:uipath-platform)** — Authentication, Orchestrator, solutions (uipath-platform skill)
+> **Folder identifier names differ across CLI and SDK.** The CLI uses `UIPATH_FOLDER_KEY` / `--folderKey` (string) and applies only to `uip codedapp deploy`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
+
+## Completion Output
+
+When you finish a task, report only what's applicable to the work actually done:
+
+1. **What was done** — files created, edited, or deleted (list paths); CLI commands run
+2. **Stage reached** — one of: scaffolded / built / packed / published / deployed
+3. **Artifacts produced** (report only the ones that actually exist):
+   - `dist/` — if `npm run build` was run
+   - `.uipath/<name>.<version>.nupkg` — if `pack` was run
+   - `.uipath/app.config.json` with `deploymentId` — if `publish` was run
+   - Live deployment URL (`appUrl` from `app.config.json`) — if `deploy` was run
+   - External Application client ID — if one was created this session
+4. **Next steps**, depending on where the task stopped:
+   - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally
+   - **Built but not packed:** ready to `uip codedapp pack` when the user wants to deploy
+   - **Published but not deployed:** run `uip codedapp deploy` to go live
+   - **Deployed (Web):** open/share the deployment URL; verify sign-in flow
+   - **Deployed (Action):** the app will render in Action Center human tasks triggered by Maestro/Agent workflows matching the routing name
+5. **Open issues** — any auth failures, scope mismatches, missing folder key, skipped steps, or errors left unresolved
+
+If a later stage was requested but skipped (e.g., user asked to deploy but only `publish` succeeded), call it out explicitly in the next-steps section.
+
+## Anti-patterns
+
+These pitfalls are not already covered by the Critical Rules. For rules stated as positive requirements, see the **Critical Rules** section at the top.
+
+- **Don't import service classes from the package root** — use the subpath (e.g., `@uipath/uipath-typescript/assets`).
+- **Don't use the deprecated dot-chain `sdk.entities.getAll()`** — use constructor DI: `new Entities(sdk)`.
+- **Don't delete `.uipath/` between `publish` and `deploy`** — `deploy` reads `app.config.json` written by `publish`.

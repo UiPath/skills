@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.subflow --output json
+uip maestro flow registry get core.subflow --output json
 ```
 
 Confirm: input port `input`, output ports `output` and `error`.
@@ -37,8 +37,7 @@ Confirm: input port `input`, output ports `output` and `error`.
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:SubProcess" }
+  }
 }
 ```
 
@@ -56,7 +55,10 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "type": "core.trigger.manual",
           "typeVersion": "1.0.0",
           "display": { "label": "Start" },
-          "inputs": {},
+          "inputs": {
+            "entryPointId": "unique-uuid-here",
+            "isDefaultEntryPoint": true
+          },
           "outputs": {
             "output": {
               "type": "object",
@@ -64,8 +66,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
               "source": "null",
               "var": "output"
             }
-          },
-          "model": { "type": "bpmn:StartEvent", "entryPointId": "unique-uuid-here", "isDefaultEntryPoint": true }
+          }
         },
         {
           "id": "script1",
@@ -115,8 +116,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
               "source": "=result.Error",
               "var": "error"
             }
-          },
-          "model": { "type": "bpmn:ScriptTask" }
+          }
         },
         {
           "id": "subflow1End",
@@ -126,8 +126,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           "inputs": {},
           "outputs": {
             "result": { "source": "=js:$vars.script1.output.result" }
-          },
-          "model": { "type": "bpmn:EndEvent" }
+          }
         }
       ],
       "edges": [
@@ -170,6 +169,13 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
           }
         ],
         "nodes": []
+      },
+      "layout": {
+        "nodes": {
+          "subflow1Start": { "position": { "x": 200, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
+          "script1":       { "position": { "x": 400, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
+          "subflow1End":   { "position": { "x": 600, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false }
+        }
       }
     }
   }
@@ -185,7 +191,8 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 5. Parent-scope `$vars` are **not** visible inside the subflow — pass values explicitly via inputs
 6. Subflow nodes must have inline `outputs` defined on them (Start node needs `outputs.output`, Script nodes need `outputs.output` and `outputs.error`)
 7. Subflows can be nested (subflow inside subflow), up to 3 levels
-8. Each subflow has its own `nodes`, `edges`, and `variables` sections
+8. Each subflow has its own `nodes`, `edges`, `variables`, and `layout` sections
+9. Subflow node positions go in the subflow's own `layout.nodes` — NOT in the top-level `layout.nodes`. Each subflow scope is independent.
 
 ## Creating a Subflow
 

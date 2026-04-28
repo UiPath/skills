@@ -2,7 +2,7 @@
 
 All flow file modifications via direct read-modify-write of the `.flow` JSON file. This strategy gives full control over every field but requires manual management of definitions, variables, and edge integrity.
 
-> **When to use this strategy:** Use for operations the CLI does not support (variables, variableUpdates, subflows, output mapping) or when you prefer direct file control. See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
+> **When to use this strategy:** Direct JSON is the default for all `.flow` edits. Use CLI (see [flow-editing-operations-cli.md](flow-editing-operations-cli.md)) only for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
 
 ---
 
@@ -12,7 +12,7 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 
 | Concern | CLI handles | Direct JSON — you must |
 |---------|------------|------------------------|
-| Definitions | Auto-copied from registry cache | Copy `Data.Node` from `uip flow registry get` into `definitions` array |
+| Definitions | Auto-copied from registry cache | Copy `Data.Node` from `uip maestro flow registry get` into `definitions` array |
 | Node variables | Auto-added to `variables.nodes` | Add output variable entries manually (or accept that `variables.nodes` may need regeneration) |
 | Edge cleanup on delete | Auto-removes connected edges | Find and remove all edges referencing the deleted node |
 | Orphan cleanup | Auto-removes unused definitions and orphaned bindings | Remove definitions no longer referenced by any node; remove connector bindings only when no remaining node uses that connector |
@@ -21,11 +21,28 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 
 ---
 
+## Pre-flight Checklist
+
+Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Direct JSON default, **you** are responsible for them.
+
+1. **Locate the canonical `.flow` file.** Before any Write/Edit, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution new <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `.flow` Write/Edit to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
+2. **Definitions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the `Data.Node` object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Never hand-write or paraphrase (Critical Rule #7).
+3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
+4. **`targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (Critical Rule #6). Look up ports in the relevant plugin's `planning.md` or in [flow-file-format.md — Standard ports](flow-file-format.md).
+5. **Node outputs block.** Every data-producing node needs an `outputs` block on the node instance (not just in `definitions`). Action nodes: `output` + `error`. Trigger nodes: `output`. End/terminate: none. (Critical Rule #18.)
+6. **`variables.nodes`.** Add an entry for the new node's outputs. Optional under today's runtime, but expected for completeness and diff clarity.
+7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
+
+> **Anti-pattern: editing a `.flow` that is not colocated with `project.uiproj`.**
+> A `.flow` file outside the flow project directory is invisible to `uip maestro flow debug`, to the Studio solution, and to any checker that discovers the project via `**/project.uiproj`. It will still pass `uip maestro flow validate <PATH>.flow` because that command only checks JSON-schema correctness of the file you hand it — it does not verify the file is the project's canonical flow. Always edit the `.flow` that sits next to `project.uiproj`.
+
+---
+
 ## Primitive Operations
 
 ### Add a node
 
-1. Run `uip flow registry get <NODE_TYPE> --output json` and copy the `Data.Node` object
+1. Run `uip maestro flow registry get <NODE_TYPE> --output json` and copy the `Data.Node` object
 2. Add a node entry to the `nodes` array:
 
 ```json
@@ -48,18 +65,25 @@ When editing the `.flow` file directly, **you** are responsible for everything t
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "<BPMN_TYPE>" }
+  }
 }
 ```
 
 > **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [flow-file-format.md — Node outputs](flow-file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
+
+> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [flow-file-format.md — Instance-specific fields that live in `inputs`](flow-file-format.md#instance-specific-fields-that-live-in-inputs).
 
 > **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
 
 3. Add the definition to `definitions` (if this type is not already present):
    - Paste the `Data.Node` object from the registry response
    - One definition per unique `type` — not one per node instance
+
+> **Resource nodes — extra step.** If the node type is one of `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, or `uipath.core.human-task.*`:
+> 1. The instance stays minimal — just `inputs`/`outputs`/`display`.
+> 2. Add matching entries to the top-level `bindings[]` array (sibling of `nodes`/`edges`/`definitions`): two entries per resource (`name` + `folderPath`) with `resourceKey` exactly matching the definition's `model.bindings.resourceKey`.
+>
+> The BPMN emit layer rewrites the definition's `<bindings.{name}>` placeholders to `=bindings.{id}` by matching on `(resourceKey, name)`. Without matching entries in top-level `bindings[]`, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." The definition stays verbatim from the registry — do NOT rewrite `<bindings.*>` placeholders inside it. See the relevant plugin's `impl.md` for the exact JSON.
 
 4. Add node output variables to `variables.nodes` (optional — the CLI regenerates these, but direct builds should include them for completeness):
 
@@ -73,13 +97,13 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 }
 ```
 
-5. Add a layout entry for the node in the top-level `layout.nodes` object:
+5. Add a placeholder layout entry for the node in the top-level `layout.nodes` object — `flow tidy` rewrites both `position` and `size` on save:
 
 ```json
 "layout": {
   "nodes": {
     "<UNIQUE_NODE_ID>": {
-      "position": { "x": <X>, "y": <Y> },
+      "position": { "x": 0, "y": 0 },
       "size": { "width": 96, "height": 96 },
       "collapsed": false
     }
@@ -87,7 +111,7 @@ When editing the `.flow` file directly, **you** are responsible for everything t
 }
 ```
 
-**Layout rule:** Use horizontal layout — increasing `x` values left-to-right, consistent `y` baseline (e.g., `y: 144`). Space nodes ~200px apart on the x-axis.
+**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow tidy <ProjectName>.flow` after edits. Tidy arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
 
 ### Delete a node
 
@@ -232,42 +256,45 @@ Only `inout` variables can be updated. `in` variables are read-only.
 
 ### Replace a mock with a real resource node
 
-1. Run `uip flow registry get "<RESOURCE_NODE_TYPE>" --output json`
+1. Get the resource node manifest — check in-solution first, then tenant registry:
+   ```bash
+   # In-solution (preferred — no login required):
+   uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --local --output json
+
+   # Tenant registry (if not in solution):
+   uip maestro flow registry get "<RESOURCE_NODE_TYPE>" --output json
+   ```
 2. Record the mock node's connected edges
 3. Remove the mock node from `nodes`
 4. Remove all edges referencing the mock
 5. Add the real resource node to `nodes` with:
    - Correct `type` and `typeVersion`
    - `inputs` with resolved field values
-   - `model.bindings` with `resourceSubType`, `resourceKey`, etc.
+   - `outputs` block (action nodes: `output` + `error`)
+   - No `model` block — binding/context templates come from the definition
 6. Copy the definition from registry into `definitions`
-7. Re-create all edges using the new node's `id`
-8. Add node variables to `variables.nodes`
-9. Validate: `uip flow validate <ProjectName>.flow --output json`
+7. Add entries to the top-level `bindings[]` array — two per resource (`name` + `folderPath`), with `resourceKey` matching the definition's `model.bindings.resourceKey`
+8. Re-create all edges using the new node's `id`
+9. Add node variables to `variables.nodes`
+10. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Replace manual trigger with scheduled trigger
 
 Edit the start node in-place (no delete/re-add needed):
 
 1. Change `type` from `core.trigger.manual` to `core.trigger.scheduled`
-2. Add timer inputs:
+2. Add timer inputs (keep the existing `entryPointId` in `inputs`):
    ```json
    "inputs": {
+     "entryPointId": "<existing-uuid>",
      "timerType": "timeCycle",
      "timerPreset": "R/PT1H"
    }
    ```
-3. Add `eventDefinition` to `model`:
-   ```json
-   "model": {
-     "type": "bpmn:StartEvent",
-     "eventDefinition": "bpmn:TimerEventDefinition"
-   }
-   ```
-4. Update the definition in `definitions`:
+3. Update the definition in `definitions`:
    - Remove the `core.trigger.manual` definition
-   - Add the `core.trigger.scheduled` definition from `uip flow registry get core.trigger.scheduled --output json`
-5. Validate: `uip flow validate <ProjectName>.flow --output json`
+   - Add the `core.trigger.scheduled` definition from `uip maestro flow registry get core.trigger.scheduled --output json` (the new definition carries the correct `model.type` and `model.eventDefinition`)
+4. Validate: `uip maestro flow validate <ProjectName>.flow --output json`
 
 ### Create a subflow
 
@@ -294,12 +321,11 @@ Edit the start node in-place (no delete/re-add needed):
          "source": "=result.Error",
          "var": "error"
        }
-     },
-     "model": { "type": "bpmn:SubProcess" }
+     }
    }
    ```
 
-2. Add a `subflows.<SUBFLOW_NODE_ID>` entry with its own nodes, edges, and variables:
+2. Add a `subflows.<SUBFLOW_NODE_ID>` entry with its own nodes, edges, variables, and layout:
    ```json
    {
      "subflows": {
@@ -315,6 +341,12 @@ Edit the start node in-place (no delete/re-add needed):
              { "id": "<OUT_VAR>", "direction": "out", "type": "..." }
            ],
            "nodes": []
+         },
+         "layout": {
+           "nodes": {
+             "sfStart": { "position": { "x": 200, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false },
+             "sfEnd":   { "position": { "x": 400, "y": 144 }, "size": { "width": 96, "height": 96 }, "collapsed": false }
+           }
          }
        }
      }
@@ -324,6 +356,7 @@ Edit the start node in-place (no delete/re-add needed):
 3. Subflow's `in` variables must match the parent node's `inputs` keys
 4. Map all `out` variables on the subflow's End node `outputs`
 5. Parent-scope `$vars` are NOT visible inside the subflow — pass values via inputs
+6. Subflow node positions go in the **subflow's own** `layout.nodes` — not in the top-level `layout.nodes`. Each subflow has an independent layout scope.
 
 See [subflow/impl.md](plugins/subflow/impl.md) for the full JSON structure and rules.
 
@@ -331,7 +364,7 @@ See [subflow/impl.md](plugins/subflow/impl.md) for the full JSON structure and r
 
 ## Connector Node Configuration (Direct JSON)
 
-When not using `uip flow node configure`, you must manually set up:
+When not using `uip maestro flow node configure`, you must manually set up:
 
 ### 1. `inputs.detail` on the node
 

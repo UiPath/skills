@@ -1,0 +1,190 @@
+task_id: skill-datafabric-integration-error-paths
+description: >
+  Integration test: agent exercises all major negative paths for records,
+  CSV import, and file operations against a live tenant — missing required
+  field (R-C-08), unique constraint violation on insert and update (R-C-09,
+  R-U-06), type mismatch on insert and update (R-C-10, R-U-07), update body
+  missing Id (R-U-08), record not found on update and delete (R-U-05,
+  R-D-04), CSV header mismatch (R-C-11), malformed CSV (R-C-12), file upload
+  to non-FILE field (F-U-05), file upload with non-existent record (F-U-06),
+  and file upload with missing local file (F-U-08). All commands are expected
+  to fail; the test verifies the agent captures structured errors and does
+  not retry or call the REST API directly.
+tags: [uipath-data-fabric, integration, error-paths]
+
+agent:
+  type: claude-code
+  max_turns: 30
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login.
+
+  2. List native-only entities. Use "ErrorPathsTest" if it already exists.
+     If not, create it with fields:
+       - Code (STRING, isRequired=true)
+       - Score (INTEGER)
+       - Tag (STRING, isUnique=true)
+
+  3. Insert a valid seed record: { "Code": "SEED-001", "Score": 10, "Tag": "tag-unique" }
+     Save the returned record ID as seed_id.
+
+  4. Insert a second valid record: { "Code": "SEED-002", "Score": 20, "Tag": "tag-other" }
+     Save the returned record ID as seed_id2.
+
+  Now attempt each error scenario below. Run each command once, do NOT retry
+  or attempt to fix the error, and do NOT call the DataFabric REST API.
+
+  5. Required field missing: insert { "Score": 5 } (omit Code).
+
+  6. Unique constraint on insert: insert { "Code": "DUP", "Score": 1, "Tag": "tag-unique" }
+     (Tag "tag-unique" is already taken by the seed record).
+
+  7. Type mismatch on insert: insert { "Code": "TM-INS", "Score": "not-a-number" }.
+
+  8. Update missing Id: records update with body { "Score": 99 } (no Id key).
+
+  9. Update record not found: records update with body { "Id": "does-not-exist-aaa", "Score": 1 }.
+
+  10. Unique constraint on update: update seed_id2 — set Tag to "tag-unique"
+      (already held by seed record 1).
+
+  11. Type mismatch on update: update seed_id with { "Id": "<seed_id>", "Score": "bad-value" }.
+
+  12. Delete record not found: records delete <entity-id> does-not-exist-bbb.
+
+  13. CSV header mismatch: create wrong_headers.csv with header "WrongField,Score"
+      and one row "val,10". Import it into ErrorPathsTest.
+
+  14. Malformed CSV: create malformed.csv with content:
+        Code,Score
+        "unclosed-quote,5
+      Import it into ErrorPathsTest.
+
+  15. File upload to non-FILE field: create a temp file temp.txt with content "x".
+      Run: uip df files upload <entity-id> <seed_id> Score --file temp.txt
+      (Score is INTEGER, not FILE — expect a field-type error).
+
+  16. File upload record not found: run:
+      uip df files upload <entity-id> does-not-exist-ccc Score --file temp.txt
+
+  17. File upload local file not found:
+      uip df files upload <entity-id> <seed_id> Score --file ./no-such-file.bin
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<ErrorPathsTest entity ID>",
+    "seed_record_id": "<seed_id>",
+    "errors": {
+      "required_field_missing": "<error text or code>",
+      "unique_constraint_insert": "<error text or code>",
+      "type_mismatch_insert": "<error text or code>",
+      "update_missing_id": "<error text or code>",
+      "update_record_not_found": "<error text or code>",
+      "unique_constraint_update": "<error text or code>",
+      "type_mismatch_update": "<error text or code>",
+      "delete_record_not_found": "<error text or code>",
+      "csv_header_mismatch": "<error text or code>",
+      "csv_malformed": "<error text or code>",
+      "file_upload_non_file_field": "<error text or code>",
+      "file_upload_record_not_found": "<error text or code>",
+      "file_upload_local_not_found": "<error text or code>"
+    },
+    "all_errors_non_empty": <true if every key in errors has a non-empty value>,
+    "record_errors_captured": <count of non-empty values among: required_field_missing, unique_constraint_insert, type_mismatch_insert, update_missing_id, update_record_not_found, unique_constraint_update, type_mismatch_update, delete_record_not_found>,
+    "import_errors_captured": <count of non-empty values among: csv_header_mismatch, csv_malformed>,
+    "file_errors_captured": <count of non-empty values among: file_upload_non_file_field, file_upload_record_not_found, file_upload_local_not_found>
+  }
+
+  Do NOT delete the entity — the test harness handles cleanup.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the test entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted records insert (seed + error scenarios)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 4
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted records update (error scenarios)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted records delete with non-existent ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted CSV import (header mismatch and malformed)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted file upload (error scenarios)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Error scenarios captured per group — allows 1-2 misses per category"
+    path: "report.json"
+    assertions:
+      - expression: "record_errors_captured"
+        operator: gte
+        expected: 6
+      - expression: "import_errors_captured"
+        operator: gte
+        expected: 1
+      - expression: "file_errors_captured"
+        operator: gte
+        expected: 2
+    weight: 4.0
+    pass_threshold: 0.67
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

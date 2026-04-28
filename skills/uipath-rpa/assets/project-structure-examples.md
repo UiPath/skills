@@ -8,7 +8,7 @@ When creating a project, **proactively design the right file structure** based o
 - **Multi-step process** (e.g. "read invoices, validate, post to system") — split into multiple workflow files, each handling one step. `Main.cs` orchestrates by calling `workflows.StepName(...)` for each step
 - **Shared data structures** — extract into a Coded Source File (e.g. `Models.cs` or `InvoiceData.cs`)
 - **Repeated logic** — extract into helper Coded Source Files (e.g. `ValidationHelpers.cs`, `DataTransformations.cs`)
-- **Test project** — one test case per scenario, shared setup in `CodedWorkflowBase.cs` with `IBeforeAfterRun`
+- **Test project** — one test case per scenario, shared setup via `partial class CodedWorkflow : IBeforeAfterRun` in `CodedWorkflowHooks.cs`
 - **Complex domain logic** — isolate business rules in source files so they can be unit-tested and reused
 
 ## Example — Well-Structured Invoice Processing Project
@@ -49,10 +49,10 @@ public void Execute(string inputFolder)
 ```
 InvoiceTests/
 ├── project.json
-├── CodedWorkflowBase.cs             # Source file: base class with Before/After hooks (IBeforeAfterRun)
-├── TestLoginFlow.cs            # Test case: login scenario (inherits from CodedWorkflowBase)
-├── TestInvoiceCreation.cs      # Test case: create invoice scenario (inherits from CodedWorkflowBase)
-├── TestInvoiceValidation.cs    # Test case: validation rules (inherits from CodedWorkflowBase)
+├── CodedWorkflowHooks.cs             # Source file: partial class CodedWorkflow with Before/After hooks
+├── TestLoginFlow.cs            # Test case: login scenario (hooks apply automatically via partial class merge)
+├── TestInvoiceCreation.cs      # Test case: create invoice scenario (hooks apply automatically)
+├── TestInvoiceValidation.cs    # Test case: validation rules (hooks apply automatically)
 ├── TestData.cs                 # Source file: shared test constants/fixtures
 └── PageHelpers.cs              # Source file: UI interaction helpers
 ```
@@ -102,7 +102,7 @@ For the full decision framework on when to use coded vs XAML, see [../references
 - ✅ Yes → Extract to helper Coded Source File (e.g. `Helpers.cs`, `Utilities.cs`)
 
 **Is it a test project?**
-- ✅ Yes → One test case file per scenario + optional `CodedWorkflowBase.cs` for shared setup/teardown
+- ✅ Yes → One test case file per scenario + optional `CodedWorkflowHooks.cs` (partial class CodedWorkflow) for shared setup/teardown
 
 **Does it have complex business rules?**
 - ✅ Yes → Isolate in Coded Source Files for reusability and testability

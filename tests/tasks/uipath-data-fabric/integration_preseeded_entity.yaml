@@ -1,0 +1,257 @@
+task_id: skill-datafabric-integration-preseeded-entity
+description: >
+  Integration test: agent discovers CodeEvalTestEntity (auto-creating and
+  seeding it with 20 records if missing), then exercises the full Discover
+  workflow — introspect schema (7 fields), run 5 filterGroup queries with
+  known expected counts (Active=true → 12, Score>7 → 6, Title="The Matrix"
+  → 1, Title contains "Matrix" → 3), verify sort order (Score desc → 10.0
+  first), paginate all 20 records, do a targeted Notes update and restore.
+  Entity is never deleted.
+tags: [uipath-data-fabric, integration, pre-seeded, discover]
+
+agent:
+  type: claude-code
+  max_turns: 50
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login.
+
+  2. List native-only entities. Look for "CodeEvalTestEntity".
+
+     If it IS in the list: save the entity ID and proceed to step 3.
+
+     If it is NOT in the list, set it up now:
+     a. Create the entity with exactly these 7 fields:
+        Title (STRING), Score (DECIMAL), Active (BOOLEAN),
+        ReleaseDate (DATE), Email (STRING, isUnique: true),
+        Notes (MULTILINE_TEXT), Poster (FILE).
+        Save the new entity ID.
+     b. Write seed_20.csv using Python with exactly these 20 records
+        (do not change any Active values):
+
+        import csv
+        rows = [
+          ["Title","Score","Active","ReleaseDate","Email","Notes"],
+          ["The Matrix","5.0","true","1999-03-31","user1@test.com",""],
+          ["The Matrix Reloaded","6.0","false","2003-05-15","user2@test.com",""],
+          ["The Matrix Revolutions","7.0","true","2003-11-05","user3@test.com",""],
+          ["Star Wars","7.5","true","1977-05-25","user4@test.com",""],
+          ["The Dark Knight","8.0","true","2008-07-18","user5@test.com",""],
+          ["Inception","8.5","true","2010-07-16","user6@test.com",""],
+          ["Interstellar","9.0","true","2014-11-07","user7@test.com",""],
+          ["The Shawshank Redemption","9.5","true","1994-09-23","user8@test.com",""],
+          ["Pulp Fiction","10.0","true","1994-10-14","user9@test.com",""],
+          ["Fight Club","1.0","false","1999-10-15","user10@test.com",""],
+          ["Se7en","1.5","false","1995-09-22","user11@test.com",""],
+          ["Goodfellas","2.0","false","1990-09-19","user12@test.com",""],
+          ["Forrest Gump","2.5","true","1994-07-06","user13@test.com","A classic"],
+          ["The Silence of the Lambs","3.0","true","1991-02-14","user14@test.com",""],
+          ["Schindler's List","3.5","true","1993-12-15","user15@test.com",""],
+          ["The Godfather","4.0","true","1972-03-24","user16@test.com",""],
+          ["The Godfather Part II","4.5","false","1974-12-20","user17@test.com",""],
+          ["Casablanca","5.0","false","1942-11-26","user18@test.com",""],
+          ["Citizen Kane","5.5","false","1941-09-05","user19@test.com",""],
+          ["12 Angry Men","6.5","false","1957-04-10","user20@test.com",""],
+        ]
+        with open("seed_20.csv","w",newline="") as f: csv.writer(f).writerows(rows)
+
+     c. Import: uip df records import <entity-id> --file seed_20.csv --output json
+        Confirm the import reports 20 records created.
+
+  3. Retrieve the full schema with entities get.
+     Confirm the entity has exactly 7 fields:
+       Title (STRING), Score (DECIMAL), Active (BOOLEAN), ReleaseDate (DATE),
+       Email (STRING), Notes (MULTILINE_TEXT), Poster (FILE).
+
+  4. Run the following queries. Record the count of records returned by each.
+
+     a. Active = true
+        Expected: 12 records.
+
+     b. Score > 7
+        Expected: 6 records (7.5, 8.0, 8.5, 9.0, 9.5, 10.0).
+
+     c. Title = "The Matrix" (exact equality)
+        Expected: 1 record.
+
+     d. Title contains "Matrix"
+        Expected: 3 records.
+
+     e. Score >= 7 AND Active = true  (AND logic: logicalOperator=0)
+        Expected: 7 records (7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0 — all Active=true in seed data).
+
+  5. Sort all records by Score descending.
+     Confirm records[0].Score == 10.0 (the highest seed value).
+
+  6. Paginate through ALL records with records list --limit 5.
+     Use Python to collect IDs across pages. Confirm total == 20 with no
+     duplicate IDs.
+
+  7. Pick any one record returned by the Active=true query (step 4a).
+     Update its Notes field to "test-annotation-by-agent".
+     Verify the update with records get (confirm Notes == "test-annotation-by-agent").
+     Then restore Notes to null (update with Notes: null).
+     Verify the restore (confirm Notes == null).
+     Save the record ID you modified.
+
+  Save a summary to report.json:
+  {
+    "entity_found": true,
+    "entity_seeded_now": <true if you just created and imported it, false if it was pre-existing>,
+    "entity_id": "<CodeEvalTestEntity ID>",
+    "field_count": <number of fields in schema>,
+    "query_active_true_count": <count>,
+    "query_score_gt_7_count": <count>,
+    "query_title_exact_count": <count>,
+    "query_title_contains_count": <count>,
+    "query_score_gte7_and_active_true_count": <count>,
+    "sort_highest_score": <Score of records[0] from descending sort>,
+    "pagination_total_records": <unique ID count across all pages>,
+    "pagination_no_duplicates": <true/false>,
+    "update_record_id": "<ID of record you modified>",
+    "update_verified": <true if records get confirmed the new Notes value>,
+    "restore_verified": <true if records get confirmed Notes is null again>
+  }
+
+  Do NOT delete any records. Do NOT delete the entity.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed entities to discover CodeEvalTestEntity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved entity schema with entities get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran multiple filterGroup queries"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 4
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paginated through records with --limit"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a record and verified with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified updates with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 4
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used logicalOperator in AND filterGroup query (step 4e)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*logicalOperator'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included Id key in records update body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update.*\"Id\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Entity found, query counts match seed data, sort and pagination correct"
+    path: "report.json"
+    assertions:
+      - expression: "entity_found"
+        operator: equals
+        expected: true
+      - expression: "field_count"
+        operator: gte
+        expected: 7
+      - expression: "query_active_true_count"
+        operator: equals
+        expected: 12
+      - expression: "query_score_gt_7_count"
+        operator: equals
+        expected: 6
+      - expression: "query_title_exact_count"
+        operator: equals
+        expected: 1
+      - expression: "query_title_contains_count"
+        operator: equals
+        expected: 3
+      - expression: "query_score_gte7_and_active_true_count"
+        operator: equals
+        expected: 7
+      - expression: "sort_highest_score"
+        operator: gte
+        expected: 10
+      - expression: "pagination_total_records"
+        operator: equals
+        expected: 20
+      - expression: "pagination_no_duplicates"
+        operator: equals
+        expected: true
+      - expression: "update_verified"
+        operator: equals
+        expected: true
+      - expression: "restore_verified"
+        operator: equals
+        expected: true
+    weight: 6.0
+    pass_threshold: 0.75
+
+# No post_run: CodeEvalTestEntity is a shared persistent fixture — never deleted between runs.

@@ -44,6 +44,10 @@ Determine the agent mode before proceeding:
 | Create/build/deploy low-code agent | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) | `lowcode/agent-json-format.md` |
 | Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Common Edits | `lowcode/agent-json-format.md` |
 | Add tools, contexts, or escalations | Low-code | [lowcode/agent-json-format.md](references/lowcode/agent-json-format.md) § Resources | |
+| Discover solution resources (processes/apps/indexes/buckets/connections) | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) § Solution Resource Discovery | |
+| Add Integration Service tool | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 5 | `lowcode/agent-json-format.md` § Integration Service tool |
+| Add index-backed context (Context Grounding) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 7 | `lowcode/agent-json-format.md` § Context resource |
+| Add guardrails to an agent | Low-code | [lowcode/guardrails-guide.md](references/lowcode/guardrails-guide.md) (MUST read — do not guess the schema) | `lowcode/quickstart.md` § Scenario 8 |
 | Embed agent in a flow | Low-code | [lowcode/embedding-in-flows.md](references/lowcode/embedding-in-flows.md) | |
 | Wire multi-agent solution | Low-code | [lowcode/agent-solution-guide.md](references/lowcode/agent-solution-guide.md) | |
 | Inline agent node structure in a flow | Low-code | [lowcode/agent-flow-integration.md](references/lowcode/agent-flow-integration.md) | |

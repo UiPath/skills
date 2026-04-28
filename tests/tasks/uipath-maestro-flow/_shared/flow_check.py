@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-flow e2e checks.
 
-Runs ``uip flow debug --output json`` and asserts:
+Runs ``uip maestro flow debug --output json`` and asserts:
 
 1. ``finalStatus == "Completed"``.
 2. For each required node-type hint, at least one ``elementExecution`` with
@@ -35,22 +35,22 @@ def run_debug(
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
 ) -> dict:
-    """Locate the project, run ``uip flow debug --output json``, and return the
+    """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing."""
     project_dir = _find_project(project_glob)
-    cmd = ["uip", "flow", "debug", project_dir, "--output", "json"]
+    cmd = ["uip", "maestro", "flow", "debug", project_dir, "--output", "json"]
     if inputs is not None:
         cmd.extend(["--inputs", json.dumps(inputs)])
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
-        _fail(f"flow debug exit {r.returncode}\n{r.stderr[:500]}")
+        _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
     if data is None:
-        _fail(f"Could not parse JSON from flow debug\n{r.stdout[:500]}")
+        _fail(f"Could not parse JSON from flow debug\n{r.stdout}")
     payload = data.get("Data") or {}
     status = payload.get("finalStatus")
     if status != "Completed":
-        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout[:1000]}")
+        _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}")
     return payload
 
 
@@ -161,16 +161,17 @@ def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
 
 def assert_output_value(payload: dict, expected: Any) -> None:
     """Assert that some declared output equals ``expected``. For numerics this
-    is equality; for strings it is substring (case-insensitive)."""
+    is strict equality against a numeric leaf; for strings it is case-insensitive
+    substring. Deliberately does NOT regex-search for integers inside string
+    leaves — error dumps (e.g., HTTP response bodies with ETag hashes like
+    ``W/"20-da39a3ee5e6b4b0d..."``) embed isolated digits between non-digit
+    characters and would spuriously match small expected ints like 6 or 3."""
     outs = collect_outputs(payload)
     for v in outs:
         if v == expected:
             return
         if isinstance(expected, str) and isinstance(v, str):
             if expected.lower() in v.lower():
-                return
-        if isinstance(expected, (int, float)) and isinstance(v, str):
-            if re.search(rf"(?<!\d){expected}(?!\d)", v):
                 return
     _fail(f"No output equals expected {expected!r}\nOutputs: {_stringify(outs)[:1000]}")
 
@@ -212,9 +213,14 @@ def _parse_json(stdout: str) -> dict | None:
 
 
 def _find_project(pattern: str) -> str:
-    projects = glob.glob(pattern, recursive=True)
+    projects = sorted(glob.glob(pattern, recursive=True))
     if not projects:
         _fail(f"No project.uiproj found matching {pattern}")
+    if len(projects) > 1:
+        joined = "\n  - ".join(projects)
+        _fail(
+            f"Multiple projects match {pattern!r} — refusing to guess:\n  - {joined}"
+        )
     return os.path.dirname(projects[0])
 
 

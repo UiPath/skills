@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.script --output json
+uip maestro flow registry get core.action.script --output json
 ```
 
 Confirm: input port `input`, output port `success`, required input `script` (string, non-empty).
@@ -36,14 +36,13 @@ Confirm: input port `input`, output port `success`, required input `script` (str
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Script Rules
 

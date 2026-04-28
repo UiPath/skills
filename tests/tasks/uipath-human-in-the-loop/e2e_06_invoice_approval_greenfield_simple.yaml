@@ -1,0 +1,104 @@
+task_id: skill-hitl-e2e-invoice-approval-greenfield-simple
+# NOTE: "e2e" here means authoring end-to-end (greenfield flow project creation).
+# This test does NOT deploy or execute the flow — it only validates the authored
+# .flow file JSON and the skill's ability to scaffold and wire a new project.
+description: >
+  Authoring E2E test (green field): agent creates a new Flow project with a HITL
+  checkpoint from scratch. Tests C1 (green field), B1-B3 (schema design),
+  C5 (completed handle), F1 (validate after add). Does not deploy or run the flow.
+tags: [uipath-human-in-the-loop, e2e, green-field]
+
+agent:
+  type: claude-code
+  max_turns: 40
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a new UiPath Flow project called "InvoiceApproval" that processes
+  invoices. The flow must pause so a finance manager can review and approve
+  each invoice before a final confirmation step runs.
+
+  The HITL node should show the manager: invoice ID, vendor name, and amount.
+  The manager should be able to Approve or Reject.
+
+  After adding the HITL node and wiring it, validate the flow.
+
+  Save a summary to report.json with:
+  {
+    "project_name": "InvoiceApproval",
+    "hitl_node_id": "<the ID of the HITL node>",
+    "schema_inputs": ["<field names shown to the human>"],
+    "schema_outcomes": ["<button names>"],
+    "commands_used": ["<list of uip commands run>"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node is present in the flow file"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Completed handle is wired in the flow file"
+    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
+    includes:
+      - '"completed"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct project name and validation passed"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "InvoiceApproval"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "length(schema_inputs)"
+        operator: gte
+        expected: 2
+      - expression: "length(schema_outcomes)"
+        operator: gte
+        expected: 2
+    weight: 2.0
+    pass_threshold: 0.75

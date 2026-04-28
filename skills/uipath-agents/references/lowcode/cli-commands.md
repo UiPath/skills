@@ -35,6 +35,22 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 
 After scaffolding, add a `uipath.agent.autonomous` node to the flow with `model.source = <ProjectId>`. See [embedding-in-flows.md](embedding-in-flows.md) for the full structure.
 
+### `uip agent guardrails list`
+
+List available guardrail validator definitions with their allowed scopes, stages, and parameters.
+
+```bash
+uip agent guardrails list --output json
+```
+
+Returns an array of validator definitions. Each entry contains:
+- `Validator` — the `validatorType` string to use in `builtInValidator` guardrails
+- `AllowedScopes` — valid values for `selector.scopes`
+- `GuardrailStages` — object mapping each scope to its valid execution stages
+- `Parameters` — array of parameter definitions (`Type`, `Id`, `Required`)
+
+Run this before adding built-in validator guardrails to discover which validators are available and what parameters they accept.
+
 ### `uip agent validate`
 
 Validate agent project structure and schema, then migrate all project files to the latest schema version.
@@ -87,16 +103,13 @@ uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
 
-### Bundle and Upload to Studio Web
+### Upload to Studio Web
 
-Bundle packages the solution directory into a `.uis` file; upload sends it to Studio Web.
+Upload sends the solution to Studio Web. Accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file.
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
-
-Note: `upload` accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file as its positional argument. Uploading the directory directly skips the separate bundle step.
 
 ### Pack Solution for Orchestrator
 
@@ -140,6 +153,197 @@ uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
 uip solution deploy uninstall "<DEPLOYMENT_NAME>" --output json
 ```
 
+## Solution Resource Discovery
+
+`uip solution resource list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
+
+```bash
+uip solution resource list [solutionPath] \
+  --kind <kind> \
+  --source <all|local|remote> \
+  --search <term> \
+  --output json
+```
+
+**Flags:**
+- `--kind <kind>` — filter by resource kind. Supported: `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`.
+- `--source <all|local|remote>` — default `all`. Use `remote` to query only Orchestrator / RCS (what you typically need for discovery).
+- `--search <term>` — substring match on the resource name (case-insensitive).
+
+**Output row:**
+
+```jsonc
+{
+  "Source": "Remote",              // "Local" (already in this solution) or "Remote"
+  "Key": "<guid>",                 // kind-specific: release Key (Process), index GUID (Index), app id (App), connection id (Connection), ...
+  "Name": "<display name>",
+  "Kind": "Process",               // matches --kind
+  "Type": "agent",                 // subtype: process/agent/api/processOrchestration/webApp for Process; Workflow Action/Coded/CodedAction for App; connector key for Connection; orchestratorBucket for Bucket
+  "Folder": "Shared/MyFolder",     // fully-qualified folder path
+  "FolderKey": "<folder-guid>"     // folder GUID — use as X-UIPATH-FolderKey header and in debug_overwrites.json
+}
+```
+
+**Kind-specific Type values:**
+
+| Kind | `Type` values | What it means |
+|------|---------------|---------------|
+| `Process` | `process` | RPA (XAML workflow) |
+| `Process` | `agent` | Low-code / coded agent |
+| `Process` | `api` | API workflow |
+| `Process` | `processOrchestration` | Agentic process |
+| `Process` | `webApp` | Deployed Apps — ignore when looking for runnable tools; use `--kind App` for escalations |
+| `App` | `Workflow Action` | Action Center app (backs escalations) |
+| `App` | `Coded` / `CodedAction` | Coded Apps — not supported as escalations today |
+| `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
+| `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
+
+**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For those, you still hit the kind-specific API (see sections below). `resource list` is the identification step — it tells you *that* a resource exists and *where*.
+
+### Refresh Solution Resources
+
+```bash
+uip solution resource refresh [solutionPath] --output json
+```
+
+Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each binding, it either imports the matching resource from the Resource Catalog Service (if found by name + kind) or creates a virtual placeholder in the solution.
+
+**Run this after `uip agent validate`** whenever external tools have been added or changed.
+
+Handled kinds and what refresh produces:
+
+| Binding kind | Solution-level files | `debug_overwrites.json` entry |
+|---|---|---|
+| `Queue`, `Asset`, `Bucket` | Virtual resource in solution | none required |
+| `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
+| `Connection` | `connection/<connectorKey>/<Name>.json` | `kind: "connection"` |
+| `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | two entries (`kind: "index"` + `kind: "bucket"`) |
+| `App` (Action Center `workflow Action`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | two entries (`kind: "app"` + `kind: "process"` for the backing code-behind) |
+
+**Not yet handled by refresh** (write the solution-level files and `debug_overwrites.json` entries by hand — see [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files):
+
+- `Index` bindings whose data source is not `StorageBucket` (GoogleDrive / OneDrive / Dropbox / Confluence / Attachments) — refresh emits a warning and skips.
+- `Context` resources of type `datafabricentityset`.
+- Escalation channels other than `actionCenter` (`email`, `slack`, `teams`) — these are recognised by the runtime but refresh does not auto-generate any solution-level files for them.
+
+## Per-Kind Rich Metadata
+
+`resource list` identifies resources; these APIs fill in the authoring data the skill needs to write `resource.json`.
+
+### Orchestrator Processes — argument schemas
+
+Query Orchestrator `/odata/Releases` for release metadata (version, feed id, raw .NET schemas for RPA), then `GetPackageEntryPointsV2` for JSON Schemas. The folder GUID comes from the `FolderKey` field of `resource list --kind Process`.
+
+```bash
+# SECURITY: Never read ~/.uipath/.auth directly — keep the token inside the shell.
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=Key%20eq%20<RELEASE_KEY_GUID>&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
+```
+
+Returns release `Key` (same as `resource list`'s `Key`), `ProcessVersion`, `FeedId`, `ProcessType` and raw `Arguments.Input`/`Arguments.Output` (only populated for RPA).
+
+```bash
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='\''<PROCESS_KEY>:<VERSION>'\'')?feedId=<FEED_ID>" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
+```
+
+Returns (first entry): `UniqueId`, `Path`, `InputArguments`/`OutputArguments` as JSON Schema strings, `Type` (1=Process, 2=ProcessOrchestration, 4=Agent, 6=Api), `Id`.
+
+### Action Center Apps — action schema
+
+`resource list --kind App` gives you `Key` (app id), `Name`, `Type` (`Workflow Action` filters to escalations). To fetch the action schema you need the app's `systemName` and `deployVersion` — query `action-apps` filtered to a single deployment:
+
+```bash
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-apps?state=deployed&pageNumber=0&limit=100" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"'
+```
+
+Client-side filter the `deployed[]` array by `id == <APP_KEY>` to get `systemName` and `deployVersion`. Then:
+
+```bash
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-schema?appSystemName=<SYSTEM_NAME>&version=<DEPLOY_VERSION>" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"'
+```
+
+Returns `inputs`, `outputs`, `inOuts`, `outcomes` — use them to build the escalation channel's schemas and outcomeMapping.
+
+### Context Grounding Indexes — data source
+
+`resource list --kind Index` gives you `Key`, `Name`, `Folder`, `FolderKey`. To determine whether the index is StorageBucket-backed (required for auto-generated solution-level files today) and to locate the backing bucket, query ECS directly:
+
+```bash
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/ecs_/v2/indexes/AllAcrossFolders?\$filter=Name%20eq%20'\''<INDEX_NAME>'\''&\$expand=dataSource" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN"'
+```
+
+Check `dataSource.@odata.type`:
+- `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource` — StorageBucket-backed. Cross-reference the bucket with `uip solution resource list --kind Bucket --source remote --search <BucketName> --output json`.
+- Any other value (GoogleDrive, OneDrive, Dropbox, Confluence, Attachments) — not yet supported by solution-level file generation.
+
+### Integration Service — connectors, activities, metadata
+
+`uip solution resource list --kind Connection` reports existing connections, but building an Integration Service tool requires connector, activity, and field metadata that only the `uip is` commands expose.
+
+#### List Connectors
+
+```bash
+uip is connectors list --output json
+```
+
+Use `--filter <keyword>` to narrow by name or key.
+
+#### Get Connector Details
+
+```bash
+uip is connectors get "<connector-key>" --output json
+```
+
+Returns connector `Name`, `Key`, and image URL.
+
+#### List Connections for a Connector
+
+```bash
+uip is connections list "<connector-key>" --output json
+```
+
+Returns connections with `Id`, `Name`, `State`, `IsDefault`, `FolderKey`. Recommend the default enabled connection but let the user confirm.
+
+**Important:** This command populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json`. Always run it **before** `uip solution resource refresh` — refresh reads connection metadata from this cache to populate `debug_overwrites.json`.
+
+#### Ping a Connection
+
+```bash
+uip is connections ping "<connection-id>" --output json
+```
+
+Verifies the connection is healthy (`Enabled`). If not, prompt the user to re-authenticate.
+
+#### List Activities for a Connector
+
+```bash
+uip is activities list "<connector-key>" --output json
+```
+
+Returns activity `DisplayName`, `Description`, `ObjectName`, `MethodName`.
+
+#### Get Activity Metadata
+
+```bash
+uip is resources describe "<connector-key>" "<object-name>" --connection-id "<connection-id>" --operation Create --output json
+```
+
+Returns field metadata for the activity. The response includes a `metadataFile` path pointing to a cached JSON file with full details (`requestFields`, `responseFields`, `parameters`). Read that file to build `inputSchema`, `outputSchema`, and `properties.parameters` for the tool resource.
+
+If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned.
+
 ## Authentication
 
 ```bash
@@ -162,9 +366,8 @@ uip solution project add "MyAgent" --output json
 # 3. Edit agent.json, then validate
 uip agent validate MyAgent --output json
 
-# 4. Bundle + upload to Studio Web (for visual development)
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/MySolution.uis --output json
+# 4. Upload to Studio Web (for visual development)
+uip solution upload . --output json
 
 # 5. Pack + publish + deploy to Orchestrator
 uip solution pack . ./dist -v "1.0.0" --output json
@@ -186,11 +389,13 @@ uip solution deploy run \
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory |
 | Register project | `uip solution project add "<PATH>" --output json` | Solution directory |
+| List guardrail validators | `uip agent guardrails list --output json` | Any directory |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any directory with path |
-| Bundle for Studio Web | `uip solution bundle . -d ./dist --output json` | Solution directory |
-| Upload to Studio Web | `uip solution upload ./dist/<NAME>.uis --output json` | Any directory |
+| Upload to Studio Web | `uip solution upload . --output json` | Solution directory |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory |
 | Deploy | `uip solution deploy run --name ... --output json` | Any directory |
 | Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory |
 | Login check | `uip login status --output json` | Any directory |
+| Discover solution resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory |
+| Refresh solution resources | `uip solution resource refresh --output json` | Solution directory |

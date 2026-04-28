@@ -147,7 +147,7 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 
 Node variables represent outputs produced by nodes during execution. They are read-only and referenced via `$vars.{nodeId}.{outputId}`.
 
-When you add a node via `uip flow node add`, node variables are created automatically. When editing JSON directly, add them manually.
+When you add a node via `uip maestro flow node add`, node variables are created automatically. When editing JSON directly, add them manually.
 
 ### Schema
 
@@ -287,8 +287,7 @@ Workflow output variables (`direction: "out"`) must be mapped on End nodes. The 
     "summary": {
       "source": "=js:$vars.formatResult.output.text"
     }
-  },
-  "model": { "type": "bpmn:EndEvent" }
+  }
 }
 ```
 
@@ -310,18 +309,21 @@ Used for conditions, input values, variable updates, and output mappings. The `=
 
 ### Template Expressions (`{ }`)
 
-Used for string interpolation in text fields. Expressions inside single braces are evaluated and converted to strings.
+Used for string interpolation in **native flow string fields** only. Expressions inside single braces are evaluated and converted to strings.
 
 ```
 Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 ```
+
+> **Brace-templates do NOT work in Integration Service activity inputs.** The flow-layer template runner only processes native flow fields (decision expressions, variable updates, end-node output `source`, script bodies, agent prompt text). Fields inside `inputs.detail.bodyParameters` on `core.action.http.v2` or `uipath.connector.*` activity nodes — `url`, `headers`, `body`, `query` — are passed through to the IS runtime unchanged, so `{$vars.article}` ships literally. Observed behavior: the `$` is stripped and the braces survive (`user/{vars.article}` reaches the service). **For any dynamic value in an IS activity input, use `=js:` instead** — e.g., `` "url": "=js:`https://.../user/${$vars.article}`" `` or `"headers": { "Authorization": "=js:'Bearer ' + $vars.token" }`.
 
 ### Comparison
 
 | Feature | `=js:` | `{ }` template |
 | --- | --- | --- |
 | Return type | Any (boolean, number, object, array) | Always string |
-| Use case | Conditions, inputs, mappings | Text/prompt fields |
+| Use case | Conditions, inputs, mappings | Native flow text/prompt fields only |
+| Works in IS activity inputs (HTTP URL/headers/body, connector `bodyParameters`) | Yes | **No — use `=js:`** |
 | Full JS | Yes | Expression-only (no statements) |
 | Prefix | `=js:` required | No prefix, braces inline |
 
@@ -506,7 +508,7 @@ There are **no CLI commands** for adding or removing variables. Manage variables
 
 1. Open `<ProjectName>.flow`
 2. Add the variable object to `variables.globals`
-3. Run `uip flow validate` to check for errors
+3. Run `uip maestro flow validate` to check for errors
 
 ### Adding node variables after manual node insertion
 
@@ -525,7 +527,7 @@ When adding nodes via direct JSON edit (not CLI), you must also add correspondin
 }
 ```
 
-> **When using `uip flow node add`**, node variables are handled automatically. Only add them manually when editing JSON directly.
+> **When using `uip maestro flow node add`**, node variables are handled automatically. Only add them manually when editing JSON directly.
 
 ### Mapping outputs on End nodes
 
@@ -591,7 +593,9 @@ A flow with input, state, and output variables:
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
-      "inputs": {},
+      "inputs": {
+        "entryPointId": "<uuid>"
+      },
       "outputs": {
         "output": {
           "type": "object",
@@ -599,8 +603,7 @@ A flow with input, state, and output variables:
           "source": "=result.response",
           "var": "output"
         }
-      },
-      "model": { "type": "bpmn:StartEvent" }
+      }
     },
     {
       "id": "transform1",
@@ -622,8 +625,7 @@ A flow with input, state, and output variables:
           "source": "=result.Error",
           "var": "error"
         }
-      },
-      "model": { "type": "bpmn:ScriptTask" }
+      }
     },
     {
       "id": "end1",
@@ -634,8 +636,7 @@ A flow with input, state, and output variables:
         "result": {
           "source": "=js:({ total: $vars.processedCount, data: $vars.transform1.output })"
         }
-      },
-      "model": { "type": "bpmn:EndEvent" }
+      }
     }
   ],
   "edges": [

@@ -6,7 +6,7 @@ Inline agent nodes embed an autonomous AI agent **inside** the flow project. The
 
 `uipath.agent.autonomous`
 
-This is a fixed, OOTB node type (no `{key}` suffix). Inline agents do not appear in `registry search` — the single node type accepts any inline agent via its `model.source` field.
+This is a fixed, OOTB node type (no `{key}` suffix). Inline agents do not appear in `registry search` — the single node type accepts any inline agent via its `inputs.source` field.
 
 ## When to Use
 
@@ -26,9 +26,12 @@ Use an inline agent node when the reasoning/judgment task is tightly scoped to t
 
 Do not inline an agent you intend to reuse. Inline agents are private to the flow project — if you later need to call the same agent from another flow, you must re-scaffold and re-configure it, diverging over time. Use a published agent for shared logic.
 
+**Do NOT scaffold an inline agent to satisfy a prompt that names an existing agent.** If the prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to a published agent. Search the tenant registry by name first: `uip maestro flow registry search "<name>" --output json`. Only scaffold inline when the user explicitly asks to **embed / inline / include / create** an agent inside this flow. The words "coded" and "low-code" describe the implementation style of a published agent — they are NOT synonyms for "inline".
+
 ### When NOT to Use
 
 - **Agent already exists as a published tenant resource** — use the [published agent](../agent/planning.md) node instead
+- **User references the agent by name** (existing agent) — search the tenant registry first; scaffold inline only if the user explicitly asks to embed/inline a new agent
 - **Task is deterministic** — use [Script](../script/planning.md) or [Decision](../decision/planning.md)
 
 ## Ports
@@ -37,7 +40,7 @@ Do not inline an agent you intend to reuse. Inline agents are private to the flo
 | --- | --- | --- | --- |
 | `input` | left | target | Flow sequence input |
 | `success` | right | source | Normal flow output |
-| `error` | right | source | Error handler (when `errorHandlingEnabled`) |
+| `error` | right | source | Implicit error port (shared with all action nodes) — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes) |
 | `tool` | bottom | source (artifact) | Connect tool resource nodes |
 | `context` | bottom | source (artifact) | Connect context resource nodes |
 | `escalation` | top | source (artifact) | Connect escalation resource nodes |
@@ -55,7 +58,7 @@ Unlike published agents, inline agents are **not** discovered through the regist
 uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 ```
 
-This creates a `<FlowProjectDir>/<projectId-uuid>/` directory containing `agent.json`, `flow-layout.json`, and empty `evals/`, `features/`, `resources/` subdirectories. Record the returned `ProjectId` — the flow node's `model.source` must match it exactly.
+This creates a `<FlowProjectDir>/<projectId-uuid>/` directory containing `agent.json`, `flow-layout.json`, and empty `evals/`, `features/`, `resources/` subdirectories. Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
 
 No `uip login` or registry refresh is required for this workflow.
 

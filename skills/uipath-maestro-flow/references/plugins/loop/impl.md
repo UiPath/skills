@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.loop --output json
+uip maestro flow registry get core.logic.loop --output json
 ```
 
 Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`.
@@ -25,8 +25,7 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
   "inputs": {
     "collection": "=js:$vars.fetchData.output.body.items",
     "parallel": false
-  },
-  "model": { "type": "bpmn:SubProcess" }
+  }
 }
 ```
 
@@ -45,7 +44,6 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
   "inputs": {
     "script": "return $vars.product * $vars.loop1.currentItem"
   },
-  "model": { "type": "bpmn:ScriptTask" },
   "parentId": "loop1"
 }
 ```
@@ -54,7 +52,7 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `parentId`.
 
 ## Wiring
 
@@ -166,16 +164,14 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
       "display": { "label": "Manual trigger" },
-      "inputs": {},
-      "model": { "type": "bpmn:StartEvent", "entryPointId": "..." }
+      "inputs": { "entryPointId": "..." }
     },
     {
       "id": "loop1",
       "type": "core.logic.loop",
       "typeVersion": "1.0.0",
       "display": { "label": "Loop" },
-      "inputs": { "collection": "=js:$vars.inputItems", "parallel": false },
-      "model": { "type": "bpmn:SubProcess" }
+      "inputs": { "collection": "=js:$vars.inputItems", "parallel": false }
     },
     {
       "id": "bodyScript",
@@ -185,7 +181,6 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
       "inputs": {
         "script": "return $vars.accumulator + $vars.loop1.currentItem;"
       },
-      "model": { "type": "bpmn:ScriptTask" },
       "parentId": "loop1"
     },
     {
@@ -196,8 +191,7 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
       "inputs": {},
       "outputs": {
         "result": { "source": "=js:$vars.accumulator" }
-      },
-      "model": { "type": "bpmn:EndEvent" }
+      }
     }
   ],
   "edges": [

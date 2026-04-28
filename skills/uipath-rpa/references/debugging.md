@@ -4,6 +4,20 @@ The `uip rpa run-file` command provides full interactive debugging capabilities 
 
 This is a powerful complement to `get-errors` (static validation). While `get-errors` catches structural and type issues at design time, the debugger catches runtime problems: wrong API responses, null references, logic errors, failed deserialization, and more. Use both together for comprehensive workflow validation.
 
+## Studio Desktop vs headless
+
+Most debugging works on **headless Studio** with no Studio Desktop install: `StartExecution`, `StartDebugging` (with workflow-level breakpoint), all stepping commands (`StepOver`, `StepInto`, `StepOut`), `Continue`, `Break`, `Resume`, `ContinueRetry`, `ContinueIgnore`, `Stop`, `RestartFromTop`, `ForceSessionEnded`.
+
+**Studio Desktop is required** for any flow that targets a specific activity, because activity targeting goes through `uip rpa focus-activity` and that tool only runs against Studio Desktop:
+
+| Command | Why it needs Studio Desktop |
+|---------|------------------------------|
+| `TestActivity` | Operates on the focused activity — requires `focus-activity` first |
+| `StartDebuggingFromHere` | Operates on the focused activity — requires `focus-activity` first |
+| `ToggleBreakpoint` *targeted to a specific activity* | Targeting requires `focus-activity` first. Without focusing, the breakpoint toggles on the whole workflow (still works headless) |
+
+Before invoking any of the above, run `uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json` and ensure the project is open in Studio Desktop. See [environment-setup.md § Edge case: requiring Studio Desktop](environment-setup.md#edge-case-requiring-studio-desktop).
+
 ---
 
 ## Command Reference
@@ -29,9 +43,9 @@ uip rpa run-file --file-path <relative-path> --command <Command> [--input-argume
 |---------|-------------|--------------|
 | `StartExecution` | Run without debugging | Executes the workflow to completion. Default if `--command` is omitted |
 | `StartDebugging` | Begin a debug session | Starts execution in debug mode. Pauses at the first breakpoint (or at the first activity if a breakpoint is set on the workflow itself). Returns current execution state |
-| `TestActivity` | Test one activity in isolation | Isolates the currently focused activity and executes it in a temporary test workflow. **Requires `focus-activity` first.** Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
-| `StartDebuggingFromHere` | Debug from a specific activity | Starts a debugging session from the currently focused activity, skipping all preceding activities. **Requires `focus-activity` first.** Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
-| `ToggleBreakpoint` | Set/remove breakpoints | Toggles a breakpoint on the currently focused activity (XAML) or line (.cs). Use `uip rpa focus-activity` to focus beforehand. For XAML, cycles through 3 states: **enabled → disabled → no breakpoint**. For .cs, cycles through 2 states: **breakpoint → no breakpoint**. If no activity/line is focused, toggles on the entire workflow |
+| `TestActivity` | Test one activity in isolation | Isolates the currently focused activity and executes it in a temporary test workflow. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
+| `StartDebuggingFromHere` | Debug from a specific activity | Starts a debugging session from the currently focused activity, skipping all preceding activities. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
+| `ToggleBreakpoint` | Set/remove breakpoints | Toggles a breakpoint on the currently focused activity (XAML) or line (.cs). Use `uip rpa focus-activity` to focus beforehand — **activity-targeted toggling requires Studio Desktop**. For XAML, cycles through 3 states: **enabled → disabled → no breakpoint**. For .cs, cycles through 2 states: **breakpoint → no breakpoint**. If no activity/line is focused, toggles on the entire workflow (works on Helm) |
 | `StepOver` | Execute one activity and pause | Executes the current activity, then pauses at the next sibling activity. Does not enter child scopes (e.g., stays at the For Each level, doesn't step into its body) |
 | `StepInto` | Drill into child activities | Executes and pauses at the first child activity inside the current scope. Use to enter loops, sequences, Try-Catch blocks, etc. |
 | `StepOut` | Exit the current scope | Continues execution until the current scope completes, then pauses at the parent level. Use to leave a loop body or nested sequence |
@@ -206,8 +220,10 @@ For `StartExecution` (non-debug run), `TestActivity` (when no breakpoints are hi
 
 The most common pattern: set a breakpoint on the focused activity, start debugging, inspect state, then continue or step through.
 
+> **Studio Desktop required** for activity-targeted breakpoints (the `focus-activity` step). Skip step 1 to set a workflow-level breakpoint instead — that path runs headless.
+
 ```bash
-# 1. Focus the activity you want to break at (optional — skip if you want to break at the workflow level)
+# 1. Focus the activity you want to break at (Studio Desktop only — skip to break at the workflow level)
 uip rpa focus-activity --activity-id "Assign_1"
 
 # 2. Toggle a breakpoint on the focused activity
@@ -228,8 +244,10 @@ uip rpa run-file --file-path "GetStockPrices.xaml" --command Stop --output json
 
 Use `TestActivity` to run just the currently focused activity without executing the entire workflow. Useful for verifying an activity works with specific inputs.
 
+> **Studio Desktop required** — `focus-activity` and `TestActivity` both rely on it. On a headless-only setup, fall back to a workflow-level `StartDebugging` with a breakpoint placed earlier in the file.
+
 ```bash
-# 1. Focus the activity to test
+# 1. Focus the activity to test (Studio Desktop required)
 uip rpa focus-activity --activity-id "DeserializeJson_1"
 
 # 2. Run it in isolation, pre-setting any variables it reads from
@@ -248,8 +266,10 @@ uip rpa run-file --file-path "GetBucharestTemperature.xaml" \
 
 Use `StartDebuggingFromHere` to skip straight to the activity you care about, avoiding stepping through earlier activities.
 
+> **Studio Desktop required** — `focus-activity` and `StartDebuggingFromHere` both rely on it. On a headless-only setup, use plain `StartDebugging` with a workflow-level breakpoint near the activity instead.
+
 ```bash
-# 1. Focus the activity to start from
+# 1. Focus the activity to start from (Studio Desktop required)
 uip rpa focus-activity --activity-id "HttpRequest_1"
 
 # 2. Start debugging from that point, pre-setting variables
@@ -351,9 +371,9 @@ A practical example — a workflow makes an HTTP request and tries to deserializ
 
 - **Always use `--output json`** for debug commands when you need to parse the output programmatically. The structured output makes it easy to inspect variables and identify exceptions.
 - **Set breakpoints strategically** — place them just before the activity you suspect is failing, not at the very start. This avoids stepping through dozens of unrelated activities.
-- **Use `focus-activity` before `ToggleBreakpoint`** to target a specific activity by its IdRef. Without focusing first, the breakpoint is set on whatever activity or workflow is currently focused in Studio.
-- **Use `TestActivity` for quick feedback** — it runs a single activity in isolation, which is faster than debugging the entire workflow. Pre-set variables with `--input-variables` so the activity has the data it needs.
-- **Use `StartDebuggingFromHere` to skip setup** — when the bug is deep in the workflow, skip straight to the relevant activity instead of stepping through the entire flow. Pre-set variables with `--input-variables` to simulate the state the activity would have received from preceding activities.
+- **Use `focus-activity` before `ToggleBreakpoint`** to target a specific activity by its IdRef — Studio Desktop required. Without focusing first, the breakpoint is set on whatever activity or workflow is currently focused, which on a headless-only run means the entire workflow.
+- **Use `TestActivity` for quick feedback** — it runs a single activity in isolation, which is faster than debugging the entire workflow. Studio Desktop required (depends on `focus-activity`). Pre-set variables with `--input-variables` so the activity has the data it needs.
+- **Use `StartDebuggingFromHere` to skip setup** — when the bug is deep in the workflow, skip straight to the relevant activity instead of stepping through the entire flow. Studio Desktop required (depends on `focus-activity`). Pre-set variables with `--input-variables` to simulate the state the activity would have received from preceding activities.
 - **Prefer `StepOver` for quick inspection** — it moves one activity at a time without descending into scopes. Use `StepInto` only when you need to examine what happens inside a loop iteration or nested sequence.
 - **Check variables after each step** — inspect the Output entries after each step to see the current state of in-scope variables. This is the most direct way to verify that each activity produced the expected result.
 - **Use `ContinueRetry` for transient errors** — if the exception is a network timeout or rate limit, retrying may succeed without any code changes.

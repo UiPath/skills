@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.merge --output json
+uip maestro flow registry get core.logic.merge --output json
 ```
 
 Confirm: input port `input` (accepts multiple connections), output port `output`.
@@ -20,14 +20,13 @@ Confirm: input port `input` (accepts multiple connections), output port `output`
   "type": "core.logic.merge",
   "typeVersion": "1.0.0",
   "display": { "label": "Join Branches" },
-  "inputs": {},
-  "model": { "type": "bpmn:ParallelGateway" }
+  "inputs": {}
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Wiring
 

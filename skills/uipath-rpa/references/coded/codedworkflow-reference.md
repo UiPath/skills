@@ -10,7 +10,7 @@ All workflow and test case files inherit from `CodedWorkflow`, which provides bu
 | `Delay(TimeSpan time)` / `Delay(int delayMs)` | Pause execution synchronously |
 | `DelayAsync(TimeSpan time)` / `DelayAsync(int delayMs)` | Pause execution asynchronously |
 | `BuildClient(string scope = "Orchestrator", bool force = true)` | Build an authenticated `HttpClient` for Orchestrator or custom scopes |
-| `GetRunningJobInformation()` | Get info about the current running job (status, progress, parameters, timestamps) |
+| `GetRunningJobInformation()` | Returns `IRunningJobInformation` with current job context: job ID, process name/version, tenant, folder, organization, robot name, and more (see [IRunningJobInformation](#irunningjobinformation-properties) below) |
 | `RunWorkflow(string workflowFilePath, IDictionary<string, object> inputArguments = null, TimeSpan? timeout = null, bool isolated = false, InvokeTargetSession targetSession = InvokeTargetSession.Current)` | **Fallback method:** Invoke workflow by string path. Use `workflows.MyWorkflow()` instead when possible |
 | `RunWorkflowAsync(...)` | Async version of `RunWorkflow` (same limitations apply) |
 
@@ -175,52 +175,101 @@ The `services` property provides access to:
 - `WorkflowInvocationService` (via `RunWorkflow`) — fallback for dynamic workflow invocation
 - `OutputLoggerService` (via `Log`) — logging
 
-## Extending CodedWorkflow with Before/After Hooks
+## IRunningJobInformation Properties
 
-To add shared setup/teardown logic that runs before and after ALL test cases, create a base class that implements `IBeforeAfterRun`:
+`GetRunningJobInformation()` returns an `IRunningJobInformation` instance (from `UiPath.Robot.Activities.Api`). Key properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `JobId` | `Guid` | Current job identifier |
+| `ProcessName` | `string` | Running process name |
+| `ProcessVersion` | `string` | Running process version |
+| `OrganizationId` | `string` | Organization identifier |
+| `TenantId` | `string` | Tenant identifier |
+| `TenantName` | `string` | Tenant display name |
+| `FolderId` | `long?` | Orchestrator folder numeric ID |
+| `FolderName` | `string` | Orchestrator folder display name |
+| `FolderKey` | `Guid` | Orchestrator folder GUID key |
+| `RobotName` | `string` | Executing robot name |
+| `UserEmail` | `string` | Logged-in user's email |
+| `InitiatedBy` | `string` | What started the job (`"Orchestrator"`, `"Studio"`, `"Assistant"`, etc.) |
+
+### Usage Example
 
 ```csharp
-// CodedWorkflowBase.cs — Coded Source File (NOT a workflow, no entry point)
+var jobInfo = GetRunningJobInformation();
+Log($"Org: {jobInfo.OrganizationId}, Tenant: {jobInfo.TenantName}, Folder: {jobInfo.FolderName}");
+```
+
+## Before/After Hooks (IBeforeAfterRun)
+
+Any class inheriting from `CodedWorkflow` can implement `IBeforeAfterRun` to add setup/teardown logic. Two approaches:
+
+**Per-file:** Implement directly on a workflow or test case — hooks run only for that file:
+```csharp
+public class TestLoginFlow : CodedWorkflow, IBeforeAfterRun
+{
+    public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
+    public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
+
+    [TestCase]
+    public void Execute() { /* Before() already ran, After() runs after */ }
+}
+```
+
+**Project-wide:** Use a `partial class CodedWorkflow` — hooks apply to every workflow and test case:
+```csharp
+// CodedWorkflowHooks.cs — Coded Source File (no entry point)
 using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public class CodedWorkflowBase : CodedWorkflow, IBeforeAfterRun
+    public partial class CodedWorkflow : IBeforeAfterRun
     {
-        public void Before(BeforeRunContext context)
-        {
-            Log("Execution started for " + context.RelativeFilePath);
-            // Setup: open app, log in, navigate to starting state
-        }
+        public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
+        public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
+    }
+}
+```
 
-        public void After(AfterRunContext context)
+## Extending CodedWorkflow with Partial Classes
+
+The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks:
+
+```csharp
+// CodedWorkflowExtensions.cs — Coded Source File (no entry point)
+using UiPath.CodedWorkflows;
+
+namespace MyProject
+{
+    public partial class CodedWorkflow
+    {
+        protected string GetEnvironmentUrl()
         {
-            Log("Execution finished for " + context.RelativeFilePath);
-            // Teardown: close app, clean up test data
+            var env = system.GetAsset("Environment").ToString();
+            return env == "prod" ? "https://app.example.com" : "https://staging.example.com";
         }
     }
 }
 ```
 
-Then change your workflows/test cases to inherit from `CodedWorkflowBase` instead of `CodedWorkflow`:
+### Key Points
 
-```csharp
-// TestInvoiceCreation.cs — Test Case
-using UiPath.CodedWorkflows;
+- **`IBeforeAfterRun`** is an interface — any `CodedWorkflow`-derived class can implement it
+- **`partial class CodedWorkflow`** is a C# feature — extends the auto-generated class for all files in the project
+- **They combine:** use `partial class CodedWorkflow : IBeforeAfterRun` when you want hooks on every file
+- **Use `IBeforeAfterRun` on individual files** when only specific workflows/test cases need setup/teardown
+- **Use `partial class CodedWorkflow`** (without hooks) to add shared methods, properties, or constants
+- **Context objects** (`BeforeRunContext`, `AfterRunContext`) provide `RelativeFilePath`, `WorkflowFilePath`, etc.
+- **After() runs even on failure** — guaranteed cleanup
 
-namespace MyProject
-{
-    public class TestInvoiceCreation : CodedWorkflowBase  // Inherits from CodedWorkflowBase
-    {
-        [TestCase]
-        public void Execute()
-        {
-            // Before() runs automatically before this method
-            // ... test logic ...
-            // After() runs automatically after this method
-        }
-    }
-}
-```
+### When to Use Which
 
-This approach ensures `Before()` and `After()` run for all workflows/test cases that inherit from `CodedWorkflowBase`.
+| Scenario | Pattern |
+|----------|---------|
+| One test case needs its own setup/teardown | `IBeforeAfterRun` on the class |
+| All test cases share the same setup/teardown | `partial class CodedWorkflow : IBeforeAfterRun` |
+| Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
+| All of the above | Combine patterns in one or more partial files |
+
+Code templates: [assets/before-after-hooks-template.md](../../assets/before-after-hooks-template.md)

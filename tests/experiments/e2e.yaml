@@ -17,5 +17,23 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
+  llm_reviewer:
+    enabled: true
+    model: claude-sonnet-4-6
+    temperature: 0.0
+    max_tokens: 1000
+    prompt: |
+      Evaluate whether the full end-to-end lifecycle completed correctly:
+      project creation, workflow authoring, validation, and platform
+      round-trip where applicable. Call out any step that was skipped,
+      skipped-but-should-have-run, or produced a partial result. Score 1.0
+      if complete and correct, lower otherwise.
+
+  # Append default post_run to every e2e task: delete Studio Web solutions
+  # uploaded by `uip maestro flow debug` (no-op for tasks that don't produce .uipx).
+  post_run:
+    - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+      timeout: 120
+
 variants:
   - variant_id: default

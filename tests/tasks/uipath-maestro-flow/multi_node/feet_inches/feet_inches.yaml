@@ -1,0 +1,57 @@
+task_id: skill-flow-feet-inches
+description: >
+  Create a UiPath Flow that converts a value between feet and inches based on
+  a direction input, using a Switch node to pick the conversion. Exercises
+  switch branching, multi-case wiring, and branch convergence on End.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:switch]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Flow project named "FeetInches" that takes `value` (number)
+  and `direction` (string: "f2i", "i2f", or "y2f") as inputs, converts feet
+  to inches (× 12), inches to feet (÷ 12), or yards to feet (× 3) accordingly,
+  and returns the converted number.
+
+  Use a Switch node on `direction` to branch to one of three cases
+  ("f2i", "i2f", "y2f"); each branch applies the corresponding conversion
+  (in a Script node) and converges on a single End node that returns the result.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate FeetInches/FeetInches/FeetInches.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution checks — one debug call per direction ───────────────────
+  - type: run_command
+    description: "Debug with (23, \"f2i\") returns 276 via a Switch node"
+    command: "python3 $TASK_DIR/check_feet_inches_flow.py f2i"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Debug with (276, \"i2f\") returns 23 via a Switch node"
+    command: "python3 $TASK_DIR/check_feet_inches_flow.py i2f"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

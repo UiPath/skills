@@ -194,6 +194,61 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 - **TargetSession validation**: `TargetSession.Secondary` (or any non-Current value) requires `UnSafe=True`. Without it, validation fails.
 - **Persistence with isolation**: Using `ResumeInstanceId` with Safe mode (`UnSafe=false`) without persistence support throws `NotSupportedException`.
 
+### WorkflowFileName Must Be a Plain String Path
+
+`WorkflowFileName` accepts a **plain string literal**, not a VB/C# expression. Use the relative path directly — do NOT wrap it in expression brackets or string-literal quotes.
+
+**Correct:**
+```xml
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml" />
+<ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessData.xaml" />
+```
+
+**Wrong — VB expression string literal (common agent mistake):**
+```xml
+<!-- Studio silently accepts this but the path resolution may break -->
+<ui:InvokeWorkflowFile WorkflowFileName="[&quot;Workflows\ProcessData.xaml&quot;]" />
+```
+
+The path is relative to the project root directory. Use backslashes for subfolder paths (e.g., `Workflows\SendEmail.xaml`). If the file is at the project root, use just the filename (e.g., `ResetSpotify.xaml`).
+
+### Arguments Must NOT Use a Dictionary Wrapper
+
+`uip rpa get-default-activity-xaml` returns an empty `scg:Dictionary` as the default container for `InvokeWorkflowFile.Arguments`. This is correct for the **empty state only**. When you populate arguments, drop the Dictionary wrapper and use direct `InArgument`/`OutArgument`/`InOutArgument` child elements instead.
+
+Studio silently clears any Dictionary-wrapped argument entries on load — the arguments appear mapped in the designer but are empty at runtime, with no validation error.
+
+**Correct — direct child elements (what Studio actually serializes):**
+```xml
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
+    DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
+  <ui:InvokeWorkflowFile.Arguments>
+    <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
+    <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+  </ui:InvokeWorkflowFile.Arguments>
+</ui:InvokeWorkflowFile>
+```
+
+**Wrong — Dictionary wrapper (from `get-default-activity-xaml` empty state):**
+```xml
+<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
+    DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)">
+  <ui:InvokeWorkflowFile.Arguments>
+    <scg:Dictionary x:TypeArguments="x:String, Argument">
+      <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
+      <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
+    </scg:Dictionary>
+  </ui:InvokeWorkflowFile.Arguments>
+</ui:InvokeWorkflowFile>
+```
+
+**Rules for argument bindings:**
+1. Each argument key (`x:Key`) must match the argument name defined in the callee workflow's `x:Members` exactly (case-sensitive)
+2. Use the correct argument direction: `InArgument` for `in_*`, `OutArgument` for `out_*`, `InOutArgument` for `io_*`
+3. The `x:TypeArguments` must match the callee's argument type
+4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
+5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
+
 ## InvokeCode Language Property
 
 The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
@@ -206,7 +261,7 @@ Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `references/activity-docs/UiPath.System.Activities/` for full details.
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `../activity-docs/UiPath.System.Activities/` for full details.
 
 ## HTTP Request Activity Complexity
 
@@ -235,6 +290,66 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - **Create new connection**: `uip is connections create <connector-key>` — opens OAuth flow for user to authenticate
 - **Re-authenticate**: `uip is connections edit <connection-id>` — re-runs OAuth flow for expired/revoked connections
 - If no connection exists and you cannot create one interactively, use a placeholder GUID (`00000000-0000-0000-0000-000000000000`) and inform the user they must configure the connection in Studio
+
+## IS `ConnectorActivity` Gotchas
+
+Full authoring flow: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md).
+
+### JIT `OutArgument` from Studio Designer Breaks Fresh Loads
+
+When Studio's designer touches an IS `ConnectorActivity`, it can inject a JIT-typed `OutArgument` on the `Jit_<operation>` `FieldObject`:
+
+```xml
+<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument">
+  <isactr:FieldObject.Value>
+    <OutArgument x:TypeArguments="uiascb:send_message_to_channel_v2_Create" />
+  </isactr:FieldObject.Value>
+</isactr:FieldObject>
+```
+
+The `uiascb:` namespace points at a Studio-session-local dynamically-compiled assembly (e.g. `C35283077FA_send_mes.<hash>`). On any **fresh load** (new Studio session, Helm, CI), that assembly doesn't exist, compile fails with:
+
+```
+[Error] Unable to create activity builder for <workflow>.xaml.
+Reason was 'Cannot create unknown type '{...}OutArgument({...}<op>_Create)'.'
+```
+
+**Fix** — strip the injected `OutArgument` back to bare form:
+
+```xml
+<isactr:FieldObject Name="Jit_send_message_to_channel_v2" Type="FieldArgument" />
+```
+
+Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` element if no other reference uses it. Tracked as PILOT-4812.
+
+### Field Names Come From the Schema, Not Memory
+
+`FieldObject Name` values are connector-specific and schema-driven. Never guess. Always read:
+
+```bash
+uip is resources describe <connector-key> <operation-name> --operation Create --output json
+cat ~/.uipath/cache/integrationservice/<connector-key>/_static/<operation>.Create.json
+```
+
+Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually expects connector-specific names) trigger a `Configuration contains a breaking change` runtime error.
+
+### `Configuration` Attribute Is Opaque
+
+The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa get-default-activity-xaml --activity-type-id <GUID> --connection-id <GUID>`.
+
+### `FieldObject.Value` Attribute Does Nothing
+
+Putting a literal in the attribute form — `<isactr:FieldObject Name="channel" Value="hello" />` — is silently ignored. The runtime only reads the element form:
+
+```xml
+<isactr:FieldObject Name="channel" Type="FieldArgument">
+  <isactr:FieldObject.Value>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">"hello"</CSharpValue>
+    </InArgument>
+  </isactr:FieldObject.Value>
+</isactr:FieldObject>
+```
 
 ## Deprecated Activities (Do Not Use)
 
@@ -273,7 +388,19 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 | `UiPath.UIAutomation.Activities` | `UiPath.UIAutomationNext.Activities` | Modern UI activities use "Next" namespace |
 | `UiPath.UIAutomation.Activities` (classic) | `UiPath.Core.Activities` | Classic UI activities are in Core |
 
-Use `uip rpa get-default-activity-xaml --use-studio` to get correct xmlns declarations — never guess namespace mappings.
+Use `uip rpa get-default-activity-xaml` to get correct xmlns declarations — never guess namespace mappings.
+
+### `Delay` — no namespace prefix
+
+`Delay` is a Microsoft Workflow Foundation primitive (`System.Activities.Statements.Delay`), reached via the root `<Activity>` default xmlns and written unprefixed:
+
+```xml
+<Delay Duration="00:00:02" DisplayName="Wait for server" />
+```
+
+`<ui:Delay .../>` fails with `Cannot create unknown type '{...uipath...}Delay'`. The `ui:` prefix maps to `UiPath.Core.Activities`, which has no `Delay` override.
+
+**For other primitives** (`Sequence`, `If`, `Assign`, `ForEach`, `While`, `TryCatch`, `Switch`, …) UiPath provides `ui:`-prefixed overrides for many — which one to use depends on the behavior you want. Check with `uip rpa find-activities --query "<name>"` before assuming MWF or UiPath; don't generalize from `Delay`.
 
 ## Portable vs Windows Framework Limitations
 
@@ -314,9 +441,9 @@ Use `uip rpa get-default-activity-xaml --use-studio` to get correct xmlns declar
 2. Remove attributes that don't exist in the target version
 3. Cap `Version` attributes to the maximum supported by the target package
 4. Add `<AssemblyReference>netstandard</AssemblyReference>` if type resolution errors persist
-5. Use `uip rpa get-errors --use-studio` to validate after changes
+5. Use `uip rpa get-errors` to validate after changes
 
-**Prevention:** When using `uip rpa get-default-activity-xaml --use-studio`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
+**Prevention:** When using `uip rpa get-default-activity-xaml`, the output matches the currently installed package version. Never copy XAML snippets from projects using different package versions.
 
 ## Expression Language Mismatch
 
@@ -337,6 +464,10 @@ Every XAML file must use the same expression language as the project (`expressio
 
 **Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
 
+### C# expression pitfalls — separate file
+
+Applies only to XAML projects with `expressionLanguage: CSharp` — not to VB XAML, and not to coded workflows (`.cs` files). Attribute-form expressions, `OutArgument<T>` parse failures, and `ThrowIfNotInTree` all have root causes specific to that configuration. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md) and [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
 ## Missing Assembly References
 
 Common validation error: `"The type 'Dictionary<,>' is defined in an assembly that is not referenced"`.
@@ -354,7 +485,7 @@ Common validation error: `"The type 'Dictionary<,>' is defined in an assembly th
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages --use-studio`.
+**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa install-or-update-packages`.
 
 ## Invalid Use of `x:` Prefix for Non-Builtin CLR Types
 
@@ -524,7 +655,7 @@ The same registration rules apply to `<upa:ProcessDiagram>` and its node types (
 - `PropertyName="{x:Null}"` explicitly sets a property to null — this is serialized and persisted
 - Omitting a property entirely means "use the default value" — which may or may not be null
 - Some activities behave differently when a property is explicitly null vs absent (e.g., `Filter="{x:Null}"` may disable filtering, while omitting `Filter` uses a default filter)
-- When `uip rpa get-default-activity-xaml --use-studio` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
+- When `uip rpa get-default-activity-xaml` outputs properties with `{x:Null}`, preserve them — removing them may change behavior
 
 ## Literal Curly Braces in Attribute Values
 
@@ -574,7 +705,7 @@ The `.project/JitCustomTypesSchema.json` file can be missing or outdated.
 
 ### `get-errors --file-path` requires relative paths
 
-The `--file-path` parameter of `uip rpa get-errors --use-studio` must be a path **relative to the project directory**:
+The `--file-path` parameter of `uip rpa get-errors` must be a path **relative to the project directory**:
 - Correct: `--file-path "Workflows/SendEmail.xaml"`
 - Wrong: `--file-path "C:\Users\me\Projects\MyProject\Workflows\SendEmail.xaml"`
 
@@ -586,11 +717,12 @@ All `uip rpa` commands default to the current working directory as the project r
 
 ### Studio IPC connection failures
 
-`uip rpa` commands communicate with Studio Desktop via IPC. If Studio is not running, not responding, or has no project open, commands will fail with connection errors. Recovery steps:
-1. `uip rpa list-instances --output json --use-studio` — check if Studio is running
-2. `uip rpa start-studio` — start Studio if not running
-3. `uip rpa open-project --project-dir "..." --use-studio` — open the project if Studio has no project loaded
-4. If Studio is running but unresponsive, the user may need to restart it manually
+`uip rpa` commands communicate with Studio over IPC. By default this is a **headless Studio** that auto-launches from a NuGet package — no Studio Desktop required. Recovery steps when commands fail with connection errors:
+
+1. **Re-run the command.** Headless Studio relaunches automatically on the next call; transient pipe errors clear on retry.
+2. **Raise the timeout for the first call.** Cold NuGet restore of the headless Studio package can take 30–90 s — `uip rpa --timeout 600 <command>`.
+3. **`uip rpa open-project --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
+4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa list-instances --output json` and run `uip rpa start-studio --project-dir "..."` if no instance is up.
 
 ### CLI output format for parsing
 

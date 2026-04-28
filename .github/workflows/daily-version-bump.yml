@@ -20,8 +20,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check for existing open bump PR
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list \
+            --state open \
+            --json number,url,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("auto/version-bump-"))] | .[0] // empty')
+
+          if [ -n "$EXISTING" ]; then
+            URL=$(echo "$EXISTING" | jq -r '.url')
+            NUMBER=$(echo "$EXISTING" | jq -r '.number')
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Existing bump PR still open: #$NUMBER — $URL"
+            {
+              echo "## Skipped: version bump PR already open"
+              echo ""
+              echo "PR [#$NUMBER]($URL) is still open. Merge or close it before the next run."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Bump version in plugin.json and marketplace.json
         id: bump
+        if: steps.check.outputs.exists != 'true'
         run: |
           PLUGIN=".claude-plugin/plugin.json"
           MARKETPLACE=".claude-plugin/marketplace.json"
@@ -41,6 +66,7 @@ jobs:
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
+        if: steps.check.outputs.exists != 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           commit-message: "chore: bump version to ${{ steps.bump.outputs.new_version }}"

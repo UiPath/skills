@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.trigger.scheduled --output json
+uip maestro flow registry get core.trigger.scheduled --output json
 ```
 
 Confirm: no input port, output port `output`, required inputs `timerType` and `timerPreset`.
@@ -23,6 +23,7 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
   "typeVersion": "1.0.0",
   "display": { "label": "Every Hour" },
   "inputs": {
+    "entryPointId": "<uuid>",
     "timerType": "timeCycle",
     "timerPreset": "R/PT1H"
   },
@@ -33,10 +34,6 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
       "source": "=result.response",
       "var": "output"
     }
-  },
-  "model": {
-    "type": "bpmn:StartEvent",
-    "eventDefinition": "bpmn:TimerEventDefinition"
   }
 }
 ```
@@ -50,6 +47,7 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
   "typeVersion": "1.0.0",
   "display": { "label": "Every 45 Minutes" },
   "inputs": {
+    "entryPointId": "<uuid>",
     "timerType": "timeCycle",
     "timerPreset": "custom",
     "timerValue": "R/PT45M"
@@ -61,17 +59,15 @@ Confirm: no input port, output port `output`, required inputs `timerType` and `t
       "source": "=result.response",
       "var": "output"
     }
-  },
-  "model": {
-    "type": "bpmn:StartEvent",
-    "eventDefinition": "bpmn:TimerEventDefinition"
   }
 }
 ```
 
+BPMN type (`bpmn:StartEvent`) and event definition (`bpmn:TimerEventDefinition`) come from the `core.trigger.scheduled` entry in `definitions[]` — never on the instance.
+
 ## Replacing Manual Trigger with Scheduled
 
-For the step-by-step procedure, see [CLI: Replace manual trigger with scheduled trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) or [JSON: Replace manual trigger with scheduled trigger](../../flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs` and `model` fields.
+For the step-by-step procedure, see [CLI: Replace manual trigger with scheduled trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) or [JSON: Replace manual trigger with scheduled trigger](../../flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs`.
 
 ## Debug
 
@@ -79,5 +75,5 @@ For the step-by-step procedure, see [CLI: Replace manual trigger with scheduled 
 | --- | --- | --- |
 | Invalid timer value | Malformed ISO 8601 repeating interval | Check format: `R/P[duration]` (e.g., `R/PT1H`) |
 | Missing `timerValue` | `timerPreset: "custom"` but no `timerValue` | Add `timerValue` with ISO 8601 repeating interval |
-| Missing `eventDefinition` in model | Forgot to add timer event definition | Add `"eventDefinition": "bpmn:TimerEventDefinition"` to `model` |
+| BPMN timer event not emitted | `core.trigger.scheduled` definition wrong or missing | Re-copy from `uip maestro flow registry get core.trigger.scheduled --output json` — the definition carries `model.eventDefinition: "bpmn:TimerEventDefinition"` |
 | Two triggers in flow | Both manual and scheduled triggers exist | Remove one — flows must have exactly one trigger |

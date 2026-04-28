@@ -1,0 +1,115 @@
+task_id: skill-rpa-legacy-create-and-validate
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa-legacy skill to create
+  a new legacy UiPath RPA project (.NET Framework 4.6.1) with a simple
+  workflow. Tests whether the skill teaches the correct targetFramework
+  setting, XAML baseline (VB.NET, mscorlib), CLI flag conventions
+  (--output json), and discovery workflow.
+
+  Platform note: Legacy RPA targets .NET Framework 4.6.1 (Windows-only), so
+  `uip rpa-legacy validate` cannot successfully execute on Linux/Mac CI.
+  This smoke test verifies the skill guides the agent to produce correct
+  artifacts and invoke the right commands — it does not require the CLI
+  commands to succeed at runtime.
+tags: [uipath-rpa-legacy, smoke, create, validate]
+
+task_timeout: 1200
+agent:
+  type: claude-code
+  # Override: the Anthropic Sonnet family's output classifier trips
+  # on the legacy XAML baseline (21 namespaces + 16 assembly refs
+  # including the .NET Framework set: PresentationFramework/
+  # PresentationCore/WindowsBase/System.Xaml/mscorlib +
+  # Microsoft.VisualBasic.Activities). Observed on both Sonnet 4.6
+  # (Anthropic-direct, 3/3 runs) and Sonnet 4.5 (Bedrock EU, 1 run) —
+  # the classifier travels with the model family across backends.
+  # Opus 4.6 emits the same baseline cleanly.
+  #
+  # NOTE: On Bedrock, coder_eval's BedrockRoute.model overrides this
+  # task-level field. The CI workflow injects the Opus 4.6 Bedrock
+  # inference profile ID per-task via an inline BEDROCK_MODEL
+  # override (see .github/workflows/smoke-rpa-skills.yml). This
+  # field still applies on Anthropic-direct.
+  model: claude-opus-4-6
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a new legacy UiPath RPA project called "HelloLegacy" with a Main.xaml
+  that logs "Hello from legacy" using a LogMessage activity. Follow the skill's
+  full workflow: create the project, generate the XAML, and attempt validation.
+
+  Deliverables (place all files inside a `./HelloLegacy/` subdirectory):
+  - `./HelloLegacy/project.json`
+  - `./HelloLegacy/Main.xaml`
+
+  Whether you scaffold via `uip rpa-legacy create-project` (which creates
+  the HelloLegacy/ folder for you) or hand-author, the files MUST end up
+  under `./HelloLegacy/` — that's where the validator looks.
+
+  Important:
+  - The `uip` CLI is already available in the environment and is
+    authenticated against the sandbox tenant in this CI step.
+  - Do not run `uip rpa-legacy debug` — just attempt validation.
+  - Use `--output json` on the uip CLI commands you run.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked uip rpa-legacy validate"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json (not --format json) on uip rpa-legacy commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa-legacy\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "project.json was created"
+    path: "HelloLegacy/project.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.xaml workflow was created"
+    path: "HelloLegacy/Main.xaml"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json sets targetFramework to Legacy"
+    path: "HelloLegacy/project.json"
+    includes:
+      - '"targetFramework"'
+      - '"Legacy"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml uses legacy baseline (mscorlib, not System.Private.CoreLib)"
+    path: "HelloLegacy/Main.xaml"
+    includes:
+      - "assembly=mscorlib"
+    excludes:
+      - "System.Private.CoreLib"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml contains a LogMessage activity with the expected text"
+    path: "HelloLegacy/Main.xaml"
+    includes:
+      - "LogMessage"
+      - "Hello from legacy"
+    weight: 1.0
+    pass_threshold: 1.0

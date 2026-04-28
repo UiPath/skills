@@ -1,0 +1,114 @@
+task_id: skill-rpa-template-aware-create
+description: >
+  Skill-guided evaluation: when the user asks for a REFramework project,
+  the agent should run `uip rpa search-templates` and create the project
+  with `--template-package-id UiPath.Template.REFramework`, not with
+  `--template-id BlankTemplate`. Tests whether the skill teaches the
+  template-detection decision before `create-project`.
+tags: [uipath-rpa, smoke, lifecycle:generate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to create a new UiPath REFramework project called "InvoiceREF"
+  in the current directory.
+
+  Studio Desktop is NOT available in this sandbox — DO NOT actually run
+  `uip rpa create-project`. Instead, decide which template-related flags
+  you would pass and write a report.
+
+  Try running `uip rpa search-templates --query "REFramework" --output json`
+  to discover the available templates. **If that command fails in this sandbox**
+  (no NuGet feed access, missing dotnet SDK, etc.), assume the result is:
+
+      {
+        "Result": "Success",
+        "Code": "ToolResult",
+        "Data": [
+          {
+            "packageId": "UiPath.Template.REFramework",
+            "version": "25.10.1",
+            "title": "NewBusinessProcessProjectTemplateTitle",
+            "description": "NewBusinessProcessProjectTemplateDescription",
+            "authors": "UiPath",
+            "source": "Official",
+            "tags": ["UiPathStudioTemplate", "UiPathStudioProcess"]
+          },
+          {
+            "packageId": "Enhanced.REFrameWork",
+            "version": "1.0.1",
+            "title": "Enhanced REFrameWork",
+            "description": "...",
+            "authors": "Internal Labs",
+            "source": "Marketplace",
+            "tags": ["UiPathStudioTemplate"]
+          },
+          {
+            "packageId": "Lite.ReFrameWork",
+            "version": "1.1.1",
+            "title": "Lite ReFrameWork",
+            "description": "...",
+            "authors": "Internal Labs",
+            "source": "Marketplace",
+            "tags": ["UiPathStudioTemplate"]
+          }
+        ]
+      }
+
+  Note: the user said "REFramework" (no "Enhanced"/"Lite" qualifier) — so the
+  selection rule should auto-pick the single Official match.
+
+  Save your decision to report.json with this exact shape:
+    {
+      "template_strategy": "<'template_package' or 'template_id'>",
+      "template_package_id": "<packageId from search-templates, or null>",
+      "template_package_version": "<version, or null>",
+      "template_id": "<BlankTemplate / LibraryProcessTemplate / TestAutomationProjectTemplate, or null>",
+      "search_templates_query": "<the exact --query value passed to search-templates, or null>",
+      "create_project_command": "<the full uip rpa create-project command you would run>"
+    }
+
+  Important:
+  - Use `--output json` on any uip commands you run.
+  - Do NOT invoke `uip rpa create-project` itself in this sandbox.
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent picked template_package strategy (not BlankTemplate) for REFramework"
+    path: "report.json"
+    assertions:
+      - expression: "template_strategy"
+        operator: equals
+        expected: "template_package"
+      - expression: "template_package_id"
+        operator: equals
+        expected: "UiPath.Template.REFramework"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent ran search-templates with a REFramework query before creating"
+    path: "report.json"
+    assertions:
+      - expression: "search_templates_query"
+        operator: contains
+        expected: "REFramework"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "create_project command uses --template-package-id, not --template-id BlankTemplate"
+    path: "report.json"
+    includes:
+      - "--template-package-id"
+      - "UiPath.Template.REFramework"
+    weight: 1.5
+    pass_threshold: 1.0

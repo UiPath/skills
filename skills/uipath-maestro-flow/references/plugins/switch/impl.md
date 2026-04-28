@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.switch --output json
+uip maestro flow registry get core.logic.switch --output json
 ```
 
 Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, required input `cases`.
@@ -38,14 +38,13 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
         "expression": "$vars.classify.output.priority === 'low'"
       }
     ]
-  },
-  "model": { "type": "bpmn:ExclusiveGateway" }
+  }
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Wiring
 

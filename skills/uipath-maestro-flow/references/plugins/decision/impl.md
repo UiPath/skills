@@ -7,7 +7,7 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.logic.decision --output json
+uip maestro flow registry get core.logic.decision --output json
 ```
 
 Confirm: input port `input`, output ports `true` and `false`, required input `expression`.
@@ -22,14 +22,13 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
   "display": { "label": "Check Status" },
   "inputs": {
     "expression": "$vars.fetchData.output.statusCode === 200"
-  },
-  "model": { "type": "bpmn:ExclusiveGateway" }
+  }
 }
 ```
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Expression Examples
 

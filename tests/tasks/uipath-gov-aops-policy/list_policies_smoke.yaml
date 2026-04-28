@@ -1,0 +1,87 @@
+task_id: skill-gov-aops-policy-list-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-gov-aops-policy skill to
+  list AOps governance policies for a given product. Tests whether the
+  skill teaches the correct CLI namespace (`uip gov aops-policy`, not the
+  legacy `uip admin aops-policy`), the `--output json` convention, and
+  the product-identifier-vs-label discipline (Critical Rule #2).
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov aops-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-gov-aops-policy, smoke, list]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A tenant admin wants to see every AOps governance policy registered for
+  the `AITrustLayer` product, ordered by priority ascending. Use the
+  uipath-gov-aops-policy skill to produce the result.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "product_name": "AITrustLayer",
+      "list_command": "<the exact uip gov aops-policy list command you ran>",
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, record the result (success or
+    error) in report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip gov aops-policy list` with --product-name AITrustLayer"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+list\s+.*--product-name\s+["'']?AITrustLayer'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the list command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the current CLI namespace (`uip gov aops-policy`), not the legacy `uip admin aops-policy`"
+    path: "report.json"
+    includes:
+      - "uip gov aops-policy"
+    excludes:
+      - "uip admin aops-policy"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure and values"
+    path: "report.json"
+    assertions:
+      - expression: "product_name"
+        operator: equals
+        expected: "AITrustLayer"
+      - expression: "length(list_command)"
+        operator: gte
+        expected: 10
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 1
+    weight: 1.5
+    pass_threshold: 0.75

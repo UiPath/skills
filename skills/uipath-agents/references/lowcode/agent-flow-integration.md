@@ -109,7 +109,7 @@ See [embedding-in-flows.md](embedding-in-flows.md) for the full inline agent cre
 
 ## What Happens at Pack Time
 
-`flow-workbench` extracts inline agents during `uip solution bundle` / `uip solution pack`:
+`flow-workbench` extracts inline agents during `uip solution upload` / `uip solution pack`:
 
 1. Reads the inline agent directory referenced by `model.source` UUID
 2. Collects connected resource nodes via artifact handles

@@ -1,8 +1,10 @@
 # Agent Node — Planning
 
-Agent nodes invoke **published** UiPath AI agents from within a flow. They are tenant-specific resources that appear in the registry after `uip login` + `uip flow registry pull`.
+Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required.
 
 > **Published vs Inline:** This plugin covers the published/tenant-resource case. For agents defined inside the flow project itself (scaffolded via `uip agent init --inline-in-flow`), see [inline-agent/planning.md](../inline-agent/planning.md). Pick the published path when the agent is reused across flows or needs independent versioning; pick inline when the agent is tightly coupled to one flow.
+
+> **If the user names an existing agent, it is a published agent — not inline.** When a prompt says "use the X agent" / "call the Y agent" / "invoke the Z coded agent" / "use the W low-code agent", the user is referring to an agent that already exists in the tenant (or in-solution). ALWAYS run `uip maestro flow registry search "<name>" --output json` BEFORE deciding to scaffold an inline agent. The words "coded" and "low-code" describe the *implementation style* of a published agent — they do NOT mean "inline". Inline (`uipath.agent.autonomous`) is only correct when the user explicitly asks to embed, inline, or create a new agent from scratch inside this flow.
 
 ## Node Type Pattern
 
@@ -33,7 +35,8 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 
 ### When NOT to Use
 
-- **Agent not yet published** — use `core.logic.mock` placeholder and tell the user to create the agent with `uipath-agents`
+- **Agent in the same solution but not yet published** — use `--local` discovery (see below)
+- **Agent does not exist yet** — tell the user to create it in the same solution with `uipath-agents`, then use `--local` discovery
 - **Task is deterministic** — use [Script](../script/planning.md) or [Decision](../decision/planning.md)
 - **Need to call an external service API** — use [Connector](../connector/planning.md) or [HTTP](../http/planning.md)
 
@@ -41,7 +44,9 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `output` |
+| `input` | `output`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 
@@ -50,12 +55,23 @@ Use workflow nodes for the deterministic parts (fetch data, transform, route) an
 
 ## Discovery
 
+**Published (tenant registry):**
+
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.agent" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.agent" --output json
 ```
 
 Requires `uip login`. Only published agents from your tenant appear.
+
+**In-solution (local, no login required):**
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
+```
+
+Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
 
 ## Planning Annotation
 

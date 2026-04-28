@@ -1,0 +1,134 @@
+task_id: skill-datafabric-integration-csv-import
+description: >
+  Integration test: agent performs a full CSV bulk import workflow against a
+  live tenant — checks login, discovers or creates an entity, retrieves the
+  schema to confirm exact field names (case-sensitive), creates a correctly
+  formatted CSV (no system fields), runs the bulk import, then verifies results
+  with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
+tags: [uipath-data-fabric, integration, records, import]
+
+agent:
+  type: claude-code
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login — use
+     whatever tenant is currently active.
+
+  2. List native-only entities. Use an entity named "IntegrationInventory" if it
+     exists. If not, create it with fields:
+       - SKU (STRING)
+       - Quantity (INTEGER)
+       - UnitCost (DECIMAL)
+       - Available (BOOLEAN)
+       - LastRestocked (DATE)
+
+  3. Get the entity schema using entities get to confirm the exact field names
+     (case-sensitive) before creating the CSV.
+
+  4. Create a file named inventory.csv with:
+     - A header row using the exact field names from the schema
+     - 4 data rows of realistic inventory data
+     - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)
+
+  5. Run the bulk import: records import --file inventory.csv
+
+  6. Verify the import: list records and check that rows were added.
+     Note InsertedRecords and TotalRecords from the import response.
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<entity ID used>",
+    "entity_existed_already": <true or false>,
+    "csv_headers": ["<headers used in the CSV, in order>"],
+    "csv_row_count": <number of data rows, excluding header>,
+    "csv_includes_system_fields": false,
+    "import_inserted_records": <InsertedRecords value from import response>,
+    "import_total_records": <TotalRecords value from import response>
+  }
+
+  Use --output json on every uip df command.
+  CSV headers must match entity field names exactly — case-sensitive.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved entity schema before creating CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran records import with --file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import\s+.*--file'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified import results with records list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+list\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "inventory.csv was created"
+    path: "inventory.csv"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "CSV uses exact case-sensitive field names as headers"
+    path: "inventory.csv"
+    includes:
+      - "SKU"
+      - "Quantity"
+      - "UnitCost"
+      - "Available"
+      - "LastRestocked"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "CSV has 4 rows, no system fields, import counts recorded"
+    path: "report.json"
+    assertions:
+      - expression: "csv_row_count"
+        operator: gte
+        expected: 4
+      - expression: "csv_includes_system_fields"
+        operator: equals
+        expected: false
+      - expression: "import_total_records"
+        operator: gte
+        expected: 4
+    weight: 3.0
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

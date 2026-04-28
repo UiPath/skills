@@ -23,6 +23,8 @@ Use a Subflow node to group related steps into a reusable, drillable container w
 | --- | --- |
 | `input` | `output`, `error` |
 
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+
 ## Key Properties
 
 - Subflows have their own `nodes`, `edges`, and `variables` stored in `subflows.{nodeId}`

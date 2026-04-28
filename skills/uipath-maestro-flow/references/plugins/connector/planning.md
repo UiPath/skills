@@ -1,6 +1,6 @@
 # Connector Activity Nodes — Planning
 
-Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip flow registry pull`.
+Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
 
 ## When to Use
 
@@ -13,19 +13,19 @@ Prefer higher tiers when connecting to external services:
 | Tier | Approach | When to Use |
 | --- | --- | --- |
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
-| 2 | **HTTP Request within a connector** | A connector exists but lacks the specific endpoint — connector still handles auth |
-| 3 | **Standalone HTTP Request** (`core.action.http`) | No connector exists, or quick prototyping — you handle auth manually |
+| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector's IS connection for auth |
+| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
 | 4 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
 
 ### Prerequisites
 
 - `uip login` required — connector nodes only appear in the registry after authentication
 - A healthy IS connection must exist for the connector — if none exists, the user must create one before proceeding
-- `uip flow registry pull` must be run to cache connector node types locally
+- `uip maestro flow registry pull` must be run to cache connector node types locally
 
 ### When NOT to Use
 
-- **No connector exists for the service** — use `core.action.http` instead
+- **No connector exists for the service** — use `core.action.http.v2` manual mode instead
 - **Simple GET request with no auth** — `core.action.http` is simpler and faster to configure
 - **The operation needs desktop/browser interaction** — use an RPA resource node
 - **The task requires reasoning or judgment** — use an agent node
@@ -41,7 +41,7 @@ Examples:
 ## Discovery
 
 ```bash
-uip flow registry search <service> --output json
+uip maestro flow registry search <service> --output json
 ```
 
 Confirm `category: "connector"` in the results. If the connector key fails, list all connectors:
@@ -67,16 +67,26 @@ uip is connections list "<connector-key>" --output json
 
 | Input Port | Output Port(s) |
 | --- | --- |
-| `input` | `success` |
+| `input` | `success`, `error` |
+
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 
 - `$vars.{nodeId}.output` — the connector response (structure depends on the operation)
 - `$vars.{nodeId}.error` — error details if the call fails
 
-## HTTP Fallback
+## HTTP Fallback (Managed HTTP Request)
 
-When a connector exists but lacks the specific endpoint, use the connector's HTTP Request activity. The connector still manages authentication; you supply the path and payload. Note as `connector: <service> (HTTP fallback)` during planning.
+When a connector exists but lacks the specific curated activity, use `core.action.http.v2` (Managed HTTP Request). This node proxies through the `uipath-uipath-http` connector and uses the **target connector's** IS connection for authentication — you supply the API URL and payload.
+
+> **Do NOT use individual connector HTTP request nodes** (e.g., `uipath.connector.<key>.http-request`). Always use the unified `core.action.http.v2` Managed HTTP Request node for non-curated API calls.
+
+> **Do NOT use `core.action.http` (v1) with `authenticationType: "connection"` for this.** The v1 node does not pass IS credentials at runtime. Always use `core.action.http.v2`.
+
+See [http/planning.md](../http/planning.md) for full selection heuristics and [http/impl.md](../http/impl.md) for configuration via `uip maestro flow node configure`.
+
+Note as `managed-http: <service> — <operation>` during planning.
 
 ## Planning Annotation
 

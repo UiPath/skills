@@ -81,7 +81,7 @@ InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snipp
 | **Reusable across workflows** | No (copy-paste) | Yes (import namespace) | Yes (invoke from any workflow) |
 | **Unit testable** | No | Indirectly | Yes (via Coded Test Case) |
 | **Recommended max size** | ~15 lines | No limit | No limit |
-| **Entry point in project.json** | N/A | No | Yes |
+| **Entry point in project.json** | N/A | No | Process only |
 
 ---
 

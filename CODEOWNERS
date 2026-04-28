@@ -1,15 +1,20 @@
 # Default owners for the entire repo
-
-- @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden
+- @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2
 
 # CI workflows and review config
 /.github/ @uipreliga
 
 # Hooks
-/hooks/ @DragosUnguru
+/hooks/ @DragosUnguru @RaduAna-Maria
 
-# Activity references
-/references/ @DragosUnguru
+# Plugin agents
+/agents/ @RaduAna-Maria
+
+# Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
+/commands/ @DragosUnguru @tmatup
+
+# Activity references (bundled inside uipath-rpa skill)
+/skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
 /skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
@@ -18,6 +23,7 @@
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
+/tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
@@ -25,17 +31,21 @@
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
+# Solution Design skill
+/skills/uipath-solution-design/ @RaduAna-Maria
+
 # Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
+/tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
 
 # Case Management skill
-/skills/uipath-case-management/ @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-maestro-case/ @charlesliu9 @song-zhao-25 @jundayin
 
-# Flow skill — node category guides (away team owned)
-# Add your team here when contributing a new node category file
+# Coded Apps skill
+/skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
@@ -45,5 +55,25 @@
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
+# Legacy RPA skill
+/skills/uipath-rpa-legacy/ @roalexandru
+
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+
+# AOps Governance skill
+/skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
+# Test skill (reports, manual test automation, manual test execution)
+/skills/uipath-test/ @vaishalisharma-uipath @amoluipath
+
+# Data Fabric skill (CLI entity/record management)
+/skills/uipath-data-fabric/ @aditi-goyal-uipath
+/tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath
+
+# Tasks skill (Action Center Operate)
+/skills/uipath-tasks/ @UiPath/ActionCenterDev
+/tests/tasks/uipath-tasks/ @UiPath/ActionCenterDev
+
+# Access Policy Governance skill (CLI-based ToolUsePolicy management)
+/skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2

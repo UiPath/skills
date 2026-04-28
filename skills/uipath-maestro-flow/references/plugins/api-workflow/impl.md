@@ -1,18 +1,31 @@
 # API Workflow Node — Implementation
 
-API workflow nodes invoke published API functions. Pattern: `uipath.core.api-workflow.{key}`.
+API workflow nodes invoke API functions. Pattern: `uipath.core.api-workflow.{key}`.
 
 ## Discovery
 
+### Published (tenant registry)
+
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.api-workflow" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.api-workflow" --output json
+```
+
+### In-solution (sibling projects)
+
+```bash
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 ## Registry Validation
 
 ```bash
-uip flow registry get "uipath.core.api-workflow.{key}" --output json
+# Published
+uip maestro flow registry get "uipath.core.api-workflow.{key}" --output json
+
+# In-solution
+uip maestro flow registry get "uipath.core.api-workflow.{key}" --local --output json
 ```
 
 Confirm:
@@ -21,14 +34,19 @@ Confirm:
 - Output port: `output`
 - `model.serviceType` — `Orchestrator.ExecuteApiWorkflowAsync`
 - `model.bindings.resourceSubType` — `Api`
+- `model.bindings.resourceKey` — the `<FolderPath>.<ApiName>` string used to scope binding resolution
 - `inputDefinition` — typically empty
 - `outputDefinition.error` — error schema
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `model` fields.
+For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
 
 ## JSON Structure
+
+### Node instance (inside `nodes[]`)
+
+The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and binding/context templates come from the definition in `definitions[]`.
 
 ```json
 {
@@ -50,28 +68,44 @@ For step-by-step add, delete, and wiring procedures, see [flow-editing-operation
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": {
-    "type": "bpmn:ServiceTask",
-    "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",
-    "version": "v2",
-    "bindings": {
-      "resource": "process",
-      "resourceSubType": "Api",
-      "resourceKey": "Shared.My API Function",
-      "orchestratorType": "api-workflow",
-      "values": {
-        "name": "My API Function",
-        "folderPath": "Shared"
-      }
-    }
   }
 }
 ```
+
+### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
+
+Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across node instances that reference the same API workflow — do NOT create duplicates.
+
+```json
+"bindings": [
+  {
+    "id": "bCallApiFunctionName",
+    "name": "name",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.My API Function",
+    "default": "My API Function",
+    "propertyAttribute": "name",
+    "resourceSubType": "Api"
+  },
+  {
+    "id": "bCallApiFunctionFolderPath",
+    "name": "folderPath",
+    "type": "string",
+    "resource": "process",
+    "resourceKey": "Shared.My API Function",
+    "default": "Shared",
+    "propertyAttribute": "folderPath",
+    "resourceSubType": "Api"
+  }
+]
+```
+
+> For the resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ## Debug
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry | API workflow not published or registry stale | Run `uip login` then `uip maestro flow registry pull --force`; for in-solution API workflows use `--local` |
 | Execution failed | Underlying API workflow errored | Check `$vars.{nodeId}.error` for details |

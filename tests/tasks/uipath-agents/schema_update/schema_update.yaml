@@ -1,0 +1,55 @@
+task_id: skill-agent-schema-update
+description: >
+  Skill-guided evaluation: after scaffolding a low-code agent, the
+  agent updates inputSchema / outputSchema and rebuilds the user
+  message template with a {{input.<field>}} placeholder. Tests schema
+  sync between agent.json and entry-points.json, the {{input.X}}
+  syntax, and contentTokens construction. A check script verifies
+  deep equivalence of the two schema files.
+tags: [uipath-agents, smoke, low-code]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "QuerySol" containing a low-code agent
+  "QueryAgent". The agent accepts a required `userQuery` (string) and
+  returns a `reply` (string). Validate the agent.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema sync, prompt-matching schemas, and user message inlines {{input.userQuery}}"
+    command: "python3 $TASK_DIR/check_schema_update.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,14 @@
+---
+description: Writing standards for AI-agent-facing documentation in skills and references
+globs: ["skills/**/*.md", "references/**/*.md", ".claude/rules/**/*.md"]
+---
+
+Primary audience is AI coding agents, not humans. Be prescriptive ("Run X") not descriptive ("You could run X"). Include exact CLI commands with all required flags. Use `--output json` on any command whose output the agent parses. Specify what to do when a command fails, not just the happy path. Number rules — agents follow numbered lists more reliably than prose. Include anti-patterns — "what NOT to do" prevents the most expensive mistakes.
+
+Markdown: ATX headers (`#`, `##`), no underline-style. Fenced code blocks with language identifiers (` ```bash `, ` ```yaml `, ` ```csharp `, ` ```json `). Tables for structured data. `>` blockquotes for warnings. Heading hierarchy must not skip levels.
+
+CLI docs: use `<PLACEHOLDER>` (angle brackets, UPPER_SNAKE_CASE) for user-provided values. Specify required vs optional flags. Shell commands must use Unix syntax (never `del`/`dir`/`nul`); escape backslashes in Windows paths (`C:\\path\\file.txt`).
+
+Do NOT include: marketing language, version-specific facts that will go stale (link to latest docs instead), duplicate content across files, auto-generated `--help` output, images or binary files.
+
+Full reference: `.claude/rules/content-quality.md`.

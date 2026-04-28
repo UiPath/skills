@@ -1,0 +1,91 @@
+task_id: skill-platform-is-connection-lifecycle
+description: >
+  Smoke test: agent uses the uipath-platform skill to list connections for a
+  connector and ping a connection to verify health. Tests that the skill
+  teaches the correct connection workflow (list, present options, ping) and
+  that the agent knows the create/edit recovery paths without executing them
+  (both require browser interaction).
+tags: [uipath-platform, smoke, integration-service, connections]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  I want to use the Salesforce connector through UiPath Integration Service.
+  Help me find and verify a connection for the "uipath-salesforce-sfdc"
+  connector.
+
+  1. List available connections for this connector
+  2. Present the options to me (recommend the default if one exists)
+  3. Ping the recommended connection to check health
+  4. Explain what commands I would run if no connections exist or if a
+     connection needs re-authentication (do NOT run these — they require
+     a browser)
+
+  Save your findings to report.json:
+  {
+    "connector_key": "uipath-salesforce-sfdc",
+    "connections_found": <number of connections found or 0 if auth error>,
+    "ping_result": "<ping status or error message>",
+    "create_command": "<exact uip command to create a new connection>",
+    "edit_command": "<exact uip command to re-auth an existing connection>",
+    "commands_used": ["<list of uip is commands you actually ran>"]
+  }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run every command listed above (list and ping), record
+    each result (success or error) in report.json, and move on.
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - If connections list returns no connections, use a placeholder like
+    "placeholder-conn-id" to still run the ping command with correct syntax.
+  - Do NOT run connections create or connections edit — they open a browser.
+    Just document the correct commands in report.json.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed connections for the Salesforce connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list\s+.*uipath-salesforce-sfdc'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted to ping a connection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+ping'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on connection commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json has correct structure and documents create/edit commands"
+    command: "python3 $TASK_DIR/_shared/is_check.py check_connection_lifecycle"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

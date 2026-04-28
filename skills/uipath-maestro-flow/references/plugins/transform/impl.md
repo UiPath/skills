@@ -10,10 +10,10 @@
 ## Registry Validation
 
 ```bash
-uip flow registry get core.action.transform --output json
-uip flow registry get core.action.transform.filter --output json
-uip flow registry get core.action.transform.map --output json
-uip flow registry get core.action.transform.group-by --output json
+uip maestro flow registry get core.action.transform --output json
+uip maestro flow registry get core.action.transform.filter --output json
+uip maestro flow registry get core.action.transform.map --output json
+uip maestro flow registry get core.action.transform.group-by --output json
 ```
 
 Confirm: input port `input`, output ports `output` and `error`, required inputs `collection` and `operations`.
@@ -70,11 +70,10 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
@@ -114,17 +113,20 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
-**Filter conditions:** `equals`, `not_equals`, `greater`, `greater_equal`, `less`, `less_equal`, `contains`, `not_contains`, `starts_with`, `ends_with`
+**Filter conditions:** `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null`
 
 **Filter operations:** `and` (all conditions must match), `or` (any condition matches)
+
+> **Filter `value` is literal-only — no `$vars`, no `=js:`, no brace-templates.** The Transform runtime reads `value` as-is and does not evaluate expressions. Setting `"value": "$vars.threshold"`, `"value": "=js:$vars.threshold"`, or `"value": "{$vars.threshold}"` silently produces an empty filtered array — the filter is comparing each item's field against the literal string `$vars.threshold` (or `=js:...`), never against the intended number. Only literal scalars work: `"value": 500`, `"value": "active"`, `"value": true`. If you need a dynamic threshold, compute the filter inside a [Script](../script/impl.md) node instead, or hoist the literal into the flow design and keep the Transform filter for demo-time thresholds.
+
+**`field` accepts dot-paths** for nested object fields (e.g., `"field": "order.amount"`). Applies to `collection` elements.
 
 ---
 
@@ -163,15 +165,14 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
-**Transformations:** `copy` (no change), `uppercase`, `lowercase`, or a custom expression.
+**Transformations:** `copy` (no change), `uppercase`, `lowercase`, `trim` (remove leading/trailing whitespace).
 
 **`keepOriginalFields`:** When `false`, only mapped fields appear in output. When `true`, unmapped fields pass through.
 
@@ -218,11 +219,10 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
     "error": {
       "type": "object",
       "description": "Error information if the transform fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
-  },
-  "model": { "type": "bpmn:ScriptTask" }
+  }
 }
 ```
 
@@ -245,7 +245,8 @@ Chains multiple operations (filter -> map -> groupBy) in a single node. Operatio
 
 | Error | Cause | Fix |
 | --- | --- | --- |
+| Filter passes all items through | Wrong condition name (e.g. `greater` instead of `greater_than`) | Use exact names: `equals`, `not_equals`, `greater_than`, `less_than`, `greater_equal`, `less_equal`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null` |
+| Filter silently returns empty array | Filter `value` holds an unresolved expression (`"$vars.x"`, `"=js:..."`, `"{$vars.x}"`) — Transform compares each item against that string literal | Replace with a literal scalar (`"value": 500`); expressions are not evaluated in filter `value`. If the threshold must be dynamic, do the filter in a Script node |
 | Collection is null/empty | `$vars` reference evaluates to null | Check collection expression and upstream output |
-| Unknown filter condition | Typo in condition name | Use one of: `equals`, `not_equals`, `greater`, `greater_equal`, `less`, `less_equal`, `contains`, `not_contains`, `starts_with`, `ends_with` |
 | Map output missing fields | `keepOriginalFields: false` and field not in mappings | Add the field to mappings or set `keepOriginalFields: true` |
 | GroupBy produces empty groups | No items match the group field | Check `groupByField` matches actual field names in the data |

@@ -32,6 +32,33 @@ This repo uses [coder_eval](https://github.com/UiPath/coder_eval) to verify that
 - Check whether existing tasks in `tests/tasks/<skill-name>/` still cover the updated behavior
 - Flag new capabilities that lack a test task as **Medium**
 
+### Reference Pointer Discipline
+
+When a skill doc (SKILL.md or any file under `skills/<skill>/references/`) contains a section that links to another skill doc via `See [X.md]`, the linking section must contain **only bridge content** — the sentence(s) tying this file's context to the referenced material, plus any routing decision unique to this file. Content the linked file already explains must NOT be restated or summarized.
+
+Applies in both directions:
+- Reference → reference
+- Higher-level doc → deeper reference (including `SKILL.md` → any reference)
+
+**How to check:**
+1. For each section in a changed skill doc that contains `See [...](another-doc.md)` (or similar link), open the linked file
+2. Compare the overlap — do both files describe the same mechanism, step list, spawn semantics, handoff contract, or rules?
+3. Flag any overlap beyond a single bridging sentence plus unique routing — the duplicate copy drifts from the authoritative one over time
+
+**Severity:** Medium by default. High when the duplication is substantial (multi-paragraph overlap, step lists, or mechanism descriptions) or touches Critical Rules — silent drift between copies can mislead agents.
+
+### UIA Boundary Discipline (uipath-rpa skill)
+
+The `skills/uipath-rpa/` subtree must work against every future version of `UiPath.UIAutomation.Activities`. UIA-version-coupled content — CLI subcommand names, skill invocation arguments, internal step numbering, artifact filenames, and `uip rpa uia ...` bash blocks — belongs in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` (shipped by the UIA package), not in the skill.
+
+**How to check:**
+
+`skills/uipath-rpa/CLAUDE.md` lists every forbidden pattern (with carve-outs for generic `uip rpa` commands that are stable across UIA versions). For each changed file under `skills/uipath-rpa/`, check added or modified lines for any instance of those patterns and flag hits.
+
+**Severity:**
+- **Medium** — a new UIA-coupling bullet or sentence introduced in this PR
+- **High** — coupling **restored** that was previously extracted to UIA docs (the duplicate will drift and mislead agents)
+
 ### Repository Hygiene
 
 - `CODEOWNERS` has an entry for any new or moved skill path (e.g., `/skills/uipath-<name>/`)
