@@ -97,6 +97,8 @@ Only use field names that appear in `filterFields`. If a filter cannot be transl
 
 ## Implementation — Shared Metadata Fetches (read-only CLI)
 
+> **Each connector task runs its own `get-connection`.** Even when two tasks share the same `connection-id`, the Entry and Config objects differ between activity and trigger types. Never reuse another task's CLI output.
+
 ### Step 1 — Get connection details + Entry
 
 ```bash
@@ -112,7 +114,9 @@ uip case registry get-connection \
 | `Entry` | `.Data.Entry` (full object) | `{ displayName: "Email Received", ... }` |
 | `Config` | `.Data.Config` | `{ connectorKey, objectName, eventOperation, eventMode, version, supportsStreaming }` |
 | `folderKey` | `.Data.Connections[selected].folder.key` | `"87fd6cec-..."` |
+| `folderName` | `.Data.Connections[selected].folder.name` | `"57d6e3b0's workspace"` |
 | `connectorName` | `.Data.Connections[selected].connector.name` | `"Microsoft Outlook 365"` |
+| `connectionName` | `.Data.Connections[selected].name` | `"my-outlook-connection"` |
 
 ### Step 2 — Get enriched metadata + outputs
 
@@ -209,6 +213,12 @@ Create 2 entries in `root.data.uipath.bindings[]`:
 | folderKey | `"folderKey"` | `folderKey` (from Step 1) |
 
 Both share `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
+
+### Root-level bindings post-sync
+
+After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `get-connection` failed.
+
+> **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 (after all connector tasks), not per-task. See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md).
 
 ---
 

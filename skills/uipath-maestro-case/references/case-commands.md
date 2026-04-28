@@ -10,7 +10,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution new`, `solution project add`, `solution upload` | Solution scaffold + Studio Web upload | Yes (for `upload`) |
+| `solution new`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
@@ -50,17 +50,32 @@ Adds the project to `.uipx.Projects[]`. Run after the case plugin has scaffolded
 
 ---
 
+## uip solution resource refresh
+
+Re-scan all projects in the solution and sync resource declarations from `bindings_v2.json`. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
+
+```bash
+uip solution resource refresh <SolutionDir> --output json
+```
+
+**Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
+
+> Requires `bindings_v2.json` to be populated. If still the empty scaffold (`resources: []`), no resources will be synced.
+
+---
+
 ## uip solution upload
 
 Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
+uip solution resource refresh <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json
 ```
 
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step. Uploads to Studio Web where the user can visualize, inspect, edit, and publish the case from the browser.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir>`. Share the resulting URL with the user.
 
 ---
 
@@ -105,8 +120,11 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
 
 ```bash
+uip solution resource refresh <SolutionDir> --output json
 uip maestro case debug <projectDirectory> --log-level debug --output json
 ```
+
+> **Always run `uip solution resource refresh`** on the solution directory before debug.
 
 | Flag | Description |
 |------|-------------|
