@@ -50,19 +50,7 @@ The `selector` field controls where the guardrail applies.
 
 ### Built-in Validator Scope Support
 
-Not all validators support all scopes. Run the following command to get the authoritative list of validators, their allowed scopes, stages, and parameters:
-
-```bash
-uip agent guardrails list --output json
-```
-
-Each entry in the `Data` array contains:
-- `Validator` — the `validatorType` string (e.g., `"pii_detection"`)
-- `AllowedScopes` — array of valid scope values (e.g., `["Agent", "Llm", "Tool"]`)
-- `GuardrailStages` — object mapping each scope to its valid stages (e.g., `{"Agent": ["PreExecution", "PostExecution"]}`)
-- `Parameters` — array of parameter definitions with `Type`, `Id`, and `Required`
-
-Use this output to determine which scopes and stages are valid for each validator. Do not hardcode assumptions about scope/stage support.
+Not all validators support all scopes. Current `uip agent` CLI versions expose `validate` for this schema but do not expose `uip agent guardrails list` or a guardrail add command. Do not invent guardrails CLI commands. For validator-specific scopes, stages, and parameters, use Studio Web-exported guardrail JSON or current product documentation, then run `uip agent validate <AGENT_PATH> --output json` after editing.
 
 ## Actions
 
@@ -321,17 +309,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 | `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
 | `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
 
-Run `uip agent guardrails list --output json` to get the authoritative list. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
-
-**How to map `uip agent guardrails list` output to guardrail JSON:**
-
-| CLI field | Maps to |
-|-----------|---------|
-| `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` |
-| `GuardrailStages[scope]` | Valid execution stages for that scope |
-| `Parameters[].Id` | `validatorParameters[].id` |
-| `Parameters[].Type` | `validatorParameters[].$parameterType` |
+Use Studio Web-exported guardrail JSON or current product documentation to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. Keep the exported discriminator and parameter names exactly as shown, then validate the project with `uip agent validate <AGENT_PATH> --output json`.
 
 > **Important:** PII entity names use PascalCase (`"Email"`, not `"email_address"`). Harmful content categories use PascalCase (`"Hate"`, not `"hate"`). Scope values use PascalCase (`"Agent"`, `"Llm"`, `"Tool"`).
 
