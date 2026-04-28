@@ -7,11 +7,20 @@ description: >
   (updateFields with id key). Tests all entity command syntax in a single pass.
 tags: [uipath-data-fabric, smoke, entities]
 
+agent:
+  type: claude-code
+  max_turns: 30
+
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Every uip df command will fail with an auth error — that is expected and normal.
+  Run each command exactly once, ignore the auth error, and continue to the next step.
+  Do NOT retry any command. Do NOT attempt to login.
+
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
   There is an existing entity "Employees" with entity ID "ent-456-xyz".
@@ -30,7 +39,8 @@ initial_prompt: |
      would come from Fields[].ID in the entities get response) in the
      updateFields body.
 
-  Save a summary to report.json:
+  Save a summary to report.json with the bodies and commands you CONSTRUCTED
+  (fill these in regardless of whether the commands returned auth errors):
   {
     "commands_used": ["<list of uip df commands you ran in order>"],
     "create_body": { "fields": [ ... ] },
@@ -39,11 +49,7 @@ initial_prompt: |
     "field_id_source": "entities get"
   }
 
-  Important:
-  - The uip CLI is available but is NOT connected to a live Data Fabric tenant.
-    Commands will fail with auth errors — that is expected.
-    Run each command once, record the result in report.json, and move on.
-    Do NOT retry or attempt to login.
+  Additional constraints:
   - Use --output json on every uip df command.
   - Do NOT use removeFields. Do NOT delete any entity.
 

@@ -6,11 +6,20 @@ description: >
   excluded, and records import --file is the correct command (not records insert).
 tags: [uipath-data-fabric, smoke, records, import]
 
+agent:
+  type: claude-code
+  max_turns: 30
+
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Every uip df command will fail with an auth error — that is expected and normal.
+  Run each command exactly once, ignore the auth error, and continue to the next step.
+  Do NOT retry any command. Do NOT attempt to login.
+
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
   There is a "Products" entity with entity ID "prod-002-ent".
@@ -26,17 +35,15 @@ initial_prompt: |
   2. Create the CSV file at products.csv with correct headers and 3 data rows.
   3. Run the bulk import command.
 
-  Save a summary to report.json:
+  Save a summary to report.json with the commands and CSV you CONSTRUCTED
+  (fill these in regardless of whether the commands returned auth errors):
   {
     "commands_used": ["<list of uip df commands you ran>"],
     "csv_headers": ["<headers used in the CSV, in order>"],
     "csv_includes_system_fields": false
   }
 
-  Important:
-  - The uip CLI is available but is NOT connected to a live Data Fabric tenant.
-    Commands will fail with auth errors — that is expected.
-    Run each command once, record the result, and move on.
+  Additional constraints:
   - Use --output json on every uip df command.
   - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)
     in the CSV headers.

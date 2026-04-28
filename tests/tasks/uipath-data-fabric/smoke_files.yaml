@@ -8,11 +8,20 @@ description: >
   upload, --destination flag for download, and --output json on all commands.
 tags: [uipath-data-fabric, smoke, files]
 
+agent:
+  type: claude-code
+  max_turns: 30
+
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Every uip df command will fail with an auth error — that is expected and normal.
+  Run each command exactly once, ignore the auth error, and continue to the next step.
+  Do NOT retry any command. Do NOT attempt to login.
+
   Before starting, load the uipath-data-fabric skill and follow its workflow.
 
   There is an entity "Documents" with entity ID "doc-001-ent".
@@ -28,7 +37,8 @@ initial_prompt: |
   4. Delete the file attachment from that field:
        uip df files delete doc-001-ent rec-001-id Attachment
 
-  Save a summary to report.json:
+  Save a summary to report.json with the commands you ran and what you observed
+  (fill these in based on what you sent, not the error responses):
   {
     "commands_used": ["<list of uip df commands you ran in order>"],
     "upload_command_uses_positional_args": true,
@@ -36,11 +46,7 @@ initial_prompt: |
     "delete_positional_args": ["<entity-id>", "<record-id>", "<field-name>"]
   }
 
-  Important:
-  - The uip CLI is available but is NOT connected to a live Data Fabric tenant.
-    Commands will fail with auth errors — that is expected.
-    Run each command once, record the result in report.json, and move on.
-    Do NOT retry or attempt to login.
+  Additional constraints:
   - Use --output json on every uip df command.
   - The download flag is --destination (not --output).
   - Field names are case-sensitive — use the exact name "Attachment".

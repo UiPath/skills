@@ -8,6 +8,10 @@ description: >
   sections of the skill without requiring a live tenant.
 tags: [uipath-data-fabric, smoke, entities, records]
 
+agent:
+  type: claude-code
+  max_turns: 30
+
 sandbox:
   driver: tempdir
   python: {}
