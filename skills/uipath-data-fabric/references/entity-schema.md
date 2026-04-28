@@ -106,16 +106,6 @@ Both entity names and field names must:
 
 `RELATIONSHIP` requires `referenceEntityName` (the technical name of the target entity) and `referenceFieldName` (the field in the target entity to link on). Use `entities get <id>` to verify exact entity and field names.
 
-## Not Supported
-
-| Operation | Action |
-|-----------|--------|
-| Delete an entity | No command exists — tell the user it is not supported |
-| Remove / delete a field | CLI explicitly rejects `removeFields` with an error — do not attempt |
-| Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
-
----
-
 ## Updating an Entity
 
 Use `entities update` to add fields, modify existing field metadata, or update entity-level properties.
@@ -175,14 +165,46 @@ Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `U
 ## Listing and Inspecting Entities
 
 ```bash
-# Discover all entities (shows Source: Native or Federated)
+# List all entities (shows Source: Native or Federated)
 uip df entities list --output json
 
-# Discover only native entities (recommended before any write operation)
+# List only native entities (recommended before any write operation)
 uip df entities list --native-only --output json
 
 # Get full schema including all fields
 uip df entities get <entity-id> --output json
+```
+
+**Key fields in `entities list` response:**
+
+| Field | Description |
+|-------|-------------|
+| `ID` | Entity UUID — required for all `uip df` record and entity commands |
+| `Name` | CamelCase system name (e.g. `BankDetails`) |
+| `DisplayName` | Human-readable label shown in Studio Web |
+| `Source` | `Native` (read/write) or `Federated (ConnectorName)` (read-only) |
+
+**Key fields in `entities get <id>` response:**
+
+| Field | Description |
+|-------|-------------|
+| `Fields[].FieldName` | Exact field name for use in record bodies and CSV headers |
+| `Fields[].Type` | Data type (e.g. `STRING`, `INTEGER`) |
+| `Fields[].ID` | Field UUID — required for `updateFields` in `entities update` |
+| `Fields[].IsRequired` | Whether the field must have a value on insert |
+
+**Example — discover an entity before writing records:**
+```bash
+# 1. Find the entity ID and confirm it is Native
+uip df entities list --native-only --output json
+# e.g. response: { "Name": "Customer", "ID": "abc-123", "Source": "Native" }
+
+# 2. Get field names for use in record bodies
+uip df entities get abc-123 --output json
+# e.g. Fields: [{"FieldName": "FullName", "Type": "STRING"}, {"FieldName": "Score", "Type": "INTEGER"}]
+
+# 3. Insert using exact field names
+uip df records insert abc-123 --body '{"FullName":"Alice","Score":95}' --output json
 ```
 
 ## Native vs Federated Entities
