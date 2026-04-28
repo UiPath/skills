@@ -139,7 +139,7 @@ Patterns nodes wrap LLM-driven operations as single service tasks. They appear i
 | Node Type | Plugin | When to Select |
 | --- | --- | --- |
 | `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns (category, summary, extracted entities) to every row of an attached CSV. Supports optional web-search grounding |
-| `uipath.pattern.deep-rag` | [deep-rag](plugins/deep-rag/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations back to the source |
+| `uipath.pattern.deep-rag` | [summarize](plugins/summarize/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations back to the source |
 
 **When NOT to use Patterns:** For simple in-memory transforms use [transform](plugins/transform/planning.md); for multi-step reasoning with tools use an [agent](plugins/agent/planning.md); for per-row side effects use a [loop](plugins/loop/planning.md).
 
@@ -512,7 +512,7 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 ### "I need an LLM to process rows of a CSV or summarize a document"
 
 - Add LLM-generated columns to every row of a CSV (classify, summarize, extract) -> [batch-transform](plugins/batch-transform/planning.md) (`uipath.pattern.batch-transform`)
-- Synthesize or answer questions over one attached document, with optional citations -> [deep-rag](plugins/deep-rag/planning.md) (`uipath.pattern.deep-rag`)
+- Synthesize or answer questions over one attached document, with optional citations -> [summarize](plugins/summarize/planning.md) (`uipath.pattern.deep-rag`)
 - Small ad-hoc reshaping (map/filter/groupBy) without an LLM -> [transform](plugins/transform/planning.md)
 - Multi-step reasoning with tool use -> [inline-agent](plugins/inline-agent/planning.md) or [agent](plugins/agent/planning.md)
 

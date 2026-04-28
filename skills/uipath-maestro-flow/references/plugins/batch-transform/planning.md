@@ -1,6 +1,6 @@
 # Batch Transform Pattern Node — Planning
 
-The Batch Transform node runs an LLM over every row of an attached CSV (or similar tabular file) and appends one or more **LLM-generated columns** to each row. Think "row-wise enrichment with a prompt" — classification, summarization, entity extraction, categorization. It is one of two nodes in the **Patterns** category (alongside [Deep RAG](../deep-rag/planning.md)).
+The Batch Transform node runs an LLM over every row of an attached CSV (or similar tabular file) and appends one or more **LLM-generated columns** to each row. Think "row-wise enrichment with a prompt" — classification, summarization, entity extraction, categorization. It is one of two nodes in the **Patterns** category (alongside [Summarize](../summarize/planning.md)).
 
 ## Node Type
 
@@ -20,14 +20,14 @@ Use Batch Transform when the task is **"do this to every row"** and the per-row 
 | Enrich rows with web-searched facts (e.g., look up a company's HQ city per row) | Yes — set `enableWebSearchGrounding: true` |
 | Small ad-hoc data shape change (rename, filter, groupBy) on an in-memory array | No — use [Transform](../transform/planning.md) |
 | Per-row side effects (API calls, DB writes) | No — use [Loop](../loop/planning.md) with the per-row action inside |
-| Reason over a **single** document and produce a synthesis with citations | No — use [Deep RAG](../deep-rag/planning.md) |
+| Reason over a **single** document and produce a synthesis with citations | No — use [Summarize](../summarize/planning.md) |
 | Row-count unknown but small (< 20) and the agent should decide how to reason | Consider [Agent](../agent/planning.md) with the collection in its context instead |
 
 ### Anti-Patterns
 
 - **Do not use Batch Transform for deterministic work.** If the new column is a formula, regex match, or date reformat, use [Transform](../transform/planning.md) or [Script](../script/planning.md) — the LLM adds cost and latency for no accuracy gain.
 - **Do not use Batch Transform as a general loop.** It only produces new columns attached to the same rows; it cannot call APIs or perform side effects per row. Use [Loop](../loop/planning.md) for that.
-- **Do not pass reasoning-heavy instructions that depend on the whole document.** Each row is processed with only its own values plus the prompt — it cannot "see" other rows or an external document. For cross-row reasoning, pre-aggregate with [Transform](../transform/planning.md) first, or use [Deep RAG](../deep-rag/planning.md) over a synthesized attachment.
+- **Do not pass reasoning-heavy instructions that depend on the whole document.** Each row is processed with only its own values plus the prompt — it cannot "see" other rows or an external document. For cross-row reasoning, pre-aggregate with [Transform](../transform/planning.md) first, or use [Summarize](../summarize/planning.md) over a synthesized attachment.
 
 ## Ports
 
@@ -48,7 +48,7 @@ No artifact ports. Patterns nodes do not wire to resource files — the prompt a
 
 | Input | Required | Type | Description |
 | --- | --- | --- | --- |
-| `attachment` | Yes | string (file ref) | The source CSV. Pass a `$vars.*` reference to an upstream file handle, or a concrete UiPath file URI. |
+| `attachment` | Yes | string (Orchestrator Attachment Id) | The Orchestrator Attachment Id of the source CSV — a GUID identifying a file already uploaded to Orchestrator's Storage Buckets / Attachments store. Typically a `$vars.*` reference to an upstream node that produced the attachment (e.g., a connector, RPA node, or HTTP step that uploaded a CSV and returned its id), or a literal attachment id string. **Not** a file URL, byte stream, or local path. |
 | `prompt` | Yes | string | The instruction describing what each output column should contain. Can reference column names from the source via natural language ("summarize the `Description` field"). |
 | `outputColumns` | Yes | array of `{ name, description }` | The columns to produce. Max 10. `name` is the column header; `description` tells the LLM what to put in it. |
 | `enableWebSearchGrounding` | No | boolean | When `true`, the LLM can issue web searches per row to ground its answer. Slower and costlier — use only when rows need external facts. Default `false`. |

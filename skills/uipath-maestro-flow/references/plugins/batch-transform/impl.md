@@ -14,7 +14,7 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.BatchTransform`
-- `inputDefinition.properties` — `attachment`, `prompt`, `enableWebSearchGrounding`, `outputColumns`
+- `inputDefinition.properties` — `attachment` (string — Orchestrator Attachment Id), `prompt` (string), `enableWebSearchGrounding` (boolean), `outputColumns` (array of `{ name, description }`)
 - `outputDefinition.output.schema.properties` — `id`, `fileName`, `mimeType`
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
@@ -31,7 +31,7 @@ uip flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --label "<LABEL>" \
   --position <X>,<Y> \
   --input '{
-    "attachment": "$vars.<upstreamFileNode>.output",
+    "attachment": "$vars.<upstreamNode>.output.<attachmentIdField>",
     "prompt": "<INSTRUCTION describing every output column>",
     "outputColumns": [
       { "name": "<COLUMN_NAME>", "description": "<WHAT TO PUT IN THIS COLUMN>" }
@@ -41,7 +41,7 @@ uip flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --output json
 ```
 
-`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. The `outputColumns` array can have up to 10 entries. Omit `enableWebSearchGrounding` unless rows genuinely require web-fetched facts.
+`--input` accepts a JSON object; the CLI merges it into the node's `inputs`. `attachment` must resolve to an **Orchestrator Attachment Id** string (a GUID) — point it at the field on the upstream node's output that carries the attachment id (not a file URL, file bytes, or a path). The `outputColumns` array can have up to 10 entries. Omit `enableWebSearchGrounding` unless rows genuinely require web-fetched facts.
 
 **Save the returned node ID** — needed for wiring edges and downstream `$vars.{nodeId}.output` references.
 
@@ -72,7 +72,7 @@ uip flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
   "typeVersion": "1.0.0",
   "display": { "label": "Categorize Invoices" },
   "inputs": {
-    "attachment": "$vars.fetchRows.output",
+    "attachment": "$vars.fetchRows.output.attachmentId",
     "prompt": "Classify each invoice by category and write a one-line summary.",
     "enableWebSearchGrounding": false,
     "outputColumns": [
@@ -143,5 +143,5 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 - **Do not hand-author `model.bindings`** on the node — Batch Transform has no process or connector binding. Adding a `bindings` block will be stripped or cause validate errors.
 - **Do not pass `--source` on `uip flow node add`** — `--source` is only for inline agent nodes (`uipath.agent.autonomous`). Batch Transform has no agent project behind it.
 - **Do not reshape `outputColumns` to a map** — the array-of-`{name, description}` shape is contractual with the canvas property panel and the BPMN `ECS.BatchTransform` serializer.
-- **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Deep RAG](../deep-rag/impl.md) on a synthesized document instead.
+- **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.
