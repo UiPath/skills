@@ -213,13 +213,28 @@ Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (
 
 ### Git Hooks
 
-This repository uses pre-commit hooks to validate skill descriptions (1024-character limit). To enable them:
+This repository ships an opt-in git pre-commit chain that runs the same validators CI runs, so drift is caught locally before push. To enable:
 
 ```bash
 bash scripts/setup-hooks.sh
 ```
 
-This configures git to use `.githooks/` and enables the skill description validator.
+This configures git to use `.githooks/` and runs the following validators on every commit:
+
+- `scripts/validate-skill-descriptions.sh` — enforces the 250-character limit on skill descriptions.
+- `scripts/validate-synced-files.sh` — confirms every synced copy declared in `.github/synced-files.yml` is byte-identical to its source.
+
+Both validators are also enforced in CI; the local hook is best-effort developer ergonomics.
+
+### Sharing Content Across Skills
+
+Skills must be self-contained — no `../<other-skill>/...` paths in any markdown file. When the same content needs to live in two or more skills, register a synced copy:
+
+```bash
+bash scripts/sync-files.sh --add <source-path> <copy-path>
+```
+
+This appends an entry to `.github/synced-files.yml` and creates `<copy-path>` as a byte-for-byte clone of `<source-path>`. After registering, always edit the source; run `bash scripts/sync-files.sh --apply` to refresh copies before committing. CI fails any PR where a copy diverges from its source. `yq` (mikefarah v4) is required to run these scripts.
 
 ## Testing Skills
 
