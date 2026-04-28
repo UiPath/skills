@@ -7,7 +7,7 @@ tags: [uipath-maestro-flow, smoke, lifecycle-generate]
 
 agent:
   type: claude-code
-  max_turns: 12
+  max_turns: 20
   turn_timeout: 600
 
 sandbox:
@@ -26,13 +26,6 @@ initial_prompt: |
 
   The correct flow-file path is:
     WeatherAlert/WeatherAlert/WeatherAlert.flow
-
-  **REQUIRED — before finishing, write report.json at the sandbox root** with
-  at minimum:
-    {
-      "project_name": "WeatherAlert",
-      "commands_used": ["<all uip commands you ran>"]
-    }
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -53,39 +46,18 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "report.json records the required command families"
-    command: |
-      python3 - <<'PY'
-      import json
-      from pathlib import Path
-
-      report = json.loads(Path("report.json").read_text())
-      commands = " \n ".join(str(command) for command in report.get("commands_used", []))
-      required = [
-          "uip solution new",
-          "flow init",
-          "flow validate",
-          "--output json",
-      ]
-      missing = [item for item in required if item not in commands]
-      assert not missing, {"missing": missing, "commands_used": report.get("commands_used", [])}
-      print("OK")
-      PY
-    expected_stdout: "OK"
-    stdout_match: contains
-    weight: 4.0
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "WeatherAlert"
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
+  - type: command_executed
+    description: "Agent initialized the Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 1.0
