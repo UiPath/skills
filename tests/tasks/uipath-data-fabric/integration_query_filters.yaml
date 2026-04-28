@@ -1,12 +1,15 @@
 task_id: skill-datafabric-integration-query-filters
 description: >
   Integration test: agent constructs advanced records queries against a live
-  tenant — nested filterGroups with OR logic, sortOptions with isDescending,
-  selectedFields projection, and cursor-based pagination (checking HasNextPage
-  and passing NextCursor to --cursor). Creates test records first, runs queries,
-  then deletes the test records. Tests the full query body schema and pagination
-  workflow end-to-end.
+  tenant — AND filterGroup, OR filterGroup, nested filterGroups, sortOptions
+  with isDescending, selectedFields projection, and cursor-based pagination
+  using records query (no body). Creates test records first, runs 5 query
+  scenarios, then deletes the test records. Tests the full query body schema
+  and the no-body pagination path end-to-end.
 tags: [uipath-data-fabric, integration, records]
+
+agent:
+  turn_timeout: 600
 
 sandbox:
   driver: tempdir
@@ -20,44 +23,66 @@ initial_prompt: |
 
   2. List native-only entities. Use an entity named "IntegrationOrders" if it
      exists. If not, create it with fields:
-       - CustomerName (STRING)
-       - Amount (DECIMAL)
+       - Code (STRING)
+       - Value (DECIMAL)
        - Status (STRING)
-       - Region (STRING)
 
-  3. Insert 4 test records (batch insert):
-       - { "CustomerName": "Alice",   "Amount": 150, "Status": "shipped",  "Region": "west" }
-       - { "CustomerName": "Bob",     "Amount": 50,  "Status": "pending",  "Region": "east" }
-       - { "CustomerName": "Carol",   "Amount": 200, "Status": "shipped",  "Region": "east" }
-       - { "CustomerName": "Dave",    "Amount": 80,  "Status": "pending",  "Region": "west" }
-     Save the record IDs from the response.
+  3. Batch-insert exactly these 4 records (use a single insert call with an array body):
+       { "Code": "ORD-001", "Value": 100.00, "Status": "Pending" }
+       { "Code": "ORD-002", "Value": 500.00, "Status": "Active"  }
+       { "Code": "ORD-003", "Value": 250.00, "Status": "Active"  }
+       { "Code": "ORD-004", "Value": 750.00, "Status": "Closed"  }
+     Save the 4 record IDs from the response.
 
-  4. Simple query: find all records where Status = "pending".
+  4. AND query: records query with filterGroup logicalOperator 0 (AND):
+       Status = "Active" AND Value > "300"
+     Expected: exactly 1 result (ORD-002; ORD-003 is Active but Value 250 fails).
+     Save count as and_query_count.
 
-  5. Complex query: find records where (Status = "shipped" AND Amount >= 100)
-     OR (Region = "west"). Use nested filterGroups with OR as the outer
-     logicalOperator. Sort by Amount descending. Return only CustomerName and
-     Amount fields using selectedFields.
+  5. OR query: records query with filterGroup logicalOperator 1 (OR):
+       Status = "Pending" OR Status = "Closed"
+     Expected: exactly 2 results (ORD-001, ORD-004).
+     Save count as or_query_count.
 
-  6. Paginated list: list all records with --limit 2. If HasNextPage = true in
-     the response, make a follow-up call with --cursor <NextCursor>.
+  6. Nested filterGroups query — outer logicalOperator 1 (OR) over two inner AND groups:
+       Group 1: Status = "Active" AND Value > "200"
+       Group 2: Status = "Pending"
+     Expected: exactly 3 results (ORD-001, ORD-002, ORD-003; ORD-004 fails both).
+     Save count as nested_query_count.
 
-  7. Delete only the 4 records you inserted in step 3.
+  7. Sort query: records query with sortOptions Value isDescending true, no filter.
+     Save the Value field of Records[0] as sort_first_value (expected: 750.0).
+
+  8. Projection query: records query with selectedFields ["Code"], no filter.
+     Verify that the Value and Status fields are absent from every record returned.
+     Save projection_value_absent and projection_status_absent as true/false.
+
+  9. Paginate all records using records query with --limit 2 and no --body:
+       uip df records query <entity-id> --limit 2 --output json
+     If HasNextPage is true, repeat with --cursor <NextCursor> until exhausted.
+     Collect all record IDs across pages.
+     Use Python to verify: total unique IDs == 4 and no duplicates.
+     Save pagination_total_ids and pagination_no_duplicates.
+
+  10. Delete the 4 records you inserted in step 3.
 
   Save a summary to report.json:
   {
     "entity_id": "<entity ID used>",
     "records_inserted": ["<id1>", "<id2>", "<id3>", "<id4>"],
-    "simple_query_result_count": <number of records returned>,
-    "complex_query_outer_operator": <0 or 1>,
-    "complex_query_used_sort": true,
-    "complex_query_used_selected_fields": true,
-    "pagination_followed_cursor": <true if a second --cursor call was made>,
+    "and_query_count": <number>,
+    "or_query_count": <number>,
+    "nested_query_count": <number>,
+    "sort_first_value": <number>,
+    "projection_value_absent": <true/false>,
+    "projection_status_absent": <true/false>,
+    "pagination_total_ids": <number>,
+    "pagination_no_duplicates": <true/false>,
     "records_deleted": ["<ids deleted>"]
   }
 
   Use --output json on every uip df command.
-  Pagination must use --limit and --cursor flags — never body keys.
+  Pagination must use --limit and --cursor CLI flags — never body keys.
 
 success_criteria:
   - type: command_executed
@@ -77,19 +102,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran records query at least twice (simple + complex)"
+    description: "Agent ran filter queries with --body (AND, OR, nested, sort, projection)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query\s+'
-    min_count: 2
-    weight: 2.5
+    command_pattern: 'uip\s+df\s+records\s+query\s+.*--body'
+    min_count: 4
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed records with --limit for cursor pagination"
+    description: "Agent paginated with records query --limit (no body)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    command_pattern: 'uip\s+df\s+records\s+query\s+.*--limit'
     min_count: 1
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -107,16 +132,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Complex query used OR operator, sort, projection; records cleaned up"
+    description: "AND→1, OR→2, nested→3, sort first=750, projection excludes Value/Status, pagination 4 unique IDs"
     path: "report.json"
     assertions:
-      - expression: "complex_query_outer_operator"
+      - expression: "and_query_count"
         operator: equals
         expected: 1
-      - expression: "complex_query_used_sort"
+      - expression: "or_query_count"
+        operator: equals
+        expected: 2
+      - expression: "nested_query_count"
+        operator: equals
+        expected: 3
+      - expression: "sort_first_value"
+        operator: equals
+        expected: 750.0
+      - expression: "projection_value_absent"
         operator: equals
         expected: true
-      - expression: "complex_query_used_selected_fields"
+      - expression: "projection_status_absent"
+        operator: equals
+        expected: true
+      - expression: "pagination_total_ids"
+        operator: equals
+        expected: 4
+      - expression: "pagination_no_duplicates"
         operator: equals
         expected: true
       - expression: "length(records_inserted)"
@@ -125,7 +165,7 @@ success_criteria:
       - expression: "length(records_deleted)"
         operator: gte
         expected: 4
-    weight: 3.5
+    weight: 5.0
     pass_threshold: 0.75
 
 post_run:

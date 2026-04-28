@@ -8,6 +8,9 @@ description: >
   folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
 tags: [uipath-data-fabric, integration, entity-scope]
 
+agent:
+  turn_timeout: 600
+
 sandbox:
   driver: tempdir
   python: {}
@@ -23,9 +26,9 @@ initial_prompt: |
      folder, record that limitation in the report and skip folder-isolation
      checks (mark them null).
 
-  2. Create a tenant-level entity "TenantScopeTest" with field Name (STRING).
-     Do NOT pass any folder flag — tenant level is the default.
-     Save the entity ID.
+  2. List native-only entities. Use "TenantScopeTest" if it already exists.
+     If not, create it with field Name (STRING) — do NOT pass any folder flag
+     (tenant level is the default). Save the entity ID.
 
   3. Run entities list (--native-only) without a folder flag. Confirm
      "TenantScopeTest" appears in the response.
@@ -42,7 +45,7 @@ initial_prompt: |
      Confirm "FolderScopeTest" does NOT appear (it is scoped to folder_a only).
 
   7. Attempt to create an entity with a non-existent folder ID:
-       uip df entities create ... --folder does-not-exist-folder
+       uip df entities create ... --folder 00000000-0000-0000-0000-000000000000
      Record the error response.
 
   Save a summary to report.json:

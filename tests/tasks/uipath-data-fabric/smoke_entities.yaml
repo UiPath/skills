@@ -28,7 +28,7 @@ initial_prompt: |
   5. Update the HireDate field on Employees: set displayName to "Date Hired"
      and isRequired to true. Use placeholder field ID "field-hire-id" (which
      would come from Fields[].ID in the entities get response) in the
-     updateFields body. The payload key is "id" (lowercase), not "ID".
+     updateFields body.
 
   Save a summary to report.json:
   {

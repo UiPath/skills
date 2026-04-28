@@ -12,6 +12,10 @@ description: >
   not retry or call the REST API directly.
 tags: [uipath-data-fabric, integration, error-paths]
 
+agent:
+  max_turns: 30
+  turn_timeout: 600
+
 sandbox:
   driver: tempdir
   python: {}
@@ -23,7 +27,8 @@ initial_prompt: |
 
   1. Check login: run `uip login status --output json`. Do NOT re-login.
 
-  2. Create entity "ErrorPathsTest" with fields:
+  2. List native-only entities. Use "ErrorPathsTest" if it already exists.
+     If not, create it with fields:
        - Code (STRING, isRequired=true)
        - Score (INTEGER)
        - Tag (STRING, isUnique=true)

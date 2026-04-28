@@ -8,6 +8,9 @@ description: >
   upload/download/delete workflow including overwrite semantics and byte integrity.
 tags: [uipath-data-fabric, integration, files]
 
+agent:
+  turn_timeout: 600
+
 sandbox:
   driver: tempdir
   python: {}

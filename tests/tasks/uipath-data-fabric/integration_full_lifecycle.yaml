@@ -8,6 +8,9 @@ description: >
   Verify workflow combining schema management and record CRUD in one multi-step run.
 tags: [uipath-data-fabric, integration, entities, records]
 
+agent:
+  turn_timeout: 600
+
 sandbox:
   driver: tempdir
   python: {}

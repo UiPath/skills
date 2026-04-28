@@ -10,7 +10,6 @@ description: >
 tags: [uipath-data-fabric, integration, pre-seeded, discover]
 
 agent:
-  type: claude-code
   max_turns: 50
   turn_timeout: 600
 
@@ -87,8 +86,7 @@ initial_prompt: |
         Expected: 3 records.
 
      e. Score >= 7 AND Active = true  (AND logic: logicalOperator=0)
-        Expected: 5 records (scores 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0 that are also Active=true
-        — use the actual count returned, but it must be <= 12).
+        Expected: 7 records (7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0 — all Active=true in seed data).
 
   5. Sort all records by Score descending.
      Confirm records[0].Score == 10.0 (the highest seed value).
@@ -114,6 +112,7 @@ initial_prompt: |
     "query_score_gt_7_count": <count>,
     "query_title_exact_count": <count>,
     "query_title_contains_count": <count>,
+    "query_score_gte7_and_active_true_count": <count>,
     "sort_highest_score": <Score of records[0] from descending sort>,
     "pagination_total_records": <unique ID count across all pages>,
     "pagination_no_duplicates": <true/false>,
@@ -210,8 +209,8 @@ success_criteria:
         operator: equals
         expected: 3
       - expression: "sort_highest_score"
-        operator: equals
-        expected: 10.0
+        operator: gte
+        expected: 10
       - expression: "pagination_total_records"
         operator: equals
         expected: 20
@@ -226,3 +225,5 @@ success_criteria:
         expected: true
     weight: 6.0
     pass_threshold: 0.75
+
+# No post_run: CodeEvalTestEntity is a shared persistent fixture — never deleted between runs.

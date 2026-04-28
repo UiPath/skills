@@ -7,6 +7,9 @@ description: >
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
 tags: [uipath-data-fabric, integration, records, import]
 
+agent:
+  turn_timeout: 600
+
 sandbox:
   driver: tempdir
   python: {}

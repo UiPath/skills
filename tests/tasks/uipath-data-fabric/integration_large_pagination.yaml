@@ -1,12 +1,15 @@
-task_id: skill-datafabric-integration-bulk-pagination
+task_id: skill-datafabric-integration-large-pagination
 description: >
-  Integration test: agent imports 100 records from a CSV into a live entity,
-  traverses all pages using cursor-based pagination (limit=10), verifies no
-  gap or duplicate record IDs across pages, then applies a filterGroup query
-  with pagination to verify that a filtered subset returns the expected count.
-  Covers B-01 (100-record import + full paginated traversal) and B-02
-  (filter + paginated subset count).
+  Integration test: agent imports 500 records from a CSV into a live entity,
+  traverses all pages using cursor-based pagination (limit=60), verifies no
+  gap or duplicate record IDs across all 9 pages, then applies a filterGroup
+  query with pagination (limit=60) to verify the 300-record Active=true subset
+  across 5 pages. Covers large-dataset pagination stability and cursor
+  continuity at scale.
 tags: [uipath-data-fabric, integration, bulk-pagination]
+
+agent:
+  turn_timeout: 600
 
 sandbox:
   driver: tempdir
@@ -19,49 +22,53 @@ initial_prompt: |
 
   1. Check login: run `uip login status --output json`. Do NOT re-login.
 
-  2. Create entity "BulkPaginationTest" with fields:
+  2. List native-only entities. If "LargePaginationTest" already exists, use
+     its entity ID and delete all existing records before proceeding. If not,
+     create it with fields:
        - Name (STRING)
        - Score (INTEGER)
        - Active (BOOLEAN)
 
-  3. Use Python to generate bulk_100.csv:
+  3. Use Python to generate bulk_500.csv:
        - Header row: Name,Score,Active
-       - 100 data rows:
-           rows 1-60:  Name=Record-001..Record-060, Score=1..60, Active=true
-           rows 61-100: Name=Record-061..Record-100, Score=61..100, Active=false
+       - 500 data rows:
+           rows 1-300:   Name=Record-001..Record-300, Score=1..300,   Active=true
+           rows 301-500: Name=Record-301..Record-500, Score=301..500, Active=false
 
   4. Import the CSV:
-       uip df records import <entity-id> --file bulk_100.csv --output json
+       uip df records import <entity-id> --file bulk_500.csv --output json
 
-  5. Traverse ALL records using cursor-based pagination (limit=10):
-       - First call: uip df records list <entity-id> --limit 10 --output json
+  5. Traverse ALL records using cursor-based pagination (limit=60):
+       - First call: uip df records list <entity-id> --limit 60 --output json
        - Each response includes a cursor; pass it to the next call with --cursor
        - Stop when no cursor is returned
      Use Python to collect all record IDs across pages.
+     Expected: 9 pages (8 pages × 60 records + 1 page × 20 records = 500 total).
 
   6. Use Python to verify:
-       - total unique record IDs collected == 100
+       - total unique record IDs collected == 500
        - no duplicate IDs across pages
 
-  7. Query all Active=true records using records query with filterGroup:
+  7. Query all Active=true records using records query with filterGroup and
+     paginate with limit=60 using --cursor until exhausted:
        {
          "filterGroup": {
            "logicalOperator": 0,
            "queryFilters": [{"fieldName": "Active", "operator": "=", "value": true}]
          }
        }
-     Paginate with limit=10 using cursor until all pages are consumed.
+     Expected: 5 pages × 60 records = 300 records total.
      Collect all matching record IDs.
 
   8. Use Python to verify:
        - every collected record has Active=true
-       - total count == 60
+       - total count == 300
 
   Save a summary to report.json:
   {
-    "entity_id": "<BulkPaginationTest entity ID>",
-    "import_count": <number of records returned in import response, or 100 if not in response>,
-    "pagination_pages_fetched": <number of list calls made>,
+    "entity_id": "<LargePaginationTest entity ID>",
+    "import_count": <number of records imported>,
+    "pagination_pages_fetched": <number of list calls made for full traversal>,
     "pagination_total_unique_ids": <count of unique record IDs across all pages>,
     "pagination_no_duplicates": <true if no duplicate IDs>,
     "filtered_pages_fetched": <number of query calls made for Active=true filter>,
@@ -81,7 +88,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent imported 100 records from CSV"
+    description: "Agent imported 500 records from CSV"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+import'
     min_count: 1
@@ -89,10 +96,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent paginated through records with records list --limit"
+    description: "Agent paginated through all records with records list --limit (at least 9 calls)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
-    min_count: 5
+    min_count: 9
     weight: 3.0
     pass_threshold: 1.0
 
@@ -105,8 +112,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "bulk_100.csv was generated"
-    path: "bulk_100.csv"
+    description: "bulk_500.csv was generated"
+    path: "bulk_500.csv"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -117,18 +124,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "100 records paginated without duplicates; 60 Active=true records confirmed"
+    description: "500 records paginated without duplicates; 300 Active=true records confirmed"
     path: "report.json"
     assertions:
       - expression: "pagination_total_unique_ids"
         operator: equals
-        expected: 100
+        expected: 500
       - expression: "pagination_no_duplicates"
         operator: equals
         expected: true
       - expression: "filtered_active_count"
         operator: equals
-        expected: 60
+        expected: 300
       - expression: "filtered_all_active"
         operator: equals
         expected: true

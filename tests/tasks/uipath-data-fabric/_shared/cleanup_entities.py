@@ -58,6 +58,8 @@ def get_auth_token() -> tuple[str, str]:
                 ["uip", "login", "status", "--output", "json"],
                 capture_output=True, text=True, timeout=30,
             )
+            if result.returncode != 0:
+                raise RuntimeError(f"uip login status failed (exit {result.returncode}): {result.stderr}")
             data = json.loads(result.stdout)
             inner = data.get("Data") or data
             org = inner.get("Organization") or ""

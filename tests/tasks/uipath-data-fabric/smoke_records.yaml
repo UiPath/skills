@@ -27,14 +27,12 @@ initial_prompt: |
        - { "Title": "Deploy",     "Priority": 3, "Done": false }
   3. Retrieve the single record from step 1 by ID using records get.
      Use placeholder record ID "id-single" since the CLI is offline.
-  4. Query all records where Done = false. Use filterGroup syntax with
-     logicalOperator and queryFilters.
+  4. Query all records where Done = false.
   5. List the first page of all records with --limit 10.
   6. Update the record from step 1: set Done = true.
      Use placeholder record ID "id-single" in the "Id" field of the body.
   7. Batch-update the 2 records from step 2: set Done = true for each.
-     Use placeholder IDs "id-2" and "id-3". Every object in the array must
-     include "Id" — the CLI rejects any array element missing it.
+     Use placeholder IDs "id-2" and "id-3".
   8. Delete the record from step 1 using records delete.
      Use placeholder record ID "id-single".
 

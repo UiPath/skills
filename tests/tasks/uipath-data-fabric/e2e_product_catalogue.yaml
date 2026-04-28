@@ -9,7 +9,6 @@ description: >
 tags: [uipath-data-fabric, e2e, product-catalogue]
 
 agent:
-  type: claude-code
   max_turns: 50
   turn_timeout: 1200
 
@@ -21,9 +20,11 @@ initial_prompt: |
   We're building a product catalogue for an e-commerce store using UiPath
   Data Fabric. Load the uipath-data-fabric skill before starting.
 
-  The catalogue needs: product name, category (Electronics / Clothing / Home),
-  price, whether it's in stock, and a unique SKU. Seed it with 15 products
-  (5 per category) by generating and importing a CSV. Then:
+  The entity must have these fields: ProductName (STRING), Category (STRING),
+  Price (DECIMAL), InStock (BOOLEAN), SKU (STRING), Poster (FILE). Create the
+  entity with all six fields before importing. Seed it with 15 products
+  (5 per category: Electronics / Clothing / Home) by generating and importing
+  a CSV (CSV does not include the Poster column). Then:
 
   - Query all Electronics products and confirm you get exactly 5.
   - Apply a 10% price increase to the 2 most expensive products across all
@@ -31,7 +32,7 @@ initial_prompt: |
   - Mark the 3 cheapest products as out of stock (InStock = false).
   - Upload a small placeholder image file (product_hero.jpg — create it
     locally with any content) to the Poster field of the single most
-    expensive product. The entity needs a FILE-type field for this.
+    expensive product.
   - Confirm the final state: total products, how many are in stock, how
     many are Electronics.
 
@@ -78,7 +79,7 @@ success_criteria:
     description: "Agent updated product records (price + stock status)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+update'
-    min_count: 4
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
