@@ -149,9 +149,9 @@ Creates a task in an Action Center app for human review.
 | `$actionType` | `"escalate"` | Yes | Action discriminator |
 | `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
 | `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
-| `app.version` | string | Yes | `deployVersion` from the Apps API as a string (e.g., `"1"`) — **never use `"0"`** |
-| `app.folderId` | string | No | Deployment folder GUID — the `FolderKey` field from `uip solution resource list --kind App` |
-| `app.folderName` | string | No | Deployment folder path — the `Folder` field from `uip solution resource list --kind App` (e.g., `"Shared"`) |
+| `app.version` | string | Yes | When first writing `agent.json`: `deployVersion` from the Apps API as a string (e.g., `"3"`). After `resource refresh` runs, this is replaced by `"0"` (the solution-embedded reference). |
+| `app.folderId` | string | No | When first writing: the `FolderKey` from `resource list --kind App` (e.g., the Shared folder GUID). After `resource refresh`, replaced by the solution_folder GUID. |
+| `app.folderName` | string | No | When first writing: the `Folder` from `resource list --kind App` (e.g., `"Shared"`). After `resource refresh`, replaced by `"solution_folder"`. |
 | `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
 | `recipient.type` | integer | Yes | 1=UserId (GUID), 2=GroupId (GUID), 3=UserEmail, 4=AssetUserEmail, 5=StaticGroupName, 6=AssetGroupName |
 | `recipient.value` | string | Yes | Depends on `type` — see recipient types table below |
@@ -239,15 +239,27 @@ Use `str(deployVersion)` as the `app.version` string (e.g., `1` → `"1"`).
 }
 ```
 
-**Step 4 — Validate and refresh:**
+**Step 4 — Validate, then run `resource refresh` (mandatory):**
 
 ```bash
 uip agent validate <AgentName> --output json
 uip solution resource refresh --output json
 ```
 
-`resource refresh` uses the escalation resource file (if present) to auto-generate the four solution-level app files under `resources/solution_folder/`:
-`app/workflow Action/<AppName>.json`, `appVersion/<AppName>.json`, `package/<AppName>.json`, `process/webApp/<AppName>.json`.
+`resource refresh` reads the escalation app reference from `agent.json`'s guardrail `escalate` action and automatically:
+
+- Fetches the app definition from the remote service
+- Generates 4 files under `resources/solution_folder/`:
+  - `app/workflow Action/<AppName>.json`
+  - `appVersion/<AppName>.json`
+  - `package/<AppName>.json`
+  - `process/webApp/<AppName>.json`
+- Transforms `agent.json`'s `app.folderId` → solution_folder GUID, `app.folderName` → `"solution_folder"`, `app.version` → `"0"`
+- Adds 2 entries to `debug_overwrites.json` (`kind: "app"` + `kind: "process"`) mapping the solution resource key to the real Shared folder for runtime resolution
+
+**Do not skip this step.** Without refresh, the solution does not embed the app, `debug_overwrites.json` is incomplete, and the UI will report the escalation app as unrecognized.
+
+After refresh completes, verify that `agent.json` now shows `"folderName": "solution_folder"` and `"version": "0"`. If the values are unchanged, refresh did not detect the guardrail reference — re-check that `$actionType` is exactly `"escalate"` and `app.id` is set to the Key from Step 1.
 
 **Step 5 — Upload:**
 
@@ -591,7 +603,7 @@ Run `uip agent guardrails list --output json` to get the full list of available 
 
 ### Example 6: Escalate PII Violations to Action Center — Agent Level
 
-Escalates to an Action Center app when email or credit card PII is detected at the agent level. All `app.*` fields are populated from `uip solution resource list --kind App` (Step 1) and the Apps API `deployVersion` (Step 2) — no guessing required.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. The JSON below shows what you write in Step 3 (before `resource refresh`). After refresh, `version`, `folderId`, and `folderName` are transformed in place — see the traceability table.
 
 ```json
 {
@@ -636,15 +648,15 @@ Escalates to an Action Center app when email or credit card PII is detected at t
 }
 ```
 
-Where the `app` field values come from:
+Where the `app` field values come from, and how they change after `resource refresh`:
 
-| `app.*` field | Source | Value in example |
+| `app.*` field | Written in Step 3 (source) | After `resource refresh` |
 |---|---|---|
-| `id` | `resource list --kind App` → `Key` | `8137af9d-...` |
-| `name` | `resource list --kind App` → `Name` | `Tool.Guardrail.Escalation.Action.App` |
-| `version` | Apps API `deployVersion` as string | `"1"` |
-| `folderId` | `resource list --kind App` → `FolderKey` | `627fe423-...` |
-| `folderName` | `resource list --kind App` → `Folder` | `"Shared"` |
+| `id` | `resource list --kind App` → `Key` (`8137af9d-...`) | unchanged |
+| `name` | `resource list --kind App` → `Name` | unchanged |
+| `version` | Apps API `deployVersion` as string (`"1"`) | `"0"` |
+| `folderId` | `resource list --kind App` → `FolderKey` (`627fe423-...`, Shared) | solution_folder GUID (tenant-specific) |
+| `folderName` | `resource list --kind App` → `Folder` (`"Shared"`) | `"solution_folder"` |
 
 ### Example 7: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
@@ -770,5 +782,5 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 12. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Always configure guardrails at the agent.json root `guardrails` array.
 13. **Do not reuse UUIDs across guardrails** — each guardrail needs a unique `id`.
 14. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
-15. **Do not use `"version": "0"` or `"folderName": "solution_folder"` in a guardrail escalate action** — `version` must be the `deployVersion` string from the Apps API (e.g., `"1"`), and `folderName` must be the actual deployment folder (e.g., `"Shared"`), not the placeholder `"solution_folder"`.
+15. **Do not upload a solution without running `resource refresh` after adding an escalation guardrail** — refresh transforms `agent.json`'s `app.version`, `app.folderId`, and `app.folderName` from their initial Shared-folder values to `"0"` / solution_folder values, generates the 4 solution-level resource files, and updates `debug_overwrites.json`. Uploading before refresh produces a solution the UI cannot resolve (escalation app shown as unrecognized).
 16. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.

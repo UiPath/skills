@@ -206,19 +206,23 @@ uip solution resource list [solutionPath] \
 uip solution resource refresh [solutionPath] --output json
 ```
 
-Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each binding, it either imports the matching resource from the Resource Catalog Service (if found by name + kind) or creates a virtual placeholder in the solution.
+Re-scans all projects in the solution and syncs resource declarations from two sources:
+1. **`bindings_v2.json`** — tool/process bindings declared by each project
+2. **`agent.json` guardrail `escalate` actions** — escalation app references found in the `guardrails` array
 
-**Run this after `uip agent validate`** whenever external tools have been added or changed.
+For each binding or escalation app reference, it either imports the matching resource from the Resource Catalog Service (if found by name + kind) or creates a virtual placeholder in the solution.
+
+**Run this after `uip agent validate`** whenever external tools or guardrail escalation apps have been added or changed.
 
 Handled kinds and what refresh produces:
 
-| Binding kind | Solution-level files | `debug_overwrites.json` entry |
-|---|---|---|
-| `Queue`, `Asset`, `Bucket` | Virtual resource in solution | none required |
-| `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
-| `Connection` | `connection/<connectorKey>/<Name>.json` | `kind: "connection"` |
-| `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | two entries (`kind: "index"` + `kind: "bucket"`) |
-| `App` (Action Center `workflow Action`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | two entries (`kind: "app"` + `kind: "process"` for the backing code-behind) |
+| Source | Solution-level files | `agent.json` transformation | `debug_overwrites.json` entry |
+|---|---|---|---|
+| Binding: `Queue`, `Asset`, `Bucket` | Virtual resource in solution | none | none required |
+| Binding: `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | none | `kind: "process"` — real `folderKey`, `folderFullyQualifiedName`, `folderPath` |
+| Binding: `Connection` | `connection/<connectorKey>/<Name>.json` | none | `kind: "connection"` |
+| Binding: `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | none | two entries (`kind: "index"` + `kind: "bucket"`) |
+| Guardrail escalation: `App` (Action Center `workflow Action`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | `app.version` → `"0"`, `app.folderId` → solution_folder GUID, `app.folderName` → `"solution_folder"` | two entries (`kind: "app"` + `kind: "process"` for the backing code-behind) |
 
 **Not yet handled by refresh** (write the solution-level files and `debug_overwrites.json` entries by hand — see [agent-json-format.md](agent-json-format.md) § Solution-Level Resource Files):
 
