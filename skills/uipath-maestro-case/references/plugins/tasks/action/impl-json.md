@@ -35,11 +35,11 @@
 |---|---|
 | `data.taskTitle` | Required, even on skeletons. Validator rejects empty. |
 | `data.priority` | `"Low"` \| `"Medium"` (default) \| `"High"` \| `"Critical"` |
-| `data.recipient` | User email string. Omit for group/role assignment. |
+| `data.recipient` | `ActionTaskAssignee` object: `{ "Type": <int>, "Value": "<id-or-email>" }`. Omit for group/role assignment. |
 | `data.actionCatalogName` | `deploymentTitle` from tasks.md |
 | `data.labels` | Label set from tasks.md |
 
-`recipient` as object (`ActionTaskAssignee`): `{ Type: 0|1|2|3, Value: "<id-or-email>" }`. Type 3 = `"=vars.<varId>"` for runtime resolution.
+`recipient.Type` values: `0` = user ID, `1` = group ID, `2` = email address, `3` = `"=vars.<varId>"` for runtime resolution. Email recipients always use Type `2`.
 
 ## Procedure
 
