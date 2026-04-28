@@ -73,17 +73,13 @@ Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000
   "value": "validationResult", "source": "=ValidationResult", "target": "=validationResult",
   "type": "string", "elementId": "Stage_submit-tValidate01" }
 
-// 2. Root inputOutputs entry (per global-vars output wiring)
-{ "id": "validationResult", "name": "ValidationResult",
-  "type": "string", "elementId": "Stage_submit-tValidate01" }
-
-// 3. Task B input after binding — value set to =vars.<output.var>
+// 2. Task B input after binding — value set to =vars.<output.var>
 { "name": "in_ValidationResult", "value": "=vars.validationResult",
   "type": "string", "id": "vXr9pQ2mK", "var": "vXr9pQ2mK",
   "elementId": "Stage_submit-tEnrich02" }
 ```
 
-All three must exist: output on Task A, inputOutputs entry on root, bound input on Task B. If any is missing, the error handling below will catch it.
+Two things must exist: output on Task A with a `var` field, and bound input on Task B referencing `=vars.<var>`. The FE's `CaseManagementVariablesProvider` collects task outputs directly from `task.data.outputs[]` and makes them referenceable — it does not require a separate `root.data.uipath.variables.inputOutputs[]` entry to resolve `=vars.<id>`. Root `inputOutputs` entries for task outputs are a FE sync convention (the FE writes them), not a hard requirement for variable resolution.
 
 ## Error Handling
 
@@ -94,7 +90,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Skeleton task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `=vars.X` not in `inputs[]`/`outputs[]`/`inputOutputs[]` | `ERROR` | Skip binding |
+| `=vars.X` not in any task `outputs[]` or root `inputOutputs[]` | `ERROR` | Skip binding |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
