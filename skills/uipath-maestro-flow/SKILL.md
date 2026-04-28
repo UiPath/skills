@@ -348,7 +348,8 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Wire nodes with edges** | [references/flow-editing-operations.md](references/flow-editing-operations.md) + [references/flow-file-format.md — Standard ports](references/flow-file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
 | **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
-| **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
+| **Read/write UiPath Data Fabric entities** | [references/plugins/connector/data-fabric/planning.md](references/plugins/connector/data-fabric/planning.md) — entity discovery, activity selection; [references/plugins/connector/data-fabric/impl.md](references/plugins/connector/data-fabric/impl.md) — node JSON templates, configuration blob, bindings |
+| **Publish to Studio Web** | Step 9 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/flow-commands.md](references/flow-commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
 | **Manage variables and expressions** | [references/variables-and-expressions.md](references/variables-and-expressions.md) + [JSON: Variable Operations](references/flow-editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/variables-and-expressions.md — Expression System](references/variables-and-expressions.md) |
@@ -416,6 +417,7 @@ When you finish building or editing a flow, report to the user:
 - **[Variables and Expressions](references/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
   - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
+    - [data-fabric](references/plugins/connector/data-fabric/) — UiPath Data Fabric entities: Query, Create, Update, Delete, Get by ID 
   - [script](references/plugins/script/) — Custom JavaScript logic via Jint ES2020
   - [http](references/plugins/http/) — REST API calls via `core.action.http.v2` (Managed HTTP Request — connector auth or manual mode)
   - [decision](references/plugins/decision/) — Binary if/else branching
