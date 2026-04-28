@@ -28,7 +28,7 @@ uip maestro flow node add <ProjectName>.flow <nodeType> --output json \
 |------|----------|-------------|
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
-| `--position` | No | `x,y` coordinates. Use horizontal layout: increasing `x`, consistent `y` baseline (e.g., `y: 144`). |
+| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow tidy` rewrites positions on save. |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file:

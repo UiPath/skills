@@ -196,7 +196,7 @@ Weights reflect what tests actually catch:
 | Skill shape | Typical N/A dimensions | Effective weights |
 |---|---|---|
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
-| Workflow-heavy, single-path (e.g. `uipath-case-management`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
+| Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
 | Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
 | Planning skills (e.g. `uipath-planner`, `uipath-solution-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-diagnostics`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |

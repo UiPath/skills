@@ -54,6 +54,23 @@ def assert_where_configured(node: dict) -> None:
     if not detail:
         sys.exit("FAIL: connector node is missing inputs.detail")
 
+    if isinstance(detail, str):
+        # `=js:` expression form — the whole detail object is computed at
+        # runtime, so structural fields (queryParameters, savedFilterTrees)
+        # live inside the expression string. Accept iff the where filter
+        # is referenced lexically.
+        if not re.search(r"queryParameters", detail):
+            sys.exit(
+                "FAIL: connector node inputs.detail is a JS expression but "
+                "does not reference 'queryParameters'"
+            )
+        if not re.search(r"\bwhere\b", detail):
+            sys.exit(
+                "FAIL: connector node inputs.detail is a JS expression but "
+                "does not reference a 'where' filter"
+            )
+        return
+
     query_params = detail.get("queryParameters") or {}
     where_value = query_params.get("where")
     if not isinstance(where_value, str) or not where_value.strip():

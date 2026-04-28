@@ -13,7 +13,20 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  Save a summary of what you did to report.json with at minimum:
+  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  inside a solution:
+  1. Create the solution first.
+  2. Create the Flow project inside that solution.
+  3. Link the project to the solution.
+
+  The correct flow-file path is:
+    WeatherAlert/WeatherAlert/WeatherAlert.flow
+
+  The task is NOT complete until `uip maestro flow validate` has passed for
+  that exact file path.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root** with
+  at minimum:
     {
       "project_name": "WeatherAlert",
       "commands_used": ["<list of uip commands you ran>"],

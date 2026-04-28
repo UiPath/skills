@@ -35,6 +35,22 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 
 After scaffolding, add a `uipath.agent.autonomous` node to the flow with `model.source = <ProjectId>`. See [embedding-in-flows.md](embedding-in-flows.md) for the full structure.
 
+### `uip agent guardrails list`
+
+List available guardrail validator definitions with their allowed scopes, stages, and parameters.
+
+```bash
+uip agent guardrails list --output json
+```
+
+Returns an array of validator definitions. Each entry contains:
+- `Validator` — the `validatorType` string to use in `builtInValidator` guardrails
+- `AllowedScopes` — valid values for `selector.scopes`
+- `GuardrailStages` — object mapping each scope to its valid execution stages
+- `Parameters` — array of parameter definitions (`Type`, `Id`, `Required`)
+
+Run this before adding built-in validator guardrails to discover which validators are available and what parameters they accept.
+
 ### `uip agent validate`
 
 Validate agent project structure and schema, then migrate all project files to the latest schema version.
@@ -373,6 +389,7 @@ uip solution deploy run \
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory |
 | Register project | `uip solution project add "<PATH>" --output json` | Solution directory |
+| List guardrail validators | `uip agent guardrails list --output json` | Any directory |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any directory with path |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory |

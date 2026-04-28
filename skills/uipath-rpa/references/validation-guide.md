@@ -2,6 +2,26 @@
 
 Fix-one-thing discipline, the validation iteration loop, smoke test procedure, and RPA-specific fix procedures.
 
+## Pre-generation: List Analyzer Rules
+
+Before creating or editing any workflow file (`.cs` with `[Workflow]`/`[TestCase]`, or `.xaml`), list the enabled Workflow Analyzer rules so generated code satisfies them on the first attempt instead of round-tripping through `get-errors` fixes:
+
+```bash
+uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json
+```
+
+Apply every rule whose `severity` is `error` or `warning` during authoring. `info` rules are advisory.
+
+**When to run:**
+1. Once at the start of every task that will generate or edit a workflow file.
+2. Re-run after adding or updating a NuGet package — package-shipped rules (`MA-*`) change with the dependency set.
+
+**When NOT to run:**
+1. Pure read-only / Q&A tasks that do not produce or modify workflow files.
+2. Edits that only touch non-workflow files (`project.json`, docs, plain `.cs` source files without workflow attributes).
+
+Rule prefixes and full schema: [cli-reference.md § get-analyzer-rules](cli-reference.md).
+
 ## Fix One Thing at a Time
 
 When an error occurs, identify the root cause, fix **only** that one thing, and re-run.
