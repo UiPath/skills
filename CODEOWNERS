@@ -70,3 +70,5 @@
 
 # Access Policy Governance skill (CLI-based ToolUsePolicy management)
 /skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+# Governance Brain (apply compliance packs, diagnose errors, advise on config)
+/skills/uipath-governance/ @nishank-siddharth
