@@ -7,11 +7,13 @@
 1. **Record the window baseline** — list top-level windows via the `uia interact` CLI and note which w-refs and titles are already present. See the skill (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`) for the exact command.
 2. **Run the workflow:**
    ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json   ```
-   If the run fails, [`uia-selector-recovery.md`](uia-selector-recovery.md) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json
+   ```
+   If the run fails with a selector error, follow [`uia-selector-recovery.md`](uia-selector-recovery.md) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **stop the debug session:**
    ```bash
-   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json   ```
+   uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command Stop --output json
+   ```
 4. **List windows again** via the `uia interact` CLI.
 5. **Diff before vs after.** Any window present now that was NOT in the baseline was opened by the workflow. Close each such window via the `uia interact` CLI's window command (see the skill).
 
