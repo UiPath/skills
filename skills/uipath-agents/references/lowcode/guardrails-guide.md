@@ -38,7 +38,7 @@ The `selector` field controls where the guardrail applies.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
-| `matchNames` | string[] | No | Target specific tools by name. Omit to apply to all tools in the selected scopes |
+| `matchNames` | string[] | No | Target specific tools by name. |
 
 ### Scope Definitions
 
@@ -207,10 +207,10 @@ String matching against field values.
 | `startsWith` | Field value starts with the string |
 | `endsWith` | Field value ends with the string |
 | `matchesRegex` | Field value matches the regular expression |
-| `notContains` | Field value does not contain the string |
-| `notEquals` | Field value does not equal the string |
-| `notStartsWith` | Field value does not start with the string |
-| `notEndsWith` | Field value does not end with the string |
+| `doesNotContain` | Field value does not contain the string |
+| `doesNotEqual` | Field value does not equal the string |
+| `doesNotStartWith` | Field value does not start with the string |
+| `doesNotEndWith` | Field value does not end with the string |
 | `isEmpty` | Field value is empty (no `value` needed) |
 | `isNotEmpty` | Field value is not empty (no `value` needed) |
 
@@ -225,7 +225,7 @@ Numeric comparison against field values.
 | `operator` | string | Yes | Comparison operator |
 | `value` | number | Yes | Value to compare against |
 
-**Operators:** `equals`, `notEquals`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`
+**Operators:** `equals`, `doesNotEqual`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`
 
 #### Boolean Rules (`$ruleType: "boolean"`)
 
