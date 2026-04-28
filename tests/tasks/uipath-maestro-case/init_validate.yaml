@@ -1,12 +1,12 @@
 task_id: skill-case-init-validate
 description: >
-  Skill-guided evaluation: agent uses the uipath-maestro-case skill to
+  Integration evaluation: agent uses the uipath-maestro-case skill to
   scaffold a minimal Case Management project inside a solution (manual
   trigger, one stage) and validate it. Either scaffolding path is accepted
   — CLI (`uip solution new` + `uip solution project add`) or the JSON
   strategy (writing project files directly). The test asserts on the
   resulting artifacts and the validate step, not on the scaffolding method.
-tags: [uipath-maestro-case, smoke, init, validate]
+tags: [uipath-maestro-case, integration, init, validate]
 
 agent:
   type: claude-code
