@@ -39,7 +39,14 @@ graph LR
     D --> E[publish]
     E --> F[deploy run]
     F --> G[activate]
+    C --> H[upload]
 ```
+
+Two distinct distribution paths from the same solution source:
+- **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
+- **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
+
+Always run `resource refresh` before either path so the bundled artefact files and `userProfile/<userId>/debug_overwrites.json` reflect the current cloud state.
 
 ---
 

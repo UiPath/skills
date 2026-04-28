@@ -85,7 +85,7 @@ uip solution resource list ./InvoiceAutomation --kind Queue --search "Invoice" -
 
 ## Step 6: Refresh Resources
 
-Re-scan all projects and sync resource declarations from their `bindings_v2.json` files.
+Re-scan all projects and sync resource declarations from their `bindings_v2.json` files. Refresh is the only way to reconcile a solution's local artefacts with cloud entities — run it after adding/importing projects, after editing `bindings_v2.json`, or before any `pack` / `upload`.
 
 ```bash
 uip solution resource refresh ./InvoiceAutomation --output json
@@ -93,12 +93,38 @@ uip solution resource refresh ./InvoiceAutomation --output json
 
 | Field | Meaning |
 |-------|---------|
-| `Created` | New resources added to the solution manifest |
-| `Imported` | Resources matched and imported from Orchestrator |
+| `Created` | New local skeletons created (resource didn't exist in cloud) |
+| `Imported` | Cloud resources imported into the solution (artefact files written + linked) |
 | `Skipped` | Resources already tracked in the solution |
-| `Warnings` | Any issues encountered during sync |
+| `Warnings` | Bindings that couldn't be resolved (logged for follow-up) |
 
-Run after adding/importing projects or editing any project's `bindings_v2.json`.
+### What `refresh` actually does
+
+1. **Discover bindings** — reads `bindings_v2.json` from each project (solution root copy is also read for agent projects).
+2. **Discover cloud GUIDs** — for agent projects, supplements bindings with `<project>/resources/<X>/resource.json` files. These carry a `referenceKey` (GUID) for tools/escalations/contexts that the agent depends on; the GUID is the unambiguous cloud identity (binding names alone aren't unique across folders).
+3. **Reconcile in-solution projects (`.uipx`)** — generates project artefact files (`process/<type>/`, `package/`) from SDK templates. Internal to the solution; no debug overwrite written.
+4. **Sync external references** — for each cloud resource the solution depends on, calls Orchestrator/Apps APIs and writes:
+   - The artefact files under `resources/solution_folder/<kind>/...`
+   - A user-scoped debug overwrite at `userProfile/<userId>/debug_overwrites.json` linking the local skeleton to the cloud entity (key + folder + FQN). Studio Web's runtime needs the FQN populated to resolve "configured folder" lookups.
+
+### App resources
+
+When an agent's escalation channel (`channels[].properties.resourceKey`) points to an Action Center App, refresh imports four artefact files:
+
+```
+resources/solution_folder/app/<subType>/<AppName>.json
+resources/solution_folder/appVersion/<AppVersionTitle>.json
+resources/solution_folder/package/<AppVersionTitle>.json
+resources/solution_folder/process/webApp/<AppName>.json
+```
+
+Plus debug overwrites for the App and its codeBehindProcess. The App's `spec.version` must match the cloud Apps service `semVersion` (current published) — otherwise Studio Web's Health Analyzer flags "App is no longer available".
+
+### Folder disambiguation
+
+When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh prefers the folder declared in the binding's `folderPath`. Without a folder hint and multiple matches, refresh marks the binding unresolved and emits a warning rather than picking one silently.
+
+The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
 ## Step 7: Upload to Studio Web
 
@@ -165,8 +191,22 @@ Adding a project does not automatically sync its resources. The refresh scans al
 
 | Virtualizable | Non-virtualizable |
 |---------------|-------------------|
-| Queue, Asset, Bucket | Process, Connection |
-| Can exist as local placeholders (created at deploy time) | Must reference an existing Orchestrator resource |
+| Queue, Asset, Bucket | Process, Connection, App |
+| Can exist as local placeholders (created at deploy time) | Must reference an existing Orchestrator/IS/Apps resource |
+
+If a non-virtualizable resource isn't found in cloud, refresh emits a warning and the deployment will fail until the resource is provisioned (or the binding is fixed/removed).
+
+### `bindings_v2.json` locations
+
+Studio Web writes bindings in two places depending on project type:
+- `<project>/bindings_v2.json` — for flow / RPA projects
+- Solution root `bindings_v2.json` — added for agent projects (Studio Web mirrors them up)
+
+Refresh reads both. Don't hand-edit these — they're regenerated whenever Studio Web saves the project.
+
+### Per-user debug overwrites
+
+`userProfile/<userId>/debug_overwrites.json` is per-user state (the `userId` is your UiPath user GUID). Refresh writes only your own entries; another user opening the bundled solution would have separate entries. The bundle (`.uis`) carries `userProfile/` for everyone who ran refresh; Studio Web picks the active user's at runtime.
 
 ### `upload` overwrites on matching SolutionId
 
