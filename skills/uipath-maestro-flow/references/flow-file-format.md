@@ -148,7 +148,7 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See [subflow/impl.md](plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Nested subflow definitions are still top-level peers in the root `subflows` map; do NOT place `subflows` inside another subflow definition. Tidy handles each subflow layout pass. See [subflow/impl.md](plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
