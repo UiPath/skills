@@ -52,14 +52,36 @@ def load_sdd() -> str:
 
 
 def check_sections(content: str) -> list[str]:
-    """Verify required sections exist as headings."""
+    """Verify required sections exist as headings.
+
+    Tolerates common heading variants the model may emit:
+      - `## 1. Process Overview`           (canonical template form)
+      - `## §1. Process Overview`          (§N copied from cross-refs)
+      - `## 1. **Process Overview**`       (bold inside heading)
+      - `## **1. Process Overview**`       (bold wrapping the whole title)
+      - `## 1 — Process Overview`          (em-dash / en-dash separator)
+      - `## 1) Process Overview`           (paren separator)
+      - `## 11.1 Process Overview`         (sub-numbered, e.g. Master Project)
+      - `### Process Overview`             (no number at all)
+    """
     failures = []
     for section in REQUIRED_SECTIONS:
-        # Match ## N. Section or # N. Section (with optional number)
-        pattern = rf"^#{1,3}\s+(\d+\.\s+)?{re.escape(section)}"
+        pattern = (
+            rf"^#{{1,4}}\s+"                       # heading marker (h1-h4)
+            rf"\**\s*"                             # optional opening bold
+            rf"(?:§\s*)?"                          # optional § prefix
+            rf"(?:\d+(?:\.\d+)*\s*[.\):—–-]?\s+)?" # optional 1. / 1.1 / 1) / 1 — etc.
+            rf"\**\s*"                             # optional bold before the title
+            rf"{re.escape(section)}"
+        )
         if not re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
             failures.append(f"Missing section: {section}")
     return failures
+
+
+def collect_headings(content: str) -> list[str]:
+    """Return every markdown heading line — used for diagnostics on failure."""
+    return re.findall(r"^#{1,4}\s+.*$", content, re.MULTILINE)
 
 
 def check_line_count(content: str) -> list[str]:
@@ -203,6 +225,10 @@ def main():
         print(f"FAIL: {len(all_failures)} check(s) failed:")
         for f in all_failures:
             print(f"  - {f}")
+        if any(f.startswith("Missing section:") for f in all_failures):
+            print("\nHeadings actually present in the SDD:")
+            for h in collect_headings(content):
+                print(f"  {h}")
         sys.exit(1)
     else:
         print("PASS: All SDD structure checks passed")
