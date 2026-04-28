@@ -55,10 +55,10 @@ After all bindings, verify every bound input has a non-empty `value` and every `
 
 ## Connector Tasks
 
-Connector inputs are set at creation time via `--input-values`, not post-creation. Plain prefixes work directly. Resolve cross-task `var` IDs **before** constructing the JSON:
+Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`:
 
-```bash
---input-values '{"body":{"email":"=vars.employeeEmail","caseRef":"=metadata.ExternalId"}}'
+```json
+{ "body": { "email": "=vars.employeeEmail", "caseRef": "=metadata.ExternalId" } }
 ```
 
 Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-json.md](../../../plugins/tasks/connector-activity/impl-json.md).
