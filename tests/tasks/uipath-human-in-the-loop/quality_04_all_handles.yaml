@@ -5,6 +5,8 @@ description: >
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
+max_turns: 100
+
 sandbox:
   driver: tempdir
   python: {}
