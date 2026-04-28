@@ -12,11 +12,6 @@
       "skillPath": "uipath-agents/SKILL.md"
     },
     {
-      "name": "uipath-case-management",
-      "description": "[PREVIEW] Case Management authoring from sdd.md. Produces tasks.md plan, executes uip maestro case CLI to build caseplan.json. For .xaml→uipath-rpa, .flow→uipath-maestro-flow.",
-      "skillPath": "uipath-case-management/SKILL.md"
-    },
-    {
       "name": "uipath-coded-apps",
       "description": "[PREVIEW] UiPath Coded Web Apps & Coded Action Apps (uip codedapp, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents.",
       "skillPath": "uipath-coded-apps/SKILL.md"
@@ -37,6 +32,11 @@
       "skillPath": "uipath-feedback/SKILL.md"
     },
     {
+      "name": "uipath-gov-access-policy",
+      "description": "[PREVIEW] UiPath access policies (`uip gov access-policy`): govern tool-use when an Actor Process invokes a child Resource. Selection + Actor Process + Actor Identity rules. For product settings→uipath-gov-aops-policy.",
+      "skillPath": "uipath-gov-access-policy/SKILL.md"
+    },
+    {
       "name": "uipath-gov-aops-policy",
       "description": "[PREVIEW] UiPath AOps governance — enforce rules (\"block/restrict/require X\") by mapping intent to a Product policy via `uip gov aops-policy`. Create/update/delete/list/deploy policies to users, groups, tenants. For platform ops→uipath-platform.",
       "skillPath": "uipath-gov-aops-policy/SKILL.md"
@@ -45,6 +45,16 @@
       "name": "uipath-human-in-the-loop",
       "description": "[PREVIEW] Add Human-in-the-Loop node to a Flow, Maestro, or Coded Agent. Triggers on approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs schema, writes JSON directly.",
       "skillPath": "uipath-human-in-the-loop/SKILL.md"
+    },
+    {
+      "name": "uipath-interact",
+      "description": "[PREVIEW] Inspect and interact with live desktop/browser apps -- click buttons, type text, read values, take screenshots, inspect UI state, verify behavior, fill forms, navigate menus, and extract table data from running applications.",
+      "skillPath": "uipath-interact/SKILL.md"
+    },
+    {
+      "name": "uipath-maestro-case",
+      "description": "[PREVIEW] Case Management authoring from sdd.md. Produces tasks.md plan, writes caseplan.json directly via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow.",
+      "skillPath": "uipath-maestro-case/SKILL.md"
     },
     {
       "name": "uipath-maestro-flow",
@@ -72,14 +82,14 @@
       "skillPath": "uipath-rpa-legacy/SKILL.md"
     },
     {
-      "name": "uipath-servo",
-      "description": "[PREVIEW] Interact with live desktop/browser apps — click buttons, type text, read values, take screenshots, inspect UI state, verify behavior, fill forms, navigate menus, and extract table data from running applications via Servo CLI.",
-      "skillPath": "uipath-servo/SKILL.md"
-    },
-    {
       "name": "uipath-solution-design",
       "description": "[PREVIEW] PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), generate implementation-ready SDD. For project setup→uipath-platform.",
       "skillPath": "uipath-solution-design/SKILL.md"
+    },
+    {
+      "name": "uipath-tasks",
+      "description": "[PREVIEW] Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, or user mentions 'Action Center'/'tasks'/'uip tasks'. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding.",
+      "skillPath": "uipath-tasks/SKILL.md"
     },
     {
       "name": "uipath-test",

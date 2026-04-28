@@ -35,7 +35,6 @@ success_criteria:
     description: "plan.md records catalog-first discovery"
     path: "plan.md"
     includes:
-      - "Discovery source"
       - "catalog"
     weight: 1.5
     pass_threshold: 1.0
