@@ -5,9 +5,8 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 ## When to Use
 
 - Create a new low-code agent project (standalone or inline in a flow)
-- Edit `agent.json` — prompts, model, schemas, settings, resources
-- Add tools to an agent: RPA processes, other agents, Integration Service connections
-- Add RAG contexts (semantic index) and escalations (human-in-the-loop)
+- Edit `agent.json` — prompts, model, schemas, settings
+- Add tools, contexts, or escalations as files in `resources/{Name}/resource.json`
 - Wire agent-to-agent calls within a solution or to an external deployed agent
 - Design input/output schemas and sync with `entry-points.json`
 - Validate agent project structure
@@ -15,12 +14,15 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 ## Read These First
 
-Read in this order before doing anything else:
+1. **Always:** [critical-rules.md](critical-rules.md) — the 16 Critical Rules and 13 anti-patterns. Read this every session.
 
-1. **[critical-rules.md](critical-rules.md)** — the 16 Critical Rules and 13 anti-patterns. Always read first.
-2. **[project-lifecycle.md](project-lifecycle.md)** — read when scaffolding a new project, validating, or running solution lifecycle commands. Contains the canonical end-to-end example for a new standalone agent.
-3. **[agent-definition.md](agent-definition.md)** — read when editing `agent.json` (prompts, schemas, model settings) or `entry-points.json`. Covers contentTokens construction.
-4. **[solution-resources.md](solution-resources.md)** — read when working with external tools, integration tools, indexes, or escalations (anything that needs `uip solution resource refresh`). Covers solution architecture, UUID cross-references, bindings, and debug_overwrites.
+Read the rest **on demand**, not upfront:
+
+| Read when... | File |
+|---|---|
+| Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
+| Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
+| External tools / IS tools / index contexts / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
 
 Then pick from the capability registry below.
 
@@ -38,7 +40,6 @@ Then pick from the capability registry below.
 | Add an external Orchestrator process tool (RPA / agent / API / agentic) | [capabilities/process/external.md](capabilities/process/external.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
 | Wire a solution-internal agent tool / multi-agent solution | [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md) | |
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
-| Add an MCP server tool | [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md) | |
 | Add a context (Context Grounding / attachments / DataFabric) | [capabilities/context/context.md](capabilities/context/context.md) | applicable sibling |
 | Add an index-backed context (RAG) | [capabilities/context/index.md](capabilities/context/index.md) | |
 | Add attachments context | [capabilities/context/attachments.md](capabilities/context/attachments.md) | |

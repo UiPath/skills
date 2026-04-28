@@ -245,7 +245,7 @@ For each resource type's full schema, see the relevant capability file:
 - Tool resources (`$resourceType: "tool"`) — [capabilities/process/external.md](capabilities/process/external.md), [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
-- MCP resources (`$resourceType: "mcp"`) — [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md)
+- MCP resources (`$resourceType: "mcp"`) — not yet documented in this skill
 
 ## Common Edits
 
@@ -283,61 +283,6 @@ For each resource type's full schema, see the relevant capability file:
 ### Capability-Adding Edits
 
 For edits that add a new tool, context, or escalation, see the capability registry in [lowcode.md](lowcode.md).
-
-## v1.1.0 agent.json Template
-
-The root `agent.json` does not contain a `resources` field. Resources are defined as separate files in the `resources/` directory.
-
-```jsonc
-{
-  "version": "1.1.0",
-  "type": "lowCode",
-  "projectId": "<uuid>",
-  "settings": {
-    "model": "anthropic.claude-sonnet-4-6",
-    "maxTokens": 16384,
-    "temperature": 0,
-    "engine": "basic-v2",
-    "maxIterations": 25,
-    "mode": "standard"
-  },
-  "metadata": {
-    "storageVersion": "50.0.0",
-    "isConversational": false,
-    "targetRuntime": "pythonAgent",
-    "showProjectCreationExperience": false
-  },
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are a helpful assistant.",
-      "contentTokens": [
-        { "type": "simpleText", "rawString": "You are a helpful assistant." }
-      ]
-    },
-    {
-      "role": "user",
-      "content": "{{input.userInput}}",
-      "contentTokens": [
-        { "type": "variable", "rawString": "input.userInput" }
-      ]
-    }
-  ],
-  "inputSchema": {
-    "type": "object",
-    "required": ["userInput"],
-    "properties": {
-      "userInput": { "type": "string", "description": "User input" }
-    }
-  },
-  "outputSchema": {
-    "type": "object",
-    "properties": {
-      "content": { "type": "string", "description": "Agent response" }
-    }
-  }
-}
-```
 
 ## Auto-Generated Files (do not edit)
 

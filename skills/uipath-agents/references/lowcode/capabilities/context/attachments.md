@@ -43,7 +43,7 @@ None. No solution-level file is produced — attachments are runtime-only.
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12 (lowercase `contextType`).
+`contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
 
 ## References
 

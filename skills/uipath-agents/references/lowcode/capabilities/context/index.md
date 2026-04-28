@@ -15,12 +15,9 @@ For other context variants, see [context.md](context.md).
 
 ## Discovery
 
-### Step 1 — Verify login and solution
+### Step 1 — Verify login and scaffold (if not already done)
 
-```bash
-uip login status --output json
-# If needed: uip solution new "<SOLUTION_NAME>"; cd "<SOLUTION_NAME>"; uip agent init "<AGENT_NAME>"; uip solution project add "<AGENT_NAME>"
-```
+Run `uip login status --output json`. If a solution and agent do not yet exist, scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
 
 ### Step 2 — Discover the index
 
@@ -85,7 +82,7 @@ Check `dataSource.@odata.type`:
 
 **`folderPathPrefix.variant`:** `"static"` (no prefix) or `"argument"` (scope by a folder path provided at runtime).
 
-**Casing matters.** `contextType` and `retrievalMode` values are **lowercase** (`"datafabricentityset"`, `"deeprag"`, `"batchtransform"`). `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import.
+**Casing matters.** All `contextType` and `retrievalMode` values are lowercase. See [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
 
 ## Solution-Level Files
 
@@ -105,7 +102,7 @@ into `bindings_v2.json` at the agent project root. `uip solution resource refres
 1. Calls ECS `GET ecs_/v2/indexes/AllAcrossFolders?$filter=Name eq '<IndexName>'&$expand=dataSource` — resolves the index GUID, folder key, and data source type.
 2. If `dataSource.@odata.type` is not `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource`, warns + skips (other data sources — GoogleDrive, OneDrive, Dropbox, Confluence, Attachments — are not yet wired).
 3. Calls Orchestrator `GET orchestrator_/odata/Buckets?$filter=Name eq '<BucketName>'` with the index's `folderKey` as `X-UIPATH-FolderKey` — gets the bucket `Identifier` GUID.
-4. Registers the bucket as a solution resource via the resource-builder SDK — writes `resources/solution_folder/Bucket/OrchestratorBucket/<BucketName>.json`.
+4. Registers the bucket as a solution resource via the resource-builder SDK — writes `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`.
 5. Hand-writes `resources/solution_folder/index/<IndexName>.json` with `kind: "index"`, `apiVersion: "ecs.uipath.com/v2"`, `dependencies: [{name: "<BucketName>", kind: "bucket"}]`, `spec.storageBucketReference: { name, key }`, `dataSourceType: "StorageBucket"`.
 6. Appends two entries (`kind: "index"` + `kind: "bucket"`) to `userProfile/<userId>/debug_overwrites.json`.
 
@@ -240,7 +237,7 @@ The upload response includes a `Data.DesignerUrl` — open it to verify the cont
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12 (lowercase `contextType` / `retrievalMode`).
+`contextType` and `retrievalMode` values MUST be lowercase — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
 
 ## References
 

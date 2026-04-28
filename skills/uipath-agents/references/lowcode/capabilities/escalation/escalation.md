@@ -13,14 +13,9 @@ The only channel type currently supported end-to-end by `uip solution resource r
 
 ## Discovery
 
-### Step 1 — Create solution and scaffold agent (if not already done)
+### Step 1 — Scaffold solution and agent (if not already done)
 
-```bash
-uip solution new "<SOLUTION_NAME>" --output json
-cd "<SOLUTION_NAME>"
-uip agent init "<AGENT_NAME>" --output json
-uip solution project add "<AGENT_NAME>" --output json
-```
+Scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
 
 ### Step 2 — Find the deployed Action Center app
 

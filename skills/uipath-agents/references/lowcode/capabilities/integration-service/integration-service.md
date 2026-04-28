@@ -2,7 +2,7 @@
 
 Walkthrough for adding a tool that calls an Integration Service connector activity (e.g., Slack Send Message, Web Search, Jira Create Issue). Integration Service tools connect to external apps via pre-built connectors and authenticated connections.
 
-For Orchestrator process tools (RPA / agent / API / agentic process), see [../process/process.md](../process/process.md). For MCP server tools, see [../mcp/mcp.md](../mcp/mcp.md).
+For Orchestrator process tools (RPA / agent / API / agentic process), see [../process/process.md](../process/process.md). MCP server tools are not yet documented in this skill.
 
 ## When to Use
 
@@ -20,68 +20,6 @@ IS tools differ structurally from Orchestrator-based tools:
 - Additional top-level fields: `iconUrl`, `isPreview`
 - No `referenceKey` or `argumentProperties`
 - Solution-level resources use `connection/` (not `package/` + `process/`)
-
-## Discovery
-
-### Step 1 — Find the connector
-
-```bash
-uip is connectors list --output json
-# Or filter: uip is connectors list --filter "slack" --output json
-```
-
-Note the connector `Key` (e.g., `uipath-salesforce-slack`).
-
-### Step 2 — Find a connection
-
-```bash
-uip is connections list "<connector-key>" --output json
-```
-
-Present connections to the user. Recommend the default enabled one but let the user confirm. Note the connection `Id`, `FolderKey`, `Name`. If no connection exists, prompt the user to create one via `uip is connections create "<connector-key>"`.
-
-This command also populates the local cache at `~/.uipath/cache/integrationservice/<connector-key>/connections.json` — used later by `uip solution resource refresh` to generate `debug_overwrites.json`. Running it is mandatory even when you already found the connection via `uip solution resource list --kind Connection`, because refresh reads from the cache this command writes.
-
-### Step 3 — Discover activities
-
-```bash
-uip is activities list "<connector-key>" --output json
-```
-
-Present activities to the user. Note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
-
-### Step 4 — Get connector details (for iconUrl)
-
-```bash
-uip is connectors get "<connector-key>" --output json
-```
-
-Note the connector `Name` and image URL.
-
-### Step 5 — Ping a connection (optional)
-
-```bash
-uip is connections ping "<connection-id>" --output json
-```
-
-Verifies the connection is healthy (`Enabled`). If not, prompt the user to re-authenticate.
-
-### Step 6 — Get activity metadata
-
-```bash
-uip is resources describe "<connector-key>" "<object-name>" \
-  --connection-id "<connection-id>" --operation Create --output json
-```
-
-The response includes a `metadataFile` path. Read that cached JSON file to get:
-- `requestFields` → build `inputSchema` and `properties.parameters` (body fields)
-- `responseFields` → build `outputSchema`
-- `parameters` → query/path parameters (add to `properties.parameters`)
-- `path` → `properties.toolPath`
-- `method` → `properties.method`
-- `description` → tool description
-
-If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned.
 
 ## Agent-Level Resource Shape
 
@@ -305,13 +243,9 @@ Provisions an Integration Service connection as part of the solution. Required w
 
 ## Walkthrough
 
-```bash
-# 1. Create solution and scaffold agent (if not already done)
-uip solution new "<SOLUTION_NAME>" --output json
-cd "<SOLUTION_NAME>"
-uip agent init "<AGENT_NAME>" --output json
-uip solution project add "<AGENT_NAME>" --output json
-```
+### Step 1 — Scaffold solution and agent (if not already done)
+
+Scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
 
 ### Step 2 — Find the connector
 
@@ -362,6 +296,8 @@ The response includes a `metadataFile` path. Read that cached JSON file to get:
 - `path` → `properties.toolPath`
 - `method` → `properties.method`
 - `description` → tool description
+
+If no `--connection-id` is available (e.g., the connector auto-provisions connections), omit it — static metadata will be returned. To verify a connection's health beforehand, run `uip is connections ping "<connection-id>" --output json`.
 
 ### Step 7 — Build and write the tool resource.json
 

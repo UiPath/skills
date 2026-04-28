@@ -483,13 +483,15 @@ Returns, for each match:
 
 ### Step 2: Query `/odata/Releases` for ProcessKey, ProcessVersion, FeedId, and raw .NET schemas (RPA)
 
-Use a shell wrapper to query the Releases API — this keeps the access token inside the shell. Filter by `Key` (the release GUID from Step 1) for an exact match:
+Use a shell wrapper to query the Releases API — this keeps the access token inside the shell. Filter by `ProcessKey` (string, exact match):
 
 ```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=Key%20eq%20<RELEASE_KEY_GUID>&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
+bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
   -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
   -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
 ```
+
+Orchestrator's OData rejects `Key eq <guid>` (Edm.Guid mismatch); filter by `ProcessKey` (string) or `Name` instead. The `Key` GUID from Step 1 is used as `referenceKey` and process-declaration `key`, never as a filter value.
 
 Returns:
 - `ProcessKey` / `ProcessVersion` → build `"<ProcessKey>:<Version>"` package key for Step 3

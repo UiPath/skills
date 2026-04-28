@@ -41,17 +41,7 @@ Determine the agent mode before proceeding:
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
-| Create/build/deploy low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
-| Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/agent-definition.md](references/lowcode/agent-definition.md) | |
-| Add tools, contexts, or escalations | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | applicable `lowcode/capabilities/<name>/` |
-| Discover solution resources (processes/apps/indexes/buckets/connections) | Low-code | [lowcode/project-lifecycle.md](references/lowcode/project-lifecycle.md) § Resource Discovery | |
-| Add Integration Service tool | Low-code | [lowcode/capabilities/integration-service/integration-service.md](references/lowcode/capabilities/integration-service/integration-service.md) | |
-| Add index-backed context (Context Grounding) | Low-code | [lowcode/capabilities/context/index.md](references/lowcode/capabilities/context/index.md) | |
-| Add external process tool (RPA / agent / API / agentic) | Low-code | [lowcode/capabilities/process/external.md](references/lowcode/capabilities/process/external.md) | `lowcode/capabilities/process/solution-files.md` |
-| Add Action Center escalation | Low-code | [lowcode/capabilities/escalation/escalation.md](references/lowcode/capabilities/escalation/escalation.md) | |
-| Embed agent in a flow | Low-code | [lowcode/capabilities/inline-in-flow/inline-in-flow.md](references/lowcode/capabilities/inline-in-flow/inline-in-flow.md) | |
-| Wire multi-agent solution | Low-code | [lowcode/capabilities/process/solution-agent.md](references/lowcode/capabilities/process/solution-agent.md) | |
-| See low-code CLI commands | Low-code | [lowcode/project-lifecycle.md](references/lowcode/project-lifecycle.md) | |
+| Anything low-code (scaffold, edit `agent.json`, add tool/context/escalation, validate, deploy, embed in a flow, multi-agent solutions, CLI reference) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | follow the Capability Registry there |
 
 ## Resources
 

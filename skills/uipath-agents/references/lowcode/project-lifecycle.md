@@ -209,7 +209,7 @@ The canonical happy-path walkthrough for creating, configuring, validating, and 
 which uip || npm root -g 2>/dev/null | xargs -I{} echo {}/uip/bin/uip
 ```
 
-If not found: `npm install -g @uipath/uip`
+If not found: `npm install -g @uipath/cli`
 
 ### Step 1 — Check login status
 
@@ -299,73 +299,25 @@ uip solution deploy run \
   --folder-path "Production"
 ```
 
-## Solution Lifecycle Commands — Full Reference
-
-```bash
-# Create the solution skeleton
-uip solution new "MySolution" --output json
-# → MySolution.uipx + SolutionStorage.json
-
-# Scaffold agent projects (creates ONLY agent project files)
-uip agent init ./MySolution/Agent --model gpt-4o-2024-11-20 --output json
-uip agent init ./MySolution/Agent2 --model gpt-4o-2024-11-20 --output json
-
-# Link agent projects to solution
-uip solution project add ./MySolution/Agent ./MySolution/MySolution.uipx --output json
-uip solution project add ./MySolution/Agent2 ./MySolution/MySolution.uipx --output json
-
-# Upload to Studio Web
-uip solution upload ./MySolution --output json
-
-# Pack to .zip for Orchestrator
-uip solution pack ./MySolution ./output -v "1.0.0" --output json
-# → ./output/MySolution.1.0.0.zip
-
-# Publish to Orchestrator package feed
-uip solution publish ./output/MySolution.1.0.0.zip --output json
-# → { PackageVersionKey, PackageName, PackageVersion }
-
-# Deploy (install + auto-activate); polls until terminal state
-uip solution deploy run \
-  --name "MySolution-Production" \
-  --package-name "MySolution" \
-  --package-version "1.0.0" \
-  --folder-name "MySolution" \
-  --folder-path "Shared" \
-  --output json
-# Terminal states: DeploymentSucceeded, DeploymentFailed, ValidationFailed
-
-# Activate an already-installed deployment
-uip solution deploy activate "MySolution-Production" --output json
-# Terminal states: SuccessfulActivate, FailedActivate
-
-# Uninstall a deployment
-uip solution deploy uninstall "MySolution-Production" --output json
-# Terminal states: SuccessfulUninstall, FailedUninstall
-
-# Check deployment status
-uip solution deploy status <pipeline-deployment-id> --output json
-
-# List deployments
-uip solution deploy list --output json
-```
-
-All solution lifecycle operations are performed via `uip solution` CLI commands. Never call Automation.Solutions REST endpoints directly.
-
 ## Quick Reference
 
-| Task | Command | Run From |
-|------|---------|----------|
-| Create solution | `uip solution new "<NAME>" --output json` | Any directory |
-| Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory |
-| Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory |
-| Register project | `uip solution project add "<PATH>" --output json` | Solution directory |
-| Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any directory with path |
-| Upload to Studio Web | `uip solution upload . --output json` | Solution directory |
-| Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory |
-| Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory |
-| Deploy | `uip solution deploy run --name ... --output json` | Any directory |
-| Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory |
-| Login check | `uip login status --output json` | Any directory |
-| Discover solution resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory |
-| Refresh solution resources | `uip solution resource refresh --output json` | Solution directory |
+All solution lifecycle operations go through `uip solution` CLI. Never call Automation.Solutions REST endpoints directly.
+
+| Task | Command | Run From | Terminal states |
+|------|---------|----------|-----------------|
+| Login check | `uip login status --output json` | Any directory | — |
+| Create solution | `uip solution new "<NAME>" --output json` | Any directory | — |
+| Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
+| Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
+| Register project | `uip solution project add "<PATH>" --output json` | Solution directory | — |
+| Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any with path | — |
+| Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
+| Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
+| Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
+| Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
+| Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |
+| Deploy | `uip solution deploy run --name ... --output json` | Any directory | `DeploymentSucceeded`, `DeploymentFailed`, `ValidationFailed` |
+| Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory | `SuccessfulActivate`, `FailedActivate` |
+| Uninstall | `uip solution deploy uninstall "<NAME>" --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
+| Deploy status | `uip solution deploy status <pipeline-deployment-id> --output json` | Any directory | — |
+| List deployments | `uip solution deploy list --output json` | Any directory | — |

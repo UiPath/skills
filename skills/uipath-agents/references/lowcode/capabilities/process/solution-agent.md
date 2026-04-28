@@ -65,24 +65,17 @@ The tool agent's solution-level files (`package/<ToolAgent>.json` + `process/age
 ## Walkthrough — Multi-Agent Solution
 
 ```bash
-# 1. Create solution
-uip solution new "<SOLUTION_NAME>" --output json
-cd "<SOLUTION_NAME>"
-
-# 2. Scaffold both agents
-uip agent init "ParentAgent" --output json
+# 1. Scaffold the solution per [project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent),
+#    then scaffold a second agent in the same solution:
 uip agent init "ToolAgent" --output json
-
-# 3. Link both to the solution
-uip solution project add "ParentAgent" --output json
 uip solution project add "ToolAgent" --output json
 
-# 4. Create ParentAgent/resources/ToolAgent/resource.json with the tool definition
-# See § Agent-Level Resource Shape above.
-# Use location: "solution" + folderPath: "solution_folder" for solution-internal tools.
-# For external tools, see external.md — also requires solution-level resource files.
+# 2. Create ParentAgent/resources/ToolAgent/resource.json with the tool definition.
+#    See § Agent-Level Resource Shape above.
+#    Use location: "solution" + folderPath: "solution_folder" for solution-internal tools.
+#    For external tools, see external.md — also requires solution-level resource files.
 
-# 5. Validate both (generates .agent-builder/ files and resolves referenceKey)
+# 3. Validate both (generates .agent-builder/ files and resolves referenceKey)
 uip agent validate ParentAgent --output json
 uip agent validate ToolAgent --output json
 ```

@@ -134,27 +134,13 @@ uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
 ## Flow Wiring
 
-After creating the inline agent, add a `uipath.agent.autonomous` node to the flow that references it via `model.source = projectId`.
+After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `model.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
 
-Use the `uip maestro flow node add` command with the `--source` parameter:
+**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 16, this skill does not invoke flow operations directly. Tell the user:
 
-```bash
-uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
-  --source <projectId-uuid> \
-  --label "Autonomous Agent" \
-  --output json
-```
+> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `model.source = <uuid>` and connect the input/success edges.
 
-Then wire edges using:
-
-```bash
-uip maestro flow edge add <FlowName>.flow <sourceNodeId> <agentNodeId> \
-  --source-port success \
-  --target-port input \
-  --output json
-```
-
-Flow wiring details (edge ports, node IDs) are handled by the `uipath-maestro-flow` skill.
+The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
 
 ## Flow Node Structure
 
@@ -250,17 +236,10 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # 5. Validate the inline agent
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
-# 6. Add the inline agent node to the flow
-uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
-  --source <projectId> \
-  --label "Autonomous Agent" \
-  --output json
-
-# 7. Wire edges to connect the agent node
-uip maestro flow edge add <FlowName>.flow <sourceNodeId> <agentNodeId> \
-  --source-port success \
-  --target-port input \
-  --output json
+# 6. Hand off to the uipath-maestro-flow skill to add the
+#    uipath.agent.autonomous node (model.source = <projectId>)
+#    and wire the input/success edges. Do NOT run uip maestro
+#    flow commands from this skill — Critical Rule 16.
 ```
 
 ## What Happens at Pack Time
