@@ -137,7 +137,7 @@ uip gov aops-policy deployment tenant remove <tenantIdentifier> ...
 uip gov aops-policy deployment group list --output json
 uip gov aops-policy deployment group get <groupIdentifier> --output json
 uip gov aops-policy deployment group configure <groupIdentifier> \
-  --group-name <name> --input <path> --output json
+  --group <name> [--source <local|aad|cloud>] --input <path> --output json
 uip gov aops-policy deployment group delete ...
 ```
 
@@ -147,7 +147,7 @@ uip gov aops-policy deployment group delete ...
 uip gov aops-policy deployment user list --output json
 uip gov aops-policy deployment user get <userIdentifier> --output json
 uip gov aops-policy deployment user configure <userIdentifier> \
-  --user-name <name> --input <path> --output json
+  --user <name> [--source <local|aad|cloud>] --input <path> --output json
 uip gov aops-policy deployment user delete ...
 ```
 

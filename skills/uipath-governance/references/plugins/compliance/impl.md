@@ -200,7 +200,7 @@ Skip if `--skip-deploy`. Otherwise, loop over every entry in `deploymentTargets[
    - Read current scope state (`deployment tenant|group|user get <id>`).
    - Merge: `currentAssignments ∪ newAssignments` with new entries winning on conflict. **Every** existing `(product, licenseType)` slot the pack doesn't touch is preserved.
    - Write the merged array to a temp JSON file.
-   - Call `deployment {tenant|group|user} configure <id> --name <targetName> --input <file> --output json`.
+   - Call `deployment {tenant|group|user} configure <id>` with the level-specific name flag (`--tenant-name` / `--group` / `--user`) and `--input <file> --output json`. See [../../policy-assign.md](../../policy-assign.md) for the exact per-level invocation.
 
 3. **Collect results** per target: `{ level, targetId, targetName, status, mergedAssignmentCount, addedAssignmentCount, replacedAssignmentCount, warnings[] }`. Halt on 4xx — remaining cascade targets become `status: "skipped", reason: "prior-failure"`.
 

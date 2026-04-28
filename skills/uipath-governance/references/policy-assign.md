@@ -89,7 +89,8 @@ uip gov aops-policy deployment tenant configure "<targetId>" \
 
 ```bash
 uip gov aops-policy deployment group configure "<targetId>" \
-  --group-name "<targetName>" \
+  --group "<targetName>" \
+  [--source <local|aad|cloud>] \
   --input "$inputFile" \
   --output json
 ```
@@ -98,12 +99,13 @@ uip gov aops-policy deployment group configure "<targetId>" \
 
 ```bash
 uip gov aops-policy deployment user configure "<targetId>" \
-  --user-name "<targetName>" \
+  --user "<targetName>" \
+  [--source <local|aad|cloud>] \
   --input "$inputFile" \
   --output json
 ```
 
-Confirm exact flag names for group/user with `--help` on first run — the tenant variant uses `--tenant-name` and the others should follow the same pattern, but verify before assuming.
+`--source` is the identity-provider source. Optional, defaults to `local`. Pass the value the upstream IDP reports (from `principals-lookup.md`) when the group/user is not local.
 
 ## License-type awareness
 
