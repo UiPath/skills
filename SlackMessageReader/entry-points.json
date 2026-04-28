@@ -1,0 +1,15 @@
+{
+  "entryPoints": [
+    {
+      "filePath": "SlackMessageReader.flow",
+      "type": "Flow",
+      "input": {},
+      "output": {
+        "slackResponse": {
+          "type": "object",
+          "description": "The response from Slack conversations.history API containing the latest message"
+        }
+      }
+    }
+  ]
+}
