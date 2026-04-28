@@ -95,16 +95,18 @@ Both share `resourceKey` = `connection-id`. ID generation: `b` + 8 alphanumeric 
 
 No `operation`, `_label`, or `designTimeMetadata` for activities — the FE only adds `operation` to context for triggers. Activity tasks use `enrichment.operation` inside `essentialConfiguration` only.
 
-| `name` | `value` source | Notes |
-|---|---|---|
-| `connectorKey` | `connector-key` (tasks.md) | |
-| `connection` | `=bindings.<connBindingId>` | Reference — not raw UUID |
-| `resourceKey` | `connection-id` (tasks.md) | |
-| `folderKey` | `=bindings.<folderBindingId>` | Reference — not raw UUID |
-| `objectName` | `object-name` (tasks.md) | |
-| `method` | `Config.httpMethod` (Step 1) | |
-| `path` | `enrichment.path` (Step 2) | From Swagger — includes hub prefix |
-| `metadata` | *(see §3c)* | `type: "json"` with `body` |
+Every context entry MUST include `"type": "string"` (or `"type": "json"` for metadata). Omitting `type` causes Studio Web to fail to render the case.
+
+| `name` | `type` | `value` source | Notes |
+|---|---|---|---|
+| `connectorKey` | `"string"` | `connector-key` (tasks.md) | |
+| `connection` | `"string"` | `=bindings.<connBindingId>` | Reference — not raw UUID |
+| `resourceKey` | `"string"` | `connection-id` (tasks.md) | |
+| `folderKey` | `"string"` | `=bindings.<folderBindingId>` | Reference — not raw UUID |
+| `objectName` | `"string"` | `object-name` (tasks.md) | |
+| `method` | `"string"` | `Config.httpMethod` (Step 1) | |
+| `path` | `"string"` | `enrichment.path` (Step 2) | From Swagger — includes hub prefix |
+| `metadata` | `"json"` | *(see §3c)* | Uses `body` not `value` |
 
 ### 3c. `metadata` context entry body
 
