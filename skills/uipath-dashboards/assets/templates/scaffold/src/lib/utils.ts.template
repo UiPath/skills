@@ -1,0 +1,13 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+/**
+ * Tailwind className merger. This is the ONLY thing in utils.ts.
+ *
+ * Dashboard primitives (zeroFill, groupBy, fetchAll, etc.) live next to the
+ * query hooks that consume them in `src/lib/queries/_shared.ts`, not here —
+ * that's the natural co-location and keeps `cn()` discoverable on its own.
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}

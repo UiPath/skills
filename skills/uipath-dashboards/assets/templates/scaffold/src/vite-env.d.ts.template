@@ -1,0 +1,24 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  /**
+   * UiPath Cloud API base URL — the api subdomain.
+   *   alpha   → https://alpha.api.uipath.com
+   *   staging → https://staging.api.uipath.com
+   *   cloud   → https://api.uipath.com  (no env prefix on prod)
+   */
+  readonly VITE_UIPATH_BASE_URL: string;
+  readonly VITE_UIPATH_ORG_NAME: string;
+  readonly VITE_UIPATH_TENANT_NAME: string;
+  /**
+   * Personal Access Token for local dev only. NEVER set during a
+   * production build — the failBuildIfPatSet plugin in vite.config.ts
+   * aborts the build if it detects this var. The deploy flow temp-moves
+   * .env.local aside before `npm run build` to ensure a clean prod bundle.
+   */
+  readonly VITE_UIPATH_PAT?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

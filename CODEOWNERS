@@ -44,3 +44,6 @@
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+
+# Dashboards-as-Code skill
+/skills/uipath-dashboards/ @nishank-siddharth

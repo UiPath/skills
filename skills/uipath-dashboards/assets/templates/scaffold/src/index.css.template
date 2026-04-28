@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * UiPath-flavored shadcn palette, declared explicitly in HSL space so:
+ *   1. Tailwind alpha modifiers work (bg-card/40, text-destructive/60, ...).
+ *   2. Components have predictable values not subject to third-party stylesheet drift.
+ *   3. Light/dark themes stay first-class via .dark and body.dark selectors.
+ *
+ * Brand sources: UiPath orange #FA4616 (HSL 14 96% 53%), UiPath blue, neutrals
+ * tuned for Apps/Orchestrator/StudioWeb consistency. Chart palette uses the
+ * same brand colors so widgets feel on-brand without per-chart overrides.
+ *
+ * Poppins is loaded via <link> in index.html (Google Fonts CDN). No CSS-side
+ * font import here — keeps cascade simple and avoids flash-of-unstyled-text.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 18% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 18% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 18% 11%;
+    --primary: 14 96% 53%;              /* UiPath orange #FA4616 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 14% 96%;
+    --secondary-foreground: 222 18% 11%;
+    --muted: 213 14% 96%;
+    --muted-foreground: 215 13% 42%;
+    --accent: 213 14% 96%;
+    --accent-foreground: 222 18% 11%;
+    --destructive: 0 78% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 213 14% 90%;
+    --input: 213 14% 90%;
+    --ring: 14 96% 53%;
+    --radius: 0.5rem;
+    --chart-1: 14 96% 53%;              /* UiPath orange — primary series */
+    --chart-2: 213 100% 44%;             /* UiPath blue — secondary series */
+    --chart-3: 142 70% 38%;              /* success green — "up is good" */
+    --chart-4: 38 92% 50%;               /* amber — mid-risk warning */
+    --chart-5: 0 78% 55%;                /* red — "down is good" */
+  }
+  /* Dark palette activates on either ancestor — covers shadcn's html.dark
+     convention and our body.dark theme-toggle convention. */
+  .dark, body.dark {
+    --background: 222 25% 7%;
+    --foreground: 210 14% 96%;
+    --card: 222 22% 10%;
+    --card-foreground: 210 14% 96%;
+    --popover: 222 22% 10%;
+    --popover-foreground: 210 14% 96%;
+    --primary: 14 96% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 18% 17%;
+    --secondary-foreground: 210 14% 96%;
+    --muted: 217 18% 17%;
+    --muted-foreground: 215 13% 65%;
+    --accent: 217 18% 17%;
+    --accent-foreground: 210 14% 96%;
+    --destructive: 0 78% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 18% 19%;
+    --input: 217 18% 19%;
+    --ring: 14 96% 60%;
+    --chart-1: 14 96% 60%;
+    --chart-2: 213 94% 60%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 35 91% 62%;
+    --chart-5: 0 91% 71%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

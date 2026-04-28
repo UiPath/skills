@@ -1,0 +1,49 @@
+import { useEffect, useState } from 'react';
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+import { initSdk } from '@/lib/sdk';
+import { Dashboard } from '@/dashboard/Dashboard';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { ErrorBoundary } from '@/dashboard/chrome/ErrorBoundary';
+
+// Generator appends one import per widget detail view:
+//   import { ActiveAgentsView } from '@/dashboard/views/ActiveAgentsView';
+
+export function App() {
+  const [sdk, setSdk] = useState<UiPath | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    initSdk()
+      .then(setSdk)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Auth failed'));
+  }, []);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background text-destructive p-8">
+        <h1 className="text-lg font-semibold">Authentication failed</h1>
+        <pre className="mt-4 whitespace-pre-wrap">{error}</pre>
+        <p className="mt-4 text-muted-foreground">
+          See <code>SECURITY.md</code> for auth-strategy details.
+        </p>
+      </div>
+    );
+  }
+
+  if (!sdk) return <LoadingState />;
+
+  return (
+    <ErrorBoundary>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<Dashboard sdk={sdk} />} />
+          {/* Generator appends one <Route> per widget:
+              <Route path="/active-agents" element={<ActiveAgentsView sdk={sdk} />} />
+              <Route path="/invocation-volume" element={<InvocationVolumeView sdk={sdk} />} />
+              ... */}
+        </Routes>
+      </HashRouter>
+    </ErrorBoundary>
+  );
+}

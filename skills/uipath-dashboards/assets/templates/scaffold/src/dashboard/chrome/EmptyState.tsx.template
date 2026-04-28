@@ -1,0 +1,13 @@
+import { Card, CardContent } from '@/components/ui/card';
+
+type Props = { message: string };
+
+export function EmptyState({ message }: Props) {
+  return (
+    <Card>
+      <CardContent className="py-10 text-center text-muted-foreground">
+        {message}
+      </CardContent>
+    </Card>
+  );
+}

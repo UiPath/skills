@@ -1,0 +1,70 @@
+import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
+import { LineChart, Line } from 'recharts';
+import { fmtNumber } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * KPI tile with sparkline. Whole card is a <Link> drill-down.
+ *
+ * Substitutions:
+ *   {{IconName}}, {{title}}, {{detailRoute}}, {{seriesKey}}, {{seriesLabel}},
+ *   {{colorIdx}}, {{deltaDirection}}
+ */
+import { {{IconName}} } from 'lucide-react';
+
+const chartConfig = {
+  {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-{{colorIdx}}))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+  if (isLoading) return <LoadingState height="h-28" />;
+  if (error) throw error;
+
+  const value = data?.value ?? 0;
+  const deltaText = data?.deltaText ?? '';
+  const deltaDirection = data?.deltaDirection ?? '{{deltaDirection}}';
+  const points = data?.points ?? [];
+  const Icon: LucideIcon = {{IconName}};
+
+  return (
+    <Link
+      to="{{detailRoute}}"
+      className={cn(
+        'group block rounded-xl border bg-card p-5 transition-all',
+        'hover:border-primary/50 hover:shadow-sm',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      )}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
+        {deltaText && <DeltaBadge direction={deltaDirection} text={deltaText} />}
+      </div>
+      <p className="mb-0.5 text-2xl font-semibold tabular-nums text-foreground">
+        {typeof value === 'number' ? fmtNumber(value) : value}
+      </p>
+      <p className="text-xs text-muted-foreground">{{title}}</p>
+      <ChartContainer config={chartConfig} className="mt-2 h-8 w-full">
+        <LineChart data={points}>
+          <Line
+            type="monotone"
+            dataKey="{{seriesKey}}"
+            stroke="var(--color-{{seriesKey}})"
+            strokeWidth={1.5}
+            dot={false}
+          />
+        </LineChart>
+      </ChartContainer>
+    </Link>
+  );
+}

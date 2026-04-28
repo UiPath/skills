@@ -1,0 +1,73 @@
+export const fmtHour = (iso: string) =>
+  new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: true }).format(new Date(iso));
+
+export const fmtDay = (iso: string) =>
+  new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(iso));
+
+export const fmtWeekday = (iso: string) =>
+  new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(iso));
+
+export const fmtNumber = (n: number) =>
+  new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(n);
+
+export const fmtPercent = (n: number) =>
+  new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(n);
+
+export const fmtDuration = (ms: number) => {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${(ms / 60_000).toFixed(1)}m`;
+};
+
+/**
+ * Relative time formatter — "2h ago", "1d ago", "just now".
+ * Use for recent timestamps in table cells ("when" columns).
+ * For older/absolute references, prefer fmtDay.
+ */
+export function fmtTimeAgo(date: Date | string | number): string {
+  const d = typeof date === 'object' ? date : new Date(date);
+  const secs = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
+  if (secs < 60) return 'just now';
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 14) return `${days}d ago`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 9) return `${weeks}w ago`;
+  const months = Math.round(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.round(days / 365);
+  return `${years}y ago`;
+}
+
+/**
+ * Delta as a signed percent — "+8%", "-15%".
+ * Input is fractional (0.08 = +8%). Sign preserved.
+ */
+export function fmtDeltaPercent(n: number): string {
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${(n * 100).toFixed(1)}%`;
+}
+
+/**
+ * Delta as signed percentage points — "+1.2pp", "-0.6pp".
+ * Use when you're comparing two percentages (e.g., error rate 1.8% vs 2.4% = -0.6pp).
+ * Input is fractional (0.012 = 1.2pp).
+ */
+export function fmtDeltaPp(n: number): string {
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${(n * 100).toFixed(1)}pp`;
+}
+
+/**
+ * Delta as signed absolute number with optional unit — "+3 this week", "-12ms vs last week".
+ * Caller provides `unit` and `context` strings.
+ */
+export function fmtDeltaAbs(n: number, unit = '', context = ''): string {
+  const sign = n >= 0 ? '+' : '';
+  const u = unit ? unit : '';
+  const c = context ? ` ${context}` : '';
+  return `${sign}${fmtNumber(n)}${u}${c}`;
+}

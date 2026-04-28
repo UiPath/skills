@@ -1,0 +1,392 @@
+/**
+ * Shared primitives for SDK-backed query hooks. Co-located with the hooks
+ * that consume them — `src/lib/utils.ts` stays focused on `cn()` only.
+ */
+import { UiPath } from '@uipath/uipath-typescript/core';
+import { Jobs } from '@uipath/uipath-typescript/jobs';
+
+// ───────────────────────────────────────────────────────────────────────────
+// SDK construction
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Build a Jobs client from the auth'd SDK.
+ * The `as never` cast is required because the current TS SDK's `Jobs`
+ * constructor expects an internal `IUiPath` interface that the public
+ * `UiPath` class doesn't formally declare implementing — it does satisfy
+ * the surface at runtime. Known SDK ergonomics issue; revisit when fixed.
+ */
+export const jobsService = (sdk: UiPath) => new Jobs(sdk as never);
+
+// ───────────────────────────────────────────────────────────────────────────
+// Per-service pagination caps — NOT universal
+// ───────────────────────────────────────────────────────────────────────────
+// Per-service pagination caps, with errors on violation:
+//
+//   Orchestrator OData (Jobs, Tasks, Releases, Assets, Queues, Buckets) → 1000
+//   pims (CaseInstances, ProcessInstances)                              → 500
+//     error on violation: "PIMS-100048: pageSize must be less than or equal to 500"
+//   autopilot (Conversations) → 100  (and param is named `limit`, not `pageSize`)
+//     error on violation: "Number must be less than or equal to 100"
+//
+// fetchAll / fetchAllPaginated default to 1000 — callers targeting pims/autopilot
+// MUST pass the per-service cap explicitly.
+export const PAGE_SIZE = {
+  orchestrator: 1000,
+  pims: 500,
+  autopilot: 100,
+} as const;
+
+// ───────────────────────────────────────────────────────────────────────────
+// Pagination — cursor-based, dedup-by-id (see sdk/invariants.md §1, §5)
+// ───────────────────────────────────────────────────────────────────────────
+
+type Paginated<T> = {
+  items?: T[];
+  nextCursor?: { value: string };
+  totalCount?: number;
+};
+
+type ServiceLike<T> = {
+  getAll: (args?: Record<string, unknown>) => Promise<Paginated<T>>;
+};
+
+export async function fetchAll<T extends { id?: string | number }>(
+  service: ServiceLike<T>,
+  args: Record<string, unknown> = {},
+  maxPages = 50,
+  pageSize: number = PAGE_SIZE.orchestrator,
+): Promise<T[]> {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  let cursor: { value: string } | undefined;
+  for (let page = 0; page < maxPages; page++) {
+    const resp = await service.getAll(cursor ? { cursor } : { ...args, pageSize });
+    const batch = resp.items ?? [];
+    for (const row of batch) {
+      const k = String(row.id ?? JSON.stringify(row));
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(row);
+    }
+    cursor = resp.nextCursor;
+    if (!cursor || batch.length === 0) break;
+  }
+  return out;
+}
+
+// Module-level in-flight cache for fetchAllJobs.
+//
+// WHY: Dashboards routinely have 6+ widgets that all want jobs in the same
+// time window (e.g. "agent jobs in last 24h"). Without coordination, every
+// widget mounts in parallel and each kicks off its own paginated jobs
+// fetch — Orchestrator's OData endpoint then 429s, dashboard breaks.
+//
+// HOW: keyed by the filter string. Multiple widgets calling fetchAllJobs
+// with the same filter within the same in-flight window share one network
+// fetch. Cache entry is removed once the Promise settles (success OR
+// failure) so the NEXT call (e.g. after the hour-bucket rolls forward,
+// see isoHoursAgo) starts a fresh fetch.
+//
+// This is in-flight-only — NOT a result cache. We don't memoize the rows
+// across fetches; we only deduplicate concurrent ones.
+const _inFlightJobs = new Map<string, Promise<unknown[]>>();
+
+export const fetchAllJobs = (
+  jobs: ReturnType<typeof jobsService>,
+  filter: string,
+) => {
+  const cached = _inFlightJobs.get(filter);
+  if (cached) return cached as Promise<unknown[]>;
+  const p = fetchAll(jobs as never, { filter }, 50, PAGE_SIZE.orchestrator)
+    .finally(() => {
+      _inFlightJobs.delete(filter);
+    });
+  _inFlightJobs.set(filter, p);
+  return p;
+};
+
+/** For pims services (CaseInstances, ProcessInstances). 500-row cap. */
+export const fetchAllPims = <T extends { id?: string | number }>(
+  service: ServiceLike<T>,
+  args: Record<string, unknown> = {},
+) => fetchAll(service, args, 50, PAGE_SIZE.pims);
+
+/**
+ * For services that return a plain T[] with no pagination at all
+ * (MaestroProcesses.getAll, ProcessIncidents.getAll, Cases.getAll — case
+ * DEFINITIONS, not instances). Attempting cursor pagination against them
+ * yields weird coercion bugs; use this fetcher instead.
+ */
+export async function fetchPlainArray<T>(
+  getAll: () => Promise<T[] | Paginated<T>>,
+): Promise<T[]> {
+  const resp = await getAll();
+  if (Array.isArray(resp)) return resp;
+  return resp.items ?? [];
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Job state predicates
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * States that count as a "fault" for error-rate calculations.
+ *   Faulted   — runtime error; the canonical failure signal
+ *   Stopped   — human-aborted before completion; counts as a non-success
+ *   Cancelled — platform-aborted (quotas / policies); counts as non-success
+ *
+ * NOT included:
+ *   Abandoned — usually means ambiguous cleanup, not a user-visible failure
+ *   Suspended — paused mid-run; expected to resume
+ *
+ * Callers who need a narrower definition (e.g., "only Faulted") should define
+ * their own predicate.
+ */
+export const FAULT_STATES = ['Faulted', 'Stopped', 'Cancelled'] as const;
+
+export type Job = {
+  id?: string;
+  state?: string;
+  processName?: string;
+  packageType?: string;
+  folderName?: string;
+  folderId?: number;
+  createdTime?: string;
+  startTime?: string;
+  endTime?: string;
+  jobError?: unknown;
+};
+
+export const isFaulted = (job: Job) =>
+  typeof job.state === 'string' && (FAULT_STATES as readonly string[]).includes(job.state);
+
+export const isSuccessful = (job: Job) => job.state === 'Successful';
+
+// ───────────────────────────────────────────────────────────────────────────
+// Filter builders (use server-side PascalCase names — see invariants.md §2)
+// ───────────────────────────────────────────────────────────────────────────
+
+export const agentJobsFilter = (sinceIso: string) =>
+  `CreationTime gt ${sinceIso} and ProcessType eq 'Agent'`;
+
+export const faultedJobsFilter = (sinceIso: string) =>
+  `CreationTime gt ${sinceIso} and (State eq 'Faulted' or State eq 'Stopped' or State eq 'Cancelled')`;
+
+// ───────────────────────────────────────────────────────────────────────────
+// Time helpers — bucketed to the hour
+// ───────────────────────────────────────────────────────────────────────────
+//
+// WHY BUCKETED: widget hooks like
+//   useAgentJobs24h(sdk) = useAgentJobs(sdk, isoHoursAgo(24))
+// place the result of isoHoursAgo into useEffect's dependency array. If the
+// function returns a fresh ISO every call (millisecond-precision Date.now()),
+// useEffect's deps change on EVERY render, the fetch refires, and the
+// dashboard pegs itself in a refetch loop until Orchestrator 429s.
+//
+// Bucketing the timestamp to the floor-of-current-hour stabilizes deps: the
+// returned ISO only changes when the wall-clock hour rolls over. For a
+// "last 24h" or "last 7d" view, hour-grain freshness is more than enough.
+//
+// (Combined with the in-flight cache in fetchAllJobs, this gives us:
+// (a) deps stable for an hour → useEffect doesn't refire on re-render,
+// (b) parallel widgets within the same hour share one network fetch.)
+
+const HOUR_MS = 3_600_000;
+
+export const isoHoursAgo = (n: number) => {
+  const nowBucket = Math.floor(Date.now() / HOUR_MS) * HOUR_MS;
+  return new Date(nowBucket - n * HOUR_MS).toISOString();
+};
+
+export const isoDaysAgo = (n: number) => {
+  const nowBucket = Math.floor(Date.now() / HOUR_MS) * HOUR_MS;
+  return new Date(nowBucket - n * 24 * HOUR_MS).toISOString();
+};
+
+export const hourBucket = (d: Date) => {
+  const c = new Date(d);
+  c.setMinutes(0, 0, 0);
+  return c.toISOString();
+};
+
+export const dayBucket = (d: Date) => {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c.toISOString();
+};
+
+export function lastNHourBuckets(n: number): string[] {
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(now.getTime() - (n - 1 - i) * 3600_000);
+    return d.toISOString();
+  });
+}
+
+export function lastNDayBuckets(n: number): string[] {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(now.getTime() - (n - 1 - i) * 86_400_000);
+    return d.toISOString();
+  });
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Aggregation helpers
+// ───────────────────────────────────────────────────────────────────────────
+
+export function groupBy<T, K>(rows: T[], key: (row: T) => K): Map<K, T[]> {
+  const m = new Map<K, T[]>();
+  for (const r of rows) {
+    const k = key(r);
+    const bucket = m.get(k);
+    if (bucket) bucket.push(r);
+    else m.set(k, [r]);
+  }
+  return m;
+}
+
+export function zeroFill<T extends Record<string, unknown>>(
+  rows: T[],
+  keyField: keyof T,
+  buckets: Array<T[keyof T]>,
+  defaults: Record<string, number>,
+): T[] {
+  const idx = new Map(rows.map((r) => [r[keyField], r]));
+  return buckets.map((b) => {
+    const existing = idx.get(b);
+    if (existing) return existing;
+    return { [keyField]: b, ...defaults } as unknown as T;
+  });
+}
+
+export const meanOfNumbers = (nums: number[]): number =>
+  nums.length > 0 ? nums.reduce((s, n) => s + n, 0) / nums.length : 0;
+
+export function percentile(sortedAsc: number[], p: number): number {
+  if (sortedAsc.length === 0) return 0;
+  const idx = Math.min(sortedAsc.length - 1, Math.floor(sortedAsc.length * p));
+  return sortedAsc[idx];
+}
+
+export type Delta = {
+  value: number;
+  /** fractional — 0.08 means "+8%" */
+  pct: number;
+  direction: 'up-good' | 'up-bad' | 'down-good' | 'down-bad' | 'neutral';
+};
+
+/**
+ * Compute delta between current and prior period.
+ * `biasGood` = 'up' means increases are good (e.g., active agents, throughput).
+ * `biasGood` = 'down' means increases are bad (e.g., latency, cost, error count).
+ */
+export function delta(current: number, prior: number, biasGood: 'up' | 'down'): Delta {
+  const diff = current - prior;
+  const pct = prior > 0 ? diff / prior : 0;
+  let direction: Delta['direction'] = 'neutral';
+  if (diff !== 0) {
+    const isUp = diff > 0;
+    direction = isUp
+      ? biasGood === 'up' ? 'up-good' : 'up-bad'
+      : biasGood === 'up' ? 'down-bad' : 'down-good';
+  }
+  return { value: diff, pct, direction };
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Job-specific accessors (so widgets never crash on missing/weird fields)
+// ───────────────────────────────────────────────────────────────────────────
+
+export const agentNameOf = (job: Job): string | undefined =>
+  job.processName ?? undefined;
+
+export const jobDurationMs = (job: Job): number | null => {
+  if (!job.startTime || !job.endTime) return null;
+  const s = new Date(job.startTime).getTime();
+  const e = new Date(job.endTime).getTime();
+  if (!isFinite(s) || !isFinite(e) || e < s) return null;
+  return e - s;
+};
+
+// ───────────────────────────────────────────────────────────────────────────
+// SDK error normalization (CRITICAL — never render raw jobError as React child)
+// ───────────────────────────────────────────────────────────────────────────
+
+// ───────────────────────────────────────────────────────────────────────────
+// Task SLA
+// ───────────────────────────────────────────────────────────────────────────
+// Reality: Tasks don't have a `dueDate` field on the raw response. SLA info
+// lives in `taskSlaDetail: { status, dueTime }` with `status` as one of:
+//
+//   'Overdue'          — past dueTime
+//   'OverdueSoon'      — within a tenant-configured window before dueTime
+//   'OverdueLater'     — further out than the 'OverdueSoon' window
+//   'CompletedInTime'  — closed before dueTime
+//
+// Callers that want a 4-way SLA bucket for KPIs / tables use this helper
+// rather than reading `task.dueDate` (which does not exist).
+
+type TaskSlaStatus = 'Overdue' | 'OverdueSoon' | 'OverdueLater' | 'CompletedInTime' | 'Unknown';
+
+type TaskShape = {
+  taskSlaDetail?: { status?: string; dueTime?: string };
+};
+
+export function taskSlaStatusOf(task: TaskShape): TaskSlaStatus {
+  const s = task.taskSlaDetail?.status;
+  if (s === 'Overdue' || s === 'OverdueSoon' || s === 'OverdueLater' || s === 'CompletedInTime') return s;
+  return 'Unknown';
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Process / Release filtering — client-side for packageType (NOT filterable via OData)
+// ───────────────────────────────────────────────────────────────────────────
+// Releases expose `packageType` on the projected row but NOT as a filterable
+// OData property. `processes.getAll({ filter: "PackageType eq 'Agent'" })`
+// returns 400. Paginate everything, filter in memory.
+
+export const filterAgentsClientSide = <T extends { packageType?: string }>(rows: T[]) =>
+  rows.filter((r) => r.packageType === 'Agent');
+
+export const filterProcessesClientSide = <T extends { packageType?: string }>(rows: T[]) =>
+  rows.filter((r) => r.packageType === 'Process');
+
+type JobErrorShape = {
+  code?: string;
+  title?: string;
+  detail?: string;
+  category?: string;
+  status?: number | string;
+  timestamp?: string;
+};
+
+/**
+ * Flatten a Jobs.jobError field into a human string safe for JSX.
+ * The SDK surfaces errors as objects `{code, title, detail, category, status, timestamp}`
+ * on faulted jobs. Rendering `{row.jobError}` directly crashes React with
+ * "Objects are not valid as a React child". ALWAYS pass through this helper.
+ *
+ * Rule (enforced by incremental-editor): never render SDK error objects as
+ * React children. Use formatJobError() or extract a specific field.
+ */
+export function formatJobError(err: unknown): string {
+  if (err == null) return '';
+  if (typeof err === 'string') return err;
+  if (typeof err === 'object') {
+    const e = err as JobErrorShape;
+    const parts: string[] = [];
+    if (e.title) parts.push(e.title);
+    else if (e.code) parts.push(e.code);
+    if (e.detail && e.detail !== e.title) parts.push(e.detail);
+    if (parts.length > 0) return parts.join(' — ');
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}

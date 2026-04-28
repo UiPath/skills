@@ -1,0 +1,36 @@
+import { Info } from 'lucide-react';
+
+/**
+ * CSS-only info tooltip — pure Tailwind hover/focus-within pattern. No
+ * dependency on shadcn's Tooltip primitive (which has migrated to
+ * @base-ui/react with breaking API changes). Simpler, accessible by
+ * default, and immune to future tooltip-component churn.
+ *
+ * Placement: typically in CardHeader right-side cluster with ViewAllLink.
+ * Message: one clear sentence. Long explanations belong in a detail view.
+ *
+ * Accessibility: aria-label on the trigger button gives screen readers the
+ * same content. role="tooltip" + group-hover/focus-within keeps it visible
+ * while the user is reading it.
+ */
+type Props = { message: string };
+
+export function InfoTooltip({ message }: Props) {
+  return (
+    <span className="relative inline-flex group">
+      <button
+        type="button"
+        aria-label={message}
+        className="inline-flex items-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+      >
+        <Info className="w-4 h-4" />
+      </button>
+      <span
+        role="tooltip"
+        className="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 transition-opacity absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 max-w-xs rounded-md border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md whitespace-normal pointer-events-none"
+      >
+        {message}
+      </span>
+    </span>
+  );
+}

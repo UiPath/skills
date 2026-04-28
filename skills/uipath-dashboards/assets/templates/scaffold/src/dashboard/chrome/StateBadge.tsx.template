@@ -1,0 +1,109 @@
+import { cn } from '@/lib/utils';
+
+/**
+ * Service-aware state pill. UiPath products color-code state/status fields
+ * everywhere (Orchestrator job state, Task priority, Case status, Process
+ * Incident severity), and dashboards must match that visual contract — plain
+ * text "Faulted" / "Successful" cells are dashboard-hygiene anti-patterns.
+ *
+ * The mapping table below covers the canonical state/status enums per service.
+ * For an unmapped value, the badge renders in neutral muted tone — never as
+ * raw text without chrome.
+ *
+ * Generator usage: detail-view.tsx.template auto-applies this to columns
+ * whose key matches a registered (service, field) pair per service-
+ * semantics.md § "Semantic column renderers". Widgets can also use it
+ * inline.
+ */
+type StateBadgeProps = {
+  /** Service name from sdk-manifest.json (e.g., 'Jobs', 'Tasks', 'CaseInstances'). */
+  service: string;
+  /** Field name (e.g., 'state', 'status', 'priority', 'severity'). */
+  field?: string;
+  /** Raw value from the SDK row. */
+  value: string | null | undefined;
+  className?: string;
+};
+
+type Tone = 'success' | 'destructive' | 'warning' | 'info' | 'neutral';
+
+const TONE_CLASSES: Record<Tone, string> = {
+  success: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
+  destructive: 'bg-destructive/10 text-destructive border-destructive/20',
+  warning: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+  info: 'bg-chart-1/10 text-chart-1 border-chart-1/20',
+  neutral: 'bg-muted text-muted-foreground border-border',
+};
+
+/**
+ * Single registry of (service, field, value) → tone mappings. Add entries here
+ * as new state/status fields surface from the SDK. service-semantics.md
+ * documents the registry; this is the runtime implementation.
+ */
+function toneFor(service: string, field: string | undefined, value: string | null | undefined): Tone {
+  if (!value) return 'neutral';
+  const v = String(value).toLowerCase();
+  const f = (field ?? 'state').toLowerCase();
+
+  // Jobs.state / .status
+  if (service === 'Jobs' || service === 'JobInstances') {
+    if (v === 'successful' || v === 'completed') return 'success';
+    if (v === 'faulted' || v === 'stopped' || v === 'killed') return 'destructive';
+    if (v === 'pending' || v === 'resumed' || v === 'suspended') return 'warning';
+    if (v === 'running') return 'info';
+  }
+
+  // Tasks.priority
+  if (service === 'Tasks' && f === 'priority') {
+    if (v === 'high' || v === 'critical') return 'destructive';
+    if (v === 'medium') return 'warning';
+    if (v === 'low') return 'neutral';
+  }
+  // Tasks.status
+  if (service === 'Tasks' && (f === 'status' || f === 'state')) {
+    if (v === 'completed') return 'success';
+    if (v === 'pending' || v === 'unassigned') return 'warning';
+    if (v === 'rejected' || v === 'cancelled') return 'destructive';
+    if (v === 'in progress' || v === 'inprogress') return 'info';
+  }
+
+  // CaseInstances / ProcessInstances state
+  if (service === 'CaseInstances' || service === 'ProcessInstances') {
+    if (v === 'completed' || v === 'closed' || v === 'resolved') return 'success';
+    if (v === 'failed' || v === 'cancelled' || v === 'aborted') return 'destructive';
+    if (v === 'paused' || v === 'suspended' || v === 'waiting') return 'warning';
+    if (v === 'running' || v === 'open' || v === 'inprogress') return 'info';
+  }
+
+  // ProcessIncidents severity (derived from errorCode if no severity field)
+  if (service === 'ProcessIncidents' && f === 'severity') {
+    if (v === 'high' || v === 'critical') return 'destructive';
+    if (v === 'medium') return 'warning';
+    if (v === 'low') return 'neutral';
+    if (v === 'info' || v === 'informational') return 'info';
+  }
+
+  // Generic state field on unmapped service — best-effort by value
+  if (v === 'success' || v === 'successful' || v === 'completed' || v === 'ok') return 'success';
+  if (v === 'fail' || v === 'failed' || v === 'error' || v === 'faulted') return 'destructive';
+  if (v === 'warning' || v === 'pending' || v === 'paused') return 'warning';
+  if (v === 'running' || v === 'active' || v === 'open') return 'info';
+
+  return 'neutral';
+}
+
+export function StateBadge({ service, field, value, className }: StateBadgeProps) {
+  const tone = toneFor(service, field, value);
+  const display = value == null || value === '' ? '—' : String(value);
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
+        TONE_CLASSES[tone],
+        className,
+      )}
+    >
+      {display}
+    </span>
+  );
+}

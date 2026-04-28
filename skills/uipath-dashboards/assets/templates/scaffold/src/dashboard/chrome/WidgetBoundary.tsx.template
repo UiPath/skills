@@ -1,0 +1,86 @@
+import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
+/**
+ * Per-widget error boundary. Wraps a single widget so its throw renders as a
+ * compact inline error card — the rest of the dashboard keeps rendering.
+ *
+ * WHY THIS EXISTS: a top-level <ErrorBoundary> around <Routes> catches the
+ * first widget that throws and replaces the WHOLE PAGE. With 30+ widgets on
+ * a governance dashboard, one missing scope or one SDK shape drift takes
+ * everything dark. This boundary keeps the blast radius to one card.
+ *
+ * Usage (in Dashboard.tsx, per widget):
+ *   <WidgetBoundary label="Active agents">
+ *     <ActiveAgentsKPI sdk={sdk} />
+ *   </WidgetBoundary>
+ *
+ * Keep the top-level <ErrorBoundary> around the router as a last-resort
+ * catch for unrecoverable chrome errors (auth failure, theme boot crash).
+ */
+type Props = {
+  /** Label rendered in the error card — usually the widget's human title. */
+  label?: string;
+  children: ReactNode;
+  /** Layout hint — 'card' (default) or 'inline' for narrow regions. */
+  variant?: 'card' | 'inline';
+};
+
+type State = { hasError: boolean; message: string };
+
+export class WidgetBoundary extends Component<Props, State> {
+  state: State = { hasError: false, message: '' };
+
+  static getDerivedStateFromError(err: Error): State {
+    return { hasError: true, message: err.message };
+  }
+
+  componentDidCatch(err: Error, info: ErrorInfo) {
+    console.warn(
+      `[widget] ${this.props.label ?? 'widget'} threw:`,
+      err.message,
+      info.componentStack,
+    );
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    const content = (
+      <div className="flex items-start gap-3 text-sm">
+        <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-destructive">
+            {this.props.label ?? 'Widget error'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground break-words">
+            {this.state.message || 'unknown error'}
+          </p>
+          <button
+            type="button"
+            className="mt-2 text-xs text-destructive underline hover:opacity-80"
+            onClick={() => this.setState({ hasError: false, message: '' })}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+
+    if (this.props.variant === 'inline') {
+      return (
+        <div className={cn('rounded-lg border border-destructive/30 bg-destructive/5 p-3')}>
+          {content}
+        </div>
+      );
+    }
+
+    return (
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardContent className="p-4">{content}</CardContent>
+      </Card>
+    );
+  }
+}

@@ -1,0 +1,54 @@
+import type { UiPathSDKConfig } from '@uipath/uipath-typescript/core';
+
+/**
+ * Resolve the SDK's auth config.
+ *
+ * Two cases:
+ *   1. LOCAL DEV — VITE_UIPATH_PAT in .env.local. Returned as `secret`.
+ *      The SDK auto-initializes for secret-based auth (no separate
+ *      initialize() call required, but await-ing it is harmless and
+ *      keeps the call site uniform across both branches).
+ *
+ *   2. DEPLOYED inside Action Center — no PAT. We emit OAuth placeholder
+ *      fields (clientId / scope / redirectUri) so the SDK's
+ *      `isCompleteConfig` check passes and the constructor wires up
+ *      `SDKInternalsRegistry`. Without these, every `new Jobs(sdk)` /
+ *      `new Processes(sdk)` throws "Invalid SDK instance. Make sure to
+ *      pass a valid UiPath instance to the service constructor." — no
+ *      widget makes any SDK call.
+ *
+ *      The actual token flow at runtime goes through
+ *      `ActionCenterTokenManager` (auto-instantiated by the SDK's
+ *      `TokenManager` when `isInActionCenter` is true). The OAuth fields
+ *      satisfy the SDK's config-completeness gate; the OAuth code path
+ *      itself is never exercised in this deployment context.
+ *
+ * If neither a PAT nor a sane location.origin exists at runtime, SDK
+ * calls fail at first request — fail loudly, not silently with a blank
+ * secret.
+ */
+export function resolveAuth(): UiPathSDKConfig {
+  const base = {
+    baseUrl: import.meta.env.VITE_UIPATH_BASE_URL as string,
+    orgName: import.meta.env.VITE_UIPATH_ORG_NAME as string,
+    tenantName: import.meta.env.VITE_UIPATH_TENANT_NAME as string,
+  };
+
+  const pat = import.meta.env.VITE_UIPATH_PAT as string | undefined;
+  if (pat && pat.length > 0) {
+    return { ...base, secret: pat } as UiPathSDKConfig;
+  }
+
+  // No PAT — emit OAuth placeholders so SDK's isCompleteConfig passes.
+  // ActionCenterTokenManager handles the actual token at runtime.
+  const redirectUri =
+    typeof window !== 'undefined'
+      ? window.location.origin + window.location.pathname
+      : '';
+  return {
+    ...base,
+    clientId: 'coded-app',
+    scope: 'OR.Default',
+    redirectUri,
+  } as UiPathSDKConfig;
+}
