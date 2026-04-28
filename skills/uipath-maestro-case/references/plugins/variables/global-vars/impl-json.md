@@ -77,21 +77,23 @@ Combines In + Out. Creates input + **one** shared companion IO + trigger mapping
 
 ## Task Output → inputOutputs Wiring
 
-For every task output written, also append to `root.data.uipath.variables.inputOutputs[]`:
+The FE's `CaseManagementVariablesProvider` collects task outputs directly from `task.data.outputs[]` and makes them referenceable via `=vars.<var>`. A separate `root.data.uipath.variables.inputOutputs[]` entry is **not required** for cross-task variable resolution — the FE resolves from task outputs directly.
+
+Write the companion entry to match FE behavior. Safe to omit — resolution works without it:
 
 ```json
-// Task output on the task node
+// Task output on the task node (required)
 { "name": "AnomalyCheck", "var": "anomalyCheck", "id": "anomalyCheck",
   "value": "anomalyCheck", "type": "string",
   "source": "=AnomalyCheck", "target": "=anomalyCheck",
   "elementId": "Stage_intake-tAnomalyXX" }
 
-// Corresponding inputOutputs entry on root
+// Optional root inputOutputs companion (FE sync convention, not required for resolution)
 { "id": "anomalyCheck", "name": "AnomalyCheck",
   "type": "string", "elementId": "Stage_intake-tAnomalyXX" }
 ```
 
-Skip when a `custom: true` output reuses an existing variable from another element.
+Skip the root companion when a `custom: true` output reuses an existing variable from another element.
 
 ## Custom Outputs (`custom: true`)
 

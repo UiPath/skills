@@ -34,6 +34,7 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 10. **HARD STOP between Phase 2a and Phase 2b — unconditional, every run.** Run informational `validate` (no `--mode`), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2a validate errors — unbound inputs/missing conditions/missing SLA expected. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. **On `Publish for review`: print `DesignerUrl` as plain-text output BEFORE invoking the second AskUserQuestion — never embed URL only inside the question body.** Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 11. **Never run `uip maestro case debug` automatically.** Executes case for real — emails, messages, API calls. Explicit user consent only.
 12. **`caseplan.json` mutations: Read + Write/Edit only.** No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save the file. Bash subprocesses OK for stdout-only helpers (e.g., id generation), CLI metadata fetches, validate, debug, and solution scaffold/upload. See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
+13. **Always run `uip solution resource refresh` before `uip solution upload` or `uip maestro case debug`** — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
 
 ## Workflow
 
@@ -57,7 +58,7 @@ Read [references/implementation.md](references/implementation.md) + [references/
 3. Stages (Step 7), edges (Step 8), triggers
 4. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `is describe`); unresolved as skeletons per Rule 7
 5. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-6. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 2b` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+6. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 2b` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
 ### Phase 2b — Detail build
 
@@ -85,6 +86,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 | Wire inputs/outputs + cross-task refs + expression prefixes | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | Configure connector activity / trigger / event | [references/connector-integration.md](references/connector-integration.md) |
 | Skeleton tasks for unresolved resources | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
+| Sync bindings_v2.json + connection resources | [references/bindings-v2-sync.md](references/bindings-v2-sync.md) |
 
 ### Plugin Index
 

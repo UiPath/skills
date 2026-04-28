@@ -100,6 +100,10 @@ Skeleton tasks integrate with the rest of the graph:
 - **Stage-exit `selected-tasks-completed`** rules reference skeleton `TaskId`s normally.
 - **Cross-task variable bindings** are deferred — the user binds them after attaching the real resource.
 
+## Step 9.4 — Regenerate bindings_v2.json (batch)
+
+After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass converts all root bindings accumulated during Step 9 — no per-task regeneration needed.
+
 ## Step 9.5 — Skeleton-mode validate + HARD STOP
 
 End of Phase 2a. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Hard stop](phased-execution.md). This section is a bridge — do NOT duplicate that contract here.
@@ -137,10 +141,13 @@ Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — 
 
 For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
-1. Run `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
-2. Write `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+1. Run `get-connection` (each task runs its own — never reuse) + `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
+2. Write root bindings, `data.context[]`, `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
+3. Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md).
 
 Skip connector tasks that are skeletons (unresolved `typeId` / `connectionId`) — they stay bare.
+
+After all connector tasks are done, **regenerate `bindings_v2.json`** once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass includes both the non-connector bindings from Step 9 and the Connection bindings from this step.
 
 ## Step 9.8 — Bind task input/output values
 

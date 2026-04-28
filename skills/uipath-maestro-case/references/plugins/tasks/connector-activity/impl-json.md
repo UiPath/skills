@@ -20,6 +20,8 @@ The `tasks.md` entry provides:
 
 ## Configuration Workflow
 
+> **Each connector task runs its own `get-connection`.** Even when two tasks share the same `connection-id`, the Entry and Config objects differ between activity and trigger types (`httpMethod`, `activityType`, `inputMetadata`, etc.). Never reuse another task's CLI output.
+
 ### Step 1 — Get connection details + Entry
 
 ```bash
@@ -35,7 +37,9 @@ uip case registry get-connection \
 | `Entry` | `.Data.Entry` (full object) | `{ displayName: "Send Email", svgIconUrl: "icons/...", ... }` |
 | `Config` | `.Data.Config` | `{ connectorKey, objectName, httpMethod, activityType, version }` |
 | `folderKey` | `.Data.Connections[selected].folder.key` | `"87fd6cec-..."` |
+| `folderName` | `.Data.Connections[selected].folder.name` | `"57d6e3b0's workspace"` |
 | `connectorName` | `.Data.Connections[selected].connector.name` | `"Microsoft Outlook 365"` |
+| `connectionName` | `.Data.Connections[selected].name` | `"song.zhao@uipath.com #1"` |
 
 ### Step 2 — Get enriched metadata + outputs
 
@@ -90,6 +94,12 @@ Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](..
 | folderKey | `"folderKey"` | `folderKey` (from Step 1) |
 
 Both share `resourceKey` = `connection-id`. ID generation: `b` + 8 alphanumeric chars.
+
+### 3a-post. IS connection cache
+
+After writing root bindings in § 3a, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `get-connection` failed.
+
+> **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 (after all connector tasks), not per-task. See [bindings-v2-sync.md § When to Run](../../../bindings-v2-sync.md).
 
 ### 3b. `data.context[]`
 
@@ -235,9 +245,9 @@ Append the task to the target stage's `tasks[]` array in its own task set (one t
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| get-connection | Context from tasks.md values only. No bindings — folderKey unknown | `[SKIPPED] get-connection failed — bindings/folderKey omitted` |
-| tasks describe | Context + bindings. No outputs/enrichment. Use Config fallbacks | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
-| All succeed | Full population per §3a-3h | — |
+| get-connection | Context from tasks.md values only. No bindings, no bindings_v2 sync — folderKey unknown | `[SKIPPED] get-connection failed — bindings/folderKey omitted` |
+| tasks describe | Context + bindings + bindings_v2. No outputs/enrichment. Use Config fallbacks | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
+| All succeed | Full population per §3a-3h including bindings_v2 sync | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).
 
@@ -253,6 +263,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 8. `data.bindings[]` is empty `[]`
 9. `data.outputs[]` copied verbatim with `elementId` set
 10. `data.inputs[]` includes `pathParameters` (always), `queryParameters` (when applicable), `file` (when multipart has file), `body`
+11. `bindings_v2.json` `resources` array matches `root.data.uipath.bindings` (unless get-connection failed)
 
 ## What NOT to Do
 

@@ -51,14 +51,14 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` points to an existing variable ID.
+After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, `root.data.uipath.variables.inputOutputs[].id`, or `root.data.uipath.variables.inputs[].id`.
 
 ## Connector Tasks
 
-Connector inputs are set at creation time via `--input-values`, not post-creation. Plain prefixes work directly. Resolve cross-task `var` IDs **before** constructing the JSON:
+Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`:
 
-```bash
---input-values '{"body":{"email":"=vars.employeeEmail","caseRef":"=metadata.ExternalId"}}'
+```json
+{ "body": { "email": "=vars.employeeEmail", "caseRef": "=metadata.ExternalId" } }
 ```
 
 Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000)`). See [connector-activity/impl-json.md](../../../plugins/tasks/connector-activity/impl-json.md).
@@ -73,17 +73,13 @@ Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000
   "value": "validationResult", "source": "=ValidationResult", "target": "=validationResult",
   "type": "string", "elementId": "Stage_submit-tValidate01" }
 
-// 2. Root inputOutputs entry (per global-vars output wiring)
-{ "id": "validationResult", "name": "ValidationResult",
-  "type": "string", "elementId": "Stage_submit-tValidate01" }
-
-// 3. Task B input after binding — value set to =vars.<output.var>
+// 2. Task B input after binding — value set to =vars.<output.var>
 { "name": "in_ValidationResult", "value": "=vars.validationResult",
   "type": "string", "id": "vXr9pQ2mK", "var": "vXr9pQ2mK",
   "elementId": "Stage_submit-tEnrich02" }
 ```
 
-All three must exist: output on Task A, inputOutputs entry on root, bound input on Task B. If any is missing, the error handling below will catch it.
+Two things must exist: output on Task A with a `var` field, and bound input on Task B referencing `=vars.<var>`. Root `inputOutputs` companion entries for task outputs are optional — see [global-vars/impl-json.md § Task Output → inputOutputs Wiring](../global-vars/impl-json.md#task-output--inputoutputs-wiring).
 
 ## Error Handling
 
@@ -94,7 +90,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Skeleton task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `=vars.X` not in `inputs[]`/`outputs[]`/`inputOutputs[]` | `ERROR` | Skip binding |
+| `=vars.X` not in any task `outputs[]` or root `inputOutputs[]` | `ERROR` | Skip binding |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
