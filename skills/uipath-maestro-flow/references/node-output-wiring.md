@@ -61,8 +61,8 @@ Three failure modes observed in agent-generated `.flow` files:
 | **Connector activity nodes** (`uipath.connector.<connector-key>.<activity>`) | `inputs.detail.bodyParameters.*` (all values) | **YES** |
 | | `inputs.detail.queryParameters.*` (all values) | **YES** |
 | | `inputs.detail.pathParameters.*` (all values) | **YES** |
-| **Managed HTTP** (`core.action.http.v2`) | `inputs.detail.bodyParameters.url` / `path` / `query` / `headers` / `body` | **YES** |
-| **Custom HTTP** (`core.action.http`) | `inputs.url` / `headers` / `body` / `queryParams` | **YES** |
+| **Managed HTTP** (`core.action.http.v2`) | `inputs.detail.bodyParameters.url` / `headers` / `query` / `body` — both manual and connector mode store dynamic fields here in the `.flow` JSON, regardless of how the CLI's `--detail` flag accepts them at the top level | **YES** |
+| **Custom HTTP** (`core.action.http`) | `inputs.url` / `headers` / `body` / `queryParams` (deprecated; prefer `core.action.http.v2`) | **YES** |
 | **HTTP branches** | `inputs.branches[].conditionExpression` | **NO** — already JS, do not prefix |
 | **Decision** (`core.logic.decision`) | `inputs.expression` | **NO** — already JS, do not prefix |
 | **Switch** (`core.logic.switch`) | `inputs.cases[].expression` | **NO** — already JS, do not prefix |
