@@ -52,6 +52,10 @@
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 
+# IXP 
+/skills/uipath-maestro-flow/references/plugins/ixp/ @UiPath/communications-mining
+/tests/tasks/uipath-maestro-flow/single_node/ixp/ @UiPath/communications-mining
+
 # Legacy RPA skill
 /skills/uipath-rpa-legacy/ @roalexandru
 
