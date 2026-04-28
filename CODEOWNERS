@@ -44,3 +44,6 @@
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+
+# Governance Brain (apply compliance packs, diagnose errors, advise on config)
+/skills/uipath-governance/ @nishank-siddharth
