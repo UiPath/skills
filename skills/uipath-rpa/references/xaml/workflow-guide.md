@@ -191,6 +191,12 @@ Edit: file_path=... old_string=<exact text> new_string=<modified text>
 
 **Critical:** `old_string` must match exactly and be unique. Include surrounding context if needed.
 
+For structural edits (activity insertions, arguments, variables, namespace
+imports, assembly references, or anchor-based changes), follow
+[semantic-editing-guide.md](semantic-editing-guide.md) before applying the diff.
+Choose the operation first, collect existing prefixes/IdRefs/anchors, apply the
+smallest targeted replacement, then validate.
+
 ---
 
 ## Phase 3: Validate & Fix Loop
@@ -247,3 +253,4 @@ For detailed procedures, see [../validation-guide.md](../validation-guide.md).
 - **NEVER** use connector activities without checking connection existence
 - **NEVER** ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
 - **NEVER** generate full XAML from scratch without using `get-default-activity-xaml` as a starting point
+- **NEVER** perform broad text rewrites for structural edits; use the semantic editing guide and preserve prefixes, IdRefs, and anchors
