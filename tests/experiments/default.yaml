@@ -17,5 +17,24 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
+  # Qualitative LLM review runs after the evaluation loop and its verdict
+  # renders in task.html's reviewer card. Backed by ANTHROPIC_API_KEY in
+  # CI (see smoke workflows); silently degrades when no reviewer backend
+  # is available.
+  llm_reviewer:
+    enabled: true
+    model: claude-sonnet-4-6
+    temperature: 0.0
+    max_tokens: 600
+    prompt: |
+      Evaluate whether the agent produced correct, minimal output for this
+      UiPath skill task and adhered to the skill's Critical Rules. Focus on:
+      - Did the agent pick and invoke the right skill / commands?
+      - Are the required files present with the expected shape and content?
+      - Were the uip CLI flags used correctly (e.g. --output json)?
+      Reply terse, developer-style: what's wrong, if anything, and what to
+      fix next. Score 1.0 if the work is correct and complete, lower
+      otherwise.
+
 variants:
   - variant_id: default

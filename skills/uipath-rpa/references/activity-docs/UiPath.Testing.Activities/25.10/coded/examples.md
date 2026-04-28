@@ -2,7 +2,7 @@
 
 Examples using the `testing` service from `UiPath.Testing.Activities` package.
 
-**Required package:** `"UiPath.Testing.Activities": "[25.10.0]"`
+**Required package:** `"UiPath.Testing.Activities": "[25.10.2]"`
 
 ---
 
