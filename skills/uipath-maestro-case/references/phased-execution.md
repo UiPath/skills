@@ -82,9 +82,14 @@ Use **AskUserQuestion** with three options:
 
 ### On `Publish for review`
 
-1. Run `uip solution upload "<SolutionDir>" --output json`.
-2. Print `DesignerUrl` from the response.
-3. **AskUserQuestion** (second prompt): `Continue to phase 2b` / `Abort`.
+1. Run `uip solution upload "<SolutionDir>" --output json`. Capture full response.
+2. Parse `DesignerUrl` from response.
+3. **MUST emit DesignerUrl as plain-text output to the user BEFORE invoking AskUserQuestion**, on its own line:
+   `Skeleton published. Review at: <DesignerUrl>`
+   Never bundle the URL only into the question body — some renderers display the question before the surrounding prose, leaving the user without the URL until after they answer.
+4. Only after the URL line has been emitted, invoke **AskUserQuestion** (second prompt): `Continue to phase 2b` / `Abort`.
+
+If `DesignerUrl` is missing from the response, dump the full upload response to `tasks/upload-response.json`, print that path, and continue to the prompt — the user can recover the URL from the file.
 
 Do not warn the user about Studio Web edits being overwritten. Phase 2b's final Step 13 prompt re-publishes the completed case, which overwrites any volatile review-time edits with the final local state. The user can compare Studio Web state before and after Phase 2b to spot any edits they want to preserve.
 
