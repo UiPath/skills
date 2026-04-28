@@ -85,17 +85,3 @@ Skip this step if the user already provided a meaningful name in Step 1.
 ## Step 4 — Label All Documents
 
 Follow the [Label Documents Guide](label-documents.md) to label every document in the project.
-
-## Step 5 — Show Metrics
-
-After all documents are labelled, wait ~2 minutes for re-evaluation, then:
-
-```bash
-uip ixp project metrics <project-name> --output json
-```
-
-Check that `ModelVersion` has advanced. If not, wait another 60 seconds and retry.
-
-Report project score, quality rating, and per-field F1/precision/recall. Highlight fields with F1 < 0.5 that need prompt improvement.
-
-If the user wants to improve scores, follow the [Improve Prompts Guide](improve-prompts.md).

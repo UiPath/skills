@@ -54,7 +54,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 | `uip ixp project taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
 | `uip ixp project metrics <project-name> --output json` | Get validation metrics — `FieldGroups[]` (per-group) and `Fields[]` (per-field F1/Precision/Recall) |
 | `uip ixp project configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13), `--preprocessing` (none/table_mini/table), `--attribution` (model/rules), `--temperature`, `--top-p`, `--seed`, `--frequency-penalty` |
-| `uip ixp project update-prompts <project-name> --fields <json> [--groups <json>] --output json` | Update field and/or field group instructions. `--fields` (required): per-field updates `[{"name":"Invoice Number","instructions":"..."}]`. `--groups` (optional): label_def updates `[{"name":"Invoice","instructions":"..."}]`. `--label-instructions` (optional): project-level prompt. |
+| `uip ixp project update-prompts <project-name> --fields <json> [--groups <json>] --output json` | Update field and/or field group instructions. `--fields` (required): per-field updates `[{"name":"Invoice Number","instructions":"..."}]`. `--groups` (optional): label_def updates `[{"name":"Invoice","instructions":"..."}]`. |
 | `uip ixp project list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (Version, Pinned, TrainedTime) and `Tags[]` (Name, Version). |
 | `uip ixp project publish <project-name> --output json` | Publish (pin) the latest model version. Options: `--model-version <N>` (specific version, default: latest), `--description "<text>"` (set description), `--tag <name>` (assign tag: "live", "staging", or custom). |
 
@@ -79,7 +79,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 |---------|-------|-----|
 | Metrics don't change after update-prompts | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
-| Field instructions conflict with label_def instructions | `update-prompts --fields` only edits moon_form per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. |
+| Field instructions conflict with label_def instructions | `update-prompts --fields` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. |
 
 ## Instruction Quality Standards
 
