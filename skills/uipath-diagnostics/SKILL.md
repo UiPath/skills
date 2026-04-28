@@ -5,18 +5,30 @@ description: Use when diagnosing UiPath platform & process issues - failed jobs,
 
 # UiPath Diagnostic Agent
 
-You orchestrate a hypothesis-driven diagnostic investigation. You manage the loop, delegate to sub-agents, and present findings to the user.
+You orchestrate a hypothesis-driven diagnostic investigation. You manage the loop, delegate work to diagnostic roles, and present findings to the user.
 
-All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md`.
+All diagnostic roles (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md`.
+
+## 0. Execution Adapter
+
+This skill is written as a multi-role investigation. Use the best execution primitive your host provides:
+
+| If your host supports... | Do this |
+|---|---|
+| Background sub-agents / tasks | Spawn the named role file (`agents/triage.md`, `agents/hypothesis-tester.md`, etc.) and pass the working directory plus `.investigation/` path. |
+| Resuming or messaging an existing task | Continue that same role with the user's answer when a role wrote `needs_input.json`. |
+| No sub-agents or no resume primitive | Run the named role sequentially in the current agent context. Read `agents/shared.md` plus the role file, perform only that role's work, write the same `.investigation/` files, then return to the orchestrator loop. |
+
+When the instructions below say **spawn**, **re-spawn**, or **continue**, apply this adapter. Preserve the role boundary either way: the orchestrator decides phase transitions; triage gathers initial data; generators generate; testers test; presenters format the final answer.
 
 ## 1. Critical Rules
 
-1. **You NEVER run uip commands, query endpoints, or read reference docs.** Sub-agents do everything else.
-2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester.
+1. **As orchestrator, you NEVER run uip commands, query endpoints, or read reference docs.** Delegate to the relevant diagnostic role. In single-agent hosts, enter that role via the Execution Adapter before doing role work.
+2. **You NEVER confirm/eliminate hypotheses in orchestrator mode.** Always delegate to the tester role (sub-agent or sequential role run).
 3. **You own all decisions:** phase transitions, root cause vs. symptom classification, when to present resolution.
-4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them.
-5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
-6. **When you need user input, use `AskUserQuestion`.** Do not proceed until the user responds.
+4. **You present the presenter's output verbatim.** The presenter role formats all findings — you do not rewrite or reformat them.
+5. **Test hypotheses one at a time, sequentially.** Never run testers in parallel.
+6. **When you need user input, ask with the host's normal user-input mechanism.** Do not proceed until the user responds.
 
 ## 2. Investigation State
 
@@ -50,29 +62,29 @@ Update `state.json.phase` at each transition:
 
 ### TRIAGE
 
-Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify or constrain scope.
+Run the triage role (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify or constrain scope.
 
-**Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, re-spawn or ask for clarification.
+**Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, run triage again or ask for clarification.
 
-**Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.scope.domain`.
+**Scope check:** Run the scope-checker role (`agents/scope-checker.md`). If missing domains found, ask the user whether to expand. If approved, run triage again with the missing domains. If unnecessary domains found, remove them from `state.json.scope.domain`.
 
-**User input:** If triage returned `needs_user_input: true`, present the question via `AskUserQuestion`. When the user responds, **continue the existing triage agent** via `SendMessage` (the agent result includes the agent ID) — do NOT spawn a fresh triage agent. A fresh spawn re-reads all instructions and re-discovers everything from scratch. Only re-spawn triage if the user's answer fundamentally changes scope (different product, different entity type).
+**User input:** If triage returned `needs_user_input: true`, present the question to the user. When the user responds, continue the same triage role if the host supports task resume. If it does not, start a new triage role run with the user's answer plus the existing `.investigation/` files as context; do NOT rediscover from scratch unless the answer fundamentally changes scope (different product, different entity type).
 
 **Never skip the hypothesis loop.** Even if the triage evidence looks conclusive, always proceed through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root causes. A "clear" error message may have a non-obvious underlying cause that only the hypothesis-test cycle would surface.
 
 ### GENERATE HYPOTHESES
 
-Spawn hypothesis generator (`agents/hypothesis-generator.md`). Behavior varies by confidence level per the table in shared.md.
+Run the hypothesis-generator role (`agents/hypothesis-generator.md`). Behavior varies by confidence level per the table in shared.md.
 
 ### TEST HYPOTHESES
 
-Test every hypothesis sequentially (highest confidence first). For each, spawn hypothesis tester (`agents/hypothesis-tester.md`).
+Test every hypothesis sequentially (highest confidence first). For each, run the hypothesis-tester role (`agents/hypothesis-tester.md`).
 
 ### EVALUATE (after each test)
 
-**Validate:** Reject and re-spawn if `elimination_checks` are missing/incomplete. For medium/low, also reject if `execution_path_traced` has unverified downstream entities.
+**Validate:** Reject and re-run the tester role if `elimination_checks` are missing/incomplete. For medium/low, also reject if `execution_path_traced` has unverified downstream entities.
 
-**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker. Otherwise skip.
+**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, run the scope-checker role. Otherwise skip.
 
 **Classify and act:**
 - **Eliminated / Inconclusive** → record, test next hypothesis
@@ -82,7 +94,7 @@ Test every hypothesis sequentially (highest confidence first). For each, spawn h
 
 ### NEW DATA FROM USER
 
-If the user provides new data at any point (error messages, job IDs, logs, screenshots), go back to TRIAGE. Re-spawn triage with the new data. Do NOT patch new data into an in-progress investigation.
+If the user provides new data at any point (error messages, job IDs, logs, screenshots), go back to TRIAGE. Run triage again with the new data. Do NOT patch new data into an in-progress investigation.
 
 ## 5. Evaluation Rules
 
@@ -95,7 +107,7 @@ If the user provides new data at any point (error messages, job IDs, logs, scree
 
 ## 6. Resolution
 
-Spawn the presenter agent (`agents/presenter.md`) with the confirmed hypothesis IDs and **all domains from `state.json.scope.domain`**. Do NOT pre-filter domains based on your judgment of their relevance to the causal chain — the presenter classifies root cause vs. propagation domains and searches docsai for each. Excluding a domain prevents the presenter from finding error handling patterns it was designed to surface.
+Run the presenter role (`agents/presenter.md`) with the confirmed hypothesis IDs and **all domains from `state.json.scope.domain`**. Do NOT pre-filter domains based on your judgment of their relevance to the causal chain — the presenter classifies root cause vs. propagation domains and searches docsai for each. Excluding a domain prevents the presenter from finding error handling patterns it was designed to surface.
 
 The presenter:
 - Assembles fixes from playbook `## Resolution` sections across all domains in the causal chain
@@ -107,12 +119,12 @@ Present the presenter's output verbatim to the user. After presenting:
 
 **If root cause found** — offer to help implement the fix or clean up `.investigation/`.
 
-**If no root cause found** — use `AskUserQuestion` to offer: provide more data (re-triage), or open a UiPath support ticket with the evidence gathered.
+**If no root cause found** — ask the user whether they want to provide more data (re-triage) or open a UiPath support ticket with the evidence gathered.
 
 ## 7. Operational Details
 
-**Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions, context, working directory path, and the absolute path to `.investigation/` in the prompt.
+**Role execution:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to run that role. Include full instructions, context, working directory path, and the absolute path to `.investigation/` in the role prompt or local role context.
 
-**Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
+**Progress:** Track progress with the host's normal task/checklist mechanism or concise phase updates. Tailor subjects to the user's problem.
 
 **Cleanup:** After investigation completes, offer to delete or preserve `.investigation/`.
