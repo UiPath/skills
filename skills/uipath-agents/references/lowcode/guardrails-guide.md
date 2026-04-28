@@ -315,10 +315,10 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 | Validator | Scopes | Stages | Supported Actions |
 |-----------|--------|--------|-------------------|
-| `pii_detection` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate, Filter |
+| `pii_detection` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
 | `prompt_injection` | Llm | Pre only | Block, Log, Escalate |
 | `harmful_content` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
-| `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate, Filter |
+| `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
 | `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
 
 Run `uip agent guardrails list --output json` to get the authoritative list. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
@@ -727,5 +727,5 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 11. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
 12. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Always configure guardrails at the agent.json root `guardrails` array.
 13. **Do not reuse UUIDs across guardrails** — each guardrail needs a unique `id`.
-14. **Do not use `filter` action on validators that don't support it** — only `pii_detection` and `intellectual_property` support `"$actionType": "filter"`. The `prompt_injection`, `user_prompt_attacks`, and `harmful_content` validators support only `block`, `log`, and `escalate`.
+14. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on custom rules (`customWordRule`). All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 15. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
