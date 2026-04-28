@@ -87,6 +87,79 @@ When migration was applied, `Status` becomes `"Valid — migrated to 50.0.0"` an
 { "Result": "Failure", "Code": "LowCodeAgentValidationFailed", "Message": "Validation failed with N error(s)", "Data": { "Errors": ["agent.json → settings.mode: missing — must be \"standard\" or \"advanced\""] } }
 ```
 
+### `uip agent input add` / `uip agent output add`
+
+Add schema fields through the CLI instead of hand-editing both `agent.json` and `entry-points.json`.
+
+```bash
+uip agent input add "<name>" --type string --description "<description>" --path "<AGENT_PATH>" --output json
+uip agent output add "<name>" --type string --description "<description>" --path "<AGENT_PATH>" --output json
+```
+
+Supported types: `string`, `number`, `boolean`, `object`, `array`.
+
+### `uip agent tool add`
+
+Add agent tool resources through the CLI. The command writes the resource files the validator consumes.
+
+```bash
+# Orchestrator process / agent / API workflow / process orchestration
+uip agent tool add "<TOOL_NAME>" \
+  --type "<process|agent|apiWorkflow|processOrchestration>" \
+  --process-name "<PROCESS_OR_AGENT_NAME>" \
+  --folder-path "<FOLDER_PATH>" \
+  --path "<AGENT_PATH>" \
+  --output json
+
+# Integration Service tool
+uip agent tool add "<TOOL_NAME>" \
+  --type integration \
+  --connector "<CONNECTOR_KEY>" \
+  --object-name "<OBJECT_NAME>" \
+  --connection-id "<CONNECTION_ID>" \
+  --path "<AGENT_PATH>" \
+  --output json
+```
+
+Related commands:
+
+```bash
+uip agent tool discover --connector "<CONNECTOR_KEY>" --output json
+uip agent tool connect "<TOOL_NAME>" --connection-id "<CONNECTION_ID>" --path "<AGENT_PATH>" --output json
+uip agent tool list --path "<AGENT_PATH>" --output json
+uip agent tool remove "<TOOL_NAME>" --path "<AGENT_PATH>" --output json
+```
+
+### `uip agent context add`
+
+Add Context Grounding index resources through the CLI.
+
+```bash
+uip agent context add "<CONTEXT_NAME>" \
+  --index "<INDEX_NAME>" \
+  --retrieval-mode semantic \
+  --threshold 0 \
+  --result-count 3 \
+  --path "<AGENT_PATH>" \
+  --output json
+```
+
+Retrieval modes: `semantic`, `structured`, `deeprag`, `batchtransform`.
+
+### `uip agent escalation add`
+
+Add escalation resources through the CLI.
+
+```bash
+uip agent escalation add "<ESCALATION_NAME>" \
+  --description "<description>" \
+  --type Escalation \
+  --path "<AGENT_PATH>" \
+  --output json
+```
+
+Supported types: `Escalation`, `VsEscalation`.
+
 ## Solution Commands
 
 ### Create Solution
@@ -228,7 +301,7 @@ Handled kinds and what refresh produces:
 
 ## Per-Kind Rich Metadata
 
-`resource list` identifies resources; these APIs fill in the authoring data the skill needs to write `resource.json`.
+`resource list` identifies resources; use the metadata below to choose arguments for `uip agent tool add`, `uip agent context add`, or `uip agent escalation add`. If a required field is not exposed by the relevant CLI command, capture that gap from `--help --output json` before using the advanced JSON reference.
 
 ### Orchestrator Processes — argument schemas
 

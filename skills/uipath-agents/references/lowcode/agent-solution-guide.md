@@ -334,7 +334,7 @@ Provisions an Integration Service connection as part of the solution.
 
 Provisions an Integration Service connection as part of the solution. Required when an agent has an integration tool (`type: "integration"`). One per connector — all tools using the same connector share this connection resource.
 
-**Auto-generated:** Do not create these files manually. After creating the agent-level integration tool `resource.json`, run `uip agent validate` (generates `bindings_v2.json`) then `uip solution resource refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
+**Auto-generated:** Do not create these files manually. After adding the integration tool with `uip agent tool add`, run `uip agent validate` (generates `bindings_v2.json`) then `uip solution resource refresh` (auto-generates connection resources and `debug_overwrites.json` from `bindings_v2.json`).
 
 **Cross-reference:** The connection resource `key` matches the `solutionProperties.resourceKey` in integration tool resources that use this connector.
 
@@ -576,9 +576,22 @@ uip solution deploy list --output json
 
 When Agent A needs to call Agent B in the same solution:
 
-### In Agent A's `resources/Agent B/resource.json`:
+### Add Agent B as a tool in Agent A
 
-Create a tool resource file at `AgentA/resources/Agent B/resource.json`:
+Use the CLI first:
+
+```bash
+uip agent tool add "Agent B" \
+  --type agent \
+  --process-name "Agent B" \
+  --folder-path "solution_folder" \
+  --path "AgentA" \
+  --output json
+```
+
+Then run `uip agent validate "AgentA" --output json`. The command writes the tool resource under `AgentA/resources/Agent B/`, and validation resolves `referenceKey` from the solution process definitions.
+
+The generated resource shape is:
 
 ```jsonc
 {
@@ -616,7 +629,7 @@ Create a tool resource file at `AgentA/resources/Agent B/resource.json`:
 }
 ```
 
-**Do NOT add resources inline in Agent A's root `agent.json`.** The `validate` command reads `resources/{name}/resource.json` files, resolves `referenceKey` from the solution process definitions, and generates `.agent-builder/agent.json` with resources inlined.
+**Do NOT add resources inline in Agent A's root `agent.json`.** Use `uip agent tool add` for supported tool resources. The `validate` command reads `resources/{name}/resource.json` files, resolves `referenceKey`, and generates `.agent-builder/agent.json` with resources inlined.
 
 ### Generated `.agent-builder/bindings.json` (by validate):
 

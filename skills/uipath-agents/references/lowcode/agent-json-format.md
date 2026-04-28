@@ -231,7 +231,11 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 
 ## Resources (v1.1.0)
 
-Resources are defined as individual files in the agent project's `resources/` directory — **not** inline in the root `agent.json`. Each resource gets its own subdirectory:
+For normal authoring, create resources with the CLI commands documented in [cli-commands.md](cli-commands.md): `uip agent tool add`, `uip agent context add`, and `uip agent escalation add`. Those commands write the resource files that `uip agent validate` consumes.
+
+The JSON shapes below are reference material for review, troubleshooting, and advanced fields that the CLI does not expose yet. Do not hand-author `resource.json` for a supported CLI path.
+
+Resources are stored as individual files in the agent project's `resources/` directory — **not** inline in the root `agent.json`. Each resource gets its own subdirectory:
 
 ```
 Agent/
@@ -449,7 +453,7 @@ The activity metadata's `fields.<name>.enum` already has this exact shape — co
 
 ### Solution-level resources for Integration Service tools
 
-Solution-level connection resources and `debug_overwrites.json` are **auto-generated** — do not create them manually. After creating the agent-level `resource.json`:
+Solution-level connection resources and `debug_overwrites.json` are **auto-generated** — do not create them manually. After adding the tool with `uip agent tool add`:
 
 1. Run `uip agent validate` — generates `bindings_v2.json` in the agent project directory
 2. Run `uip solution resource refresh` from the solution root — auto-generates `resources/solution_folder/connection/{connectorKey}/` files and `debug_overwrites.json`
@@ -458,19 +462,19 @@ Solution-level connection resources and `debug_overwrites.json` are **auto-gener
 
 | `location` | `folderPath` | Meaning |
 |------------|-------------|---------|
-| `"solution"` | `"solution_folder"` | Resource is another project within this same solution. Creating this agent-level resource.json is sufficient. |
-| `"external"` | `"solution_folder"` | Resource is already deployed in Orchestrator, outside this solution. Write the agent-level resource.json, then run `uip agent validate` followed by `uip solution resource refresh` — refresh auto-generates the solution-level process declaration, package declaration, and `debug_overwrites.json` entry. |
+| `"solution"` | `"solution_folder"` | Resource is another project within this same solution. `uip agent tool add` is sufficient for supported tool types. |
+| `"external"` | `"solution_folder"` | Resource is already deployed in Orchestrator, outside this solution. Run `uip agent tool add`, then `uip agent validate` followed by `uip solution resource refresh` — refresh auto-generates the solution-level process declaration, package declaration, and `debug_overwrites.json` entry when supported. |
 
-**For `"location": "external"`:** one agent-level `resource.json` is all you author. The canonical flow is:
+**For `"location": "external"`:** use the CLI to create the agent-level resource. The canonical flow is:
 
-1. Create `resources/{ToolName}/resource.json` inside the agent project (see § Tool resource above).
+1. Run `uip agent tool add "<ToolName>" --type "<process|agent|apiWorkflow|processOrchestration>" --process-name "<PROCESS_OR_AGENT_NAME>" --folder-path "solution_folder" --path "<AGENT_PATH>" --output json`.
 2. `uip agent validate` — emits `bindings_v2.json` with a `resource: "process"` binding.
 3. `uip solution resource refresh` — for each Process binding, looks up the matching release in RCS and writes:
    - `resources/solution_folder/process/<type_dir>/<ToolName>.json` (declaration)
    - `resources/solution_folder/package/<PackageName>.json` (package declaration)
    - an entry in `userProfile/<userId>/debug_overwrites.json` with real `folderKey`, `folderFullyQualifiedName`, and `folderPath` so Studio Web can resolve the process at runtime. An entry missing `folderFullyQualifiedName` or `folderPath` will cause "Could not find process for tool '<name>'" — refresh from current uipcli populates both correctly.
 
-Hand-authoring the templates below is only needed when refresh cannot run (offline, missing RCS match, custom deployment).
+Hand-authoring the templates below is only needed when the CLI or refresh cannot cover the scenario (offline, missing RCS match, custom deployment, or a missing CLI flag documented from `uip agent tool add --help --output json`).
 
 **Type-to-directory mapping for process declarations:**
 

@@ -43,7 +43,7 @@ Determine the agent mode before proceeding:
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
 | Create/build/deploy low-code agent | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) | `lowcode/agent-json-format.md` |
 | Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Common Edits | `lowcode/agent-json-format.md` |
-| Add tools, contexts, or escalations | Low-code | [lowcode/agent-json-format.md](references/lowcode/agent-json-format.md) § Resources | |
+| Add tools, contexts, or escalations | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) § Agent Commands | [lowcode/agent-json-format.md](references/lowcode/agent-json-format.md) § Resources for advanced JSON reference |
 | Discover solution resources (processes/apps/indexes/buckets/connections) | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) § Solution Resource Discovery | |
 | Add Integration Service tool | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 5 | `lowcode/agent-json-format.md` § Integration Service tool |
 | Add index-backed context (Context Grounding) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 7 | `lowcode/agent-json-format.md` § Context resource |
