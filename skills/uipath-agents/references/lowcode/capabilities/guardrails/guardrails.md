@@ -122,20 +122,20 @@ Removes specific fields from the input/output.
 
 Creates a task in an Action Center app for human review.
 
+**Minimum required from user:** app name + recipient (email is the simplest form).
+
 ```json
 "action": {
   "$actionType": "escalate",
   "app": {
-    "id": "<APP_ID>",
-    "name": "<APP_NAME>",
+    "id": "<Key from uip solution resource list --kind App>",
+    "name": "<app Name>",
     "version": "0",
-    "folderId": "<FOLDER_ID>",
     "folderName": "solution_folder"
   },
   "recipient": {
-    "type": 1,
-    "value": "<USER_GUID>",
-    "displayName": "<DISPLAY_NAME>"
+    "type": 3,
+    "value": "reviewer@example.com"
   }
 }
 ```
@@ -143,16 +143,405 @@ Creates a task in an Action Center app for human review.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `$actionType` | `"escalate"` | Yes | Action discriminator |
-| `app` | object | Yes | Action Center app reference |
-| `app.id` | string | Yes | Deployed app ID |
-| `app.name` | string | Yes | Deployed app name |
-| `app.version` | string | Yes | App version (e.g., `"0"`) |
-| `app.folderId` | string | Yes | Folder ID where the app is deployed |
-| `app.folderName` | string | Yes | Use `"solution_folder"` |
-| `recipient` | object | Yes | Task recipient |
-| `recipient.type` | integer | Yes | Recipient type: 1=UserId, 2=GroupId, 3=Email, 4=AssetUserEmail, 5=StaticGroupName, 6=AssetGroupName |
-| `recipient.value` | string | Yes | User GUID, group GUID, or email address (depends on `type`) |
-| `recipient.displayName` | string | No | Human-readable name (omit for `type: 3` email recipients) |
+| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
+| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
+| `app.version` | string | Yes | Always `"0"` for solution-embedded apps |
+| `app.folderId` | string | No | Omit — not needed when `folderName` is `"solution_folder"` |
+| `app.folderName` | string | Yes | Always `"solution_folder"` — the app is embedded in the solution package, not referenced remotely |
+| `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
+| `recipient.type` | integer | Yes | Recipient kind — see shapes below: 1=UserId, 2=GroupId, 3=UserEmail, 4=AssetUserEmail, 5=GroupName, 6=AssetGroupName, 7=ArgumentEmail, 8=ArgumentGroupName |
+| `recipient.*` | — | — | Remaining fields depend on `type` — see recipient shapes below |
+
+**Recipient shapes (discriminated by `type`):**
+
+**Types 1, 2, 3, 5 — StandardRecipient** (UserId, GroupId, UserEmail, GroupName)
+
+```json
+{ "type": 3, "value": "reviewer@example.com" }
+{ "type": 1, "value": "<user-guid>", "displayName": "Jane Doe" }
+{ "type": 5, "value": "ReviewersGroup" }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `value` | Yes | User GUID (type 1), group GUID (type 2), email address (type 3), group name string (type 5) |
+| `displayName` | No | Recommended for type 1 (UserId); omit for types 2, 3, 5 |
+
+**Types 4, 6 — AssetRecipient** (AssetUserEmail, AssetGroupName)
+
+Resolves the email or group name from an Orchestrator asset at runtime — do NOT use `value`.
+
+```json
+{ "type": 4, "assetName": "ReviewerEmailAsset", "folderPath": "Shared" }
+{ "type": 6, "assetName": "ReviewGroupAsset", "folderPath": "Shared/MyTeam" }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `assetName` | Yes | Name of the Orchestrator asset holding the email or group value |
+| `folderPath` | Yes | Fully-qualified Orchestrator folder path where the asset lives |
+
+**Types 7, 8 — ArgumentRecipient** (ArgumentEmail, ArgumentGroupName)
+
+Resolves the email or group name from the agent's input arguments at runtime — do NOT use `value`.
+
+```json
+{ "type": 7, "argumentName": "user.email" }
+{ "type": 8, "argumentName": "team.groupName" }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `argumentName` | Yes | Dot-path into the agent's input schema (e.g. `"user.email"`, `"reviewerEmail"`) |
+
+Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or asset lookup. Studio Web uses `type: 1` (UserId) when a user is selected via the UI.
+
+#### Adding an escalation guardrail — step-by-step
+
+**Step 1 — Discover the app** using `--kind App` from the solution root:
+
+```bash
+uip solution resource list --kind App --source remote --search "<app-name>" --output json
+```
+
+Filter results for `"Type": "Workflow Action"` (skip `"VB Action"` and `"Coded"` entries — they cannot back a guardrail escalation). Use only these two fields from the result:
+
+| Resource list field | Maps to `app.*` field |
+|---------------------|----------------------|
+| `Key` | `app.id` |
+| `Name` | `app.name` |
+
+`app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — do not use the `Folder` or `FolderKey` values from this command for those fields.
+
+If multiple entries share the same name in different folders, prefer the `"Shared"` entry.
+
+Example entry:
+```json
+{
+  "Source": "Remote",
+  "Key": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+  "Name": "Tool.Guardrail.Escalation.Action.App",
+  "Kind": "app",
+  "Type": "Workflow Action",
+  "Folder": "Shared",
+  "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19"
+}
+```
+
+> **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
+
+**Step 2 — Construct and add the escalate action** in `agent.json`'s `guardrails` array:
+
+```json
+{
+  "$actionType": "escalate",
+  "app": {
+    "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+    "name": "Tool.Guardrail.Escalation.Action.App",
+    "version": "0",
+    "folderName": "solution_folder"
+  },
+  "recipient": { "type": 3, "value": "reviewer@example.com" }
+}
+```
+
+`app.id` and `app.name` come from Step 1. `app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — these are fixed values for solution-embedded apps.
+
+**Step 3 — Generate 4 solution-level resource files and update `debug_overwrites.json`**
+
+Four files must exist under `resources/solution_folder/` for the solution to embed the escalation app. `resource refresh` does NOT generate these — collect the required data from the Apps API and Orchestrator, then write the files.
+
+**3a — Get code-behind process key and shared folder key**
+
+```bash
+uip solution resource list --kind Process --source remote --search "<app-name>" --output json
+```
+
+Find the entry with `"Type": "webApp"`. Record its `Key` (**process key**, e.g. `5a02b925-...`) and `FolderKey` (**shared folder key**).
+
+> The Apps API (Step 3b) also returns both values via `codeBehindProcessKey` and `deploymentFolder.key` — Step 3a serves as a verification step and can be skipped if Step 3b is run first.
+
+**3b — Get systemName, deployVersion, appVersionKey, feedId, semVersion from the Apps API**
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-apps?state=deployed&pageNumber=0&limit=100" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"' | python3 -c "
+import sys, json
+for a in json.load(sys.stdin).get('deployed', []):
+    if a.get('id') == '<APP_KEY>':
+        print('systemName:', a['systemName'])
+        print('deployVersion:', a['deployVersion'])
+        print('semVersion:', a['semVersion'])
+        print('feedId:', a.get('feed', {}).get('feedId', ''))
+        print('codeBehindProcessKey:', a['codeBehindProcessKey'])
+"
+```
+
+Then get the **appVersionKey** (the `id` of the matching version):
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/models/<SYSTEM_NAME>/publish/versions?pageNumber=0&limit=10" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"' | python3 -c "
+import sys, json
+for v in json.load(sys.stdin):
+    if v.get('deployVersion') == <DEPLOY_VERSION>:
+        print('appVersionKey:', v['id'])
+"
+```
+
+**3c — Get action schema JSON (save to a variable)**
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-schema?appSystemName=<SYSTEM_NAME>&version=<DEPLOY_VERSION>" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"'
+```
+
+Store the raw JSON response — it becomes `spec.actionSchema` (compact-serialized string) in the app resource file.
+
+**3d — Get entry point data from Orchestrator**
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a && curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='"'"'<APP_NAME>:<PACKAGE_VERSION>'"'"')?feedId=<FEED_ID>" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-UIPATH-FolderKey: <SHARED_FOLDER_KEY>"'
+```
+
+From the first entry: `UniqueId` → **entryPointId**, `Id` → **entryPointOrchestratorId**, `InputArguments` → **inputArgumentsSchemaV2**, `OutputArguments` → **outputArgumentsSchemaV2**.
+
+**3e — Write the 4 resource files**
+
+Variables used below:
+- `APP_KEY` — from `resource list --kind App` → `Key`
+- `APP_NAME` — from `resource list --kind App` → `Name`
+- `APP_VERSION_KEY` — from Step 3b (appVersionKey, prefixed `ID...`)
+- `SYSTEM_NAME` — from Step 3b (systemName, prefixed `ID...`)
+- `DEPLOY_VERSION` — integer from Step 3b (e.g. `3`)
+- `SEM_VERSION` — from Step 3b (e.g. `"1.0.0"`)
+- `FEED_ID` — from Step 3b
+- `PROCESS_KEY` — from Step 3a (code-behind Key)
+- `SHARED_FOLDER_KEY` — from Step 3a (FolderKey)
+- `ENTRY_POINT_ID` — from Step 3d (UniqueId)
+- `ENTRY_POINT_ORC_ID` — from Step 3d (Id integer)
+- `ACTION_SCHEMA_STR` — compact JSON string from Step 3c
+
+**`resources/solution_folder/app/workflow Action/<APP_NAME>.json`:**
+
+```json
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<APP_NAME>",
+    "kind": "app",
+    "type": "workflow Action",
+    "apiVersion": "apps.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      { "name": "<APP_NAME>", "kind": "appVersion" },
+      { "name": "<APP_NAME>", "kind": "Process" }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [{ "fullyQualifiedName": "solution_folder" }],
+    "spec": {
+      "name": "<APP_NAME>",
+      "description": "<app description>",
+      "type": "Regular",
+      "appSystemName": "<SYSTEM_NAME>",
+      "version": "<DEPLOY_VERSION>.0.0",
+      "appVersionRef": { "name": "<APP_NAME>", "key": "<APP_VERSION_KEY>" },
+      "actionSchema": "<ACTION_SCHEMA_STR>",
+      "codeBehindProcess": { "name": "<APP_NAME>", "key": "<PROCESS_KEY>", "folderKey": "" }
+    },
+    "locks": [],
+    "key": "<APP_KEY>"
+  }
+}
+```
+
+**`resources/solution_folder/appVersion/<APP_NAME>.json`:**
+
+```json
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<APP_NAME>",
+    "kind": "appVersion",
+    "apiVersion": "apps.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [
+      {
+        "name": "<APP_NAME>.uiapp",
+        "kind": "appVersion",
+        "url": "<UIPATH_URL>/<ORG_ID>/apps_/default/api/v1/default/models/<SYSTEM_NAME>/publish/versions/<DEPLOY_VERSION>/package",
+        "key": "<APP_VERSION_KEY>"
+      }
+    ],
+    "folders": [],
+    "spec": {
+      "name": "<APP_NAME>",
+      "description": "",
+      "appSystemName": "<SYSTEM_NAME>",
+      "version": "<DEPLOY_VERSION>.0.0",
+      "isAppPublic": false,
+      "expressionLanguage": "VB",
+      "publishNote": null,
+      "uiappFile": "<APP_VERSION_KEY>",
+      "uiappFileName": "<APP_NAME>.uiapp",
+      "isUnifiedProject": true,
+      "packageKey": "<APP_NAME>:<SEM_VERSION>"
+    },
+    "locks": [],
+    "key": "<APP_VERSION_KEY>"
+  }
+}
+```
+
+**`resources/solution_folder/package/<APP_NAME>.json`:**
+
+```json
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<APP_NAME>",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [
+      {
+        "name": "<APP_NAME>.<SEM_VERSION>.nupkg",
+        "kind": "Package",
+        "version": "<SEM_VERSION>",
+        "url": "<UIPATH_URL>/<ORG_ID>/<TENANT_ID>/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.DownloadPackage(key='<APP_NAME>:<SEM_VERSION>')?feedId=<FEED_ID>",
+        "key": "<APP_NAME>_<SEM_VERSION>"
+      }
+    ],
+    "folders": [{ "fullyQualifiedName": "solution_folder" }],
+    "spec": {
+      "fileName": "<APP_NAME>.<SEM_VERSION>.nupkg",
+      "fileReference": "<APP_NAME>_<SEM_VERSION>",
+      "name": "<APP_NAME>",
+      "description": null
+    },
+    "locks": [],
+    "key": "<APP_NAME>:<SEM_VERSION>"
+  }
+}
+```
+
+**`resources/solution_folder/process/webApp/<APP_NAME>.json`:**
+
+```json
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<APP_NAME>",
+    "kind": "process",
+    "type": "webApp",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [{ "name": "<APP_NAME>", "kind": "Package" }],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [{ "fullyQualifiedName": "solution_folder" }],
+    "spec": {
+      "type": "WebApp",
+      "description": "<app description>",
+      "jobPriority": "Normal",
+      "hiddenForAttendedUser": true,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "jobRecording": "Disabled",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "robotSize": "Automatic",
+      "name": "<APP_NAME>",
+      "package": { "name": "<APP_NAME>", "key": "<APP_NAME>:<SEM_VERSION>" },
+      "packageName": "<APP_NAME>",
+      "packageVersion": "<SEM_VERSION>",
+      "entryPointUniqueId": "<ENTRY_POINT_ID>",
+      "entryPointName": "Main.xaml",
+      "inputArguments": null,
+      "inputArgumentsSchema": null,
+      "outputArgumentsSchema": null,
+      "inputArgumentsSchemaV2": "<INPUT_ARGS_SCHEMA_JSON_STRING>",
+      "outputArgumentsSchemaV2": "",
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": "<ENTRY_POINTS_JSON_STRING>",
+      "connections": null,
+      "tags": []
+    },
+    "locks": [],
+    "key": "<PROCESS_KEY>"
+  }
+}
+```
+
+`entryPoints` is a JSON string of an array: `[{"UniqueId":"<ENTRY_POINT_ID>","Path":"Main.xaml","DisplayName":null,"InputArguments":"<INPUT_ARGS_SCHEMA_JSON_STRING>","OutputArguments":"","Type":3,"TargetRuntime":null,"ContentRoot":null,"DataVariation":null,"Id":<ENTRY_POINT_ORC_ID>}]`
+
+**3f — Add 2 entries to `debug_overwrites.json`** (under the tenant key):
+
+```json
+{
+  "solutionResourceKey": "<APP_KEY>",
+  "reprovisioningIndex": 0,
+  "overwrite": {
+    "resourceKey": "<APP_KEY>",
+    "resourceName": "<APP_NAME>",
+    "folderKey": "<SHARED_FOLDER_KEY>",
+    "folderFullyQualifiedName": "Shared",
+    "folderPath": "<SHARED_FOLDER_KEY>",
+    "type": "Reference",
+    "kind": "app"
+  }
+},
+{
+  "solutionResourceKey": "<PROCESS_KEY>",
+  "reprovisioningIndex": 0,
+  "overwrite": {
+    "resourceKey": "<PROCESS_KEY>",
+    "resourceName": "<APP_NAME>",
+    "folderKey": "<SHARED_FOLDER_KEY>",
+    "folderFullyQualifiedName": "Shared",
+    "folderPath": "<SHARED_FOLDER_KEY>",
+    "type": "Reference",
+    "kind": "process"
+  }
+}
+```
+
+**Step 4 — Validate:**
+
+```bash
+uip agent validate <AgentName> --output json
+```
+
+**Step 5 — Upload:**
+
+```bash
+uip solution upload . --output json
+```
 
 ## Custom Guardrails (`$guardrailType: "custom"`)
 
@@ -570,52 +959,58 @@ PostExecution only — no content exists to check before the LLM generates outpu
 
 ### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
 
-Escalates to an Action Center app when PII is detected in output from specific tools. Uses `matchNames` to target multiple tools and `escalate` action with `app` and `recipient`.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id` and `app.name` come from `uip solution resource list --kind App`. `app.version` and `app.folderName` are fixed values.
 
 ```json
 {
   "$guardrailType": "builtInValidator",
   "id": "10d5f10f-da4e-4bf1-ace9-dd880e33d9be",
-  "name": "PII detection guardrail",
-  "description": "This validator is designed to detect personally identifiable information using Azure Cognitive Services",
+  "name": "PII Email and Credit Card escalation guardrail",
+  "description": "Detects email addresses and credit card numbers, escalates to human review",
   "validatorType": "pii_detection",
   "validatorParameters": [
     {
       "$parameterType": "enum-list",
       "id": "entities",
-      "value": ["Email", "Address"]
+      "value": ["Email", "CreditCardNumber"]
     },
     {
       "$parameterType": "map-enum",
       "id": "entityThresholds",
       "value": {
         "Email": 0.5,
-        "Address": 0.5
+        "CreditCardNumber": 0.5
       }
     }
   ],
   "action": {
     "$actionType": "escalate",
     "app": {
-      "id": "<APP_ID>",
-      "name": "<APP_NAME>",
+      "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+      "name": "Tool.Guardrail.Escalation.Action.App",
       "version": "0",
-      "folderId": "<FOLDER_ID>",
       "folderName": "solution_folder"
     },
     "recipient": {
-      "type": 1,
-      "value": "<USER_GUID>",
-      "displayName": "<DISPLAY_NAME>"
+      "type": 3,
+      "value": "reviewer@example.com"
     }
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Tool"],
-    "matchNames": ["Agent", "Get Instance Details"]
+    "scopes": ["Agent"]
   }
 }
 ```
+
+Where each `app.*` field comes from:
+
+| `app.*` field | Source |
+|---|---|
+| `id` | `resource list --kind App` → `Key` |
+| `name` | `resource list --kind App` → `Name` |
+| `version` | Fixed: always `"0"` |
+| `folderName` | Fixed: always `"solution_folder"` |
 
 ### Example 9: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
@@ -820,3 +1215,7 @@ Confirm the guardrails appear in the validated output without errors.
 - [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, manual `guardrail.policies` edits, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
+9. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
+10. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
+11. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
+

@@ -224,10 +224,10 @@ Handled kinds and what refresh produces:
 | `Process` (RPA / agent / api / processOrchestration) | `process/<type>/<Name>.json` + `package/<Name>.json` | `kind: "process"` — populated with real `folderKey`, `folderFullyQualifiedName`, `folderPath` from the RCS match |
 | `Connection` | `connection/<connectorKey>/<Name>.json` | `kind: "connection"` |
 | `Index` (StorageBucket-backed only) | `index/<Name>.json` + `bucket/orchestratorBucket/<BucketName>.json` | two entries (`kind: "index"` + `kind: "bucket"`) |
-| `App` (Action Center `workflow Action`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | two entries (`kind: "app"` + `kind: "process"` for the backing code-behind) |
+| `App` (guardrail escalation via `agent.json`) | `app/workflow Action/<Name>.json` + `appVersion/<Name>.json` + `package/<Name>.json` + `process/webApp/<Name>.json` | two entries (`kind: "app"` + `kind: "process"`) |
 
 **Not yet handled by refresh** (write the solution-level files and `debug_overwrites.json` entries by hand — see [capabilities/process/solution-files.md](capabilities/process/solution-files.md)):
 
 - `Index` bindings whose data source is not `StorageBucket` (GoogleDrive / OneDrive / Dropbox / Confluence / Attachments) — refresh emits a warning and skips.
 - `Context` resources of type `datafabricentityset`.
-- Escalation channels other than `actionCenter` (`email`, `slack`, `teams`) — these are recognised by the runtime but refresh does not auto-generate any solution-level files for them.
+- Escalation resource channels of type `email`, `slack`, or `teams` — recognised by the runtime but refresh does not auto-generate solution-level files for these channel types.
