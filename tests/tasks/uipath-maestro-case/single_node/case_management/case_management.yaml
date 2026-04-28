@@ -1,0 +1,65 @@
+task_id: skill-case-single-case-management
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  nested case (CASE_MANAGEMENT). The referenced sub-case will not be
+  published on the tenant, so the agent must emit a skeleton task per the
+  skill's unresolved-resource rules — `type: "case-management"` set, no
+  fabricated taskTypeId. Validates the resulting case file.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management project named "ParentCaseSingle" from the
+  sdd.md below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # ParentCaseSingle
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Delegate (regular stage) — receives the case after the manual trigger.
+
+  ## Tasks
+  - Spawn ChildOnboardingCase (CASE_MANAGEMENT) — placed in the "Delegate" stage.
+    - Case Reference: Name "ChildOnboardingCase", Folder "Shared".
+    - Component type: CASE_MANAGEMENT.
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass. If the referenced sub-case isn't in the registry, leave
+  it as a skeleton task (`<UNRESOLVED>`) per the skill's rules — do NOT
+  fabricate a taskTypeId. Finish with `uip maestro case validate` passing
+  on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate $(find . -type f -name caseplan.json -not -path '*/.venv/*' | head -n 1) --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan contains a task with type=\"case-management\""
+    command: "python3 $TASK_DIR/check_case_management_case.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
