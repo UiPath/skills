@@ -130,7 +130,9 @@ Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
 
 ### Focus Activity for Debugging
 
-When `get-errors` returns an error referencing a specific activity (by IdRef or DisplayName), use `focus-activity` to highlight it in the Studio designer. This helps the user see the problematic activity in context and verify fixes visually:
+When `get-errors` returns an error referencing a specific activity (by IdRef or DisplayName), use `focus-activity` to highlight it in the Studio Desktop designer. This helps the user see the problematic activity in context and verify fixes visually.
+
+> **Studio Desktop required.** `focus-activity` does not run against headless Studio — it manipulates the Studio Desktop designer UI. Before invoking it, ensure Studio Desktop is up via `uip rpa start-studio --project-dir "<PROJECT_DIR>"` (see [environment-setup.md § Edge case: requiring Studio Desktop](environment-setup.md#edge-case-requiring-studio-desktop)). Skip this step entirely on headless-only setups — `get-errors` already includes the IdRef and file:line in its output, which is enough to locate the activity.
 
 ```bash
 # Focus a specific activity by its IdRef (from the error output):
