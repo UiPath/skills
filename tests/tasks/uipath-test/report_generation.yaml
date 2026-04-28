@@ -1,0 +1,106 @@
+task_id: skill-test-report-generation-qa
+description: >
+  Integration test: agent uses the uipath-test skill to generate a QA Engineer
+  test report from Test Manager execution data. Validates the full analysis
+  chain taught in references/test-result-report-guide.md (executions →
+  testcaselogs) and the `test-report-<persona>-<YYYY-MM-DD>.md` filename
+  convention.
+tags: [uipath-test, integration, report, qa]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Generate a **QA Engineer** test report for the UiPath Test Manager test set
+  with key "INV:10" in project "INV". Save the report file in the current
+  working directory using the default filename convention from the skill.
+
+  Important:
+  - This sandbox has no live tenant connection. Run each command once,
+    capture the full output (including any error) in report_meta.json, then
+    continue to the next step. Do NOT retry or attempt interactive login.
+  - Use `--output json` on every uip tm command.
+
+  Also save a summary of what you did to report_meta.json:
+  {
+    "persona": "qa",
+    "project_key": "INV",
+    "test_set_key": "INV:10",
+    "report_filename": "<the filename you wrote the report to>",
+    "commands_used": ["<list of uip tm commands you ran, verbatim>"]
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status first (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions for the test set with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+execution\s+list(\s|$).*--test-set-id.*--output\s+json|uip\s+tm\s+execution\s+list(\s|$).*--output\s+json.*--test-set-id'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed testcase logs for an execution with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+execution\s+list-testcaselogs.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on tm commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report file exists with the QA persona filename convention (test-report-qa-YYYY-MM-DD.md)"
+    command: "ls test-report-qa-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md >/dev/null 2>&1"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report_meta.json was created"
+    path: "report_meta.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report_meta.json has correct persona, project/testset keys, and filename"
+    path: "report_meta.json"
+    assertions:
+      - expression: "persona"
+        operator: equals
+        expected: "qa"
+      - expression: "project_key"
+        operator: equals
+        expected: "INV"
+      - expression: "test_set_key"
+        operator: equals
+        expected: "INV:10"
+      - expression: "contains(report_filename, 'test-report-qa')"
+        operator: equals
+        expected: true
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 3
+    weight: 2.0
+    pass_threshold: 0.8

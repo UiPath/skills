@@ -1,0 +1,90 @@
+task_id: skill-test-testset-hierarchy-discovery
+description: >
+  Smoke test: agent uses the uipath-test skill to traverse the Test Manager
+  discovery chain — project → testset → test cases in testset. Validates
+  Critical Rule #7 ("discover before assuming") and the correct `uip tm`
+  list command syntax for project, testset, and testset list-testcases.
+tags: [uipath-test, smoke, testset, discovery]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  I have a UiPath Test Manager project called "InvoiceAutomation". I want to
+  see the test sets in it and, for the first test set, the test cases inside
+  it. Walk the full discovery hierarchy.
+
+  Important:
+  - This sandbox has no live tenant connection. Run each command once and
+    capture the full output in report.json. If a discovery step fails, use
+    the project/set name above as a placeholder key and continue to the next
+    command. Do NOT retry or attempt interactive login.
+  - Use `--output json` on every uip tm command.
+
+  Save a summary of what you did to report.json:
+  {
+    "project_key_used": "<the project key you discovered or attempted>",
+    "testsets_found": <number of testsets returned, or 0 if auth error>,
+    "first_testset_key": "<the test set key you used to list test cases>",
+    "testcases_found": <number of test cases in that test set, or 0 if auth error>,
+    "commands_used": ["<list of uip tm commands you ran, verbatim>"]
+  }
+
+
+success_criteria:
+  - type: command_executed
+    description: "Agent looked up the project with --filter and --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list.*--filter.*--output\s+json|uip\s+tm\s+project\s+list.*--output\s+json.*--filter'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets scoped to the project with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testset\s+list.*--project-key.*--output\s+json|uip\s+tm\s+testset\s+list.*--output\s+json.*--project-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test cases using --test-set-key with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testset\s+list-testcases.*--test-set-key.*--output\s+json|uip\s+tm\s+testset\s+list-testcases.*--output\s+json.*--test-set-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on all tm commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json records the project key used and the full command chain"
+    path: "report.json"
+    assertions:
+      - expression: "length(project_key_used)"
+        operator: gte
+        expected: 1
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 3
+    weight: 2.0
+    pass_threshold: 1.0
