@@ -120,6 +120,8 @@ uip maestro flow node configure <file> <nodeId> \
 
 The `method` and `endpoint` values come from `connectorMethodInfo` in the `registry get` response (Step 2). The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names.
 
+> **Server-side filtering (List All Records and similar list activities):** Pass a structured `filter` tree under `--detail` — the CLI compiles it to CEQL using the same logic Studio Web uses, so the activity round-trips cleanly. Tree shape, operator table, and examples live in [uipath-platform — Filter Trees (CEQL)](../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). **Do not pass a raw CEQL string in `filter`; do not use `filterExpression` (that is the trigger / JMESPath path — see [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees)).**
+
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
 ---
