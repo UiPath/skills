@@ -18,7 +18,7 @@ sandbox:
   node:
     # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
-      - "@uipath/cli@0.1.21"
+      - "@uipath/cli@0.9.0"
 initial_prompt: |
   Create a new Flow project called "PathParamsTest" with a manual trigger.
   You need a flow that deletes a single task from a specific Google Tasks list.

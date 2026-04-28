@@ -23,7 +23,7 @@ sandbox:
   python: {}
   node:
     env_packages:
-      - "@uipath/cli@0.1.21"
+      - "@uipath/cli@0.9.0"
 
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new

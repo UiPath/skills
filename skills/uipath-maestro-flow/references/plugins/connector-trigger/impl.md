@@ -119,6 +119,8 @@ uip is resources execute list "<connector-key>" "<reference.objectName>" \
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `execute list` call — in the trigger's event parameter configuration.
 
+> **Anti-pattern: do not pass the display name as the ID.** Reference fields take the GUID returned by `execute list` (e.g. the `id` field of an item — typically `"AAMkAD..."` for an Outlook MailFolder), **not** the human-readable folder name like `"Inbox"`. Passing the display name validates fine and may even round-trip through `flow validate`, but the trigger faults silently at runtime because the connector cannot resolve a non-GUID against the live connection. After running `execute list`, parse the response and extract the `id` value from the matching item — never substitute the user-typed name.
+
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../uipath-platform/references/integration-service/resources.md) for the full reference resolution workflow**, including pagination, describe failures, and fallback strategies.
