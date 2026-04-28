@@ -3,12 +3,11 @@
 Post-run cleanup: delete test-created Data Fabric entities via REST API.
 
 Usage (called automatically via task post_run):
-    python3 cleanup_entities.py [--entity-id <id>] [--from-report <path>]
+    python3 cleanup_entities.py [--entity-id <id>]
 
 Reads entity_id from (in priority order):
   1. --entity-id CLI flag
-  2. --from-report <path>  (reads .entity_id from that JSON file)
-  3. report.json in CWD    (default)
+  2. report.json in CWD
 
 Auth:
   Reads UIP_BEARER_TOKEN and UIP_TENANT_URL from environment.
@@ -17,6 +16,8 @@ Auth:
   for the token. If neither is available, cleanup is skipped with a SKIP message.
 
   In CI: set UIP_BEARER_TOKEN (and optionally UIP_TENANT_URL) in the env.
+  For non-production environments (staging, gov, on-prem), set UIP_TENANT_URL
+  explicitly — the derived URL only works for production cloud tenants.
   Locally: cleanup is a no-op — tests still pass.
 
 Deletes via: POST <tenant-url>/dataservice_/api/Entity/<entityId>/delete
@@ -60,6 +61,8 @@ def get_auth_token() -> tuple[str, str]:
             )
             if result.returncode != 0:
                 raise RuntimeError(f"uip login status failed (exit {result.returncode}): {result.stderr}")
+            if not result.stdout.strip():
+                raise RuntimeError(f"uip login status returned empty output; stderr: {result.stderr}")
             data = json.loads(result.stdout)
             inner = data.get("Data") or data
             org = inner.get("Organization") or ""
@@ -67,6 +70,11 @@ def get_auth_token() -> tuple[str, str]:
             if not org:
                 raise RuntimeError(f"Could not extract Organization from: {data}")
             tenant_url = f"https://{org}.uipath.com/{tenant}"
+            print(
+                f"WARN: UIP_TENANT_URL not set — derived {tenant_url} from uip login status. "
+                "Set UIP_TENANT_URL explicitly for staging, gov-cloud, or on-prem tenants.",
+                file=sys.stderr,
+            )
         except Exception as e:
             raise RuntimeError(f"Failed to derive tenant URL: {e}") from e
 
@@ -101,7 +109,7 @@ def resolve_entity_ids(args) -> list[str]:
         ids.append(args.entity_id)
         return ids
 
-    report_path = args.from_report or os.path.join(os.getcwd(), "report.json")
+    report_path = os.path.join(os.getcwd(), "report.json")
     if not os.path.exists(report_path):
         print(f"SKIP: no report file found at {report_path}")
         return ids
@@ -128,7 +136,6 @@ def resolve_entity_ids(args) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Delete test-created Data Fabric entities")
     parser.add_argument("--entity-id", help="Entity ID to delete directly")
-    parser.add_argument("--from-report", help="Path to report.json (default: ./report.json)")
     args = parser.parse_args()
 
     entity_ids = resolve_entity_ids(args)

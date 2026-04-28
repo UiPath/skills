@@ -12,7 +12,7 @@ tags: [uipath-data-fabric, e2e, employee-directory]
 
 agent:
   max_turns: 50
-  turn_timeout: 1200
+  turn_timeout: 600
 
 sandbox:
   driver: tempdir

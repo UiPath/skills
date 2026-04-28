@@ -10,7 +10,7 @@ tags: [uipath-data-fabric, e2e, product-catalogue]
 
 agent:
   max_turns: 50
-  turn_timeout: 1200
+  turn_timeout: 600
 
 sandbox:
   driver: tempdir

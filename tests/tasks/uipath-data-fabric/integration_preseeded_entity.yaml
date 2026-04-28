@@ -208,6 +208,9 @@ success_criteria:
       - expression: "query_title_contains_count"
         operator: equals
         expected: 3
+      - expression: "query_score_gte7_and_active_true_count"
+        operator: equals
+        expected: 7
       - expression: "sort_highest_score"
         operator: gte
         expected: 10

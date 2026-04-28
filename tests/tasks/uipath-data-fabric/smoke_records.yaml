@@ -55,8 +55,6 @@ initial_prompt: |
     Run each command once, record the result in report.json, and move on.
     Do NOT retry or attempt to login.
   - Use --output json on every uip df command.
-  - Pagination must use --limit and --cursor CLI flags, not body keys.
-  - Every record in a batch update must include "Id".
 
 success_criteria:
   - type: command_executed
