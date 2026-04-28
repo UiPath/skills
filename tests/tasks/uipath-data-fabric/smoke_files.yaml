@@ -1,0 +1,110 @@
+task_id: skill-datafabric-smoke-files
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to manage file attachments
+  offline — create a local test file, upload it to a FILE-type field on a record
+  using files upload, download it back using files download with --destination,
+  and delete the attachment using files delete. Tests correct files command
+  syntax: positional args (entity-id record-id field-name), --file flag for
+  upload, --destination flag for download, and --output json on all commands.
+tags: [uipath-data-fabric, smoke, files]
+
+agent:
+  type: claude-code
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Every uip df command will fail with an auth error — that is expected and normal.
+  Run each command exactly once, ignore the auth error, and continue to the next step.
+  Do NOT retry any command. Do NOT attempt to login.
+
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  There is an entity "Documents" with entity ID "doc-001-ent".
+  It has a FILE-type field named "Attachment".
+  There is a record with ID "rec-001-id" in that entity.
+
+  Do the following in order:
+  1. Create a small local test file at test_upload.txt with some text content.
+  2. Upload test_upload.txt to the Attachment field of record "rec-001-id":
+       uip df files upload doc-001-ent rec-001-id Attachment --file test_upload.txt
+  3. Download the file back from the same field, saving to downloaded.txt:
+       uip df files download doc-001-ent rec-001-id Attachment --destination downloaded.txt
+  4. Delete the file attachment from that field:
+       uip df files delete doc-001-ent rec-001-id Attachment
+
+  Save a summary to report.json with the commands you ran and what you observed
+  (fill these in based on what you sent, not the error responses):
+  {
+    "commands_used": ["<list of uip df commands you ran in order>"],
+    "upload_command_uses_positional_args": true,
+    "download_uses_destination_flag": true,
+    "delete_positional_args": ["<entity-id>", "<record-id>", "<field-name>"]
+  }
+
+  Additional constraints:
+  - Use --output json on every uip df command.
+  - The download flag is --destination (not --output).
+  - Field names are case-sensitive — use the exact name "Attachment".
+
+success_criteria:
+  - type: file_exists
+    description: "test_upload.txt was created locally"
+    path: "test_upload.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded file using files upload with --file flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded file using files download with --destination flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+download\s+.*--destination'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted file attachment using files delete"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+delete\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Upload uses positional args and download uses --destination flag"
+    path: "report.json"
+    assertions:
+      - expression: "upload_command_uses_positional_args"
+        operator: equals
+        expected: true
+      - expression: "download_uses_destination_flag"
+        operator: equals
+        expected: true
+    weight: 2.5
+    pass_threshold: 1.0

@@ -1,0 +1,146 @@
+task_id: skill-datafabric-e2e-product-catalogue
+description: >
+  E2E scenario: agent builds a complete product catalogue in Data Fabric from
+  scratch — designs the entity schema, bulk-imports 15 products via CSV,
+  queries by category, updates pricing for specific products, marks items as
+  out of stock, uploads a product image to the most expensive item, and
+  produces a final inventory summary. Tests the full Discover → Act → Verify
+  loop for a realistic e-commerce use case.
+tags: [uipath-data-fabric, e2e, product-catalogue]
+
+agent:
+  type: claude-code
+  max_turns: 50
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  We're building a product catalogue for an e-commerce store using UiPath
+  Data Fabric. Load the uipath-data-fabric skill before starting.
+
+  The entity must have these fields: ProductName (STRING), Category (STRING),
+  Price (DECIMAL), InStock (BOOLEAN), SKU (STRING), Poster (FILE). Create the
+  entity with all six fields before importing. Seed it with 15 products
+  (5 per category: Electronics / Clothing / Home) by generating and importing
+  a CSV (CSV does not include the Poster column). Then:
+
+  - Query all Electronics products and confirm you get exactly 5.
+  - Apply a 10% price increase to the 2 most expensive products across all
+    categories (update them individually).
+  - Mark the 3 cheapest products as out of stock (InStock = false).
+  - Upload a small placeholder image file (product_hero.jpg — create it
+    locally with any content) to the Poster field of the single most
+    expensive product.
+  - Confirm the final state: total products, how many are in stock, how
+    many are Electronics.
+
+  Save a summary to report.json:
+  {
+    "entity_id": "<ProductCatalogue entity ID>",
+    "total_products": <count>,
+    "electronics_count": <count from query>,
+    "price_updated_count": 2,
+    "out_of_stock_count": 3,
+    "in_stock_count": <total_products minus out_of_stock_count>,
+    "image_uploaded_to_sku": "<SKU of the product the image was uploaded to>",
+    "most_expensive_product_name": "<name>"
+  }
+
+  Do NOT delete the entity.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent imported products from CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried products by category"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated product records (price + stock status)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded product image"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used fieldName key in entity create body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create.*fieldName'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included Id key in records update body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update.*\"Id\"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "15 products, 5 Electronics, 2 price updates, 3 out of stock"
+    path: "report.json"
+    assertions:
+      - expression: "total_products"
+        operator: equals
+        expected: 15
+      - expression: "electronics_count"
+        operator: equals
+        expected: 5
+      - expression: "price_updated_count"
+        operator: equals
+        expected: 2
+      - expression: "out_of_stock_count"
+        operator: equals
+        expected: 3
+    weight: 5.0
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

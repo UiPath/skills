@@ -1,0 +1,135 @@
+task_id: skill-datafabric-integration-entity-scope
+description: >
+  Integration test: agent verifies entity scope behaviour against a live
+  tenant — creates a tenant-level entity (default, no folder flag) and
+  confirms it appears in entities list from any folder context; creates a
+  folder-scoped entity and confirms it is absent when listing from a
+  different folder; and attempts to create an entity with a non-existent
+  folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
+tags: [uipath-data-fabric, integration, entity-scope]
+
+agent:
+  type: claude-code
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
+  Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. From the response
+     note the active tenant ID. Also note at least two folder IDs if
+     available (folder_a_id and folder_b_id). If the tenant has only one
+     folder, record that limitation in the report and skip folder-isolation
+     checks (mark them null).
+
+  2. List native-only entities. Use "TenantScopeTest" if it already exists.
+     If not, create it with field Name (STRING) — do NOT pass any folder flag
+     (tenant level is the default). Save the entity ID.
+
+  3. Run entities list (--native-only) without a folder flag. Confirm
+     "TenantScopeTest" appears in the response.
+
+  4. If folder_a_id is available, run entities list with --folder <folder_a_id>.
+     Confirm "TenantScopeTest" still appears (tenant entities are visible
+     from all folder contexts).
+
+  5. If folder_a_id is available, create a folder-scoped entity "FolderScopeTest"
+     with field Name (STRING) scoped to folder_a_id. Save the entity ID.
+
+  6. If both folder_a_id and folder_b_id are available, run:
+       uip df entities list --native-only --folder <folder_b_id> --output json
+     Confirm "FolderScopeTest" does NOT appear (it is scoped to folder_a only).
+
+  7. Attempt to create an entity with a non-existent folder ID:
+       uip df entities create ... --folder 00000000-0000-0000-0000-000000000000
+     Record the error response.
+
+  Save a summary to report.json:
+  {
+    "tenant_entity_id": "<TenantScopeTest entity ID>",
+    "folder_entity_id": "<FolderScopeTest entity ID or null>",
+    "tenant_entity_visible_at_tenant": <true/false>,
+    "tenant_entity_visible_from_folder_a": <true/false or null if single folder>,
+    "folder_entity_isolated_from_folder_b": <true/false or null if single folder>,
+    "invalid_folder_returned_error": <true if a non-zero exit code or error message was returned>,
+    "notes": "<any observations — e.g. single-folder tenant, unexpected scope behaviour>"
+  }
+
+  Do NOT delete entities — the test harness handles cleanup.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created at least one entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed entities at least twice (different scope contexts)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used fieldName key in entities create body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create.*fieldName'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --native-only flag when listing entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list.*--native-only'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --folder flag to test folder-scoped entity listing"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list.*--folder'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Tenant entity visible and invalid folder returns error"
+    path: "report.json"
+    assertions:
+      - expression: "tenant_entity_visible_at_tenant"
+        operator: equals
+        expected: true
+      - expression: "invalid_folder_returned_error"
+        operator: equals
+        expected: true
+    weight: 4.0
+    pass_threshold: 0.75
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60
