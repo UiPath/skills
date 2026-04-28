@@ -9,6 +9,7 @@ description: >
 tags: [uipath-data-fabric, e2e, product-catalogue]
 
 agent:
+  type: claude-code
   max_turns: 50
   turn_timeout: 600
 

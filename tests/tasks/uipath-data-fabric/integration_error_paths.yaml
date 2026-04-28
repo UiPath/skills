@@ -13,6 +13,7 @@ description: >
 tags: [uipath-data-fabric, integration, error-paths]
 
 agent:
+  type: claude-code
   max_turns: 30
   turn_timeout: 600
 

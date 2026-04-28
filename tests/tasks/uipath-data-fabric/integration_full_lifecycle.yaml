@@ -9,6 +9,7 @@ description: >
 tags: [uipath-data-fabric, integration, entities, records]
 
 agent:
+  type: claude-code
   turn_timeout: 600
 
 sandbox:

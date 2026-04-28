@@ -10,6 +10,7 @@ description: >
 tags: [uipath-data-fabric, integration, pre-seeded, discover]
 
 agent:
+  type: claude-code
   max_turns: 50
   turn_timeout: 600
 
