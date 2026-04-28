@@ -2,7 +2,9 @@
 
 > **Phase split.** Phase 2b only. Phase 2a does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the case-exit condition directly to `root.caseExitConditions[]` in `caseplan.json`. No CLI command needed.
+Write the case-exit condition directly into the `root` object's `caseExitConditions[]` array in `caseplan.json`. No CLI command needed.
+
+> **Nesting matters.** `caseExitConditions` MUST be a property of the `root` object — a sibling of `data`, `description`, `caseIdentifier`. Do NOT place it at the JSON top level (sibling of `root`, `nodes`, `edges`). The validator silently passes but Studio Web cannot render the case.
 
 ## Condition JSON Shape
 
@@ -27,7 +29,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 1. Generate condition ID: `Condition_` + 6 alphanumeric chars
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
-3. Initialize `root.caseExitConditions = []` if absent
+3. Read `caseplan.json`. Locate the `root` object. Initialize `root.caseExitConditions = []` if absent — this array lives INSIDE `root`, not at the JSON top level
 4. Read `rule-type` and `marks-case-complete` from tasks.md; pick the recipe below
 5. Append the condition object to `root.caseExitConditions[]`
 
