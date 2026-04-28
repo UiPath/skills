@@ -19,8 +19,9 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Case Management project named "ParentCaseSingle" from the
-  sdd.md below. Write the sdd.md to disk first, then build from it.
+  Build a UiPath Case Management solution named "ParentCaseSingle" containing
+  a project also named "ParentCaseSingle" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
 
   ```
   # ParentCaseSingle
@@ -50,7 +51,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate $(find . -type f -name caseplan.json -not -path '*/.venv/*' | head -n 1) --output json"
+    command: "uip maestro case validate ParentCaseSingle/ParentCaseSingle/caseplan.json --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
