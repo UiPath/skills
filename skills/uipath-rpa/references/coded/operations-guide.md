@@ -11,7 +11,8 @@ Creates a complete UiPath coded automation project from scratch. **ALWAYS use `u
 **1. Create the project with `uip rpa create-project`:**
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json
+```
 
 **Template options:**
 - `--template-id BlankTemplate` (default) — standard process project

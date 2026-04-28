@@ -11,7 +11,8 @@ The `uip rpa` commands use `--project-dir` to target a specific project (default
 2. **Project name reference** — The user mentioned a project by name → search for a folder with that name containing `project.json`.
 3. **Detect from running Studio** — No path or name given → run:
    ```bash
-   uip rpa list-instances --output json   ```
+   uip rpa list-instances --output json
+   ```
    Parse the JSON response. If `Data` is a non-empty array, each entry has a `ProjectDirectory` field. Use it:
    - **One instance** → use its `ProjectDirectory`.
    - **Multiple instances** → pick the best match or ask the user.
@@ -25,7 +26,8 @@ If the CWD is not the project root:
 ## Step 0.2: Verify Studio is Running
 
 ```bash
-uip rpa list-instances --output json```
+uip rpa list-instances --output json
+```
 
 **If no instances are found or Studio is not running:**
 ```bash
@@ -34,7 +36,8 @@ uip rpa start-studio
 
 **If Studio is running but the project is not open:**
 ```bash
-uip rpa open-project --project-dir "{projectRoot}"```
+uip rpa open-project --project-dir "{projectRoot}"
+```
 
 **If Studio IPC connection fails** (error messages about connection refused, timeout, or pipe not found):
 1. Check if Studio Desktop is actually installed on the machine

@@ -109,12 +109,12 @@ Some operations (creating projects, validating, running workflows, packing) requ
 
 1. **Check for a running instance first:**
    ```bash
-   rpa-tool list-instances --output json
+   uip rpa list-instances --output json
    ```
 
 2. **If no instance is running, try the standard install location:**
    ```bash
-   rpa-tool start-studio --output json
+   uip rpa start-studio --output json
    ```
 
 3. **If that fails (version too old, not found, etc.) — ASK THE USER where their Studio build is located.** Do NOT search the entire filesystem. Common locations include:
@@ -124,7 +124,7 @@ Some operations (creating projects, validating, running workflows, packing) requ
 
 4. **Once you have the path, pass it explicitly:**
    ```bash
-   rpa-tool start-studio --studio-dir "<STUDIO_DIR>" --output json
+   uip rpa start-studio --studio-dir "<STUDIO_DIR>" --output json
    ```
 
 > **Never spend time searching for Studio automatically.** If the default doesn't work, ask immediately — the user knows where their build is.
@@ -217,7 +217,7 @@ The typical deployment workflow for a UiPath automation:
 
 ```
 1. Develop    → Create/edit coded workflows or RPA projects locally
-2. Validate   → uip rpa get-errors --use-studio
+2. Validate   → uip rpa get-errors
 3. Pack       → uip solution pack
 4. Login      → uip login
 5. Publish    → uip solution publish

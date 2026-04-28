@@ -115,7 +115,6 @@ Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **P
 > **Note:** The `entryPoints` block above applies to Process projects only. For Tests and Library projects, only `fileInfoCollection` is needed.
 
 > **`editingStatus` lifecycle:** Set to `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
-```
 
 ### What NOT to Do
 
@@ -159,7 +158,7 @@ Three commands attach different data source types to a test case. All three regi
 #### `add-test-data-variation` — File-based (JSON)
 
 ```bash
-uip rpa add-test-data-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa add-test-data-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -171,7 +170,7 @@ Parses fields from the JSON file and creates one argument per field with matchin
 
 **Example:**
 ```bash
-uip rpa add-test-data-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa add-test-data-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json
 ```
 
 #### `add-test-data-queue` — Orchestrator Test Data Queue
@@ -179,7 +178,7 @@ uip rpa add-test-data-variation --test-case-path "TestProcessInvoice.cs" --data-
 > **Prerequisite:** Use the **uipath-platform** skill to discover queue details (name, ID, folder) before calling this command.
 
 ```bash
-uip rpa add-test-data-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa add-test-data-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -193,7 +192,7 @@ Creates an `IDictionary<string, object>` argument named after the queue (camelCa
 
 **Example:**
 ```bash
-uip rpa add-test-data-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json --use-studio
+uip rpa add-test-data-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json
 ```
 
 > **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
@@ -205,7 +204,7 @@ uip rpa add-test-data-queue --test-case-path "TestLoanApproval.cs" --queue-name 
 > 2. **Install the target entity into the project** if not already installed — `uip rpa install-data-fabric-entities --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `add-test-data-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
 
 ```bash
-uip rpa add-test-data-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa add-test-data-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -218,7 +217,7 @@ Creates an argument of the entity type named after the entity (camelCase). Requi
 
 **Example:**
 ```bash
-uip rpa add-test-data-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa add-test-data-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json
 ```
 
 ### Data-Driven Testing Best Practices
