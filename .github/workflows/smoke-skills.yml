@@ -149,9 +149,11 @@ jobs:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
     runs-on: ubuntu-latest
-    # 18 smoke tasks at ~1–2 min each + env setup — 30 min was getting
-    # cancelled mid-run. 60 min gives headroom even if a task retries.
-    timeout-minutes: 60
+    # 18+ smoke tasks at ~1–2 min each + env setup. 60 min was getting
+    # cancelled when the matrix grew + LLM reviewer was retrying on quota
+    # exhaustion. 120 min covers worst-case reviewer-retry storms without
+    # masking real hangs.
+    timeout-minutes: 120
     name: Run skill smoke tests
     steps:
       - uses: actions/checkout@v4
