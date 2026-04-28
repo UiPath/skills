@@ -18,7 +18,7 @@ sandbox:
   node:
     # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
-      - "@uipath/cli@0.1.21"
+      - "@uipath/cli@0.9.0"
 initial_prompt: |
   Create a flow called "CeqlWhereTest" with a manual trigger that lists all sharepoint sites that were created in the last 7 days.
   Add a Decision node to check whether the call succeeded.
