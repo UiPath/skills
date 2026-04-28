@@ -10,7 +10,7 @@ mkdir my-agent && cd my-agent
 # Copy pyproject.toml template, add framework dep if needed, then:
 uv sync
 source .venv/bin/activate           # activate venv BEFORE uip codedagent commands
-uip codedagent setup --output json # configure Python backend (once per env)
+uip codedagent --help               # verify wrapper can reach the Python CLI
 uip codedagent new my-agent        # name is REQUIRED
 uip codedagent init
 
@@ -40,6 +40,7 @@ A `pyproject.toml` template is available in [assets/templates/pyproject.toml](..
 | `NameError: name 'StateGraph' is not defined` | `uip codedagent init` imports `main.py` but `langgraph` not installed | Run `uv sync` to install all dependencies before `uip codedagent init` |
 | `No solution found` for Python 3.10 | `requires-python` set too low | Set `requires-python = ">=3.11"` — UiPath SDK requires Python 3.11+ |
 | `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` section |
+| `error: unknown command 'setup'` or stale guidance says to run `uip codedagent setup` | There is no coded-agent setup subcommand | Run `uv sync`, activate `.venv`, then retry the intended `uip codedagent ...` command |
 
 ## Additional Instructions
 
@@ -136,6 +137,8 @@ uv sync
 ```bash
 uip codedagent --version
 ```
+
+Do not run `uip codedagent setup`; setup is handled by `uv sync` plus the activated virtual environment.
 
 ### 5. Authenticate
 
