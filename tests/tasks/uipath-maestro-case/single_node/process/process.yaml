@@ -1,0 +1,64 @@
+task_id: skill-case-single-process
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  PROCESS. Exercises the process plugin, registry resolution via
+  process-index.json, and direct caseplan.json write of a `type: "process"`
+  task. Validates the resulting case file.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management project named "ProcessSingleCase" from the
+  sdd.md below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # ProcessSingleCase
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Run Process (regular stage) — receives the case after the manual trigger.
+
+  ## Tasks
+  - Run InvoiceApproval (PROCESS) — placed in the "Run Process" stage.
+    - Process Reference: Name "InvoiceApproval", Folder "Shared".
+    - Component type: PROCESS.
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on the
+  resulting caseplan.json. If the process is not in the registry, leave it
+  as a skeleton task (`<UNRESOLVED>`) per the skill's rules — do not fabricate
+  a taskTypeId.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate $(find . -type f -name caseplan.json -not -path '*/.venv/*' | head -n 1) --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan contains a task with type=\"process\""
+    command: "python3 $TASK_DIR/check_process_case.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
