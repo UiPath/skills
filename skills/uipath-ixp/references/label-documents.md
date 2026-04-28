@@ -19,38 +19,33 @@ Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the
 
 From the taxonomy, review the field groups and field types so you understand what each predicted field represents.
 
-## Step 2 — Get Predictions
+## Step 2 — Process Each Document
 
-Fetch IXP's model predictions for all documents:
+For each document from the list, process one at a time: get predictions, download image/text, review, confirm.
+
+### 2a. Get predictions for this document
 
 ```bash
-uip ixp labelling predictions <project-name> --output json
+uip ixp labelling predictions <project-name> <document-id> --output json
 ```
 
-This returns each document's `DocumentId` with predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
+This returns the document's predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
 
-## Step 3 — Download Images and OCR Text
-
-For each document that has predictions, get the image and OCR text:
+### 2b. Download image and OCR text
 
 - **If files already exist** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse them — do NOT re-download.
-- **Otherwise, download** each document image:
+- **Otherwise, download** the document image and OCR text:
 
 ```bash
-uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/doc_1.png --output json
+uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id>.png --output json
+uip ixp document text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/<document-id>.txt --output json
 ```
 
-**Always fetch the OCR text** (unless already saved from a previous session):
+Use the document ID as the filename — it's unique and lets you match files to documents without tracking a counter. These files persist across sessions — check for existing files before downloading.
 
-```bash
-uip ixp document text <project-name> <document-id> --output json
-```
+### 2c. Review predictions field-by-field
 
-Save OCR output to `/tmp/ixp/<project-name>/text/doc_1.json`. Use unique filenames per document (e.g., `doc_1`, `doc_2`). These files persist across sessions — check for existing files before downloading.
-
-## Step 4 — Review Predictions Field-by-Field
-
-For each document, use the **Read tool** to view the image, then review each predicted field against the document:
+Use the **Read tool** to view the image, then review each predicted field against the document:
 
 1. **Look at the image** to understand the document layout and where field values appear.
 2. **For each predicted field**, assign one of three verdicts:
@@ -78,9 +73,9 @@ For **NOT CONFIRMED** fields: state the predicted value, the actual value (if vi
    - **Confirmed field IDs** — all CONFIRMED + CORRECTED fields
    - **Corrections JSON** — only CORRECTED fields: `[{"field_id":"...","value":"corrected text"}]`
 
-## Step 5 — Confirm and Correct
+### 2d. Confirm and correct
 
-For each document, submit confirmed and corrected fields together.
+Submit confirmed and corrected fields for this document.
 
 **If there are corrections:**
 
@@ -106,11 +101,13 @@ If ALL predicted fields for a document are correct with no corrections needed, y
 uip ixp labelling confirm <project-name> <document-id> --output json
 ```
 
-Submit confirmations in **serial** — do not parallelize.
+### 2e. Move to the next document
 
-## Step 6 — Loop Steps 4-5 for All Documents
+Repeat steps 2a–2d for all documents in the list.
 
-Process all documents with predictions. Track progress and errors:
+## Step 3 — Summary
+
+After processing all documents, track progress and errors:
 
 - Do NOT stop on the first error — continue with remaining documents
 - If a download or text fetch fails, skip the document and note the failure

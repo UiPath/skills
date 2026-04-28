@@ -48,7 +48,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 |---------|-------------|
 | `uip ixp project list --output json` | List all IXP projects |
 | `uip ixp project get <project-name> --output json` | Get a project |
-| `uip ixp project create "<name>" <folder-path> -d "<description>" [--skip-taxonomy] --output json` | Create project and upload docs. By default suggests+imports taxonomy. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
+| `uip ixp project create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload docs. By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
 | `uip ixp project import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. |
 | `uip ixp project rename <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp project taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
@@ -64,7 +64,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 |---------|-------------|
 | `uip ixp document list <project-name> --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]` |
 | `uip ixp document image <project-name> <document-id> -o <path> --output json` | Download original document file (image/PDF) for viewing |
-| `uip ixp document text <project-name> <document-id> --output json` | Get OCR text — use to cross-reference predicted values against the document |
+| `uip ixp document text <project-name> <document-id> -o <path> --output json` | Get OCR text and save to file — use to cross-reference predicted values against the document |
 
 ### Labellings
 

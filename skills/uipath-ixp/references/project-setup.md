@@ -9,10 +9,16 @@ If the user provides a name, use it. If not, generate a temporary name (e.g., `i
 **Option A — Auto-suggest taxonomy (default):**
 
 ```bash
-uip ixp project create "<name>" <folder-path> --description "<what to extract>" --output json
+uip ixp project create "<name>" <folder-path> --output json
 ```
 
-This uploads documents and auto-suggests a taxonomy based on the document content.
+If the user specified what to extract, add `-d` for a better taxonomy suggestion:
+
+```bash
+uip ixp project create "<name>" <folder-path> -d "<what to extract>" --output json
+```
+
+This uploads documents and auto-suggests a taxonomy based on the document content (and the description if provided).
 
 **Option B — Blank project + import taxonomy from file:**
 
@@ -23,10 +29,10 @@ uip ixp project create "<name>" <folder-path> --skip-taxonomy --output json
 uip ixp project import-taxonomy <project-name> <taxonomy-file> --output json
 ```
 
-The taxonomy file can be in either format:
+The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
 
-- `{ "field_types": [...], "label_group": {...} }` — suggest-taxonomy output
-- `{ "entity_defs": [...], "label_groups": [...] }` — taxonomy endpoint output
+- `{ "field_types": [...], "label_group": {...} }` — use when importing a taxonomy suggested by a previous `project create` run
+- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project (exported via `uip ixp project taxonomy`)
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
@@ -68,13 +74,7 @@ uip ixp project configure-model <project-name> \
 
 ## Step 3 — Name the Project
 
-After the taxonomy has been imported, look at the suggested label groups and field names to understand what type of documents these are. Then give the project a descriptive title:
-
-```bash
-uip ixp project taxonomy <project-name> --output json
-```
-
-Based on the taxonomy (e.g., if it has "Invoice Details", "Line Items", "Bill-To" → it's an invoices project), rename:
+Based on the taxonomy from Step 1 (e.g., if it has "Invoice Details", "Line Items", "Bill-To" → it's an invoices project), give the project a descriptive title:
 
 ```bash
 uip ixp project rename <project-name> "Vendor Invoices" --output json
@@ -96,9 +96,6 @@ uip ixp project metrics <project-name> --output json
 
 Check that `ModelVersion` has advanced. If not, wait another 60 seconds and retry.
 
-Report project score, quality rating, and per-field F1/precision/recall. Highlight:
-
-- Fields with F1 < 0.5 that need prompt improvement
-- Typed fields (Date, Monetary Quantity) at F1 = 0 — likely a format mismatch in the field instructions. Fix via the [Improve Prompts Guide](improve-prompts.md).
+Report project score, quality rating, and per-field F1/precision/recall. Highlight fields with F1 < 0.5 that need prompt improvement.
 
 If the user wants to improve scores, follow the [Improve Prompts Guide](improve-prompts.md).
