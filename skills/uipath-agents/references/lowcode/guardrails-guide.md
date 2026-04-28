@@ -38,7 +38,7 @@ The `selector` field controls where the guardrail applies.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
-| `matchNames` | string[] | No | Target specific tools by name. Omit to apply to all tools in the selected scopes |
+| `matchNames` | string[] | No | Target specific tools by name. |
 
 ### Scope Definitions
 
@@ -102,7 +102,7 @@ Records the violation in logs without stopping execution.
 
 ### filter — Redact Fields
 
-Removes or masks specific fields from the input/output.
+Removes specific fields from the input/output.
 
 ```json
 "action": {
@@ -207,8 +207,12 @@ String matching against field values.
 | `startsWith` | Field value starts with the string |
 | `endsWith` | Field value ends with the string |
 | `matchesRegex` | Field value matches the regular expression |
-| `notContains` | Field value does not contain the string |
-| `notEquals` | Field value does not equal the string |
+| `doesNotContain` | Field value does not contain the string |
+| `doesNotEqual` | Field value does not equal the string |
+| `doesNotStartWith` | Field value does not start with the string |
+| `doesNotEndWith` | Field value does not end with the string |
+| `isEmpty` | Field value is empty (no `value` needed) |
+| `isNotEmpty` | Field value is not empty (no `value` needed) |
 
 #### Number Rules (`$ruleType: "number"`)
 
@@ -221,7 +225,7 @@ Numeric comparison against field values.
 | `operator` | string | Yes | Comparison operator |
 | `value` | number | Yes | Value to compare against |
 
-**Operators:** `equals`, `notEquals`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`
+**Operators:** `equals`, `doesNotEqual`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`
 
 #### Boolean Rules (`$ruleType: "boolean"`)
 
@@ -236,12 +240,12 @@ Boolean equality check.
 
 #### Always / Universal Rules (`$ruleType: "always"`)
 
-Fires on every input/output — no condition check. Use `applyTo` to control whether it runs on input, output, or both.
+Fires on every input/output — no condition check. Use `applyTo` to control whether it runs on input, output, or inputAndOutput.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `$ruleType` | `"always"` | Yes | Rule type discriminator |
-| `applyTo` | `"input"` \| `"output"` \| `"both"` | Yes | When the rule fires |
+| `applyTo` | `"input"` \| `"output"` \| `"inputAndOutput"` | Yes | When the rule fires |
 
 ### Field Selectors
 
@@ -307,9 +311,17 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 | `"map-enum"` | Threshold maps (e.g., `entityThresholds`, `harmfulContentEntityThresholds`) | object (keys = entity names, values = numbers) |
 | `"number"` | Scalar numbers (e.g., `threshold` for prompt injection) | number |
 
-### Validators Reference
+### Validators Quick Reference
 
-Run `uip agent guardrails list --output json` to get the full list of available validators with their allowed scopes, stages, and parameters. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
+| Validator | Scopes | Stages | Supported Actions |
+|-----------|--------|--------|-------------------|
+| `pii_detection` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
+| `prompt_injection` | Llm | Pre only | Block, Log, Escalate |
+| `harmful_content` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
+| `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
+| `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
+
+Run `uip agent guardrails list --output json` to get the authoritative list. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
 
 **How to map `uip agent guardrails list` output to guardrail JSON:**
 
@@ -381,10 +393,10 @@ Run `uip agent guardrails list --output json` to get the full list of available 
       "$parameterType": "map-enum",
       "id": "harmfulContentEntityThresholds",
       "value": {
-        "Hate": 3,
+        "Hate": 2,
         "SelfHarm": 2,
         "Sexual": 4,
-        "Violence": 3
+        "Violence": 2
       }
     }
   ],
@@ -426,7 +438,59 @@ Run `uip agent guardrails list --output json` to get the full list of available 
 }
 ```
 
-### Example 4: Custom Word Rule — Block Forbidden Terms in Specific Tool Output
+### Example 4: User Prompt Attack Detection — Block Jailbreaks
+
+No parameters required — binary detection via Azure Prompt Shield. Llm PreExecution only.
+
+```json
+{
+  "$guardrailType": "builtInValidator",
+  "id": "f1a2b3c4-d5e6-7890-abcd-ef0123456789",
+  "name": "User prompt attack guardrail",
+  "description": "Detects jailbreak attempts and indirect prompt injection via Azure Prompt Shield",
+  "validatorType": "user_prompt_attacks",
+  "validatorParameters": [],
+  "action": {
+    "$actionType": "block",
+    "reason": "Adversarial input detected — execution blocked."
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Llm"]
+  }
+}
+```
+
+### Example 5: Intellectual Property Detection — Block Copyrighted Text and Code
+
+PostExecution only — no content exists to check before the LLM generates output.
+
+```json
+{
+  "$guardrailType": "builtInValidator",
+  "id": "a2b3c4d5-e6f7-8901-bcde-f01234567890",
+  "name": "IP detection guardrail",
+  "description": "Detects copyrighted text and licensed GitHub code in LLM output",
+  "validatorType": "intellectual_property",
+  "validatorParameters": [
+    {
+      "$parameterType": "enum-list",
+      "id": "ipEntities",
+      "value": ["Text", "Code"]
+    }
+  ],
+  "action": {
+    "$actionType": "block",
+    "reason": "Protected material detected in output — execution blocked."
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Llm"]
+  }
+}
+```
+
+### Example 6: Custom Word Rule — Block Forbidden Terms in Specific Tool Output
 
 ```json
 {
@@ -462,7 +526,7 @@ Run `uip agent guardrails list --output json` to get the full list of available 
 }
 ```
 
-### Example 5: Custom Word Rule — Log on All Fields
+### Example 7: Custom Word Rule — Log on All Fields
 
 ```json
 {
@@ -491,7 +555,7 @@ Run `uip agent guardrails list --output json` to get the full list of available 
 }
 ```
 
-### Example 6: Escalate PII Violations to Action Center — Multiple Tool Targets
+### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
 
 Escalates to an Action Center app when PII is detected in output from specific tools. Uses `matchNames` to target multiple tools and `escalate` action with `app` and `recipient`.
 
@@ -540,7 +604,7 @@ Escalates to an Action Center app when PII is detected in output from specific t
 }
 ```
 
-### Example 7: Custom Word Rule — Specific Fields with Titles on a Named Tool
+### Example 9: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
 Inspects specific output fields (with human-readable `title`) of an Integration Service tool. Logs a violation when the field value contains a forbidden string.
 
@@ -584,7 +648,7 @@ Inspects specific output fields (with human-readable `title`) of an Integration 
 }
 ```
 
-### Example 8: Filter — Redact Fields from Tool Output
+### Example 10: Filter — Redact Fields from Tool Output
 
 Redacts specific fields from a tool's output instead of blocking or logging. Use when you want the agent to continue but with sensitive data removed.
 
@@ -663,3 +727,5 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 11. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
 12. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Always configure guardrails at the agent.json root `guardrails` array.
 13. **Do not reuse UUIDs across guardrails** — each guardrail needs a unique `id`.
+14. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
+15. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
