@@ -79,7 +79,7 @@ Combines In + Out. Creates input + **one** shared companion IO + trigger mapping
 
 The FE's `CaseManagementVariablesProvider` collects task outputs directly from `task.data.outputs[]` and makes them referenceable via `=vars.<var>`. A separate `root.data.uipath.variables.inputOutputs[]` entry is **not required** for cross-task variable resolution — the FE resolves from task outputs directly.
 
-The FE does write a root `inputOutputs` copy as a sync convention. To match FE behavior, optionally append a companion entry:
+Write the companion entry to match FE behavior. Safe to omit — resolution works without it:
 
 ```json
 // Task output on the task node (required)

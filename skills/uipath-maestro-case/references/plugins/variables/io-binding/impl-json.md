@@ -51,7 +51,7 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` points to an existing variable ID.
+After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, `root.data.uipath.variables.inputOutputs[].id`, or `root.data.uipath.variables.inputs[].id`.
 
 ## Connector Tasks
 
@@ -79,7 +79,7 @@ Use `=js:()` only for expressions with operators (e.g., `=js:(vars.amount > 5000
   "elementId": "Stage_submit-tEnrich02" }
 ```
 
-Two things must exist: output on Task A with a `var` field, and bound input on Task B referencing `=vars.<var>`. The FE's `CaseManagementVariablesProvider` collects task outputs directly from `task.data.outputs[]` and makes them referenceable — it does not require a separate `root.data.uipath.variables.inputOutputs[]` entry to resolve `=vars.<id>`. Root `inputOutputs` entries for task outputs are a FE sync convention (the FE writes them), not a hard requirement for variable resolution.
+Two things must exist: output on Task A with a `var` field, and bound input on Task B referencing `=vars.<var>`. Root `inputOutputs` companion entries for task outputs are optional — see [global-vars/impl-json.md § Task Output → inputOutputs Wiring](../global-vars/impl-json.md#task-output--inputoutputs-wiring).
 
 ## Error Handling
 
