@@ -6,7 +6,7 @@ The Summarize node runs comprehensive document synthesis over an attached file (
 
 `uipath.pattern.deep-rag`
 
-Fixed OOTB node type — no registry suffix, one version. It does not appear in `uip flow registry list` unless the tenant has the platform-side `canvas.nodes.patterns` feature flag enabled. The uip CLI unconditionally requests Patterns nodes in its manifest fetch, so they will appear once the server rolls the flag out to your tenant.
+Fixed OOTB node type — no registry suffix, one version. It does not appear in `uip maestro flow registry list` unless the tenant has the platform-side `canvas.nodes.patterns` feature flag enabled. The uip CLI unconditionally requests Patterns nodes in its manifest fetch, so they will appear once the server rolls the flag out to your tenant.
 
 ## When to Use
 

@@ -5,7 +5,7 @@ Batch Transform runs an LLM row-by-row over an attached CSV and appends LLM-gene
 ## Registry Validation
 
 ```bash
-uip flow registry get uipath.pattern.batch-transform --output json
+uip maestro flow registry get uipath.pattern.batch-transform --output json
 ```
 
 Confirm:
@@ -18,7 +18,7 @@ Confirm:
 - `outputDefinition.output.schema.properties` — `id`, `fileName`, `mimeType`
 - `outputDefinition.error.schema.required` — `code`, `message`, `detail`, `category`, `status`
 
-If the command errors with **"Node type not found: uipath.pattern.batch-transform"**, the CLI build predates Patterns support or the tenant's `canvas.nodes.patterns` server flag is off. Run `uip cli update` and `uip flow registry pull --force`; if it still errors, confirm with your UiPath admin that Patterns are enabled on the tenant.
+If the command errors with **"Node type not found: uipath.pattern.batch-transform"**, the CLI build predates Patterns support or the tenant's `canvas.nodes.patterns` server flag is off. Run `uip cli update` and `uip maestro flow registry pull --force`; if it still errors, confirm with your UiPath admin that Patterns are enabled on the tenant.
 
 ## Adding / Editing
 
@@ -27,7 +27,7 @@ For general add, delete, and wiring mechanics, see [flow-editing-operations.md](
 ### Add the node via CLI
 
 ```bash
-uip flow node add <FlowName>.flow uipath.pattern.batch-transform \
+uip maestro flow node add <FlowName>.flow uipath.pattern.batch-transform \
   --label "<LABEL>" \
   --position <X>,<Y> \
   --input '{
@@ -48,18 +48,18 @@ uip flow node add <FlowName>.flow uipath.pattern.batch-transform \
 ### Wire edges
 
 ```bash
-uip flow node list <FlowName>.flow --output json
+uip maestro flow node list <FlowName>.flow --output json
 
 # Upstream file producer (e.g., HTTP, connector, agent) → Batch Transform
-uip flow edge add <FlowName>.flow <upstreamNodeId> <btNodeId> \
+uip maestro flow edge add <FlowName>.flow <upstreamNodeId> <btNodeId> \
   --source-port <upstreamOutputPort> --target-port input --output json
 
 # Batch Transform success → downstream consumer
-uip flow edge add <FlowName>.flow <btNodeId> <nextNodeId> \
+uip maestro flow edge add <FlowName>.flow <btNodeId> <nextNodeId> \
   --source-port output --target-port input --output json
 
 # Optional: error branch
-uip flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
+uip maestro flow edge add <FlowName>.flow <btNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
 ```
 
@@ -122,7 +122,7 @@ If you need the rows as JSON inside the flow, add a downstream step that fetches
 ## Validate
 
 ```bash
-uip flow validate <FlowName>.flow --output json
+uip maestro flow validate <FlowName>.flow --output json
 ```
 
 The validator checks that required inputs (`attachment`, `prompt`, `outputColumns`) are present and non-empty, and that `outputColumns` entries each have `name` and `description`.
@@ -131,7 +131,7 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `Node type not found: uipath.pattern.batch-transform` | CLI predates Patterns support, or tenant flag `canvas.nodes.patterns` is off | `uip cli update`, `uip flow registry pull --force`; check with admin if still missing |
+| `Node type not found: uipath.pattern.batch-transform` | CLI predates Patterns support, or tenant flag `canvas.nodes.patterns` is off | `uip cli update`, `uip maestro flow registry pull --force`; check with admin if still missing |
 | Validate rejects `outputColumns` | Wrong shape — e.g., passed a map `{ name: description }` or string array | Rewrite to `[{ "name": "...", "description": "..." }, ...]` |
 | Runtime error `exceeded maxColumns` | More than 10 output columns | Reduce to ≤10 or split into two Batch Transform nodes chained on the output file |
 | All rows produce blank values for a column | `description` is too vague or references fields not in the source CSV | Tighten the `description` — name the source column(s) the LLM should read from; test with a small sample first |
@@ -141,7 +141,7 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 ## What NOT to Do
 
 - **Do not hand-author `model.bindings`** on the node — Batch Transform has no process or connector binding. Adding a `bindings` block will be stripped or cause validate errors.
-- **Do not pass `--source` on `uip flow node add`** — `--source` is only for inline agent nodes (`uipath.agent.autonomous`). Batch Transform has no agent project behind it.
+- **Do not pass `--source` on `uip maestro flow node add`** — `--source` is only for inline agent nodes (`uipath.agent.autonomous`). Batch Transform has no agent project behind it.
 - **Do not reshape `outputColumns` to a map** — the array-of-`{name, description}` shape is contractual with the canvas property panel and the BPMN `ECS.BatchTransform` serializer.
 - **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.
