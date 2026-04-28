@@ -106,6 +106,29 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
 
+### Step 5b — Wire outputs from previous nodes
+
+When a connector node's input field needs a value produced by an upstream node (e.g. the `Id` returned by a Create activity becomes the `recordId` for a Get-by-Id activity), the value MUST use the canonical expression form:
+
+```
+"=js:$vars.<sourceNodeId>.output.<field>"
+```
+
+Examples in `inputs.detail`:
+
+```jsonc
+"queryParameters": {
+  "recordId": "=js:$vars.createEntityRecord1.output.Id"
+},
+"bodyParameters": {
+  "ParentId":  "=js:$vars.queryAccounts1.output[0].Id",
+  "BankName":  "HDFC Bank",
+  "Note":      "=js:`Linked from run ${$metadata.instanceId}`"
+}
+```
+
+> **The `=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference inside `bodyParameters`, `queryParameters`, and `pathParameters`.** Without it the BPMN runtime sees a literal string (`"vars.createEntityRecord1.output.Id"`) and binds it as-is to the activity input — `flow validate` passes; the failure surfaces only at `flow debug`. There is no `nodes.X.output.Y` syntax — that is an invention that silently ships as a literal string. See [node-output-wiring.md](../../node-output-wiring.md) for the per-field-type rule and the full failure-mode table (MST-9107).
+
 ### Step 6 — Configure the node
 
 **Run `is resources describe` (Step 3) before this step.** The full metadata tells you which fields are required, what types they expect, and which need reference resolution. Do not guess field names or skip the metadata check — required fields missing from `--detail` cause runtime errors that `flow validate` does not catch.
