@@ -158,7 +158,7 @@ success_criteria:
   - type: command_executed
     description: "Agent attempted file upload (error scenarios)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+files\s+upload\s+.*--file'
+    command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
     min_count: 3
     weight: 2.0
     pass_threshold: 1.0

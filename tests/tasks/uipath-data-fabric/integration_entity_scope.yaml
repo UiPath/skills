@@ -90,7 +90,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used fieldName key in entities create body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create.*fieldName'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
