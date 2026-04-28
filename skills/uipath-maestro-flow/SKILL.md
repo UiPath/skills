@@ -74,6 +74,8 @@ For targeted changes to an existing flow, use the recipes below instead of the f
 | **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via JSON (default) or CLI (opt-in), wire edges. | Relevant plugin's `impl.md` + [JSON editing](references/flow-editing-operations-json.md) (default) or [CLI editing](references/flow-editing-operations-cli.md) (opt-in) |
 | **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
 | **Add a HITL QuickForm node** | Insert a human approval/review/enrichment checkpoint. Wire the `completed` port after adding. | [JSON: Add a node](references/flow-editing-operations-json.md) (default) or [CLI: `uip maestro flow hitl add`](references/flow-commands.md#uip-maestro-flow-hitl-add) (opt-in) + [hitl/impl.md](references/plugins/hitl/impl.md) |
+| **Add a Batch Transform node** | Run an LLM over every row of a CSV attachment to append generated columns (classify, summarize, extract). Node type: `uipath.pattern.batch-transform`. Requires the tenant `canvas.nodes.patterns` feature flag. | [batch-transform/planning.md](references/plugins/batch-transform/planning.md) for selection vs Transform/Loop/Agent + [batch-transform/impl.md](references/plugins/batch-transform/impl.md) for `uip maestro flow node add`, JSON structure, and `outputColumns` shape. |
+| **Add a Summarize node** | Comprehensive synthesis or Q&A over one attached document, with optional per-claim citations. Node type: `uipath.pattern.deep-rag`. Requires the tenant `canvas.nodes.patterns` feature flag. | [summarize/planning.md](references/plugins/summarize/planning.md) for selection vs Agent/Script + [summarize/impl.md](references/plugins/summarize/impl.md) for `uip maestro flow node add`, JSON structure, and `returnCitations`. |
 
 ## Planning (optional)
 
@@ -359,6 +361,8 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Embed an AI agent tightly coupled to this flow** | [references/plugins/inline-agent/](references/plugins/inline-agent/) — scaffolded via `uip agent init --inline-in-flow`, node type `uipath.agent.autonomous` |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [CLI: Replace a mock](references/flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [references/plugins/transform/impl.md](references/plugins/transform/impl.md) |
+| **Apply an LLM to every row of a CSV** | [references/plugins/batch-transform/](references/plugins/batch-transform/) — node type `uipath.pattern.batch-transform`, appends LLM-generated columns to each row |
+| **Summarize or answer questions over a document** | [references/plugins/summarize/](references/plugins/summarize/) — node type `uipath.pattern.deep-rag`, single-document synthesis with optional citations |
 | **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/flow-editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [references/plugins/delay/](references/plugins/delay/) or [references/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [references/plugins/queue/impl.md](references/plugins/queue/impl.md) |
@@ -438,6 +442,8 @@ When you finish building or editing a flow, report to the user:
   - [hitl](references/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
   - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
   - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
+  - [batch-transform](references/plugins/batch-transform/) — LLM-powered row-by-row CSV enrichment (`uipath.pattern.batch-transform`); appends generated columns to an attached file. Requires the tenant `canvas.nodes.patterns` feature flag.
+  - [summarize](references/plugins/summarize/) — Single-document synthesis / Q&A (`uipath.pattern.deep-rag`) with optional per-claim citations. Requires the tenant `canvas.nodes.patterns` feature flag.
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
 
