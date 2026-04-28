@@ -318,6 +318,18 @@ Order {$vars.orderId} is {$vars.status} — total: {$vars.amount}
 
 > **Brace-templates do NOT work in Integration Service activity inputs.** The flow-layer template runner only processes native flow fields (decision expressions, variable updates, end-node output `source`, script bodies, agent prompt text). Fields inside `inputs.detail.bodyParameters` on `core.action.http.v2` or `uipath.connector.*` activity nodes — `url`, `headers`, `body`, `query` — are passed through to the IS runtime unchanged, so `{$vars.article}` ships literally. Observed behavior: the `$` is stripped and the braces survive (`user/{vars.article}` reaches the service). **For any dynamic value in an IS activity input, use `=js:` instead** — e.g., `` "url": "=js:`https://.../user/${$vars.article}`" `` or `"headers": { "Authorization": "=js:'Bearer ' + $vars.token" }`.
 
+### IS Activity Inputs Require `=js:` (Critical)
+
+Every `$vars` / `$metadata` / `$self` reference inside `inputs.detail.bodyParameters`, `inputs.detail.queryParameters`, or `inputs.detail.pathParameters` on a connector or HTTP activity node MUST be wrapped with `=js:`. Without it the value ships as a literal string at runtime.
+
+| Wrong | Right |
+|---|---|
+| `"recordId": "$vars.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
+| `"recordId": "nodes.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
+| `"recordId": "{vars.createEntityRecord1.output.Id}"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
+
+The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). `flow validate` does not catch this — it only manifests at `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+
 ### Comparison
 
 | Feature | `=js:` | `{ }` template |
