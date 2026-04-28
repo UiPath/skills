@@ -1,0 +1,22 @@
+# Build output
+dist/
+node_modules/
+
+# Env files (contain PATs + config)
+.env.local
+.env.production
+
+# Skill state (tenant-specific config — folderKey, deployment metadata)
+.dashboard/
+
+# uip CLI artifacts
+.uipath/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db

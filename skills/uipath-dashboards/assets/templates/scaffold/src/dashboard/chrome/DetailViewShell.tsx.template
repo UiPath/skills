@@ -1,0 +1,42 @@
+import type { ReactNode } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+/**
+ * Standard page chrome for every detail view.
+ * Renders: back-link → dashboard, title + description header, children slot.
+ *
+ * Every widget gets a matching view component that wraps in this shell,
+ * passing its own title/description and a filterable list of the underlying
+ * data behind the widget's chart/table/KPI.
+ *
+ * Routes convention: HashRouter — root ("/") renders <Dashboard />; each
+ * widget routes to `/{kebab-slug}` (e.g., `/active-agents`, `/invocation-volume`).
+ */
+type Props = {
+  title: string;
+  description?: string;
+  children: ReactNode;
+};
+
+export function DetailViewShell({ title, description, children }: Props) {
+  return (
+    <div className="min-h-screen bg-background text-foreground p-4 lg:p-8">
+      <header>
+        <Link
+          to="/"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Back to dashboard
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description && (
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        )}
+      </header>
+
+      <main className="mt-6">{children}</main>
+    </div>
+  );
+}

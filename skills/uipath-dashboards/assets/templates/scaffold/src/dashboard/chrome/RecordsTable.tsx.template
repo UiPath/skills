@@ -1,0 +1,161 @@
+import { useState, type ReactNode } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+/**
+ * Shared records table for detail views. Replaces ~80 lines of per-view
+ * scaffolding (Table + TableHead + sort state + chevrons) with one call:
+ *
+ *   <RecordsTable
+ *     rows={rows}
+ *     columns={[
+ *       { key: 'agent', label: 'Agent' },
+ *       { key: 'invocations', label: 'Invocations', align: 'right', render: r => fmtNumber(r.invocations) },
+ *       { key: 'errors', label: 'Errors', align: 'right', render: r => <span className={errorTone(r.errors)}>{r.errors}</span> },
+ *       { key: 'lastSeen', label: 'Last seen', align: 'right', render: r => fmtTimeAgo(r.lastSeen) },
+ *     ]}
+ *     defaultSortKey="invocations"
+ *     onRowClick={r => navigate(`/agents/${r.agent}`)}
+ *   />
+ *
+ * The table renders its own row-count header and handles sorting state —
+ * views just declare columns + optional interactions.
+ */
+export type ColumnDef<T> = {
+  /** Property name on the row (must be a string field name for sort). */
+  key: keyof T & string;
+  /** Column header label (uppercase-cased automatically by the header style). */
+  label: string;
+  /** Custom cell renderer. Falls back to `String(row[key])` if omitted. */
+  render?: (row: T) => ReactNode;
+  /** 'left' (default) or 'right' for numeric columns. */
+  align?: 'left' | 'right';
+  /** Default true. Set false for cells that shouldn't be click-to-sort. */
+  sortable?: boolean;
+  /** Optional className applied to every cell in this column. */
+  className?: string;
+};
+
+type Props<T> = {
+  rows: T[];
+  columns: ColumnDef<T>[];
+  defaultSortKey?: keyof T & string;
+  defaultSortDir?: 'asc' | 'desc';
+  rowKey?: (row: T, i: number) => string | number;
+  onRowClick?: (row: T) => void;
+  /** Optional caption shown in the count bar next to row count. */
+  countLabel?: string;
+};
+
+export function RecordsTable<T>({
+  rows,
+  columns,
+  defaultSortKey,
+  defaultSortDir = 'desc',
+  rowKey,
+  onRowClick,
+  countLabel,
+}: Props<T>) {
+  const [sortKey, setSortKey] = useState<string | undefined>(
+    defaultSortKey as string | undefined,
+  );
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(defaultSortDir);
+
+  const toggle = (key: string) => {
+    if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const Arrow = ({ k }: { k: string }) =>
+    sortKey !== k ? null : sortDir === 'asc' ? (
+      <ChevronUp className="inline w-3 h-3 ml-1" />
+    ) : (
+      <ChevronDown className="inline w-3 h-3 ml-1" />
+    );
+
+  const sorted = sortKey
+    ? [...rows].sort((a, b) => {
+        const av = (a as never as Record<string, unknown>)[sortKey];
+        const bv = (b as never as Record<string, unknown>)[sortKey];
+        if (typeof av === 'number' && typeof bv === 'number') {
+          return sortDir === 'asc' ? av - bv : bv - av;
+        }
+        return sortDir === 'asc'
+          ? String(av).localeCompare(String(bv))
+          : String(bv).localeCompare(String(av));
+      })
+    : rows;
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b">
+        <p className="text-xs text-muted-foreground">
+          {sorted.length} {countLabel ?? (sorted.length === 1 ? 'record' : 'records')}
+        </p>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b">
+            {columns.map((col) => {
+              const sortable = col.sortable !== false;
+              return (
+                <TableHead
+                  key={col.key}
+                  className={cn(
+                    'text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+                    col.align === 'right' && 'text-right',
+                    sortable && 'cursor-pointer select-none',
+                    col.className,
+                  )}
+                  onClick={sortable ? () => toggle(col.key) : undefined}
+                >
+                  {col.label}
+                  {sortable && <Arrow k={col.key} />}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sorted.map((row, i) => (
+            <TableRow
+              key={rowKey ? rowKey(row, i) : i}
+              className={cn(
+                onRowClick && 'cursor-pointer hover:bg-muted/50 transition-colors',
+              )}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+            >
+              {columns.map((col) => (
+                <TableCell
+                  key={col.key}
+                  className={cn(
+                    'py-3',
+                    col.align === 'right' && 'text-right tabular-nums',
+                    col.className,
+                  )}
+                >
+                  {col.render
+                    ? col.render(row)
+                    : String(
+                        (row as never as Record<string, unknown>)[col.key] ?? '',
+                      )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

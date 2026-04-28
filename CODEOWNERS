@@ -72,3 +72,5 @@
 /skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
 # Governance Brain (apply compliance packs, diagnose errors, advise on config)
 /skills/uipath-governance/ @nishank-siddharth
+# Dashboards-as-Code skill
+/skills/uipath-dashboards/ @nishank-siddharth

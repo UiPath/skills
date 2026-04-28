@@ -1,0 +1,78 @@
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
+import { ViewAllLink } from '@/dashboard/chrome/ViewAllLink';
+import { fmt{{AxisFormatter}}, fmtNumber } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * Area-chart widget — cumulative trend or "X over time with fill emphasis".
+ * Used where the filled area under the line is meaningful (progress toward a goal,
+ * compliance rate over 12 weeks).
+ *
+ * Expected data shape: `{ points: [...], headline?: number, deltaText?: string }`
+ */
+
+const chartConfig = {
+  {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-{{colorIdx}}))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+
+  if (isLoading) return <LoadingState height="h-72" />;
+  if (error) throw error;
+  if (!data || !data.points || data.points.length === 0) {
+    return <EmptyState message="{{emptyMessage}}" />;
+  }
+
+  return (
+    <Card className="transition-all hover:shadow-sm">
+      <CardHeader className="space-y-0 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">{{title}}</p>
+          <ViewAllLink to="{{detailRoute}}" />
+        </div>
+        <p className="text-xs text-muted-foreground">{{description}}</p>
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        {(data.headline !== undefined || data.deltaText) && (
+          <div className="mb-3 flex items-end gap-2">
+            {data.headline !== undefined && (
+              <span className="text-2xl font-semibold tabular-nums text-foreground">
+                {fmtNumber(data.headline)}
+              </span>
+            )}
+            {data.deltaText && (
+              <DeltaBadge direction="{{deltaDirection}}" text={data.deltaText} className="mb-1" />
+            )}
+          </div>
+        )}
+
+        <ChartContainer config={chartConfig} className="h-48 w-full">
+          <AreaChart data={data.points}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="{{xKey}}" tickFormatter={fmt{{AxisFormatter}}} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Area
+              type="monotone"
+              dataKey="{{seriesKey}}"
+              stroke="var(--color-{{seriesKey}})"
+              fill="var(--color-{{seriesKey}})"
+              fillOpacity={0.2}
+              strokeWidth={2}
+            />
+          </AreaChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}

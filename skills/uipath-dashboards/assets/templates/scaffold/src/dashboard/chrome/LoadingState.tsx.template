@@ -1,0 +1,14 @@
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type Props = { height?: string };
+
+export function LoadingState({ height = 'h-40' }: Props) {
+  return (
+    <Card>
+      <CardContent className="py-6">
+        <Skeleton className={`w-full ${height}`} />
+      </CardContent>
+    </Card>
+  );
+}

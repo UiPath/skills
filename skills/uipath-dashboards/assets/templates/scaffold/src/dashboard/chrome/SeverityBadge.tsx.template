@@ -1,0 +1,45 @@
+import { cn } from '@/lib/utils';
+
+/**
+ * Severity pill for table cells and inline alerts.
+ *
+ * Tone-driven, matches the Recent Violations pattern:
+ *   - 'high'    : red (chart-5 / destructive)
+ *   - 'medium'  : amber (chart-4)
+ *   - 'low'     : muted gray
+ *   - 'info'    : blue (chart-1)
+ *   - 'success' : green (chart-3)
+ */
+export type Severity = 'high' | 'medium' | 'low' | 'info' | 'success';
+
+const toneFor = (s: Severity) => {
+  switch (s) {
+    case 'high':
+      return 'bg-destructive/10 text-destructive border-destructive/20';
+    case 'medium':
+      return 'bg-chart-4/10 text-chart-4 border-chart-4/20';
+    case 'low':
+      return 'bg-muted text-muted-foreground border-border';
+    case 'info':
+      return 'bg-chart-1/10 text-chart-1 border-chart-1/20';
+    case 'success':
+      return 'bg-chart-3/10 text-chart-3 border-chart-3/20';
+  }
+};
+
+type Props = { severity: Severity; label?: string; className?: string };
+
+export function SeverityBadge({ severity, label, className }: Props) {
+  const text = label ?? severity.charAt(0).toUpperCase() + severity.slice(1);
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
+        toneFor(severity),
+        className,
+      )}
+    >
+      {text}
+    </span>
+  );
+}

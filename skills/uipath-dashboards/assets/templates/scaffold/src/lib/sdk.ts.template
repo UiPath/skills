@@ -1,0 +1,22 @@
+import { UiPath } from '@uipath/uipath-typescript/core';
+import { resolveAuth } from './auth-strategy';
+
+/**
+ * Build and initialize a UiPath SDK instance.
+ *
+ * `await sdk.initialize()` is REQUIRED — for OAuth/Action-Center auth the
+ * SDK has to complete a handshake before service constructors will work.
+ * For secret-based auth (local dev with PAT) the SDK's initialize() returns
+ * immediately, so the await is essentially free; we keep it unconditional
+ * for uniformity.
+ *
+ * Forgetting the await is a silent foot-gun: services constructed against
+ * an uninitialized SDK throw "Invalid SDK instance" at the first call,
+ * after every widget's useEffect already mounted.
+ */
+export async function initSdk(): Promise<UiPath> {
+  const config = resolveAuth();
+  const sdk = new UiPath(config);
+  await sdk.initialize();
+  return sdk;
+}

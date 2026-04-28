@@ -1,0 +1,49 @@
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+
+type Props = {
+  title: string;
+  description?: string;
+  lastRefreshed?: Date;
+  onRefresh?: () => void;
+};
+
+/**
+ * Page header: title (h1) + optional description (one-sentence scope) +
+ * right-side action cluster (manual Refresh button when onRefresh is wired).
+ *
+ * Per layout-patterns.md rule 1, every dashboard MUST pass a `description`
+ * when the prompt yielded one. Description is the second line that explains
+ * what the dashboard covers ("Agent invocation volume, error rates, and
+ * performance metrics.") — never just a title.
+ *
+ * No theme toggle: dashboards default to light mode, no user-facing
+ * dark/light switcher. The dark-mode CSS variables in index.css remain in
+ * place as dormant infrastructure if a future revision wants to expose a
+ * toggle, but no UI control surfaces them today.
+ */
+export function Header({ title, description, lastRefreshed, onRefresh }: Props) {
+  const fmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric' });
+  return (
+    <header className="flex items-start justify-between gap-4">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description && (
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        )}
+        {lastRefreshed && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Last updated {fmt.format(lastRefreshed)}
+          </p>
+        )}
+      </div>
+      {onRefresh && (
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={onRefresh}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
+      )}
+    </header>
+  );
+}

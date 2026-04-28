@@ -1,0 +1,6 @@
+{
+  "inputs":   { "type": "object", "properties": {} },
+  "outputs":  { "type": "object", "properties": {} },
+  "inOuts":   { "type": "object", "properties": {} },
+  "outcomes": { "type": "object", "properties": {} }
+}

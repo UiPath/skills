@@ -1,0 +1,7 @@
+{
+  "name": "{{name}}",
+  "orgName": "{{orgName}}",
+  "tenantName": "{{tenantName}}",
+  "baseUrl": "{{baseUrl}}",
+  "redirectUri": "https://{{orgName}}.{{envInfix}}uipath.host/{{routingName}}"
+}

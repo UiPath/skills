@@ -1,0 +1,44 @@
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+
+/**
+ * Production builds must NEVER bake a PAT into the bundle. Anyone with the
+ * deployed bundle could extract the token; treating that as a normal path
+ * leaks user-session-scoped credentials.
+ *
+ * Auth in production runs through the SDK's ActionCenterTokenManager, which
+ * fetches a fresh token from the host on each session. The PAT is a local-
+ * dev convenience only.
+ *
+ * This plugin fails `npm run build` if VITE_UIPATH_PAT is set in any of the
+ * env files Vite loads (.env, .env.local, .env.production, etc.). The
+ * deploy flow handles this by temp-moving .env.local out of the way before
+ * production builds — see references/plugins/deploy/impl.md § Build.
+ */
+function failBuildIfPatSet(): import('vite').Plugin {
+  return {
+    name: 'fail-build-if-pat-set',
+    apply: 'build',
+    configResolved(config) {
+      const env = loadEnv(config.mode, process.cwd(), '');
+      if (env.VITE_UIPATH_PAT && env.VITE_UIPATH_PAT.length > 0) {
+        throw new Error(
+          '[security] VITE_UIPATH_PAT is set during production build.\n' +
+          'PATs must NEVER be baked into the production bundle. ' +
+          'Unset it in .env.local (or move .env.local aside for the build) and re-run.\n' +
+          'Production auth flows through the SDK\'s ActionCenterTokenManager — no client-side PAT needed.'
+        );
+      }
+    },
+  };
+}
+
+export default defineConfig({
+  base: './',                // platform invariant — relative paths for Coded App iframe
+  plugins: [react(), failBuildIfPatSet()],
+  resolve: {
+    alias: { '@': path.resolve(__dirname, './src') },
+  },
+  server: { port: 5173 },
+});

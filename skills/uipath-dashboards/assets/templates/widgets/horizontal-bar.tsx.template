@@ -1,0 +1,82 @@
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { use{{HookName}} } from '@/lib/queries/{{hookFile}}';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { DeltaBadge } from '@/dashboard/chrome/DeltaBadge';
+import { ViewAllLink } from '@/dashboard/chrome/ViewAllLink';
+import { fmtNumber } from '@/lib/format';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+
+/**
+ * Horizontal-bar widget — categorical with > 6 items, sorted desc.
+ * Also used as the degradation fallback when a donut has > 5 slices.
+ *
+ * Expected data: `{ items: Array<{ [xKey]: string; [seriesKey]: number }>, headline?: number, deltaText?: string }`
+ */
+
+const chartConfig = {
+  {{seriesKey}}: { label: '{{seriesLabel}}', color: 'hsl(var(--chart-{{colorIdx}}))' },
+} satisfies ChartConfig;
+
+type Props = { sdk: UiPath };
+
+export function {{ComponentName}}({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}(sdk);
+
+  if (isLoading) return <LoadingState height="h-72" />;
+  if (error) throw error;
+  if (!data || !data.items || data.items.length === 0) {
+    return <EmptyState message="{{emptyMessage}}" />;
+  }
+
+  // Sort desc by series value (clarity rule for horizontal bars).
+  const sorted = [...data.items].sort(
+    (a, b) => (b as any).{{seriesKey}} - (a as any).{{seriesKey}},
+  );
+
+  return (
+    <Card className="transition-all hover:shadow-sm">
+      <CardHeader className="space-y-0 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">{{title}}</p>
+          <ViewAllLink href="{{detailHref}}" />
+        </div>
+        <p className="text-xs text-muted-foreground">{{description}}</p>
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        {(data.headline !== undefined || data.deltaText) && (
+          <div className="mb-3 flex items-end gap-2">
+            {data.headline !== undefined && (
+              <span className="text-2xl font-semibold tabular-nums text-foreground">
+                {fmtNumber(data.headline)}
+              </span>
+            )}
+            {data.deltaText && (
+              <DeltaBadge direction="{{deltaDirection}}" text={data.deltaText} className="mb-1" />
+            )}
+          </div>
+        )}
+
+        <ChartContainer config={chartConfig} className="h-72 w-full">
+          <BarChart data={sorted} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+            <YAxis
+              type="category"
+              dataKey="{{xKey}}"
+              width={120}
+              tick={{ fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="{{seriesKey}}" fill="var(--color-{{seriesKey}})" radius={[0, 3, 3, 0]} />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}

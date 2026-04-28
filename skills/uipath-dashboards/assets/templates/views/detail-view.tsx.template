@@ -1,0 +1,58 @@
+import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell';
+import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable';
+import { LoadingState } from '@/dashboard/chrome/LoadingState';
+import { EmptyState } from '@/dashboard/chrome/EmptyState';
+import { use{{HookName}}List } from '@/lib/queries/{{hookFile}}-list';
+import type { UiPath } from '@uipath/uipath-typescript/core';
+// Generator imports format helpers per column: fmtNumber, fmtTimeAgo, fmtPercent, fmtDuration, fmtDay, formatJobError
+// import { fmtNumber, fmtTimeAgo } from '@/lib/format';
+// import { formatJobError } from '@/lib/queries/_shared';
+// import { SeverityBadge } from '@/dashboard/chrome/SeverityBadge';
+
+/**
+ * Per-widget detail view — rendered at route "/{{kebabSlug}}".
+ * Re-queries the underlying SDK data WITHOUT aggregation so the user sees
+ * the full list of records behind the widget, pre-filtered by the widget's
+ * metric semantics.
+ *
+ * Views are thin: ~25 lines of column definitions + a RecordsTable call.
+ * All table scaffolding (sort state, chevrons, hover rows, count bar) is
+ * inherited from the shared `RecordsTable` primitive.
+ *
+ * Substitutions:
+ *   {{title}}           — "Active agents" (same as widget title)
+ *   {{description}}     — "All agents that ran at least one job in the last 24 hours."
+ *   {{HookName}}        — drill-down query hook, widget's hook + 'List' suffix
+ *   {{hookFile}}        — underlying query file ("active-agents")
+ *   {{RowType}}         — row type
+ *   {{defaultSortKey}}  — primary column to sort by on mount
+ *   {{emptyMessage}}    — widget-specific
+ *   {{columnDefs}}      — array literal of ColumnDef<Row> — generator emits per widget
+ */
+
+type Row = {{RowType}};
+type Props = { sdk: UiPath };
+
+const columns: ColumnDef<Row>[] = {{columnDefs}};
+
+export function {{ComponentName}}View({ sdk }: Props) {
+  const { data, isLoading, error } = use{{HookName}}List(sdk);
+
+  let body;
+  if (isLoading) body = <LoadingState height="h-96" />;
+  else if (error) throw error;                              // caught by WidgetBoundary / ErrorBoundary
+  else if (!data || data.length === 0) body = <EmptyState message="{{emptyMessage}}" />;
+  else body = (
+    <RecordsTable<Row>
+      rows={data}
+      columns={columns}
+      defaultSortKey="{{defaultSortKey}}"
+    />
+  );
+
+  return (
+    <DetailViewShell title="{{title}}" description="{{description}}">
+      {body}
+    </DetailViewShell>
+  );
+}
