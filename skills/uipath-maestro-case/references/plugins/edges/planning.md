@@ -58,9 +58,9 @@ If sdd.md states an explicit edge label, use it verbatim and skip inference.
 
 ### Anti-patterns
 
-- ❌ Emitting an edge T-entry without a `label:` line.
-- ❌ Inferring from edge index (`"Edge 1"`, `"Edge 2"`) — meaningless to the user.
-- ❌ Reading exit-condition text from another T-entry — read directly from sdd.md, preserve plugin isolation.
+- **Do NOT emit an edge T-entry without a `label:` line.**
+- **Do NOT infer from edge index** (`"Edge 1"`, `"Edge 2"`) — meaningless to the user.
+- **Do NOT read exit-condition text from another T-entry** — read directly from sdd.md, preserve plugin isolation.
 
 ## Handles
 
