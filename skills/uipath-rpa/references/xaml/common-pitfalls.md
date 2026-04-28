@@ -717,11 +717,12 @@ All `uip rpa` commands default to the current working directory as the project r
 
 ### Studio IPC connection failures
 
-`uip rpa` commands communicate with Studio Desktop via IPC. If Studio is not running, not responding, or has no project open, commands will fail with connection errors. Recovery steps:
-1. `uip rpa list-instances --output json` — check if Studio is running
-2. `uip rpa start-studio` — start Studio if not running
-3. `uip rpa open-project --project-dir "..."` — open the project if Studio has no project loaded
-4. If Studio is running but unresponsive, the user may need to restart it manually
+`uip rpa` commands communicate with Studio over IPC. By default this is a **headless Studio** that auto-launches from a NuGet package — no Studio Desktop required. Recovery steps when commands fail with connection errors:
+
+1. **Re-run the command.** Headless Studio relaunches automatically on the next call; transient pipe errors clear on retry.
+2. **Raise the timeout for the first call.** Cold NuGet restore of the headless Studio package can take 30–90 s — `uip rpa --timeout 600 <command>`.
+3. **`uip rpa open-project --project-dir "..."`** — open the project explicitly if Studio reports no project loaded.
+4. **Studio Desktop only** — if the failing command is `diff` or `focus-activity` (or the user set `UIPATH_RPA_TOOL_USE_STUDIO=1`), check Studio Desktop with the hidden `uip rpa list-instances --output json` and run `uip rpa start-studio --project-dir "..."` if no instance is up.
 
 ### CLI output format for parsing
 

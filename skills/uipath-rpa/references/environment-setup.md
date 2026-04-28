@@ -1,6 +1,18 @@
 # Environment Setup
 
-**Goal:** Ensure Studio Desktop is running, connected, and targeting the correct project before any other operations.
+**Goal:** Resolve the project root before any other operations.
+
+## Studio Desktop vs headless Studio
+
+`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — create-project, open-project, run-file, get-errors, build, find-activities, install-or-update-packages, indicate-application/element, the `uia` group, etc. all work headless.
+
+Studio Desktop is only required for two interactive UI tools:
+- `uip rpa diff` — opens an interactive diff window in Studio's UI.
+- `uip rpa focus-activity` — selects an activity in Studio's active workflow designer.
+
+For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
+
+> **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. Bump the per-call timeout to ≥ 180s for the first invocation.
 
 ## Step 0.1: Establish Project Root
 
@@ -9,42 +21,14 @@ The `uip rpa` commands use `--project-dir` to target a specific project (default
 **Resolution order** (use the first rule that matches):
 1. **Explicit path** — The user provided a directory path → use it as-is.
 2. **Project name reference** — The user mentioned a project by name → search for a folder with that name containing `project.json`.
-3. **Detect from running Studio** — No path or name given → run:
-   ```bash
-   uip rpa list-instances --output json   ```
-   Parse the JSON response. If `Data` is a non-empty array, each entry has a `ProjectDirectory` field. Use it:
-   - **One instance** → use its `ProjectDirectory`.
-   - **Multiple instances** → pick the best match or ask the user.
-4. **Fall back to current working directory** — If `Data` is an empty array.
+3. **Fall back to current working directory** — If neither is given.
 
 If the CWD is not the project root:
 - Locate the project root by finding `project.json`: `Glob: pattern="**/project.json"`
 - **Pass `--project-dir` explicitly** to every `uip rpa` command
 - Store the project root path and use it consistently as `{projectRoot}`
 
-## Step 0.2: Verify Studio is Running
-
-```bash
-uip rpa list-instances --output json```
-
-**If no instances are found or Studio is not running:**
-```bash
-uip rpa start-studio
-```
-
-**If Studio is running but the project is not open:**
-```bash
-uip rpa open-project --project-dir "{projectRoot}"```
-
-**If Studio IPC connection fails** (error messages about connection refused, timeout, or pipe not found):
-1. Check if Studio Desktop is actually installed on the machine
-2. Try `uip rpa start-studio` to launch a fresh instance
-3. If Studio is running but IPC fails, the user may need to restart Studio
-4. Inform the user and ask them to ensure Studio Desktop is open and responsive
-
-**Note:** If `start-studio` fails with a registry key error, pass `--studio-dir` explicitly pointing to the Studio installation directory.
-
-## Step 0.3: Authentication (If Needed)
+## Step 0.2: Authentication (If Needed)
 
 Some commands (IS connections, workflow examples, cloud features) require authentication:
 
@@ -54,7 +38,7 @@ uip login
 
 If you encounter auth errors (401, 403, "not authenticated") during any phase, prompt the user to run `uip login` to authenticate against their UiPath Cloud tenant.
 
-## Step 0.4: Creating a New Project
+## Step 0.3: Creating a New Project
 
 **ALWAYS use `uip rpa create-project`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
 
@@ -68,18 +52,17 @@ uip rpa create-project \
   --expression-language "VisualBasic" \
   --target-framework "Windows" \
   --description "Automates invoice processing" \
-  --studio-dir "<STUDIO_DIR>" \
   --output json
 ```
 
 **Expression language for XAML projects:** Prefer `VisualBasic` for Windows target framework projects.
 
-**`--studio-dir`:** Pass the Studio installation directory explicitly (e.g. `C:\Program Files\UiPathPlatform\Studio\<version>`) if the CLI fails to resolve it from the registry. Resolve it once per session and reuse for every subsequent `uip rpa` command.
+**`--studio-dir`:** Optional. Headless Studio does not need it. Pass it only when you have explicitly forced Studio Desktop (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or invoking `diff`/`focus-activity`) and Studio's auto-detection from the registry fails.
 
 ### For Coded Projects
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json
 ```
 
 Use `--template-id TestAutomationProjectTemplate` for test projects, or `--template-id LibraryProcessTemplate` for libraries.
@@ -137,7 +120,6 @@ uip rpa create-project \
   --location "/path/to/parent/directory" \
   --template-package-id "<PACKAGE_ID>" \
   --template-package-version "<VERSION>" \
-  --studio-dir "<STUDIO_DIR>" \
   --output json
 ```
 
@@ -151,3 +133,23 @@ uip rpa create-project \
 1. Open the project in Studio: `uip rpa open-project --project-dir "/path/to/MyAutomation"`
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
+
+## Edge case: requiring Studio Desktop
+
+Two `uip rpa` commands need a running Studio Desktop instance — they have UI side effects that Helm cannot render:
+
+| Command | Why it needs Studio |
+|---------|---------------------|
+| `uip rpa diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
+| `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. |
+
+When (and only when) you need to run one of these, ensure Studio Desktop is up:
+
+```bash
+uip rpa list-instances --output json   # hidden diagnostic — confirms a Studio Desktop instance is running
+uip rpa start-studio --project-dir "{projectRoot}" --output json   # launches Studio Desktop if none is running
+```
+
+If `start-studio` cannot resolve Studio's install directory from the registry, pass `--studio-dir` pointing to the Studio installation root.
+
+You can also force Studio Desktop for any other command by setting `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is not needed for the standard authoring loop and gives up the headless benefits.
