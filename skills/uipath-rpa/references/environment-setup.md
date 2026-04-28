@@ -14,7 +14,7 @@ The `uip rpa` commands use `--project-dir` to target a specific project (default
    uip rpa list-instances --output json   ```
    Parse the JSON response. If `Data` is a non-empty array, each entry has a `ProjectDirectory` field. Use it:
    - **One instance** → use its `ProjectDirectory`.
-   - **Multiple instances** → pick the best match or ask the user.
+   - **Multiple instances** → choose the instance whose `ProjectDirectory` exactly matches the intended project. If one instance has the project open and another is idle, keep using the project directory from the open instance and pass `--project-dir` on every command. For commands that offer an explicit Studio-targeting option, use it to avoid routing to the idle instance. If no instance clearly matches, ask the user which Studio window owns the project or ask them to close the idle instance.
 4. **Fall back to current working directory** — If `Data` is an empty array.
 
 If the CWD is not the project root:
