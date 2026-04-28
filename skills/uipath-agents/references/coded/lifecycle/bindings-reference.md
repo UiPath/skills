@@ -58,20 +58,7 @@ Use Grep to find calls matching these patterns across all project Python files. 
 
 **SubType inference during scanning:**
 
-For each binding, look up valid `SubType` values from the Resource Builder metadata (see `SubType Metadata` section for the full lookup procedure):
-
-1. Find all entries in the metadata whose `kind` matches the binding's resource kind.
-2. If **no entry** has a `type` field → omit `SubType` entirely.
-3. If **exactly one** entry has a `type` → emit that value as `SubType`.
-4. If **multiple entries** have different `type` values → try to disambiguate from the agent code first. For assets, apply these code heuristics in order:
-   - `sdk.assets.retrieve_credential` / `retrieve_credential_async` → `credentialAsset` (high confidence, definitive)
-   - Return value is type-annotated or used as `str` → `stringAsset`
-   - Return value is type-annotated or used as `int` → `integerAsset`
-   - Return value is type-annotated or used as `bool` → `booleanAsset`
-   - Variable name or context suggests a password/API key/token (e.g. `password`, `api_key`, `secret`, `token`, `pwd`) → likely `credentialAsset` or `secretAsset` — confirm which with the user
-5. If the code-based heuristics do not resolve the SubType (or produce only a low-confidence guess), **ask the user via `AskUserQuestion`**: present the candidate `type` values from the metadata as a multiple-choice list, plus a `None / skip` option. Include the resource name, folder, and any heuristic best guess in the prompt ("Asset `db_password` in `Finance` — code suggests credential/secret; which sub-type?"). If the user picks `None / skip`, omit `SubType`.
-
-Omitting `SubType` is always safe — it means `uipath push` will still create a virtual resource placeholder (for supported kinds) with just the base `kind`.
+For `retrieve_credential` / `retrieve_credential_async` calls, always emit `"SubType": "credentialAsset"` — the method name is definitive. For all other calls, follow the full lookup procedure in the **SubType Metadata** section below: fetch metadata → filter by kind → disambiguate from code → fall back to `AskUserQuestion` → omit `SubType` if the user skips. Omitting `SubType` is always safe — `uipath push` still creates a virtual placeholder for supported kinds, just with the base `kind` only.
 
 ### Step 3: Compare with Existing Bindings
 
@@ -116,7 +103,7 @@ For the exact JSON structure of each resource type, consult `bindings-reference.
 - `ActivityName` in metadata always uses the `_async` variant name
 - Connection entries use `ConnectionId` instead of `name` and have no `folderPath`
 - The `app` resource type uses the app name as `DisplayLabel`; all others use `"FullName"`
-- `SubType` is an optional metadata field. Always emit `"SubType": "credentialAsset"` for `retrieve_credential*` calls. For other SDK calls omit it unless the user specifies a value (needed for correct virtual-resource fallback on push — see `Virtual Resource Fallback on uipath push`).
+- `SubType` is an optional metadata field — see the **SubType Metadata** section for the full lookup procedure and the `retrieve_credential*` shortcut.
 - Entrypoint fields (`EntryPointUniqueId`, `EntryPointPath`) are optional in any resource's `value` block, but when present must include a `displayName` set to the entrypoint's `filePath` from `entry-points.json`
 
 ### Step 6: Verify
@@ -586,13 +573,15 @@ The valid SubType values for each kind are defined by the Studio Web Resource Bu
    ```
    GET https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata
    ```
-   Example: `https://alpha.uipath.com/myorg/studio_/backend/api/resourcebuilder/metadata`. The endpoint returns the up-to-date list of supported kinds/types for the target tenant.
+   Example: `https://cloud.uipath.com/myorg/studio_/backend/api/resourcebuilder/metadata`. Returns the up-to-date list of supported kinds/types for the target tenant.
 
-2. **Fallback — bundled snapshot:** `assets/solutions/metadata.json` (relative to the skill root). Use this when the live endpoint is unreachable or the agent is not authenticated. The snapshot may be stale compared to the live endpoint.
+2. **Fallback — bundled snapshot:** `assets/solutions/metadata.json` (relative to the skill root). Use when the live endpoint is unreachable or the agent is not authenticated. May be stale; the file's `_snapshotDate` shows when it was captured.
 
 ### Metadata structure
 
-Both sources return the same shape — an array of entries:
+The two sources return slightly different shapes. The agent only needs `{kind, type}` from each entry — everything else can be ignored.
+
+**Live endpoint** — array of full entries:
 
 ```json
 [
@@ -602,21 +591,53 @@ Both sources return the same shape — an array of entries:
 ]
 ```
 
+**Bundled snapshot** — wrapper with trimmed entries (only `kind` and `type` are kept):
+
+```json
+{
+  "_snapshotDate": "2026-04-24",
+  "_source": "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata",
+  "_note": "...",
+  "entries": [
+    { "kind": "asset", "type": "stringAsset" },
+    { "kind": "asset", "type": "credentialAsset" },
+    { "kind": "queue", "type": null }
+  ]
+}
+```
+
+In both shapes:
+
 - `kind` — maps directly to the binding's `resource` field.
-- `type` — optional. When present, this is the `SubType` value to emit. When absent, the kind has no sub-type.
-- A kind may have multiple entries (one per valid sub-type). Example: `asset` has 5 entries (`stringAsset`, `integerAsset`, `booleanAsset`, `credentialAsset`, `secretAsset`).
+- `type` — optional. When present, this is the `SubType` value to emit. When `null` or absent, the kind has no sub-type.
+- A kind may appear in multiple entries (one per valid sub-type). Example: `asset` has 5 entries (`stringAsset`, `integerAsset`, `booleanAsset`, `credentialAsset`, `secretAsset`).
 
 ### Lookup procedure
 
 For each binding, follow these steps:
 
-1. **Fetch metadata.** Try the live endpoint first; on any failure (network error, auth failure, non-200 response), read `assets/solutions/metadata.json` from the skill's assets folder.
+1. **Fetch metadata.** Try the live endpoint first; on any failure (network error, auth failure, non-200 response), read `assets/solutions/metadata.json`. From the bundled snapshot, read the `entries` array; from the live endpoint, use the top-level array directly.
 2. **Filter by `kind`.** Select all entries where `kind` equals the binding's `resource` value.
 3. **Collect candidate `type` values.** Build a set from the `type` field of the matched entries, dropping `null`/absent values.
 4. **Choose a SubType:**
    - **No candidates** (all entries lack `type`) → omit `SubType`.
    - **One candidate** → emit it as `SubType`.
    - **Multiple candidates** → try code-based disambiguation first (see rules below). If no rule matches, **ask the user via `AskUserQuestion`**: present the candidate `type` values as a multiple-choice list plus a `None / skip` option, and include the resource name and folder in the prompt for context. If the user picks `None / skip`, omit `SubType`.
+
+### Refreshing the bundled snapshot
+
+When the live endpoint adds new kinds or types, regenerate `assets/solutions/metadata.json` from an authenticated tenant:
+
+```bash
+curl -s -H "Authorization: Bearer <TOKEN>" \
+  "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata" \
+| jq --arg date "$(date -u +%Y-%m-%d)" '{
+    _snapshotDate: $date,
+    _source: "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata",
+    _note: "Trimmed projection: agents only consume {kind, type} for SubType lookup.",
+    entries: [.[] | {kind, type}]
+  }' > skills/uipath-agents/assets/solutions/metadata.json
+```
 
 ### Known code-based disambiguation rules
 
