@@ -7,14 +7,6 @@ user-invocable: true
 
 # UiPath Agents
 
-## CLI Setup
-
-```bash
-which uip > /dev/null 2>&1 && echo "uip found" || echo "uip NOT found — run: npm install -g @uipath/cli"
-```
-
-If `uip` is not found, install with `npm install -g @uipath/cli`. If `npm` is missing, ask the user to install Node.js first.
-
 ## Project Type Detection
 
 Determine the agent mode before proceeding:

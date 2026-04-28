@@ -5,7 +5,7 @@ Synchronize UiPath platform resource references in agent Python code with the `b
 ## When to Use
 
 - After adding, removing, or modifying UiPath SDK resource calls in agent code
-- Before packaging/deploying an agent with the [deployment reference](deployment.md) (`uip codedagent pack` / `uip codedagent publish`)
+- Before deploying an agent with the [deployment reference](deployment.md) (`uip codedagent deploy`)
 - When resource override configuration in Orchestrator is missing entries or shows stale resources
 - To audit existing bindings.json for correctness
 
@@ -77,7 +77,13 @@ Each resource can optionally be linked to an entrypoint from `entry-points.json`
 
 **Workflow:**
 1. **Single entrypoint** — If `entry-points.json` contains exactly one entrypoint, automatically bind all resources to it. Add `EntryPointUniqueId` (preferred) or `EntryPointPath` (fallback). No need to ask the user.
-2. **Multiple entrypoints** — Use `AskUserQuestion` to ask the user which entrypoint each resource should be bound to. Present the entrypoint names/filePaths as choices. Include a **"None"** option — if the user chooses "None", omit the entrypoint field from that resource's `value`.
+2. **Multiple entrypoints** — Call `AskUserQuestion` once with all detected resources and the entrypoint choices. Exact phrasing:
+
+   > Which entrypoint should each of these resources be bound to? Choose one per resource, or `None` to leave it unbound.
+   > Resources: `<list: name + type>`
+   > Entrypoints: `<list: name + filePath>`, plus `None`
+
+   Apply `EntryPointUniqueId` (preferred) or `EntryPointPath` (fallback) based on the answer. If the user picks `None`, omit the entrypoint field from that resource's `value`.
 3. **No `entry-points.json`** — Skip entrypoint binding entirely.
 4. **Existing entrypoint fields** — If a resource already has `EntryPointUniqueId`/`EntryPointPath`, preserve them unless the referenced entrypoint no longer exists in `entry-points.json` (flag as stale).
 
@@ -90,13 +96,13 @@ After confirming with the user, update `bindings.json`:
 - **Update** entries where values have drifted
 - **Add/update entrypoint fields** per Step 4 resolution
 
-For the exact JSON structure of each resource type, consult `bindings-reference.md`. Key rules:
+For the exact JSON structure of each resource type, see § bindings.json Reference below. Key rules:
 
 - `version` is always `"2.0"`
 - Each resource entry has `resource`, `key`, `value`, and `metadata` fields
 - The `key` is `<name>.<folder_path>` for most types, just `<connection_key>` for connections. When `folder_path` is empty, omit the dot separator — the key is just `<name>`
 - `ActivityName` in metadata always uses the `_async` variant name
-- Connection entries use `ConnectionId` instead of `name` and have no `folderPath`
+- Connection entries use a `ConnectionId` field in their binding `value` (other resource types use `name`) and have no `folderPath`. The `ConnectionId`'s `defaultValue` is the connection key — the same string passed as the positional argument to `sdk.connections.retrieve()` / `retrieve_async()`.
 - The `app` resource type uses the app name as `DisplayLabel`; all others use `"FullName"`
 - Entrypoint fields (`EntryPointUniqueId`, `EntryPointPath`) are optional in any resource's `value` block, but when present must include a `displayName` set to the entrypoint's `filePath` from `entry-points.json`
 
@@ -108,12 +114,6 @@ After writing the updated `bindings.json`:
 2. Confirm each code resource call has a matching binding entry
 3. Confirm no orphaned entries remain (unless the user chose to keep them)
 4. If entrypoint binding was applied, verify `EntryPointUniqueId` values match valid `uniqueId` entries in `entry-points.json`
-
-## Reference Files
-
-For detailed bindings.json schema, all eight resource type templates, SDK method signatures, and a complete worked example, consult:
-
-- **`bindings-reference.md`** — Full bindings.json format specification and resource type mapping
 
 ## Edge Cases
 
@@ -139,7 +139,7 @@ For detailed bindings.json schema, all eight resource type templates, SDK method
 
 ## Additional Instructions
 
-- Read `bindings-reference.md` before generating or modifying any binding entries — do not guess the JSON structure.
+- Consult § bindings.json Reference below before generating or modifying any binding entries — do not guess the JSON structure.
 - Confirm stale entry removal with the user before deleting — stale entries may be intentionally kept for future use.
 - When in doubt about whether a value is static or dynamic, read the surrounding code context to determine if the string literal is truly constant.
 - After updating bindings.json, always re-read it to verify well-formed JSON before reporting success.

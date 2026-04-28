@@ -2,7 +2,7 @@
 
 How to invoke external processes and monitor job execution in LangGraph agents using UiPath automation capabilities.
 
-> **First time here?** Read [Interrupt and Resume Patterns](interrupt-resume.md) for a conceptual overview of how agent pausing and resumption works.
+> **First time here?** Read [Human-in-the-Loop & Interrupt/Resume](human-in-the-loop.md) for a conceptual overview of how agent pausing and resumption works.
 
 ## Overview
 

@@ -17,7 +17,7 @@ This generates `main.py` (with a StateGraph template), `langgraph.json`, and `py
 
 ## Project Structure
 
-LangGraph agents use a **different structure** from simple function-based agents. There are two supported patterns:
+LangGraph agents use a **different structure** from coded function agents. There are two supported patterns:
 
 ### Pattern A: `langgraph.json` (Recommended for LangGraph)
 
@@ -128,14 +128,14 @@ Use UiPath's LLM libraries instead of raw `langchain_openai.ChatOpenAI`. These r
 
 Drop-in replacement for LangChain's `ChatOpenAI` that routes through UiPath's passthrough endpoint (Azure OpenAI API format). No API keys needed — usage consumes Agent Units from your UiPath account.
 
-> **CRITICAL: Never instantiate LLM clients at module level.** `uip codedagent init` imports your file — module-level LLM clients will fail because auth may not have happened yet. Always create LLM instances inside graph nodes or functions.
+Instantiate LLM clients inside graph nodes or functions — module-level instantiation fails during `uip codedagent init`. See [../lifecycle/build.md](../lifecycle/build.md) § Additional Instructions for the full rule.
 
 ```python
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
 
-# INSIDE a graph node or function, not at module level:
+# Inside a graph node:
 llm = UiPathAzureChatOpenAI(
-    model="gpt-4.1-mini-2025-04-14",
+    model="gpt-4o-mini-2024-07-18",
     temperature=0.7,
     max_tokens=4000,
     timeout=30,
@@ -143,11 +143,7 @@ llm = UiPathAzureChatOpenAI(
 )
 ```
 
-**Supported Models:**
-- `gpt-4`, `gpt-4-turbo-2024-04-09`
-- `gpt-4o-2024-05-13`, `gpt-4o-mini-2024-07-18`
-- `gpt-4.1-mini-2025-04-14` (recommended)
-- And others available in your UiPath instance
+**Model names:** Pass the model identifier as a string. Use `sdk.agenthub.get_available_llm_models()` to list the models available in your tenant.
 
 **Features:**
 - No API key needed — uses UiPath authentication
@@ -205,18 +201,20 @@ class Analysis(BaseModel):
 
 llm = UiPathAzureChatOpenAI()
 structured_llm = llm.with_structured_output(Analysis)
-result = await structured_llm.ainvoke("Analyze: I love this product!")
-# result is an Analysis instance
+raw_dict: dict = await structured_llm.ainvoke("Analyze: I love this product!")
+result: Analysis = Analysis.model_validate(raw_dict)
 ```
 
 ### Model Selection Guide
 
-| Use Case | Recommended Model | Class |
-|----------|-------------------|-------|
-| Cost-conscious, general tasks | `gpt-4o-mini` or `gpt-4.1-mini-2025-04-14` | UiPathAzureChatOpenAI |
-| Complex reasoning, state-of-the-art | `gpt-4o` or `o3-mini` | UiPathChat or UiPathAzureChatOpenAI |
-| Multi-vendor flexibility | Any vendor model | UiPathChat |
-| Specialized domains (e.g., code) | Claude variants | UiPathChat |
+| Use Case | Class |
+|----------|-------|
+| Cost-conscious, general tasks | `UiPathAzureChatOpenAI` |
+| Complex reasoning, state-of-the-art | `UiPathChat` or `UiPathAzureChatOpenAI` |
+| Multi-vendor flexibility (OpenAI, Anthropic, Google) | `UiPathChat` |
+| Specialized domains (e.g., code) | `UiPathChat` with a Claude model |
+
+Call `sdk.agenthub.get_available_llm_models()` to see the model strings available in your tenant and pass the exact `model_name` to the class constructor.
 
 ---
 
@@ -261,7 +259,7 @@ async def search(state: GraphState) -> Command:
     # ... your logic ...
     return Command(update={"answer": "result", "sources": ["url1"]})
 
-builder = StateGraph(GraphState, input=GraphInput, output=GraphOutput)
+builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
 builder.add_node("search", search)
 builder.add_edge(START, "search")
 builder.add_edge("search", END)
@@ -330,7 +328,7 @@ uip codedagent init
   ```
 
 **Schema not detected**
-- Ensure your `StateGraph` specifies `input=GraphInput, output=GraphOutput`
+- Ensure your `StateGraph` specifies `input_schema=GraphInput, output_schema=GraphOutput` 
 - The Input/Output classes must be Pydantic `BaseModel` subclasses
 
 ---
@@ -371,10 +369,10 @@ The `uipath-langchain` package provides UiPath-specific LangChain tools:
 
 | Tool | Import | Purpose |
 |------|--------|---------|
-| Process invocation | `uipath_langchain.agent.tools` | Trigger UiPath processes |
-| Escalation (HITL) | `uipath_langchain.agent.tools` | Send to human reviewer |
-| Context search | `uipath_langchain.agent.tools` | Search Context Grounding indexes |
-| MCP tools | `uipath_langchain.agent.tools.mcp` | Connect to MCP servers |
+| Process invocation | `uipath_langchain.agent.tools import create_process_tool` | Trigger UiPath processes |
+| Escalation (HITL) | `uipath_langchain.agent.tools import create_escalation_tool` | Send to human reviewer |
+| Context search | `uipath_langchain.retrievers import ContextGroundingRetriever` | Search Context Grounding indexes |
+| MCP tools | `uipath_langchain.agent.tools import open_mcp_tools` | Connect to MCP servers |
 
 ---
 

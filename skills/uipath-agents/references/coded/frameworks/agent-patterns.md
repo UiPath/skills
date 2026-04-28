@@ -1,6 +1,6 @@
 # Agent Patterns
 
-Common implementation patterns for building UiPath coded agents, from simple functions to multi-agent orchestrations.
+Common implementation patterns for building UiPath coded agents, from coded functions to multi-agent orchestrations.
 
 > **Note:** These patterns are general architectural concepts. The code examples use **LangGraph** and the **UiPath Python SDK**. The same patterns apply to LlamaIndex and OpenAI Agents — see their respective integration references.
 
@@ -66,7 +66,7 @@ async def main(input: Input) -> Output:
 **Key points:**
 - `@traced()` on `main` is required for Orchestrator visibility
 - Use `@traced(name=..., span_type="tool")` on helper functions for granular traces
-- Use `@mockable()` on functions calling external services to enable evaluation mocking
+- Use `@mockable` from `uipath.eval.mocks` on functions calling external services so evaluations can substitute example calls
 
 ---
 
@@ -117,7 +117,7 @@ async def main(input: Input) -> Output:
 
 Multi-step agent using LangGraph's `StateGraph` with nodes, edges, and conditional routing. Supports LLM-powered decisions.
 
-> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than simple agents. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
+> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than coded function agents. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
 
 **When to use:** Classification workflows, multi-step reasoning, conditional branching based on LLM output.
 
@@ -150,7 +150,7 @@ def route(state: GraphState) -> str:
         return END
     return "review"
 
-builder = StateGraph(GraphState, input=GraphInput, output=GraphOutput)
+builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
 builder.add_node("classify", classify)
 builder.add_edge(START, "classify")
 builder.add_conditional_edges("classify", route)
@@ -365,7 +365,7 @@ def route_supervisor(state: State) -> str:
         case "coder": return "coder"
         case _: return END
 
-builder = StateGraph(State, input=GraphInput, output=GraphOutput)
+builder = StateGraph(State, input_schema=GraphInput, output_schema=GraphOutput)
 builder.add_node("supervisor", make_supervisor(UiPathAzureChatOpenAI()))
 builder.add_node("researcher", research_node)
 builder.add_node("coder", code_node)
@@ -388,5 +388,5 @@ graph = builder.compile()
 
 - **Pydantic models** — Every agent defines `Input`/`Output` (or `GraphInput`/`GraphOutput`) as `BaseModel` subclasses. Run `uip codedagent init` after changing them.
 - **`@traced()`** — Apply to `main` and key helpers. LangGraph agents get tracing automatically.
-- **`@mockable()`** — Wrap functions calling external services to enable evaluation mocking.
+- **`@mockable`** — From `uipath.eval.mocks`. Wrap functions calling external services so evaluations can return `ExampleCall` outputs without hitting the network.
 - **Async** — All patterns support `async def main(...)`. SDK methods have `_async` variants.

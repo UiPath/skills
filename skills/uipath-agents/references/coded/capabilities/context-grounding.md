@@ -17,6 +17,16 @@ Before using context grounding, you must first create an index in your Orchestra
 
 Once indexed, you can reference the index by name in your agent code.
 
+## Folder Targeting
+
+Context Grounding indexes live in Orchestrator folders. Pass `folder_path` (or `folder_key`) whenever the index is not in the default folder resolved from your auth context — otherwise the service may return `400 FolderKey required`.
+
+```python
+retriever = ContextGroundingRetriever(index_name="my_index", folder_path="Shared/Knowledge")
+```
+
+All examples below accept the same `folder_path` / `folder_key` arguments — add them when cross-folder access is needed.
+
 ## Core Components
 
 ### ContextGroundingRetriever
@@ -24,7 +34,7 @@ Once indexed, you can reference the index by name in your agent code.
 A document retrieval system using vector search to find relevant information based on natural language queries.
 
 ```python
-from uipath_langchain.agent.tools import ContextGroundingRetriever
+from uipath_langchain.retrievers import ContextGroundingRetriever
 
 retriever = ContextGroundingRetriever(index_name="my_index")
 documents = await retriever.ainvoke("What is our return policy?")
@@ -41,7 +51,7 @@ documents = await retriever.ainvoke("What is our return policy?")
 A vector store enabling semantic searches and retrieval chains with language models.
 
 ```python
-from uipath_langchain.agent.tools import ContextGroundingVectorStore
+from uipath_langchain.vectorstores import ContextGroundingVectorStore
 
 vector_store = ContextGroundingVectorStore(index_name="my_index")
 results = await vector_store.asimilarity_search(query="company policies", k=5)
@@ -63,7 +73,7 @@ from langgraph.graph import START, END, StateGraph, MessagesState
 from langgraph.types import Command
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
-from uipath_langchain.agent.tools import ContextGroundingRetriever
+from uipath_langchain.retrievers import ContextGroundingRetriever
 
 class GraphState(MessagesState):
     query: str
@@ -108,7 +118,7 @@ Combine context grounding with an LLM for more accurate responses:
 ```python
 from langchain.chains import RetrievalQA
 from uipath_langchain.chat.models import UiPathAzureChatOpenAI
-from uipath_langchain.agent.tools import ContextGroundingVectorStore
+from uipath_langchain.vectorstores import ContextGroundingVectorStore
 
 llm = UiPathAzureChatOpenAI()
 vector_store = ContextGroundingVectorStore(index_name="company_docs")
@@ -128,7 +138,7 @@ result = await rag_chain.ainvoke("What are our current policies?")
 Add context grounding as a tool to agents for autonomous document-based reasoning:
 
 ```python
-from uipath_langchain.agent.tools import ContextGroundingRetriever
+from uipath_langchain.retrievers import ContextGroundingRetriever
 from langchain_core.tools import tool
 
 @tool
