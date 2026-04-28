@@ -29,7 +29,7 @@ Determine the agent mode before proceeding:
 **After detection, read the quickstart for that mode before doing anything else:**
 
 - **Coded** → read [references/coded/quickstart.md](references/coded/quickstart.md)
-- **Low-code** → read [references/lowcode/quickstart.md](references/lowcode/quickstart.md)
+- **Low-code** → read [references/lowcode/lowcode.md](references/lowcode/lowcode.md)
 
 ## Task Navigation
 
@@ -41,16 +41,17 @@ Determine the agent mode before proceeding:
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
-| Create/build/deploy low-code agent | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) | `lowcode/agent-json-format.md` |
-| Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Common Edits | `lowcode/agent-json-format.md` |
-| Add tools, contexts, or escalations | Low-code | [lowcode/agent-json-format.md](references/lowcode/agent-json-format.md) § Resources | |
-| Discover solution resources (processes/apps/indexes/buckets/connections) | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) § Solution Resource Discovery | |
-| Add Integration Service tool | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 5 | `lowcode/agent-json-format.md` § Integration Service tool |
-| Add index-backed context (Context Grounding) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 7 | `lowcode/agent-json-format.md` § Context resource |
-| Embed agent in a flow | Low-code | [lowcode/embedding-in-flows.md](references/lowcode/embedding-in-flows.md) | |
-| Wire multi-agent solution | Low-code | [lowcode/agent-solution-guide.md](references/lowcode/agent-solution-guide.md) | |
-| Inline agent node structure in a flow | Low-code | [lowcode/agent-flow-integration.md](references/lowcode/agent-flow-integration.md) | |
-| See low-code CLI commands | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) | |
+| Create/build/deploy low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
+| Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/agent-definition.md](references/lowcode/agent-definition.md) | |
+| Add tools, contexts, or escalations | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | applicable `lowcode/capabilities/<name>/` |
+| Discover solution resources (processes/apps/indexes/buckets/connections) | Low-code | [lowcode/project-lifecycle.md](references/lowcode/project-lifecycle.md) § Resource Discovery | |
+| Add Integration Service tool | Low-code | [lowcode/capabilities/integration-service/integration-service.md](references/lowcode/capabilities/integration-service/integration-service.md) | |
+| Add index-backed context (Context Grounding) | Low-code | [lowcode/capabilities/context/index.md](references/lowcode/capabilities/context/index.md) | |
+| Add external process tool (RPA / agent / API / agentic) | Low-code | [lowcode/capabilities/process/external.md](references/lowcode/capabilities/process/external.md) | `lowcode/capabilities/process/solution-files.md` |
+| Add Action Center escalation | Low-code | [lowcode/capabilities/escalation/escalation.md](references/lowcode/capabilities/escalation/escalation.md) | |
+| Embed agent in a flow | Low-code | [lowcode/capabilities/inline-in-flow/inline-in-flow.md](references/lowcode/capabilities/inline-in-flow/inline-in-flow.md) | |
+| Wire multi-agent solution | Low-code | [lowcode/capabilities/process/solution-agent.md](references/lowcode/capabilities/process/solution-agent.md) | |
+| See low-code CLI commands | Low-code | [lowcode/project-lifecycle.md](references/lowcode/project-lifecycle.md) | |
 
 ## Resources
 
