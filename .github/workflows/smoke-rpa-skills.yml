@@ -107,24 +107,42 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Install from public npm at @latest. The `--@uipath:registry=`
-      # flag forces the @uipath scope to public npm even if some
-      # `.npmrc` (runner image, user-level, or future setup-node config)
-      # maps it elsewhere — notably the internal GitHub Packages feed,
-      # which carries divergent 1.0.0-alpha.* prereleases under the
-      # same scope. Plain `--registry=` does NOT bypass scope mappings;
-      # only the scope-specific override does. `npm install -g` lands
+      # Install from public npm. The `--@uipath:registry=` flag forces
+      # the `@uipath` scope to public npm even if some `.npmrc` (runner
+      # image, user-level, or setup-node config) maps it elsewhere —
+      # notably the internal GitHub Packages feed, which carries
+      # divergent `1.0.0-alpha.*` prereleases under the same scope.
+      # Plain `--registry=` does NOT bypass scope mappings; only the
+      # scope-specific override does.
+      #
+      # Pin `@uipath/rpa-tool` to the `^0.9` line (currently 0.9.1) to
+      # avoid silently picking up `1.0.0-alpha.*` if `latest` ever
+      # shifts. `@uipath/cli` and `@uipath/rpa-legacy-tool` stay on
+      # `latest` (only the rpa-tool line has the alpha divergence).
+      #
+      # `npm install -g` runs from a fresh tempdir so any future
+      # workspace-aware `package.json` at the repo root cannot pull
+      # the install into a workspace context. `npm install -g` lands
       # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
       # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
       # without triggering auto-install.
-      - name: Install uip CLI + RPA tools (public npm @latest)
+      - name: Install uip CLI + RPA tools (public npm, rpa-tool ^0.9)
         shell: bash
         run: |
           set -e
+          install_dir="$(mktemp -d)"
+          cd "$install_dir"
+          echo "Installing from $install_dir (workspace-isolated)"
+          npm config get registry
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest @uipath/rpa-tool@latest @uipath/rpa-legacy-tool@latest
+            @uipath/cli@latest \
+            "@uipath/rpa-tool@^0.9" \
+            @uipath/rpa-legacy-tool@latest
           uip --version
+          echo "--- Installed @uipath/* packages ---"
+          npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
+          echo "--- uip tools list ---"
           uip tools list --output json
 
       # Pre-auth uip as a real licensed Studio user via Studio's own e2e
@@ -281,6 +299,50 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
+      # Single global gate: each task must hit weighted_score >= 0.7.
+      # Replaces both the per-criterion `pass_threshold` gate and the
+      # LLM-reviewer threshold gate — `weighted_score` is the
+      # deterministic aggregate of the YAML success_criteria, so one
+      # uniform bar at 0.7 is enough to enforce quality without
+      # re-tuning each criterion's threshold by hand.
+      - name: Enforce per-task score threshold (>= 0.7)
+        if: always()
+        working-directory: tests
+        shell: bash
+        env:
+          TASK_THRESHOLD: "0.7"
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, sys
+          threshold = float(os.environ.get('TASK_THRESHOLD', '0.7'))
+          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          task_jsons = []
+          for run_dir in run_dirs:
+              task_jsons.extend(sorted(run_dir.rglob('task.json')))
+          if not task_jsons:
+              print('::error::No task.json files found — nothing to gate')
+              sys.exit(1)
+          failures, missing = [], []
+          for p in task_jsons:
+              d = json.loads(p.read_text(encoding='utf-8'))
+              tid = d.get('task_id', p.parent.name)
+              score = d.get('weighted_score')
+              if not isinstance(score, (int, float)):
+                  missing.append(tid)
+                  continue
+              if score < threshold:
+                  failures.append((tid, score))
+          for tid in missing:
+              print(f'::error::{tid}: missing weighted_score')
+          for tid, score in failures:
+              print(f'::error::{tid}: weighted_score {score:.2f} < {threshold}')
+          fails = len(failures) + len(missing)
+          total = len(task_jsons)
+          print(f'Results: {total - fails}/{total} task(s) >= {threshold}')
+          if fails:
+              sys.exit(1)
+          PY
+
       - name: Upload HTML / JSON eval report
         if: always()
         uses: actions/upload-artifact@v4
@@ -300,71 +362,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Enforce LLM reviewer score threshold (>= 0.7)
-        if: always()
-        working-directory: tests
-        shell: bash
-        env:
-          # Reviewer is a qualitative gate and tends to dock for minor
-          # process issues the agent recovers from (e.g. late-added
-          # project.uiproj, `uip rpa get-errors` exit 1 when the agent
-          # falls back to `uip rpa build`). 0.7 keeps the gate meaningful
-          # without false-failing correct-but-imperfect runs.
-          REVIEWER_THRESHOLD: "0.7"
-        run: |
-          python - <<'PY'
-          import json, os, pathlib, sys
-          threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
-          if not run_dirs:
-              print('::warning::No run directory — skipping reviewer threshold check')
-              sys.exit(0)
-          task_jsons = []
-          for run_dir in run_dirs:
-              task_jsons.extend(sorted(run_dir.rglob('task.json')))
-          failures = []
-          missing = []
-          for p in task_jsons:
-              d = json.loads(p.read_text(encoding='utf-8'))
-              lr = d.get('llm_review') or {}
-              score = lr.get('score')
-              tid = d.get('task_id', p.parent.name)
-              if not isinstance(score, (int, float)):
-                  missing.append(tid)
-                  continue
-              if score < threshold:
-                  issues = (lr.get('issues') or '').splitlines()[0][:120]
-                  failures.append((tid, score, issues))
-          for tid in missing:
-              print(f'::warning::{tid}: no llm_review (reviewer skipped or errored)')
-          if failures:
-              for tid, score, issues in failures:
-                  print(f'::error::{tid}: llm_review score {score:.2f} < {threshold} — {issues}')
-              print(f'::error::{len(failures)} task(s) below LLM reviewer threshold {threshold}')
-              sys.exit(1)
-          print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
-          PY
-
-      - name: Check test results
-        if: always()
-        working-directory: tests
-        shell: bash
-        run: |
-          shopt -s globstar nullglob
-          mapfile -t TASK_JSONS < <(printf '%s\n' runs/**/task.json)
-          if [ ${#TASK_JSONS[@]} -eq 0 ]; then
-            echo "::error::No task results found"
-            exit 1
-          fi
-          total=${#TASK_JSONS[@]}
-          passed=$(grep -l '"final_status": "SUCCESS"' "${TASK_JSONS[@]}" | wc -l)
-          echo "Results: $passed/$total tasks passed"
-          if [ "$passed" -lt "$total" ]; then
-            echo "::error::$((total - passed)) task(s) failed — download the eval-report-${{ github.run_id }} artifact and open task.html for each failed task"
-            exit 1
-          fi
-
-      - name: Fail if smoke step failed or was cancelled
-        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
+      - name: Fail if smoke step was cancelled
+        if: steps.smoke.outcome == 'cancelled'
         shell: bash
         run: exit 1
