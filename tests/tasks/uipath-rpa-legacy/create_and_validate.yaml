@@ -26,11 +26,14 @@ agent:
   # Opus 4.6 emits the same baseline cleanly.
   #
   # NOTE: On Bedrock, coder_eval's BedrockRoute.model overrides this
-  # task-level field. The CI workflow injects the Opus 4.6 Bedrock
+  # task-level field. The CI workflow injects an Opus Bedrock
   # inference profile ID per-task via an inline BEDROCK_MODEL
   # override (see .github/workflows/smoke-rpa-skills.yml). This
-  # field still applies on Anthropic-direct.
-  model: claude-opus-4-6
+  # field still applies on Anthropic-direct. Updated 2026-04: 4.6
+  # was deprecated on Bedrock (run 25125428893: 400 'invalid model
+  # identifier'), Bedrock's own error suggested 4.1 as the
+  # replacement.
+  model: claude-opus-4-1
   max_turns: 40
   turn_timeout: 900
 
