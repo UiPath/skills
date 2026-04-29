@@ -44,11 +44,11 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
-| `<outputPath>` | Directory where the .zip will be written (required) | -- |
+| `<outputPath>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'outputPath'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 
-The output is a `.zip` file named `<name>.<version>.zip`.
+The output is a `.zip` file named `<name>_<version>.zip` written under `<outputPath>/`. Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 ## Step 2: Publish to the Solution Feed
 
@@ -105,6 +105,13 @@ The `deploy run` command returns a pipeline deployment ID. Use it to check progr
 ```bash
 uip solution deploy status <pipeline-deployment-id> --output json
 ```
+
+> **Heads up:** `deploy run`'s polling is unreliable for long-running deployments. The CLI may print
+> `Result: Failure / Deployment polling failed: Response returned an error code` and `deploy status`
+> may then return `HTTP 404 Pipeline deployment not found` even when the deployment **succeeded**
+> server-side (the pipeline record can expire shortly after completion). Always cross-check with
+> `solution deploy list` and look up the deployment by name before treating a polling failure as a
+> real error.
 
 ## Step 6: List Deployments
 
@@ -246,7 +253,11 @@ These are different commands with different destinations:
 
 ### `--folder-path` is the Parent
 
-On `deploy run`, `--folder-path` is the **parent** folder, not the deployment folder itself. The deployment folder is `--folder-name`, created inside `--folder-path`.
+On `deploy run`, `--folder-path` is the **parent** folder, not the deployment folder itself. The deployment folder is `--folder-name`, created inside `--folder-path`. To produce a nested layout like `Shared/Nica/Solution`, pre-create `Shared/Nica` (or use a previous deploy to make it) and pass `--folder-path "Shared/Nica" --folder-name "Solution"`.
+
+### Polling false-positives on `deploy run`
+
+`deploy run` may report `Failure / Deployment polling failed` even when the deployment succeeded — the pipeline ID expires after completion and `deploy status` then 404s. Always verify with `solution deploy list` (look up the deployment by name + check `OperationStatus`) before treating it as a real error. CI scripts should fall back to `deploy list` on polling failure rather than failing the pipeline.
 
 ### Config `link` Connects to Existing Resources
 
