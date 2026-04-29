@@ -16,24 +16,30 @@ initial_prompt: |
   browser login flow. I need shared setup/teardown for every test case AND
   a first coded test case that uses them.
 
-  The project already exists at ./LoginTests with a project.json.
+  The working directory starts empty. Scaffold the project with
+  `uip rpa create-project --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
   --use-studio. Focus on generating the correct files and project.json updates.
 
-  Use `UiPath.Testing.Activities` version `[25.4.1]` (newer 25.10.x
-  releases synthesize a bootloader that breaks the build on this
-  runner). Pin it in project.json before adding source files.
+  After scaffolding, pin `UiPath.Testing.Activities` to `[25.4.1]` in
+  project.json before adding source files. Newer 25.10.x releases
+  synthesize a bootloader workflow that breaks the build with CS0234
+  on this runner; 25.4.1 predates that feature.
 
   Requirements:
   - Set up shared Before/After hooks that apply to ALL test cases:
-      * Use the recommended pattern from the skill (partial class CodedWorkflow
-        with IBeforeAfterRun, NOT a base class).
-      * Browser open in Before, browser close in After.
-  - Create one coded test case TestLoginSuccess.cs:
-      * Has the [TestCase] attribute and uses CodedWorkflow.
+      * File: `LoginTests/CodedWorkflowHooks.cs`.
+      * Class: `partial class CodedWorkflow` implementing `IBeforeAfterRun`
+        (the partial-class pattern from the skill — NOT a base class, NOT
+        a separate `CodedWorkflowHooks` class). The file extends the
+        existing `CodedWorkflow` partial declared by the project.
+      * Browser open in `Before(...)`, browser close in `After(...)`.
+  - Create one coded test case `LoginTests/TestLoginSuccess.cs`:
+      * Class `TestLoginSuccess : CodedWorkflow` with the `[TestCase]`
+        attribute on the `Execute` method.
       * Follows Given-When-Then (Arrange-Act-Assert) structure.
-      * Uses the testing service for assertions (VerifyExpression /
-        VerifyAreEqual / etc.).
+      * Uses the testing service for assertions (`testing.VerifyExpression`
+        / `testing.VerifyAreEqual` / etc.).
   - Update project.json so the test case shows up in fileInfoCollection
     with the correct testCaseType entry.
 
