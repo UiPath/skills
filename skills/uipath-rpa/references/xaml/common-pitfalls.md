@@ -249,6 +249,78 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 4. For literal string values, place the text directly in the element content (e.g., `<InArgument ...>someValue</InArgument>`)
 5. For variable bindings, follow the expression language rules in [xaml-basics-and-rules.md](xaml-basics-and-rules.md#expression-language): VB uses `[bracket]` shorthand, C# uses `<CSharpValue>`/`<CSharpReference>` elements
 
+### OutArgument Bindings Must Be Variable References
+
+`OutArgument` and `InOutArgument` bindings on `InvokeWorkflowFile.Arguments` require a variable reference (lvalue), not a constructed expression. The callee writes its output into the variable; an inline-constructed `OutArgument` has no destination.
+
+**Wrong** — fails with `BC30035: Syntax error`:
+```xml
+<OutArgument x:TypeArguments="x:Boolean" x:Key="out_Discard">[New OutArgument(Of Boolean)()]</OutArgument>
+```
+
+**Correct** — declare a discard variable in the caller's scope:
+```xml
+<Sequence.Variables>
+  <Variable x:TypeArguments="x:Boolean" Name="discardShouldContinue" />
+</Sequence.Variables>
+...
+<OutArgument x:TypeArguments="x:Boolean" x:Key="out_Discard">[discardShouldContinue]</OutArgument>
+```
+
+If the caller does not consume an output but the callee declares it as required, declare a `discard*` variable per unused output and reference it. Omitting the binding fails validation when the callee has required out-arguments.
+
+## Empty Argument Values
+
+`<InArgument>` and `<OutArgument>` with **empty content** pass per-file `uip rpa get-errors` but fail project-level `uip rpa analyze` with `Value for a required activity argument 'Value' was not supplied` — no file or activity pointer.
+
+**Wrong:**
+```xml
+<Assign.Value>
+  <InArgument x:TypeArguments="x:String"></InArgument>
+</Assign.Value>
+```
+
+**Correct:**
+```xml
+<Assign.Value>
+  <InArgument x:TypeArguments="x:String">[String.Empty]</InArgument>
+</Assign.Value>
+```
+
+Or attribute form with explicit literal:
+```xml
+<Assign Value="[String.Empty]" />
+```
+
+**Detection rule.** When project-level `analyze` reports the missing-Value error with no activity ID, grep for `<InArgument [^>]*></InArgument>` and `<OutArgument [^>]*></OutArgument>` across all XAML files first.
+
+## Variable.Default — Attribute or Literal Content Only
+
+`<Variable.Default>` accepts an expression literal as element content or as the `Default` attribute. It does NOT accept a wrapped `<InArgument>` element — that form throws at activity load with `Set property 'System.Activities.Variable(...).Default' threw an exception. Value for a required activity argument 'Value' was not supplied.`
+
+**Wrong** — throws at activity load:
+```xml
+<Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="data">
+  <Variable.Default>
+    <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)()]</InArgument>
+  </Variable.Default>
+</Variable>
+```
+
+**Correct — attribute form (preferred):**
+```xml
+<Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="data" Default="[New Dictionary(Of String, String)()]" />
+```
+
+**Correct — content form (no `InArgument` wrapper):**
+```xml
+<Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="data">
+  <Variable.Default>[New Dictionary(Of String, String)()]</Variable.Default>
+</Variable>
+```
+
+Or omit `Default` entirely if the variable is assigned before its first read.
+
 ## InvokeCode Language Property
 
 The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.

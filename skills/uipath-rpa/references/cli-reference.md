@@ -117,6 +117,8 @@ Create a new UiPath project from a template.
 ```bash
 uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
 
+> **Flag names are non-standard.** Most `uip rpa` commands take `--project-dir` to identify the project. `create-project` instead uses `--name` (project name) + `--location` (parent directory). Do NOT use `--project-name` or `--project-dir` here — both fail with `error: required option '--name <string>' not specified`.
+
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `--name` | Yes | -- | Name of the project |
@@ -194,8 +196,10 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--file-path` | No | File to check (relative to project directory). Omit to check the whole project. |
+| `--file-path` | No | File to check, **relative to the project directory**. Omit to check the whole project. |
 | `--skip-validation` | No | Return cached errors without re-validating (faster, but may be stale) |
+
+> **Known issue: absolute `--file-path` + absolute `--project-dir` falsely fails with `The targeted project file <X> is not in the project folder <Y>`.** The CLI normalizes `--file-path` to forward slashes (`C:/.../Main.xaml`) but leaves `--project-dir` as backslashes (`C:\...\Project`), then string-compares them — same path, different separator, comparison fails. Pass `--file-path` **relative** to the project directory (e.g. `--file-path "Main.xaml"`) to sidestep the normalization mismatch. If you need a project-level compile gate that doesn't have this quirk, use `uip rpa build "<PROJECT_DIR>"` (positional arg, no slash compare).
 
 ---
 
