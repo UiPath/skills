@@ -77,8 +77,3 @@
 
 # IXP skill
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath
-
-# Flow skill — node category guides (away team owned)
-# Add your team here when contributing a new node category file
-/skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
-/skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden
