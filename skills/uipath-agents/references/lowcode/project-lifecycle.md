@@ -238,12 +238,15 @@ If not logged in, prompt the user to run `uip login`.
 
 ### Step 2 — Create solution and scaffold agent
 
+All commands run from the same working directory — no `cd` needed. Pass paths explicitly.
+
 ```bash
 uip solution new "<SOLUTION_NAME>" --output json
-cd "<SOLUTION_NAME>"
-uip agent init "<AGENT_NAME>" --output json
-uip solution project add "<AGENT_NAME>" --output json
+uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
+
+`uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
 
 ### Step 3 — Configure agent.json
 
@@ -258,7 +261,7 @@ Read [agent-definition.md](agent-definition.md) for the full schema.
 
 1. Add fields to `agent.json` → `inputSchema` and `outputSchema`
 2. Mirror in `entry-points.json`
-3. Validate: `uip agent validate "<AGENT_NAME>" --output json`
+3. Validate: `uip agent validate "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
 
 ### Step 5 — Publish to Studio Web or deploy to Orchestrator
 

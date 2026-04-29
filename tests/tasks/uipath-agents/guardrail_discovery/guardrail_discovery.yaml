@@ -16,7 +16,7 @@ agent:
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
-  max_turns: 30
+  max_turns: 40
 
 sandbox:
   driver: tempdir
@@ -28,9 +28,17 @@ initial_prompt: |
   using the CLI and add any built-in validator guardrail to the agent
   based on the discovery results. Use a block action.
 
+  Use path-based commands from the working directory (no cd required):
+    uip solution new "DiscoverSol" --output json
+    uip agent init "DiscoverSol/DiscoverAgent" --output json
+    uip solution project add "DiscoverSol/DiscoverAgent" --output json
+    uip agent guardrails list --output json
+    uip agent validate "DiscoverSol/DiscoverAgent" --output json
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire task end-to-end in a single pass.
+  implementation. Do NOT write a plan file. Complete the entire task
+  end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed

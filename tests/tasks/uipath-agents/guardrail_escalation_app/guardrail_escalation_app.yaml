@@ -16,7 +16,7 @@ agent:
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
-  max_turns: 30
+  max_turns: 40
 
 sandbox:
   driver: tempdir
@@ -36,13 +36,22 @@ initial_prompt: |
   - Escalation app name: "Tool.Guardrail.Escalation.Action.App"
   - Recipient email: reviewer@example.com (type 3)
 
+  Use path-based commands from the working directory (no cd required):
+    uip solution new "EscalateSol" --output json
+    uip agent init "EscalateSol/ComplianceAgent" --output json
+    uip solution project add "EscalateSol/ComplianceAgent" --output json
+    uip agent guardrails list --output json
+    uip solution resource list --kind App --source remote --output json
+    uip agent validate "EscalateSol/ComplianceAgent" --output json
+
   Use `uip solution resource list` to attempt to discover the app and
   populate app fields. If the app is not found remotely, write the
   minimum required fields (app.name, app.version, app.folderName).
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire task end-to-end in a single pass.
+  implementation. Do NOT write a plan file. Complete the entire task
+  end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
