@@ -270,15 +270,7 @@ jobs:
               # recent task.json and bail out if final_status is anything
               # other than ERROR with content-filter details.
               latest_json="$(ls -t runs/*/default/*/00/task.json 2>/dev/null | head -n 1 || true)"
-              if [ -n "$latest_json" ] && LATEST_JSON="$latest_json" python3 -c '
-import json, os, sys
-d = json.load(open(os.environ["LATEST_JSON"]))
-if d.get("final_status") != "ERROR":
-    sys.exit(2)
-det = d.get("error_details") or {}
-msg = json.dumps(det) + (d.get("error_message") or "")
-sys.exit(0 if "content filter" in msg.lower() else 2)
-'; then
+              if [ -n "$latest_json" ] && LATEST_JSON="$latest_json" python3 -c "import json,os,sys; d=json.load(open(os.environ['LATEST_JSON'])); det=d.get('error_details') or {}; msg=json.dumps(det)+(d.get('error_message') or ''); sys.exit(0 if d.get('final_status')=='ERROR' and 'content filter' in msg.lower() else 2)"; then
                 echo "::warning::$task: content-filter error on attempt $attempt — retrying"
                 if [ "$attempt" = "3" ]; then
                   overall_exit=1
