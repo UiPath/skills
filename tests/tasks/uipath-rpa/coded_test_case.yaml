@@ -47,6 +47,13 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available in the environment.
   - Use `--output json` on any uip commands you run.
+  - Do NOT run `uip rpa build` for this task — the grader checks files,
+    not build output. `uip rpa get-errors` for a quick syntax check on
+    the .cs files is fine, but skip full builds: a known
+    `UiPath.Testing.Activities` bootloader bug can derail the run on
+    unrelated issues.
+  - Write `report.json` as your FINAL step after all source files are
+    in place. Do not skip it even if you decide to stop early.
 
 success_criteria:
   - type: file_exists
