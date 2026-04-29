@@ -64,8 +64,9 @@ uip solution
   │     ├── remove <projectPath> [solutionFile] Unregister a project from .uipx
   │     └── import --source <path>              Copy external project into solution and register
   ├── resource
-  │     ├── list [solutionPath]           List local, remote, or all resources
-  │     └── refresh [solutionPath]        Sync resource declarations from project bindings
+  │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
+  │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
+  │     └── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
   ├── deploy
   │     ├── run -n <name>                 Deploy a published solution package
   │     ├── status <id>                   Check deployment status

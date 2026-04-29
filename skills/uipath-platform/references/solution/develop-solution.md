@@ -22,6 +22,7 @@ graph LR
     A[solution new] --> B[project add / import]
     B --> C[resource refresh]
     C --> D[resource list]
+    D --> G[resource get]
     D --> E[upload]
     B --> F[project remove]
 ```
@@ -69,26 +70,36 @@ uip solution project remove ./InvoiceAutomation/OldProject --output json
 
 ## Step 5: List Resources
 
-Show resources declared in the solution, available in Orchestrator, or both.
+Show resources declared in the solution, available in Orchestrator, or both. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
 
 ```bash
-uip solution resource list ./InvoiceAutomation --output json
-uip solution resource list ./InvoiceAutomation --source local --output json
-uip solution resource list ./InvoiceAutomation --kind Queue --search "Invoice" --output json
+# from inside the solution dir
+uip solution resource list --output json
+uip solution resource list --source local --output json
+uip solution resource list --kind Queue --search "Invoice" --output json
+
+# explicit folder
+uip solution resource list --solution-folder ./InvoiceAutomation --output json
 ```
 
 | Option | Values | Default |
 |--------|--------|---------|
-| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection` | All kinds |
+| `--solution-folder <path>` | Path to solution root | Current working directory |
+| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger` (any RCS kind) | All kinds |
 | `--search <term>` | Name substring match | No filter |
 | `--source <source>` | `all`, `local`, `remote` | `all` |
+| `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
 ## Step 6: Refresh Resources
 
 Re-scan all projects and sync resource declarations from their `bindings_v2.json` files. Refresh is the only way to reconcile a solution's local artefacts with cloud entities — run it after adding/importing projects, after editing `bindings_v2.json`, or before any `pack` / `upload`.
 
 ```bash
-uip solution resource refresh ./InvoiceAutomation --output json
+# from inside the solution dir
+uip solution resource refresh --output json
+
+# explicit folder
+uip solution resource refresh --solution-folder ./InvoiceAutomation --output json
 ```
 
 | Field | Meaning |
@@ -126,7 +137,51 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
-## Step 7: Upload to Studio Web
+## Step 7: Get a Single Resource Configuration
+
+Fetch the full configuration (`spec`, `apiVersion`, `isOverridable`, `resourceOverwrite`) for a specific resource by key. Useful when you need the resolved server state for a binding — e.g., constructing a deploy override, resolving an entry-point ID, inspecting a connection's authentication mode.
+
+```bash
+# from inside the solution dir
+uip solution resource get <resource-key> --output json
+
+# explicit folder + transitive deps
+uip solution resource get <resource-key> --solution-folder ./InvoiceAutomation --include-dependencies --output json
+```
+
+| Option | Purpose |
+|--------|---------|
+| `--solution-folder <path>` | Solution root (default cwd) |
+| `--include-dependencies` | Return the resource **plus** every dependency configuration in one shot |
+| `--login-validity <minutes>` | Minimum minutes left on token before refresh (default `10`) |
+
+### How resolution works
+
+`get` accepts any key from `solution resource list` — local or remote — and dispatches accordingly:
+
+1. **Local first** — calls SDK `getConfigurationAsync(key)`, which reads `resources/solution_folder/**/<resource>.json` and returns the design-time spec (plus any debug overwrite). This is what's bundled at pack time. Output is a subset of the cloud spec — good enough for most planning work.
+2. **Fallback to RCS + FPS** — if the key isn't in the local solution, the CLI scans the resource catalog (`searchFolderEntities`) for it. On match, it builds a `ResourceReferenceModel` and calls the SDK's `IImportResourceHelper.exportResourceAsync` (the same workhorse `refresh` uses). The returned `ResourceDefinition` is mapped to the same `ResourceConfiguration` shape, so callers get a uniform output regardless of source.
+3. **No match anywhere** → exits with `Failure` and `Resource '<key>' was not found in the solution or in the resource catalog`.
+
+### Local vs remote spec — they're not identical
+
+The local file is what `refresh` (and `solution project add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
+
+| Field | Local | Remote (FPS) |
+|-------|-------|--------------|
+| `name`, `package`, basic metadata | ✅ | ✅ |
+| `apiVersion` | ✅ | ✅ |
+| `entryPointUniqueId` / `entryPoints` | ❌ usually `null` | ✅ alocate de server la deploy |
+| `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` | ❌ | ✅ |
+| `agentMemory`, `targetRuntime`, `environmentVariables` | ❌ | ✅ runtime defaults |
+
+If you need the full server spec for a resource that's already in the solution (e.g., for a deploy override), `--include-dependencies` paired with manual inspection of the dependency graph is one option; the cleaner path is to delete the local file and let `refresh` re-import it from the cloud.
+
+### Why `solution resource list` and `get` aren't symmetric
+
+`list --source remote` returns entities from RCS that are **visible to your user** — including ones not bound to this solution. `get` is solution-context-aware: it considers anything in your `.uipx`'s solution_folder as "local", and falls back to RCS for everything else. A key shown by `list --source remote` that isn't bound to the solution will resolve via the FPS fallback.
+
+## Step 8: Upload to Studio Web
 
 Upload the solution for browser-based editing. Accepts a directory, `.uipx` file, or `.uis` archive.
 
@@ -136,7 +191,7 @@ uip solution upload ./InvoiceAutomation --output json
 
 If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload overwrites it.
 
-## Step 8: Delete from Studio Web
+## Step 9: Delete from Studio Web
 
 Remove a solution from Studio Web by its UUID (returned by `upload`).
 
@@ -160,11 +215,17 @@ uip solution new "InvoiceAutomation" --output json
 uip solution project add ./InvoiceAutomation/Processor --output json
 uip solution project add ./InvoiceAutomation/Reporter --output json
 
-# 3. Sync resource declarations from project bindings
-uip solution resource refresh ./InvoiceAutomation --output json
+# 3. Move into the solution dir so subsequent commands default --solution-folder
+cd ./InvoiceAutomation
 
-# 4. Verify resources are tracked
-uip solution resource list ./InvoiceAutomation --source local --output json
+# 4. Sync resource declarations from project bindings
+uip solution resource refresh --output json
+
+# 5. Verify resources are tracked
+uip solution resource list --source local --output json
+
+# 6. Inspect one resource's full configuration (local + RCS fallback)
+uip solution resource get <resource-key> --output json
 ```
 
 ---
@@ -219,6 +280,14 @@ Get the UUID from `upload` output or Studio Web -- the name string is not accept
 ### `.uipx` auto-discovery
 
 When `[solutionFile]` is omitted, the CLI walks up from the project path looking for a single `.uipx` file. If multiple `.uipx` files exist in the same directory, specify which one explicitly.
+
+### `--solution-folder` defaults to cwd
+
+`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly. Older docs and examples that pass the path as a positional (`uip solution resource list ./InvoiceAutomation`) are out of date.
+
+### `resource get` for cross-folder inspection
+
+Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resource list --source remote` to discover keys.
 
 ---
 

@@ -48,7 +48,7 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 
-The output is a `.zip` file named `<name>_<version>.zip` written under `<outputPath>/`. Run `solution resource refresh` first to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+The output is a `.zip` file named `<name>_<version>.zip` written under `<outputPath>/`. Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 ## Step 2: Publish to the Solution Feed
 
