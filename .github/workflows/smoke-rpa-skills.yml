@@ -248,6 +248,20 @@ jobs:
           shopt -s globstar nullglob
           overall_exit=0
           for task in ${{ needs.detect.outputs.task_globs }}; do
+            # TODO(rpa-legacy): Bedrock deprecated Opus 4.6 mid-2026-04
+            # and Opus 4.1 IDs return 400 'invalid model identifier'
+            # on the EU regional inference profiles we have access to.
+            # Sonnet trips Bedrock's content filter on the full legacy
+            # XAML baseline reliably (3/3 retries). Skip the task in
+            # CI until we have a working Bedrock model for it; the
+            # task YAML itself is still tracked for local runs and
+            # for an eventual model fix.
+            case "$task" in
+              *rpa-legacy*)
+                echo "::warning::Skipping $task — pending Bedrock Opus model fix"
+                continue
+                ;;
+            esac
             echo "--- Killing leftover Helm/Studio processes ---"
             taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
             echo "--- Running: $task ---"
