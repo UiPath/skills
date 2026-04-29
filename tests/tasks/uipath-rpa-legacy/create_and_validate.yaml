@@ -25,15 +25,16 @@ agent:
   # the classifier travels with the model family across backends.
   # Opus 4.6 emits the same baseline cleanly.
   #
-  # NOTE: On Bedrock, coder_eval's BedrockRoute.model overrides this
-  # task-level field. The CI workflow injects an Opus Bedrock
-  # inference profile ID per-task via an inline BEDROCK_MODEL
-  # override (see .github/workflows/smoke-rpa-skills.yml). This
-  # field still applies on Anthropic-direct. Updated 2026-04: 4.6
-  # was deprecated on Bedrock (run 25125428893: 400 'invalid model
-  # identifier'), Bedrock's own error suggested 4.1 as the
-  # replacement.
-  model: claude-opus-4-1
+  # NOTE: On Bedrock, coder_eval's BedrockRoute prefixes this with
+  # `eu.anthropic.` to form the inference profile ID. The
+  # BEDROCK_MODEL env override does NOT win on this code path —
+  # the task-level field is what Bedrock actually sees. Updated
+  # 2026-04: 4.6 was deprecated on Bedrock (run 25125428893: 400
+  # 'invalid model identifier'), then 4-1 (un-versioned) also
+  # 400'd; Bedrock's error explicitly suggested
+  # `claude-opus-4-1-20250805-v1:0` as the valid full ID, which
+  # the prefix turns into `eu.anthropic.claude-opus-4-1-20250805-v1:0`.
+  model: "claude-opus-4-1-20250805-v1:0"
   max_turns: 40
   turn_timeout: 900
 
