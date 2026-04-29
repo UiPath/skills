@@ -1,7 +1,7 @@
 # UiAutomation Prerequisites
 
 **Required package:** `UiPath.UIAutomation.Activities`
-**Minimum version (`<MIN_VERSION>`):** `26.4.0-preview`
+**Minimum version (`<MIN_VERSION>`):** `26.4.1-preview`
 **Source feed:** the official UiPath NuGet feed — the same feed Studio resolves by default. `-preview` builds of `UiPath.UIAutomation.Activities` are published there alongside stable releases. Installing a `-preview` build is a normal supported path, not a third-party workaround. The feed also publishes `-alpha.<build>` and `-beta.<build>` builds — these are internal channels and MUST NOT be installed automatically by the skill.
 
 > **`-preview` channel only.** `<MIN_VERSION>` is a `-preview` build — stable releases of `UiPath.UIAutomation.Activities` do NOT yet ship the `uia-configure-target` skill content. Install a `-preview` build explicitly. `uip rpa get-versions` MUST be invoked with `--include-prerelease` (the flag defaults to `false`), otherwise the required preview is filtered out of the listing and the agent will report "no upgrade available" against a feed that actually has it.
