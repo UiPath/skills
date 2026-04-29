@@ -265,7 +265,11 @@ jobs:
             # only way to swap per-task is at the env level here.
             task_model="$BEDROCK_MODEL"
             case "$task" in
-              *rpa-legacy*) task_model="eu.anthropic.claude-opus-4-6-v1" ;;
+              # eu.anthropic.claude-opus-4-6-v1 was deprecated on Bedrock
+              # (run 25125428893: 400 'The provided model identifier is
+              # invalid'). Bedrock's own error message suggested
+              # claude-opus-4-1-20250805-v1:0 as the replacement.
+              *rpa-legacy*) task_model="eu.anthropic.claude-opus-4-1-20250805-v1:0" ;;
             esac
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
