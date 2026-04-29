@@ -204,7 +204,7 @@ Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or ass
 uip solution resource list --kind App --source remote --search "<app-name>" --output json
 ```
 
-Filter results for `"Type": "Workflow Action"` (skip `"VB Action"` and `"Coded"` entries — they cannot back a guardrail escalation). Use only these two fields from the result:
+Filter results for `"Type": "Workflow Action"`. Use only these two fields from the result:
 
 | Resource list field | Maps to `app.*` field |
 |---------------------|----------------------|
@@ -213,7 +213,7 @@ Filter results for `"Type": "Workflow Action"` (skip `"VB Action"` and `"Coded"`
 
 `app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — do not use the `Folder` or `FolderKey` values from this command for those fields.
 
-If multiple entries share the same name in different folders, prefer the `"Shared"` entry.
+If multiple entries share the same name in different folders, ask the user which deployment to use.
 
 Example entry:
 ```json
@@ -725,14 +725,7 @@ Escalates to an Action Center app when email or credit card PII is detected at t
 }
 ```
 
-Where each `app.*` field comes from:
-
-| `app.*` field | Source |
-|---|---|
-| `id` | `resource list --kind App` → `Key` |
-| `name` | `resource list --kind App` → `Name` |
-| `version` | Fixed: always `"0"` |
-| `folderName` | Fixed: always `"solution_folder"` |
+All `app.*` values sourced from Step 1 (resource list).
 
 ### Example 9: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
@@ -855,6 +848,10 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
+10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resource list --kind App` results by this type.
+11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
+12. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
+13. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
 
 ## Walkthrough
 
@@ -937,7 +934,4 @@ Confirm the guardrails appear in the validated output without errors.
 - [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, manual `guardrail.policies` edits, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
-9. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
-10. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
-11. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
 
