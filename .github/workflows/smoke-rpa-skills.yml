@@ -260,6 +260,28 @@ jobs:
           exit $overall_exit
         continue-on-error: true
 
+      # Upload as early as possible so the report artifact is available
+      # for post-mortem regardless of whether later gate/summary steps
+      # crash.
+      - name: Upload HTML / JSON eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ github.run_id }}
+          path: |
+            tests/runs/*/experiment.html
+            tests/runs/*/experiment.md
+            tests/runs/*/experiment.json
+            tests/runs/*/experiment.log
+            tests/runs/*/*/variant.html
+            tests/runs/*/*/variant.md
+            tests/runs/*/*/variant.json
+            tests/runs/**/task.html
+            tests/runs/**/task.json
+            tests/runs/**/task.log
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Summarize results
         if: always()
         working-directory: tests
@@ -342,25 +364,6 @@ jobs:
           if fails:
               sys.exit(1)
           PY
-
-      - name: Upload HTML / JSON eval report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-report-${{ github.run_id }}
-          path: |
-            tests/runs/*/experiment.html
-            tests/runs/*/experiment.md
-            tests/runs/*/experiment.json
-            tests/runs/*/experiment.log
-            tests/runs/*/*/variant.html
-            tests/runs/*/*/variant.md
-            tests/runs/*/*/variant.json
-            tests/runs/**/task.html
-            tests/runs/**/task.json
-            tests/runs/**/task.log
-          if-no-files-found: warn
-          retention-days: 14
 
       - name: Fail if smoke step was cancelled
         if: steps.smoke.outcome == 'cancelled'
