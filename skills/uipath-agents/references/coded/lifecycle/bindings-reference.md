@@ -58,7 +58,9 @@ Use Grep to find calls matching these patterns across all project Python files. 
 
 **SubType inference during scanning:**
 
-For `retrieve_credential` / `retrieve_credential_async` calls, always emit `"SubType": "credentialAsset"` — the method name is definitive. For all other calls, follow the full lookup procedure in the **SubType Metadata** section below: fetch metadata → filter by kind → disambiguate from code → fall back to `AskUserQuestion` → omit `SubType` if the user skips. Omitting `SubType` is always safe — `uipath push` still creates a virtual placeholder for supported kinds, just with the base `kind` only.
+First check the project's pinned `uipath` version (see **SubType Metadata → Version-detection rule**). If `uipath < 2.10.58`, **skip SubType entirely** — emit no `SubType` for any binding, including `retrieve_credential*`.
+
+If `uipath >= 2.10.58`, then for `retrieve_credential` / `retrieve_credential_async` calls always emit `"SubType": "credentialAsset"` — the method name is definitive. For all other calls, follow the full lookup procedure in the **SubType Metadata** section below: fetch metadata → filter by kind → disambiguate from code → fall back to `AskUserQuestion` → omit `SubType` if the user skips. Omitting `SubType` is always safe — `uipath push` still creates a virtual placeholder for supported kinds, just with the base `kind` only.
 
 ### Step 3: Compare with Existing Bindings
 
@@ -565,6 +567,23 @@ server = sdk.mcp.retrieve(slug="mcp_server_slug", folder_path="folder_path")
 
 The `SubType` field in a resource's `metadata` block specifies a sub-classification of the resource `kind`. It is **optional** but should be emitted when determinable, so `uipath push` can create the correct virtual-resource placeholder when the resource isn't found in the catalog (see `Virtual Resource Fallback on uipath push` below).
 
+> **Minimum `uipath` version: 2.10.58 ([PyPI](https://pypi.org/project/uipath/)).** Below that version, **omit `SubType` entirely** — older `uipath push` releases ignore the field, so emitting it gives no benefit and just adds noise to `bindings.json`.
+>
+> **Version-detection rule (run before the lookup procedure):**
+>
+> 1. Read the project's `pyproject.toml` (or `requirements.txt` / `uv.lock`) and extract the resolved `uipath` version.
+> 2. If the version is **`>= 2.10.58`**, follow the full lookup procedure.
+> 3. If the version is **`< 2.10.58`** (or unspecified / unresolvable), **ask the user** before falling back. Do **not** run the upgrade command yourself. Call `AskUserQuestion` with the warning prefix and two options:
+>
+>    - **Question:** `⚠️ uipath is pinned to <version>. SubType support requires uipath >= 2.10.58 — without it every binding will be written with no SubType. Do you want to upgrade?`
+>    - **Option A — Yes, upgrade `uipath`** — print the upgrade command for the user to run themselves and stop the workflow. Tell them to re-run the bindings task after the upgrade lands. Suggested commands (do **not** execute them):
+>      ```bash
+>      uv add 'uipath>=2.10.58'      # uv-managed projects (default)
+>      # Poetry: poetry add 'uipath@^2.10.58'
+>      # pip:    pip install --upgrade 'uipath>=2.10.58'
+>      ```
+>    - **Option B — No, continue with current version** — skip the entire SubType lookup, do **not** call `AskUserQuestion` for sub-types, and write every binding with no `SubType` in `metadata` (including `retrieve_credential*`). Tell the user once: *"`uipath` is pinned to `<version>`; SubType emission is disabled."*
+
 ### Authoritative source for valid SubType values
 
 The valid SubType values for each kind are defined by the Studio Web Resource Builder metadata. **Do not hardcode or guess** — always look them up from one of these two sources:
@@ -622,7 +641,15 @@ For each binding, follow these steps:
 4. **Choose a SubType:**
    - **No candidates** (all entries lack `type`) → omit `SubType`.
    - **One candidate** → emit it as `SubType`.
-   - **Multiple candidates** → try code-based disambiguation first (see rules below). If no rule matches, **ask the user via `AskUserQuestion`**: present the candidate `type` values as a multiple-choice list plus a `None / skip` option, and include the resource name and folder in the prompt for context. If the user picks `None / skip`, omit `SubType`.
+   - **Multiple candidates** → try code-based disambiguation first (see rules below). If no rule matches, ask the user. Use the path that fits the candidate count:
+     - **≤ 3 candidates** → call `AskUserQuestion` with each candidate as an `option` (`label` = the `type` string). `AskUserQuestion`'s `options` array is capped at 4 entries, and one slot is reserved for the trailing `skip`. The harness presents a picker UI and returns the chosen `label` directly — no numbered list needed in the prompt body.
+     - **≥ 4 candidates** → emit a plain-text **numbered list** (one per line, `N. <type>`) ending with a final numbered `skip` line. The user replies with just the number; map it back to the `type` string. Do not use `AskUserQuestion` here — the list won't fit.
+     Either way, include the resource name and folder in the prompt for context. If the user picks `skip` (or its number), omit `SubType`.
+
+   **Numbered-list rules** (plain-text path only):
+   - One candidate per line, prefixed with `N. ` (1-indexed).
+   - The last line is always `N. skip` (where `N` is the next index after the last real candidate).
+   - Never expect the user to type the SubType name verbatim — they reply with the number.
 
 ### Refreshing the bundled snapshot
 
@@ -664,15 +691,66 @@ Apply these rules in order. Only fall through to the `AskUserQuestion` prompt if
 
 ### Asking the user (example prompts)
 
-When multiple candidates remain, prompt with the full candidate list from the metadata. Example:
+When multiple candidates remain, prompt with a **numbered list** of candidates from the metadata, plus a final `skip` option. The user replies with the number; map it back to the `type` string (or omit `SubType` if they pick `skip`). Examples:
 
-- **Asset** (after excluding the credential shortcut above): *"Select the asset sub-type for `db_config` in folder `Finance`:"* → `stringAsset` / `integerAsset` / `booleanAsset` / `secretAsset` / *None (skip)*
-- **Bucket**: *"Select the backing storage for bucket `reports` in folder `Shared`:"* → `orchestratorBucket` / `amazonBucket` / `azureBucket` / *None (skip)*
-- **App (`sdk.tasks.*`)**: *"Select the app sub-type for `ApprovalApp` in folder `HR`:"* → `Coded` / `CodedAction` / *None (skip — default app type)*
-- **MCP Server**: *"Select the MCP server sub-type for slug `my-server`:"* → `Coded` / `Command` / `Remote` / `UiPath` / *None (skip)*
-- **Process (`sdk.processes.invoke` / `sdk.jobs.resume`)**: *"Select the target process sub-type for `InvoiceProcessor` in folder `Finance/Invoices`:"* → `process` / `agent` / `flow` / `api` / `caseManagement` / `processOrchestration` / `testAutomationProcess` / `webApp` / `mcpServer` / *None (skip)*
+- **Asset** (after excluding the credential shortcut above — `credentialAsset` is omitted because `retrieve_credential*` is already handled with high confidence at line 654):
 
-Always include a `None / skip` option — it means "I don't know, emit no SubType." Batch prompts when possible (one question per binding, sent together) to minimize interruption.
+  ```
+  Select the asset sub-type for `db_config` in folder `Finance`:
+  1. stringAsset
+  2. integerAsset
+  3. booleanAsset
+  4. secretAsset
+  5. skip
+  ```
+
+- **Bucket**:
+
+  ```
+  Select the backing storage for bucket `reports` in folder `Shared`:
+  1. orchestratorBucket
+  2. amazonBucket
+  3. azureBucket
+  4. skip
+  ```
+
+- **App (`sdk.tasks.*`)**:
+
+  ```
+  Select the app sub-type for `ApprovalApp` in folder `HR`:
+  1. Coded
+  2. CodedAction
+  3. skip
+  ```
+
+- **MCP Server**:
+
+  ```
+  Select the MCP server sub-type for slug `my-server`:
+  1. Coded
+  2. Command
+  3. Remote
+  4. UiPath
+  5. skip
+  ```
+
+- **Process (`sdk.processes.invoke` / `sdk.jobs.resume`)**:
+
+  ```
+  Select the target process sub-type for `InvoiceProcessor` in folder `Finance/Invoices`:
+  1. process
+  2. agent
+  3. flow
+  4. api
+  5. caseManagement
+  6. processOrchestration
+  7. testAutomationProcess
+  8. webApp
+  9. mcpServer
+  10. skip
+  ```
+
+Always include a final `skip` option — it means "I don't know, emit no SubType." User replies with the number only; never expect them to type the SubType name. Batch prompts when possible (one question per binding, sent together) to minimize interruption.
 
 > **Preserve user-supplied SubType values.** When updating an existing `bindings.json`, do not overwrite a SubType value that is already present unless the referenced resource no longer exists in code. Do not re-prompt the user for bindings whose `SubType` is already set.
 
@@ -697,7 +775,7 @@ The push command fetches the supported-kinds list from `/studio_/backend/api/res
 
 ### Implications for binding generation
 
-1. **Emit `SubType` where determinable.** Always emit `"SubType": "credentialAsset"` for `retrieve_credential*` asset calls. Without it, the virtual-resource fallback will create a plain string asset placeholder, causing runtime failures when the agent expects a credential.
+1. **Emit `SubType` only when `uipath >= 2.10.58`.** Below that version, omit `SubType` from every binding — see **SubType Metadata → Version-detection rule**. When the version gate is met, always emit `"SubType": "credentialAsset"` for `retrieve_credential*` asset calls; without it the virtual-resource fallback creates a plain string asset placeholder, causing runtime failures when the agent expects a credential.
 2. **Warn the user about non-fallback kinds.** For `connection`, `mcpServer`, and `index` bindings, the referenced resource must exist in Orchestrator before `uipath push`. If it doesn't, the binding is skipped with a warning and the agent will fail at runtime. Flag this to the user when generating such bindings.
 3. **Optional `SubType` for bucket.** The bucket's backing storage is not inferable from code. Consider asking the user which storage type their buckets use, so virtual-resource fallback creates the correct kind.
 
