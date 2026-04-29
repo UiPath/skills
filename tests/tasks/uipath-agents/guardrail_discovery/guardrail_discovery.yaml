@@ -5,7 +5,10 @@ description: >
   discover available validators before adding a built-in guardrail.
   Verifies the agent uses the discovery command instead of hardcoding
   validator assumptions.
-tags: [uipath-agents, smoke, low-code]
+# BLOCKED: `uip agent guardrails list` not available in @uipath/cli@latest
+# (currently 0.9.0 on public npm). Re-enable smoke tag once CLI >= 1.0.0
+# is published.
+tags: [uipath-agents, smoke-blocked, low-code]
 max_iterations: 1
 
 agent:
