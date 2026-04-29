@@ -1,6 +1,6 @@
 ---
 name: uipath-ixp
-description: "UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models. For Orchestrator/deploy→uipath-platform."
+description: "UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
 ---
 
 # UiPath IXP Document Extraction Assistant
@@ -9,7 +9,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 
 ## What This Skill Can Do
 
-- **Create a new IXP project** — upload documents, generate or import taxonomy, review predictions, confirm valid fields, get metrics → [Project Setup Guide](references/project-setup.md)
+- **Create a new IXP project** — upload documents, generate or import taxonomy, review predictions, confirm valid fields → [Project Setup Guide](references/project-setup.md)
 - **Improve an existing project** — diagnose weak fields, rewrite instructions, review new predictions, verify improvement → [Improve Prompts Guide](references/improve-prompts.md)
 - **Publish a model** — pin a trained model version, tag it as live/staging, set a description
 - **List or inspect IXP projects** — use the CLI commands below
@@ -25,8 +25,8 @@ When the user asks to improve scores/prompts for an existing project, follow the
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
    ```
    /tmp/ixp/<project-name>/
-   ├── docs/         # Document images (doc_1.png, doc_2.png, …) — downloaded once, reused across sessions
-   ├── text/         # OCR text files (doc_1.json, doc_2.json, …) — downloaded once, reused across sessions
+   ├── docs/         # Document images (<document-id>.png, …) — downloaded once, reused across sessions
+   ├── text/         # OCR text files (<document-id>.txt, …) — downloaded once, reused across sessions
    ├── taxonomies/   # Taxonomy snapshots (v1.json, v2.json, …) — new version after each update-prompts
    └── prompts/      # Instruction update payloads (field_updates.json, group_updates.json, …)
    ```
@@ -35,9 +35,9 @@ When the user asks to improve scores/prompts for an existing project, follow the
 6. **Never use `UID` as a variable name** — it is a readonly shell variable. Use `DOC_ID`, `DOCUMENT_ID`, etc.
 7. **Always use the project `Name`, never the `Title`** — the `project list` output has both `Name` (e.g., `my_invoices-f1afa9ef-ixp`) and `Title` (e.g., `My_Invoices`). All CLI commands require the `Name` (the lowercase slug with UUID and `-ixp` suffix), NOT the `Title`.
 8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated. Fields with OCR-mangled values can be corrected using `--corrections` (keeps the prediction's document reference but fixes the text).
-9. **Do NOT manually extract values** — Claude does not construct extractions JSON or use `labelling label`. All labelling goes through `labelling confirm` with predictions from IXP.
+9. **Do NOT manually extract values** — all labelling goes through `labelling confirm` with predictions from IXP.
 10. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references.
-11. **Keep field instructions short and pattern-focused** — 2-4 sentences max, 120-250 characters. Long instructions with many examples or detailed exclusion lists cause the model to memorize the list instead of learning the pattern, resulting in F1=0. Prefer: "Extract [what] from [where]. Format: [pattern]. Example: '[one value]'." over a paragraph with 10 examples.
+11. **Keep field instructions short and pattern-focused** — 2-4 sentences max, 120-250 characters. Long instructions with many examples or detailed exclusion lists cause the model to memorize the list instead of learning the pattern, resulting in F1=0. Prefer: "Extract [what] from [where]. Example: '[one value]'." over a paragraph with 10 examples.
 12. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review predicted field values against the document image and OCR text. Confirm correct fields (`labelling confirm --fields`), correct OCR-mangled values (`--corrections`), and skip wrong fields. Do NOT manually extract values. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
 
 ## CLI Commands Reference
@@ -63,7 +63,7 @@ When the user asks to improve scores/prompts for an existing project, follow the
 | Command | Description |
 |---------|-------------|
 | `uip ixp document list <project-name> --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]` |
-| `uip ixp document image <project-name> <document-id> -o <path> --output json` | Download original document file (image/PDF) for viewing |
+| `uip ixp document image <project-name> <document-id> -o <path> --output json` | Download the document image (rendered page) for viewing |
 | `uip ixp document text <project-name> <document-id> -o <path> --output json` | Get OCR text and save to file — use to cross-reference predicted values against the document |
 
 ### Labellings
@@ -102,6 +102,6 @@ When writing or improving field instructions, focus on **what** to extract and *
 
 ## Guides
 
-- [Project Setup Guide](references/project-setup.md) — create a new project, label documents, get metrics
+- [Project Setup Guide](references/project-setup.md) — create a new project, review and label documents
 - [Improve Prompts Guide](references/improve-prompts.md) — iterative optimization loop with regression detection
 - [Label Documents Guide](references/label-documents.md) — reusable workflow for labelling documents (used by both guides above)
