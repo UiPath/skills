@@ -224,16 +224,34 @@ Always check the project's expression language before writing expressions:
 
 Mixing expression languages causes build failures.
 
-### Use `uip rpa get-default-activity-xaml` Output
-Never construct activity XAML from memory. The `uip rpa get-default-activity-xaml` command returns the exact XAML needed for the installed package version, including:
-- Correct element names and namespaces
-- Required properties and their types
-- Default values
-- Assembly references to add
+### Activity Property Surface and Starter XAML
 
-Use `uip rpa find-activities` to find the activity's fully qualified class name, type ID, and `isDynamicActivity` flag. Then use `uip rpa get-default-activity-xaml` with the appropriate parameters.
+Never construct activity XAML from memory. Two sources, in this order:
 
-Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` to see example usages of the given activity, in addition to searching existing local `.xaml` files.
+1. **`<Activity>.md`** — authoritative property surface: which properties exist, types, defaults, descriptions, required-scope rules.
+2. **`uip rpa get-default-activity-xaml --activity-class-name "<FullClassName>"`** — starter element with correct namespaces, assembly references, and any properties whose values differ from the type default.
+
+**Where `<Activity>.md` lives — try in this order:**
+
+1. **Primary:** `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md` — auto-generated when the package is installed; co-versioned with the runtime. Use `Glob` + `Read` (not `Grep` — `.local/` is gitignored).
+2. **Fallback:** `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` — bundled reference set covering the major UiPath packages. Use this when `.local/docs` is empty for that package (older versions don't ship per-activity docs) or when no project directory is in scope yet. Pick the version folder closest to the installed version.
+3. **Neither exists:** the package is third-party or unusual. Document this in your output, fall back to `find-activities` + `get-default-activity-xaml` alone, and warn the user that the property surface may be incomplete.
+
+> **Skip-tax.** `get-default-activity-xaml` omits any property whose value equals the type default (`null`, `0`, `false`, unset). For `NTypeInto`: 2 of 20 properties. For `NClick`: ~3 of ~15. The starter looks complete; it isn't. The MD read is the only way you learn which optional properties matter for your use case (`ClickType`, `KeyModifiers`, `WaitForReady`, `EmptyFieldMode`, etc.).
+
+**Workflow — each step depends on the previous step's output:**
+
+1. `uip rpa find-activities --query "<keyword>" --output json` → fully qualified class name, type ID, `isDynamicActivity` flag.
+2. **Locate `<Activity>.md` (primary → fallback per the lookup order above) and write an explicit property checklist** — required properties for the activity to function, plus optional properties relevant to your use case. If neither doc location has the file, record that explicitly and proceed to step 3 with a flag in your output. If you cannot name at least the required properties from the doc you found, you read the wrong file.
+3. `uip rpa get-default-activity-xaml` → starter element with namespaces and assembly references.
+4. **Diff your step-2 checklist against the step-3 starter.** Add every checklist property that isn't already in the starter. An empty checklist with no third-party flag from step 2 means step 2 was skipped — go back to step 2; do NOT author from the starter alone.
+5. Validate with `uip rpa get-errors`.
+
+**The rule binds for every activity, not just complex ones.** "This activity is simple — `LogMessage`, `Delay`, `StartProcess` — I can author from the starter alone" is the failure mode. Self-exemption is the bug; the procedure is the only check.
+
+**Anti-pattern.** Treating `get-default-activity-xaml` output as the complete property surface. The CLI runs XAML serialization on a default-constructed instance; type-default values are omitted by design.
+
+Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` for usage examples, in addition to searching existing local `.xaml` files.
 
 ### Preserve Existing Structure
 When editing XAML:

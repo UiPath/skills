@@ -12,30 +12,35 @@ For any activity property typed `InArgument<T>` or `OutArgument<T>`:
 
 The XAML attribute parser defaults to VB for expression-bearing attribute values, **regardless of the project's expression language**. At runtime, the VB JIT is disabled on non-Legacy projects — so attribute-form expressions fail with `JIT compilation is disabled for non-Legacy projects`. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md).
 
-## Binding forms per common property
+## Property-surface sourcing
 
-| Activity | Property | Type | Canonical C# form |
-|---|---|---|---|
-| `ui:LogMessage` | `Message` | `InArgument<Object>` | Child element — see recipe below |
-| `ui:LogMessage` | `Level` | enum | Attribute: `Level="Info"` |
-| `ui:WriteLine` | `Text` | `InArgument<String>` | Attribute (literal) or child element (expression) |
-| `ui:StartProcess` | `FileName` | `InArgument<String>` | Child element for env-var / composed paths |
-| `ui:StartProcess` | `Arguments` | `InArgument<String>` | Attribute for literals, child element for expressions |
-| `Delay` | `Duration` | `InArgument<TimeSpan>` | Attribute: `Duration="00:00:02"` — never brackets |
-| `Assign` | `To` | `OutArgument<T>` | Child element `<Assign.To>` with `<OutArgument>` + `<CSharpReference>` |
-| `Assign` | `Value` | `InArgument<T>` | Child element `<Assign.Value>` with `<InArgument>` + `<CSharpValue>` |
-| `If` | `Condition` | `InArgument<Boolean>` | Child element with `<CSharpValue x:TypeArguments="x:Boolean">` |
-| `uix:NTypeInto` | `Text` | `InArgument<String>` | Attribute for literals; child element for variables |
-| `uix:NTypeInto` | `Target` | `TargetAnchorable` | Child element `<uix:NTypeInto.Target>` — see `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md` |
-| `uix:NClick` | `Target` | `TargetAnchorable` | Child element `<uix:NClick.Target>` |
-| `uix:NClick` | `ClickType` | enum | Attribute: `ClickType="Single"` |
-| `uix:NClick` | `MouseButton` | enum | Attribute: `MouseButton="Left"` |
-| `uix:NGetText` | `Target` | `TargetAnchorable` | Child element `<uix:NGetText.Target>` |
-| `uix:NGetText` | `TextString` | `OutArgument<String>` | Child element — attribute form fails with `Failed to create a 'TextString' from the text '…'` |
-| `uix:NApplicationCard` | `TargetApp` | `TargetApp` | Child element `<uix:NApplicationCard.TargetApp>` |
-| `uix:NApplicationCard` | `OpenMode` | enum | Attribute: `OpenMode="Always"` |
-| `uix:NApplicationCard` | `CloseMode` | enum | Attribute: `CloseMode="Never"` |
-| `ui:InvokeWorkflowFile` | `WorkflowFileName` | plain `string` | Attribute with literal path — see [common-pitfalls.md § WorkflowFileName Must Be a Plain String Path](common-pitfalls.md#workflowfilename-must-be-a-plain-string-path) |
+**Which properties exist on a given activity?** Read `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md` — authoritative for the property surface, types, defaults, and required-scope rules. Co-versioned with the runtime DLL.
+
+**Do NOT** infer the property surface from `uip rpa get-default-activity-xaml` output. The CLI runs the XAML serializer against a default-constructed instance; properties whose values equal the type default are silently omitted (for `NTypeInto`, output covers 2 of 20 properties). Use `get-default-activity-xaml` for the starter element with correct namespaces and assembly references — not as a property list. See [xaml-basics-and-rules.md § Activity Property Surface and Starter XAML](xaml-basics-and-rules.md#activity-property-surface-and-starter-xaml).
+
+When `get-errors` reports `Cannot set unknown member '<Class>.<Prop>'`, the property name in memory or in this guide is wrong for the installed package version. Check `<Activity>.md` — property names drift between package versions (e.g. UIA `26.4.1-preview` renamed `InputMode` → `InteractionMode`, `EmptyField` → `EmptyFieldMode`).
+
+## Binding forms by property type
+
+| Property type | Attribute form (literal only) | Child-element form (expression) |
+|---|---|---|
+| `InArgument<String>` | Literal: `Foo="hello"` | `<InArgument x:TypeArguments="x:String"><CSharpValue x:TypeArguments="x:String">expr</CSharpValue></InArgument>` |
+| `InArgument<Object>` | Not safe — `Object` has no direct type converter | `<InArgument x:TypeArguments="x:Object"><CSharpValue x:TypeArguments="x:Object">expr</CSharpValue></InArgument>` |
+| `InArgument<Boolean>` | Literal: `Foo="True"` | `<InArgument x:TypeArguments="x:Boolean"><CSharpValue x:TypeArguments="x:Boolean">a &gt; b</CSharpValue></InArgument>` |
+| `InArgument<Int32>` / numeric | Literal: `Timeout="30"` | `<InArgument x:TypeArguments="x:Int32"><CSharpValue x:TypeArguments="x:Int32">expr</CSharpValue></InArgument>` |
+| `InArgument<TimeSpan>` | Literal: `Duration="00:00:02"` — never bracket form | Rare |
+| `InArgument<TEnum>` | Literal: `Level="Info"`, `MouseButton="Left"` | Rare |
+| `OutArgument<T>` | Often rejected — use child element | `<OutArgument x:TypeArguments="x:String"><CSharpReference x:TypeArguments="x:String">var</CSharpReference></OutArgument>` |
+| Plain `string` (not `InArgument<String>`) | Literal: `WorkflowFileName="path.xaml"` | — |
+| Complex objects (`TargetAnchorable`, `ActivityAction`, dictionaries) | — | Always child element |
+
+**Type-class mistakes:**
+
+- `InArgument<Object>` (e.g. `LogMessage.Message`) — writing `<InArgument x:TypeArguments="x:String">` instead of `x:Object` fails validation.
+- `OutArgument<T>` writeback — attribute form (`Result="[var]"`) fails with `Failed to create a '<Prop>' from the text '...'`. Use child element with `<CSharpReference>`.
+- `OutArgument` / `InOutArgument` on `InvokeWorkflowFile.Arguments` — must be a variable reference (lvalue), not a constructed expression. See [§ OutArgument Bindings Must Be Variable References](common-pitfalls.md#outargument-bindings-must-be-variable-references).
+- Empty `<InArgument x:TypeArguments="x:String"></InArgument>` — passes per-file `get-errors` but fails project `analyze` with `Value for a required activity argument 'Value' was not supplied`. Use `[String.Empty]`. See [§ Empty Argument Values](common-pitfalls.md#empty-argument-values).
+- Plain `string` (e.g. `InvokeWorkflowFile.WorkflowFileName`) — wrap in `[brackets]` or `&quot;...&quot;` and Studio silently breaks path resolution. Use the literal path. See [§ WorkflowFileName Must Be a Plain String Path](common-pitfalls.md#workflowfilename-must-be-a-plain-string-path).
 
 ## Recipes
 

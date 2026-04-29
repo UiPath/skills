@@ -66,7 +66,12 @@ Ask the user key questions using AskUserQuestion. Only ask questions the request
 **Skip this question** and default to simultaneous when the request is simple and well-defined, the user is modifying an existing automation, or the task is single-skill single-step.
 
 **If "explore first, then plan":**
-- You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`. You may walk the live app with `uip rpa uia snapshot inspect` and `uip rpa uia interact click/type/screenshot` for context.
+- You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
+- **Before promising live UIA capture in the plan**, verify all three:
+  1. A project with `project.json` exists at `<PROJECT_DIR>` (or will be created in Task 1 of the plan).
+  2. `UiPath.UIAutomation.Activities` version `>= 26.4.1-preview` (kept in sync with `uipath-rpa`'s declared minimum). For not-yet-created projects, check with `uip rpa get-versions --package-id UiPath.UIAutomation.Activities --include-prerelease --output json`.
+  3. If a project exists, `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is present.
+- If any check fails, the plan MUST either (a) include a Task 0 to install/upgrade UIA to the minimum and run `uip rpa restore`, or (b) fall back to indication-only authoring and record `UI capture: indication-only` in the plan header so `uipath-rpa` does not route to `uia-configure-target`.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.
 - After Steps 2–4, call EnterPlanMode with the plan. User approves, then ExitPlanMode.
 
@@ -276,6 +281,7 @@ Record the answers in the plan header. **The handoff is informational** — `uip
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
+**UI capture:** <live-capture / indication-only / N/A>
 **Test coverage:** <standard / happy-path / N/A>
 
 ## Understanding
