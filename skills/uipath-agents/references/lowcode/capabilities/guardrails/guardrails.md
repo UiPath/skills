@@ -198,6 +198,14 @@ Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or ass
 
 #### Adding an escalation guardrail — step-by-step
 
+**Step 0 — Discover available validators (MANDATORY — do not skip even when validator type is already known):**
+
+```bash
+uip agent guardrails list --output json
+```
+
+Confirm the target validator is listed. Record the exact parameter `id` values and `$parameterType` tags from the output — these must match precisely in the guardrail JSON. Skipping this step leads to invalid parameter shapes.
+
 **Step 1 — Discover the app** using `--kind App` from the solution root:
 
 ```bash
@@ -858,6 +866,8 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
+>
+> **MANDATORY: Run `uip agent guardrails list --output json` before writing any `builtInValidator` guardrail**, even when you already know the `validatorType`. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes for that validator — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
 
 ### Step 1 — Verify existing agent
 
