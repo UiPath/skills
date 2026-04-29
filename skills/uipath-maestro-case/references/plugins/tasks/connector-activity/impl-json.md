@@ -225,7 +225,9 @@ The `body` input carries the actual task data from `input-values`:
 
 ### 3f. `data.outputs[]`
 
-Copy verbatim from `tasks describe` (Step 2). Set `elementId` to the task's elementId on each output. Copy `_jsonSchema` from Error output if present.
+Copy from `tasks describe` (Step 2). Set `elementId` to the task's elementId on each output. Copy `_jsonSchema` from Error output if present.
+
+**Dedup output `var`/`id`/`value`.** `tasks describe` returns generic names like `response` and `error` for every connector task. When multiple connector tasks exist in the same case, these collide. After copying, apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule): collect all existing output `var` values across every task already in `caseplan.json`; if a `var` already exists, append a counter suffix starting at 2 (e.g., `response` → `response2`, `error` → `error2`). Update `var`, `id`, `value`, and `target` (as `=<new var>`) with the suffixed name. `name`, `displayName`, and `source` stay unchanged.
 
 ### 3g. `data.bindings[]`
 

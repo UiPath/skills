@@ -40,7 +40,7 @@ Generate task ID (`t` + 8 alphanumeric chars) and elementId (`<stageId>-<taskId>
 - **`data.context[]`** — per [common §Context array](../../../connector-trigger-common.md#context-array)
 - **`data.context[].metadata`** — per [common §Metadata body](../../../connector-trigger-common.md#metadata-body) + [common §essentialConfiguration](../../../connector-trigger-common.md#essentialconfiguration)
 - **`data.inputs[]`** — per [common §Input body](../../../connector-trigger-common.md#input-body-from-tasksmd-values). **Include `elementId`** on each input.
-- **`data.outputs[]`** — copy verbatim from `tasks describe` (Step 2). Set `elementId` to the task's elementId. Copy `_jsonSchema` from Error output if present.
+- **`data.outputs[]`** — copy from `tasks describe` (Step 2). Set `elementId` to the task's elementId. Copy `_jsonSchema` from Error output if present. **Dedup:** apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) — if a `var` value (`response`, `error`) already exists in any task in `caseplan.json`, suffix with a counter starting at 2. Update `var`, `id`, `value`, `target`; keep `name`, `displayName`, `source` unchanged.
 - **`data.bindings[]`** — empty array `[]`
 - **`entryConditions`** — do NOT auto-inject. Step 10 handles them.
 

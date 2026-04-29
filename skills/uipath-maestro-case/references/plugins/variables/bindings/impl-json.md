@@ -18,27 +18,11 @@ Root-level binding creation for `root.data.uipath.bindings[]`. Referenced by **a
 | case-management | `"process"` | `"CaseManagement"` | name + folderPath |
 | connector (activity/trigger) | `"Connection"` | — | ConnectionId + folderKey |
 
-## Non-Connector Binding Creation (name + folderPath)
+## Binding Creation
 
-For every non-connector task (process, action, agent, rpa, api-workflow, case-management), create **two** binding entries in `root.data.uipath.bindings[]`. Both bindings share the same `resourceKey`.
+For every task, create **two** binding entries in `root.data.uipath.bindings[]`. Both bindings share the same `resourceKey`. The shape is identical for all task types — only the field values differ per the Per Task Type table above.
 
-### Data sources
-
-| Field | Source |
-|---|---|
-| `name` | `tasks.md` `name` field (captured from registry during planning: `entry.name` for process types, `entry.deploymentTitle` for action) |
-| `folderPath` | `tasks.md` `folder-path` field (captured from registry during planning: `entry.folders[0].fullyQualifiedName` for process types, `entry.deploymentFolder.fullyQualifiedName` for action) |
-
-### resourceKey construction
-
-```
-resourceKey = "<folderPath>.<name>"
-```
-
-Examples:
-- folderPath `"Shared"`, name `"KYC"` → `"Shared.KYC"`
-- folderPath `"Shared/Finance"`, name `"InvoiceProcess"` → `"Shared/Finance.InvoiceProcess"`
-- folderPath `""` (empty), name `"ReviewHITL"` → `".ReviewHITL"`
+**Every binding entry MUST include all 7 fields:** `id`, `name`, `type`, `resource`, `resourceKey`, `default`, `propertyAttribute` (plus optional `resourceSubType`). Omitting `name` or `type` causes Studio Web to fail to render the case.
 
 ### Full binding shape (two entries per task)
 
@@ -67,9 +51,40 @@ Examples:
 ]
 ```
 
+> The `name` field mirrors `propertyAttribute` — for non-connector tasks the values are `"name"` and `"folderPath"`, for connector tasks `"ConnectionId"` and `"folderKey"`.
+
+### Data sources — non-connector tasks
+
+| Field | Source |
+|---|---|
+| `name` | `tasks.md` `name` field (captured from registry during planning: `entry.name` for process types, `entry.deploymentTitle` for action) |
+| `folderPath` | `tasks.md` `folder-path` field (captured from registry during planning: `entry.folders[0].fullyQualifiedName` for process types, `entry.deploymentFolder.fullyQualifiedName` for action) |
+
+### resourceKey construction — non-connector tasks
+
+```
+resourceKey = "<folderPath>.<name>"
+```
+
+Examples:
+- folderPath `"Shared"`, name `"KYC"` → `"Shared.KYC"`
+- folderPath `"Shared/Finance"`, name `"InvoiceProcess"` → `"Shared/Finance.InvoiceProcess"`
+- folderPath `""` (empty), name `"ReviewHITL"` → `".ReviewHITL"`
+
+### Data sources — connector tasks
+
+| Field | Source |
+|---|---|
+| `name` / `propertyAttribute` | First binding: `"ConnectionId"`. Second binding: `"folderKey"`. |
+| `default` (ConnectionId) | `connection-id` from `tasks.md` |
+| `default` (folderKey) | `folderKey` from `get-connection` (Step 1) |
+| `resourceKey` | `connection-id` from `tasks.md` |
+
 ### Task references
 
-After creating bindings, set `data.name` to `=bindings.<nameBindingId>` and `data.folderPath` to `=bindings.<folderPathBindingId>`. Do NOT use literal strings.
+Non-connector: set `data.name` to `=bindings.<nameBindingId>` and `data.folderPath` to `=bindings.<folderPathBindingId>`.
+Connector: set `data.context[].connection` to `=bindings.<connBindingId>` and `data.context[].folderKey` to `=bindings.<folderBindingId>`.
+Do NOT use literal strings.
 
 ## Deduplication
 
