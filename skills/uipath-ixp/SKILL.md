@@ -15,15 +15,6 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User asks to publish or manage IXP model versions
 - User provides a taxonomy file to import into a project
 
-## Quick Start
-
-1. Run `uip ixp project list --output json` to see existing projects
-2. To create a new project: follow [Project Setup Guide](references/project-setup.md)
-3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts.md)
-4. To label documents on an existing project: follow [Label Documents Guide](references/label-documents.md)
-
-If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the Project Setup guide).
-
 ## Critical Rules
 
 1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase.
@@ -46,14 +37,23 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 10. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references.
 11. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review predicted field values against the document image and OCR text. Confirm correct fields (`labelling confirm --fields`), correct OCR-mangled values (`--corrections`), and skip wrong fields. Do NOT manually extract values. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
 
+## Quick Start
+
+1. Run `uip ixp project list --output json` to see existing projects
+2. To create a new project: follow [Project Setup Guide](references/project-setup-guide.md)
+3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts-guide.md)
+4. To label documents on an existing project: follow [Label Documents Guide](references/label-documents-guide.md)
+
+If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the Project Setup guide).
+
 ## Task Navigation
 
 | User request | Action |
 |-------------|--------|
-| "Create an IXP project" / "Upload documents" | [Project Setup Guide](references/project-setup.md) |
-| "Import this taxonomy" / provides a taxonomy file | [Project Setup Guide](references/project-setup.md) — Option B (`--skip-taxonomy` + `import-taxonomy`) |
-| "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents.md) |
-| "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts.md) |
+| "Create an IXP project" / "Upload documents" | [Project Setup Guide](references/project-setup-guide.md) |
+| "Import this taxonomy" / provides a taxonomy file | [Project Setup Guide](references/project-setup-guide.md) — Option B (`--skip-taxonomy` + `import-taxonomy`) |
+| "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents-guide.md) |
+| "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
 | "Publish the model" / "Tag as live" | `uip ixp project publish <project-name> --output json` |
 | "Show metrics" / "What are the scores?" | `uip ixp project metrics <project-name> --output json` |
 | "List projects" | `uip ixp project list --output json` |
@@ -67,9 +67,9 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
 | Field instructions conflict with label_def instructions | `update-prompts --fields` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. |
 
-## References
+## Reference Navigation
 
 - [CLI Commands Reference](references/cli-reference.md) — all `uip ixp` commands with options and output formats
-- [Project Setup Guide](references/project-setup.md) — create a new project, review and label documents
-- [Improve Prompts Guide](references/improve-prompts.md) — iterative optimization loop with regression detection
-- [Label Documents Guide](references/label-documents.md) — reusable workflow for reviewing and confirming predictions
+- [Project Setup Guide](references/project-setup-guide.md) — create a new project, review and label documents
+- [Improve Prompts Guide](references/improve-prompts-guide.md) — iterative optimization loop with regression detection
+- [Label Documents Guide](references/label-documents-guide.md) — reusable workflow for reviewing and confirming predictions

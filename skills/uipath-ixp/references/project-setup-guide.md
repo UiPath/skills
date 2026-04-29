@@ -84,4 +84,4 @@ Skip this step if the user already provided a meaningful name in Step 1.
 
 ## Step 4 — Label All Documents
 
-Follow the [Label Documents Guide](label-documents.md) to label every document in the project.
+Follow the [Label Documents Guide](label-documents-guide.md) to label every document in the project.
