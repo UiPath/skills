@@ -57,10 +57,11 @@ uip case tasks describe --type connector-activity \
 | `enrichment.path` | `.Data.enrichment.path` | `"/hubs/productivity/send-mail-v2"` |
 | `enrichment.inputMetadata` | `.Data.enrichment.inputMetadata` | `{"type":"multipart","multipart":{"bodyFieldName":"body"}}` |
 | `enrichment.multipartParameters` | `.Data.enrichment.multipartParameters` | `[{"name":"file","dataType":"file"},{"name":"body","dataType":"string"}]` |
+| `enrichment.configuration` | `.Data.enrichment.configuration` | `"=jsonString:{\"essentialConfiguration\":{...}}"` |
 | `outputs` | `.Data.outputs` | Array with response schema + Error |
 | `inputs` | `.Data.inputs` | Array — includes `pathParameters`, `queryParameters`, `file` entries when applicable |
 
-> **All enrichment fields are critical.** Without `inputMetadata`, multipart activities fail. Without `path`, wrong endpoint. Without `operation`, incomplete essentialConfiguration. Without `multipartParameters`, the runtime cannot parse multipart request bodies.
+> **All enrichment fields are critical.** Without `inputMetadata`, multipart activities fail. Without `configuration`, the FE strips enrichment data on re-save. Without `multipartParameters`, the runtime cannot parse multipart request bodies (400 "Unable to parse multipart body").
 
 > **Do NOT derive `path` or `operation` from `Config.objectName`.** The resolved values differ (e.g., `SendEmailV2` not `send-mail-v2`, `/hubs/productivity/send-mail-v2` not `/send-mail-v2`).
 
@@ -126,7 +127,7 @@ Key order must match FE: `activityPropertyConfiguration` → `activityMetadata` 
 {
   "activityPropertyConfiguration": {
     "multipartParameters": "<enrichment.multipartParameters from Step 2 — omit key entirely if absent>",
-    "configuration": "=jsonString:<see §3d>",
+    "configuration": "<enrichment.configuration from Step 2 — copy as-is>",
     "uiPathActivityTypeId": "<type-id>",
     "errorState": { "issues": [] }
   },
@@ -157,13 +158,11 @@ Key order must match FE: `activityPropertyConfiguration` → `activityMetadata` 
 
 ### 3d. `activityPropertyConfiguration.configuration`
 
-A `=jsonString:` prefixed JSON string. Use `Config` from Step 1 + enrichment from Step 2:
+Copy `enrichment.configuration` from Step 2 as-is. The CLI pre-builds this `=jsonString:` string using the full `Entry.configuration` as `instanceParameters` and httpMethod→verb mapping for `operation` — matching what Studio Web's DAP produces.
 
-```
-=jsonString:{"essentialConfiguration":{"instanceParameters":{"activityType":"<Config.activityType>","objectName":"<object-name>","operation":"<enrichment.operation>","connectorKey":"<connector-key>","version":"<Config.version>"},"objectName":"<object-name>","operation":"<lowercase enrichment.operation>","httpMethod":"<Config.httpMethod>","path":"<enrichment.path>","packageVersion":"<Config.version>","connectorVersion":null,"executionType":null,"customFieldsRequestDetails":null,"unifiedTypesCompatible":true}}
-```
+> **Do NOT hand-construct this string.** Previous versions of this doc had a manual template that produced incorrect `instanceParameters` (missing `httpMethod`, `supportsStreaming`, `subType`) and wrong `operation` values. The CLI now returns the correct pre-built string.
 
-> `connectorVersion` is `null` for activities (triggers use `enrichment.connectorVersion`).
+> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 7 — do not hand-construct.
 
 ### 3e. `data.inputs[]`
 
@@ -246,7 +245,7 @@ Append the task to the target stage's `tasks[]` array in its own task set (one t
 | Step failed | What gets populated | Log |
 |---|---|---|
 | get-connection | Context from tasks.md values only. No bindings, no bindings_v2 sync — folderKey unknown | `[SKIPPED] get-connection failed — bindings/folderKey omitted` |
-| tasks describe | Context + bindings + bindings_v2. No outputs/enrichment. Use Config fallbacks | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
+| tasks describe | Context + bindings + bindings_v2. No outputs, no `enrichment.configuration`, no `inputMetadata`, no `multipartParameters` — write skeleton per Rule 7 | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
 | All succeed | Full population per §3a-3h including bindings_v2 sync | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).
@@ -256,7 +255,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 1. `type` is `"execute-connector-activity"`
 2. `data.serviceType` is `"Intsvc.ActivityExecution"`
 3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey`, `objectName`, `method`, `path`, `metadata` — but NOT `operation` or `_label`
-4. `metadata.body.activityPropertyConfiguration.configuration` starts with `=jsonString:` and contains `enrichment.operation` + `enrichment.path`
+4. `metadata.body.activityPropertyConfiguration.configuration` matches `enrichment.configuration` from Step 2 (starts with `=jsonString:`, contains full `instanceParameters` from `Entry.configuration`)
 5. `metadata.body.activityPropertyConfiguration.multipartParameters` matches `enrichment.multipartParameters` (present when multipart)
 6. `metadata.body.inputMetadata` matches `enrichment.inputMetadata` (not empty `{}` if multipart)
 7. Root bindings exist for ConnectionId + folderKey
@@ -274,6 +273,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT derive `path` from `objectName`** (e.g., `/<objectName>`). The real path includes hub prefixes — use `enrichment.path`.
 - **Do NOT derive `operation` from `objectName`.** They differ (e.g., `SendEmailV2` vs `send-mail-v2`) — use `enrichment.operation`.
+- **Do NOT hand-construct `activityPropertyConfiguration.configuration`.** Copy `enrichment.configuration` from Step 2 as-is. Hand-constructing produces wrong `instanceParameters` (missing fields like `httpMethod`, `supportsStreaming`, `subType`) and wrong `operation` values, causing the FE to strip enrichment data on re-save.
 - **Do NOT set `inputMetadata: {}`** when `enrichment.inputMetadata` has content. Multipart activities fail without it.
 - **Do NOT omit `multipartParameters`** from `activityPropertyConfiguration` when `enrichment.multipartParameters` exists. Without it, the runtime cannot parse multipart request bodies (400 "Unable to parse multipart body").
 - **Do NOT omit `pathParameters` input.** Always include it, even when empty — the FE always sends it.
@@ -284,4 +284,4 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 ## Known Limitation
 
-The `activityPropertyConfiguration.configuration` uses `essentialConfiguration` only (from the shared SDK). Tasks work at **runtime** (debug/publish) but the FE editor may not render them until the user re-configures the task in the UI.
+The CLI-produced `configuration` uses `essentialConfiguration` only. Tasks work at **runtime** (debug/publish) but the FE editor may not render them until the user re-configures the task in the UI.
