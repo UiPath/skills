@@ -105,7 +105,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran filter queries with --body (AND, OR, nested, sort, projection)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query\s+.*--body'
+    command_pattern: '(?s)uip\s+df\s+records\s+query\s+.*--body'
     min_count: 4
     weight: 3.0
     pass_threshold: 1.0
@@ -129,7 +129,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used filterGroup key in records query body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query.*filterGroup'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
     min_count: 3
     weight: 2.5
     pass_threshold: 1.0
@@ -137,7 +137,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used logicalOperator in filterGroup body (AND=0 / OR=1)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query.*logicalOperator'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*logicalOperator'
     min_count: 2
     weight: 2.0
     pass_threshold: 1.0
@@ -145,7 +145,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used sortOptions with isDescending in query body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query.*sortOptions'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -153,7 +153,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used selectedFields projection in query body"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query.*selectedFields'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*selectedFields'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
