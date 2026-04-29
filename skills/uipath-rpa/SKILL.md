@@ -154,6 +154,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Explore/probe a live UI** | Both | [ui-automation-guide.md § Inspecting & Interacting with GUI apps](references/ui-automation-guide.md#inspecting--interacting-with-gui-apps) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md#multi-step-ui-flows) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |

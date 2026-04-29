@@ -25,6 +25,14 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
+## Inspecting & Interacting with GUI apps
+
+Use `uia snapshot inspect` to inspect a live app's UI and element refs, and `uia interact` to test interactions or advance the app between captures.
+
+**Read this first:** `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md` — covers all `interact` subcommands and `snapshot inspect`.
+
+---
+
 ## Terminology — what "screen" means
 
 "Screen" appears across UIA docs in three distinct senses. Know which one a passage uses before acting on it.
