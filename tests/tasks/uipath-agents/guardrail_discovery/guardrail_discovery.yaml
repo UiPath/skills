@@ -25,7 +25,8 @@ sandbox:
             #!/usr/bin/env bash
             # Wrapper that mocks "uip agent guardrails list" for offline/CI use.
             # All other commands pass through to the real uip binary.
-            REAL_UIP="$(PATH="${PATH#*"$PWD/bin":}" command -v uip)"
+            SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+            REAL_UIP="$(PATH="${PATH//"$SCRIPT_DIR:"/}" command -v uip)"
             if [ -z "$REAL_UIP" ]; then
               echo "uip not found on PATH" >&2; exit 1
             fi
