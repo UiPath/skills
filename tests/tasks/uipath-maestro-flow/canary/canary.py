@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import time
+import uuid
 from typing import Any, Callable
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -34,8 +35,8 @@ DELETE_TIMEOUT = 60
 
 # Projects[0].Id must match the projectKey committed in
 # Canary/resources/solution_folder/*/Canary.json — those files reference it.
-# Omitting SolutionId makes findSolutionFile return undefined, so the CLI
-# skips overwrite and imports fresh each run.
+# SolutionId is generated fresh per run in bootstrap_uipx() so each run
+# imports a new solution that cleanup() tears down via uip solution delete.
 UIPX_TEMPLATE = {
     "DocVersion": "1.0.0",
     "StudioMinVersion": "2025.10.0",
@@ -139,8 +140,11 @@ LEGS: list[
 
 
 def bootstrap_uipx() -> None:
+    # CLI ≥ 1.0.0 requires SolutionId during pack — generate a fresh UUID
+    # per run so each canary import is a new solution.
+    template = {**UIPX_TEMPLATE, "SolutionId": str(uuid.uuid4())}
     with open(UIPX_PATH, "w") as f:
-        json.dump(UIPX_TEMPLATE, f, indent=4)
+        json.dump(template, f, indent=4)
 
 
 def cleanup(solution_id: str | None) -> None:
