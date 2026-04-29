@@ -669,3 +669,9 @@ For RPA-specific connector workflow patterns (activity/resource discovery, conne
 ### inspect-package
 
 Inspect a NuGet package to discover its API surface (classes, methods, properties). See [coded/inspect-package-guide.md](coded/inspect-package-guide.md) for full usage.
+
+---
+
+## UI Automation Commands (`uip rpa uia ...`)
+
+UIA subcommands and flags are documented in the `UiPath.UIAutomation.Activities` package. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
