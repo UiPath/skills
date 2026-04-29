@@ -53,13 +53,13 @@ uip agent guardrails list --output json
 ```
 
 Returns an array of validator definitions. Each entry contains:
-- `Status` — `"Available"` (licensed, ready to use) or `"Unauthorised"` (not enabled for this tenant)
+- `Status` — `"Available"` (licensed, ready to use) or `"Unauthorised"` (user not entitled to use guardrails)
 - `Validator` — the `validatorType` string to use in `builtInValidator` guardrails
 - `AllowedScopes` — valid values for `selector.scopes`
 - `GuardrailStages` — object mapping each scope to its valid execution stages
 - `Parameters` — array of parameter definitions (`Type`, `Id`, `Required`)
 
-**Mandatory first step** before adding any built-in validator guardrail. Only use validators with `Status: "Available"`. If a validator is missing from the list or has `Status: "Unauthorised"`, do not add it — inform user accordingly.
+**Mandatory first step** before adding any built-in validator guardrail. Only use validators with `Status: "Available"`. If a validator is missing from the list, it does not exist on this tenant. If `Status: "Unauthorised"`, user is not entitled to use guardrails — do not add the guardrail, inform user accordingly.
 
 ### `uip agent validate`
 

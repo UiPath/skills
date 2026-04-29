@@ -286,7 +286,7 @@ Before adding any built-in validator, check the `Data` array for the requested `
 
 1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail.
 2. **`Status: "Available"`** — validator is licensed and ready. Proceed with configuration.
-3. **`Status: "Unauthorised"`** — validator exists but user lacks access. Inform user: *"The validator `<name>` is present but unauthorised on your tenant. Contact your UiPath administrator to enable access."* Do not add the guardrail.
+3. **`Status: "Unauthorised"`** — validator exists but the user is not entitled to use guardrails. Inform user: *"You are not entitled to use the `<name>` guardrail. You can view the configuration but cannot apply it to agents. Contact your UiPath administrator to enable guardrail entitlements."* Do not add the guardrail.
 
 Only configure guardrails for validators with `Status: "Available"`.
 
@@ -759,7 +759,7 @@ Before adding any built-in validator, check the `Data` array for the requested v
 
 1. **Not found in list** — validator does not exist on this tenant. Inform user and stop.
 2. **`Status: "Available"`** — proceed with configuration.
-3. **`Status: "Unauthorised"`** — validator exists but user lacks access. Inform user to contact their UiPath administrator and stop.
+3. **`Status: "Unauthorised"`** — user is not entitled to use guardrails. Inform user they can view the configuration but cannot apply it to agents. Stop.
 
 Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
 

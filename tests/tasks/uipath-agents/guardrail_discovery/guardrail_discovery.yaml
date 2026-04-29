@@ -17,8 +17,104 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
+  template_sources:
+    - type: starter_files
+      files:
+        - path: "bin/uip"
+          content: |
+            #!/usr/bin/env bash
+            # Wrapper that mocks "uip agent guardrails list" for offline/CI use.
+            # All other commands pass through to the real uip binary.
+            REAL_UIP="$(PATH="${PATH#*"$PWD/bin":}" command -v uip)"
+            if [ -z "$REAL_UIP" ]; then
+              echo "uip not found on PATH" >&2; exit 1
+            fi
+            case "$*" in
+              *agent*guardrails*list*)
+                cat <<'MOCK'
+            {
+              "Status": "Succeeded",
+              "Data": [
+                {
+                  "Status": "Available",
+                  "Validator": "pii_detection",
+                  "AllowedScopes": ["Agent", "Llm", "Tool"],
+                  "GuardrailStages": {
+                    "Agent": ["PreExecution", "PostExecution"],
+                    "Llm": ["PreExecution", "PostExecution"],
+                    "Tool": ["PreExecution", "PostExecution"]
+                  },
+                  "Parameters": [
+                    {"Type": "enum-list", "Id": "entities", "Required": false},
+                    {"Type": "map-enum", "Id": "entityThresholds", "Required": false}
+                  ]
+                },
+                {
+                  "Status": "Available",
+                  "Validator": "prompt_injection",
+                  "AllowedScopes": ["Llm"],
+                  "GuardrailStages": {
+                    "Llm": ["PreExecution"]
+                  },
+                  "Parameters": [
+                    {"Type": "number", "Id": "threshold", "Required": false}
+                  ]
+                },
+                {
+                  "Status": "Available",
+                  "Validator": "harmful_content",
+                  "AllowedScopes": ["Agent", "Llm", "Tool"],
+                  "GuardrailStages": {
+                    "Agent": ["PreExecution", "PostExecution"],
+                    "Llm": ["PreExecution", "PostExecution"],
+                    "Tool": ["PreExecution", "PostExecution"]
+                  },
+                  "Parameters": [
+                    {"Type": "enum-list", "Id": "harmfulContentEntities", "Required": false},
+                    {"Type": "map-enum", "Id": "harmfulContentEntityThresholds", "Required": false}
+                  ]
+                },
+                {
+                  "Status": "Unauthorised",
+                  "Validator": "intellectual_property",
+                  "AllowedScopes": ["Llm", "Agent"],
+                  "GuardrailStages": {
+                    "Llm": ["PostExecution"],
+                    "Agent": ["PostExecution"]
+                  },
+                  "Parameters": [
+                    {"Type": "enum-list", "Id": "ipEntities", "Required": false}
+                  ]
+                },
+                {
+                  "Status": "Available",
+                  "Validator": "user_prompt_attacks",
+                  "AllowedScopes": ["Llm"],
+                  "GuardrailStages": {
+                    "Llm": ["PreExecution"]
+                  },
+                  "Parameters": []
+                }
+              ]
+            }
+            MOCK
+                exit 0
+                ;;
+              *)
+                exec "$REAL_UIP" "$@"
+                ;;
+            esac
+        - path: "CLAUDE.md"
+          content: |
+            Run `chmod +x bin/uip && export PATH="$PWD/bin:$PATH"` before
+            any `uip` commands. The local `bin/uip` wrapper provides offline
+            guardrail discovery support.
 
 initial_prompt: |
+  IMPORTANT FIRST STEP: Run `chmod +x bin/uip && export PATH="$PWD/bin:$PATH"`
+  before any `uip` commands. The local `bin/uip` wrapper provides offline
+  guardrail discovery support — without it `uip agent guardrails list` will fail.
+
   Create a UiPath solution "DiscoverSol" containing a low-code agent
   "DiscoverAgent". Then discover what guardrail validators are available
   using the CLI and add any built-in validator guardrail to the agent
