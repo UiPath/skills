@@ -1,10 +1,12 @@
 ---
 name: uipath-gov-access-policy
-description: "[PREVIEW] UiPath access policies (`uip gov access-policy`): govern tool-use when an Actor Process invokes a child Resource. Selection + Actor Process + Actor Identity rules. For product settings→uipath-gov-aops-policy."
+description: "UiPath access policies (`uip gov access-policy`): govern tool-use when an Actor Process invokes a child Resource. Selection + Actor Process + Actor Identity rules. For product settings→uipath-gov-aops-policy."
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # UiPath Access Policy Governance
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Skill for authoring UiPath **access policies** of type `ToolUsePolicy` via the `uip gov access-policy` CLI. The `ToolUsePolicy` type **governs tool-use / resource-use** inside Agents and workflow automations: when an Actor Process tries to invoke a child Resource/Tool, the policy decides whether the call is allowed. The `uip gov access-policy` surface returns other policy types as well, but they are out of scope for this skill.
 

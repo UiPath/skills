@@ -1,9 +1,11 @@
 ---
 name: uipath-solution-design
-description: "[PREVIEW] PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), generate implementation-ready SDD. For project setup→uipath-platform."
+description: "UiPath PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), generate implementation-ready SDD. For project setup→uipath-platform."
 ---
 
 # UiPath Solution Design
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Transform a Process Design Document (PDD) into an implementation-ready Solution Design Document (SDD) that a coding agent can build from. Select the right UiPath scope — either a single product (RPA Process/Library/Test Auto, Maestro Flow, Case Management, Agents, Coded Apps, or API Workflows) or a multi-project Solution composing several of them — based on PDD signals.
 

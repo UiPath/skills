@@ -1,10 +1,12 @@
 ---
 name: uipath-coded-apps
-description: "[PREVIEW] UiPath Coded Web Apps & Coded Action Apps (uip codedapp, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
+description: "UiPath Coded Web Apps & Coded Action Apps (`uip codedapp`, app.config.json, action-schema.json, @uipath/uipath-typescript SDK). Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Coded Apps
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
 

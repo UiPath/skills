@@ -1,10 +1,12 @@
 ---
 name: uipath-maestro-flow
-description: "[PREVIEW] ALWAYS invoke for .flow / UiPath Maestro Flow tasks (read, edit, author, debug, or Q&A) — spec evolves. Leverages uip CLI: nodes, edges, subflows, scripts, variables, triggers, End nodes, registry."
+description: "UiPath Maestro Flow (.flow) — read, edit, author, debug. `uip` CLI: nodes, edges, subflows, scripts, variables, triggers, End nodes, registry. For C#/XAML→uipath-rpa. For agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath Flow Authoring Assistant
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Comprehensive guide for creating, editing, validating, and debugging UiPath Flow projects using the `uip` CLI and `.flow` file format.
 

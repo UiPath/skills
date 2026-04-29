@@ -1,6 +1,7 @@
 ---
 name: uipath-planner
 description: "UiPath task planner — elicits preferences, plans multi-skill execution, detects project type (.cs, .xaml, .flow, .py). Triggers for non-trivial or ambiguous UiPath requests. Simple single-skill tasks→specialist directly."
+when_to_use: "User makes an ambiguous or multi-product UiPath request — 'help me automate this', 'build a UiPath solution for X', 'what's the right approach for Y', 'set up a process from scratch'. Skip when the project type (.cs/.xaml/.flow/.py) and scope are already clear — invoke the specialist skill directly."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanMode
 ---
 

@@ -1,9 +1,11 @@
 ---
 name: uipath-data-fabric
-description: "[PREVIEW] Data Fabric entity/record CRUD via uip df. Create entities, insert/query/update/delete records, CSV import, file attachments. For Orchestrator→uipath-platform. For Integration Service→uipath-platform."
+description: "UiPath Data Fabric entity/record CRUD via `uip df`. Create entities, insert/query/update/delete records, CSV import, file attachments. For Orchestrator→uipath-platform. For Integration Service→uipath-platform."
 ---
 
 # UiPath Data Fabric — Agent Skill
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Data Fabric is UiPath's structured data store. Entities are typed schemas;
 records are rows; file fields store binary attachments.

@@ -1,10 +1,12 @@
 ---
 name: uipath-human-in-the-loop
-description: "[PREVIEW] Add Human-in-the-Loop node to a Flow, Maestro, or Coded Agent. Triggers on approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs schema, writes JSON directly."
+description: "UiPath Human-in-the-Loop node for Flow, Maestro, or Coded Agent. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath Human-in-the-Loop Assistant
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Coded Agent.
 
