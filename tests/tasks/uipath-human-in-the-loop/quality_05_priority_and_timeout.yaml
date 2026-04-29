@@ -5,6 +5,10 @@ description: >
   and C4 (timeout ISO 8601).
 tags: [uipath-human-in-the-loop, integration, options]
 
+agent:
+  type: claude-code
+  max_turns: 50
+
 sandbox:
   driver: tempdir
   python: {}
@@ -20,7 +24,7 @@ initial_prompt: |
   Save results to report.json:
   {
     "hitl_node_id": "<id>",
-    "priority_used": "<the priority value set in the flow, e.g. high>",
+    "priority_used": "<the priority value set in the flow, e.g. High>",
     "timeout_used": "<the ISO 8601 duration set in the flow, e.g. PT48H>",
     "validation_passed": true
   }
@@ -56,7 +60,7 @@ success_criteria:
     assertions:
       - expression: "priority_used"
         operator: equals
-        expected: "high"
+        expected: "High"
       - expression: "timeout_used"
         operator: equals
         expected: "PT48H"

@@ -5,6 +5,10 @@ description: >
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
+agent:
+  type: claude-code
+  max_turns: 50
+
 sandbox:
   driver: tempdir
   python: {}
