@@ -126,7 +126,7 @@ jobs:
       # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
       # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
       # without triggering auto-install.
-      - name: Install uip CLI + RPA tools (public npm, rpa-tool ^0.9)
+      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
         shell: bash
         run: |
           set -e
@@ -137,7 +137,7 @@ jobs:
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
             @uipath/cli@latest \
-            "@uipath/rpa-tool@^0.9" \
+            "@uipath/rpa-tool@>=0.9" \
             @uipath/rpa-legacy-tool@latest
           uip --version
           echo "--- Installed @uipath/* packages ---"
@@ -182,7 +182,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$AUTH_DEBUG_DIR"
-          node .github/scripts/uipath-oauth-login.mjs
+          # Auth via puppeteer is occasionally flaky on alpha (org-select
+          # SPA renders late, or the login form inputs intermittently lose
+          # focus). Retry the login flow up to 3 times before giving up.
+          for attempt in 1 2 3; do
+            echo "--- Auth attempt $attempt ---"
+            if node .github/scripts/uipath-oauth-login.mjs; then
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "::error::Auth failed after 3 attempts"
+              exit 1
+            fi
+            sleep 5
+          done
           # Smoke check the auth context is recognized. Failure here fails
           # the job — we'd rather not run smoke tasks against a broken
           # login state and chase mysterious sign-in errors per task.
