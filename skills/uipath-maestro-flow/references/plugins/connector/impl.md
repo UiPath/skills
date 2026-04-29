@@ -112,6 +112,21 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 **Run `is resources describe` (Step 3) before this step.** The full metadata tells you which fields are required, what types they expect, and which need reference resolution. Do not guess field names or skip the metadata check — required fields missing from `--detail` cause runtime errors that `flow validate` does not catch.
 
+#### Step 6a — Detect FilterBuilder parameters
+
+Before writing `--detail`, scan the operation's `parameters[]` (from Step 3 / `registry get`) for any entry with `design.component === "FilterBuilder"`. This applies to **any** operation, not only List operations — connectors render the FilterBuilder UI for any param flagged this way.
+
+For every match:
+
+- That parameter's `name` is the connector-specific filter input — most commonly `where`, sometimes `q` (Salesforce), sometimes another name. Do not assume `where`.
+- **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
+- **Do not pass a raw CEQL string under `--detail.queryParameters.<name>`.** It populates only the runtime half — debug runs succeed but the FilterBuilder UI shows `undefined` when the activity is reopened in SW. The CLI rejects this at configure time.
+- Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+
+If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
+
+#### Step 6b — Run configure
+
 After adding the node with `uip maestro flow node add`, configure it with the resolved connection and field values:
 
 ```bash
@@ -120,9 +135,9 @@ uip maestro flow node configure <file> <nodeId> \
   --output json
 ```
 
-The `method` and `endpoint` values come from `connectorMethodInfo` in the `registry get` response (Step 2). The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names.
+The `method` and `endpoint` values come from `connectorMethodInfo` in the `registry get` response (Step 2). The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
-> **Server-side filtering (List All Records and similar list activities):** Pass a structured `filter` tree under `--detail` — the CLI compiles it to CEQL using the same logic Studio Web uses, so the activity round-trips cleanly. Tree shape, operator table, and examples live in [uipath-platform — Filter Trees (CEQL)](../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). **Do not pass a raw CEQL string in `filter`; do not use `filterExpression` (that is the trigger / JMESPath path — see [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees)).**
+> **Do not use `filterExpression`** — that field is the trigger / JMESPath path. See [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees).
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
 
@@ -332,6 +347,8 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |
 | `bindings_v2.json` malformed or stale | It was hand-edited (the CLI overwrites edits on next debug/pack) | Never edit `bindings_v2.json` directly — author bindings in the top-level `.flow` `bindings[]` instead. Compare your top-level `bindings[]` against the schema and examples in the Bindings section above |
 | Connector key not found | Wrong key name | Run `uip is connectors list --output json` — keys are often prefixed with `uipath-` |
+| FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
+| `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
 
 ### Debug Tips
 

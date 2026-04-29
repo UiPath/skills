@@ -56,12 +56,20 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
 
-The CLI persists both halves of the contract from a single `filter` input:
+### Contract — three signals from IS metadata
 
-- **Runtime side** — the compiled CEQL string lands at `inputs.detail.queryParameters.where`. The IS connector reads `queryParameters.where` when executing List All Records and similar list/query operations.
-- **Design-time side** — the structured tree is embedded under `inputs.detail.configuration`'s `essentialConfiguration.savedFilterTrees.where`. Studio Web reads this on open to re-render the filter widget; without it the filter UI shows up empty even though the runtime call still works.
+The CLI reads the live IS metadata response and uses three signals to wire the filter:
 
-Pass `filter` (the structured tree) and the CLI emits both halves in lockstep. Passing both `filter` and `queryParameters.where` is rejected at validation time — single source of truth.
+1. **The activity supports CEQL** when one of its `parameters` declares `design.component === "FilterBuilder"`. That parameter's `name` is the connector-specific key the compiled CEQL string is sent under — most commonly `where`, but **not always** (e.g. Salesforce uses `q`). Activities with no such parameter do not support server-side filtering — pass no `filter` and filter downstream.
+2. **A field is filterable** when its IS metadata entry has `searchable: true`. Type alone does not gate it — the connector flags fields explicitly. Fields without `searchable: true` are rejected by the CLI even if they look like primitives.
+3. **Permitted operators** for the field are listed under `searchableOperators`. **Connector-side identifier** for the field in CEQL is `searchableNames[0]` when present (some connectors expose a friendly `name` but require a different identifier in the query string).
+
+### What the CLI persists from a single `filter` input
+
+- **Runtime side** — the compiled CEQL string lands at `inputs.detail.queryParameters.<filterParamName>` where `<filterParamName>` is the FilterBuilder parameter's name from the IS metadata (often `where`).
+- **Design-time side** — the structured tree is embedded under `inputs.detail.configuration`'s `essentialConfiguration.savedFilterTrees.<filterParamName>`. Studio Web reads this on open to re-render the filter widget; without it the filter UI shows up empty even though the runtime call still works.
+
+Pass `filter` (the structured tree) and the CLI emits both halves in lockstep. Passing both `filter` and `queryParameters.<filterParamName>` is rejected at validation time — single source of truth.
 
 ### Tree shape
 
@@ -166,13 +174,13 @@ Logical operators between siblings:
 
 ### How to build a CEQL filter tree
 
-1. Run `uip is resources describe "<connector-key>" "<objectName>" --connection-id "<id>" --operation List` to read the resource's filterable fields (`requestFields` / `parameters` flagged as filterable).
-2. For each user-intent condition, pick a matching field `name` from that response — using an unknown field name will be rejected by the CLI at configure time.
-3. Choose an operator based on the field type (see operator table). Date-time fields take ISO-8601 strings; enums take the literal enum value.
-4. Build one leaf per condition; place multiple conditions under the same `groupOperator` (0 for AND, 1 for OR).
-5. If you need mixed AND/OR logic, use nested `groups`.
-6. Wrap values in a `WorkflowValue` object with `value`, `rawString`, `isLiteral`. Strings, numbers, booleans, dates, and arrays are all valid `value` types; only `isLiteral: true` is currently supported by activity-side compilation.
-7. If the resource doesn't expose filterable fields, the activity does not support server-side filtering — omit `filter` and filter downstream in the flow (e.g. with a Script node).
+1. Run `uip is resources describe "<connector-key>" "<objectName>" --connection-id "<id>" --operation List` to read the resource's metadata.
+2. **Confirm CEQL is supported** for this operation: at least one entry under `parameters` must carry `design.component === "FilterBuilder"`. If none does, the activity does not support server-side filtering — omit `filter` and filter downstream (e.g. with a Script node).
+3. **Pick filterable fields** from `fields[]` where `searchable: true`. Other fields will be rejected by the CLI at configure time even if they look like primitives.
+4. For each leaf, pick an operator from the field's `searchableOperators` list (when present). Date-time fields take ISO-8601 strings; enums take the literal enum value.
+5. Use the field's `name` as the leaf `id`. The CLI rewrites it to `searchableNames[0]` when emitting CEQL if the connector declares one — you don't need to use the alias yourself.
+6. Build one leaf per condition; place multiple conditions under the same `groupOperator` (0 for AND, 1 for OR). Use nested `groups` for mixed AND/OR.
+7. Wrap values in a `WorkflowValue` object with `value`, `rawString`, `isLiteral`. Strings, numbers, booleans, dates, and arrays are all valid `value` types; only `isLiteral: true` is currently supported by activity-side compilation.
 
 ### What NOT to generate
 
@@ -183,4 +191,6 @@ Logical operators between siblings:
 | `{ "operator": "equals", ... }` | Operator is case-sensitive. | `"operator": "Equals"` |
 | `{ "value": "Active" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ "value": { "value": "Active", "rawString": "\"Active\"", "isLiteral": true } }` |
 | `{ "id": "fields.Status", ... }` | `fields.` prefix — use the bare field name from `is resources describe`. | `{ "id": "Status", ... }` |
+| `{ "id": "<field without searchable: true>", ... }` | The CLI checks `searchable` on the IS metadata entry; non-searchable fields are rejected even if their type looks filterable. | Pick a field where `searchable: true`. |
+| `"queryParameters": { "where": "..." }` alongside `filter` | Hardcoding `where` assumes that's the FilterBuilder param name — it isn't always (Salesforce uses `q`, etc.). | Pass `filter` only; the CLI discovers the right param name from `design.component === "FilterBuilder"`. |
 | `In` operator with a single value not in a list | `In` expects an array `value`. | Use `Equals`, or pass `value: ["one"]`. |
