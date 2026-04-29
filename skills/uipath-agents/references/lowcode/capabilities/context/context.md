@@ -24,13 +24,7 @@ Contexts feed retrievable information into an agent at runtime. Three variants e
 
 ## Casing Rule
 
-`contextType` and `retrievalMode` values are **lowercase**. `uip agent validate` accepts camelCase but Studio Web silently drops the resource on import. Use:
-- `"index"` (not `"Index"`)
-- `"attachments"` (not `"Attachments"`)
-- `"datafabricentityset"` (not `"dataFabricEntitySet"`)
-- `"semantic"` / `"structured"` / `"deeprag"` / `"batchtransform"` (not `"deepRAG"` / `"batchTransform"`)
-
-See [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
+`contextType` and `retrievalMode` values are lowercase. See [../../critical-rules.md](../../critical-rules.md) § What NOT to Do — Anti-pattern 12.
 
 ## Sibling Files
 
