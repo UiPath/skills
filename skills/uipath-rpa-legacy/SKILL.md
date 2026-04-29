@@ -1,9 +1,11 @@
 ---
 name: uipath-rpa-legacy
-description: "[PREVIEW] Legacy UiPath RPA (.NET Framework 4.6.1, XAML) via uip rpa-legacy CLI. TRIGGER: project.json targetFramework 'Legacy' or absent; user mentions legacy. For Windows/cross-platform→uipath-rpa."
+description: "Legacy UiPath RPA (.NET Framework 4.6.1, XAML) via `uip rpa-legacy`. Activates when project.json targetFramework='Legacy' or missing, or user mentions legacy. For Windows/cross-platform→uipath-rpa."
 ---
 
 # Legacy RPA Workflow Architect
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic activities (no "X" suffix). Uses `uip rpa-legacy` CLI (standalone, no Studio IPC needed).
 

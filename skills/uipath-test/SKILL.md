@@ -1,11 +1,13 @@
 ---
 name: uipath-test
-description: "[PREVIEW] UiPath Test Manager — manage test projects, cases, sets, executions; generate reports. TRIGGER when: test ops, reports, results. DO NOT TRIGGER: Orchestrator → uipath-platform; test automation → uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports. For Orchestrator→uipath-platform. For test automation→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
 # UiPath Test Assistant
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Manage UiPath Test Manager resources (projects, test cases, test sets, executions) and generate persona-tailored shareable test reports.
 

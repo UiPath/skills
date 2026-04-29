@@ -1,10 +1,12 @@
 ---
 name: uipath-maestro-case
-description: "[PREVIEW] Case Management authoring from sdd.md. Produces tasks.md plan, writes caseplan.json directly via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow."
+description: "UiPath Case Management authoring (caseplan.json) from sdd.md. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Case Management Authoring Assistant
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, is describe) and solution boundary operations (`uip solution new` / `project add` / `upload`).
 
