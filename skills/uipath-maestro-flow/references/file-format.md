@@ -144,7 +144,7 @@ End/terminate nodes do **not** use this pattern — their `outputs` maps workflo
 
 ## Layout
 
-Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [flow-commands.md](flow-commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
+Node positioning is stored in a **top-level `layout` object**, keyed by node `id`. The same shape applies inside each subflow as `subflows[<id>].layout`. Layout data is owned by `uip maestro flow tidy` (see [commands.md](commands.md#uip-maestro-flow-tidy)) — you should not need to hand-write it.
 
 ```json
 "layout": {

@@ -28,7 +28,7 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Expression Examples
 
@@ -51,7 +51,7 @@ $vars.lookupUser.output.user !== null
 
 ## Wiring
 
-Output ports: `true` and `false`. Both branches must be wired. See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
+Output ports: `true` and `false`. Both branches must be wired. See [editing-operations.md](../../editing-operations.md) for edge add procedures.
 
 ## Debug
 

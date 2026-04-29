@@ -67,7 +67,7 @@ BPMN type (`bpmn:StartEvent`) and event definition (`bpmn:TimerEventDefinition`)
 
 ## Replacing Manual Trigger with Scheduled
 
-For the step-by-step procedure, see [CLI: Replace manual trigger with scheduled trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) or [JSON: Replace manual trigger with scheduled trigger](../../flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs`.
+For the step-by-step procedure, see [CLI: Replace manual trigger with scheduled trigger](../../editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) or [JSON: Replace manual trigger with scheduled trigger](../../editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger). Use the JSON structures above for the node-specific `inputs`.
 
 ## Debug
 

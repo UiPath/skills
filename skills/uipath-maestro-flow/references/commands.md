@@ -2,7 +2,7 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see [flow-editing-operations-cli.md](flow-editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see [editing-operations-cli.md](editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip maestro flow init
 
@@ -228,7 +228,7 @@ See [troubleshooting-guide.md](troubleshooting-guide.md) for the full diagnostic
 
 ## uip maestro flow node / uip maestro flow edge
 
-See [flow-editing-operations-cli.md](flow-editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See [editing-operations-cli.md](editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow registry
 

@@ -61,7 +61,7 @@ Confirm:
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the `--source` flag to bind the node to the inline agent during `node add`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the `--source` flag to bind the node to the inline agent during `node add`.
 
 ### Add the node via CLI
 

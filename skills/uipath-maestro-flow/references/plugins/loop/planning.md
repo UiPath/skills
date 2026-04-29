@@ -26,7 +26,7 @@ Use a Loop node to iterate over a collection of items. Supports sequential and p
 - `loopBack` — receives the edge returning from the last node inside the loop body
 - `success` — fires after all iterations complete
 - `output` — carries aggregated results from all iterations
-- `error` — implicit error port shared with all action nodes; fires when the loop or an iteration throws. See [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+- `error` — implicit error port shared with all action nodes; fires when the loop or an iteration throws. See [Implicit error port on action nodes](../../file-format.md#implicit-error-port-on-action-nodes).
 
 ## Key Inputs
 

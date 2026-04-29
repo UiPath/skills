@@ -52,7 +52,7 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `parentId`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `parentId`.
 
 ## Wiring
 
@@ -63,7 +63,7 @@ Loop nodes have a specific wiring pattern:
 - `loopBack` — return from last body node back to loop
 - `success` — exit after loop completes (to next downstream node)
 
-See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
+See [editing-operations.md](../../editing-operations.md) for edge add procedures.
 
 ## Accessing Loop Variables Inside Body
 

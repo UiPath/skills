@@ -34,7 +34,7 @@ Use a managed HTTP node to call a REST API — either with IS connector-managed 
 | `input` | `default`, `error`, `branch-{id}` (dynamic, one per `inputs.branches` entry) |
 
 - `default` — primary success output, or fallback when configured branches don't match.
-- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../file-format.md#implicit-error-port-on-action-nodes).
 - `branch-{id}` — HTTP-specific, configured via `inputs.branches` (response-content routing). See [Conditional Branches](#conditional-branches) below.
 
 ## Output Variables

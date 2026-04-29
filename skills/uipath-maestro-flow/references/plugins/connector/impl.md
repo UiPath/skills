@@ -2,7 +2,7 @@
 
 How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are authored in the flow's top-level `bindings[]` — `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
 
-For generic node/edge add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+For generic node/edge add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
 
 ## How Connector Nodes Differ from OOTB
 

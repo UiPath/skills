@@ -63,7 +63,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`. BPMN type and event definition come from the definition in `definitions[]`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`. BPMN type and event definition come from the definition in `definitions[]`.
 
 ## Debug
 

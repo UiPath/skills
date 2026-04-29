@@ -197,7 +197,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.human-in-the-loop` | `input` | `completed` |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
-> **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.
+> **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.
 
 ---
 
@@ -216,7 +216,7 @@ Apply these when defining edges in the topology:
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
 10. Do not create cycles except through Loop's `loopBack` mechanism
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
-12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes).
+12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](file-format.md#implicit-error-port-on-action-nodes).
 
 ---
 
@@ -265,7 +265,7 @@ Trigger -> HTTP Request
   |-- error   -> Log Error -> End (error path with descriptive output)
 ```
 
-Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length > 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](flow-file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
+Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length > 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
 
 **Plan the error edge in Phase 1.** If the requirements mention "if the call fails", "invalid input", "article not found", or any failure fallback, add an edge from the action node's `error` port to a handler in the edge table — don't leave it to the build step.
 
