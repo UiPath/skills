@@ -1,12 +1,10 @@
 # UiAutomation Prerequisites
 
 **Required package:** `UiPath.UIAutomation.Activities`
-**Minimum version (`<MIN_VERSION>`):** `26.4.0-preview`
-**Source feed:** the official UiPath NuGet feed — the same feed Studio resolves by default. `-preview` builds of `UiPath.UIAutomation.Activities` are published there alongside stable releases. Installing a `-preview` build is a normal supported path, not a third-party workaround. The feed also publishes `-alpha.<build>` and `-beta.<build>` builds — these are internal channels and MUST NOT be installed automatically by the skill.
+**Minimum version (`<MIN_VERSION>`):** `26.4.1-preview`
+**Source feed:** the official UiPath NuGet feed — the same feed Studio resolves by default. Prerelease / preview builds of `UiPath.UIAutomation.Activities` are published there alongside stable releases. Installing them is a normal supported path, not a third-party workaround.
 
-> **`-preview` channel only.** `<MIN_VERSION>` is a `-preview` build — stable releases of `UiPath.UIAutomation.Activities` do NOT yet ship the `uia-configure-target` skill content. Install a `-preview` build explicitly. `uip rpa get-versions` MUST be invoked with `--include-prerelease` (the flag defaults to `false`), otherwise the required preview is filtered out of the listing and the agent will report "no upgrade available" against a feed that actually has it.
->
-> **Filter the returned listing to `-preview` only.** `--include-prerelease` returns every prerelease — `-preview`, `-alpha.<build>`, `-beta.<build>`, `-rc.<build>`. After fetching the list, keep only versions whose suffix is exactly `-preview` (no extra build segment). Pick the highest such version that is `>= <MIN_VERSION>`. If no `-preview` version meets the minimum, ask the user how to proceed; do NOT silently fall back to `-alpha`, `-beta`, or `-rc`.
+> **Prerelease required.** `<MIN_VERSION>` is a preview — stable releases of `UiPath.UIAutomation.Activities` do NOT yet ship the `uia-configure-target` skill content. Install the prerelease build explicitly. `uip rpa get-versions` MUST be invoked with `--include-prerelease` (the flag defaults to `false`), otherwise the required preview is filtered out of the listing and the agent will report "no upgrade available" against a feed that actually has it.
 
 The `uip rpa uia` CLI used by `uia-configure-target` requires `UiPath.UIAutomation.Activities` at `<MIN_VERSION>` or newer. Before configuring any target, check the installed version in `project.json` under `dependencies`.
 
@@ -19,7 +17,7 @@ Never upgrade UIA silently. Every upgrade requires explicit user consent before 
 
 | Scenario | Behavior |
 |---|---|
-| No UIA installed, request needs UIA | Ask before installing `<MIN_VERSION>`. Disclose that it is a `-preview` build from the official UiPath feed (not a stable release). |
+| No UIA installed, request needs UIA | Ask before installing `<MIN_VERSION>`. Disclose that it is a prerelease build from the official UiPath feed. |
 | Major-version upgrade (e.g. `25.x` → `26.x`) | Ask. Note that breaking changes are possible across major versions. |
 | Minor-version upgrade (e.g. `26.3.x` → `26.4.x`) | Ask. Note that the minimum required for `uia-configure-target` is a preview. |
 | Patch / build upgrade within the preview band | Ask before installing the newer preview build. |
@@ -32,17 +30,13 @@ If the user declines, do NOT install. Warn that `uip rpa uia` commands will fail
 Discovery (non-mutating, no consent required):
 
 ```bash
-# Full listing — also returns -alpha and -beta builds you must reject:
 uip rpa get-versions --package-id UiPath.UIAutomation.Activities --include-prerelease --project-dir "$PROJECT_DIR" --output json
-
-# Filter to -preview suffix only (recommended — picks straight from the acceptable channel):
-uip rpa get-versions --package-id UiPath.UIAutomation.Activities --include-prerelease --project-dir "$PROJECT_DIR" --output-filter "Data.versions[?ends_with(@, '-preview')]" --output json
 ```
 
-Install / upgrade (mutating — only after consent per the table above; substitute `<MIN_VERSION>` with the value declared at the top of this file). The version string MUST end in `-preview` with no extra build segment:
+Install / upgrade (mutating — only after consent per the table above; substitute `<MIN_VERSION>` with the value declared at the top of this file):
 
 ```bash
 uip rpa install-or-update-packages --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "<MIN_VERSION>"}]' --project-dir "$PROJECT_DIR" --output json
 ```
 
-`install-or-update-packages` accepts the `-preview` version directly via the `version` field — no separate prerelease flag is needed once the version string is specified explicitly. Never pass a `-alpha.<build>` or `-beta.<build>` string here, even if it appeared in the unfiltered `get-versions` output.
+`install-or-update-packages` accepts the beta version directly via the `version` field — no separate prerelease flag is needed once the version string is specified explicitly.
