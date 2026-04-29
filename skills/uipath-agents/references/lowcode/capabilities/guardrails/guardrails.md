@@ -50,19 +50,16 @@ The `selector` field controls where the guardrail applies.
 
 ### Built-in Validator Scope Support
 
-Not all validators support all scopes. Run the following command to get the authoritative list of validators, their allowed scopes, stages, and parameters:
-
-```bash
-uip agent guardrails list --output json
-```
+Not all validators support all scopes. Use the output from [Step 0](#step-0--fetch-available-validators-mandatory-first-step) (`uip agent guardrails list --output json`) to determine valid scopes and stages.
 
 Each entry in the `Data` array contains:
+- `Status` — `"Available"` or `"Unauthorised"` — only use validators with `"Available"` status
 - `Validator` — the `validatorType` string (e.g., `"pii_detection"`)
 - `AllowedScopes` — array of valid scope values (e.g., `["Agent", "Llm", "Tool"]`)
 - `GuardrailStages` — object mapping each scope to its valid stages (e.g., `{"Agent": ["PreExecution", "PostExecution"]}`)
 - `Parameters` — array of parameter definitions with `Type`, `Id`, and `Required`
 
-Use this output to determine which scopes and stages are valid for each validator. Do not hardcode assumptions about scope/stage support.
+Do not hardcode assumptions about scope/stage support or availability.
 
 ## Actions
 
@@ -277,6 +274,22 @@ Each rule (except `always`) has a `fieldSelector` object with a `$selectorType` 
 | `fields[].source` | `"input"` \| `"output"` | Yes | Which side to inspect |
 | `fields[].title` | string | No | Human-readable label |
 
+## Step 0 — Fetch Available Validators (Mandatory First Step)
+
+Before adding any built-in validator guardrail, run:
+
+```bash
+uip agent guardrails list --output json
+```
+
+Before adding any built-in validator, check the `Data` array for the requested `Validator` value:
+
+1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail.
+2. **`Status: "Available"`** — validator is licensed and ready. Proceed with configuration.
+3. **`Status: "Unauthorised"`** — validator exists but user lacks access. Inform user: *"The validator `<name>` is present but unauthorised on your tenant. Contact your UiPath administrator to enable access."* Do not add the guardrail.
+
+Only configure guardrails for validators with `Status: "Available"`.
+
 ## Built-in Validator Guardrails (`$guardrailType: "builtInValidator"`)
 
 Built-in validators call the UiPath Guardrails API. They have a `validatorType` string and a `validatorParameters` array.
@@ -321,12 +334,12 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 | `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
 | `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
 
-Run `uip agent guardrails list --output json` to get the authoritative list. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
-
+Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
 **How to map `uip agent guardrails list` output to guardrail JSON:**
 
 | CLI field | Maps to |
 |-----------|---------|
+| `Status` | Gate check — only proceed if `"Available"` |
 | `Validator` | `validatorType` value |
 | `AllowedScopes` | Valid values for `selector.scopes` |
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
@@ -724,6 +737,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 6. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
+9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
 
 ## Walkthrough
 
@@ -735,13 +749,19 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent) first.
 
-### Step 2 — Discover available validators
+### Step 2 — Fetch and verify available validators (mandatory)
 
 ```bash
 uip agent guardrails list --output json
 ```
 
-Use the output to determine which `validatorType` values exist, their allowed scopes, stages, and required parameters. Do not hardcode assumptions — always check the CLI output for the authoritative list.
+Before adding any built-in validator, check the `Data` array for the requested validator:
+
+1. **Not found in list** — validator does not exist on this tenant. Inform user and stop.
+2. **`Status: "Available"`** — proceed with configuration.
+3. **`Status: "Unauthorised"`** — validator exists but user lacks access. Inform user to contact their UiPath administrator and stop.
+
+Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
 
 ### Step 3 — Add a guardrail to agent.json
 
