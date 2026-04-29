@@ -29,7 +29,7 @@ Determine the agent mode before proceeding:
 **After detection, read the quickstart for that mode before doing anything else:**
 
 - **Coded** → read [references/coded/quickstart.md](references/coded/quickstart.md)
-- **Low-code** → read [references/lowcode/quickstart.md](references/lowcode/quickstart.md)
+- **Low-code** → read [references/lowcode/lowcode.md](references/lowcode/lowcode.md)
 
 ## Task Navigation
 
@@ -41,17 +41,14 @@ Determine the agent mode before proceeding:
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
-| Create/build/deploy low-code agent | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) | `lowcode/agent-json-format.md` |
-| Edit agent.json (prompts, schemas, model) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Common Edits | `lowcode/agent-json-format.md` |
-| Add tools, contexts, or escalations | Low-code | [lowcode/agent-json-format.md](references/lowcode/agent-json-format.md) § Resources | |
-| Discover solution resources (processes/apps/indexes/buckets/connections) | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) § Solution Resource Discovery | |
-| Add Integration Service tool | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 5 | `lowcode/agent-json-format.md` § Integration Service tool |
-| Add index-backed context (Context Grounding) | Low-code | [lowcode/quickstart.md](references/lowcode/quickstart.md) § Scenario 7 | `lowcode/agent-json-format.md` § Context resource |
-| Add guardrails to an agent | Low-code | [lowcode/guardrails-guide.md](references/lowcode/guardrails-guide.md) (MUST read — do not guess the schema) | `lowcode/quickstart.md` § Scenario 8 |
-| Embed agent in a flow | Low-code | [lowcode/embedding-in-flows.md](references/lowcode/embedding-in-flows.md) | |
-| Wire multi-agent solution | Low-code | [lowcode/agent-solution-guide.md](references/lowcode/agent-solution-guide.md) | |
-| Inline agent node structure in a flow | Low-code | [lowcode/agent-flow-integration.md](references/lowcode/agent-flow-integration.md) | |
-| See low-code CLI commands | Low-code | [lowcode/cli-commands.md](references/lowcode/cli-commands.md) | |
+| Create or scaffold a new low-code agent project | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Quick Start | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
+| Edit `agent.json` (prompts, model, schemas, contentTokens, entry-points.json) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md` |
+| Add a low-code tool (Orchestrator process — RPA / agent / API / agentic — or Integration Service) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/process/*`, `lowcode/capabilities/integration-service/*` |
+| Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
+| Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
+| Add guardrails (PII, harmful content, custom rules) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/guardrails/guardrails.md` |
+| Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/solution-agent.md` |
+| Validate, pack, publish, upload, or deploy a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/solution-resources.md` |
 
 ## Resources
 

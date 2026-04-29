@@ -714,18 +714,89 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 
 ## What NOT to Do
 
-1. **Do not omit `$actionType` from action objects** — every action requires `$actionType` as the discriminator (`"block"`, `"log"`, `"filter"`, `"escalate"`). Using `"type"` instead of `"$actionType"` causes validation failure.
-2. **Do not omit `$parameterType` from validator parameters** — every entry in `validatorParameters` requires `$parameterType` (`"enum-list"`, `"map-enum"`, or `"number"`). Using `"name"` instead of `"id"` causes validation failure.
-3. **Do not omit `$ruleType` from custom rules** — every rule requires `$ruleType` (`"word"`, `"number"`, `"boolean"`, `"always"`).
-4. **Do not omit `$selectorType` from field selectors** — use `fieldSelector` with `$selectorType` (`"all"` or `"specific"`), not `field` with `type`.
-5. **Do not use snake_case for PII entity names** — use PascalCase: `"Email"` not `"email_address"`, `"PhoneNumber"` not `"phone_number"`, `"USSocialSecurityNumber"` not `"us_ssn"`.
-6. **Do not use lowercase for scope values** — use `"Agent"`, `"Llm"`, `"Tool"` (PascalCase). `"agent"`, `"llm"`, `"tool"` are invalid.
-7. **Do not add `prompt_injection` to Tool or Agent scope** — it only works with `"Llm"` scope, PreExecution stage.
-8. **Do not add `user_prompt_attacks` to Tool or Agent scope** — Llm only, PreExecution only.
-9. **Do not add `intellectual_property` to Tool scope** — only `"Llm"` and `"Agent"` scopes are supported.
-10. **Do not add `intellectual_property` to PreExecution stage** — PostExecution only.
-11. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
-12. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Always configure guardrails at the agent.json root `guardrails` array.
-13. **Do not reuse UUIDs across guardrails** — each guardrail needs a unique `id`.
-14. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
-15. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
+> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, manual `guardrail.policies` edits on tool resources, and UUID reuse — live in [../../critical-rules.md](../../critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
+
+1. **Do not use snake_case for PII entity names** — use PascalCase: `"Email"` not `"email_address"`, `"PhoneNumber"` not `"phone_number"`, `"USSocialSecurityNumber"` not `"us_ssn"`.
+2. **Do not add `prompt_injection` to Tool or Agent scope** — it only works with `"Llm"` scope, PreExecution stage.
+3. **Do not add `user_prompt_attacks` to Tool or Agent scope** — Llm only, PreExecution only.
+4. **Do not add `intellectual_property` to Tool scope** — only `"Llm"` and `"Agent"` scopes are supported.
+5. **Do not add `intellectual_property` to PreExecution stage** — PostExecution only.
+6. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
+7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
+8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
+
+## Walkthrough
+
+Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
+
+> **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
+
+### Step 1 — Verify existing agent
+
+Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent) first.
+
+### Step 2 — Discover available validators
+
+```bash
+uip agent guardrails list --output json
+```
+
+Use the output to determine which `validatorType` values exist, their allowed scopes, stages, and required parameters. Do not hardcode assumptions — always check the CLI output for the authoritative list.
+
+### Step 3 — Add a guardrail to agent.json
+
+For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–5, 8).
+
+For custom rules (word/number/boolean/always), see [Custom Guardrails](#custom-guardrails-guardrailtype-custom) for the full schema and worked examples (Examples 6, 7, 9, 10).
+
+Quick template — built-in PII validator:
+
+```json
+"guardrails": [
+  {
+    "$guardrailType": "builtInValidator",
+    "id": "<GENERATE_UUID>",
+    "name": "PII detection guardrail",
+    "description": "Detects personally identifiable information using Azure Cognitive Services",
+    "validatorType": "pii_detection",
+    "validatorParameters": [
+      {
+        "$parameterType": "enum-list",
+        "id": "entities",
+        "value": ["Email", "PhoneNumber", "CreditCardNumber"]
+      },
+      {
+        "$parameterType": "map-enum",
+        "id": "entityThresholds",
+        "value": {
+          "Email": 0.5,
+          "PhoneNumber": 0.5,
+          "CreditCardNumber": 0.5
+        }
+      }
+    ],
+    "action": {
+      "$actionType": "block",
+      "reason": "PII detected in output."
+    },
+    "enabledForEvals": true,
+    "selector": {
+      "scopes": ["Agent"]
+    }
+  }
+]
+```
+
+### Step 4 — Validate
+
+```bash
+uip agent validate "<AGENT_NAME>" --output json
+```
+
+Confirm the guardrails appear in the validated output without errors.
+
+## References
+
+- [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, manual `guardrail.policies` edits, UUID reuse)
+- [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
+- [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
