@@ -13,7 +13,10 @@ defaults:
     type: claude-code
     permission_mode: acceptEdits
     model: claude-sonnet-4-6
-    max_turns: 20
+    # Coded RPA tasks (hooks setup + test case + project.json edits +
+    # `uip rpa` calls) routinely take 25-30 turns end-to-end. 20 was
+    # cutting before/after-hooks and coded-test-case off mid-task.
+    max_turns: 40
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     plugins:
       - type: "local"
