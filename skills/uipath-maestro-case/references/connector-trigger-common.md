@@ -201,6 +201,7 @@ uip case tasks describe --type connector-trigger \
 |---|---|---|
 | `enrichment.operation` | `.Data.enrichment.operation` | `"EMAIL_RECEIVED"` |
 | `enrichment.connectorVersion` | `.Data.enrichment.connectorVersion` | `"1.35.48"` |
+| `enrichment.configuration` | `.Data.enrichment.configuration` | `"=jsonString:{\"essentialConfiguration\":{...}}"` |
 | `outputs` | `.Data.outputs` | Array with response schema + Error |
 
 ---
@@ -231,7 +232,7 @@ Every context entry MUST include `"type": "string"` (or `"type": "json"` for met
     "objectName": "<object-name>",
     "eventType": "<enrichment.operation>",
     "eventMode": "<event-mode from tasks.md>",
-    "configuration": "=jsonString:<essentialConfiguration>",
+    "configuration": "<enrichment.configuration from Step 2 — copy as-is>",
     "uiPathActivityTypeId": "<type-id>",
     "errorState": { "issues": [] }
   },
@@ -251,11 +252,13 @@ Every context entry MUST include `"type": "string"` (or `"type": "json"` for met
 
 ### essentialConfiguration
 
-```
-=jsonString:{"essentialConfiguration":{"instanceParameters":{"connectorKey":"<connector-key>","objectName":"<object-name>","activityType":"CuratedWaitFor","version":"<Config.version>","eventOperation":"<enrichment.operation>","eventMode":"<event-mode>","supportsStreaming":<Config.supportsStreaming>},"objectName":"<object-name>","packageVersion":"<Config.version>","connectorVersion":"<enrichment.connectorVersion>","executionType":null,"httpMethod":null,"path":null,"filter":<filter-tree-or-null>}}
-```
+Copy `enrichment.configuration` from Step 2 as-is. The CLI pre-builds this `=jsonString:` string using the full `Entry.configuration` as `instanceParameters` (with `activityType` overridden to `"CuratedWaitFor"`) and includes `connectorVersion` and `filter` when available.
 
-> **Critical:** `activityType` MUST be `"CuratedWaitFor"` — NOT `Config.activityType` (which is `"CuratedTrigger"`).
+> **Do NOT hand-construct this string.** The CLI returns the correct pre-built configuration. Hand-constructing produces incomplete `instanceParameters` and risks using the wrong `activityType`.
+
+> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 7 — do not hand-construct.
+
+> **Critical:** The CLI already overrides `activityType` to `"CuratedWaitFor"` (NOT `Config.activityType` which is `"CuratedTrigger"`). Case `wait-for-connector` tasks use different runtime semantics than Flow triggers.
 
 > When a structured filter tree is provided (from §7), store it in `essentialConfiguration.filter` so Studio Web can round-trip the filter UI. The derived JMESPath expression goes in `inputs[].body.filters.expression`. When no filter is needed, `filter` stays `null`.
 
