@@ -1,10 +1,10 @@
 task_id: skill-case-registry-discovery
 description: >
-  Skill-guided evaluation: agent uses the uipath-maestro-case skill to
+  Integration evaluation: agent uses the uipath-maestro-case skill to
   explore available case task resources via the registry. Tests whether the
   skill teaches the correct discovery workflow (pull + direct cache-file
   inspection at ~/.uipcli/case-resources/, not relying on registry search).
-tags: [uipath-maestro-case, smoke, registry]
+tags: [uipath-maestro-case, integration, registry]
 
 agent:
   type: claude-code
