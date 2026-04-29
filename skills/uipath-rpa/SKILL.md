@@ -76,6 +76,21 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 | Unit tests with assertions | **Coded Test Case** | `[TestCase]` with Arrange/Act/Assert |
 | User explicitly requests coded/XAML | **User's choice** | Never second-guess explicit preference |
 
+### UI Automation Boundaries
+
+For any task whose required business behavior is "open an app/browser, inspect a screen, click, type, select, scrape visible UI, submit a form, or verify UI state", the interaction layer MUST be UiPath UI Automation:
+
+- XAML: `NApplicationCard` plus UIA activities (`NClick`, `NTypeInto`, `NGetText`, `NExtractData`, etc.) with targets configured through Object Repository.
+- Coded: `uiAutomation.Open` / `Attach` plus descriptors generated from Object Repository.
+
+Do NOT implement the UI interaction layer with `InvokeCode`, PowerShell, Selenium, Playwright, Chrome DevTools Protocol, raw DOM JavaScript, HTTP requests that simulate UI submission, or external browser-driver scripts. These are not valid "coded fallback" choices for UI automation because they bypass the UiPath workflow artifact, Object Repository, selectors, analyzer coverage, and Studio maintainability.
+
+Browser scripts through UiPath's own `InvokeJS` / `InjectJsScript` activity are allowed when they are materially more efficient or reliable for a specific browser-only operation, but they should typically not be preferred over standard UIA activities. Keep them inside the UiPath workflow and use them sparingly, with the surrounding navigation, triggering, and validation still owned by UIA activities where practical.
+
+Application exploration and UI discovery must use the UiPath UI Automation skills and CLI flows (`uia snapshot inspect`, `uia-configure-target`, `uia interact`, Object Repository capture). Do not use Playwright, Selenium, DOM inspection, process lists, or ad hoc browser scripts to discover what UI targets/selectors to author.
+
+The coded fallback rows above apply only to non-UI helper logic such as data transforms, parsing downloaded files, DTOs, calculations, API-only integrations, or reusable business rules. If target configuration is unavailable, stop for the documented UIA prerequisite/indication fallback path; do not replace UIA with an external browser automation shortcut.
+
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
     Main.xaml                  ← orchestration (XAML)
