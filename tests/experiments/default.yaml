@@ -3,8 +3,11 @@ description: "Default experiment for smoke tests — loads the full UiPath skill
 
 defaults:
   max_iterations: 1
-  task_timeout: 600
-  turn_timeout: 300
+  # Helm-backed `uip rpa` ops (install-or-update-packages, get-analyzer-rules,
+  # build) regularly take 30-90s each on a cold runner. The before/after-hooks
+  # task chains several such calls, so the agent's single turn needs headroom.
+  task_timeout: 900
+  turn_timeout: 900
 
   agent:
     type: claude-code
