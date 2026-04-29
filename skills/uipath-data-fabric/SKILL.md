@@ -98,7 +98,8 @@ uip df records query <entity-id> \
 | Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
 | Read records (first page) | `records list <entity-id> --limit 50` |
-| Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
+| Read records (next page, cursor) | `records list <entity-id> --cursor <NextCursor>` |
+| Read records (jump to page, offset) | `records list <entity-id> --limit 50 --offset 100` (tool 1.0.0+; mutually exclusive with `--cursor`) |
 | Get one record | `records get <entity-id> <record-id>` |
 | Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`) |
 | Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
@@ -138,7 +139,7 @@ uip df records list <entity-id> --cursor <NextCursor> --output json
 
 ## Query Request Format
 
-Pass via `--body` or `--file`. Use `--limit` and `--cursor` CLI flags for pagination — not body keys.
+Pass via `--body` or `--file`. Use `--limit` with `--cursor` or `--offset` CLI flags for pagination — not body keys. `--offset` requires `@uipath/data-fabric-tool` 1.0.0+ and is mutually exclusive with `--cursor`.
 
 ```json
 {
