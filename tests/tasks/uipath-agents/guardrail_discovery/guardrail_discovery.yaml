@@ -5,7 +5,10 @@ description: >
   discover available validators before adding a built-in guardrail.
   Verifies the agent uses the discovery command instead of hardcoding
   validator assumptions.
-tags: [uipath-agents, smoke, low-code]
+# BLOCKED: `uip agent guardrails list` not available in @uipath/cli@latest
+# (currently 0.9.0 on public npm). Re-enable smoke tag once CLI >= 1.0.0
+# is published.
+tags: [uipath-agents, smoke-blocked, low-code]
 max_iterations: 1
 
 agent:
@@ -17,105 +20,8 @@ agent:
 sandbox:
   driver: tempdir
   python: {}
-  template_sources:
-    - type: starter_files
-      files:
-        - path: "bin/uip"
-          content: |
-            #!/usr/bin/env bash
-            # Wrapper that mocks "uip agent guardrails list" for offline/CI use.
-            # All other commands pass through to the real uip binary.
-            SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-            REAL_UIP="$(PATH="${PATH//"$SCRIPT_DIR:"/}" command -v uip)"
-            if [ -z "$REAL_UIP" ]; then
-              echo "uip not found on PATH" >&2; exit 1
-            fi
-            case "$*" in
-              *agent*guardrails*list*)
-                cat <<'MOCK'
-            {
-              "Status": "Succeeded",
-              "Data": [
-                {
-                  "Status": "Available",
-                  "Validator": "pii_detection",
-                  "AllowedScopes": ["Agent", "Llm", "Tool"],
-                  "GuardrailStages": {
-                    "Agent": ["PreExecution", "PostExecution"],
-                    "Llm": ["PreExecution", "PostExecution"],
-                    "Tool": ["PreExecution", "PostExecution"]
-                  },
-                  "Parameters": [
-                    {"Type": "enum-list", "Id": "entities", "Required": false},
-                    {"Type": "map-enum", "Id": "entityThresholds", "Required": false}
-                  ]
-                },
-                {
-                  "Status": "Available",
-                  "Validator": "prompt_injection",
-                  "AllowedScopes": ["Llm"],
-                  "GuardrailStages": {
-                    "Llm": ["PreExecution"]
-                  },
-                  "Parameters": [
-                    {"Type": "number", "Id": "threshold", "Required": false}
-                  ]
-                },
-                {
-                  "Status": "Available",
-                  "Validator": "harmful_content",
-                  "AllowedScopes": ["Agent", "Llm", "Tool"],
-                  "GuardrailStages": {
-                    "Agent": ["PreExecution", "PostExecution"],
-                    "Llm": ["PreExecution", "PostExecution"],
-                    "Tool": ["PreExecution", "PostExecution"]
-                  },
-                  "Parameters": [
-                    {"Type": "enum-list", "Id": "harmfulContentEntities", "Required": false},
-                    {"Type": "map-enum", "Id": "harmfulContentEntityThresholds", "Required": false}
-                  ]
-                },
-                {
-                  "Status": "Unauthorised",
-                  "Validator": "intellectual_property",
-                  "AllowedScopes": ["Llm", "Agent"],
-                  "GuardrailStages": {
-                    "Llm": ["PostExecution"],
-                    "Agent": ["PostExecution"]
-                  },
-                  "Parameters": [
-                    {"Type": "enum-list", "Id": "ipEntities", "Required": false}
-                  ]
-                },
-                {
-                  "Status": "Available",
-                  "Validator": "user_prompt_attacks",
-                  "AllowedScopes": ["Llm"],
-                  "GuardrailStages": {
-                    "Llm": ["PreExecution"]
-                  },
-                  "Parameters": []
-                }
-              ]
-            }
-            MOCK
-                exit 0
-                ;;
-              *)
-                exec "$REAL_UIP" "$@"
-                ;;
-            esac
-        - path: "CLAUDE.md"
-          content: |
-            Run `chmod +x bin/uip && export PATH="$PWD/bin:$PATH"` before
-            any `uip` commands. The local `bin/uip` wrapper provides offline
-            guardrail discovery support.
 
 initial_prompt: |
-  IMPORTANT FIRST STEP: Run `chmod +x bin/uip && export PATH="$PWD/bin:$PATH"`
-  before any `uip` commands. The local `bin/uip` wrapper provides offline
-  guardrail discovery support — without it `uip agent guardrails list` will fail.
-
   Create a UiPath solution "DiscoverSol" containing a low-code agent
   "DiscoverAgent". Then discover what guardrail validators are available
   using the CLI and add any built-in validator guardrail to the agent
