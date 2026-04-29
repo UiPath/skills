@@ -14,7 +14,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 ## Critical Rules
 
-[critical-rules.md](critical-rules.md) is the canonical source — 16 numbered rules and 13 anti-patterns. Read it every session. The seven below are the operational must-knows; the rest live in the canonical file.
+[critical-rules.md](critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
 
 1. **Edit JSON files directly.** The CLI provides only `init` (scaffold) and `validate` (check + migrate). All configuration is a file edit. Resources live in `resources/{Name}/resource.json` — never inline in `agent.json`.
 2. **Use `--output json`** on every `uip` command.
@@ -73,7 +73,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 
 ## Anti-patterns
 
-See [critical-rules.md](critical-rules.md) § What NOT to Do for the canonical 13. The four most expensive to get wrong:
+See [critical-rules.md](critical-rules.md) § What NOT to Do for the canonical list. Most expensive to get wrong:
 
 - Editing `content` without updating `contentTokens` (causes silent rendering failures)
 - Skipping `uip solution resource refresh` after adding external tools (`bindings_v2.json` never reaches the solution)
