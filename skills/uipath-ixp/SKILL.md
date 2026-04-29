@@ -7,15 +7,22 @@ description: "UiPath IXP (Document Understanding) — review IXP predictions wit
 
 Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects — creating projects, uploading documents, reviewing predictions, and improving extraction quality.
 
-## What This Skill Can Do
+## When to Use This Skill
 
-- **Create a new IXP project** — upload documents, generate or import taxonomy, review predictions, confirm valid fields → [Project Setup Guide](references/project-setup.md)
-- **Improve an existing project** — diagnose weak fields, rewrite instructions, review new predictions, verify improvement → [Improve Prompts Guide](references/improve-prompts.md)
-- **Publish a model** — pin a trained model version, tag it as live/staging, set a description
-- **List or inspect IXP projects** — use the CLI commands below
+- User asks to create an IXP project, upload documents, or train a document extraction model
+- User asks to label, review, or confirm document predictions
+- User asks to improve extraction scores, prompts, or field instructions
+- User asks to publish or manage IXP model versions
+- User provides a taxonomy file to import into a project
 
-When the user asks to create a project or label documents, follow the [Project Setup Guide](references/project-setup.md). If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the guide).
-When the user asks to improve scores/prompts for an existing project, follow the [Improve Prompts Guide](references/improve-prompts.md).
+## Quick Start
+
+1. Run `uip ixp project list --output json` to see existing projects
+2. To create a new project: follow [Project Setup Guide](references/project-setup.md)
+3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts.md)
+4. To label documents on an existing project: follow [Label Documents Guide](references/label-documents.md)
+
+If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy` (Option B in the Project Setup guide).
 
 ## Critical Rules
 
@@ -37,8 +44,20 @@ When the user asks to improve scores/prompts for an existing project, follow the
 8. **Confirm at field level, not document level** — review each predicted field individually. Confirm only the fields that are correct using `labelling confirm --fields`. Fields with wrong predictions are left unannotated. Fields with OCR-mangled values can be corrected using `--corrections` (keeps the prediction's document reference but fixes the text).
 9. **Do NOT manually extract values** — all labelling goes through `labelling confirm` with predictions from IXP.
 10. **Max 8 documents for taxonomy suggestion** — the suggest-taxonomy endpoint accepts at most 8 attachment references.
-11. **Keep field instructions short and pattern-focused** — 2-4 sentences max, 120-250 characters. Long instructions with many examples or detailed exclusion lists cause the model to memorize the list instead of learning the pattern, resulting in F1=0. Prefer: "Extract [what] from [where]. Example: '[one value]'." over a paragraph with 10 examples.
-12. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review predicted field values against the document image and OCR text. Confirm correct fields (`labelling confirm --fields`), correct OCR-mangled values (`--corrections`), and skip wrong fields. Do NOT manually extract values. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
+11. **Claude is the reviewer, not the extractor** — IXP generates predictions, Claude validates them. For each document, review predicted field values against the document image and OCR text. Confirm correct fields (`labelling confirm --fields`), correct OCR-mangled values (`--corrections`), and skip wrong fields. Do NOT manually extract values. If a field's F1 is low, improve the **prompt** so IXP predicts better values.
+
+## Task Navigation
+
+| User request | Action |
+|-------------|--------|
+| "Create an IXP project" / "Upload documents" | [Project Setup Guide](references/project-setup.md) |
+| "Import this taxonomy" / provides a taxonomy file | [Project Setup Guide](references/project-setup.md) — Option B (`--skip-taxonomy` + `import-taxonomy`) |
+| "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents.md) |
+| "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts.md) |
+| "Publish the model" / "Tag as live" | `uip ixp project publish <project-name> --output json` |
+| "Show metrics" / "What are the scores?" | `uip ixp project metrics <project-name> --output json` |
+| "List projects" | `uip ixp project list --output json` |
+| "Configure the model" / "Change preprocessing" | `uip ixp project configure-model <project-name> [options] --output json` |
 
 ## CLI Commands Reference
 
@@ -81,27 +100,8 @@ When the user asks to improve scores/prompts for an existing project, follow the
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
 | Field instructions conflict with label_def instructions | `update-prompts --fields` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and ensure they don't contradict your per-field instructions. |
 
-## Instruction Quality Standards
-
-When writing or improving field instructions, focus on **what** to extract and **where** to find it. Do NOT specify format — the entity_def (field type) already handles that.
-
-- **Minimum length**: 120+ characters. Short instructions like "Extract the date" are too vague.
-- **Location hint**: describe WHERE in the document (section, header area, table, near a label). Keywords: "section", "header", "table", "top of", "labeled", "near".
-- **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
-- **Disambiguation**: if similar fields exist, clarify what NOT to extract (e.g., "Do NOT confuse with PO Number").
-- **No format patterns**: do NOT include "Format: MM/DD/YYYY" or similar — the entity_def type (Date, Monetary, Text) already defines the format. Adding format in instructions creates conflicting signals.
-
-**Good instruction** (145 chars):
-> "The unique invoice identifier, found in the header area near the top-right, labeled 'Invoice #' or 'Invoice Number'. Example: '2106732'."
-
-**Bad instruction** (25 chars):
-> "Extract the invoice number"
-
-**For fields visible in documents** — include location and a real example from the actual documents.
-**For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
-
-## Guides
+## References
 
 - [Project Setup Guide](references/project-setup.md) — create a new project, review and label documents
 - [Improve Prompts Guide](references/improve-prompts.md) — iterative optimization loop with regression detection
-- [Label Documents Guide](references/label-documents.md) — reusable workflow for labelling documents (used by both guides above)
+- [Label Documents Guide](references/label-documents.md) — reusable workflow for reviewing and confirming predictions

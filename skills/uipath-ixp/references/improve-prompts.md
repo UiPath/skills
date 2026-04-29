@@ -145,14 +145,30 @@ For each field marked REFINE, rewrite its `instructions`:
 - **RECALL** → Better describe WHERE to find the field
 - **BOTH** → Full rewrite — what, where, what to avoid
 
-**Rules** (see also "Instruction Quality Standards" in the main skill):
+**Instruction quality standards:**
+
+Focus on **what** to extract and **where** to find it. Do NOT specify format — the entity_def (field type) already handles that.
+
+- **Minimum length**: 120+ characters. Short instructions like "Extract the date" are too vague.
+- **Location hint**: describe WHERE in the document (section, header area, table, near a label). Keywords: "section", "header", "table", "top of", "labeled", "near".
+- **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
+- **Disambiguation**: if similar fields exist, clarify what NOT to extract (e.g., "Do NOT confuse with PO Number").
+- **No format patterns**: do NOT include "Format: MM/DD/YYYY" or similar — the entity_def type (Date, Monetary, Text) already defines the format. Adding format in instructions creates conflicting signals.
+
+**Good instruction** (145 chars):
+> "The unique invoice identifier, found in the header area near the top-right, labeled 'Invoice #' or 'Invoice Number'. Example: '2106732'."
+
+**Bad instruction** (25 chars):
+> "Extract the invoice number"
+
+**For fields visible in documents** — include location and a real example from the actual documents.
+**For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
+
+**Additional rules:**
 
 1. NEVER reference specific page numbers — use section headings or labels
-2. Each instruction must be **120+ characters** with location hint and real example from the documents. Do NOT specify format — the entity_def type handles that
-3. For fields visible in the sample documents, use the real data you observed (location, label on page, format, example value)
-4. For fields NOT visible in the sample documents, use a generic instruction with no example
-5. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")
-6. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, add negative examples)
+2. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")
+3. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, add negative examples)
 
 ### 2c. Update instructions
 
