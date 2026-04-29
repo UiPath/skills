@@ -461,7 +461,7 @@ if (!sdk.isAuthenticated()) {
 
 ```bash
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
-npm install @uipath/uipath-ts-coded-action-apps --@uipath:registry=https://registry.npmjs.org
+npm install @uipath/coded-action-app --@uipath:registry=https://registry.npmjs.org
 npm install
 ```
 
@@ -483,7 +483,7 @@ codedActionAppsService.getTask()
   .catch((err) => console.error('getTask failed:', err));
 ```
 
-Check the browser console for the error. Common causes: missing `@uipath/uipath-ts-coded-action-apps` package, or app not being opened from within Action Center (the service requires an Action Center context).
+Check the browser console for the error. Common causes: missing `@uipath/coded-action-app` package, or app not being opened from within Action Center (the service requires an Action Center context).
 
 ### `404` After Deploy / App Not Found
 
