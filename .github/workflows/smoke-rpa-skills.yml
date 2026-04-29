@@ -297,7 +297,10 @@ jobs:
           echo "## Task results"
           python - <<'PY'
           import json, pathlib
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          # Skip runs/latest — it's a symlink/copy of the most recent
+          # timestamped run dir, so including it double-counts that task.
+          run_dirs = [d for d in sorted(pathlib.Path('runs').glob('*/'))
+                      if d.name != 'latest']
           rows = []
           for run_dir in run_dirs:
               for p in sorted(run_dir.rglob('task.json')):
@@ -337,7 +340,10 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, sys
           threshold = float(os.environ.get('TASK_THRESHOLD', '0.7'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          # Skip runs/latest — it's a symlink/copy of the most recent
+          # timestamped run dir, so including it double-counts that task.
+          run_dirs = [d for d in sorted(pathlib.Path('runs').glob('*/'))
+                      if d.name != 'latest']
           task_jsons = []
           for run_dir in run_dirs:
               task_jsons.extend(sorted(run_dir.rglob('task.json')))

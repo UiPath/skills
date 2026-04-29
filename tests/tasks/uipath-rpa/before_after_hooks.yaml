@@ -1,0 +1,90 @@
+task_id: skill-rpa-before-after-hooks
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to set up shared
+  Before/After hooks for a test project. Tests whether the skill teaches the
+  partial class CodedWorkflow pattern (not the old base class pattern).
+tags: [uipath-rpa, smoke, coded, hooks]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath coded test project called "LoginTests" with several test
+  case files. I need shared setup and teardown logic that runs before and
+  after every test case — opening and closing the browser.
+
+  The project already exists at ./LoginTests with a project.json.
+  Studio Desktop is NOT available — skip any CLI commands that require
+  --use-studio. Focus on generating the correct files.
+
+  Requirements:
+  - Set up shared Before/After hooks that apply to ALL test cases
+  - Use the recommended pattern from the skill (partial class, not base class)
+  - Include browser open in Before and browser close in After
+  - Create one example test case (TestLoginSuccess.cs) that benefits from the hooks
+
+  Save a summary to report.json:
+    {
+      "hooks_file": "<filename of the hooks file>",
+      "hooks_pattern": "<'partial_class' or 'base_class'>",
+      "hooks_class_declaration": "<the class declaration line>",
+      "test_case_file": "<filename of the test case>",
+      "test_case_inherits_from": "<base class of the test case>"
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Use `--output json` on any uip commands you run.
+
+success_criteria:
+  - type: file_exists
+    description: "Hooks file was created in the project"
+    path: "LoginTests/CodedWorkflowHooks.cs"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Hooks file uses partial class CodedWorkflow with IBeforeAfterRun"
+    path: "LoginTests/CodedWorkflowHooks.cs"
+    includes:
+      - "partial class CodedWorkflow"
+      - "IBeforeAfterRun"
+      - "Before("
+      - "After("
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Example test case was created"
+    path: "LoginTests/TestLoginSuccess.cs"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case inherits from CodedWorkflow (not CodedWorkflowBase)"
+    path: "LoginTests/TestLoginSuccess.cs"
+    includes:
+      - "CodedWorkflow"
+      - "[TestCase]"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms partial class pattern was used"
+    path: "report.json"
+    assertions:
+      - expression: "hooks_pattern"
+        operator: equals
+        expected: "partial_class"
+      - expression: "hooks_class_declaration"
+        operator: contains
+        expected: "partial class CodedWorkflow"
+    weight: 2.0
+    pass_threshold: 1.0
