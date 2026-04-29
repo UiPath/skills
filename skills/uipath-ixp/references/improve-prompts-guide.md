@@ -68,7 +68,7 @@ uip ixp project configure-model <project-name> \
   --output json
 ```
 
-See the [Project Setup Guide](project-setup.md) Step 2 for the decision table.
+See the [Project Setup Guide](project-setup-guide.md) Step 2 for the decision table.
 
 ### 1c. Get taxonomy
 
@@ -94,7 +94,7 @@ Save OCR output to `/tmp/ixp/<project-name>/text/sample.json`. View the images w
 
 ### 1e. Check for unlabelled documents
 
-Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
+Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents-guide.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
 
 ---
 
@@ -206,7 +206,7 @@ Compare the number of fields in each updated label_def against the previous vers
 
 ### 2d. Review and confirm predictions for all documents
 
-Wait ~2 minutes for the model to retrain with the updated instructions, then review predictions for all documents using the [Label Documents Guide](label-documents.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
+Wait ~2 minutes for the model to retrain with the updated instructions, then review predictions for all documents using the [Label Documents Guide](label-documents-guide.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
 
 ### 2e. Wait and get new metrics
 

@@ -2,8 +2,8 @@
 
 Reusable workflow for labelling documents in an IXP project. Used by:
 
-- [Project Setup](project-setup.md) — initial labelling after creating a project
-- [Improve Prompts](improve-prompts.md) — reviewing predictions during optimization
+- [Project Setup](project-setup-guide.md) — initial labelling after creating a project
+- [Improve Prompts](improve-prompts-guide.md) — reviewing predictions during optimization
 
 Claude acts as a **reviewer** — IXP generates predictions, Claude validates them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
 
