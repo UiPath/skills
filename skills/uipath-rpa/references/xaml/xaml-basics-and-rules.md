@@ -251,6 +251,8 @@ Never construct activity XAML from memory. Two sources, in this order:
 
 **Anti-pattern.** Treating `get-default-activity-xaml` output as the complete property surface. The CLI runs XAML serialization on a default-constructed instance; type-default values are omitted by design.
 
+**Property-name drift.** When `get-errors` reports `Cannot set unknown member '<Class>.<Prop>'`, the property name is wrong for the installed package version. Check `<Activity>.md` — property names drift between package versions (e.g. UIA `26.4.1-preview` renamed `InputMode` → `InteractionMode`, `EmptyField` → `EmptyFieldMode`).
+
 Use `uip rpa list-workflow-examples` and `uip rpa get-workflow-example` for usage examples, in addition to searching existing local `.xaml` files.
 
 ### Preserve Existing Structure
