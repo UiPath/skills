@@ -26,6 +26,30 @@ Before designing the schema, ask these focused questions if the business descrip
 
 ---
 
+## Step 1b — Discover Upstream Variables
+
+Before designing input field bindings, read `workflow.variables.nodes` from the `.flow` file. Each entry exposes exactly what `$vars` paths are available:
+
+```json
+{ "id": "fetchInvoice.output", "type": "object", "binding": { "nodeId": "fetchInvoice", "outputId": "output" } }
+```
+
+The `id` field is the `$vars` path — `fetchInvoice.output` → `$vars.fetchInvoice.output`. Nested field access appends `.fieldName` (e.g., `$vars.fetchInvoice.output.invoiceId`).
+
+**outputId by node type:**
+
+| Node type | outputId | Access pattern |
+|---|---|---|
+| HTTP node | `output` | `$vars.{nodeId}.output.body.{field}` |
+| Script node | `output` | `$vars.{nodeId}.output.{field}` |
+| Prior HITL node | `result`, `status` | `$vars.{nodeId}.result.{field}` |
+| Agent node | `output` | `$vars.{nodeId}.output.content` |
+| Trigger (manual) | `output` | `$vars.start.output.{field}` |
+
+For the full variable system, see → [uipath-maestro-flow — variables-and-expressions.md](../../../../uipath-maestro-flow/references/variables-and-expressions.md)
+
+---
+
 ## Step 2 — Design the Schema
 
 The node schema uses `fields[]` entries inside `inputs.schema`. Use these conceptual roles to plan the fields before writing the node JSON:
@@ -73,14 +97,14 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Invoice ID",
           "type": "text",
           "direction": "input",
-          "binding": "=js:$vars.fetchInvoice.result.invoiceId"
+          "binding": "=js:$vars.fetchInvoice.output.invoiceId"
         },
         {
           "id": "amount",
           "label": "Amount",
           "type": "number",
           "direction": "input",
-          "binding": "=js:$vars.fetchInvoice.result.amount"
+          "binding": "=js:$vars.fetchInvoice.output.amount"
         },
         {
           "id": "notes",
@@ -227,7 +251,7 @@ The agent translates the user's business description into the `fields[]` and `ou
 | field `id` | lowercase label, spaces→`-`, strip non-alphanumeric. `"Invoice ID"` → `"invoiceid"`, `"Due Date"` → `"due-date"` |
 | `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
 | field `type` | `"string"` → `"text"`, `"number"` → `"number"`, `"boolean"` → `"boolean"`, `"date"` → `"date"` |
-| `binding` | `"varName"` → `"=js:$vars.<upstream-node-id>.result.<varName>"` (for input/inOut) |
+| `binding` | Read `variables.nodes` to find `{nodeId}.{outputId}` for the upstream node, then construct `"=js:$vars.<nodeId>.<outputId>.<varName>"`. The outputId is `output` for HTTP/script/agent/trigger nodes, `result` for a prior HITL node — do not assume `.result.` universally |
 | `variable` | output/inOut variable name — defaults to `id` if not specified |
 | `required` | omit if false; set `true` for mandatory outputs |
 | `outcomes[0]` | `isPrimary: true`, `outcomeType: "Positive"`, `action: "Continue"` |
@@ -240,8 +264,8 @@ Business description: *"Reviewer sees invoice ID and amount, clicks Approve or R
 
 ```json
 "fields": [
-  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchData1.result.invoiceId" },
-  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchData1.result.amount" }
+  { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "=js:$vars.fetchData1.output.invoiceId" },
+  { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "=js:$vars.fetchData1.output.amount" }
 ],
 "outcomes": [
   { "id": "approve", "name": "Approve", "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
@@ -255,8 +279,8 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 
 ```json
 "fields": [
-  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "=js:$vars.draft1.result.recipient" },
-  { "id": "emailbody",  "label": "Email Body", "type": "text", "direction": "inOut", "binding": "=js:$vars.draft1.result.body", "variable": "emailBody" }
+  { "id": "recipient",  "label": "Recipient",  "type": "text", "direction": "input", "binding": "=js:$vars.draft1.output.recipient" },
+  { "id": "emailbody",  "label": "Email Body", "type": "text", "direction": "inOut", "binding": "=js:$vars.draft1.output.body", "variable": "emailBody" }
 ],
 "outcomes": [
   { "id": "send",    "name": "Send",    "isPrimary": true,  "outcomeType": "Positive", "action": "Continue" },
@@ -270,7 +294,7 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 
 ```json
 "fields": [
-  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "=js:$vars.extract1.result.rawText" },
+  { "id": "rawextract",  "label": "Raw Extract",  "type": "text", "direction": "input",  "binding": "=js:$vars.extract1.output.rawText" },
   { "id": "vendorname",  "label": "Vendor Name",  "type": "text", "direction": "output", "variable": "vendorName",  "required": true },
   { "id": "costcenter",  "label": "Cost Center",  "type": "text", "direction": "output", "variable": "costCenter", "required": true }
 ],
@@ -285,8 +309,8 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 
 ```json
 "fields": [
-  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "=js:$vars.classify1.result.reasoning" },
-  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "=js:$vars.classify1.result.score" },
+  { "id": "reasoning",       "label": "Agent Reasoning",  "type": "text",   "direction": "input",  "binding": "=js:$vars.classify1.output.reasoning" },
+  { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "=js:$vars.classify1.output.score" },
   { "id": "notes",           "label": "Notes",            "type": "text",   "direction": "output", "variable": "notes" }
 ],
 "outcomes": [
