@@ -36,7 +36,7 @@ These rules are the canonical source for low-code agent authoring. Capability fi
 
 16. **Never invoke other skills automatically.** If the user needs flow operations, tell them to use the `uipath-maestro-flow` skill.
 
-17. **Read [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) before authoring guardrail JSON.** The schema uses discriminator fields (`$guardrailType`, `$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. Configure guardrails at the agent.json root `guardrails` array; never populate `guardrail.policies` on tool resources — that field is a legacy schema artifact and must remain empty `[]`.
+17. **Read [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) before authoring guardrail JSON.** The schema uses discriminator fields (`$guardrailType`, `$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. Configure guardrails at the agent.json root `guardrails` array only.
 
 ## What NOT to Do (17)
 

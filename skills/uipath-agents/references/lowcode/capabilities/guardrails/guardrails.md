@@ -8,7 +8,7 @@ Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
 - **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
 
-> **All guardrails are configured at the agent.json root `guardrails` array.** Tool resource JSON files have a `guardrail` field (kept for schema compatibility) but its `policies` array is always empty — do not populate it. The `selector.scopes` and `selector.matchNames` fields on each guardrail in `agent.json` determine which tools and scopes a guardrail applies to.
+> **All guardrails are configured at the agent.json root `guardrails` array.** The `selector.scopes` and `selector.matchNames` fields on each guardrail determine which tools and scopes it applies to.
 
 ## Guardrail Schema (Base Fields)
 

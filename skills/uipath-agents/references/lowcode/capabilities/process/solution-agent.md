@@ -44,7 +44,7 @@ No remote discovery needed — the tool agent is another project in the same sol
     "folderPath": "solution_folder"
   },
   "guardrail": {
-    "policies": []              // Legacy field — always empty. Guardrails are configured in agent.json root `guardrails` array. See ../guardrails/guardrails.md.
+    "policies": []
   },
   "id": "<uuid>",
   "referenceKey": "",           // Leave empty; validate resolves it and writes it back to disk

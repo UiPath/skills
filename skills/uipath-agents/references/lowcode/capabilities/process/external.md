@@ -91,7 +91,7 @@ Extract from response (take first entry):
     "exampleCalls": []                // Required for external tools
   },
   "guardrail": {
-    "policies": []              // Legacy field — always empty. Guardrails are configured in agent.json root `guardrails` array. See ../guardrails/guardrails.md.
+    "policies": []
   },
   "id": "<uuid>",              // Stable; generate once, never change
   "referenceKey": "<release-key-guid>", // For external: the release Key (lowercase GUID from /odata/Releases API). For solution-internal: leave empty, validate resolves it.

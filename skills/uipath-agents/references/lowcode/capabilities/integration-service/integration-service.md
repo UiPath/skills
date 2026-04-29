@@ -76,7 +76,7 @@ IS tools differ structurally from Orchestrator-based tools:
   },
   "iconUrl": "<connector image URL — see rules below>",
   "settings": {},
-  "guardrail": { "policies": [] },     // Legacy field — always empty. Guardrails are configured in agent.json root `guardrails` array. See ../guardrails/guardrails.md.
+  "guardrail": { "policies": [] },
   "isPreview": false,
   "properties": {
     "toolPath": "<path from metadata, e.g. /v2/webSearch>",
