@@ -8,7 +8,7 @@ Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
 - **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
 
-> **Tool-level `guardrail.policies`** is auto-populated by `uip agent validate` — it copies the root-level guardrails that target each tool (via `matchNames`) into the tool's `guardrail.policies` array. Do not manually edit `guardrail.policies` on tool resources. Always configure guardrails at the agent.json root `guardrails` array.
+> **All guardrails are configured at the agent.json root `guardrails` array.** Tool resource JSON files have a `guardrail` field (kept for schema compatibility) but its `policies` array is always empty — do not populate it. The `selector.scopes` and `selector.matchNames` fields on each guardrail in `agent.json` determine which tools and scopes a guardrail applies to.
 
 ## Guardrail Schema (Base Fields)
 
@@ -845,7 +845,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 
 ## What NOT to Do
 
-> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, manual `guardrail.policies` edits on tool resources, and UUID reuse — live in [../../critical-rules.md](../../critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
+> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, populating `guardrail.policies` on tool resources, and UUID reuse — live in [../../critical-rules.md](../../critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
 
 1. **Do not use snake_case for PII entity names** — use PascalCase: `"Email"` not `"email_address"`, `"PhoneNumber"` not `"phone_number"`, `"USSocialSecurityNumber"` not `"us_ssn"`.
 2. **Do not add `prompt_injection` to Tool or Agent scope** — it only works with `"Llm"` scope, PreExecution stage.
@@ -941,7 +941,7 @@ Confirm the guardrails appear in the validated output without errors.
 
 ## References
 
-- [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, manual `guardrail.policies` edits, UUID reuse)
+- [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
 
