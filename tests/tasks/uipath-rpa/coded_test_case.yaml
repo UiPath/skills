@@ -21,10 +21,14 @@ initial_prompt: |
   Studio Desktop is NOT available — skip any CLI commands that require
   --use-studio. Focus on generating the correct files and project.json updates.
 
-  After scaffolding, pin `UiPath.Testing.Activities` to `[25.4.1]` in
-  project.json before adding source files. Newer 25.10.x releases
-  synthesize a bootloader workflow that breaks the build with CS0234
-  on this runner; 25.4.1 predates that feature.
+  Do NOT run `uip rpa build` for this task. The grader checks files,
+  not build output. The TestAutomationProjectTemplate's default
+  `UiPath.Testing.Activities` `[25.10.x]` ships an auto-synthesized
+  bootloader workflow that fails to compile with CS0234 on this runner,
+  and the cached `.local/` artifacts persist across version edits — so
+  any attempt to "fix the build" will derail the run. Skip the build
+  entirely. `uip rpa get-errors` on individual `.cs` files is fine for
+  syntax sanity checks.
 
   Requirements:
   - Set up shared Before/After hooks that apply to ALL test cases:
@@ -43,22 +47,23 @@ initial_prompt: |
   - Update project.json so the test case shows up in fileInfoCollection
     with the correct testCaseType entry.
 
-  Save a summary to report.json:
+  Write a `report.json` IMMEDIATELY after scaffolding the project (with
+  placeholder values) and update it as you complete each piece. Do not
+  leave it as the last step — previous runs got distracted by build
+  errors and never wrote it. Final shape:
     {
-      "hooks_file": "<filename of the hooks file>",
-      "hooks_pattern": "<'partial_class' or 'base_class'>",
+      "hooks_file": "CodedWorkflowHooks.cs",
+      "hooks_pattern": "partial_class",
       "hooks_class_declaration": "<the class declaration line>",
-      "test_case_file": "<filename of the test case>",
-      "test_case_class": "<class name>",
-      "base_class": "<base class used>",
+      "test_case_file": "TestLoginSuccess.cs",
+      "test_case_class": "TestLoginSuccess",
+      "base_class": "CodedWorkflow",
       "assertions_used": ["<list of testing.Verify* methods used>"]
     }
 
   Important:
   - The `uip` CLI is already available in the environment.
   - Use `--output json` on any uip commands you run.
-  - Write `report.json` as your FINAL step after all source files are
-    in place. Do not skip it even if you decide to stop early.
 
 success_criteria:
   - type: file_exists
