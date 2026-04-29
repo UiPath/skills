@@ -251,29 +251,17 @@ jobs:
             echo "--- Killing leftover Helm/Studio processes ---"
             taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
             echo "--- Running: $task ---"
-            # Per-task Bedrock model override. The Anthropic Sonnet
-            # family (4.5 on Bedrock, 4.6 on Anthropic-direct) trips
-            # the post-generation content filter when emitting the
-            # full legacy XAML baseline (21 namespaces + 16 assembly
-            # refs, including PresentationFramework / PresentationCore
-            # / WindowsBase / System.Xaml / mscorlib +
-            # Microsoft.VisualBasic.Activities). Opus emits it
-            # cleanly *most* of the time but Bedrock's filter still
-            # trips intermittently — retry up to 2 times on a
-            # content-filter ERROR before giving up. coder_eval's
-            # BedrockRoute.model overrides task-level model, so the
-            # only way to swap per-task is at the env level here.
-            task_model="$BEDROCK_MODEL"
-            case "$task" in
-              # eu.anthropic.claude-opus-4-6-v1 was deprecated on Bedrock
-              # (run 25125428893: 400 'The provided model identifier is
-              # invalid'). Bedrock's own error message suggested
-              # claude-opus-4-1-20250805-v1:0 as the replacement.
-              *rpa-legacy*) task_model="eu.anthropic.claude-opus-4-1-20250805-v1:0" ;;
-            esac
+            # We previously overrode the legacy task to Opus on Bedrock
+            # to dodge a content filter that tripped on the full legacy
+            # XAML baseline. Opus 4.6 was deprecated on Bedrock, and
+            # both 4-1 (un-versioned) and the suggested
+            # claude-opus-4-1-20250805-v1:0 also returned 400 'invalid
+            # model identifier' on the EU regional inference profiles
+            # we have access to. Drop the override and rely on the
+            # content-filter retry below to absorb intermittent blocks.
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
-              if BEDROCK_MODEL="$task_model" coder-eval run "$task" \
+              if coder-eval run "$task" \
                   -e experiments/default.yaml --tags smoke -j 1 -v; then
                 break
               fi
