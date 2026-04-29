@@ -2,7 +2,7 @@
 
 All flow file modifications via `uip maestro flow node` and `uip maestro flow edge` CLI commands. The CLI automatically manages definitions, variables, edge cleanup, and `bindings_v2.json` — eliminating the most common build errors.
 
-> **When to use this strategy:** Use this strategy for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. For all other edits, Direct JSON is the default (see [flow-editing-operations-json.md](flow-editing-operations-json.md)). See [flow-editing-operations.md](flow-editing-operations.md) for the strategy selection matrix.
+> **When to use this strategy:** Use this strategy for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. For all other edits, Direct JSON is the default (see [editing-operations-json.md](editing-operations-json.md)). See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
 
 ---
 
@@ -76,7 +76,7 @@ uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> -
 - Inserts edge into `edges` array with a generated `id`
 - Sets `targetPort` (required — validate rejects edges without it)
 
-See each plugin's `planning.md` or [flow-file-format.md — Standard ports](flow-file-format.md) for port names by node type.
+See each plugin's `planning.md` or [file-format.md — Standard ports](file-format.md) for port names by node type.
 
 ### Delete an edge
 
@@ -157,7 +157,7 @@ These combine primitives to accomplish common editing tasks. Each recipe assumes
 
 The CLI does not have a `node update` command. **Do not use delete + re-add** — `node add` generates a new node ID, which breaks all downstream `$vars.{nodeId}.output` expressions and requires re-wiring every edge.
 
-Instead, edit the node's `inputs` (and optionally `display.label`) directly in the `.flow` JSON file. See [JSON: Update node inputs](flow-editing-operations-json.md#update-node-inputs).
+Instead, edit the node's `inputs` (and optionally `display.label`) directly in the `.flow` JSON file. See [JSON: Update node inputs](editing-operations-json.md#update-node-inputs).
 
 ### Insert a node between two existing nodes
 
@@ -300,7 +300,7 @@ See [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) for timer pre
 
 ## Operations NOT Supported by CLI
 
-These operations require direct `.flow` JSON editing. Use the [JSON strategy guide](flow-editing-operations-json.md) for:
+These operations require direct `.flow` JSON editing. Use the [JSON strategy guide](editing-operations-json.md) for:
 
 1. **Workflow variables** — add/remove/update `variables.globals`
 2. **Variable updates** — add/modify `variables.variableUpdates` entries

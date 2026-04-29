@@ -42,7 +42,7 @@ Confirm:
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
 
 ## JSON Structure
 
@@ -103,7 +103,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ## Accessing Output
 

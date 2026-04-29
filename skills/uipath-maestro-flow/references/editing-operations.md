@@ -8,8 +8,8 @@ Strategy selection and shared concepts for modifying `.flow` files. Two implemen
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
-| **Direct JSON** (default) | [flow-editing-operations-json.md](flow-editing-operations-json.md) | Default for all `.flow` edits — node/edge CRUD, variables, subflows, output mapping, in-place input updates. |
-| **CLI** (opt-in / carve-outs) | [flow-editing-operations-cli.md](flow-editing-operations-cli.md) | Connector, connector-trigger, and inline-agent nodes (carve-outs); or when the user explicitly requests CLI. |
+| **Direct JSON** (default) | [editing-operations-json.md](editing-operations-json.md) | Default for all `.flow` edits — node/edge CRUD, variables, subflows, output mapping, in-place input updates. |
+| **CLI** (opt-in / carve-outs) | [editing-operations-cli.md](editing-operations-cli.md) | Connector, connector-trigger, and inline-agent nodes (carve-outs); or when the user explicitly requests CLI. |
 
 ---
 
@@ -59,12 +59,12 @@ These apply regardless of which strategy you use.
 
 - Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow tidy` — do not hand-compute coordinates
 - When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save
-- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [flow-commands.md](flow-commands.md#uip-maestro-flow-tidy)
+- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [commands.md](commands.md#uip-maestro-flow-tidy)
 
 ### Edge rules
 
 - `targetPort` is required on every edge — validate rejects edges without it
-- See [flow-file-format.md — Standard ports](flow-file-format.md) for port names by node type
+- See [file-format.md — Standard ports](file-format.md) for port names by node type
 - Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`output`/`success`/`loopBack`)
 
 ### Validation
@@ -87,15 +87,15 @@ See [variables-and-expressions.md](variables-and-expressions.md) for the full ex
 
 | I need to... | Go to |
 |---|---|
-| Add/delete nodes or edges | [JSON guide](flow-editing-operations-json.md) (default) or [CLI guide](flow-editing-operations-cli.md) (opt-in) |
-| Change a node's inputs | [JSON guide — Update node inputs](flow-editing-operations-json.md#update-node-inputs) |
-| Configure a connector node | [CLI guide — Configure a connector node](flow-editing-operations-cli.md#configure-a-connector-node) (carve-out) or [JSON guide — Connector Node Configuration](flow-editing-operations-json.md#connector-node-configuration-direct-json) (fallback) |
-| Manage variables | [JSON guide — Variable Operations](flow-editing-operations-json.md#variable-operations) |
-| Map outputs on End nodes | [JSON guide — Add output mapping](flow-editing-operations-json.md#add-output-mapping-on-an-end-node) |
-| Create a subflow | [JSON guide — Create a subflow](flow-editing-operations-json.md#create-a-subflow) |
-| Replace a mock placeholder (non-connector) | [JSON guide — Replace a mock](flow-editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI guide — Replace a mock](flow-editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) |
-| Replace a trigger type (non-connector) | [JSON guide — Replace trigger](flow-editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](flow-editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
-| Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
-| Understand the `.flow` JSON schema | [flow-file-format.md](flow-file-format.md) |
-| Look up CLI flags and syntax | [flow-commands.md](flow-commands.md) |
+| Add/delete nodes or edges | [JSON guide](editing-operations-json.md) (default) or [CLI guide](editing-operations-cli.md) (opt-in) |
+| Change a node's inputs | [JSON guide — Update node inputs](editing-operations-json.md#update-node-inputs) |
+| Configure a connector node | [CLI guide — Configure a connector node](editing-operations-cli.md#configure-a-connector-node) (carve-out) or [JSON guide — Connector Node Configuration](editing-operations-json.md#connector-node-configuration-direct-json) (fallback) |
+| Manage variables | [JSON guide — Variable Operations](editing-operations-json.md#variable-operations) |
+| Map outputs on End nodes | [JSON guide — Add output mapping](editing-operations-json.md#add-output-mapping-on-an-end-node) |
+| Create a subflow | [JSON guide — Create a subflow](editing-operations-json.md#create-a-subflow) |
+| Replace a mock placeholder (non-connector) | [JSON guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI guide — Replace a mock](editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) |
+| Replace a trigger type (non-connector) | [JSON guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
+| Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
+| Understand the `.flow` JSON schema | [file-format.md](file-format.md) |
+| Look up CLI flags and syntax | [commands.md](commands.md) |
 | Work with variables and expressions | [variables-and-expressions.md](variables-and-expressions.md) |

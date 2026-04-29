@@ -42,7 +42,7 @@ Confirm: input port `input`, output port `success`, required input `script` (str
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Script Rules
 

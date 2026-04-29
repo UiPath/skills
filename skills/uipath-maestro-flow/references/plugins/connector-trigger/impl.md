@@ -142,7 +142,7 @@ Each trigger type has a different output schema — field names like `.text`, `.
 
 ### Step 5 — Replace the manual trigger with the connector trigger node
 
-Follow the [CLI: Replace manual trigger with connector trigger](../../flow-editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.
+Follow the [CLI: Replace manual trigger with connector trigger](../../editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.
 
 ### Step 6 — Configure the trigger node
 

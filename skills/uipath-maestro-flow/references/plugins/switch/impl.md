@@ -44,11 +44,11 @@ Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, requi
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
 
 ## Wiring
 
-Each case creates a dynamic output port `case-{id}`. An optional `default` port handles unmatched values. Ensure edge `sourcePort` matches `case-{id}` exactly. See [flow-editing-operations.md](../../flow-editing-operations.md) for edge add procedures.
+Each case creates a dynamic output port `case-{id}`. An optional `default` port handles unmatched values. Ensure edge `sourcePort` matches `case-{id}` exactly. See [editing-operations.md](../../editing-operations.md) for edge add procedures.
 
 ## Debug
 

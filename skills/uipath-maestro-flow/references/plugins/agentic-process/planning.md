@@ -27,7 +27,7 @@ Use an Agentic Process node when the flow needs to invoke a published orchestrat
 | --- | --- |
 | `input` | `output`, `error` |
 
-The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../flow-file-format.md#implicit-error-port-on-action-nodes).
+The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 

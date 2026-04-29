@@ -9,13 +9,13 @@ Two node types implement human-in-the-loop checkpoints. Choose based on whether 
 This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
 
 **Full implementation guide, JSON examples, and schema conversion rules:**
-→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
+→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
 
 > **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). **Direct JSON is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Direct JSON is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
 
 ```bash
 uip maestro flow hitl add <path/to/file.flow> \
@@ -26,7 +26,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --output json
 ```
 
-Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [flow-commands.md — uip maestro flow hitl add](../../flow-commands.md#uip-maestro-flow-hitl-add).
+Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [commands.md — uip maestro flow hitl add](../../commands.md#uip-maestro-flow-hitl-add).
 
 ### Quick Reference
 
@@ -113,7 +113,7 @@ Confirm:
 
 ### Node JSON
 
-For step-by-step add, delete, and wiring procedures, see [flow-editing-operations.md](../../flow-editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs`.
 
 The human task node's output (`$vars.{nodeId}.output`) contains the form data submitted by the user.
 
@@ -176,7 +176,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ### If the app does not exist yet
 
