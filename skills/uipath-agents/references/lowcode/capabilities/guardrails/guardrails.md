@@ -122,20 +122,20 @@ Removes specific fields from the input/output.
 
 Creates a task in an Action Center app for human review.
 
+**Minimum required from user:** app name + recipient (email is the simplest form).
+
 ```json
 "action": {
   "$actionType": "escalate",
   "app": {
-    "id": "<APP_ID>",
-    "name": "<APP_NAME>",
+    "id": "<Key from uip solution resource list --kind App>",
+    "name": "<app Name>",
     "version": "0",
-    "folderId": "<FOLDER_ID>",
     "folderName": "solution_folder"
   },
   "recipient": {
-    "type": 1,
-    "value": "<USER_GUID>",
-    "displayName": "<DISPLAY_NAME>"
+    "type": 3,
+    "value": "reviewer@example.com"
   }
 }
 ```
@@ -143,16 +143,135 @@ Creates a task in an Action Center app for human review.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `$actionType` | `"escalate"` | Yes | Action discriminator |
-| `app` | object | Yes | Action Center app reference |
-| `app.id` | string | Yes | Deployed app ID |
-| `app.name` | string | Yes | Deployed app name |
-| `app.version` | string | Yes | App version (e.g., `"0"`) |
-| `app.folderId` | string | Yes | Folder ID where the app is deployed |
-| `app.folderName` | string | Yes | Use `"solution_folder"` |
-| `recipient` | object | Yes | Task recipient |
-| `recipient.type` | integer | Yes | Recipient type: 1=UserId, 2=GroupId, 3=Email, 4=AssetUserEmail, 5=StaticGroupName, 6=AssetGroupName |
-| `recipient.value` | string | Yes | User GUID, group GUID, or email address (depends on `type`) |
-| `recipient.displayName` | string | No | Human-readable name (omit for `type: 3` email recipients) |
+| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
+| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
+| `app.version` | string | Yes | Always `"0"` for solution-embedded apps |
+| `app.folderId` | string | No | Omit — not needed when `folderName` is `"solution_folder"` |
+| `app.folderName` | string | Yes | Always `"solution_folder"` — the app is embedded in the solution package, not referenced remotely |
+| `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
+| `recipient.type` | integer | Yes | Recipient kind — see shapes below: 1=UserId, 2=GroupId, 3=UserEmail, 4=AssetUserEmail, 5=GroupName, 6=AssetGroupName, 7=ArgumentEmail, 8=ArgumentGroupName |
+| `recipient.*` | — | — | Remaining fields depend on `type` — see recipient shapes below |
+
+**Recipient shapes (discriminated by `type`):**
+
+**Types 1, 2, 3, 5 — StandardRecipient** (UserId, GroupId, UserEmail, GroupName)
+
+```json
+{ "type": 3, "value": "reviewer@example.com" }
+{ "type": 1, "value": "<user-guid>", "displayName": "Jane Doe" }
+{ "type": 5, "value": "ReviewersGroup" }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `value` | Yes | User GUID (type 1), group GUID (type 2), email address (type 3), group name string (type 5) |
+| `displayName` | No | Recommended for type 1 (UserId); omit for types 2, 3, 5 |
+
+**Types 4, 6 — AssetRecipient** (AssetUserEmail, AssetGroupName)
+
+Resolves the email or group name from an Orchestrator asset at runtime — do NOT use `value`.
+
+```json
+{ "type": 4, "assetName": "ReviewerEmailAsset", "folderPath": "Shared" }
+{ "type": 6, "assetName": "ReviewGroupAsset", "folderPath": "Shared/MyTeam" }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `assetName` | Yes | Name of the Orchestrator asset holding the email or group value |
+| `folderPath` | Yes | Fully-qualified Orchestrator folder path where the asset lives |
+
+**Types 7, 8 — ArgumentRecipient** (ArgumentEmail, ArgumentGroupName)
+
+Resolves the email or group name from the agent's input arguments at runtime — do NOT use `value`.
+
+```json
+{ "type": 7, "argumentName": "user.email" }
+{ "type": 8, "argumentName": "team.groupName" }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `argumentName` | Yes | Dot-path into the agent's input schema (e.g. `"user.email"`, `"reviewerEmail"`) |
+
+Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or asset lookup. Studio Web uses `type: 1` (UserId) when a user is selected via the UI.
+
+#### Adding an escalation guardrail — step-by-step
+
+**Step 0 — Discover available validators (MANDATORY — do not skip even when validator type is already known):**
+
+```bash
+uip agent guardrails list --output json
+```
+
+Confirm the target validator is listed. Record the exact parameter `id` values and `$parameterType` tags from the output — these must match precisely in the guardrail JSON. Skipping this step leads to invalid parameter shapes.
+
+**Step 1 — Discover the app** using `--kind App` from the solution root:
+
+```bash
+uip solution resource list --kind App --source remote --search "<app-name>" --output json
+```
+
+Filter results for `"Type": "Workflow Action"`. Use only these two fields from the result:
+
+| Resource list field | Maps to `app.*` field |
+|---------------------|----------------------|
+| `Key` | `app.id` |
+| `Name` | `app.name` |
+
+`app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — do not use the `Folder` or `FolderKey` values from this command for those fields.
+
+If multiple entries share the same name in different folders, ask the user which deployment to use.
+
+Example entry:
+```json
+{
+  "Source": "Remote",
+  "Key": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+  "Name": "Tool.Guardrail.Escalation.Action.App",
+  "Kind": "app",
+  "Type": "Workflow Action",
+  "Folder": "Shared",
+  "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19"
+}
+```
+
+> **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
+
+**Step 2 — Construct and add the escalate action** in `agent.json`'s `guardrails` array:
+
+```json
+{
+  "$actionType": "escalate",
+  "app": {
+    "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+    "name": "Tool.Guardrail.Escalation.Action.App",
+    "version": "0",
+    "folderName": "solution_folder"
+  },
+  "recipient": { "type": 3, "value": "reviewer@example.com" }
+}
+```
+
+`app.id` and `app.name` come from Step 1. `app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — these are fixed values for solution-embedded apps.
+
+**Step 3 — Generate solution resource files**
+
+Run these two commands from the solution root:
+
+```bash
+uip agent validate <AgentName> --output json
+uip solution resource refresh --output json
+```
+
+- `validate` generates `bindings_v2.json` with a `resource: "app"` binding for the escalation app.
+- `refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service by name, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
+
+**Step 4 — Upload:**
+
+```bash
+uip solution upload . --output json
+```
 
 ## Custom Guardrails (`$guardrailType: "custom"`)
 
@@ -570,52 +689,51 @@ PostExecution only — no content exists to check before the LLM generates outpu
 
 ### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
 
-Escalates to an Action Center app when PII is detected in output from specific tools. Uses `matchNames` to target multiple tools and `escalate` action with `app` and `recipient`.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id` and `app.name` come from `uip solution resource list --kind App`. `app.version` and `app.folderName` are fixed values.
 
 ```json
 {
   "$guardrailType": "builtInValidator",
   "id": "10d5f10f-da4e-4bf1-ace9-dd880e33d9be",
-  "name": "PII detection guardrail",
-  "description": "This validator is designed to detect personally identifiable information using Azure Cognitive Services",
+  "name": "PII Email and Credit Card escalation guardrail",
+  "description": "Detects email addresses and credit card numbers, escalates to human review",
   "validatorType": "pii_detection",
   "validatorParameters": [
     {
       "$parameterType": "enum-list",
       "id": "entities",
-      "value": ["Email", "Address"]
+      "value": ["Email", "CreditCardNumber"]
     },
     {
       "$parameterType": "map-enum",
       "id": "entityThresholds",
       "value": {
         "Email": 0.5,
-        "Address": 0.5
+        "CreditCardNumber": 0.5
       }
     }
   ],
   "action": {
     "$actionType": "escalate",
     "app": {
-      "id": "<APP_ID>",
-      "name": "<APP_NAME>",
+      "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
+      "name": "Tool.Guardrail.Escalation.Action.App",
       "version": "0",
-      "folderId": "<FOLDER_ID>",
       "folderName": "solution_folder"
     },
     "recipient": {
-      "type": 1,
-      "value": "<USER_GUID>",
-      "displayName": "<DISPLAY_NAME>"
+      "type": 3,
+      "value": "reviewer@example.com"
     }
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Tool"],
-    "matchNames": ["Agent", "Get Instance Details"]
+    "scopes": ["Agent"]
   }
 }
 ```
+
+All `app.*` values sourced from Step 1 (resource list).
 
 ### Example 9: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
@@ -738,12 +856,18 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
+10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resource list --kind App` results by this type.
+11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
+12. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
+13. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
 
 ## Walkthrough
 
 Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
+>
+> **MANDATORY: Run `uip agent guardrails list --output json` before writing any `builtInValidator` guardrail**, even when you already know the `validatorType`. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes for that validator — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
 
 ### Step 1 — Verify existing agent
 
@@ -820,3 +944,4 @@ Confirm the guardrails appear in the validated output without errors.
 - [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, manual `guardrail.policies` edits, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
+
