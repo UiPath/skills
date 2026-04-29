@@ -16,7 +16,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 2. **SKILL.md frontmatter is required:** must include `name` (matching folder name) and `description` (with TRIGGER/DO NOT TRIGGER conditions)
 3. **References use kebab-case filenames** with `-guide.md` and `-template.md` suffixes
 4. **Update CODEOWNERS** when adding or modifying skill ownership
-5. **No cross-skill references** — each skill must work in isolation
+5. **No cross-skill references** — each skill must work in isolation. When content genuinely needs to live in multiple skills, register a synced copy via `bash scripts/sync-files.sh --add <source> <copy>` (see `.github/synced-files.yml` and `.claude/rules/skill-structure.md`).
 6. **No secrets or personal paths** in committed files
 7. **CLI commands must use `--output json`** when output is parsed programmatically
 
