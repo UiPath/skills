@@ -460,7 +460,7 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 
 **Why this is required.** The definition's `model.context[].value` fields are placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions, so they can't be confused with one. Before the BPMN is emitted, the runtime rewrites each placeholder to `=bindings.<id>` by finding a workflow-level binding with `(resourceKey, name)` matching the node's manifest `model.bindings.resourceKey` + the placeholder name. Without matching entries in top-level `bindings[]`, `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip maestro flow validate` passes.
 
-**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. Critical Rule #7 applies unchanged.
+**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [AUTHOR.md](../AUTHOR.md).
 
 See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/plugins/rpa/impl.md), [agent](../author/plugins/agent/impl.md), [flow](../author/plugins/flow/impl.md), [agentic-process](../author/plugins/agentic-process/impl.md), [api-workflow](../author/plugins/api-workflow/impl.md), [hitl](../author/plugins/hitl/impl.md).
 

@@ -6,7 +6,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 ## uip maestro flow init
 
-Scaffold a new Flow project directory. **Always create a solution first** (see Quick Start Step 2 in SKILL.md).
+Scaffold a new Flow project directory. **Always create a solution first** (see [author/greenfield.md — Step 2](../author/greenfield.md)).
 
 ```bash
 # 1. Create solution first

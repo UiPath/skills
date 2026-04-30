@@ -29,7 +29,7 @@ Discover available capabilities, then design the flow topology — select node t
 Discovery answers "what can I work with?" before you commit to a topology. This prevents designing around a connector that doesn't exist, an operation the connector doesn't support, or an RPA process / agent that hasn't been published yet.
 
 ```bash
-# Registry should already be refreshed (Step 3 in Quick Start runs `registry pull`)
+# Registry should already be refreshed (greenfield.md Step 3 runs `registry pull`)
 uip maestro flow registry search <keyword> --output json    # search by service, resource name, or category
 uip maestro flow registry search outlook --output json       # example: does an Outlook connector exist?
 uip maestro flow registry search "invoice process" --output json  # example: is an RPA process published?
