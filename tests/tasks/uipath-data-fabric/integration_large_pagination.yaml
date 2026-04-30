@@ -106,6 +106,24 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "bulk_500.csv has exactly 500 data rows (header + 500)"
+    command: "awk 'END { exit (NR == 501 ? 0 : 1) }' bulk_500.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "bulk_500.csv has the required header columns"
+    path: "bulk_500.csv"
+    includes:
+      - "Name"
+      - "Score"
+      - "Active"
+    weight: 1.5
+    pass_threshold: 1.0
+
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
     timeout: 60

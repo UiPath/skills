@@ -96,6 +96,22 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "inventory.csv has at least 4 data rows (header + 4)"
+    command: "awk 'END { exit (NR >= 5 ? 0 : 1) }' inventory.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "inventory.csv header row excludes system fields"
+    command: "awk 'NR==1 && /(^|,)(Id|CreatedBy|CreateTime|UpdatedBy|UpdateTime)(,|$)/ { exit 1 }' inventory.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
     timeout: 60

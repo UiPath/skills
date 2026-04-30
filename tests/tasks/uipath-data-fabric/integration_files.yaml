@@ -112,6 +112,34 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "updated.txt (v2 source) was created"
+    path: "updated.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "verify_update.txt (v2 download) was created"
+    path: "verify_update.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "v1 byte integrity: downloaded.txt is identical to original.txt"
+    command: "cmp -s original.txt downloaded.txt"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "v2 byte integrity: verify_update.txt is identical to updated.txt"
+    command: "cmp -s updated.txt verify_update.txt"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
     timeout: 60
