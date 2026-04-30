@@ -44,10 +44,16 @@ build the case in the Case Designer without guessing.
    - **Marks Stage Complete:** Yes | No
    These are separate concepts. A stage can exit without completing (exit-only + No).
 
-   **WHEN ↔ Marks Stage Complete pairing (hard constraint — schema-enforced):**
-   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` or `required-stages-completed`. **NEVER** `selected-tasks-completed(...)`. The completion exit fires when the stage's required tasks finish; specific-task selection is meaningless here.
-   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `selected-stage-completed(...)`, or any other rule type. Used to fork stage flow without ending the stage.
+   **WHEN ↔ Marks Complete pairing (hard constraint — schema-enforced; applies identically to STAGE exit and CASE exit):**
+
+   *Stage exit:*
+   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `required-stages-completed`. **NEVER** `selected-tasks-completed(...)`.
+   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `selected-stage-completed(...)`, `wait-for-connector`, etc.
    - Same stage may carry one completion exit (`Yes` + `required-tasks-completed`) plus zero or more routing exits (`No` + `selected-tasks-completed`).
+
+   *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
+   - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.
+   - `Marks Case Complete: No` (case exits without closing — rare) → WHEN may be `selected-stage-completed(...)`, `selected-stage-exited(...)`, or `wait-for-connector`.
 
 5. **Descriptions are mandatory:** Every case, stage, and task MUST have a prose description. No empty or placeholder descriptions.
 
@@ -144,9 +150,11 @@ The generated SDD must start with:
 
 ### Case Exit Conditions
 
+> **WHEN ↔ Marks Case Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-stages-completed` (preferred) or `wait-for-connector`; `No` row MAY use `selected-stage-completed(...)` / `selected-stage-exited(...)` / `wait-for-connector`. Mixing `Yes` with a `selected-*` rule is invalid.
+
 | WHEN | IF | THEN | Marks Case Complete |
 |------|-----|------|---------------------|
-| {rule type with target, e.g., required-stages-completed} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} |
+| {`required-stages-completed` for Yes; `selected-stage-completed("StageName")` or other rule for No} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} |
 
 ### Case Variables
 

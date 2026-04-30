@@ -146,7 +146,9 @@ On `Re-validate`, structural checks:
 - Every stage has ≥1 task entry
 - Every task has a `Type:` from the 10-type set
 - Every task has at minimum a `Description:` line
-- **Stage Exit Condition WHEN ↔ Marks Stage Complete pairing** (sdd-template.md Key Rule 4): rows with `Marks Stage Complete: Yes` MUST use `required-tasks-completed` or `required-stages-completed` — never `selected-tasks-completed(...)`. Rows with `No` MAY use `selected-tasks-completed`. Validation flags any `Yes + selected-tasks-completed` pair as an error.
+- **Exit Condition WHEN ↔ Marks Complete pairing** (sdd-template.md Key Rule 4 — applies to both stage exit and case exit):
+  - **Stage exit:** `Marks Stage Complete: Yes` → must use `required-tasks-completed` / `required-stages-completed`; `No` → may use `selected-tasks-completed(...)`. Flag any `Yes + selected-tasks-completed` pair as error.
+  - **Case exit:** `Marks Case Complete: Yes` → must use `required-stages-completed` / `wait-for-connector`; `No` → may use `selected-stage-completed(...)` / `selected-stage-exited(...)` / `wait-for-connector`. Flag any `Yes + selected-stage-*` pair as error.
 
 Validation fail → list specific issues, AskUserQuestion `Re-edit and re-validate` / `Restart interview` / `Abort`.
 
