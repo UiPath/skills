@@ -2,6 +2,8 @@
 
 Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `tidy`; from there, hand off to [OPERATE.md](OPERATE.md) to publish, run, or debug.
 
+> **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [OPERATE.md](OPERATE.md); fault triage lives in [DIAGNOSE.md](DIAGNOSE.md).
+>
 > **Inherits universal rules from [SKILL.md](../SKILL.md)** — `--output json`, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout. The rules below are author-scoped and apply on top.
 
 ## When to use this capability

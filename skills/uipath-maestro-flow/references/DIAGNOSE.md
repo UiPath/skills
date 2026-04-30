@@ -2,6 +2,8 @@
 
 Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout). Requires `uip login`.
 
+> **Where you came from / where to go next.** Diagnose is downstream of Operate (run faulted → diagnose) and points back to Author for the underlying fix (diagnose → re-author → re-ship). Re-running and lifecycle live in [OPERATE.md](OPERATE.md); building/editing the `.flow` file lives in [AUTHOR.md](AUTHOR.md).
+>
 > **Inherits universal rules from [SKILL.md](../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically. The rules below are diagnose-scoped and apply on top.
 
 ## When to use this capability
