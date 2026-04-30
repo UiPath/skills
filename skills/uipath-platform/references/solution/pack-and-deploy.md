@@ -260,10 +260,6 @@ These are different commands with different destinations:
 
 On `deploy run`, `--folder-path` is the **parent** folder, not the deployment folder itself. The deployment folder is `--folder-name`, created inside `--folder-path`. To produce a nested layout like `Shared/Nica/Solution`, pre-create `Shared/Nica` (or use a previous deploy to make it) and pass `--folder-path "Shared/Nica" --folder-name "Solution"`.
 
-### Polling false-positives on `deploy run`
-
-`deploy run` may report `Failure / Deployment polling failed` even when the deployment succeeded — the pipeline ID expires after completion and `deploy status` then 404s. Always verify with `solution deploy list` (look up the deployment by name + check `OperationStatus`) before treating it as a real error. CI scripts should fall back to `deploy list` on polling failure rather than failing the pipeline.
-
 ### Config `link` Connects to Existing Resources
 
 `config link` does not copy or move a resource. It tells the deployment to use an existing Orchestrator resource instead of creating a new one. The linked resource must already exist in the specified folder.
