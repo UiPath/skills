@@ -7,34 +7,41 @@ Internal tooling and conventions for maintaining the `uipath-maestro-flow` skill
 The skill is organized into three peer capabilities:
 
 ```text
-SKILL.md                              ← capability router (universal rules + 3-bucket intent)
+SKILL.md                                ← capability router (universal rules + 3-bucket intent)
 references/
-├── AUTHOR.md                         ← capability index
-├── OPERATE.md                        ← capability index
-├── DIAGNOSE.md                       ← capability index
-├── shared/                           ← cross-capability primitives
-│   ├── commands.md                   ← flat CLI lookup
-│   ├── cli-conventions.md            ← --output json, login, FOLDER_KEY, etc.
-│   ├── file-format.md                ← .flow JSON schema
-│   ├── variables-and-expressions.md  ← =js: Jint expressions
-│   └── node-output-wiring.md         ← canonical $vars wiring rule
+├── shared/                             ← cross-capability primitives
+│   ├── commands.md                     ← flat CLI lookup
+│   ├── cli-conventions.md              ← --output json, login, FOLDER_KEY, etc.
+│   ├── file-format.md                  ← .flow JSON schema
+│   ├── variables-and-expressions.md    ← =js: Jint expressions
+│   └── node-output-wiring.md           ← canonical $vars wiring rule
 ├── author/
-│   ├── greenfield.md                 ← create-new-flow journey
-│   ├── brownfield.md                 ← edit-existing-flow journey
-│   ├── editing-operations.md         ← strategy selection
-│   ├── editing-operations-json.md    ← Direct JSON recipes (default)
-│   ├── editing-operations-cli.md     ← CLI carve-outs
-│   ├── planning-arch.md              ← topology/plugin index
-│   ├── planning-impl.md              ← registry/binding/wiring
-│   └── plugins/                      ← per-node-type planning + impl
+│   ├── CAPABILITY.md                   ← capability index
+│   └── references/                     ← author's supporting docs
+│       ├── greenfield.md               ← create-new-flow journey
+│       ├── brownfield.md               ← edit-existing-flow journey
+│       ├── editing-operations.md       ← strategy selection
+│       ├── editing-operations-json.md  ← Direct JSON recipes (default)
+│       ├── editing-operations-cli.md   ← CLI carve-outs
+│       ├── planning-arch.md            ← topology/plugin index
+│       ├── planning-impl.md            ← registry/binding/wiring
+│       └── plugins/                    ← per-node-type planning + impl
 ├── operate/
-│   ├── ship.md                       ← Studio Web upload + Orchestrator deploy
-│   ├── run.md                        ← debug + process run + job status/traces
-│   └── manage.md                     ← instance lifecycle (pause/resume/cancel/retry)
+│   ├── CAPABILITY.md                   ← capability index
+│   └── references/                     ← operate's supporting docs
+│       ├── ship.md                     ← Studio Web upload + Orchestrator deploy
+│       ├── run.md                      ← debug + process run + job status/traces
+│       └── manage.md                   ← instance lifecycle (pause/resume/cancel/retry)
 └── diagnose/
-    ├── troubleshooting-guide.md      ← diagnostic priority ladder
-    └── failure-modes.md              ← pattern catalog (MST-9107, MST-9061, etc.)
+    ├── CAPABILITY.md                   ← capability index
+    └── references/                     ← diagnose's supporting docs
+        ├── troubleshooting-guide.md    ← diagnostic priority ladder
+        └── failure-modes.md            ← pattern catalog (MST-9107, MST-9061, etc.)
 ```
+
+**Recursive pattern.** Skill = `SKILL.md` + `references/`. Capability = `CAPABILITY.md` + `references/`. The same "index next to its references" shape at two scales. Future capabilities (e.g., `governance/`) get the template for free.
+
+**Convention:** each capability is a self-contained folder. Every file under `<capability>/references/` is implicitly that-capability-scoped — path = provenance. The `CAPABILITY.md` index is always at `<capability>/CAPABILITY.md` (uniform shape across all three).
 
 ### Capability boundary
 
@@ -93,18 +100,47 @@ Run the link-checker script to catch broken `[text](path)` links:
 bash .maintenance/check-links.sh
 ```
 
-Returns `checked=N broken=M`. The known false positive (`./REFACTOR-PROPOSAL.md -> ../AUTHOR.md`) is an example link inside a code block in the design doc — ignore.
+Returns `checked=N broken=M`. Both checkers skip links inside fenced code blocks and inline code spans, so example links in this README and in REFACTOR-PROPOSAL.md don't trigger false positives.
+
+## Verifying reachability depth
+
+Run the depth-checker script to verify every file under `references/` is reachable from `SKILL.md` within the configured max hops (default 2):
+
+```bash
+bash .maintenance/check-depth.sh
+```
+
+Pass a custom max-hops value as the first argument:
+
+```bash
+bash .maintenance/check-depth.sh 3
+```
+
+Returns `total_files=N reachable_within=R unreachable=U exceeds_depth=E`. Folder links count as reachability for every file in the folder (per the agent-navigation convention below). Exits non-zero if any file is unreachable or exceeds the configured depth.
+
+## Verifying capability-index template conformance
+
+Run the template-checker script to verify each `CAPABILITY.md` follows the canonical 6-section structure (When to use / Critical rules / Workflow / Common tasks / Anti-patterns / References):
+
+```bash
+bash .maintenance/check-template.sh
+```
+
+Returns `capabilities_checked=N missing_sections=M`. Exits non-zero if any `CAPABILITY.md` is missing a required section. Catches drift if a future edit removes or renames a canonical section.
 
 ## When to run these checkers
 
 - Before committing changes that move files or rewrite link paths
 - Before merging a PR that touches `references/`
 - After a refactoring phase
+- Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md` to confirm structural conformance
 
 The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.
 
 ## Reachability convention
 
-Plugin docs (`references/author/plugins/<name>/{planning,impl}.md`) are linked from `AUTHOR.md` via **folder links** (e.g., `[connector](author/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
+Plugin docs (`references/author/references/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
 
-A strict file-link reachability checker would flag these 29 plugin docs as "unreachable" — that is a false negative against the agent-navigation model. If a future change requires explicit file links (e.g., AUTHOR.md task table needs a specific impl.md anchor), add the file link inline rather than relying on folder discovery.
+The depth checker (`check-depth.sh`) treats folder links as reachability for every `.md` file inside the folder, matching this agent-navigation model. A strict file-link-only reachability check would flag plugin docs as "unreachable" — that's a false negative.
+
+If a future change requires explicit file links (e.g., a task table needs a specific `impl.md` anchor), add the file link inline rather than relying on folder discovery.

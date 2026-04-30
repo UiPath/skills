@@ -12,7 +12,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 
 ## When to use this skill
 
-**Author** — building or editing a `.flow` file. Read [references/AUTHOR.md](references/AUTHOR.md).
+**Author** — building or editing a `.flow` file. Read [references/author/CAPABILITY.md](references/author/CAPABILITY.md).
 
 - Create a new Flow project (`uip maestro flow init`)
 - Edit a `.flow` file — add nodes, edges, variables, subflows, transforms, triggers
@@ -22,7 +22,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 - Configure connector, connector-trigger, or inline-agent nodes
 - Plan a complex flow before building
 
-**Operate** — publishing, running, or managing a deployed flow. Read [references/OPERATE.md](references/OPERATE.md).
+**Operate** — publishing, running, or managing a deployed flow. Read [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
 
 - Push a flow to Studio Web (`uip solution upload`)
 - Deploy a flow to Orchestrator (`uip maestro flow pack` + `uip solution publish`)
@@ -31,7 +31,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 - Check job status or stream traces
 - Pause, resume, cancel, or retry a running instance
 
-**Diagnose** — investigating a failed or misbehaving run. Read [references/DIAGNOSE.md](references/DIAGNOSE.md).
+**Diagnose** — investigating a failed or misbehaving run. Read [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
 
 - Triage a failed `flow debug` or deployed process run
 - Read incidents, runtime variables, deployed BPMN
@@ -41,9 +41,9 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 
 | I want to... | Read |
 | --- | --- |
-| Create a new flow or edit an existing one | [references/AUTHOR.md](references/AUTHOR.md) |
-| Publish, deploy, debug, or manage a flow's lifecycle | [references/OPERATE.md](references/OPERATE.md) |
-| Diagnose a failed or misbehaving flow run | [references/DIAGNOSE.md](references/DIAGNOSE.md) |
+| Create a new flow or edit an existing one | [references/author/CAPABILITY.md](references/author/CAPABILITY.md) |
+| Publish, deploy, debug, or manage a flow's lifecycle | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
+| Diagnose a failed or misbehaving flow run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
 | Look up CLI command syntax | [references/shared/commands.md](references/shared/commands.md) |
 | Look up CLI conventions (`--output json`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
 | Understand the `.flow` JSON format | [references/shared/file-format.md](references/shared/file-format.md) |
@@ -61,10 +61,10 @@ These rules apply across all three capabilities. Each capability index adds capa
     2. **In-solution local discovery** — `uip maestro flow registry list --local --output json`. No login required; returns sibling projects in the same `.uipx` solution.
     3. **Only then create/scaffold** — scaffold an inline agent, mock, or create-new-resource only when both searches return no match AND either the user explicitly asks to embed/inline/create, or no published resource can satisfy the requirement.
 
-    The words "coded" and "low-code" describe the *implementation style* of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/author/plugins/rpa/impl.md), [agent](references/author/plugins/agent/impl.md)).
+    The words "coded" and "low-code" describe the *implementation style* of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/author/references/plugins/rpa/impl.md), [agent](references/author/references/plugins/agent/impl.md)).
 4. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 5. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
-6. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See [author/greenfield.md](references/author/greenfield.md) Step 2.
+6. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See [author/greenfield.md](references/author/references/greenfield.md) Step 2.
 
 ## Anti-patterns (universal)
 
