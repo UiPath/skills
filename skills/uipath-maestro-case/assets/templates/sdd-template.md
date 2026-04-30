@@ -44,6 +44,11 @@ build the case in the Case Designer without guessing.
    - **Marks Stage Complete:** Yes | No
    These are separate concepts. A stage can exit without completing (exit-only + No).
 
+   **WHEN ↔ Marks Stage Complete pairing (hard constraint — schema-enforced):**
+   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` or `required-stages-completed`. **NEVER** `selected-tasks-completed(...)`. The completion exit fires when the stage's required tasks finish; specific-task selection is meaningless here.
+   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `selected-stage-completed(...)`, or any other rule type. Used to fork stage flow without ending the stage.
+   - Same stage may carry one completion exit (`Yes` + `required-tasks-completed`) plus zero or more routing exits (`No` + `selected-tasks-completed`).
+
 5. **Descriptions are mandatory:** Every case, stage, and task MUST have a prose description. No empty or placeholder descriptions.
 
 6. **Entry/exit conditions use WHEN + IF format:**
@@ -176,9 +181,11 @@ The generated SDD must start with:
 
 #### Stage Exit Conditions
 
+> **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
+
 | WHEN | IF | Exit Type | Marks Stage Complete |
 |------|-----|-----------|---------------------|
-| {rule type with target, e.g., required-tasks-completed} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
+| {`required-tasks-completed` for Yes; `selected-tasks-completed("TaskName")` or other rule for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
 
 #### Stage SLA
 

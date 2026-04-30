@@ -46,11 +46,11 @@ Each round produces or updates `sdd.draft.md`. Final approval renames `sdd.draft
 Single user-facing message. Three asks bundled:
 
 1. **Free-text description.** "Describe the process. Who starts it? What stages does it go through? Where does it end?"
-2. **Archetype hint** (AskUserQuestion, 4 options — hint only, no flow shaping):
-   - `Approval` — single decision gate (review → approve/reject)
-   - `Intake-Triage` — classify and route to handler
-   - `Multi-stage Orchestration` — sequential stages with handoffs
-   - `Other (describe freely)`
+2. **Archetype hint** (AskUserQuestion, 4 options — hint only, used to seed stage skeleton). Render each option with its example so the user is not guessing at jargon:
+   - `Approval` — one decision gate, end-to-end (e.g., expense approval, leave request, PTO)
+   - `Intake & Routing` — incoming items get classified, then routed to the right handler (e.g., support ticket triage, lead qualification, IT request routing)
+   - `Multi-stage Orchestration` — sequential stages with handoffs across roles or systems (e.g., employee onboarding, candidate interview pipeline, loan origination)
+   - `Other / not sure` — describe in free-text (Round 1 ask 1); agent infers shape from description
 3. **Upfront triage counts.** "Roughly how many stages? How many systems integrated? How many distinct user roles?"
 
 #### Upfront triage redirect
@@ -146,6 +146,7 @@ On `Re-validate`, structural checks:
 - Every stage has ≥1 task entry
 - Every task has a `Type:` from the 10-type set
 - Every task has at minimum a `Description:` line
+- **Stage Exit Condition WHEN ↔ Marks Stage Complete pairing** (sdd-template.md Key Rule 4): rows with `Marks Stage Complete: Yes` MUST use `required-tasks-completed` or `required-stages-completed` — never `selected-tasks-completed(...)`. Rows with `No` MAY use `selected-tasks-completed`. Validation flags any `Yes + selected-tasks-completed` pair as an error.
 
 Validation fail → list specific issues, AskUserQuestion `Re-edit and re-validate` / `Restart interview` / `Abort`.
 
