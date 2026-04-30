@@ -224,7 +224,7 @@ After adding, wire the `completed` port to the next node — an unwired `complet
 
 ## uip maestro flow instance / uip maestro flow incident
 
-See [troubleshooting-guide.md](../troubleshooting-guide.md) for the full diagnostic workflow and command reference for `instance` and `incident` subcommands.
+See [troubleshooting-guide.md](../diagnose/troubleshooting-guide.md) for the full diagnostic workflow and command reference for `instance` and `incident` subcommands.
 
 ## uip maestro flow node / uip maestro flow edge
 

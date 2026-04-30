@@ -290,7 +290,7 @@ The argument to `resource refresh` is the **solution directory** (containing the
 
 ### Step 7a — Troubleshoot failed flows
 
-When a debug or process run fails, read **[references/troubleshooting-guide.md](references/troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → .flow correlation → traces (last resort).
+When a debug or process run fails, read **[references/diagnose/troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → .flow correlation → traces (last resort).
 
 ### Step 8 — Publish to Studio Web
 
@@ -366,7 +366,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 | **Create a subflow** | [references/author/plugins/subflow/impl.md](references/author/plugins/subflow/impl.md) + [JSON: Create a subflow](references/author/editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [references/author/plugins/delay/](references/author/plugins/delay/) or [references/author/plugins/scheduled-trigger/](references/author/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [references/author/plugins/queue/impl.md](references/author/plugins/queue/impl.md) |
-| **Troubleshoot a failed flow** | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
+| **Troubleshoot a failed flow** | [references/diagnose/troubleshooting-guide.md](references/diagnose/troubleshooting-guide.md) |
 
 ## Key Concepts
 
@@ -419,7 +419,7 @@ When you finish building or editing a flow, report to the user:
 - **[Planning: Implementation Resolution](references/author/planning-impl.md)** — Registry lookups, connection binding, reference field resolution, wiring rules, and flow patterns.
 - **[.flow File Format](references/shared/file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/shared/commands.md)** — All `uip flow` subcommands with flags and options
-- **[Troubleshooting Guide](references/troubleshooting-guide.md)** — Diagnostic workflow for failed flows: incidents, runtime variables, definition correlation, traces, and `instance`/`incident` CLI reference
+- **[Troubleshooting Guide](references/diagnose/troubleshooting-guide.md)** — Diagnostic workflow for failed flows: incidents, runtime variables, definition correlation, traces, and `instance`/`incident` CLI reference
 - **[Variables and Expressions](references/shared/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Node Output Wiring](references/shared/node-output-wiring.md)** — The single rule for wiring one node's output as another node's input. Per-node-type table of where `=js:` is required vs forbidden. Diagnoses the `vars.X.output.Y` literal-string failure mode (MST-9107).
 - **[Node Plugins](references/author/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
