@@ -37,6 +37,9 @@
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
+# API Workflow skill
+/skills/uipath-api-workflow/ @rares-baesu-uipath
+
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
 /tests/tasks/uipath-human-in-the-loop/ @dushyant-uipath
