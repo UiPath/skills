@@ -76,18 +76,22 @@ UIPATH_REGISTRY_FLAG="--@uipath:registry=https://registry.npmjs.org/"
 # npm install -g always re-downloads and re-installs, even if the same version
 # is already present. This is slow for a synchronous session hook and also
 # re-triggers package lifecycle scripts. Check first, install only when needed.
+# Stay silent on the happy path: Claude Code surfaces ANY stderr from an
+# exit-0 SessionStart hook as "Failed with non-blocking status code",
+# which is misleading. Capture install output and only emit on failure.
 ensure_npm_package() {
   local pkg="$1"
 
   if npm ls -g "$pkg" --depth=0 &>/dev/null \
      && [ -z "$(npm outdated -g "$pkg" $UIPATH_REGISTRY_FLAG 2>/dev/null)" ]; then
-    echo "$pkg is already installed and up to date." >&2
     return
   fi
 
-  echo "Installing or updating $pkg globally..." >&2
-  if ! npm install -g $UIPATH_REGISTRY_FLAG "$pkg" 2>&1; then
-    echo "Failed to install $pkg. Please run: npm install -g $UIPATH_REGISTRY_FLAG $pkg" >&2
+  local output
+  if ! output="$(npm install -g $UIPATH_REGISTRY_FLAG "$pkg" 2>&1)"; then
+    echo "Failed to install $pkg:" >&2
+    echo "$output" >&2
+    echo "Please run manually: npm install -g $UIPATH_REGISTRY_FLAG $pkg" >&2
     exit 2
   fi
 }
