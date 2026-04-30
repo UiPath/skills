@@ -1,10 +1,9 @@
 task_id: skill-platform-traces-fetch
 description: >
   Smoke test: agent uses the uipath-platform skill to fetch LLM trace spans for a
-  given job key using the correct CLI command and flags. Verifies the agent knows
-  to call `uip traces spans get --job-key <guid> --output json` and summarize the
-  result in report.json. A 404 response (no traces for this job key) is an
-  acceptable outcome — this test checks command knowledge, not data availability.
+  given job key against the live tenant. Verifies the agent knows to call
+  `uip traces spans get --job-key <guid> --output json` and record the result.
+  A 404 response (no traces for this job key) is an acceptable outcome.
 tags: [uipath-platform, smoke, lifecycle:discover]
 
 sandbox:
@@ -12,18 +11,28 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Use the uipath-platform skill. Fetch the LLM trace spans for job key
-  `11111111-2222-3333-4444-555566667777` from the active UiPath tenant.
-  Write a report.json with at minimum:
-  {
-    "command": "<the exact uip command you ran>",
-    "outcome": "<success | 404 | error>",
-    "spans_count": <number of spans returned, or null>
-  }
+  Use the uipath-platform skill.
+
+  1. Verify login: run `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active.
+
+  2. Fetch LLM trace spans for job key `11111111-2222-3333-4444-555566667777`:
+     `uip traces spans get --job-key 11111111-2222-3333-4444-555566667777 --output json`
+
+  3. Save your findings to report.json — include the command you ran,
+     the outcome (success, 404, or error), and the span count (or null).
 
   Do NOT ask for approval or confirmation. Complete end-to-end in a single pass.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before fetching"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent fetched spans using uip traces spans get with --job-key flag"
     tool_name: "Bash"
@@ -44,4 +53,23 @@ success_criteria:
     description: "report.json was written to the sandbox root"
     path: "report.json"
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json records the command used"
+    path: "report.json"
+    assertions:
+      - expression: "command"
+        operator: contains
+        expected: "uip"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json records an outcome field"
+    path: "report.json"
+    assertions:
+      - expression: "outcome"
+        operator: exists
+    weight: 1.0
     pass_threshold: 1.0
