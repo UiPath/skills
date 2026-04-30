@@ -104,9 +104,7 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 
 **Log:** `[SKELETON] Event trigger "<display-name>" written as skeleton — connector "<connector-key>" / connection unresolved.`
 
-**Upgrade:** regenerate from scratch — re-pull registry (`--force`), re-invoke from Phase 1 with the unchanged sdd.md. Phase 2a Step 6 overwrites `caseplan.json` (per [case/impl-json.md § Pre-write checks](../../case/impl-json.md)); the trigger plugin runs the resolved code path on the now-resolved T-entry. The skeleton's `id` is not preserved across the rebuild — Rule 5 mandates regenerate-from-scratch, and trigger configuration is sibling-file-coupled (`entry-points.json`, root bindings).
-
-> **Studio Web caveat.** The minimal skeleton shape passes `uip maestro case validate` but is not end-to-end FE-tested. If a future build reports rendering failures, log `[FE-INCOMPATIBLE]` and adjust the shape — do not silently fall back to skipping.
+**Upgrade:** regenerate from scratch (Rule 5) — no in-place mutation path. Trigger config is sibling-file-coupled (`entry-points.json`, root variable bindings); a partial in-place edit leaves siblings stale.
 
 ## Graceful degradation (resolved planning, runtime CLI failure)
 
