@@ -130,45 +130,85 @@ bucket/orchestratorBucket/...        │
 
 ## Bindings
 
-When Studio Web or uipcli generates bindings for a solution-aware agent, resources that are part of the solution get `folderPath: "solution_folder"`:
+`uip agent validate` reads each `resources/{Name}/resource.json` and writes one binding entry per external dependency into `bindings_v2.json`. Every binding carries `name`; **Process, Index, and App bindings also carry `folderPath`** propagated verbatim from the agent-level resource. Connection bindings are exempt (bound by `connection.id`).
+
+| Binding kind | `name` source | `folderPath` source | Notes |
+|---|---|---|---|
+| `process` (external) | `properties.processName` | `properties.folderPath` (literal `Folder`) | One per external process tool |
+| `process` (solution-internal) | `properties.processName` | `"solution_folder"` (placeholder) | Resolved at deploy |
+| `index` | `indexName` | top-level `folderPath` (literal `Folder`) | StorageBucket-backed only |
+| `app` (escalation) | `channel.properties.appName` | `channel.properties.folderPath` (literal `Folder`) | One per Action Center channel |
+| `connection` | `properties.connection.name` | — (omitted) | Bound by `connection.id` |
 
 ```jsonc
-// Tool that is inside the solution
+// Solution-internal tool — placeholder until deploy
 {
   "resource": "process",
   "key": "Agent2",
   "value": {
-    "name": { "defaultValue": "Agent2", "isExpression": false },
+    "name":       { "defaultValue": "Agent2",          "isExpression": false },
     "folderPath": { "defaultValue": "solution_folder", "isExpression": false }
   },
-  "metadata": {
-    "subType": "Agent",
-    "bindingsVersion": "2.2",
-    "solutionsSupport": "true"
-  }
+  "metadata": { "subType": "Agent", "bindingsVersion": "2.2", "solutionsSupport": "true" }
 }
 ```
 
 ```jsonc
-// External tool registered as a solution resource (via resources/solution_folder/ files)
+// External tool — literal Folder from `uip solution resource list`
 {
   "resource": "process",
   "key": "TestRPA",
   "value": {
-    "name": { "defaultValue": "TestRPA", "isExpression": false },
-    "folderPath": { "defaultValue": "solution_folder", "isExpression": false }
+    "name":       { "defaultValue": "TestRPA",      "isExpression": false },
+    "folderPath": { "defaultValue": "Shared/Sales", "isExpression": false }
   },
-  "metadata": {
-    "subType": "process",
-    "bindingsVersion": "2.2",
-    "solutionsSupport": "true"
-  }
+  "metadata": { "subType": "process", "bindingsVersion": "2.2", "solutionsSupport": "true" }
 }
 ```
 
-The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment and the folder path should be resolved dynamically. External tools use `"solution_folder"` because they are registered as solution resources via the process and package declaration files under `resources/solution_folder/`.
+```jsonc
+// External Index (Context Grounding RAG) — folderPath is now propagated
+{
+  "resource": "index",
+  "key": "MyIndex",
+  "value": {
+    "name":       { "defaultValue": "MyIndex",          "isExpression": false, "displayName": "Index Name" },
+    "folderPath": { "defaultValue": "Shared/Knowledge", "isExpression": false }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
 
-> Note: `solutionsSupport` is a stringified boolean (`"true"`, not `true`). `uip agent validate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
+```jsonc
+// External Action Center App (escalation) — folderPath is now propagated
+{
+  "resource": "app",
+  "key": "ApprovalApp",
+  "value": {
+    "name":       { "defaultValue": "ApprovalApp",      "isExpression": false },
+    "folderPath": { "defaultValue": "Shared/Approvals", "isExpression": false }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+```jsonc
+// Connection binding — exempt from folderPath propagation
+{
+  "resource": "connection",
+  "key": "<connection-id>",
+  "value": {
+    "name": { "defaultValue": "my-connection", "isExpression": false }
+  },
+  "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
+}
+```
+
+The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment.
+
+> **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent validate` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
+>
+> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json`. Edit the resource.json and re-validate; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 19.
 
 ## Debug Overwrites
 
@@ -212,7 +252,9 @@ For capability-specific debug_overwrites entries (process / connection / index /
 uip solution resource refresh [solutionPath] --output json
 ```
 
-Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each binding, it either imports the matching resource from the Resource Catalog Service (if found by name + kind) or creates a virtual placeholder in the solution.
+Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each external binding, refresh looks up the matching resource in the Resource Catalog Service using the **joint key `(name, kind, folderPath)`** read from the binding. The folder dimension disambiguates resources that share a name across folders — historically refresh imported the first RCS match; now the binding's `folderPath` pins the lookup to the exact deployment. If no match is found, refresh creates a virtual placeholder in the solution and warns.
+
+Solution-internal bindings (`folderPath: "solution_folder"`) skip the RCS lookup — they are resolved at deploy time against the solution folder.
 
 **Run this after `uip agent validate`** whenever external tools have been added or changed.
 

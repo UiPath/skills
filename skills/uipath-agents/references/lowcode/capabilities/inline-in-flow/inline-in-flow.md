@@ -230,7 +230,9 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 # - Configure outputSchema if needed
 
 # 4. Add tools to <FlowProjectDir>/<projectId>/resources/ (optional)
-# Same resource.json format as standalone agents
+# Same resource.json format as standalone agents — including the folderPath rule:
+# external resources carry the literal Folder from `uip solution resource list`;
+# solution-internal resources keep "solution_folder". See ../../critical-rules.md Rule 11.
 
 # 5. Validate the inline agent
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json

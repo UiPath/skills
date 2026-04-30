@@ -28,8 +28,9 @@ Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / Coded
 | `resource list` field | Use as |
 |-----------------------|--------|
 | `Key` | `channel.properties.resourceKey` (also becomes the app resource's `key`) |
-| `Name` | `channel.properties.appName` |
-| `Folder`, `FolderKey` | folder reference (informational — escalations set `folderName: null`) |
+| `Name` | `channel.properties.appName` (also propagates as binding `name`) |
+| `Folder` | `channel.properties.folderPath` — literal Orchestrator folder (e.g., `"Shared/Approvals"`). Propagates verbatim as `folderPath` in the App binding inside `bindings_v2.json`. |
+| `FolderKey` | folder reference (informational — escalations set `channel.properties.folderName: null`; `FolderKey` is still used in `debug_overwrites.json`) |
 
 `Key` gives you everything you need to identify the backing app, but `resource list` does not return `systemName` or `deployVersion` — both are required to fetch the action schema in Step 3. Query the Apps API once, filtered client-side by `id == <KEY>`, to extract them:
 
@@ -162,6 +163,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
         "resourceKey": "<appId-guid>",              // from `action-apps?state=deployed` → `id`
         "appName": "<deploymentTitle>",             // from the same response → `deploymentTitle`
         "folderName": null,                         // MUST be null — setting "solution_folder" or anything else causes Studio Web "Resource provisioning failed (#100)" on solution import
+        "folderPath": "Shared/Approvals",           // literal Folder from `uip solution resource list --kind App`. Propagates into bindings_v2.json App binding.
         "appVersion": 1,                            // from the same response → `deployVersion` (integer)
         "isActionableMessageEnabled": false,
         "actionableMessageMetaData": null
@@ -248,7 +250,8 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 See [../../critical-rules.md](../../critical-rules.md) Critical Rules. Escalation-specific gotchas:
 
-- `properties.folderName` MUST be `null` (any string causes "Resource provisioning failed (#100)").
+- `properties.folderName` MUST be `null` (any string causes "Resource provisioning failed (#100)"). This is a separate field from `properties.folderPath` — they coexist on the channel: `folderName` stays `null`, `folderPath` carries the literal `Folder`.
+- `properties.folderPath` MUST be the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent validate` rejects `"solution_folder"` here — escalation apps are always external. See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Anti-pattern 18.
 - `recipients` array MUST have at least one entry. Empty uploads but routes nowhere.
 - For `type: 3` (email) recipients, do NOT set `displayName`.
 - Generate fresh UUIDs for the top-level `id` AND each channel `id`.
