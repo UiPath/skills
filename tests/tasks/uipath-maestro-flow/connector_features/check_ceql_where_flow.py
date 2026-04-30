@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""CEQL where: verify the flow targets the SharePoint connector, has
-Decision + Terminate nodes for the success/failure routing, and has the
-connector node configured with a ``where`` CEQL filter — both as a
-``queryParameters.where`` entry and as a ``savedFilterTrees.where`` entry
-inside the connector ``configuration`` blob."""
+"""CEQL where: verify the flow targets the Microsoft Entra (Azure AD)
+connector's "List Groups" operation, has Decision + Terminate nodes for
+the success/failure routing, and has the connector node configured with a
+``where`` CEQL filter on ``displayName = "active"`` — persisted both as a
+``queryParameters.where`` expression and as a structured
+``savedFilterTrees.where`` tree inside the connector ``configuration`` blob
+(same Studio Web contract used for connector-trigger filter trees)."""
 
 import glob
 import json
@@ -14,8 +16,12 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from _shared.flow_check import assert_flow_has_node_type  # noqa: E402
 
-CONNECTOR_KEY = "uipath-microsoft-onedrive"
+CONNECTOR_KEYS = (
+    "uipath-microsoft-azureactivedirectory",
+)
 FLOW_GLOB = "**/CeqlWhereTest*.flow"
+EXPECTED_FIELD = "displayname"
+EXPECTED_VALUE = "active"
 
 
 def _find_flow() -> str:
@@ -28,12 +34,33 @@ def _find_flow() -> str:
 def _find_connector_node(flow: dict) -> dict:
     for node in flow.get("nodes") or []:
         node_type = node.get("type", "")
-        if CONNECTOR_KEY in node_type and node_type.startswith("uipath.connector."):
+        if not node_type.startswith("uipath.connector."):
+            continue
+        if any(key in node_type for key in CONNECTOR_KEYS):
             return node
     sys.exit(
-        f"FAIL: No connector node with type containing "
-        f"'uipath.connector.{CONNECTOR_KEY}...' found"
+        f"FAIL: No connector node with type containing one of {CONNECTOR_KEYS} found"
     )
+
+
+def _assert_list_groups_operation(node: dict) -> None:
+    """The operation key/path must reference groups (List Groups)."""
+    node_type = node.get("type", "")
+    detail = (node.get("inputs") or {}).get("detail") or {}
+    haystack_parts = [node_type]
+    if isinstance(detail, dict):
+        for key in ("operationId", "operation", "method", "path", "resource"):
+            v = detail.get(key)
+            if isinstance(v, str):
+                haystack_parts.append(v)
+    elif isinstance(detail, str):
+        haystack_parts.append(detail)
+    haystack = " ".join(haystack_parts).lower()
+    if "group" not in haystack:
+        sys.exit(
+            "FAIL: connector node does not appear to target the List Groups "
+            f"operation (no 'group' token found in type/operation: {haystack!r})"
+        )
 
 
 def _parse_configuration(detail: dict) -> dict:
@@ -49,6 +76,71 @@ def _parse_configuration(detail: dict) -> dict:
         sys.exit(f"FAIL: inputs.detail.configuration is not valid JSON: {e}")
 
 
+def _walk(node):
+    """Yield every dict in a nested filter tree (groups + leaves)."""
+    if isinstance(node, dict):
+        yield node
+        for v in node.values():
+            yield from _walk(v)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _walk(item)
+
+
+def _leaf_field(n: dict):
+    return n.get("fieldName") or n.get("field") or n.get("id") or n.get("name")
+
+
+def _leaf_value(n: dict):
+    v = n.get("value")
+    if isinstance(v, dict):
+        return v.get("value")
+    return v
+
+
+def _assert_filter_tree_shape(where_tree) -> None:
+    """Same shape contract trigger_with_filter.yaml enforces: a structured
+    tree with a numeric groupOperator, a non-empty filters array, at least
+    one leaf referencing the displayName field, and the value 'active'."""
+    if not isinstance(where_tree, dict):
+        sys.exit(
+            "FAIL: savedFilterTrees.where is missing — the CEQL filter must be "
+            "persisted in the structured filter builder tree, not only as a "
+            "raw expression string"
+        )
+
+    if not isinstance(where_tree.get("groupOperator"), (int, float)):
+        sys.exit(
+            "FAIL: savedFilterTrees.where.groupOperator must be a number "
+            "(0 = And, 1 = Or) — Studio Web's persisted shape"
+        )
+
+    filters = where_tree.get("filters")
+    if not isinstance(filters, list) or not filters:
+        sys.exit(
+            "FAIL: savedFilterTrees.where.filters is empty — "
+            "add at least one filter entry on displayName"
+        )
+
+    leaves = [n for n in _walk(where_tree) if isinstance(n.get("operator"), str)]
+    if not leaves:
+        sys.exit("FAIL: savedFilterTrees.where contains no leaf filter with an `operator`")
+
+    fields = [_leaf_field(n) for n in leaves]
+    if not any(isinstance(f, str) and EXPECTED_FIELD in f.lower() for f in fields):
+        sys.exit(
+            f"FAIL: filter tree does not reference the `displayName` field "
+            f"(found fields: {[f for f in fields if f]})"
+        )
+
+    values = [_leaf_value(n) for n in leaves]
+    if not any(isinstance(v, str) and v.strip().lower() == EXPECTED_VALUE for v in values):
+        sys.exit(
+            f"FAIL: no leaf has value '{EXPECTED_VALUE}' "
+            f"(found values: {[v for v in values if v is not None]})"
+        )
+
+
 def assert_where_configured(node: dict) -> None:
     detail = (node.get("inputs") or {}).get("detail") or {}
     if not detail:
@@ -58,17 +150,18 @@ def assert_where_configured(node: dict) -> None:
         # `=js:` expression form — the whole detail object is computed at
         # runtime, so structural fields (queryParameters, savedFilterTrees)
         # live inside the expression string. Accept iff the where filter
-        # is referenced lexically.
-        if not re.search(r"queryParameters", detail):
-            sys.exit(
-                "FAIL: connector node inputs.detail is a JS expression but "
-                "does not reference 'queryParameters'"
-            )
-        if not re.search(r"\bwhere\b", detail):
-            sys.exit(
-                "FAIL: connector node inputs.detail is a JS expression but "
-                "does not reference a 'where' filter"
-            )
+        # is referenced lexically and mentions displayName + active.
+        for token, label in (
+            ("queryParameters", "'queryParameters'"),
+            (r"\bwhere\b", "a 'where' filter"),
+            ("displayName", "the displayName field"),
+            ("active", "the value 'active'"),
+        ):
+            if not re.search(token, detail, flags=re.IGNORECASE):
+                sys.exit(
+                    f"FAIL: connector node inputs.detail is a JS expression "
+                    f"but does not reference {label}"
+                )
         return
 
     query_params = detail.get("queryParameters") or {}
@@ -78,34 +171,16 @@ def assert_where_configured(node: dict) -> None:
             "FAIL: connector node inputs.detail.queryParameters.where "
             "must be a non-empty string"
         )
+    if "displayname" not in where_value.lower() or EXPECTED_VALUE not in where_value.lower():
+        sys.exit(
+            "FAIL: queryParameters.where must reference displayName and 'active' "
+            f"(got: {where_value!r})"
+        )
 
     config = _parse_configuration(detail)
-
     essential = config.get("essentialConfiguration") or {}
     saved_trees = essential.get("savedFilterTrees") or {}
-    where_tree = saved_trees.get("where")
-    if not isinstance(where_tree, dict):
-        sys.exit(
-            "FAIL: inputs.detail.configuration.essentialConfiguration."
-            "savedFilterTrees.where is missing — the CEQL filter must be "
-            "persisted in the filter builder tree"
-        )
-
-    filters = where_tree.get("filters")
-    if not isinstance(filters, list) or not filters:
-        sys.exit(
-            "FAIL: savedFilterTrees.where.filters is empty — "
-            "add at least one filter entry (e.g. createdDateTime operator)"
-        )
-
-    first = filters[0]
-    if not first.get("id"):
-        sys.exit("FAIL: savedFilterTrees.where.filters[0].id is missing")
-    if not first.get("operator"):
-        sys.exit("FAIL: savedFilterTrees.where.filters[0].operator is missing")
-    value = first.get("value")
-    if not isinstance(value, dict) or value.get("value") in (None, ""):
-        sys.exit("FAIL: savedFilterTrees.where.filters[0].value.value is missing")
+    _assert_filter_tree_shape(saved_trees.get("where"))
 
 
 def main():
@@ -116,18 +191,23 @@ def main():
     if "nodes" not in flow or "edges" not in flow:
         sys.exit("FAIL: Flow missing 'nodes' or 'edges'")
 
-    if CONNECTOR_KEY not in raw:
-        sys.exit(f"FAIL: Connector key {CONNECTOR_KEY!r} not found in {flow_path}")
+    if not any(key in raw for key in CONNECTOR_KEYS):
+        sys.exit(
+            f"FAIL: None of the expected Azure AD / Entra connector keys "
+            f"{CONNECTOR_KEYS} found in {flow_path}"
+        )
 
     connector_node = _find_connector_node(flow)
+    _assert_list_groups_operation(connector_node)
     assert_where_configured(connector_node)
 
     assert_flow_has_node_type(["decision", "terminate"])
 
     print(
         f"OK: {len(flow['nodes'])} nodes, {len(flow['edges'])} edges; "
-        f"{CONNECTOR_KEY} referenced; Decision and Terminate nodes present; "
-        f"where filter configured in queryParameters and savedFilterTrees"
+        f"Azure AD / Entra List Groups referenced; Decision and Terminate nodes "
+        f"present; where filter tree on displayName='active' configured in "
+        f"queryParameters and savedFilterTrees"
     )
 
 

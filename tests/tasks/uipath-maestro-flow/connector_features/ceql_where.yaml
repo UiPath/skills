@@ -1,8 +1,9 @@
 task_id: skill-flow-ipe-ceql-where
 description: >
-  Tests the CEQL where query IS feature — configures a connector node with a
-  CEQL filter expression
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector]
+  Tests the CEQL where query IS feature — configures a Microsoft Entra (Azure
+  AD) "List groups" connector node with a CEQL filter on displayName = "active",
+  persisted as a structured filter tree (Studio Web contract).
+tags: [uipath-maestro-flow, smoke, connector, ceql, filter]
 
 task_timeout: 1500
 agent:
@@ -16,22 +17,47 @@ sandbox:
   driver: tempdir
   python: {}
   node:
-    # Pin shared across all connector_features tasks — bump in lockstep.
     env_packages:
-      - "@uipath/cli@0.1.21"
+      - "@uipath/cli"
 initial_prompt: |
-  Create a flow called "CeqlWhereTest" with a manual trigger that lists all sharepoint sites that were created in the last 7 days.
+  Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
+  or any command that requires a live connection — this sandbox has no UiPath
+  tenant. Instead, plan the exact `--detail` JSON you would pass to
+  `uip flow node configure` for the where.
+  Write the planned filter `--detail` JSON to `where_detail.json`. It must
+  contain, at minimum:
+    - connectionId, folderKey, eventMode (placeholder values are fine)
+    - a `filter` object (the structured filter tree)
+
+  Also save a short summary to report.json 
+    {
+      "scenario": "ceql-where-filter-tree",
+      "uses_filter_tree": true,
+      "used_filter_expression_string": false,
+      "notes": "<one sentence explaining why the tree is the correct input>"
+    }
+  Create a flow called "CeqlWhereTest" with a manual trigger that uses the
+  Microsoft Entra (Azure AD) connector to list all groups whose `displayName`
+  equals "active". The CEQL where filter must be persisted as a structured
+  filter tree (the same shape Studio Web reads to render the filter builder),
+  not just as a raw expression string.
   Add a Decision node to check whether the call succeeded.
   Route failure to a Terminate node with error message "CeqlWhere test failed".
   Route success to a final action that logs "CeqlWhere test passed".
   Validate the final flow file.
 
 success_criteria:
+  - type: file_exists
+    description: "where_detail.json exists"
+    path: "where_detail.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "Flow references uipath-microsoft-onedrive and has Decision + Terminate nodes"
+    description: "Flow targets uipath-microsoft-azureactivedirectory List Groups with displayName=active filter tree, plus Decision + Terminate nodes"
     command: "python3 $TASK_DIR/check_ceql_where_flow.py"
-    timeout: 30
-    expected_exit_code: 0
+    timeout: 60
+    expected_exit_code: 0 
     weight: 8.0
     pass_threshold: 1.0
 
