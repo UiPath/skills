@@ -1,0 +1,173 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {
+              "iteration": { "type": "number", "default": 0 },
+              "current": { "type": "number", "default": 1 },
+              "previous": { "type": "number", "default": 0 },
+              "sum": { "type": "number", "default": 0 }
+            },
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "termCount": { "type": "number" }
+        },
+        "title": "Inputs"
+      }
+    }
+  },
+  "output": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "lastTerm": { "type": "number" },
+          "iterationsRun": { "type": "number" },
+          "fibSum": { "type": "number" }
+        },
+        "title": "Outputs"
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": { "as": "${$input}" },
+              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "fullName": "Assign", "isTransparent": true }
+            }
+          },
+          {
+            "Do_While_1": {
+              "for": { "in": "${ [1] }" },
+              "doWhile": "${$context.variables.iteration < $workflow.input.termCount}",
+              "do": [
+                {
+                  "Do_While_1#Body": {
+                    "do": [
+                      {
+                        "Javascript_1": {
+                          "run": {
+                            "script": {
+                              "language": "javascript",
+                              "code": "const next = $context.variables.iteration === 0 ? 1 : ($context.variables.current + $context.variables.previous); return { next: next, prev: $context.variables.current };",
+                              "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                            }
+                          },
+                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Javascript_1\": $output } }" },
+                          "metadata": { "activityType": "JsInvoke", "displayName": "Compute Next Fib", "fullName": "JsInvoke" }
+                        }
+                      },
+                      {
+                        "Assign_Previous": {
+                          "set": { "previous": "${$context.outputs.Javascript_1.prev}" },
+                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                          "metadata": { "activityType": "Assign", "displayName": "Update Previous", "fullName": "Assign", "isTransparent": false }
+                        }
+                      },
+                      {
+                        "Assign_Current": {
+                          "set": { "current": "${$context.outputs.Javascript_1.next}" },
+                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                          "metadata": { "activityType": "Assign", "displayName": "Update Current", "fullName": "Assign", "isTransparent": false }
+                        }
+                      },
+                      {
+                        "Assign_Sum": {
+                          "set": { "sum": "${$context.variables.sum + $context.outputs.Javascript_1.next}" },
+                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                          "metadata": { "activityType": "Assign", "displayName": "Add To Sum", "fullName": "Assign", "isTransparent": false }
+                        }
+                      },
+                      {
+                        "Assign_Iteration": {
+                          "set": { "iteration": "${$context.variables.iteration + 1}" },
+                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                          "metadata": { "activityType": "Assign", "displayName": "Increment Iteration", "fullName": "Assign", "isTransparent": false }
+                        }
+                      }
+                    ],
+                    "export": {
+                      "as": "{ ...$context, outputs: { ...$context?.outputs, \"Do_While_1\": { ...$context?.outputs?.Do_While_1, results: [ ...($context?.outputs?.Do_While_1?.results ?? []), ...([$output] ?? []) ] } } }"
+                    }
+                  }
+                }
+              ],
+              "output": { "as": "${$context.outputs.Do_While_1}" },
+              "metadata": { "activityType": "DoWhile", "displayName": "Generate Fibonacci Series", "fullName": "DoWhile" }
+            }
+          },
+          {
+            "For_Each_1": {
+              "for": {
+                "each": "term",
+                "in": "${$context.outputs.Do_While_1.results ?? []}",
+                "at": "termIndex"
+              },
+              "do": [
+                {
+                  "For_Each_1#Body": {
+                    "do": [
+                      {
+                        "Javascript_2": {
+                          "run": {
+                            "script": {
+                              "language": "javascript",
+                              "code": "return { index: $termIndex, value: $term, parity: $term % 2 === 0 ? 'even' : 'odd' };",
+                              "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+                            }
+                          },
+                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Javascript_2\": $output } }" },
+                          "metadata": { "activityType": "JsInvoke", "displayName": "Classify Term", "fullName": "JsInvoke" }
+                        }
+                      }
+                    ],
+                    "export": {
+                      "as": "{ ...$context, outputs: { ...$context?.outputs, \"For_Each_1\": { ...$context?.outputs?.For_Each_1, results: [ ...($termIndex == 0 ? [] : ($context?.outputs?.For_Each_1?.results ?? [])), ...([$output] ?? []) ] } } }"
+                    }
+                  }
+                }
+              ],
+              "output": { "as": "${$context.outputs.For_Each_1}" },
+              "metadata": { "activityType": "ForEach", "displayName": "Classify Each Term", "fullName": "ForEach" }
+            }
+          },
+          {
+            "Response_1": {
+              "response": "${{ lastTerm: $context.variables.current, iterationsRun: $context.variables.iteration, fibSum: $context.variables.sum, classified: $context.outputs.For_Each_1.results }}",
+              "markJobAsFailed": false,
+              "then": "end",
+              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }" },
+              "metadata": { "activityType": "Response", "displayName": "Response", "fullName": "Response" }
+            }
+          }
+        ],
+        "metadata": { "activityType": "Sequence", "displayName": "Sequence", "fullName": "Sequence" }
+      }
+    }
+  ],
+  "evaluate": { "mode": "strict", "language": "javascript" }
+}
