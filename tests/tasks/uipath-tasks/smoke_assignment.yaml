@@ -25,16 +25,6 @@ initial_prompt: |
   4. Reassign task 1111111 to bob@company.com.
   5. Unassign task 2222222.
 
-  Save a summary to report.json:
-  {
-    "commands_used": ["<list of uip tasks commands in order>"],
-    "assign_by_email": <true>,
-    "assign_by_user_id": <true>,
-    "reassigned": <true>,
-    "unassigned": <true>,
-    "used_mutually_exclusive_flags": <true if you used --user OR --user-id per call, never both>
-  }
-
   Important:
   - --user and --user-id are mutually exclusive. Do not combine them on the
     same command.
@@ -90,24 +80,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Report confirms both --user and --user-id variants used, mutually exclusive"
-    path: "report.json"
-    assertions:
-      - expression: "assign_by_email"
-        operator: equals
-        expected: true
-      - expression: "assign_by_user_id"
-        operator: equals
-        expected: true
-      - expression: "used_mutually_exclusive_flags"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 1.0

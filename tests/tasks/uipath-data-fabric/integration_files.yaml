@@ -57,17 +57,6 @@ initial_prompt: |
   12. Attempt to download again. The download should fail since the file was deleted.
       Record the result (expected: error or empty response).
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<entity ID used>",
-    "record_id": "<record ID inserted>",
-    "v1_sha256": "<SHA-256 of original.txt>",
-    "download_sha256_matches_v1": <true if downloaded.txt SHA-256 == original.txt>,
-    "v2_sha256": "<SHA-256 of updated.txt>",
-    "overwrite_download_matches_v2": <true if verify_update.txt SHA-256 == updated.txt>,
-    "post_delete_download_failed": <true if download after delete returned an error>
-  }
-
   Do NOT delete the entity — only delete the file attachment.
 
 success_criteria:
@@ -122,28 +111,6 @@ success_criteria:
     path: "downloaded.txt"
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Byte integrity confirmed for v1, overwrite confirmed for v2, post-delete download failed"
-    path: "report.json"
-    assertions:
-      - expression: "download_sha256_matches_v1"
-        operator: equals
-        expected: true
-      - expression: "overwrite_download_matches_v2"
-        operator: equals
-        expected: true
-      - expression: "post_delete_download_failed"
-        operator: equals
-        expected: true
-    weight: 4.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

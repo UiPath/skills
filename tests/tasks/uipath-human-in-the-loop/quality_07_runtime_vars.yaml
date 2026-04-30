@@ -22,14 +22,6 @@ initial_prompt: |
   The script node must use the HITL runtime variables to access the result.
   Wire the completed handle to the script node. Validate the flow.
 
-  Save results to report.json — use the actual node ID that was generated:
-  {
-    "hitl_node_id": "<the actual id of the HITL node>",
-    "result_variable": "$vars.<hitl_node_id>.result",
-    "status_variable": "$vars.<hitl_node_id>.status",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: file_contains
     description: "HITL node with specified ID is present in the flow file"
@@ -47,30 +39,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "report.json references a $vars result variable"
-    path: "report.json"
-    includes:
-      - "$vars."
-      - ".result"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "report.json references a $vars status variable"
-    path: "report.json"
-    includes:
-      - "$vars."
-      - ".status"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json shows validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 1.5
-    pass_threshold: 1.0

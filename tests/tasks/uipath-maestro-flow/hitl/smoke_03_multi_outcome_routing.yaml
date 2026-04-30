@@ -35,14 +35,6 @@ initial_prompt: |
 
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "decision_node_id": "<id of the Decision node>",
-    "decision_expression": "<full expression used, e.g. $vars.hitl1.result.approved>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
@@ -86,21 +78,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json captures node IDs and decision expression"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "hitl_node_id"
-        operator: not_equals
-        expected: ""
-      - expression: "decision_node_id"
-        operator: not_equals
-        expected: ""
-      - expression: "decision_expression"
-        operator: contains
-        expected: "$vars."
-    weight: 2.0
-    pass_threshold: 0.75

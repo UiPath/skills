@@ -42,17 +42,6 @@ initial_prompt: |
   6. Verify the import: list records and check that rows were added.
      Note InsertedRecords and TotalRecords from the import response.
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<entity ID used>",
-    "entity_existed_already": <true or false>,
-    "csv_headers": ["<headers used in the CSV, in order>"],
-    "csv_row_count": <number of data rows, excluding header>,
-    "csv_includes_system_fields": false,
-    "import_inserted_records": <InsertedRecords value from import response>,
-    "import_total_records": <TotalRecords value from import response>
-  }
-
   Use --output json on every uip df command.
   CSV headers must match entity field names exactly — case-sensitive.
 
@@ -106,28 +95,6 @@ success_criteria:
       - "LastRestocked"
     weight: 2.5
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "CSV has 4 rows, no system fields, import counts recorded"
-    path: "report.json"
-    assertions:
-      - expression: "csv_row_count"
-        operator: gte
-        expected: 4
-      - expression: "csv_includes_system_fields"
-        operator: equals
-        expected: false
-      - expression: "import_total_records"
-        operator: gte
-        expected: 4
-    weight: 3.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

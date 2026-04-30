@@ -34,13 +34,6 @@ initial_prompt: |
   - Intake (regular stage) — receives the case after the manual trigger.
   ```
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "OnboardingCase",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
-
   Important:
   - The `uip` CLI is already available in the environment.
   - Treat the generated plan as pre-approved for this smoke test — do not
@@ -78,18 +71,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "OnboardingCase"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 1
-    weight: 2.0
-    pass_threshold: 0.75

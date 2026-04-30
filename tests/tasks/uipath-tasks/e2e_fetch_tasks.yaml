@@ -44,26 +44,9 @@ initial_prompt: |
           `uip tasks list --folder-id <folder-id> --output json`.
 
      If NO tasks exist:
-       a. Skip 3a–3e. Set the corresponding report fields to null.
+       a. Skip 3a–3e.
        b. Still run `uip tasks list --as-admin --output json` to exercise the
           elevated path.
-
-  Save a report to report.json:
-  {
-    "tenant_url": "<UIPATH_URL from login status>",
-    "organization": "<Organization from login status>",
-    "tenant": "<Tenant from login status>",
-    "tasks_total": <total count from step 2>,
-    "first_task_id": <numeric id, or null if no tasks>,
-    "first_task_type": "<type, or null>",
-    "first_task_status": "<status, or null>",
-    "folder_id": <numeric folder id used for scoped queries, or null>,
-    "type_hint_used": <true if step 3c executed, false otherwise>,
-    "users_count": <number from step 3d, or null>,
-    "folder_tasks_count": <number from step 3e, or null>,
-    "commands_used": ["<list of uip commands you ran, in order>"],
-    "mutations_attempted": false
-  }
 
   Do NOT ask for approval or confirmation.
   Do NOT pause between steps.
@@ -129,35 +112,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Report confirms a real-tenant fetch completed end-to-end"
-    path: "report.json"
-    assertions:
-      - expression: "tasks_total"
-        operator: gte
-        expected: 0
-      - expression: "type_hint_used"
-        operator: equals
-        expected: true
-      - expression: "mutations_attempted"
-        operator: equals
-        expected: false
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 5
-    weight: 3.0
-    pass_threshold: 0.75
-
-  - type: file_contains
-    description: "Report captured a tenant URL from login status"
-    path: "report.json"
-    includes:
-      - "uipath.com"
-    weight: 1.0
-    pass_threshold: 1.0

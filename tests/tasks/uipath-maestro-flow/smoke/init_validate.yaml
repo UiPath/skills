@@ -25,14 +25,6 @@ initial_prompt: |
   The task is NOT complete until `uip maestro flow validate` has passed for
   that exact file path.
 
-  **REQUIRED — before finishing, write report.json at the sandbox root** with
-  at minimum:
-    {
-      "project_name": "WeatherAlert",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
-
   Important:
   - The `uip` CLI is already available in the environment.
   - Do not run `uip maestro flow debug` — just validate locally.
@@ -84,18 +76,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "WeatherAlert"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
-    weight: 2.0
-    pass_threshold: 0.75

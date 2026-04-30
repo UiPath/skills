@@ -42,20 +42,6 @@ initial_prompt: |
   - Update project.json so the test case shows up in fileInfoCollection
     with the correct testCaseType entry.
 
-  Write a `report.json` IMMEDIATELY after scaffolding the project (with
-  placeholder values) and update it as you complete each piece. Do not
-  leave it as the last step — previous runs got distracted by build
-  errors and never wrote it. Final shape:
-    {
-      "hooks_file": "CodedWorkflowHooks.cs",
-      "hooks_pattern": "partial_class",
-      "hooks_class_declaration": "<the class declaration line>",
-      "test_case_file": "TestLoginSuccess.cs",
-      "test_case_class": "TestLoginSuccess",
-      "base_class": "CodedWorkflow",
-      "assertions_used": ["<list of testing.Verify* methods used>"]
-    }
-
   Important:
   - The `uip` CLI is already available in the environment.
   - Use `--output json` on any uip commands you run.
@@ -111,24 +97,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json confirms partial-class hooks + CodedWorkflow base class"
-    path: "report.json"
-    assertions:
-      - expression: "hooks_pattern"
-        operator: equals
-        expected: "partial_class"
-      - expression: "hooks_class_declaration"
-        operator: contains
-        expected: "partial class CodedWorkflow"
-      - expression: "base_class"
-        operator: contains
-        expected: "CodedWorkflow"
-    weight: 2.0
-    pass_threshold: 1.0

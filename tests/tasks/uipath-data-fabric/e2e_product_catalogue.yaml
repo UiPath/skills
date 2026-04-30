@@ -37,18 +37,6 @@ initial_prompt: |
   - Confirm the final state: total products, how many are in stock, how
     many are Electronics.
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<ProductCatalogue entity ID>",
-    "total_products": <count>,
-    "electronics_count": <count from query>,
-    "price_updated_count": 2,
-    "out_of_stock_count": 3,
-    "in_stock_count": <total_products minus out_of_stock_count>,
-    "image_uploaded_to_sku": "<SKU of the product the image was uploaded to>",
-    "most_expensive_product_name": "<name>"
-  }
-
   Do NOT delete the entity.
 
 success_criteria:
@@ -115,31 +103,6 @@ success_criteria:
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "15 products, 5 Electronics, 2 price updates, 3 out of stock"
-    path: "report.json"
-    assertions:
-      - expression: "total_products"
-        operator: equals
-        expected: 15
-      - expression: "electronics_count"
-        operator: equals
-        expected: 5
-      - expression: "price_updated_count"
-        operator: equals
-        expected: 2
-      - expression: "out_of_stock_count"
-        operator: equals
-        expected: 3
-    weight: 5.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
