@@ -226,7 +226,7 @@ Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams resul
 
 ## Step 14a — Troubleshoot failed case
 
-When a debug or process run fails, read **[references/troubleshooting-guide.md](references/troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
+When a debug or process run fails, read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
 
 ## Step 15 — Optional: Publish to Studio Web
 

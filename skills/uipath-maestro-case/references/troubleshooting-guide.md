@@ -93,51 +93,11 @@ uip maestro case job traces <JOB_KEY> --pretty                  # human-readable
 
 ## CLI command reference
 
-### uip maestro case instance
+For full flag tables and all subcommands, see [case-commands.md](case-commands.md):
 
-Inspect and manage Case process instances. **Requires `uip login`.** Most subcommands accept `--folder-key <FOLDER_KEY>` (`-f` shorthand) and auto-detect the folder when omitted.
+- `uip maestro case instance` — list/get/incidents/variables/asset/cursors/element-executions and lifecycle (pause/resume/cancel/retry/migrate/goto)
+- `uip maestro case incident` — `summary`, `get`
+- `uip maestro case processes incidents <PROCESS_KEY>` — all incidents on a process
+- `uip maestro case job` — `status`, `traces`
 
-```bash
-uip maestro case instance list --output json                                                        # list all instances
-uip maestro case instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json                           # get instance details
-uip maestro case instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json                     # get incidents for a failed instance
-uip maestro case instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json                     # get runtime variable values
-uip maestro case instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json  # scope to a specific element
-uip maestro case instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json            # get per-element execution details
-uip maestro case instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json                         # get the deployed Case JSON definition
-uip maestro case instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json                       # get current execution cursor positions
-```
-
-Instance lifecycle commands:
-
-```bash
-uip maestro case instance pause <INSTANCE_ID> -f <FOLDER_KEY> --output json                         # pause a running instance
-uip maestro case instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json                        # resume a paused instance
-uip maestro case instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json                        # cancel an instance
-uip maestro case instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json                         # retry a faulted instance
-uip maestro case instance migrate <INSTANCE_ID> <NEW_VERSION> -f <FOLDER_KEY> --output json         # migrate to a new package version
-uip maestro case instance goto <INSTANCE_ID> '[{"sourceElementId":"A","targetElementId":"B"}]' -f <FOLDER_KEY> --output json  # move execution cursor
-```
-
-### uip maestro case incident
-
-Get incident details for failed cases. **Requires `uip login`.**
-
-```bash
-uip maestro case incident summary --output json                                     # get incident summaries across all processes
-uip maestro case incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json # get full details for a specific incident
-```
-
-Use `instance incidents <INSTANCE_ID>` to get incidents scoped to a specific run, then `incident get <INCIDENT_ID>` for full detail on a specific incident. Use `processes incidents <PROCESS_KEY>` for all incidents on a process across all runs.
-
-### uip maestro case job
-
-Monitor case jobs. **Requires `uip login`.**
-
-```bash
-uip maestro case job status <JOB_KEY> --output json                                 # get job status (parse instanceId, folderKey)
-uip maestro case job status <JOB_KEY> --detailed --output json                      # full response with all fields
-uip maestro case job traces <JOB_KEY> --output json                                 # stream raw execution traces
-uip maestro case job traces <JOB_KEY> --pretty                                      # human-readable trace output
-uip maestro case job traces <JOB_KEY> --poll-interval 5000                          # adjust poll interval (ms)
-```
+Append `--output json` to any command whose output you parse.
