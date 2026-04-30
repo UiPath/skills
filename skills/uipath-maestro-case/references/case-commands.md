@@ -161,10 +161,12 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
+> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 30-min cache, is network-heavy, and may be slow.
+
 ```bash
 # Refresh cache from all resource types
 uip maestro case registry pull
-uip maestro case registry pull --force             # ignore 30-min TTL and force refresh
+uip maestro case registry pull --force             # ignore 24-hours TTL and force refresh (ask via AskUserQuestion tool first)
 uip maestro case registry pull --solution-id <id>  # include a specific solution's resources
 
 # List all cached resources

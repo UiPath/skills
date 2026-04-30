@@ -113,6 +113,8 @@ When the user has registered the real resource:
 
 ### 1. Re-pull the registry
 
+**Confirm with the user via the `AskUserQuestion` tool before running** — force pull bypasses the cache, is network-heavy, and may be slow.
+
 ```bash
 uip maestro case registry pull --force
 ```
