@@ -24,6 +24,8 @@ Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-t
 
 ## tasks.md Entry Format
 
+T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in multi-trigger cases — see [planning.md §4.3](../../../planning.md).
+
 ```markdown
 ## T02: Configure event trigger "<display-name>"
 - type-id: <uiPathActivityTypeId>
