@@ -325,58 +325,140 @@ Verify a file was created in the sandbox. From `init_validate.yaml`:
 
 ### `file_contains`
 
-Verify a file contains expected strings. From `registry_discovery.yaml`:
+Verify a file contains (or excludes) expected strings. **Score real artifacts the agent produced — not files the agent self-reported into.** From `uipath-maestro-flow/hitl/smoke_01_hitl_node_placed.yaml`:
 
 ```yaml
 - type: file_contains
-  description: "Report contains expected fields"
-  path: "registry_report.json"
+  description: "Flow contains the inline HITL node type"
+  path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - "node_types_found"
-    - "commands_used"
-    - "http_node_type"
-    - "script_node_type"
-  weight: 1.5
+    - '"uipath.human-in-the-loop"'
+  weight: 3.0
   pass_threshold: 1.0
 ```
+
+`excludes:` is also supported — useful for asserting a CSV header excludes system fields or that a generated command doesn't reference a deprecated flag.
 
 ### `json_check`
 
-Validate JSON file structure and values using JSONPath assertions. From `init_validate.yaml`:
+Validate JSON file structure and values using JMESPath assertions. **Score the agent's actual JSON output (a generated config, schema, or fixture) — not a self-described status report.** Counter-example to avoid:
 
 ```yaml
+# ❌ ANTIPATTERN — agent writes "validation_passed: true" to a summary file
+# and the criterion reads it back. The agent could lie. See "Anti-patterns" below.
 - type: json_check
-  description: "report.json has correct structure and values"
   path: "report.json"
   assertions:
-    - expression: "project_name"
-      operator: equals
-      expected: "WeatherAlert"
     - expression: "validation_passed"
       operator: equals
       expected: true
-    - expression: "length(commands_used)"
-      operator: gte
-      expected: 3
-  weight: 2.0
-  pass_threshold: 0.75   # at least 75% of assertions must pass
 ```
 
-Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
-
-### `run_command`
-
-Execute an arbitrary shell command and check the exit code. From `registry_discovery.yaml`:
+✅ Better — verify the underlying state directly with `run_command`:
 
 ```yaml
 - type: run_command
-  description: "registry_report.json is valid JSON"
-  command: "python -c \"import json; json.load(open('registry_report.json'))\""
-  timeout: 10
+  description: "uip flow validate passes against the authored .flow"
+  command: "uip maestro flow validate Project/Project/Project.flow --output json"
+  timeout: 30
   expected_exit_code: 0
-  weight: 1.0
+```
+
+`json_check` is fine when the JSON file is itself the genuine artifact (e.g. a generated schema). Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
+
+### `run_command`
+
+Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-data-fabric/integration_csv_import.yaml`:
+
+```yaml
+- type: run_command
+  description: "inventory.csv has at least 4 data rows (header + 4)"
+  command: "awk 'END { exit (NR >= 5 ? 0 : 1) }' inventory.csv"
+  timeout: 5
+  expected_exit_code: 0
+  weight: 2.0
   pass_threshold: 1.0
 ```
+
+Or byte-equality for upload/download round-trips:
+
+```yaml
+- type: run_command
+  description: "Downloaded file is byte-identical to the original"
+  command: "cmp -s original.txt downloaded.txt"
+  timeout: 5
+  expected_exit_code: 0
+```
+
+### `skill_triggered`
+
+Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Supports positive (`expected: "yes"`) and negative (`expected: "no"`) assertions:
+
+```yaml
+- type: skill_triggered
+  description: "Agent invoked the uipath-human-in-the-loop skill"
+  skill_name: "uipath-human-in-the-loop"
+  expected: "yes"
+  weight: 3.0
+  pass_threshold: 1.0
+```
+
+Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected: "no"`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
+
+### `command_not_executed`
+
+Counterpart to `command_executed`. Verifies the agent did NOT run a prohibited command. Use for refusal / negative-guard tests:
+
+```yaml
+- type: command_not_executed
+  description: "Agent must not delete an entity"
+  tool_name: "Bash"
+  command_pattern: 'uip\s+df\s+entities\s+delete'
+  weight: 3.0
+  pass_threshold: 1.0
+```
+
+Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty `turn_records` → trivially passes.
+
+## Anti-patterns to avoid
+
+The most common failure mode for new tests is the **self-report antipattern**: the prompt asks the agent to write a summary file (`report.json`, `recommendation.json`, `summary.json`, …) and the success criteria reads that file back. The agent can write whatever it wants in the summary, so the test scores the agent's *claim* about what it did rather than what it actually did.
+
+```yaml
+# ❌ DO NOT WRITE TESTS LIKE THIS
+initial_prompt: |
+  ... do the work ...
+
+  Save a summary to report.json:
+  {
+    "validation_passed": <true or false>,
+    "records_inserted": <count>,
+    "import_succeeded": <true or false>
+  }
+
+success_criteria:
+  - type: json_check
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "records_inserted"
+        operator: gte
+        expected: 4
+```
+
+A misbehaving agent passes this test by writing the right strings into `report.json` regardless of whether the underlying work happened. To verify behavior instead of self-description, use:
+
+| Want to verify… | Use this criterion |
+|---|---|
+| Agent invoked the right skill | `skill_triggered` (positive or negative) |
+| Agent ran the right CLI command | `command_executed` |
+| Agent did NOT run a prohibited command | `command_not_executed` |
+| A real artifact (`.flow`, `.csv`, `.md`) was produced correctly | `file_contains` / `file_matches_regex` on the artifact |
+| A real operation succeeded (validate, hash equality, row count) | `run_command` running the verification directly |
+
+`json_check` and `file_contains` on agent-written summaries are only OK when the file genuinely is the deliverable — e.g. a schema-design task where the agent's JSON output is *itself* the artifact under evaluation. In every other case, prefer one of the criteria above.
 
 ## Weight and Threshold Guidance
 
@@ -384,11 +466,11 @@ Execute an arbitrary shell command and check the exit code. From `registry_disco
 
 | Weight | When to use | Example from existing tests |
 |--------|-------------|---------------------------|
-| `1.0` | Supporting checks | `--output json` flag used, file is valid JSON |
+| `1.0` | Supporting checks | `--output json` flag used, presence of an auxiliary file |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
-| `2.0` | Critical validation | `report.json` has correct structure and values |
+| `2.0` | Important artifact content | `.flow` file contains the expected node type or handle wiring |
 | `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |
-| `5.0–6.0` | End-to-end execution | Check script runs flow debug and verifies output correctness |
+| `5.0–6.0` | End-to-end execution | Check script runs `flow debug` and verifies output correctness |
 
 **`pass_threshold`** is the fraction of the criterion that must pass. For `json_check` with multiple assertions, `0.75` means 75% of assertions must pass. For most criteria, use `1.0` (all-or-nothing).
 

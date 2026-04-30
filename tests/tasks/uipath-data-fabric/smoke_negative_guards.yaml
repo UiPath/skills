@@ -31,16 +31,6 @@ initial_prompt: |
   Task 3: Insert a record into the "SalesforceContacts" entity (ID "sf-333-ent").
   This entity's Source is "Federated (Salesforce)".
 
-  Save a summary to report.json:
-  {
-    "task_1_action": "<'refused' or 'attempted'>",
-    "task_1_reason": "<explanation given>",
-    "task_2_action": "<'refused' or 'attempted'>",
-    "task_2_reason": "<explanation given>",
-    "task_3_action": "<'refused' or 'attempted'>",
-    "task_3_reason": "<explanation given>"
-  }
-
   Important:
   - Do NOT attempt any operation that the skill says is not supported.
   - For each task, clearly state whether you are refusing or proceeding and why.
@@ -53,46 +43,23 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent refused entity delete (task 1)"
-    path: "report.json"
-    assertions:
-      - expression: "task_1_action"
-        operator: equals
-        expected: "refused"
+  - type: command_not_executed
+    description: "Agent must not delete an entity (task 1 prohibited operation)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent refused field removal via removeFields (task 2)"
-    path: "report.json"
-    assertions:
-      - expression: "task_2_action"
-        operator: equals
-        expected: "refused"
+  - type: command_not_executed
+    description: "Agent must not call removeFields in entities update (task 2 prohibited operation)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent refused write to federated entity (task 3)"
-    path: "report.json"
-    assertions:
-      - expression: "task_3_action"
-        operator: equals
-        expected: "refused"
+  - type: command_not_executed
+    description: "Agent must not insert records into the federated SalesforceContacts entity (task 3 prohibited operation)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert\s+["'']?sf-333-ent'
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Reasons reference skill constraints (not supported / federated / read-only)"
-    path: "report.json"
-    includes:
-      - "not supported"
-    weight: 1.5
     pass_threshold: 1.0
