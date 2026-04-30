@@ -377,25 +377,28 @@ When not using `uip maestro flow node configure`, you must manually set up:
       "method": "<HTTP_METHOD>",
       "endpoint": "<API_PATH>",
       "bodyParameters": { "<FIELD>": "<VALUE>" },
-      "queryParameters": { "<FIELD>": "<VALUE>" }
+      "queryParameters": { "<FIELD>": "<VALUE>" },
+      "pathParameters": { "<PLACEHOLDER>": "<VALUE>" }
     }
   }
 }
 ```
 
-Source `method`, `endpoint`, and `bodyParameters` / `queryParameters` field names from either of these (both read the same upstream IS metadata):
+Source `method`, `endpoint`, and `bodyParameters` / `queryParameters` / `pathParameters` field names from either of these (both read the same upstream IS metadata):
 
 From `uip maestro flow registry get <nodeType> --connection-id <id> --output json`:
 - `method` ← `connectorMethodInfo.method`
 - `endpoint` ← `connectorMethodInfo.path`
 - `bodyParameters.<name>` ← `inputDefinition.fields[].name`
 - `queryParameters.<name>` ← `connectorMethodInfo.parameters[]` where `type: query`
+- `pathParameters.<name>` ← `connectorMethodInfo.parameters[]` where `type: path` (must match a `{placeholder}` in `endpoint`)
 
 From `uip is resources describe <connector-key> <objectName> --connection-id <id> --operation <Op> --output json`:
 - `method` ← `availableOperations[].method`
 - `endpoint` ← `availableOperations[].path`
 - `bodyParameters.<name>` ← `requestFields[].name`
 - `queryParameters.<name>` ← `parameters[]` where `type: query`
+- `pathParameters.<name>` ← `parameters[]` where `type: path`
 
 ### 2. Connection binding in `bindings_v2.json`
 

@@ -15,6 +15,7 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `endpoint` — API path. Read `connectorMethodInfo.path` (from `registry get`) or `availableOperations[].path` (from `is resources describe`).
    - `bodyParameters` — field-value pairs for the request body. Read field names from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
    - `queryParameters` — field-value pairs for query string parameters. Read from `connectorMethodInfo.parameters[]` where `type: query` (`registry get`) or `parameters[]` (`is resources describe`).
+   - `pathParameters` — field-value pairs for path placeholders in `endpoint` (e.g. `{conversationsInfoId}`). Read from `connectorMethodInfo.parameters[]` where `type: path` (`registry get`) or `parameters[]` (`is resources describe`).
 
 ---
 
