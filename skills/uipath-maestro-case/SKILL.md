@@ -33,14 +33,15 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 7. **Unresolved resource → skeleton, never fabricate IDs.** Keep `<UNRESOLVED: ...>` markers in `tasks.md`. Skeleton **task**: node with `type` + `displayName` + structural fields, `data: {}`; conditions still reference the TaskId. Skeleton **event trigger**: node with render fields + `data.uipath: { serviceType: "Intsvc.EventTrigger" }` only (no other `data.uipath` keys); `entry-points.json` entry appended; trigger-edge to first stage created. See [references/skeleton-tasks.md](references/skeleton-tasks.md) and [references/plugins/triggers/event/impl-json.md § Skeleton fallback](references/plugins/triggers/event/impl-json.md).
 8. **Persist every registry resolution to `registry-resolved.json`** — search query, all matches, selected result, rationale.
 9. **Cross-task refs:** `"Stage Name"."Task Name".output_name` in planning, resolve to `=vars.<outputVarId>` at execution by reading source's `var` field. Discover output names via `uip maestro case tasks describe` — never fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md).
-10. **HARD STOP between Phase 2a and Phase 2b — unconditional, every run.** Run informational `validate` (no `--mode`), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2a validate errors — unbound inputs/missing conditions/missing SLA expected. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. **On `Publish for review`: print `DesignerUrl` as plain-text output BEFORE invoking the second AskUserQuestion — never embed URL only inside the question body.** Full contract in [`references/phased-execution.md`](references/phased-execution.md).
+10. **HARD STOP between Phase 2 and Phase 3 — unconditional, every run.** Run informational `validate` (no `--mode`), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2 validate errors — unbound inputs/missing conditions/missing SLA expected. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. **On `Publish for review`: print `DesignerUrl` as plain-text output BEFORE invoking the second AskUserQuestion — never embed URL only inside the question body.** Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 11. **Never run `uip maestro case debug` automatically.** Executes case for real — emails, messages, API calls. Explicit user consent only.
 12. **`caseplan.json` mutations: Read + Write/Edit only.** No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save the file. Bash subprocesses OK for stdout-only helpers (e.g., id generation), CLI metadata fetches, validate, debug, and solution scaffold/upload. See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
 13. **Always run `uip solution resource refresh` before `uip solution upload` or `uip maestro case debug`** — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
+14. **Phase 4 (Validate) and Phase 5 (Ship) are mandatory — never skip.** Phase 4's full validate ALWAYS runs after Phase 3 completes. Phase 5's ship prompt (AskUserQuestion: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`) ALWAYS runs after Phase 4 succeeds, with the same prompt-discipline as Rule 10 — never skip for auto mode, non-interactive mode, or prior approval. The skill does not exit until the user selects `Done` from the Phase 5 prompt. Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 
 ## Workflow
 
-Three hard stops: **Planning** (sdd.md → tasks.md) → approve → **Phase 2a** (skeleton) → publish-for-review stop → **Phase 2b** (detail) → post-build.
+Five phases, three hard stops: **Phase 1 Planning** (sdd.md → tasks.md) → approve → **Phase 2 Skeleton** → publish-for-review stop → **Phase 3 Detail** → **Phase 4 Validate** → **Phase 5 Ship** (mandatory prompt loop until `Done`).
 
 ### Phase 1 — Planning
 
@@ -51,7 +52,7 @@ Read [references/planning.md](references/planning.md). Produces:
 
 HARD STOP: AskUserQuestion approval. Loop on `Request changes`.
 
-### Phase 2a — Skeleton build
+### Phase 2 — Skeleton build
 
 Read [references/implementation.md](references/implementation.md) + [references/phased-execution.md](references/phased-execution.md). Builds structural shape only:
 
@@ -61,9 +62,9 @@ Read [references/implementation.md](references/implementation.md) + [references/
 4. Stages (Step 7), edges (Step 8)
 5. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `is describe`); unresolved as skeletons per Rule 7
 6. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-7. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 2b` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+7. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 3` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
-### Phase 2b — Detail build
+### Phase 3 — Detail build
 
 Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 
@@ -71,9 +72,27 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 2. I/O binding all task classes (Step 9.8) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
 3. Conditions all 4 scopes (Step 10)
 4. SLA + escalation (Step 11)
-5. Full validate (Step 12). Retry up to 3×; on 3rd failure AskUserQuestion: `Retry with fix` / `Pause for manual edit` / `Abort`
-6. Dump `build-issues.md` (Step 12.1)
-7. Post-build loop (Step 13) — AskUserQuestion until `Done`
+
+Phase 3 ends after Step 11. Do NOT validate, debug, or publish here — those are Phase 4 / Phase 5.
+
+### Phase 4 — Validate
+
+Always runs after Phase 3. Mandatory.
+
+1. Full validate (Step 12) — `uip maestro case validate` (no `--mode` flag).
+2. On failure: agent triages errors and **directly edits `caseplan.json`** to fix them — do not re-run Phase 3 steps. Re-validate. Cap at 3 retries.
+3. On 3rd failure: AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort`.
+4. Dump `build-issues.md` (Step 12.1).
+
+### Phase 5 — Ship
+
+Always runs after Phase 4 success. Mandatory user-gated loop.
+
+1. Report results (Step 13) — case path, build summary, validation status, skeletons, missing connections.
+2. **HARD STOP — unconditional, every run.** AskUserQuestion: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`. Same prompt-discipline as Rule 10 — never skip for auto mode, non-interactive mode, prior approval.
+3. On `Run debug session` (Step 14) — execute case, stream results. On debug error: agent triages from error message, directly edits `caseplan.json` to fix, re-runs debug. Cap at 3 retries; on 3rd failure surface the error to the user via AskUserQuestion `Retry` / `Pause for manual edit` / `Abort`.
+4. On `Publish to Studio Web` (Step 15) — `uip solution resource refresh` + `uip solution upload`. Share returned DesignerUrl.
+5. After debug or publish completes, return to the prompt. Loop until `Done`.
 
 ## Reference Navigation
 
@@ -81,7 +100,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 |---|---|
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
-| Phase 2a/2b split + hard stop contract | [references/phased-execution.md](references/phased-execution.md) |
+| Phase contracts + hard stops + failure handling | [references/phased-execution.md](references/phased-execution.md) |
 | Edit caseplan.json directly | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
 | Surviving CLI commands (registry, validate, debug, runtime) | [references/case-commands.md](references/case-commands.md) |
@@ -139,7 +158,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 ## Anti-patterns
 
 - **Do NOT leave stages without an inbound edge.** Orphaned and unreachable. Every stage needs ≥1 inbound edge from Trigger or another stage.
-- **Do NOT validate after each T-entry.** Intermediate states expected invalid. Run `validate` once at end of Phase 2a (informational) and once at end of Phase 2b (authoritative).
+- **Do NOT validate after each T-entry.** Intermediate states expected invalid. Run `validate` once at end of Phase 2 (informational) and once in Phase 4 (authoritative).
 - **Do NOT batch multiple T-entries into one JSON write.** Each T-entry: own Read → mutate → Write cycle. Composing large in-memory JSON across stages/edges/tasks hides intermediate state, breaks review.
 - **Do NOT place multiple tasks in same lane.** FE renders same-lane tasks stacked — unreadable. Each task own `lane` index in `stageNode.data.tasks[laneIndex][]`. Lane is layout only, no execution semantics.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.

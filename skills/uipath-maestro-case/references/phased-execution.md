@@ -1,24 +1,27 @@
-# Phased Execution: Phase 2a → Hard Stop → Phase 2b
+# Phased Execution: Five Phases
 
-Authoritative reference for the two-phase implementation flow. Read before executing any T-entry from an approved `tasks.md`.
+Authoritative reference for the five-phase implementation flow. Read before executing any T-entry from an approved `tasks.md`.
 
-> **Relationship to other docs.** This document defines the phase boundary. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
+> **Relationship to other docs.** This document defines the phase contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
-## Why two phases
+## Why phased execution
 
-After `tasks.md` is approved, the skill does **not** build the full case in one pass. It first builds a **skeleton** — enough structure for the user to review the case graph visually in Studio Web — then hard-stops for approval before wiring the detail (I/O values, conditions, SLA).
+After `tasks.md` is approved, the skill does **not** build the full case in one pass. It first builds a **skeleton** — enough structure for the user to review the case graph visually in Studio Web — then hard-stops for approval before wiring the detail (I/O values, conditions, SLA). After the detail is written, validation runs as its own phase, and shipping (debug + publish) runs as its own user-gated phase.
 
-This gives the user a review checkpoint on the shape of the case before the agent commits to detail work that is costly to redo.
+This split gives the user a review checkpoint on the shape of the case before the agent commits to detail work that is costly to redo, and ensures validate + ship can never be silently skipped.
 
 ## Phase boundaries
 
-| Phase | What gets built | Output |
+| Phase | What gets built / done | Output |
 |---|---|---|
-| **2a — Skeleton build** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; validate run for info only (expected to report unbound inputs / missing conditions / missing SLA) |
-| **Hard stop** | User reviews via Studio Web (optional), then approves / aborts | User choice captured via AskUserQuestion |
-| **2b — Detail build** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` passes full validation |
+| **1 — Planning** | sdd.md → `tasks.md` + `registry-resolved.json` | Approved `tasks.md` |
+| **2 — Skeleton build** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; informational validate run (expected to report unbound inputs / missing conditions / missing SLA) |
+| **Hard stop (2 → 3)** | User reviews via Studio Web (optional), then approves / aborts | User choice captured via AskUserQuestion |
+| **3 — Detail build** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for validation |
+| **4 — Validate** | Authoritative full validate; agent fixes errors via direct `caseplan.json` edits and re-validates (cap 3 retries); dump `build-issues.md` | `caseplan.json` passes full validation |
+| **5 — Ship** | Mandatory hard-stop AskUserQuestion loop: `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`. Debug + publish are options inside the loop, not separate phases. | User exits via `Done` |
 
-## Phase 2a — What gets written
+## Phase 2 — What gets written
 
 ### Structural nodes (full detail)
 
@@ -31,43 +34,43 @@ This gives the user a review checkpoint on the shape of the case before the agen
 
 ### Tasks (shape depends on resolution state + task class)
 
-| Task class | Resolved resources | Phase 2a shape |
+| Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs populated per plugin. |
-| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data` contains `type-id` and `connection-id` only. `data.inputs` omitted or empty. **No `is resources describe` / `is triggers describe` call in 2a** — schema discovery is deferred to 2b. |
+| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data` contains `type-id` and `connection-id` only. `data.inputs` omitted or empty. **No `is resources describe` / `is triggers describe` call in Phase 2** — schema discovery is deferred to Phase 3. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Skeleton task per Rule 7 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [skeleton-tasks.md](skeleton-tasks.md). |
 
-### What does NOT get written in Phase 2a
+### What does NOT get written in Phase 2
 
 - Task input `value` bindings (literals, expressions, cross-task references).
 - Connector task input/output schemas.
 - Conditions of any scope (stage-entry, stage-exit, task-entry, case-exit).
 - SLA rules (default, conditional) and escalation rules.
 
-## Phase 2a informational validate
+## Phase 2 informational validate
 
-At the end of Phase 2a, run regular validate:
+At the end of Phase 2, run regular validate:
 
 ```bash
 uip maestro case validate "<caseplan.json path>" --output json
 ```
 
-**This call is informational only — do NOT halt on errors or warnings.** Phase 2a state is expected to be invalid: unbound required input values, missing condition rules, missing terminal exit, missing secondary-stage exit conditions, missing SLA. All of those are resolved in Phase 2b.
+**This call is informational only — do NOT halt on errors or warnings.** Phase 2 state is expected to be invalid: unbound required input values, missing condition rules, missing terminal exit, missing secondary-stage exit conditions, missing SLA. All of those are resolved in Phase 3.
 
 Capture the error and warning counts (and optionally the first few messages) and include them in the hard-stop summary. The user decides whether the skeleton is worth publishing/continuing, or whether something looks off and they want to `Abort` for inspection.
 
 **Do not parse the validate output for "expected" vs "unexpected" errors.** The skill does not try to classify validation errors at this boundary — if the user sees something that looks like a true structural bug (dangling edge, missing trigger, duplicate names), they choose `Abort` and fix it before re-running. Simpler, no false negatives from misclassification.
 
-## Hard stop
+## Hard stop (Phase 2 → Phase 3)
 
-**Unconditional.** Present a summary, then prompt the user via AskUserQuestion. The prompt is MANDATORY on every run — auto mode, non-interactive mode, and prior blanket approval do NOT bypass it. The only valid transition from Phase 2a to Phase 2b is a user response to this AskUserQuestion. If the harness refuses interactive prompts, halt with an explicit error rather than proceeding silently.
+**Unconditional.** Present a summary, then prompt the user via AskUserQuestion. The prompt is MANDATORY on every run — auto mode, non-interactive mode, and prior blanket approval do NOT bypass it. The only valid transition from Phase 2 to Phase 3 is a user response to this AskUserQuestion. If the harness refuses interactive prompts, halt with an explicit error rather than proceeding silently.
 
 ### Summary content
 
 Print before the prompt:
 
 1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / skeleton tasks / unresolved resources.
-2. Validate result (informational): `<N> errors, <M> warnings` — call out that Phase 2a state is expected invalid (unbound inputs / missing conditions / missing SLA are all filled in Phase 2b). Surfacing the counts is enough; do not dump the full error list unless the user asks.
+2. Validate result (informational): `<N> errors, <M> warnings` — call out that Phase 2 state is expected invalid (unbound inputs / missing conditions / missing SLA are all filled in Phase 3). Surfacing the counts is enough; do not dump the full error list unless the user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -77,7 +80,7 @@ Do not enumerate every task. Studio Web visualization fills that role after publ
 Use **AskUserQuestion** with three options:
 
 - `Publish for review` — upload skeleton to Studio Web for visual review.
-- `Skip publish and continue` — proceed directly to Phase 2b.
+- `Skip publish and continue` — proceed directly to Phase 3.
 - `Abort` — stop the skill; leave artifacts in place.
 
 ### On `Publish for review`
@@ -87,15 +90,15 @@ Use **AskUserQuestion** with three options:
 3. **MUST emit DesignerUrl as plain-text output to the user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
    Never bundle the URL only into the question body — some renderers display the question before the surrounding prose, leaving the user without the URL until after they answer.
-4. Only after the URL line has been emitted, invoke **AskUserQuestion** (second prompt): `Continue to phase 2b` / `Abort`.
+4. Only after the URL line has been emitted, invoke **AskUserQuestion** (second prompt): `Continue to phase 3` / `Abort`.
 
 If `DesignerUrl` is missing from the response, dump the full upload response to `tasks/upload-response.json`, print that path, and continue to the prompt — the user can recover the URL from the file.
 
-Do not warn the user about Studio Web edits being overwritten. Phase 2b's final Step 13 prompt re-publishes the completed case, which overwrites any volatile review-time edits with the final local state. The user can compare Studio Web state before and after Phase 2b to spot any edits they want to preserve.
+Do not warn the user about Studio Web edits being overwritten. Phase 5's publish action re-publishes the completed case, which overwrites any volatile review-time edits with the final local state. The user can compare Studio Web state before and after Phase 3 to spot any edits they want to preserve.
 
 ### On `Skip publish and continue`
 
-Proceed directly to Phase 2b.
+Proceed directly to Phase 3.
 
 ### On `Abort`
 
@@ -105,21 +108,21 @@ Proceed directly to Phase 2b.
 
 Do **not** delete any artifacts. The user may want to inspect them, or re-run the skill later (which regenerates `tasks.md` from scratch per Rule 5).
 
-## Phase 2b re-entry protocol
+## Phase 3 re-entry protocol
 
-Phase 2b begins after the user selects `Continue to phase 2b` (or `Skip publish and continue`). Before executing any 2b step:
+Phase 3 begins after the user selects `Continue to phase 3` (or `Skip publish and continue`). Before executing any Phase 3 step:
 
 1. **Re-read `tasks.md`** — per Rule 6. The declarative plan is the handoff.
-2. **Re-read `caseplan.json`** — the authoritative source of all IDs generated in Phase 2a:
+2. **Re-read `caseplan.json`** — the authoritative source of all IDs generated in Phase 2:
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"` or `"case-management:ExceptionStage"`, keyed on `data.label`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from `root.data.uipath.variables.{inputs,outputs,inputOutputs}`).
 3. Optionally cross-check against `id-map.json` if the JSON-strategy plugins wrote one. `caseplan.json` is the source of truth; `id-map.json` is a speed-up.
 
-Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — context may be compacted across the hard stop.
+Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across the hard stop.
 
-## Phase 2b — Execution order
+## Phase 3 — Execution order
 
 After re-entry:
 
@@ -128,18 +131,94 @@ After re-entry:
 3. **Conditions** — per-scope plugin `impl-json.md`:
    - Stage entry conditions
    - Stage exit conditions
-   - Task entry conditions (depends on TaskIds from Phase 2a)
+   - Task entry conditions (depends on TaskIds from Phase 2)
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
-5. **Full validate** — `uip maestro case validate "<file>" --output json` (no `--mode` flag; defaults to full). Retry policy per `SKILL.md` Anti-patterns ("Do NOT validate after each command"): validate once after full Phase 2b build; up to 3 retries.
-6. **Dump `build-issues.md`** per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
-7. **Post-build prompt** — existing Step 13 from [implementation.md](implementation.md): `Run debug session` / `Publish to Studio Web` / `Done` / `Something else`.
+
+Phase 3 ends after step 4. Do **not** validate, debug, or publish here — those are Phase 4 / Phase 5.
+
+## Phase 4 — Validate
+
+Always runs after Phase 3 completes. Mandatory.
+
+### Step order
+
+1. **Full validate** — `uip maestro case validate "<file>" --output json` (no `--mode` flag; defaults to full).
+2. **On failure**: agent reads the `[error]` / `[warning]` entries (each has a path + message), triages, and **directly edits `caseplan.json` to fix them**. Do **not** re-run Phase 3 plugin steps — the agent has enough context from the validate output and the existing file to make targeted fixes (e.g., add a missing condition rule, correct a binding expression, fix a malformed SLA target). Re-validate. Repeat up to 3 retries.
+3. **On 3rd failure**: AskUserQuestion with the remaining errors and options — `Retry with fix` / `Pause for manual edit` / `Abort`.
+4. **Dump `build-issues.md`** per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md). Write even if zero issues were logged (confirms a clean build).
+
+### Why direct edits, not plugin re-runs
+
+The agent has full context of the case at this point — it has the `tasks.md`, the assembled `caseplan.json`, and the validate error message. Fixing a single condition node, binding expression, or SLA rule via direct JSON edit is faster and more surgical than re-invoking a plugin's `impl-json.md` recipe. Plugin recipes are designed for greenfield writes, not error-driven repairs.
+
+### Failure recovery options
+
+- **`Retry with fix`** — user provides a hint or correction; agent applies it and re-validates. Counter resets.
+- **`Pause for manual edit`** — user edits `caseplan.json` manually outside the skill; agent re-validates when the user resumes.
+- **`Abort`** — dump `build-issues.md`, print paths, exit. Same cleanup as the Phase 2 → 3 hard-stop abort.
+
+## Phase 5 — Ship
+
+Always runs after Phase 4 success. Mandatory user-gated loop.
+
+### Report
+
+Before the prompt, report:
+
+1. File path of `caseplan.json`.
+2. What was built — summary of stages, edges, tasks, conditions, SLA.
+3. Validation status — `validate` pass + retry count.
+4. Skeleton tasks + unresolved resources — list every skeleton (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [skeleton-tasks.md](skeleton-tasks.md).
+5. Missing connections — connector tasks needing IS connections that don't exist yet.
+
+### Hard-stop prompt
+
+**Unconditional.** Same prompt-discipline as the Phase 2 → 3 hard stop — never skip for auto mode, non-interactive mode, or prior approval. If the harness refuses interactive prompts, halt with an explicit error rather than proceeding silently.
+
+Use **AskUserQuestion** with options:
+
+- `Run debug session` — proceed to debug action.
+- `Publish to Studio Web` — proceed to publish action.
+- `Done` — exit the skill.
+- `Something else` — free-form prompt.
+
+After debug or publish completes, return to this prompt so the user can chain the other action (e.g., debug first, then publish). Exit only when the user selects `Done`.
+
+### Debug action
+
+```bash
+uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json
+```
+
+> **Run only on explicit user selection of `Run debug session`.** Debug executes the case for real — sends emails, posts messages, calls APIs, writes to databases.
+
+Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
+
+**On debug error**: `case debug` returns error messages (runtime exception, missing connection, bad input value, etc.). Agent triages from the error, **directly edits `caseplan.json` to fix** (same approach as Phase 4 — agent has enough context to make targeted fixes), and re-runs debug. Cap at 3 retries.
+
+**On 3rd debug failure**: surface the error to the user via AskUserQuestion `Retry` / `Pause for manual edit` / `Abort`. Same recovery semantics as Phase 4.
+
+After debug success, return to the Phase 5 hard-stop prompt.
+
+### Publish action
+
+```bash
+uip solution resource refresh "<SolutionDir>" --output json
+uip solution upload "<SolutionDir>" --output json
+```
+
+**Default publish target is Studio Web.** Accepts the solution directory directly — no intermediate bundling step. Share the returned `DesignerUrl` with the user.
+
+> **Do NOT run `uip maestro case pack` + `uip solution publish` unless the user explicitly asks for Orchestrator deployment.** That path puts the case directly into Orchestrator, bypassing Studio Web.
+
+After publish success, return to the Phase 5 hard-stop prompt.
 
 ## Skeleton tasks — unchanged semantics
 
-Skeleton tasks (empty `data: {}` for unresolved resources) behave the same in both phases. Phase 2a creates them; Phase 2b does **not** upgrade them to typed tasks — upgrading requires the user to register the missing resource externally. See [skeleton-tasks.md](skeleton-tasks.md).
+Skeleton tasks (empty `data: {}` for unresolved resources) behave the same in both build phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires the user to register the missing resource externally. See [skeleton-tasks.md](skeleton-tasks.md).
 
-Phase 2b still wires skeleton TaskIds into:
+Phase 3 still wires skeleton TaskIds into:
 - Task-entry conditions that reference the skeleton.
 - Stage-exit `selected-tasks-completed` rules that include the skeleton.
 
@@ -147,21 +226,24 @@ It does **not** write `data.inputs` / `data.outputs` for skeletons. Input bindin
 
 ## Abort semantics
 
-Abort can occur at either hard-stop prompt:
+Abort can occur at any of these prompts:
 
-- `Abort` at the first prompt (`Publish for review` / `Skip` / `Abort`).
-- `Abort` at the second prompt (`Continue to phase 2b` / `Abort`) after publishing.
+- Phase 2 → 3 hard stop, first prompt: `Publish for review` / `Skip` / `Abort`.
+- Phase 2 → 3 hard stop, second prompt: `Continue to phase 3` / `Abort` (after publishing).
+- Phase 4 retry exhaustion prompt: `Retry with fix` / `Pause for manual edit` / `Abort`.
+- Phase 5 debug retry exhaustion prompt: `Retry` / `Pause for manual edit` / `Abort`.
 
-Both follow the same cleanup:
+All follow the same cleanup:
 
 1. Dump `build-issues.md`.
-2. Print paths.
+2. Print paths of `caseplan.json`, `tasks.md`, `registry-resolved.json`, and the solution directory.
 3. Exit.
 
 No artifact deletion. No rollback. The user owns the partial state.
 
 ## Out of scope
 
-- **Re-ingesting Studio Web edits.** If the user edits the published skeleton in Studio Web during review, those edits are not round-tripped back into local `caseplan.json`. Phase 2b writes on top of local state; the final Step 13 re-publish overwrites Studio Web with the completed local build.
-- **Resuming an aborted session.** Re-running the skill regenerates `tasks.md` from scratch (Rule 5) and re-executes both phases from Phase 2a Step 1.
-- **A dedicated skeleton validation mode.** The skill does not depend on a `--mode skeleton` CLI flag. Regular `uip maestro case validate` runs at end of Phase 2a for informational output only; expected Phase 2a errors are not filtered or classified here.
+- **Re-ingesting Studio Web edits.** If the user edits the published skeleton in Studio Web during review, those edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; the Phase 5 publish overwrites Studio Web with the completed local build.
+- **Resuming an aborted session.** Re-running the skill regenerates `tasks.md` from scratch (Rule 5) and re-executes all phases from Phase 2 Step 1.
+- **A dedicated skeleton validation mode.** The skill does not depend on a `--mode skeleton` CLI flag. Regular `uip maestro case validate` runs at end of Phase 2 for informational output only; expected Phase 2 errors are not filtered or classified here.
+- **Back-edges from Phases 1–3.** Phases 1 through 3 are forward-only. Failures within them follow each plugin's graceful-degradation contract (log to issue list, continue), not back-edges to earlier phases. Only Phase 4 and Phase 5 have failure recovery loops, and those recover via direct `caseplan.json` edits, not by re-running earlier phases' plugin steps.

@@ -8,8 +8,8 @@ Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes 
 
 Run at these two points only:
 
-1. **End of Phase 2a Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
-2. **End of Phase 2b Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache
+1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
+2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache
 
 Individual task plugins write root bindings to `caseplan.json` per-task as normal. The batch regeneration reads the full `root.data.uipath.bindings[]` once and converts everything in one pass.
 

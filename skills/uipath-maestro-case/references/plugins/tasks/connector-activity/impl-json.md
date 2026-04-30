@@ -1,6 +1,6 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
-> **Phase split.** Runs across both phases. Phase 2a writes `data.type-id` + `data.connection-id` only; **do NOT call `is resources describe` in 2a**. Phase 2b runs `is resources describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Runs across both phases. Phase 2 writes `data.type-id` + `data.connection-id` only; **do NOT call `is resources describe` in Phase 2**. Phase 3 runs `is resources describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Fetch connector metadata via CLI, then write the task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md`.
 
