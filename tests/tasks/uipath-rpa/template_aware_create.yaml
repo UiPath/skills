@@ -97,7 +97,7 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: file_check
     description: "Agent did NOT pick BlankTemplate as the template-id"
     path: "report.json"
     excludes:
