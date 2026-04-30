@@ -94,7 +94,7 @@ for item in data:
 
 If no match is found across all relevant cache files:
 
-1. Force-refresh the cache and retry. **Confirm with the user before running** — force pull bypasses the cache, is network-heavy, and may be slow:
+1. Force-refresh the cache and retry. **Confirm with the user via the `AskUserQuestion` tool before running** — force pull bypasses the cache, is network-heavy, and may be slow:
    ```bash
    uip maestro case registry pull --force
    ```
