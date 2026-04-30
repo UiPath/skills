@@ -43,9 +43,6 @@ No remote discovery needed — the tool agent is another project in the same sol
     "processName": "ToolAgent",
     "folderPath": "solution_folder"
   },
-  "guardrail": {
-    "policies": []              // Auto-populated by validate from root-level guardrails. Do not edit manually. See ../guardrails/guardrails.md.
-  },
   "id": "<uuid>",
   "referenceKey": "",           // Leave empty; validate resolves it and writes it back to disk
   "isEnabled": true,
@@ -116,9 +113,6 @@ Create a tool resource file at `AgentA/resources/Agent B/resource.json`:
   "properties": {
     "processName": "Agent B",
     "folderPath": "solution_folder"  // ← always solution_folder for solution resources
-  },
-  "guardrail": {
-    "policies": []                  // Auto-populated by validate from root-level guardrails. Do not edit manually. See ../guardrails/guardrails.md.
   },
   "argumentProperties": {}
 }

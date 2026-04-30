@@ -36,7 +36,7 @@ These rules are the canonical source for low-code agent authoring. Capability fi
 
 16. **Never invoke other skills automatically.** If the user needs flow operations, tell them to use the `uipath-maestro-flow` skill.
 
-17. **Read [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) before authoring guardrail JSON.** The schema uses discriminator fields (`$guardrailType`, `$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. Configure guardrails at the agent.json root `guardrails` array; never edit `guardrail.policies` on tool resources by hand.
+17. **Read [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) before authoring guardrail JSON.** The schema uses discriminator fields (`$guardrailType`, `$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. Configure guardrails at the agent.json root `guardrails` array only.
 
 ## What NOT to Do (17)
 
@@ -55,5 +55,5 @@ These rules are the canonical source for low-code agent authoring. Capability fi
 13. **Do not pass `--for-low-code-agents` to `uip is connectors list` or `uip is activities list`** — this flag has been removed. Run the commands without it and filter yourself if needed.
 14. **Do not omit discriminator fields in guardrails** — every action needs `$actionType` (not `type`), every validator parameter needs `$parameterType` and `id` (not `name`), every custom rule needs `$ruleType`, every field selector needs `$selectorType`. Missing any discriminator causes `uip agent validate` to fail.
 15. **Do not use lowercase scope values in guardrails** — use `"Agent"`, `"Llm"`, `"Tool"` (PascalCase), not `"agent"`, `"llm"`, `"tool"`.
-16. **Do not manually edit `guardrail.policies` on tool resources** — it is auto-populated by `uip agent validate` from root-level guardrails. Configure guardrails at the agent.json root `guardrails` array only.
+16. **Do not populate `guardrail.policies` on tool resource JSON files** — that field is a legacy schema artifact from when guardrails were tool-only scoped. All guardrails are now configured at the agent.json root `guardrails` array with `selector.scopes` and `selector.matchNames`. Tool resource `guardrail.policies` must always remain empty `[]`.
 17. **Do not expect `uip solution resource refresh` to wire non-StorageBucket index data sources** — GoogleDrive/OneDrive/Dropbox/Confluence/Attachments indexes, `attachments` contexts, and `datafabricentityset` contexts are not auto-generated. Refresh warns + skips them; any solution-level files for these must be hand-authored. See [capabilities/context/index.md](capabilities/context/index.md).
