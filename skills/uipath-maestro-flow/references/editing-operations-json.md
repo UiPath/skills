@@ -398,7 +398,7 @@ From `uip is resources describe <connector-key> <objectName> --connection-id <id
 - `endpoint` ← `availableOperations[].path`
 - `bodyParameters.<name>` ← `requestFields[].name`
 - `queryParameters.<name>` ← `parameters[]` where `type: query`
-- `pathParameters.<name>` ← `parameters[]` where `type: path`
+- `pathParameters.<name>` ← `parameters[]` where `type: path` (must match a `{placeholder}` in `endpoint`)
 
 ### 2. Connection binding in `bindings_v2.json`
 
