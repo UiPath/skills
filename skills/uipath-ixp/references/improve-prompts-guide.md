@@ -44,7 +44,7 @@ Do NOT re-read the taxonomy or sample documents between iterations — use what 
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
-uip ixp project metrics <project-name> --output json
+uip ixp projects get-metrics <project-name> --output json
 ```
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
@@ -61,7 +61,7 @@ Build this mapping once and reuse it throughout the loop.
 If many fields have low scores across the board, the model configuration may be wrong (e.g., no table pre-processing for table-heavy documents). View sample documents and check if the current config matches the document type. If not, reconfigure:
 
 ```bash
-uip ixp project configure-model <project-name> \
+uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
   --attribution model \
@@ -73,7 +73,7 @@ See the [Project Setup Guide](project-setup-guide.md) Step 2 for the decision ta
 ### 1c. Get taxonomy
 
 ```bash
-uip ixp project taxonomy <project-name> --output json
+uip ixp projects get-taxonomy <project-name> --output json
 ```
 
 Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. This includes `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each `update-prompts` (v2, v3, …).
@@ -83,11 +83,11 @@ The field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to
 ### 1d. Read sample documents (2-3 documents)
 
 ```bash
-uip ixp document list <project-name> --output json
+uip ixp documents list <project-name> --output json
 
 # For each sample document:
-uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
-uip ixp document text <project-name> <document-id> --output json
+uip ixp documents get-image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
+uip ixp documents get-text <project-name> <document-id> --output json
 ```
 
 Save OCR output to `/tmp/ixp/<project-name>/text/sample.json`. View the images with the **Read tool** and review the OCR text. These files persist across sessions — check for existing files before downloading.
@@ -188,7 +188,7 @@ cat > /tmp/ixp/<project-name>/prompts/group_updates.json << 'GROUPS_EOF'
 ]
 GROUPS_EOF
 
-uip ixp project update-prompts <project-name> \
+uip ixp projects update-prompts <project-name> \
   --fields "$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)" \
   --groups "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
   --output json
@@ -199,7 +199,7 @@ uip ixp project update-prompts <project-name> \
 **Post-update verification:** After `update-prompts`, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
 
 ```bash
-uip ixp project taxonomy <project-name> --output json > /tmp/ixp/<project-name>/taxonomies/v<N>.json
+uip ixp projects get-taxonomy <project-name> --output json > /tmp/ixp/<project-name>/taxonomies/v<N>.json
 ```
 
 Compare the number of fields in each updated label_def against the previous version. If any fields are missing, **STOP the workflow immediately** and report to the user — the taxonomy was corrupted and needs manual restoration. The previous taxonomy version has the old instructions for rollback.
@@ -213,7 +213,7 @@ Wait ~2 minutes for the model to retrain with the updated instructions, then rev
 Wait ~2 minutes for the model to retrain with the new labellings, then:
 
 ```bash
-uip ixp project metrics <project-name> --output json
+uip ixp projects get-metrics <project-name> --output json
 ```
 
 If `ModelVersion` hasn't advanced since the last check, wait another 60 seconds and retry.
@@ -235,7 +235,7 @@ cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
 [{"name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
-uip ixp project update-prompts <project-name> \
+uip ixp projects update-prompts <project-name> \
   --fields "$(cat /tmp/ixp/<project-name>/prompts/rollback.json)" \
   --output json
 ```

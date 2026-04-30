@@ -11,8 +11,8 @@ Claude acts as a **reviewer** — IXP generates predictions, Claude validates th
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
-uip ixp document list <project-name> --output json
-uip ixp project taxonomy <project-name> --output json
+uip ixp documents list <project-name> --output json
+uip ixp projects get-taxonomy <project-name> --output json
 ```
 
 Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
@@ -26,7 +26,7 @@ For each document from the list, process one at a time: get predictions, downloa
 ### 2a. Get predictions for this document
 
 ```bash
-uip ixp labelling predictions <project-name> <document-id> --output json
+uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
 This returns the document's predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
@@ -37,8 +37,8 @@ This returns the document's predicted `Labels` (grouped by field group name), ea
 - **Otherwise, download** the document image and OCR text:
 
 ```bash
-uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id>.png --output json
-uip ixp document text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/<document-id>.txt --output json
+uip ixp documents get-image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id>.png --output json
+uip ixp documents get-text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/<document-id>.txt --output json
 ```
 
 Use the document ID as the filename — it's unique and lets you match files to documents without tracking a counter. These files persist across sessions — check for existing files before downloading.
@@ -80,7 +80,7 @@ Submit confirmed and corrected fields for this document.
 **If there are corrections:**
 
 ```bash
-uip ixp labelling confirm <project-name> <document-id> \
+uip ixp labellings confirm <project-name> <document-id> \
   --fields "<all_confirmed_and_corrected_ids>" \
   --corrections '[{"field_id":"<id>","value":"<corrected_value>"}]' \
   --output json
@@ -91,14 +91,14 @@ The `--fields` list includes both CONFIRMED and CORRECTED field IDs. The `--corr
 **If there are no corrections (all approved fields are exact matches):**
 
 ```bash
-uip ixp labelling confirm <project-name> <document-id> \
+uip ixp labellings confirm <project-name> <document-id> \
   --fields "<field_id_1>,<field_id_2>,<field_id_3>" --output json
 ```
 
 If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm everything:
 
 ```bash
-uip ixp labelling confirm <project-name> <document-id> --output json
+uip ixp labellings confirm <project-name> <document-id> --output json
 ```
 
 ### 2e. Move to the next document

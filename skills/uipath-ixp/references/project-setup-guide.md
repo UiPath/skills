@@ -9,13 +9,13 @@ If the user provides a name, use it. If not, generate a temporary name (e.g., `i
 **Option A — Auto-suggest taxonomy (default):**
 
 ```bash
-uip ixp project create "<name>" <folder-path> --output json
+uip ixp projects create "<name>" <folder-path> --output json
 ```
 
 If the user specified what to extract, add `-d` for a better taxonomy suggestion:
 
 ```bash
-uip ixp project create "<name>" <folder-path> -d "<what to extract>" --output json
+uip ixp projects create "<name>" <folder-path> -d "<what to extract>" --output json
 ```
 
 This uploads documents and auto-suggests a taxonomy based on the document content (and the description if provided).
@@ -25,14 +25,14 @@ This uploads documents and auto-suggests a taxonomy based on the document conten
 If the user provides a taxonomy file, create a blank project and import separately:
 
 ```bash
-uip ixp project create "<name>" <folder-path> --skip-taxonomy --output json
-uip ixp project import-taxonomy <project-name> <taxonomy-file> --output json
+uip ixp projects create "<name>" <folder-path> --skip-taxonomy --output json
+uip ixp projects import-taxonomy <project-name> <taxonomy-file> --output json
 ```
 
 The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
 
 - `{ "field_types": [...], "label_group": {...} }` — use when importing a taxonomy suggested by a previous `project create` run
-- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project (exported via `uip ixp project taxonomy`)
+- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project (exported via `uip ixp projects get-taxonomy`)
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
@@ -47,8 +47,8 @@ mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 Before labelling, configure the extraction model based on what the documents look like. Download 2-3 sample document images and view them:
 
 ```bash
-uip ixp document list <project-name> --output json
-uip ixp document image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
+uip ixp documents list <project-name> --output json
+uip ixp documents get-image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
 ```
 
 View with the **Read tool**, then decide:
@@ -63,7 +63,7 @@ View with the **Read tool**, then decide:
 Apply the configuration:
 
 ```bash
-uip ixp project configure-model <project-name> \
+uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
   --attribution model \
@@ -77,7 +77,7 @@ uip ixp project configure-model <project-name> \
 Based on the taxonomy from Step 1 (e.g., if it has "Invoice Details", "Line Items", "Bill-To" → it's an invoices project), give the project a descriptive title:
 
 ```bash
-uip ixp project rename <project-name> "Vendor Invoices" --output json
+uip ixp projects update-title <project-name> "Vendor Invoices" --output json
 ```
 
 Skip this step if the user already provided a meaningful name in Step 1.
