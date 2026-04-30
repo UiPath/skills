@@ -64,7 +64,7 @@ Extract from response (take first entry):
 - `InputArguments` → JSON Schema string → agent-level `inputSchema` (parse JSON)
 - `OutputArguments` → JSON Schema string → agent-level `outputSchema` (parse JSON)
 
-## Agent-Level Resource Shape
+## Tool resource.json Shape
 
 **Path:** `<AGENT_NAME>/resources/{ToolName}/resource.json`
 
@@ -89,9 +89,6 @@ Extract from response (take first entry):
     "processName": "MyProcess",
     "folderPath": "solution_folder",  // Always "solution_folder" — for both solution-internal and external
     "exampleCalls": []                // Required for external tools
-  },
-  "guardrail": {
-    "policies": []
   },
   "id": "<uuid>",              // Stable; generate once, never change
   "referenceKey": "<release-key-guid>", // For external: the release Key (lowercase GUID from /odata/Releases API). For solution-internal: leave empty, validate resolves it.
@@ -170,7 +167,7 @@ Then create the agent-level resource file:
 
 **Agent-level resource** — `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json`
 
-Set `"location": "external"`, `"type"` directly from `resource list`'s `Type` field (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath": "solution_folder"`, `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See § Agent-Level Resource Shape above for the full template.
+Set `"location": "external"`, `"type"` directly from `resource list`'s `Type` field (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath": "solution_folder"`, `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See § Tool resource.json Shape above for the full template.
 
 ```bash
 # 5. Configure agent.json (system prompt, model, schemas)
