@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-case
-description: "UiPath Case Management authoring (caseplan.json) from sdd.md. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow."
+description: "UiPath Case Management authoring (caseplan.json) from sdd.md, or via lightweight interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow. For PDD→SDD or complex/multi-product→uipath-solution-design."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -10,11 +10,14 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, is describe) and solution boundary operations (`uip solution new` / `project add` / `upload`).
 
-**Scope:** new case from `sdd.md` only. Modifying existing case not supported (no remote fetch tooling).
+When `sdd.md` is absent, **Phase 0 interview** generates one interactively from a lightweight 4-round Q&A (open describe → skeleton + gap-fill → registry resolution → review). Threshold-exceeded scenarios (>7 stages, >14 tasks, >3 integrations, >3 personas, child case) redirect to `uipath-solution-design`.
+
+**Scope:** new case from `sdd.md` (user-provided or Phase 0-generated). Modifying existing case not supported (no remote fetch tooling).
 
 ## When to Use This Skill
 
 - User provides `sdd.md` and wants Case Management project built
+- User asks to create new case management project but has no `sdd.md` (Phase 0 interview generates one)
 - User asks to create new case management project or definition
 - User asks to generate implementation tasks from `sdd.md` or convert spec to plan
 - User asks about case management JSON schema — nodes, edges, tasks, rules, SLA
@@ -24,7 +27,8 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 
 ## Critical Rules
 
-1. **sdd.md is sole input.** Trust as written. Skill does not validate or gap-fill. If ambiguous, use AskUserQuestion — never infer silently.
+0. **Phase 0 interview when `sdd.md` absent.** Generate `sdd.md` via 4-round lightweight Q&A; output requires explicit user approval (Round 4 hard-stop) before treating as Rule 1 input. Apply complexity thresholds (>7 stages, >14 tasks, >3 integrations, >3 personas, child case) — soft-redirect to `uipath-solution-design` on breach. Never overwrite an existing `sdd.md`. See [references/phase-0-interview.md](references/phase-0-interview.md).
+1. **sdd.md is sole input post-Phase-0.** After Phase 0 approval (or when user-provided), trust as written. Skill does not validate or gap-fill. If ambiguous, use AskUserQuestion — never infer silently.
 2. **Run `uip maestro case registry pull` before planning.** Discovery reads cache files at `~/.uipcli/case-resources/<type>-index.json` directly. `registry search` has known gaps (esp. action-apps). See [references/registry-discovery.md](references/registry-discovery.md).
 3. **`--output json` on every parsed read.**
 4. **Follow plugin per node type.** Open matching `planning.md` during planning + `impl-json.md` during execution. Never guess JSON shapes from memory.
@@ -35,12 +39,25 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 9. **Cross-task refs:** `"Stage Name"."Task Name".output_name` in planning, resolve to `=vars.<outputVarId>` at execution by reading source's `var` field. Discover output names via `uip maestro case tasks describe` — never fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md).
 10. **HARD STOP between Phase 2a and Phase 2b — unconditional, every run.** Run informational `validate` (no `--mode`), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2a validate errors — unbound inputs/missing conditions/missing SLA expected. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. **On `Publish for review`: print `DesignerUrl` as plain-text output BEFORE invoking the second AskUserQuestion — never embed URL only inside the question body.** Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 11. **Never run `uip maestro case debug` automatically.** Executes case for real — emails, messages, API calls. Explicit user consent only.
-12. **`caseplan.json` mutations: Read + Write/Edit only.** No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save the file. Bash subprocesses OK for stdout-only helpers (e.g., id generation), CLI metadata fetches, validate, debug, and solution scaffold/upload. See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
+12. **All skill artifacts: Read + Write/Edit only.** Applies to `caseplan.json`, `sdd.md`, `sdd.draft.md`, `tasks.md`, `tasks/registry-resolved.json`. No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save these files. Bash subprocesses OK for stdout-only helpers (e.g., id generation), CLI metadata fetches, validate, debug, and solution scaffold/upload. See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
 13. **Always run `uip solution resource refresh` before `uip solution upload` or `uip maestro case debug`** — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
+14. **Never auto-invoke `uipath-solution-design`.** On Phase 0 threshold breach or stuck-round detection, print plain-text suggestion of the skill name. User re-invokes manually. No tool-call cross-skill handoff.
 
 ## Workflow
 
-Three hard stops: **Planning** (sdd.md → tasks.md) → approve → **Phase 2a** (skeleton) → publish-for-review stop → **Phase 2b** (detail) → post-build.
+Four hard stops: **Phase 0** (interview → sdd.md, only when sdd.md absent) → approve → **Planning** (sdd.md → tasks.md) → approve → **Phase 2a** (skeleton) → publish-for-review stop → **Phase 2b** (detail) → post-build.
+
+### Phase 0 — Interview (conditional)
+
+Triggered only when `sdd.md` is absent at the resolved path. Read [references/phase-0-interview.md](references/phase-0-interview.md). Produces:
+
+- `sdd.md` — generated from 4-round Q&A, fills `assets/templates/sdd-template.md`
+- `tasks/registry-resolved.json` — per-task registry resolutions persisted from Round 3
+- `sdd.draft.md` — intermediate, deleted on approval
+
+Rounds: (1) open describe + archetype + upfront triage → (2) skeleton + gap-fill + mid-check threshold → (3) per-task registry pick → (4) review + HARD STOP. On any threshold breach (>7 stages, >14 tasks, >3 integrations, >3 personas, child case), soft-redirect AskUserQuestion: `Switch to uipath-solution-design` / `Continue lightweight anyway` / `Abort`. Override path adds warning header to generated `sdd.md`.
+
+If `sdd.md` already exists: skip Phase 0, hand to Phase 1 unchanged (zero behavior change for existing users).
 
 ### Phase 1 — Planning
 
@@ -79,6 +96,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 
 | I need to... | Read |
 |---|---|
+| Generate sdd.md interactively when none provided | [references/phase-0-interview.md](references/phase-0-interview.md) |
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
 | Phase 2a/2b split + hard stop contract | [references/phased-execution.md](references/phased-execution.md) |
