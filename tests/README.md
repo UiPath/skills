@@ -325,7 +325,7 @@ Verify a file was created in the sandbox. From `init_validate.yaml`:
 
 ### `file_contains`
 
-Verify a file contains (or excludes) expected strings. **Score real artifacts the agent produced — not files the agent self-reported into.** From `uipath-maestro-flow/hitl/smoke_01_hitl_node_placed.yaml`:
+Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow/hitl/smoke_01_hitl_node_placed.yaml`:
 
 ```yaml
 - type: file_contains
@@ -337,34 +337,11 @@ Verify a file contains (or excludes) expected strings. **Score real artifacts th
   pass_threshold: 1.0
 ```
 
-`excludes:` is also supported — useful for asserting a CSV header excludes system fields or that a generated command doesn't reference a deprecated flag.
+`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value.
 
 ### `json_check`
 
-Validate JSON file structure and values using JMESPath assertions. **Score the agent's actual JSON output (a generated config, schema, or fixture) — not a self-described status report.** Counter-example to avoid:
-
-```yaml
-# ❌ ANTIPATTERN — agent writes "validation_passed: true" to a summary file
-# and the criterion reads it back. The agent could lie. See "Anti-patterns" below.
-- type: json_check
-  path: "report.json"
-  assertions:
-    - expression: "validation_passed"
-      operator: equals
-      expected: true
-```
-
-✅ Better — verify the underlying state directly with `run_command`:
-
-```yaml
-- type: run_command
-  description: "uip flow validate passes against the authored .flow"
-  command: "uip maestro flow validate Project/Project/Project.flow --output json"
-  timeout: 30
-  expected_exit_code: 0
-```
-
-`json_check` is fine when the JSON file is itself the genuine artifact (e.g. a generated schema). Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
+Validate JSON file structure and values using JMESPath assertions. Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
 
 ### `run_command`
 
@@ -419,46 +396,6 @@ Counterpart to `command_executed`. Verifies the agent did NOT run a prohibited c
 ```
 
 Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty `turn_records` → trivially passes.
-
-## Anti-patterns to avoid
-
-The most common failure mode for new tests is the **self-report antipattern**: the prompt asks the agent to write a summary file (`report.json`, `recommendation.json`, `summary.json`, …) and the success criteria reads that file back. The agent can write whatever it wants in the summary, so the test scores the agent's *claim* about what it did rather than what it actually did.
-
-```yaml
-# ❌ DO NOT WRITE TESTS LIKE THIS
-initial_prompt: |
-  ... do the work ...
-
-  Save a summary to report.json:
-  {
-    "validation_passed": <true or false>,
-    "records_inserted": <count>,
-    "import_succeeded": <true or false>
-  }
-
-success_criteria:
-  - type: json_check
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "records_inserted"
-        operator: gte
-        expected: 4
-```
-
-A misbehaving agent passes this test by writing the right strings into `report.json` regardless of whether the underlying work happened. To verify behavior instead of self-description, use:
-
-| Want to verify… | Use this criterion |
-|---|---|
-| Agent invoked the right skill | `skill_triggered` (positive or negative) |
-| Agent ran the right CLI command | `command_executed` |
-| Agent did NOT run a prohibited command | `command_not_executed` |
-| A real artifact (`.flow`, `.csv`, `.md`) was produced correctly | `file_contains` / `file_matches_regex` on the artifact |
-| A real operation succeeded (validate, hash equality, row count) | `run_command` running the verification directly |
-
-`json_check` and `file_contains` on agent-written summaries are only OK when the file genuinely is the deliverable — e.g. a schema-design task where the agent's JSON output is *itself* the artifact under evaluation. In every other case, prefer one of the criteria above.
 
 ## Weight and Threshold Guidance
 
