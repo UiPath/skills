@@ -26,7 +26,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --output json
 ```
 
-Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [commands.md — uip maestro flow hitl add](../../commands.md#uip-maestro-flow-hitl-add).
+Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [commands.md — uip maestro flow hitl add](../../shared/commands.md#uip-maestro-flow-hitl-add).
 
 ### Quick Reference
 
@@ -176,7 +176,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ### If the app does not exist yet
 

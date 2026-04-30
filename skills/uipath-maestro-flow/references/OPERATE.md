@@ -20,13 +20,11 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 ## Workflow
 
-> Populated in Phase 4.
-
-| Journey | Read |
-|---|---|
-| Publish a flow to Studio Web or Orchestrator | [operate/ship.md](operate/ship.md) |
-| Run a flow on demand or check progress | [operate/run.md](operate/run.md) |
-| Intervene in a running instance | [operate/manage.md](operate/manage.md) |
+> Populated in Phase 4. Planned journey docs (links activate when files land):
+>
+> - Publish a flow to Studio Web or Orchestrator → `operate/ship.md`
+> - Run a flow on demand or check progress → `operate/run.md`
+> - Intervene in a running instance → `operate/manage.md`
 
 ## Common tasks
 

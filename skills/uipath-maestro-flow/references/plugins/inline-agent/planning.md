@@ -40,7 +40,7 @@ Do not inline an agent you intend to reuse. Inline agents are private to the flo
 | --- | --- | --- | --- |
 | `input` | left | target | Flow sequence input |
 | `success` | right | source | Normal flow output |
-| `error` | right | source | Implicit error port (shared with all action nodes) — see [Implicit error port on action nodes](../../file-format.md#implicit-error-port-on-action-nodes) |
+| `error` | right | source | Implicit error port (shared with all action nodes) — see [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) |
 | `tool` | bottom | source (artifact) | Connect tool resource nodes |
 | `context` | bottom | source (artifact) | Connect context resource nodes |
 | `escalation` | top | source (artifact) | Connect escalation resource nodes |

@@ -28,7 +28,7 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 1. **Locate the canonical `.flow` file.** Before any Write/Edit, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution new <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `.flow` Write/Edit to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
 2. **Definitions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the `Data.Node` object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Never hand-write or paraphrase (Critical Rule #7).
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
-4. **`targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (Critical Rule #6). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](file-format.md).
+4. **`targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (Critical Rule #6). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](shared/file-format.md).
 5. **Node outputs block.** Every data-producing node needs an `outputs` block on the node instance (not just in `definitions`). Action nodes: `output` + `error`. Trigger nodes: `output`. End/terminate: none. (Critical Rule #18.)
 6. **`variables.nodes`.** Add an entry for the new node's outputs. Optional under today's runtime, but expected for completeness and diff clarity.
 7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
@@ -69,9 +69,9 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 }
 ```
 
-> **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [file-format.md — Node outputs](file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
+> **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [file-format.md — Node outputs](shared/file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
 
-> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [file-format.md — Instance-specific fields that live in `inputs`](file-format.md#instance-specific-fields-that-live-in-inputs).
+> **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [file-format.md — Instance-specific fields that live in `inputs`](shared/file-format.md#instance-specific-fields-that-live-in-inputs).
 
 > **No `ui` block on nodes.** Do NOT put `position`, `size`, or `collapsed` on the node. Add a layout entry instead (step 5).
 
@@ -138,7 +138,7 @@ Add an edge object to the `edges` array:
 
 **Critical:** `targetPort` is required on every edge. Omitting it produces a validation error.
 
-See each plugin's `planning.md` or [file-format.md — Standard ports](file-format.md) for port names by node type.
+See each plugin's `planning.md` or [file-format.md — Standard ports](shared/file-format.md) for port names by node type.
 
 ### Delete an edge
 
@@ -183,7 +183,7 @@ Add an entry to `variables.globals`:
 For `out` variables: add output mapping to **every reachable End node** (see below).
 For `inout` variables: add `variableUpdates` entries on nodes that modify the state.
 
-See [variables-and-expressions.md](variables-and-expressions.md) for the full schema, type system, and scoping rules.
+See [variables-and-expressions.md](shared/variables-and-expressions.md) for the full schema, type system, and scoping rules.
 
 ### Add output mapping on an End node
 

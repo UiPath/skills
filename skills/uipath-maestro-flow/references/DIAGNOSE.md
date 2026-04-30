@@ -19,12 +19,10 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 ## Workflow
 
-> Populated in Phase 3.
-
-| Journey | Read |
-|---|---|
-| Triage a failed run (priority ladder) | [diagnose/troubleshooting-guide.md](diagnose/troubleshooting-guide.md) |
-| Look up a known failure mode | [diagnose/failure-modes.md](diagnose/failure-modes.md) |
+> Populated in Phase 3. Planned journey docs (links activate when files land):
+>
+> - Triage a failed run (priority ladder) → `diagnose/troubleshooting-guide.md`
+> - Look up a known failure mode → `diagnose/failure-modes.md`
 
 ## Common tasks
 

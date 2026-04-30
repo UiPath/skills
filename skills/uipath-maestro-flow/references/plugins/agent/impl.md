@@ -103,7 +103,7 @@ Add one entry per `(resourceKey, propertyAttribute)` pair. Share entries across 
 ]
 ```
 
-> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+> For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
 
 ## Accessing Output
 

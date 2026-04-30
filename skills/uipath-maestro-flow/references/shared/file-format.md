@@ -22,7 +22,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 `solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
 
-> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](plugins/connector/impl.md) for the connector-binding shape.
+> **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../plugins/connector/impl.md) for the connector-binding shape.
 
 ## Project structure (from `uip maestro flow init`)
 
@@ -140,7 +140,7 @@ Trigger nodes (manual, scheduled, connector triggers) have a single output — n
 }
 ```
 
-End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](plugins/end/impl.md)).
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](../plugins/end/impl.md)).
 
 ## Layout
 
@@ -176,7 +176,7 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See [subflow/impl.md](plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See [subflow/impl.md](../plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -220,7 +220,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 
 > The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
 
-For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](planning-impl.md).
+For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](../planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](../planning-impl.md).
 
 Discover all available types:
 ```bash
@@ -462,7 +462,7 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 
 **Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. Critical Rule #7 applies unchanged.
 
-See each resource plugin's `impl.md` for the full JSON per node type: [rpa](plugins/rpa/impl.md), [agent](plugins/agent/impl.md), [flow](plugins/flow/impl.md), [agentic-process](plugins/agentic-process/impl.md), [api-workflow](plugins/api-workflow/impl.md), [hitl](plugins/hitl/impl.md).
+See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../plugins/rpa/impl.md), [agent](../plugins/agent/impl.md), [flow](../plugins/flow/impl.md), [agentic-process](../plugins/agentic-process/impl.md), [api-workflow](../plugins/api-workflow/impl.md), [hitl](../plugins/hitl/impl.md).
 
 **Not to be confused with `bindings_v2.json`.** That file holds connector connection bindings for Integration Service nodes — a separate system. A flow may have both: a top-level `bindings[]` for resource references and a `bindings_v2.json` file for connector connections.
 

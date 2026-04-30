@@ -76,7 +76,7 @@ uip maestro flow edge add <ProjectName>.flow <SOURCE_NODE_ID> <TARGET_NODE_ID> -
 - Inserts edge into `edges` array with a generated `id`
 - Sets `targetPort` (required — validate rejects edges without it)
 
-See each plugin's `planning.md` or [file-format.md — Standard ports](file-format.md) for port names by node type.
+See each plugin's `planning.md` or [file-format.md — Standard ports](shared/file-format.md) for port names by node type.
 
 ### Delete an edge
 

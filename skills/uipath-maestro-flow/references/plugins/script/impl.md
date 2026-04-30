@@ -48,7 +48,7 @@ For step-by-step add, delete, and wiring procedures, see [editing-operations.md]
 
 1. **Must `return` an object** — `return { key: value }`, not a bare scalar. The return value becomes `$vars.{nodeId}.output`.
 2. **`$vars` is a global** — use it directly: `return { upper: $vars.input1.toUpperCase() }`
-3. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../variables-and-expressions.md) for supported features and Jint constraints
+3. **JavaScript ES2020 (Jint engine)** — see [variables-and-expressions.md](../../shared/variables-and-expressions.md) for supported features and Jint constraints
 4. **No `console.log`** — `console` is not available. Use `return { debug: value }` to inspect values.
 5. **No external calls** — use HTTP node or connector nodes for API calls
 6. **30-second timeout** — long-running computations will be killed

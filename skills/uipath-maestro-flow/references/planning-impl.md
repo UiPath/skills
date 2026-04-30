@@ -227,7 +227,7 @@ See [agent/planning.md](plugins/agent/planning.md) for the full decision table. 
 
 ## Expressions and Variables
 
-For the **complete reference** on variables (declaration, types, scoping, variable updates) and expressions (`=js:`, templates, Jint constraints), see [variables-and-expressions.md](variables-and-expressions.md).
+For the **complete reference** on variables (declaration, types, scoping, variable updates) and expressions (`=js:`, templates, Jint constraints), see [variables-and-expressions.md](shared/variables-and-expressions.md).
 
 ### Quick Reference
 

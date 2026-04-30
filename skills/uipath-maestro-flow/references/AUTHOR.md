@@ -21,12 +21,10 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 ## Workflow
 
-> Populated in Phase 2.
-
-| Journey | Read |
-|---|---|
-| Create a new flow from scratch | [author/greenfield.md](author/greenfield.md) |
-| Edit an existing flow | [author/brownfield.md](author/brownfield.md) |
+> Populated in Phase 2. Planned journey docs (links activate when files land):
+>
+> - Create a new flow from scratch → `author/greenfield.md`
+> - Edit an existing flow → `author/brownfield.md`
 
 ## Common tasks
 

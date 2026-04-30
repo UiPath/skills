@@ -25,7 +25,7 @@ Use a Script node for custom logic, data transformation, computation, or formatt
 | `input` | `success`, `error` |
 
 - `success` — primary output; fires when the script returns normally.
-- `error` — implicit error port shared with all action nodes. Fires on uncaught script exceptions, returned non-object values, or timeout. See [Implicit error port on action nodes](../../file-format.md#implicit-error-port-on-action-nodes).
+- `error` — implicit error port shared with all action nodes. Fires on uncaught script exceptions, returned non-object values, or timeout. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ## Output Variables
 

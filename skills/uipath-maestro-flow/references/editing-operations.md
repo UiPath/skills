@@ -59,12 +59,12 @@ These apply regardless of which strategy you use.
 
 - Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow tidy` — do not hand-compute coordinates
 - When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save
-- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [commands.md](commands.md#uip-maestro-flow-tidy)
+- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [commands.md](shared/commands.md#uip-maestro-flow-tidy)
 
 ### Edge rules
 
 - `targetPort` is required on every edge — validate rejects edges without it
-- See [file-format.md — Standard ports](file-format.md) for port names by node type
+- See [file-format.md — Standard ports](shared/file-format.md) for port names by node type
 - Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`output`/`success`/`loopBack`)
 
 ### Validation
@@ -79,7 +79,7 @@ These apply regardless of which strategy you use.
 - Use `=js:` on **value expressions**: end node output `source`, variable updates, HTTP input fields, node `inputs` values
 - Do NOT use `=js:` on **condition expressions**: decision `expression`, switch case `expression`, HTTP branch `conditionExpression` — these are always evaluated as JS automatically
 
-See [variables-and-expressions.md](variables-and-expressions.md) for the full expression reference.
+See [variables-and-expressions.md](shared/variables-and-expressions.md) for the full expression reference.
 
 ---
 
@@ -96,6 +96,6 @@ See [variables-and-expressions.md](variables-and-expressions.md) for the full ex
 | Replace a mock placeholder (non-connector) | [JSON guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI guide — Replace a mock](editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) |
 | Replace a trigger type (non-connector) | [JSON guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
 | Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
-| Understand the `.flow` JSON schema | [file-format.md](file-format.md) |
-| Look up CLI flags and syntax | [commands.md](commands.md) |
-| Work with variables and expressions | [variables-and-expressions.md](variables-and-expressions.md) |
+| Understand the `.flow` JSON schema | [file-format.md](shared/file-format.md) |
+| Look up CLI flags and syntax | [commands.md](shared/commands.md) |
+| Work with variables and expressions | [variables-and-expressions.md](shared/variables-and-expressions.md) |
