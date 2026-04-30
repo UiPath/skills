@@ -1,5 +1,7 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
+> **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe`. See SKILL.md Rule 16 + Plugin Index.
+
 > **Phase split.** Runs across both phases. Phase 2a writes `data.type-id` + `data.connection-id` only; **do NOT call `is resources describe` in 2a**. Phase 2b runs `is resources describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Fetch connector metadata via CLI, then write the task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md`.
@@ -162,7 +164,7 @@ Copy `enrichment.configuration` from Step 2 as-is. The CLI pre-builds this `=jso
 
 > **Do NOT hand-construct this string.** Previous versions of this doc had a manual template that produced incorrect `instanceParameters` (missing `httpMethod`, `supportsStreaming`, `subType`) and wrong `operation` values. The CLI now returns the correct pre-built string.
 
-> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 7 — do not hand-construct.
+> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 8 — do not hand-construct.
 
 ### 3e. `data.inputs[]`
 
@@ -247,7 +249,7 @@ Append the task to the target stage's `tasks[]` array in its own task set (one t
 | Step failed | What gets populated | Log |
 |---|---|---|
 | get-connection | Context from tasks.md values only. No bindings, no bindings_v2 sync — folderKey unknown | `[SKIPPED] get-connection failed — bindings/folderKey omitted` |
-| tasks describe | Context + bindings + bindings_v2. No outputs, no `enrichment.configuration`, no `inputMetadata`, no `multipartParameters` — write skeleton per Rule 7 | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
+| tasks describe | Context + bindings + bindings_v2. No outputs, no `enrichment.configuration`, no `inputMetadata`, no `multipartParameters` — write skeleton per Rule 8 | `[SKIPPED] tasks describe failed — outputs/enrichment omitted` |
 | All succeed | Full population per §3a-3h including bindings_v2 sync | — |
 
 All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).
