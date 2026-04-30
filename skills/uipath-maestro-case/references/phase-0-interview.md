@@ -94,7 +94,14 @@ If any quantitative threshold breached → §Soft redirect.
 
 ### Round 3 — Registry resolution
 
-For each task in `sdd.draft.md`, search `~/.uipcli/case-resources/<type>-index.json` by name keywords (run `uip maestro case registry pull` first if cache absent — see [registry-discovery.md](registry-discovery.md)).
+For each task in `sdd.draft.md`, search the matching cache file under `~/.uipcli/case-resources/` by name keywords. Filename varies by component type — common cases:
+
+- `process-index.json`, `agent-index.json`, `api-index.json`, `processOrchestration-index.json`, `caseManagement-index.json` — `<type>-index.json` shape
+- `action-apps-index.json` — kebab + plural for HITL action apps
+- `typecache-activities-index.json` — for `execute-connector-activity` (`CONNECTOR_ACTIVITY`)
+- `typecache-triggers-index.json` — for `wait-for-connector` (`CONNECTOR_TRIGGER`)
+
+Run `uip maestro case registry pull` first if cache absent. See [registry-discovery.md § Cache File Index](registry-discovery.md#cache-file-index) for the authoritative file list, identifier fields, and cross-type fallback rules.
 
 Per-task AskUserQuestion (4 options max):
 
