@@ -238,7 +238,47 @@ Example entry:
 
 > **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
 
-**Step 2 — Construct and add the escalate action** in `agent.json`'s `guardrails` array:
+**Step 2 — Validate the app's action schema**
+
+A guardrail escalation app must expose a specific action schema contract. Validate **before** writing the guardrail JSON. If any check below fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1).
+
+**SECURITY:** Never read `~/.uipath/.auth` directly — keep the token inside the shell. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
+
+2a. Look up `systemName` and `deployVersion` from the Apps API (use `Key` from Step 1 to filter client-side by `id`):
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a; curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-apps?state=deployed&pageNumber=0&limit=100" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"'
+```
+
+From the entry whose `id` matches the `Key` from Step 1, extract `systemName` and `deployVersion`. If no entry matches → report error and stop.
+
+2b. Fetch the action schema:
+
+```bash
+bash -c 'set -a; source ~/.uipath/.auth; set +a; curl -s \
+  "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/apps_/default/api/v1/default/action-schema?appSystemName=<SYSTEM_NAME>&version=<DEPLOY_VERSION>" \
+  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
+  -H "X-Uipath-Tenantid: $UIPATH_TENANT_ID" \
+  -H "Accept: application/json"'
+```
+
+If the response is empty, not valid JSON, or missing the `inputs`/`outputs`/`outcomes` arrays → report error and stop.
+
+2c. Check required arguments by name. All three categories must pass — the app may have extra arguments beyond these, but must have at least:
+
+| Category | Required Names |
+|----------|---------------|
+| `inputs` (8) | `GuardrailName`, `GuardrailDescription`, `TenantName`, `AgentTrace`, `Tool`, `ExecutionStage`, `ToolInputs`, `ToolOutputs` |
+| `outputs` (3) | `ReviewedInputs`, `ReviewedOutputs`, `Reason` |
+| `outcomes` (2) | `Approve`, `Reject` |
+
+Validation is **name-only** — types, `required` flags, and `isList` are not checked. Verify every required name appears in the corresponding array's `name` fields. If any required name is missing → report error and stop.
+
+**Step 3 — Construct and add the escalate action** in `agent.json`'s `guardrails` array:
 
 ```json
 {
@@ -255,7 +295,7 @@ Example entry:
 
 `app.id` and `app.name` come from Step 1. `app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — these are fixed values for solution-embedded apps.
 
-**Step 3 — Generate solution resource files**
+**Step 4 — Generate solution resource files**
 
 Run these two commands from the solution root:
 
@@ -267,7 +307,7 @@ uip solution resource refresh --output json
 - `validate` generates `bindings_v2.json` with a `resource: "app"` binding for the escalation app.
 - `refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service by name, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
 
-**Step 4 — Upload:**
+**Step 5 — Upload:**
 
 ```bash
 uip solution upload . --output json
@@ -860,6 +900,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
 12. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
 13. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
+14. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
 
 ## Walkthrough
 

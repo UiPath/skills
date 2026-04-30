@@ -1,0 +1,92 @@
+task_id: skill-agent-guardrail-escalation-app-validation
+description: >
+  Guardrail escalation app action schema validation. Asks the agent to add
+  an escalate guardrail using an incompatible Action Center app
+  ("EscalationWorksApp") that does NOT have the required guardrail schema
+  (missing 8 required inputs, 3 required outputs, wrong outcome names).
+  The agent must validate the action schema and reject the app with the
+  error message instead of writing the guardrail.
+tags: [uipath-agents, e2e, low-code]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "ValidationSol" containing a low-code agent
+  "ReviewAgent" that handles compliance review requests.
+  Then add a built-in PII detection guardrail that escalates violations
+  to a human reviewer instead of blocking.
+
+  Guardrail requirements:
+  - validatorType: pii_detection
+  - Detect Email entities, threshold 0.5
+  - Scope: Agent level
+  - Action: use $actionType "escalate"
+  - Escalation app name: "EscalationWorksApp"
+  - Recipient email: reviewer@example.com (type 3)
+
+  Use path-based commands from the working directory (no cd required):
+    uip solution new "ValidationSol" --output json
+    uip agent init "ValidationSol/ReviewAgent" --output json
+    uip solution project add "ValidationSol/ReviewAgent" --output json
+    uip agent guardrails list --output json
+    uip solution resource list --kind App --source remote --output json
+
+  You MUST validate the app's action schema before using it in the
+  escalate action. If the app does not have the required schema,
+  report the error and do NOT write the guardrail.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Do NOT write a plan file. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent looked up the escalation app"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the action schema via the Apps API"
+    tool_name: "Bash"
+    command_pattern: 'action-schema|action-apps'
+    min_count: 1
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent rejected the incompatible app — no escalate guardrail written in agent.json"
+    command: "python3 $TASK_DIR/check_guardrail_escalation_app_validation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
