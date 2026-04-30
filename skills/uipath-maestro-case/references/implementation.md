@@ -224,6 +224,10 @@ uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level de
 
 Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
 
+## Step 14a — Troubleshoot failed case
+
+When a debug or process run fails, read **[references/troubleshooting-guide.md](references/troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
+
 ## Step 15 — Optional: Publish to Studio Web
 
 **Default publish target.** Uploads the case to Studio Web for visualization and editing.
