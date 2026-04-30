@@ -166,7 +166,7 @@ Manage the local resource cache. Requires `uip login` for tenant-specific resour
 ```bash
 # Refresh cache from all resource types
 uip maestro case registry pull
-uip maestro case registry pull --force             # ignore 30-min TTL and force refresh (ask via AskUserQuestion tool first)
+uip maestro case registry pull --force             # ignore 24-hours TTL and force refresh (ask via AskUserQuestion tool first)
 uip maestro case registry pull --solution-id <id>  # include a specific solution's resources
 
 # List all cached resources
