@@ -46,6 +46,13 @@ initial_prompt: |
   - For each task, clearly state whether you are refusing or proceeding and why.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-data-fabric skill before reasoning about the requests"
+    skill_name: "uipath-data-fabric"
+    expected: "yes"
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "report.json was created"
     path: "report.json"

@@ -13,23 +13,10 @@ initial_prompt: |
   How do I reassign a pending Action Center task that has been sitting for
   3 days without a response to a different user in our team?
 
-  Write an answer.json file with:
-  {
-    "answer": "<your guidance on how to reassign Action Center tasks>",
-    "hitl_authoring_needed": <true or false>
-  }
-
 success_criteria:
-  - type: file_exists
-    description: "Agent wrote an answer.json"
-    path: "answer.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Agent did not recommend HITL authoring"
-    path: "answer.json"
-    includes:
-      - '"hitl_authoring_needed": false'
-    weight: 2.0
+  - type: skill_triggered
+    description: "Agent did NOT invoke the uipath-human-in-the-loop skill (HITL not appropriate here)"
+    skill_name: "uipath-human-in-the-loop"
+    expected: "no"
+    weight: 3.0
     pass_threshold: 1.0

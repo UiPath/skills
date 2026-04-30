@@ -14,36 +14,10 @@ initial_prompt: |
   records to a human to fill in the missing data before the invoice is
   posted to the accounting system.
 
-  Write a recommendation.json file with:
-  {
-    "hitl_needed": <true or false>,
-    "pattern": "<which business pattern applies>",
-    "proposed_schema": {
-      "inputs": ["<what the human sees — already extracted fields>"],
-      "inOuts": ["<fields the human fills in and returns>"],
-      "outcomes": ["<button names>"]
-    }
-  }
-
 success_criteria:
-  - type: file_exists
-    description: "Agent wrote a recommendation.json"
-    path: "recommendation.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Agent identified HITL is needed"
-    path: "recommendation.json"
-    includes:
-      - '"hitl_needed": true'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Agent used inOuts (not just outputs) for the fill-in fields"
-    path: "recommendation.json"
-    includes:
-      - "inOut"
-    weight: 1.5
+  - type: skill_triggered
+    description: "Agent invoked the uipath-human-in-the-loop skill"
+    skill_name: "uipath-human-in-the-loop"
+    expected: "yes"
+    weight: 3.0
     pass_threshold: 1.0

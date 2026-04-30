@@ -13,47 +13,10 @@ initial_prompt: |
   sign-off from our data privacy officer before the deletion actually runs —
   we need an audit trail for every decision.
 
-  Write a recommendation.json file with:
-  {
-    "hitl_needed": <true or false>,
-    "pattern": "<which business pattern applies>",
-    "proposed_schema": {
-      "inputs": ["<what the privacy officer will see>"],
-      "outputs": ["<what they fill in>"],
-      "outcomes": ["<their decision options>"]
-    }
-  }
-
 success_criteria:
-  - type: file_exists
-    description: "Agent wrote a recommendation.json"
-    path: "recommendation.json"
-    weight: 1.0
+  - type: skill_triggered
+    description: "Agent invoked the uipath-human-in-the-loop skill"
+    skill_name: "uipath-human-in-the-loop"
+    expected: "yes"
+    weight: 3.0
     pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Agent identified HITL is needed"
-    path: "recommendation.json"
-    includes:
-      - '"hitl_needed": true'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent identified a compliance / audit / sign-off / approval pattern (any one, case-tolerant)"
-    path: "recommendation.json"
-    assertions:
-      - expression: "pattern"
-        operator: contains
-        expected: "udit"
-      - expression: "pattern"
-        operator: contains
-        expected: "omplianc"
-      - expression: "pattern"
-        operator: contains
-        expected: "ign"
-      - expression: "pattern"
-        operator: contains
-        expected: "pprov"
-    weight: 1.5
-    pass_threshold: 0.25

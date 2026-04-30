@@ -49,6 +49,13 @@ initial_prompt: |
     the specific skill rule that applies.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-tasks skill before reasoning about the requests"
+    skill_name: "uipath-tasks"
+    expected: "yes"
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "report.json was created"
     path: "report.json"

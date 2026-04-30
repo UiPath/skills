@@ -14,48 +14,10 @@ initial_prompt: |
   the agent confidence is below 70%, a human needs to step in and make the
   final call before the complaint is routed.
 
-  Write a recommendation.json file with:
-  {
-    "hitl_needed": <true or false>,
-    "pattern": "<which business pattern applies>",
-    "insertion_point": "<where in the flow the HITL node should go>",
-    "proposed_schema": {
-      "inputs": ["<field names>"],
-      "outcomes": ["<button names>"]
-    }
-  }
-
 success_criteria:
-  - type: file_exists
-    description: "Agent wrote a recommendation.json"
-    path: "recommendation.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Agent identified HITL is needed"
-    path: "recommendation.json"
-    includes:
-      - '"hitl_needed": true'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent identified an escalation pattern"
-    path: "recommendation.json"
-    assertions:
-      - expression: "pattern"
-        operator: contains
-        expected: "scalat"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent proposed an insertion point after the AI classifier (case-tolerant)"
-    path: "recommendation.json"
-    assertions:
-      - expression: "insertion_point"
-        operator: contains
-        expected: "lassif"
-    weight: 1.0
+  - type: skill_triggered
+    description: "Agent invoked the uipath-human-in-the-loop skill"
+    skill_name: "uipath-human-in-the-loop"
+    expected: "yes"
+    weight: 3.0
     pass_threshold: 1.0
