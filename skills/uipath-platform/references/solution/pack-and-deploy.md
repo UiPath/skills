@@ -22,10 +22,11 @@ graph LR
     A[solution pack] --> B[solution publish]
     B --> C[deploy config get]
     C --> D[config set / link]
-    D --> E[deploy run]
+    D --> E["deploy run<br/>(auto-activate by default)"]
     B --> E
     E --> F[deploy status]
     E --> G[deploy list]
+    E -->|--skip-activate| H[deploy activate]
 ```
 
 ---
@@ -75,12 +76,20 @@ This uploads to Studio Web for collaborative editing. It does **not** place the 
 
 ## Step 4: Deploy to Orchestrator
 
-Deploy the published package. This creates a new Orchestrator folder and provisions all solution resources inside it:
+Deploy the published package. By default this creates a new Orchestrator folder, provisions all solution resources, **and activates the deployment** in one call:
 
 ```bash
 uip solution deploy run -n "InvoiceAutomation-v2" \
   --package-name "MySolution" --package-version "2.0.0" \
   --folder-name "MySolutionFolder" --output json
+```
+
+A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. If the package requires configuration before it can activate, deploy still succeeds but activation surfaces an explicit error pointing at `deploy activate <name>` — fix the config and retry the activate.
+
+To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
+
+```bash
+uip solution deploy run … --skip-activate --output json
 ```
 
 Key options:
@@ -94,8 +103,9 @@ Key options:
 | `--folder-path <path>` | Parent folder under which the new folder is created | -- |
 | `--folder-key <key>` | Parent folder key (GUID, alternative to `--folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
-| `--timeout <seconds>` | Polling timeout | 360 |
-| `--poll-interval <ms>` | Polling interval | 5000 |
+| `--skip-activate` | Skip the post-deploy activation; leaves the deployment in `Inactive (Ready to activate)` | (off — auto-activate) |
+| `--timeout <seconds>` | Polling timeout, applied per phase (deploy and, when not skipped, activate) | 360 |
+| `--poll-interval <ms>` | Polling interval used during both phases | 5000 |
 | `-t, --tenant <name>` | Tenant override | Current tenant |
 
 ## Step 5: Check Deployment Status
@@ -106,12 +116,7 @@ The `deploy run` command returns a pipeline deployment ID. Use it to check progr
 uip solution deploy status <pipeline-deployment-id> --output json
 ```
 
-> **Heads up:** `deploy run`'s polling is unreliable for long-running deployments. The CLI may print
-> `Result: Failure / Deployment polling failed: Response returned an error code` and `deploy status`
-> may then return `HTTP 404 Pipeline deployment not found` even when the deployment **succeeded**
-> server-side (the pipeline record can expire shortly after completion). Always cross-check with
-> `solution deploy list` and look up the deployment by name before treating a polling failure as a
-> real error.
+The CLI also falls back to the persistent `searchSearchDeployments22` record if the pipeline service has already recycled the in-flight tracking ID — so a deployment that finishes while the CLI is between polls is still surfaced as `DeploymentSucceeded` rather than a polling failure.
 
 ## Step 6: List Deployments
 

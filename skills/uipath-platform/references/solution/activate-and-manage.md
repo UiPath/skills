@@ -31,7 +31,11 @@ graph LR
 
 ## Step 1: Activate a Deployment
 
-Activate a deployment that was deployed without auto-activation. Activation provisions all solution components (processes, queues, assets, etc.) in the target folder:
+`solution deploy run` activates by default. Use `deploy activate` only when:
+- the deploy was started with `--skip-activate`, or
+- the previous activation failed (e.g. missing config) and you've fixed the cause and want to retry without redeploying.
+
+Activation provisions all solution components (processes, queues, assets, etc.) in the target folder:
 
 ```bash
 uip solution deploy activate "MyDeployment" --output json
@@ -86,6 +90,9 @@ uip solution packages list --output json
 
 # Paginate and sort
 uip solution packages list --take 20 --order-by "Name" --order-direction "asc" --output json
+
+# Filter by name (server-side substring match on the package name)
+uip solution packages list --name "Invoice" --output json
 ```
 
 | Option | Description | Default |
