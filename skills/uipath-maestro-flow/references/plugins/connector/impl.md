@@ -12,9 +12,9 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `connectionId` — the bound IS connection UUID
    - `folderKey` — the Orchestrator folder key
    - `method` — HTTP method from `registry get` → `connectorMethodInfo.method` (e.g., `POST`)
-   - `endpoint` — API path from `registry get` → **`connectorMethodInfo.path`** (e.g., `/send_message_to_channel_v2`). **Do NOT read `connectorMethodInfo.reference`** — it is a different field that is often `null` or points at a non-curated v1 path that disagrees with the curated `requestFields` schema. The mismatch faults at runtime with a misleading provider error (e.g. Slack `no_text` when sending `messageToSend` to the v1 path). The same value is also exposed by `is resources describe ... --operation <Op>` as `availableOperations[].path` — both come from the same upstream IS metadata.
-   - `bodyParameters` — field-value pairs for the request body (field names from `inputDefinition.fields[].name` in `registry get`, equivalently `requestFields[].name` from describe)
-   - `queryParameters` — field-value pairs for query string parameters (from `connectorMethodInfo.parameters[]` where `type: query`, equivalently `parameters[]` from describe)
+   - `endpoint` — API path. Read `connectorMethodInfo.path` (from `registry get`) or `availableOperations[].path` (from `is resources describe`).
+   - `bodyParameters` — field-value pairs for the request body. Read field names from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
+   - `queryParameters` — field-value pairs for query string parameters. Read from `connectorMethodInfo.parameters[]` where `type: query` (`registry get`) or `parameters[]` (`is resources describe`).
 
 ---
 
@@ -54,7 +54,7 @@ uip maestro flow registry get <nodeType> --connection-id <connection-id> --outpu
 
 This returns enriched `inputDefinition.fields` and `outputDefinition.fields` with accurate type, required, description, enum, and `reference` info. Without `--connection-id`, only standard/base fields are returned.
 
-The response also includes `connectorMethodInfo`. Read `method` and **`path`** from it — `path` is the curated endpoint the connector actually serves. **Do NOT read `connectorMethodInfo.reference`** — it is a sibling field that is `null` for most connectors and, when present, may point at a non-curated v1 path (e.g. Slack `send-message-to-channel`: `path = /send_message_to_channel_v2`, `reference = /send_message_to_channel`). Pairing the v1 reference with the v2 field names from `inputDefinition` faults at runtime with the provider's raw error and is not caught by `flow validate`.
+The response also includes `connectorMethodInfo` with the real HTTP `method` (e.g. `GET`, `POST`) and `path` template (e.g. `/ConversationsInfo/{conversationsInfoId}`). **Save `connectorMethodInfo.method` and `connectorMethodInfo.path`** — you must pass them to `node configure` later as `method` and `endpoint`.
 
 ### Step 3 — Describe the resource and read full metadata
 
@@ -71,12 +71,10 @@ cat <metadataFile path from response>
 ```
 
 The full metadata contains:
-- **`availableOperations[].method`** and **`availableOperations[].path`** — the HTTP method and API endpoint path. Same value as `connectorMethodInfo.method` / `.path` from `registry get` (both read the same upstream IS metadata).
+- **`availableOperations[].method`** and **`availableOperations[].path`** — HTTP method and API endpoint path. Same value as `connectorMethodInfo.method` / `.path` from `registry get`.
 - **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
-- **`requestFields`** — body fields with `name`, `type`, `required`, `description`, and `reference` objects for ID resolution. Field names here are the canonical body field names that pair with `path` above (e.g. `messageToSend` for Slack `/send_message_to_channel_v2`).
+- **`requestFields`** — body fields with `name`, `type`, `required`, `description`, and `reference` objects for ID resolution. Pair these field names with the `path` above (e.g. `messageToSend` for Slack `/send_message_to_channel_v2`).
 - **`responseFields`** — response schema
-
-> **The `path` and `requestFields` are a matched set.** They describe the curated endpoint and its expected body schema. Do not mix them with `connectorMethodInfo.reference` from `registry get` — that sibling field can hold a non-curated v1 path (e.g. Slack: `path = /send_message_to_channel_v2` vs `reference = /send_message_to_channel`). Pairing the v1 reference with v2 field names faults at runtime with the provider's raw error (Slack: `no_text`); `flow validate` does not catch it.
 
 ### Step 4 — Resolve reference fields
 
@@ -158,14 +156,12 @@ uip maestro flow node configure <file> <nodeId> \
   --output json
 ```
 
-**Source of truth for `method` and `endpoint`:**
+**Source of truth for `method` and `endpoint`** — pick either (both read the same upstream IS metadata):
 
-- From `registry get` (Step 2): `connectorMethodInfo.method` and **`connectorMethodInfo.path`**.
-- Equivalently from `is resources describe ... --operation <Op>` (Step 3): `availableOperations[].method` and `availableOperations[].path`.
+- `registry get` (Step 2) → `connectorMethodInfo.method` and `connectorMethodInfo.path`
+- `is resources describe ... --operation <Op>` (Step 3) → `availableOperations[].method` and `availableOperations[].path`
 
-Both reads pull from the same upstream IS metadata. Pick whichever you already have on hand; the values agree. Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (registry get) or `requestFields[].name` (describe).
-
-> **Do NOT use `connectorMethodInfo.reference`.** It is a different sibling field — `null` for most connectors, and when populated may hold a non-curated v1 path (e.g. Slack: `path = /send_message_to_channel_v2`, `reference = /send_message_to_channel`). Pairing the v1 reference with the v2 field names from `inputDefinition` faults at runtime with the provider's raw error (Slack `no_text`); `flow validate` does not catch it.
+Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 

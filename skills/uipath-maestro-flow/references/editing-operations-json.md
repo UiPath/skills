@@ -383,21 +383,19 @@ When not using `uip maestro flow node configure`, you must manually set up:
 }
 ```
 
-The `method`, `endpoint`, and the field names used in `bodyParameters` / `queryParameters` come from the connector manifest. Two equivalent reads (both pull from the same upstream IS metadata):
+Source `method`, `endpoint`, and `bodyParameters` / `queryParameters` field names from either of these (both read the same upstream IS metadata):
 
 From `uip maestro flow registry get <nodeType> --connection-id <id> --output json`:
 - `method` ← `connectorMethodInfo.method`
-- `endpoint` ← **`connectorMethodInfo.path`** (NOT `.reference`)
+- `endpoint` ← `connectorMethodInfo.path`
 - `bodyParameters.<name>` ← `inputDefinition.fields[].name`
 - `queryParameters.<name>` ← `connectorMethodInfo.parameters[]` where `type: query`
 
-Or from `uip is resources describe <connector-key> <objectName> --connection-id <id> --operation <Op> --output json`:
+From `uip is resources describe <connector-key> <objectName> --connection-id <id> --operation <Op> --output json`:
 - `method` ← `availableOperations[].method`
 - `endpoint` ← `availableOperations[].path`
 - `bodyParameters.<name>` ← `requestFields[].name`
 - `queryParameters.<name>` ← `parameters[]` where `type: query`
-
-> **Do not read `connectorMethodInfo.reference`.** It is a sibling field that is `null` for most connectors and, when populated, may hold a non-curated v1 path that disagrees with the curated `inputDefinition.fields` schema. Mixing v1 reference + v2 field names (e.g. `/send_message_to_channel` + `messageToSend`) faults at runtime with the provider's raw error (Slack: `no_text`) — `flow validate` does not catch it. See [connector/impl.md — Step 6](plugins/connector/impl.md).
 
 ### 2. Connection binding in `bindings_v2.json`
 
