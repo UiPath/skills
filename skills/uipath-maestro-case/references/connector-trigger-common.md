@@ -26,7 +26,7 @@ Returns `Entry`, `Config`, and `Connections`.
 
 - **Single connection** → use it.
 - **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED>`. See each plugin's unresolved fallback.
+- **Empty `Connections`** → mark `<UNRESOLVED>`. Both plugins emit skeletons at execution time (different shapes per plugin) — see [skeleton-tasks.md](skeleton-tasks.md) for connector-task skeletons and [`plugins/triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md) for event-trigger skeletons.
 
 Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
 

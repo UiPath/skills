@@ -73,6 +73,10 @@ Note the empty `data: {}` — no `taskTypeId`, no folder path, no input/output w
 
 Timers are a built-in type — they are never skeletons because they have no registry dependency. Use [`plugins/tasks/wait-for-timer/impl-json.md`](plugins/tasks/wait-for-timer/impl-json.md).
 
+### Case-level event triggers
+
+Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.label` / `description` / `parentElement` to render at all, so the skeleton keeps those plus `data.uipath: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never skeletons (no registry dependency).
+
 ## `tasks.md` Planning-Entry Shape
 
 A skeleton-bound entry keeps every structural field and moves the lost wiring into a fenced code block the user will act on later:

@@ -142,15 +142,51 @@ Consult [`plugins/case/planning.md`](plugins/case/planning.md) for required fiel
 
 Title format: `Declare <category> "<name>"` where category is `In argument`, `Out argument`, or `variable`.
 
-One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and trigger (T02), before stages. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
+One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and **all** trigger T-entries (T02+) — i.e., after the last trigger row, before stages. In multi-trigger cases the variables block starts at `T0<last-trigger>+1`, not at `T03`. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
 
 Task-output variables (produced by tasks during execution) do NOT get T-entries here — they are wired automatically during task creation (§4.6).
 
-### 4.3 Configure trigger (T02)
+### 4.3 Configure trigger(s) (T02+)
 
 Title format: `Configure <trigger-type> trigger "<name>"`
 
 Consult the corresponding trigger plugin (`plugins/triggers/<type>/planning.md`) for required fields.
+
+**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. See [edges/planning.md § Multi-Trigger Cases](plugins/edges/planning.md#multi-trigger-cases) for the matching N edges from triggers to the first stage.
+
+Each trigger row uses its plugin's full field set — see `plugins/triggers/<type>/planning.md` for the per-type entry format. Worked example — sdd.md declares 3 entry-point rows (one manual + two events), one of which is unresolved:
+
+```markdown
+## T02: Configure manual trigger "Operator Starts Case"
+- display-name: "Operator Starts Case"
+- description: "Operator kicks off a case from the portal"
+- order: after T01
+- verify: Confirm node appended; capture TriggerId
+
+## T03: Configure event trigger "New Inbound Email"
+- type-id: <uiPathActivityTypeId>
+- connection-id: <connection-uuid>
+- connector-key: uipath-microsoft-office-365-outlook
+- object-name: Email
+- event-operation: created
+- event-mode: webhooks
+- input-values: {"parentFolderId": "AAMkADNm..."}
+- filter: "(contains(subject, 'urgent'))"
+- order: after T02
+- verify: Confirm trigger configured with correct event parameters
+
+## T04: Configure event trigger "Jira Issue Created"
+- type-id: <UNRESOLVED: no IS connection for uipath-atlassian-jira>
+- connection-id: <UNRESOLVED>
+- connector-key: <UNRESOLVED>
+- object-name: <UNRESOLVED>
+- event-operation: <UNRESOLVED>
+- event-mode: <UNRESOLVED>
+- order: after T03
+- verify: trigger skipped at execution; user attaches after registering connection
+```
+
+Do **not** collapse the unresolved trigger into a note on T02 or omit it entirely — execution behavior for unresolved event triggers is documented in [`triggers/event/planning.md § Unresolved Fallback`](plugins/triggers/event/planning.md#unresolved-fallback), but the planning row is still required.
 
 ### 4.4 Create stages
 
