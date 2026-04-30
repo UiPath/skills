@@ -2,7 +2,9 @@
 
 Capability index for the lifecycle of a flow as a deployed asset. Operate owns everything that touches the cloud — `solution resource refresh`, Studio Web upload, Orchestrator deploy, `flow debug`, `process run`, `job status/traces`, and `instance` lifecycle (pause, resume, cancel, retry). Requires `uip login`.
 
-> **Phase 1a scaffold** — this index is a placeholder. Subsequent phases populate the sections below by extracting content from SKILL.md Steps 7 & 8 and from `commands.md`.
+> **Where you came from / where to go next.** Operate is downstream of Author (build the flow → ship it) and upstream of Diagnose (run faults → diagnose). Build/edit lives in [AUTHOR.md](AUTHOR.md); fault triage lives in [DIAGNOSE.md](DIAGNOSE.md).
+>
+> **Inherits universal rules from [SKILL.md](../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout. The rules below are operate-scoped and apply on top.
 
 ## When to use this capability
 
@@ -16,41 +18,58 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 ## Critical rules
 
-> Populated in Phase 4. Inherits universal rules from SKILL.md (rules 4, 9, 14, 15, 19, 20). Operate-scoped rules to be added — likely include "always run `solution resource refresh` before upload or debug" and "always confirm consent before `flow debug`."
+1. **Always run `uip solution resource refresh <SolutionDir>` before `solution upload` or `flow debug`.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct. The refresh syncs connection and process resource declarations from the project's `bindings_v2.json` files into the solution.
+2. **Default to Studio Web when the user says "publish" without specifier.** "Publish" → `uip solution upload <SolutionDir>`. Only run `uip maestro flow pack` + `uip solution publish` when the user explicitly asks to deploy to Orchestrator. The Orchestrator path bypasses Studio Web — the user cannot visualize or edit the flow there.
+3. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip orchestrator folder list --output json` or from the job/process context. See [shared/cli-conventions.md](shared/cli-conventions.md#5---folder-key-requirement).
+4. **Always report Studio Web URL and Instance ID as the first two lines of any debug summary.** Parse `Data.studioWebUrl` and `Data.instanceId` from the JSON output. Use `<not returned by CLI>` if missing — never omit the line. Users need these immediately, not buried below status text.
 
 ## Workflow
 
-> Populated in Phase 4. Planned journey docs (links activate when files land):
->
-> - Publish a flow to Studio Web or Orchestrator → `operate/ship.md`
-> - Run a flow on demand or check progress → `operate/run.md`
-> - Intervene in a running instance → `operate/manage.md`
+| Journey | Read |
+| --- | --- |
+| Publish a flow (Studio Web default, Orchestrator on request) | [operate/ship.md](operate/ship.md) |
+| Run a flow on demand or check progress | [operate/run.md](operate/run.md) |
+| Intervene in a running instance | [operate/manage.md](operate/manage.md) |
 
 ## Common tasks
 
-> Populated in Phase 4.
+| I need to... | Read these |
+| --- | --- |
+| **Publish a flow to Studio Web** | [operate/ship.md — Path 1](operate/ship.md#path-1--studio-web-upload-default) |
+| **Deploy a flow to Orchestrator** (only if explicitly requested) | [operate/ship.md — Path 2](operate/ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-platform](/uipath:uipath-platform) |
+| **Sync solution resource declarations** | [operate/ship.md — Pre-flight](operate/ship.md#pre-flight) (the `uip solution resource refresh` step) |
+| **Debug a flow end-to-end** | [operate/run.md — Debug](operate/run.md#debug--controlled-end-to-end-run) |
+| **Pass input arguments to `flow debug`** | [operate/run.md — Debug](operate/run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
+| **Trigger a deployed process** | [operate/run.md — Process run](operate/run.md#process-run--trigger-a-deployed-process) |
+| **Check status of a running job** | [operate/run.md — Job inspection](operate/run.md#job-inspection--status-and-traces) |
+| **Stream verbose execution traces** | [operate/run.md — Job inspection](operate/run.md#job-inspection--status-and-traces) (use sparingly — see [DIAGNOSE.md](DIAGNOSE.md)) |
+| **Pause a running instance** | [operate/manage.md](operate/manage.md) |
+| **Resume a paused instance** | [operate/manage.md](operate/manage.md) |
+| **Cancel an instance** | [operate/manage.md](operate/manage.md) |
+| **Retry a faulted instance** | [operate/manage.md](operate/manage.md) (after diagnosing root cause via [DIAGNOSE.md](DIAGNOSE.md)) |
+| **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/commands.md](shared/commands.md) |
+| **My flow run failed** | [DIAGNOSE.md](DIAGNOSE.md) |
 
 ## Anti-patterns
 
-> Populated in Phase 4. Likely candidates:
->
-> - Never run `flow debug` without explicit user consent
-> - Never run `solution upload` without first running `solution resource refresh`
-> - Never deploy to Orchestrator when the user said "publish" — default to Studio Web
-> - Never run `flow debug` as a validation step
+- **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures.
+- **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
+- **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution against real systems.
+- **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [DIAGNOSE.md](DIAGNOSE.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
+- **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [DIAGNOSE.md](DIAGNOSE.md) for the priority ladder.
 
 ## References
 
-> Populated in Phase 4 as files are added to [operate/](operate/):
->
-> - `operate/ship.md` — Studio Web upload + Orchestrator deploy
-> - `operate/run.md` — debug, process run, job status/traces
-> - `operate/manage.md` — instance lifecycle (pause, resume, cancel, retry)
->
-> Cross-capability references in [shared/](shared/):
->
-> - `shared/commands.md` — flat CLI lookup
-> - `shared/cli-conventions.md` — login states, FOLDER_KEY, UIPCLI_LOG_LEVEL, JSON shape
-> - `shared/variables-and-expressions.md` — `--inputs` JSON for `flow debug`
+### Operate-scoped
+
+- [operate/ship.md](operate/ship.md) — Studio Web upload (default) and Orchestrator deploy (explicit)
+- [operate/run.md](operate/run.md) — debug, process run, job status/traces
+- [operate/manage.md](operate/manage.md) — instance lifecycle (pause, resume, cancel, retry)
+
+### Cross-capability (shared)
+
+- [shared/commands.md](shared/commands.md) — flat CLI lookup including `solution upload`, `solution resource refresh`, `flow pack`, `flow debug`, `flow process`, `flow job`, `flow instance`
+- [shared/cli-conventions.md](shared/cli-conventions.md) — login states, FOLDER_KEY, UIPCLI_LOG_LEVEL, JSON output shape
+- [shared/variables-and-expressions.md](shared/variables-and-expressions.md) — `--inputs` JSON shape for `flow debug`
 
 For Orchestrator deployment via `uip solution publish`, see [/uipath:uipath-platform](/uipath:uipath-platform).
