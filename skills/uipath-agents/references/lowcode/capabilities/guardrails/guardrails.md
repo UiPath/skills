@@ -242,6 +242,8 @@ Example entry:
 
 A guardrail escalation app must expose a specific action schema contract. Validate **before** writing the guardrail JSON. If any check below fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1).
 
+**SECURITY:** Never read `~/.uipath/.auth` directly — keep the token inside the shell. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
+
 2a. Look up `systemName` and `deployVersion` from the Apps API (use `Key` from Step 1 to filter client-side by `id`):
 
 ```bash
