@@ -39,7 +39,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 
 ## Quick Start
 
-1. Run `uip ixp project list --output json` to see existing projects
+1. Run `uip ixp projects list --output json` to see existing projects
 2. To create a new project: follow [Project Setup Guide](references/project-setup-guide.md)
 3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts-guide.md)
 4. To label documents on an existing project: follow [Label Documents Guide](references/label-documents-guide.md)
@@ -54,10 +54,10 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Import this taxonomy" / provides a taxonomy file | [Project Setup Guide](references/project-setup-guide.md) — Option B (`--skip-taxonomy` + `import-taxonomy`) |
 | "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents-guide.md) |
 | "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
-| "Publish the model" / "Tag as live" | `uip ixp project publish <project-name> --output json` |
-| "Show metrics" / "What are the scores?" | `uip ixp project metrics <project-name> --output json` |
-| "List projects" | `uip ixp project list --output json` |
-| "Configure the model" / "Change preprocessing" | `uip ixp project configure-model <project-name> [options] --output json` |
+| "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` |
+| "Show metrics" / "What are the scores?" | `uip ixp projects get-metrics <project-name> --output json` |
+| "List projects" | `uip ixp projects list --output json` |
+| "Configure the model" / "Change preprocessing" | `uip ixp projects configure-model <project-name> [options] --output json` |
 
 ## Common Pitfalls
 
