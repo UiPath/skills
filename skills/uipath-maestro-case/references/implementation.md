@@ -141,7 +141,7 @@ Steps 9.6 onwards wire connector task schemas, input/output values, conditions, 
 
 Before any 2b mutation:
 
-1. **Re-read `tasks.md`** — per Rule 6 of `SKILL.md`.
+1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from the authoritative artifact. See [phased-execution.md § Phase 2b re-entry protocol](phased-execution.md) for which fields to index.
 
 Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — context may be compacted across the hard stop.

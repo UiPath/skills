@@ -1,5 +1,4 @@
 # SDD Template — Case Definition Blueprint
-# File: skills/sdd/SDD_TEMPLATE.md
 # Purpose: Defines the output format for sdd.md — a case definition blueprint
 #          that a developer can directly implement in the UiPath Case Designer.
 
@@ -13,16 +12,15 @@ Designer actually consumes. A developer reading this document should be able to
 build the case in the Case Designer without guessing.
 
 **Inputs:**
-- `{SESSION_DIR}/state.json` — flat structured session state
+- Phase 0 interview answers (free-text + AskUserQuestion picks) — primary source
 - This template — defines the output structure
-- `knowledge/uipath-products/case-management-schema.md` — JSON schema reference (source of truth for types, rules, SLA model)
-- `knowledge/uipath-products/maestro-docs/INDEX.md` — grounded UiPath platform documentation
+- See [references/case-schema.md](../../references/case-schema.md) for the JSON schema reference (types, rules, SLA model)
 
 **Optional enrichment sources:**
-- CLI registry cache at `~/.uip/case-resources/` (deployed processes, connectors, action apps from the user's tenant — flat `{type}-index.json` files per resource type)
-- UiPath CLI types at `../cli/packages/case-tool/src/types/case-management.types.ts` (authoritative schema definitions)
+- CLI registry cache at `~/.uipcli/case-resources/` (deployed processes, connectors, action apps from the user's tenant — flat `<type>-index.json` files per resource type, populated by `uip maestro case registry pull`)
+- IS connector cache at `~/.uipath/cache/integrationservice/<connectorKey>/` (`connections.json`, `activities.json`) for connection + operation metadata
 
-**Output:** `output/sdd.md`
+**Output:** `sdd.md`
 
 ### Key Rules
 
@@ -52,7 +50,7 @@ build the case in the Case Designer without guessing.
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
    - **IF** = the optional `conditionExpression` (JavaScript expression evaluated against case variables, e.g., `applicationStatus == "Approved"`)
 
-7. **Task types — choose based on WHAT THE TASK DOES, not its PDD label.** Read `knowledge/component-type-mapping.md` for full mapping rules. All 10 types must be considered for every task:
+7. **Task types — choose based on WHAT THE TASK DOES, not its surface label.** All 10 types must be considered for every task:
    - `action` — a human must review, approve, or make a judgment call. The task PAUSES for a person.
    - `agent` — AI reasoning: classification, criteria application, document analysis, risk assessment, triage. Use for any semi-structured reasoning.
    - `process` — deterministic multi-step BPMN: routing, orchestration, batch processing, report generation. No judgment (human or AI).
@@ -97,9 +95,9 @@ The generated SDD must start with:
 
 ### Output Rules (applies to every section of the rendered SDD)
 
-- The SDD is a standalone developer artifact. It must NOT reference its own generation sources. Forbidden phrases anywhere in the output: `PDD`, `pdd.md`, `state.json`, `Section N of the PDD`, `per PDD`, `from state.*`, `from cache`, `from the registry`, `REVIEW:`, `wiki/`, or any chain-of-thought explanation of how a value was derived.
-- State every fact directly. If mock substitution is permitted, say "Mock Connector substitution is permitted until a live connection is provisioned" — do not say "per PDD Section 8".
-- Unknown values render as `—`, not as REVIEW markers. Review items belong in the Step 5 handoff, not in the document body.
+- The SDD is a standalone developer artifact. It must NOT reference its own generation sources. Forbidden phrases anywhere in the output: `interview answers`, `from cache`, `from the registry`, `from state.*`, `REVIEW:`, `wiki/`, `PDD`, `pdd.md`, or any chain-of-thought explanation of how a value was derived.
+- State every fact directly. If mock substitution is permitted, say "Mock Connector substitution is permitted until a live connection is provisioned" — do not attribute the decision to a generation source.
+- Unknown values render as `—`, not as REVIEW markers. Review items belong in the Phase 0 round-4 summary or post-build loop, not in the document body.
 
 ---
 
@@ -190,7 +188,7 @@ The generated SDD must start with:
 
 #### Tasks
 
-> Tasks are listed in the exact order provided by the PDD. Do not add, split, merge, or rename tasks; do not infer new tasks from context.
+> Tasks are listed in the order provided by the source spec / interview answers. Do not add, split, merge, or rename tasks; do not infer new tasks from context.
 
 | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|----------|---------------|---------|-----|
@@ -241,17 +239,17 @@ The generated SDD must start with:
 
 ###### Connector Task Detail (type: `wait-for-connector` or `execute-connector-activity`)
 
-> Use this block for connector-based tasks. Connection + Auth are **tenant-authoritative** and come from the Integration Service CLI cache, not the PDD:
+> Use this block for connector-based tasks. Connection + Auth are **tenant-authoritative** and come from the Integration Service CLI cache, not from the user spec:
 > - **Connection** ← `~/.uipath/cache/integrationservice/{connectorKey}/connections.json` — the `name` (and optional `id`) of the default or first enabled entry.
 > - **Auth Method** ← `~/.uipath/cache/integrationservice/connectors.json` — the connector's `defaultAuthenticationType`.
-> - **Operation** ← `~/.uipath/cache/integrationservice/{connectorKey}/activities.json` for the display/operation name; `~/.uip/case-resources/typecache-activities-index.json` (or `typecache-triggers-index.json` for events) for I/O schemas — each is a flat JSON array of activities, filter by connector + operation name.
-> - **Account/Endpoint is not stored** in the compact cache. Render `—` unless the PDD / state supplies it explicitly.
-> If a cache is unavailable or no enabled connection is found, leave the field as a REVIEW marker rather than inventing values.
+> - **Operation** ← `~/.uipath/cache/integrationservice/{connectorKey}/activities.json` for the display/operation name; `~/.uipcli/case-resources/typecache-activities-index.json` (or `typecache-triggers-index.json` for events) for I/O schemas — each is a flat JSON array of activities, filter by connector + operation name.
+> - **Account/Endpoint is not stored** in the compact cache. Render `—` unless the user spec supplies it explicitly.
+> If a cache is unavailable or no enabled connection is found, render `—` rather than inventing values.
 
 **Connector:** {connector name from Integration Service, e.g., "Salesforce"}
 **Connection:** {connection instance `name` from `connections.json`, e.g., "Salesforce-Prod" — or "Tenant default (connection ID {id})" when `isDefault: true`}
 **Auth Method:** {`defaultAuthenticationType` from `connectors.json`, e.g., OAuth2 \| API Key \| Basic \| Service Account}
-**Account / Endpoint:** {explicit endpoint from PDD/state — or "—" if not supplied (not stored in the CLI cache)}
+**Account / Endpoint:** {explicit endpoint if supplied — or "—" (not stored in the CLI cache)}
 **Operation:** {`displayName` / `operation` from `activities.json`}
 **Trigger / Event:** {trigger display name for `wait-for-connector`, or "—" for `execute-connector-activity`}
 

@@ -6,7 +6,7 @@ Phase 0 generates `sdd.md` interactively when none is provided. Output is approv
 
 ## When Phase 0 runs
 
-Strict binary trigger. **Any `sdd.md` present at the resolved path → no interview.** Phase 1 trusts the file as written (Rule 1).
+Strict binary trigger. **Any `sdd.md` present at the resolved path → no interview.** Phase 1 trusts the file as written (Rule 2).
 
 ```
 Step 1. Skill invoked.
@@ -28,7 +28,7 @@ AskUserQuestion (3 options):
 | `I'll provide an sdd.md path` | Re-prompt for path. Loop to Step 3. |
 | `Switch to uipath-solution-design` | Print plain-text suggestion. Exit skill. |
 
-Never auto-invoke `uipath-solution-design` (Rule 14). Print the skill name and one-line guidance only.
+Never auto-invoke `uipath-solution-design` (Rule 15). Print the skill name and one-line guidance only.
 
 ## The four rounds
 
@@ -102,10 +102,10 @@ Per-task AskUserQuestion (4 options max):
 |---|---|
 | `<top match — name + version + type>` | Record selection. |
 | `<second match>` (if available) | Record selection. |
-| `Skeleton — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits skeleton task per Rule 7. |
+| `Skeleton — resolve later` | Keep `<UNRESOLVED>` marker on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits skeleton task per Rule 8. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-After all picks, write `tasks/registry-resolved.json` matching the shape Phase 1 produces (search query, all matched results, selected result, rationale per Rule 8). Update `sdd.draft.md` with concrete resource names.
+After all picks, write `tasks/registry-resolved.json` matching the shape Phase 1 produces (search query, all matched results, selected result, rationale per Rule 9). Update `sdd.draft.md` with concrete resource names.
 
 > **Phase 1 handoff.** Phase 1 reads `tasks/registry-resolved.json` and skips re-search for resolved entries. It still extends the file with any resolutions Phase 0 deferred. No artifact replay; sdd.md is the contract.
 
@@ -219,17 +219,17 @@ AskUserQuestion (4 options):
 After Phase 0 approval, the working directory contains:
 
 - `sdd.md` — fully written, may include warning header, may contain `<UNRESOLVED>` markers, may contain `—` placeholders.
-- `tasks/registry-resolved.json` — resolutions persisted from Round 3 (matches Phase 1's artifact shape per Rule 8).
+- `tasks/registry-resolved.json` — resolutions persisted from Round 3 (matches Phase 1's artifact shape per Rule 9).
 - `sdd.draft.md` — deleted (renamed to `sdd.md` at Round 4 step 1).
 
-Phase 1 (planning.md Step 2) reads `sdd.md` exactly as it would a user-provided file. Rule 1 applies from this point: trust as written, no further gap-fill.
+Phase 1 (planning.md Step 2) reads `sdd.md` exactly as it would a user-provided file. Rule 2 applies from this point: trust as written, no further gap-fill.
 
 ## Anti-patterns
 
 - **Do NOT overwrite an existing `sdd.md`.** Strict binary trigger; presence = trust-as-written.
-- **Do NOT auto-invoke `uipath-solution-design`.** Print the suggestion; user re-invokes manually (Rule 14).
+- **Do NOT auto-invoke `uipath-solution-design`.** Print the suggestion; user re-invokes manually (Rule 15).
 - **Do NOT persist Round 1 transcripts.** In-memory only. Restart wipes cleanly.
-- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md` or `tasks/registry-resolved.json`.** Read + Write/Edit only (Rule 12).
-- **Do NOT silently auto-pick a registry match in Round 3.** AskUserQuestion every task; never infer (Rule 1 spirit).
+- **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.draft.md` or `tasks/registry-resolved.json`.** Read + Write/Edit only (Rule 13).
+- **Do NOT silently auto-pick a registry match in Round 3.** AskUserQuestion every task; never infer (Rule 2 spirit).
 - **Do NOT proceed past upfront triage when counts already exceed thresholds.** Force soft-redirect prompt before drafting.
 - **Do NOT skip the warning header when user overrode threshold.** Future agents reading the file must see the override flag.
