@@ -29,8 +29,8 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 ## Critical Rules
 
 1. **Always validate node types against the registry before building.** Use `registry search`/`list` for discovery and `registry get` for detailed metadata and definitions.
-2. **ALWAYS follow the relevant plugin in `references/plugins/` for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
-3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. See [connector/impl.md](references/plugins/connector/impl.md) for connection binding details.
+2. **ALWAYS follow the relevant plugin in `references/author/plugins/` for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/author/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
+3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. See [connector/impl.md](references/author/plugins/connector/impl.md) for connection binding details.
 4. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 5. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [references/shared/file-format.md](references/shared/file-format.md)).
 6. **`targetPort` is required on every edge** — `validate` rejects edges without it.
@@ -46,7 +46,7 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
     2. **In-solution local discovery** — `uip maestro flow registry list --local --output json`. No login required; returns sibling projects in the same `.uipx` solution.
     3. **Only then create/scaffold** — scaffold an inline agent, mock, or create-new-resource only when both searches return no match AND either the user explicitly asks to embed/inline/create, or no published resource can satisfy the requirement.
 
-    The words "coded" and "low-code" describe the *implementation style* of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/plugins/rpa/impl.md), [agent](references/plugins/agent/impl.md)).
+    The words "coded" and "low-code" describe the *implementation style* of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/author/plugins/rpa/impl.md), [agent](references/author/plugins/agent/impl.md)).
 15. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 16. **Always run `flow tidy` after edits** — `uip maestro flow tidy <ProjectName>.flow` is the canonical layout step (Step 6). Tidy arranges nodes horizontally, sets every node's `size` to `{ "width": 96, "height": 96 }`, and recurses into subflows (`subflows[<id>].layout`). Skipping tidy is the most common cause of misshapen rectangles in Studio Web.
 17. **Don't hand-write `layout.nodes` or `subflows[<id>].layout`** — these are owned by `flow tidy`. When authoring nodes, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save. Sticky notes (`type: "stickyNote"`) are the one exception — tidy preserves their custom size and position. See [file-format.md — Layout](references/shared/file-format.md#layout).
@@ -57,29 +57,29 @@ Comprehensive guide for creating, editing, validating, and debugging UiPath Flow
 
 ## Common Edits (existing flows)
 
-For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Each recipe links to the detailed step-by-step procedure in the [flow editing operations guide](references/editing-operations.md). Run `uip maestro flow validate` once after all edits are complete.
+For targeted changes to an existing flow, use the recipes below instead of the full Quick Start pipeline. Each recipe links to the detailed step-by-step procedure in the [flow editing operations guide](references/author/editing-operations.md). Run `uip maestro flow validate` once after all edits are complete.
 
-**Read [references/editing-operations.md](references/editing-operations.md) first** — Direct JSON is the default for all edits; CLI is used only for connector, connector-trigger, and inline-agent nodes, or when you explicitly request it.
+**Read [references/author/editing-operations.md](references/author/editing-operations.md) first** — Direct JSON is the default for all edits; CLI is used only for connector, connector-trigger, and inline-agent nodes, or when you explicitly request it.
 
 | Edit | Description | Guide |
 |------|-------------|-------|
-| **Change a script body or node inputs** | Edit the node's `inputs` in-place in the `.flow` JSON. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [JSON: Update node inputs](references/editing-operations-json.md#update-node-inputs) |
-| **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [JSON: Insert a node](references/editing-operations-json.md#insert-a-node-between-two-existing-nodes) (default) or [CLI: Insert a node](references/editing-operations-cli.md#insert-a-node-between-two-existing-nodes) (opt-in) |
-| **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [JSON: Insert a decision branch](references/editing-operations-json.md#insert-a-decision-branch) (default) or [CLI: Insert a decision branch](references/editing-operations-cli.md#insert-a-decision-branch) (opt-in) |
-| **Remove a node** | Delete the node, sweep edges/definitions/variables, reconnect upstream to downstream. | [JSON: Remove a node](references/editing-operations-json.md#remove-a-node-and-reconnect) (default) or [CLI: Remove a node](references/editing-operations-cli.md#remove-a-node-and-reconnect) (opt-in, auto-cascades) |
-| **Remove an edge** | Find the edge ID, delete it. | [JSON: Delete an edge](references/editing-operations-json.md#delete-an-edge) (default) or [CLI: Delete an edge](references/editing-operations-cli.md#delete-an-edge) (opt-in) |
-| **Add a workflow variable** | Edit `variables.globals` in the `.flow` file (JSON only). For `out` variables, map on every End node. See [variables-and-expressions.md](references/shared/variables-and-expressions.md). | [JSON: Add a workflow variable](references/editing-operations-json.md#add-a-workflow-variable) |
-| **Update a state variable** | Add a `variableUpdates` entry for `inout` variables (JSON only). See [variables-and-expressions.md](references/shared/variables-and-expressions.md). | [JSON: Add a variable update](references/editing-operations-json.md#add-a-variable-update) |
-| **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (JSON only). | [JSON: Create a subflow](references/editing-operations-json.md#create-a-subflow) + [subflow/impl.md](references/plugins/subflow/impl.md) |
-| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [JSON: Replace trigger](references/editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI: Replace trigger](references/editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) + [scheduled-trigger/impl.md](references/plugins/scheduled-trigger/impl.md) |
-| **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](references/editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md) |
-| **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via JSON (default) or CLI (opt-in), wire edges. | Relevant plugin's `impl.md` + [JSON editing](references/editing-operations-json.md) (default) or [CLI editing](references/editing-operations-cli.md) (opt-in) |
-| **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
-| **Add a HITL QuickForm node** | Insert a human approval/review/enrichment checkpoint. Wire the `completed` port after adding. | [JSON: Add a node](references/editing-operations-json.md) (default) or [CLI: `uip maestro flow hitl add`](references/shared/commands.md#uip-maestro-flow-hitl-add) (opt-in) + [hitl/impl.md](references/plugins/hitl/impl.md) |
+| **Change a script body or node inputs** | Edit the node's `inputs` in-place in the `.flow` JSON. Do not delete + re-add — that changes the node ID and breaks `$vars` expressions. Script nodes must return an object (`return { key: value }`). | [JSON: Update node inputs](references/author/editing-operations-json.md#update-node-inputs) |
+| **Add a node between two existing nodes** | Remove the connecting edge, add the new node, wire upstream → new → downstream. | [JSON: Insert a node](references/author/editing-operations-json.md#insert-a-node-between-two-existing-nodes) (default) or [CLI: Insert a node](references/author/editing-operations-cli.md#insert-a-node-between-two-existing-nodes) (opt-in) |
+| **Add a branch (decision node)** | Remove an edge, add a decision node, wire true/false branches. | [JSON: Insert a decision branch](references/author/editing-operations-json.md#insert-a-decision-branch) (default) or [CLI: Insert a decision branch](references/author/editing-operations-cli.md#insert-a-decision-branch) (opt-in) |
+| **Remove a node** | Delete the node, sweep edges/definitions/variables, reconnect upstream to downstream. | [JSON: Remove a node](references/author/editing-operations-json.md#remove-a-node-and-reconnect) (default) or [CLI: Remove a node](references/author/editing-operations-cli.md#remove-a-node-and-reconnect) (opt-in, auto-cascades) |
+| **Remove an edge** | Find the edge ID, delete it. | [JSON: Delete an edge](references/author/editing-operations-json.md#delete-an-edge) (default) or [CLI: Delete an edge](references/author/editing-operations-cli.md#delete-an-edge) (opt-in) |
+| **Add a workflow variable** | Edit `variables.globals` in the `.flow` file (JSON only). For `out` variables, map on every End node. See [variables-and-expressions.md](references/shared/variables-and-expressions.md). | [JSON: Add a workflow variable](references/author/editing-operations-json.md#add-a-workflow-variable) |
+| **Update a state variable** | Add a `variableUpdates` entry for `inout` variables (JSON only). See [variables-and-expressions.md](references/shared/variables-and-expressions.md). | [JSON: Add a variable update](references/author/editing-operations-json.md#add-a-variable-update) |
+| **Create a subflow** | Add a `core.subflow` parent node + `subflows.{nodeId}` with nested nodes/edges/variables (JSON only). | [JSON: Create a subflow](references/author/editing-operations-json.md#create-a-subflow) + [subflow/impl.md](references/author/plugins/subflow/impl.md) |
+| **Add a scheduled trigger** | Replace `core.trigger.manual` with `core.trigger.scheduled`. | [JSON: Replace trigger](references/author/editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI: Replace trigger](references/author/editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) + [scheduled-trigger/impl.md](references/author/plugins/scheduled-trigger/impl.md) |
+| **Add a connector trigger** | Delete manual trigger, add connector trigger, configure with connection. | [CLI: Replace trigger](references/author/editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) + [connector-trigger/impl.md](references/author/plugins/connector-trigger/impl.md) |
+| **Add a resource node** | Discover via registry (`--local` for in-solution, or tenant registry for published), add via JSON (default) or CLI (opt-in), wire edges. | Relevant plugin's `impl.md` + [JSON editing](references/author/editing-operations-json.md) (default) or [CLI editing](references/author/editing-operations-cli.md) (opt-in) |
+| **Add an inline agent node** | Embed a `uipath.agent.autonomous` node with an inline agent definition living inside the flow project. | [inline-agent/planning.md](references/author/plugins/inline-agent/planning.md) for selection vs a published agent, [inline-agent/impl.md](references/author/plugins/inline-agent/impl.md) for scaffolding, CLI, JSON structure, and validation. |
+| **Add a HITL QuickForm node** | Insert a human approval/review/enrichment checkpoint. Wire the `completed` port after adding. | [JSON: Add a node](references/author/editing-operations-json.md) (default) or [CLI: `uip maestro flow hitl add`](references/shared/commands.md#uip-maestro-flow-hitl-add) (opt-in) + [hitl/impl.md](references/author/plugins/hitl/impl.md) |
 
 ## Planning (optional)
 
-For complex flows, consider producing a plan before building. Reference [references/planning-arch.md](references/planning-arch.md) and [references/planning-impl.md](references/planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+For complex flows, consider producing a plan before building. Reference [references/author/planning-arch.md](references/author/planning-arch.md) and [references/author/planning-impl.md](references/author/planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
 
 Planning is useful when:
 - The flow has 5+ nodes with branching or parallel paths
@@ -234,7 +234,7 @@ For complex flows with multiple services or ambiguous requirements, consider pla
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Read [references/editing-operations.md](references/editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
+**Read [references/author/editing-operations.md](references/author/editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
@@ -319,7 +319,7 @@ When the build completes, present the next-step dropdown described in the [Compl
 - **Never run `uip maestro flow init` outside a solution directory** — the resulting `.flow` file MUST sit at `<Solution>/<Project>/<Project>.flow` (double-nested). Running `flow init` from a bare cwd, from the user's home, or from the parent of `<Solution>/` produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and the `uip solution project add` wiring. Always complete Step 2a first, `cd` into the solution dir, then Step 2b. Run the Step-2 self-check (`ls <Solution>/<Project>/<Project>.flow`) before continuing.
 - **Never use `--format json` on any `uip` command** — the flag is `--output json` (Critical Rule #4). `--format` produces `error: unknown option '--format'` and exit code 3 on every `uip` subcommand, not a helpful message pointing you at `--output`.
 - **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
-- **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
+- **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/author/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.
 - **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.
 - **Never run `flow debug` as a validation step** — debug executes the flow with real side effects. Use `flow validate` for checking correctness.
 - **Never chain skills automatically** — if the flow needs an RPA process, coded workflow, or agent, identify the gap and tell the user which skill to use. Do not invoke other skills.
@@ -335,37 +335,37 @@ When the build completes, present the next-step dropdown described in the [Compl
 - **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
 - **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.
 - **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.
-- **Never use `core.action.http` (v1) for connector-authenticated requests** — the v1 node's `authenticationType: "connection"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) instead. See [http/planning.md](references/plugins/http/planning.md).
+- **Never use `core.action.http` (v1) for connector-authenticated requests** — the v1 node's `authenticationType: "connection"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) instead. See [http/planning.md](references/author/plugins/http/planning.md).
 - **Never hand-write `inputs.detail` for managed HTTP nodes** — run `uip maestro flow node configure` to populate the `inputs.detail` structure, generate `bindings_v2.json`, and create the connection resource file. Hand-written configurations miss the `essentialConfiguration` block and fail at runtime.
 - **Never write `$vars.X` (or `$metadata.X`, `$self.X`) without `=js:`** in any connector `bodyParameters`/`queryParameters`/`pathParameters`, HTTP input field, end-node output `source`, variable update, loop collection, or subflow input. The serializer rewrites `$vars` → `vars` whether or not the prefix is present, so a missing prefix yields a literal string `"vars.X.output.Y"` at runtime — `flow validate` passes, the failure shows up only in `flow debug`. There is no `nodes.X.output.Y` syntax — it is invented and silently produces a literal string. See [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md) for the per-node-type field reference (MST-9107).
-- **Never reuse a reference ID (mailbox folder, Slack channel, Jira project, Google Sheet, etc.) from a prior flow or session** — reference IDs are scoped to the specific authenticated account behind the connection. A `parentFolderId` from one Outlook mailbox is invalid in another; a Slack channel ID from one workspace is invalid in another. A reused ID passes `flow validate` and `node configure` cleanly, then faults silently at runtime with no resolvable error. Always re-resolve via `uip is resources execute list <connector-key> <objectName> --connection-id <CURRENT_CONNECTION_ID> --output json` against the connection bound to this flow — do not paste a value you saw in another flow. See [connector/impl.md — Step 4](references/plugins/connector/impl.md) and [connector-trigger/impl.md — Step 3](references/plugins/connector-trigger/impl.md).
+- **Never reuse a reference ID (mailbox folder, Slack channel, Jira project, Google Sheet, etc.) from a prior flow or session** — reference IDs are scoped to the specific authenticated account behind the connection. A `parentFolderId` from one Outlook mailbox is invalid in another; a Slack channel ID from one workspace is invalid in another. A reused ID passes `flow validate` and `node configure` cleanly, then faults silently at runtime with no resolvable error. Always re-resolve via `uip is resources execute list <connector-key> <objectName> --connection-id <CURRENT_CONNECTION_ID> --output json` against the connection bound to this flow — do not paste a value you saw in another flow. See [connector/impl.md — Step 4](references/author/plugins/connector/impl.md) and [connector-trigger/impl.md — Step 3](references/author/plugins/connector-trigger/impl.md).
 
 ## Task Navigation
 
 | I need to... | Read these |
 | --- | --- |
-| **Edit an existing flow** | Common Edits section + [references/editing-operations.md](references/editing-operations.md) |
-| **Add/delete/wire nodes and edges** | [references/editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
-| **Generate a flow plan** | [references/planning-arch.md](references/planning-arch.md) + [references/planning-impl.md](references/planning-impl.md) + Planning section above |
-| **Choose the right node type** | [references/planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
+| **Edit an existing flow** | Common Edits section + [references/author/editing-operations.md](references/author/editing-operations.md) |
+| **Add/delete/wire nodes and edges** | [references/author/editing-operations.md](references/author/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
+| **Generate a flow plan** | [references/author/planning-arch.md](references/author/planning-arch.md) + [references/author/planning-impl.md](references/author/planning-impl.md) + Planning section above |
+| **Choose the right node type** | [references/author/planning-arch.md — Plugin Index](references/author/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [references/shared/file-format.md](references/shared/file-format.md) |
 | **Know all CLI commands** | [references/shared/commands.md](references/shared/commands.md) |
-| **Add a Script node** | [references/plugins/script/impl.md](references/plugins/script/impl.md) |
-| **Wire nodes with edges** | [references/editing-operations.md](references/editing-operations.md) + [references/shared/file-format.md — Standard ports](references/shared/file-format.md) |
+| **Add a Script node** | [references/author/plugins/script/impl.md](references/author/plugins/script/impl.md) |
+| **Wire nodes with edges** | [references/author/editing-operations.md](references/author/editing-operations.md) + [references/shared/file-format.md — Standard ports](references/shared/file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
-| **Work with connector nodes** | [references/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
+| **Work with connector nodes** | [references/author/plugins/connector/](references/author/plugins/connector/) + [/uipath:uipath-platform — Integration Service](/uipath:uipath-platform) |
 | **Publish to Studio Web** | Step 8 (`uip solution upload <SolutionDir>`) |
 | **Deploy to Orchestrator** (only if explicitly requested) | [references/shared/commands.md](references/shared/commands.md) + [/uipath:uipath-platform](/uipath:uipath-platform) |
-| **Manage variables and expressions** | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) + [JSON: Variable Operations](references/editing-operations-json.md#variable-operations) |
+| **Manage variables and expressions** | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) + [JSON: Variable Operations](references/author/editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [references/shared/variables-and-expressions.md — Expression System](references/shared/variables-and-expressions.md) |
 | **Wire one node's output into another node's input** | [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md) — canonical `=js:$vars.<sourceNodeId>.output.<field>` pattern; per-node-type field reference; covers connector `bodyParameters`/`queryParameters`, HTTP, end-node `source`, variable updates |
-| **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
-| **Embed an AI agent tightly coupled to this flow** | [references/plugins/inline-agent/](references/plugins/inline-agent/) — scaffolded via `uip agent init --inline-in-flow`, node type `uipath.agent.autonomous` |
-| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [CLI: Replace a mock](references/editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
-| **Add data transform nodes** | [references/plugins/transform/impl.md](references/plugins/transform/impl.md) |
-| **Create a subflow** | [references/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
-| **Add a delay or scheduled trigger** | [references/plugins/delay/](references/plugins/delay/) or [references/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
-| **Use queue nodes** | [references/plugins/queue/impl.md](references/plugins/queue/impl.md) |
+| **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/author/plugins/rpa/), [agent](references/author/plugins/agent/), [agentic-process](references/author/plugins/agentic-process/), [flow](references/author/plugins/flow/), [api-workflow](references/author/plugins/api-workflow/), [hitl](references/author/plugins/hitl/) |
+| **Embed an AI agent tightly coupled to this flow** | [references/author/plugins/inline-agent/](references/author/plugins/inline-agent/) — scaffolded via `uip agent init --inline-in-flow`, node type `uipath.agent.autonomous` |
+| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [CLI: Replace a mock](references/author/editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
+| **Add data transform nodes** | [references/author/plugins/transform/impl.md](references/author/plugins/transform/impl.md) |
+| **Create a subflow** | [references/author/plugins/subflow/impl.md](references/author/plugins/subflow/impl.md) + [JSON: Create a subflow](references/author/editing-operations-json.md#create-a-subflow) |
+| **Add a delay or scheduled trigger** | [references/author/plugins/delay/](references/author/plugins/delay/) or [references/author/plugins/scheduled-trigger/](references/author/plugins/scheduled-trigger/) |
+| **Use queue nodes** | [references/author/plugins/queue/impl.md](references/author/plugins/queue/impl.md) |
 | **Troubleshoot a failed flow** | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
 
 ## Key Concepts
@@ -412,38 +412,38 @@ When you finish building or editing a flow, report to the user:
 
 ## References
 
-- **[Flow Editing Operations](references/editing-operations.md)** — Strategy selection matrix; **Direct JSON is the default**. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
-  - [Direct JSON Strategy](references/editing-operations-json.md) — Default for all `.flow` edits: node/edge CRUD, variables, subflows, output mapping, in-place input updates.
-  - [CLI Strategy](references/editing-operations-cli.md) — Carve-outs (connector, connector-trigger, inline-agent) and explicit user opt-in for `uip maestro flow node` and `uip maestro flow edge` commands.
-- **[Planning: Discovery & Architectural Design](references/planning-arch.md)** — Capability discovery, plugin index, topology design, wiring rules, and common patterns.
-- **[Planning: Implementation Resolution](references/planning-impl.md)** — Registry lookups, connection binding, reference field resolution, wiring rules, and flow patterns.
+- **[Flow Editing Operations](references/author/editing-operations.md)** — Strategy selection matrix; **Direct JSON is the default**. Links to the two strategy guides below. **Read this before modifying any `.flow` file.**
+  - [Direct JSON Strategy](references/author/editing-operations-json.md) — Default for all `.flow` edits: node/edge CRUD, variables, subflows, output mapping, in-place input updates.
+  - [CLI Strategy](references/author/editing-operations-cli.md) — Carve-outs (connector, connector-trigger, inline-agent) and explicit user opt-in for `uip maestro flow node` and `uip maestro flow edge` commands.
+- **[Planning: Discovery & Architectural Design](references/author/planning-arch.md)** — Capability discovery, plugin index, topology design, wiring rules, and common patterns.
+- **[Planning: Implementation Resolution](references/author/planning-impl.md)** — Registry lookups, connection binding, reference field resolution, wiring rules, and flow patterns.
 - **[.flow File Format](references/shared/file-format.md)** — JSON schema, node/edge structure, definition requirements, and minimal working example
 - **[CLI Command Reference](references/shared/commands.md)** — All `uip flow` subcommands with flags and options
 - **[Troubleshooting Guide](references/troubleshooting-guide.md)** — Diagnostic workflow for failed flows: incidents, runtime variables, definition correlation, traces, and `instance`/`incident` CLI reference
 - **[Variables and Expressions](references/shared/variables-and-expressions.md)** — Variable declaration (in/out/inout), type system, `=js:` Jint expressions, template syntax, scoping rules, output mapping, and variable updates
 - **[Node Output Wiring](references/shared/node-output-wiring.md)** — The single rule for wiring one node's output as another node's input. Per-node-type table of where `=js:` is required vs forbidden. Diagnoses the `vars.X.output.Y` literal-string failure mode (MST-9107).
-- **[Node Plugins](references/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
-  - [connector](references/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
-  - [script](references/plugins/script/) — Custom JavaScript logic via Jint ES2020
-  - [http](references/plugins/http/) — REST API calls via `core.action.http.v2` (Managed HTTP Request — connector auth or manual mode)
-  - [decision](references/plugins/decision/) — Binary if/else branching
-  - [switch](references/plugins/switch/) — Multi-way branching (3+ paths)
-  - [loop](references/plugins/loop/) — Collection iteration (sequential/parallel)
-  - [merge](references/plugins/merge/) — Parallel branch synchronization
-  - [end](references/plugins/end/) — Graceful flow completion with output mapping
-  - [terminate](references/plugins/terminate/) — Abort entire flow on fatal error
-  - [transform](references/plugins/transform/) — Declarative filter, map, group-by
-  - [delay](references/plugins/delay/) — Duration or date-based pause
-  - [subflow](references/plugins/subflow/) — Reusable node groups with isolated scope
-  - [scheduled-trigger](references/plugins/scheduled-trigger/) — Recurring schedule triggers
-  - [rpa](references/plugins/rpa/) — Published RPA processes (`uipath.core.rpa.{key}`)
-  - [agentic-process](references/plugins/agentic-process/) — Published orchestration processes (`uipath.core.agentic-process.{key}`)
-  - [flow](references/plugins/flow/) — Published flows as subprocesses (`uipath.core.flow.{key}`)
-  - [api-workflow](references/plugins/api-workflow/) — Published API functions (`uipath.core.api-workflow.{key}`)
-  - [hitl](references/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
-  - [agent](references/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
-  - [inline-agent](references/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
-  - [queue](references/plugins/queue/) — Orchestrator queue item creation
+- **[Node Plugins](references/author/plugins/)** — Each node type has its own plugin folder with `planning.md` (selection heuristics, ports, key inputs) and `impl.md` (registry validation, JSON structure, configuration, debug):
+  - [connector](references/author/plugins/connector/) — IS connector nodes: connection binding, enriched metadata, reference resolution, `bindings_v2.json`
+  - [script](references/author/plugins/script/) — Custom JavaScript logic via Jint ES2020
+  - [http](references/author/plugins/http/) — REST API calls via `core.action.http.v2` (Managed HTTP Request — connector auth or manual mode)
+  - [decision](references/author/plugins/decision/) — Binary if/else branching
+  - [switch](references/author/plugins/switch/) — Multi-way branching (3+ paths)
+  - [loop](references/author/plugins/loop/) — Collection iteration (sequential/parallel)
+  - [merge](references/author/plugins/merge/) — Parallel branch synchronization
+  - [end](references/author/plugins/end/) — Graceful flow completion with output mapping
+  - [terminate](references/author/plugins/terminate/) — Abort entire flow on fatal error
+  - [transform](references/author/plugins/transform/) — Declarative filter, map, group-by
+  - [delay](references/author/plugins/delay/) — Duration or date-based pause
+  - [subflow](references/author/plugins/subflow/) — Reusable node groups with isolated scope
+  - [scheduled-trigger](references/author/plugins/scheduled-trigger/) — Recurring schedule triggers
+  - [rpa](references/author/plugins/rpa/) — Published RPA processes (`uipath.core.rpa.{key}`)
+  - [agentic-process](references/author/plugins/agentic-process/) — Published orchestration processes (`uipath.core.agentic-process.{key}`)
+  - [flow](references/author/plugins/flow/) — Published flows as subprocesses (`uipath.core.flow.{key}`)
+  - [api-workflow](references/author/plugins/api-workflow/) — Published API functions (`uipath.core.api-workflow.{key}`)
+  - [hitl](references/author/plugins/hitl/) — Human input via UiPath Apps (`uipath.core.hitl.{key}`)
+  - [agent](references/author/plugins/agent/) — Published AI agent resources (`uipath.core.agent.{key}`)
+  - [inline-agent](references/author/plugins/inline-agent/) — Autonomous agent embedded inside the flow project (`uipath.agent.autonomous`), scaffolded via `uip agent init --inline-in-flow`
+  - [queue](references/author/plugins/queue/) — Orchestrator queue item creation
 - **[Pack / Publish / Deploy](/uipath:uipath-platform)** — Orchestrator deployment only when explicitly requested (uipath-platform skill). Default publish path is Studio Web via `uip solution upload <SolutionDir>` (Step 8).
 
 > **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.
