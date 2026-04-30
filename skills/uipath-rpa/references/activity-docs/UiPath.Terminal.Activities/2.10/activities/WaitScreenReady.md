@@ -30,6 +30,8 @@ Waits until the terminal keyboard is unlocked and the screen is ready to accept 
 ## XAML Example
 
 ```xml
-<ta:TerminalWaitScreenReady DisplayName="Wait Screen Ready"
-                              TimeoutMS="[30000]" />
+<uit:TerminalWaitScreenReady DisplayName="Wait Screen Ready"
+                              TimeoutMS="[30000]"
+                              WaitType="READY"
+                              DelayMS="0" />
 ```

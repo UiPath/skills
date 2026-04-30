@@ -32,7 +32,9 @@ Moves the terminal cursor to an exact row and column position on the screen.
 ## XAML Example
 
 ```xml
-<ta:TerminalMoveCursor DisplayName="Move Cursor"
+<uit:TerminalMoveCursor DisplayName="Move Cursor"
                         Row="[5]"
-                        Column="[20]" />
+                        Column="[20]"
+                        WaitType="READY"
+                        DelayMS="300" />
 ```

@@ -42,8 +42,10 @@ Unlike **Get Text at Position** (which reads raw character data from a position)
 ## XAML Example
 
 ```xml
-<ta:TerminalGetFieldAtPosition DisplayName="Get Field at Position"
+<uit:TerminalGetFieldAtPosition DisplayName="Get Field at Position"
                                 Row="[7]"
                                 Column="[15]"
-                                Text="[fieldValue]" />
+                                Text="[fieldValue]"
+                                WaitType="READY"
+                                DelayMS="300" />
 ```

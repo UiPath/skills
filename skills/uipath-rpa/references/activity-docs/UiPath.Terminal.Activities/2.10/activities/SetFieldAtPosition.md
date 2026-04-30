@@ -44,9 +44,11 @@ Writes text into the input field that starts at the specified row and column pos
 ## XAML Example
 
 ```xml
-<ta:TerminalSetFieldAtPosition DisplayName="Set Field at Position"
+<uit:TerminalSetFieldAtPosition DisplayName="Set Field at Position"
                                 Row="[7]"
                                 Column="[15]"
                                 Text="[inputValue]"
-                                BackwardsCompatible="False" />
+                                BackwardsCompatible="False"
+                                WaitType="READY"
+                                DelayMS="300" />
 ```

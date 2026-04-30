@@ -40,10 +40,12 @@ Reads all text within a rectangular region of the terminal screen, defined by a 
 ## XAML Example
 
 ```xml
-<ta:TerminalGetScreenArea DisplayName="Get Screen Area"
+<uit:TerminalGetScreenArea DisplayName="Get Screen Area"
                            Row="[3]"
                            Column="[1]"
                            EndRow="[10]"
                            EndColumn="[80]"
-                           Text="[areaText]" />
+                           Text="[areaText]"
+                           WaitType="READY"
+                           DelayMS="300" />
 ```
