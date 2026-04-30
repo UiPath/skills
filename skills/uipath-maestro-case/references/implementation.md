@@ -228,6 +228,16 @@ Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams resul
 
 When a debug or process run fails, read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
 
+**Diagnose → fix → re-run loop.** After each diagnostic pass, classify the root cause and act:
+
+1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply the targeted fix via the matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 14 debug.
+2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to the user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
+3. **Inconclusive** (no actionable cause): proceed to next round per retry policy.
+
+**Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply a different fix — do not repeat identical commands or re-apply the same fix. Track round count.
+
+After the 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask the user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
+
 ## Step 15 — Optional: Publish to Studio Web
 
 **Default publish target.** Uploads the case to Studio Web for visualization and editing.

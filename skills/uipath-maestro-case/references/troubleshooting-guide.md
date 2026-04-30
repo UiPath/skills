@@ -23,6 +23,8 @@ uip maestro case job status <JOB_KEY> --output json
 
 Parse the instance ID and folder key from the response.
 
+> **No instance ID / `job status` fails →** halt. Report job key to user; downstream steps need the instance ID.
+
 ## Step 2 — Fetch incidents
 
 Failed cases always have an incident. Start here — incidents give you the error category, message, and the faulting element.
@@ -49,6 +51,8 @@ For all incidents on a specific case process:
 uip maestro case processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
+> **Empty incidents →** skip to Step 3. **Invalid instance ID error →** recheck Step 1 output.
+
 ## Step 3 — Fetch runtime variable state
 
 Get the variable values at the time of failure to understand what data each stage/task was working with:
@@ -63,6 +67,8 @@ Scope to a specific element (stage or task):
 uip maestro case instance variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
 ```
 
+> **Empty variables →** skip to Step 4.
+
 ## Step 4 — Correlate with the case definition
 
 Use the incident's faulting element ID and the variable state to locate the failure point in `caseplan.json`. Map the element ID to the corresponding stage, task, edges etc., check its `data.inputs[]`, upstream edges, and the variable values flowing into it.
@@ -72,6 +78,8 @@ If the local `caseplan.json` may differ from what was deployed, fetch the deploy
 ```bash
 uip maestro case instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
 ```
+
+> **`instance asset` fails →** fall back to local `caseplan.json`.
 
 Additional instance inspection commands:
 
@@ -90,6 +98,14 @@ uip maestro case job traces <JOB_KEY> --pretty                  # human-readable
 ```
 
 > **Always use CLI commands for troubleshooting — never call the underlying APIs directly.**
+
+## Stop conditions
+
+1. **Stop early on root cause.** Once a step yields actionable cause (error + faulting element + variable state), stop. Skip remaining steps.
+2. **Empty result → next step.** If a step returns empty/missing data, move to the next step. Do not retry the same command.
+3. **One retry on transient failure** (auth, network). Second failure: halt that step, continue.
+4. **Max one full pass through Steps 1–5.** No looping.
+5. **Escalate to user** if Steps 1–5 yield no root cause, or all paths blocked. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot. Do not propose `caseplan.json` edits without confirmed cause.
 
 ## CLI command reference
 
