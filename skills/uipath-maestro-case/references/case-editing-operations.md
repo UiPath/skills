@@ -136,13 +136,21 @@ All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `i
 - **Write** to rewrite the whole file.
 - **Edit** for narrowly-scoped, unambiguous in-place replacements.
 
-**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`. The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
+**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
 This is a hard constraint — it keeps every mutation reviewable in the tool-call transcript and prevents silent state changes the user cannot audit.
 
+**Anti-patterns that count as file mutation (forbidden — write the file via the Write/Edit tool instead):**
+
+- `node -e "const fs=require('fs'); ... fs.writeFileSync(...)"` — the `node -e` permission is for stdout-only helpers, not file I/O.
+- `node -e "..."` / `python -c "..."` / `jq '...' caseplan.json` followed by `> caseplan.json`, `>> caseplan.json`, or `| tee caseplan.json` — shell redirection onto a skill artifact is mutation, regardless of which interpreter ran.
+- `cat caseplan.json | jq '...'` even if you only "intend to print" — `jq` is forbidden; use Read.
+- `sed -i` / `awk -i inplace` / `python -c "open('caseplan.json','w')..."` — same family, all forbidden.
+- `bash -c "...>caseplan.json..."` — wrapping the redirection in another shell does not exempt it.
+
 Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
 
-**Bash is still used for**: ID randomness (`node -e "..."` one-liners that print to stdout only — see "Generate a fresh ID" below), `uip solution new` / `uip solution project add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
+**Bash is still used for**: ID randomness (`node -e "..."` one-liners that print to stdout only — see "Generate a fresh ID" below; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution new` / `uip solution project add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
 
 ### Read → modify → write
 
