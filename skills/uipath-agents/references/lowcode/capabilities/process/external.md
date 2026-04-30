@@ -2,7 +2,7 @@
 
 Walkthrough for adding a tool that calls a process **already deployed in Orchestrator** (outside the current solution). Supports all 4 external process types: RPA processes, agents, API workflows, and agentic processes (process orchestration). They share discovery, refresh flow, and resource shape — only `type`, the process declaration directory, and the schema-field flavor (raw .NET vs JSON Schema V2) differ.
 
-For solution-internal agents (another project in the **same** solution), see [solution-agent.md](solution-agent.md).
+For solution-internal processes (RPA / agent / API workflow / agentic process projects in the **same** solution), see [solution.md](solution.md).
 
 ## Sub-Variants
 
@@ -94,7 +94,7 @@ Extract from response (take first entry):
     "policies": []              // Auto-populated by `uip agent validate` from root-level guardrails. Do not edit manually. See ../guardrails/guardrails.md.
   },
   "id": "<uuid>",              // Stable; generate once, never change
-  "referenceKey": "<release-key-guid>", // For external: the release Key (lowercase GUID from /odata/Releases API). For solution-internal: leave empty, validate resolves it.
+  "referenceKey": "<release-key-guid>", // The release Key (lowercase GUID from `uip solution resource list` / `/odata/Releases`). For solution-internal tools, see solution.md.
   "isEnabled": true,
   "argumentProperties": {}
 }

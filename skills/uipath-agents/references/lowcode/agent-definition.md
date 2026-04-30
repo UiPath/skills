@@ -245,7 +245,7 @@ The `validate` command reads these files, resolves `referenceKey` for solution t
 
 For each resource type's full schema, see the relevant capability file:
 
-- Tool resources (`$resourceType: "tool"`) — [capabilities/process/external.md](capabilities/process/external.md), [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
+- Tool resources (`$resourceType: "tool"`) — [capabilities/process/external.md](capabilities/process/external.md), [capabilities/process/solution.md](capabilities/process/solution.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
 

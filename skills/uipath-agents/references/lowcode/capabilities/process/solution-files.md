@@ -2,6 +2,8 @@
 
 When `uip solution resource refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [external.md](external.md).
 
+> **Solution-internal tools do not need any of these templates.** When the target is a sibling project in the same solution, `uip solution project add` and `uip solution resource refresh` produce the package and process files automatically; no `debug_overwrites.json` is required. See [solution.md](solution.md).
+
 This is also the canonical location for the "How to get the values" extraction logic — Releases API, GetPackageEntryPointsV2, and JWT decoding.
 
 ## Directory Structure
