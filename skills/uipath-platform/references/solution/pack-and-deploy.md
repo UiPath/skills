@@ -14,6 +14,7 @@ Pack a solution into a deployable package, publish to the feed, and deploy to Or
 
 - Authenticated (`uip login`)
 - Solution developed and ready to pack (see [develop-solution.md](develop-solution.md))
+- Solution state verified — `.uipx` and `resources/solution_folder/` agree on the project set (see [develop-solution.md - Always verify state after every mutation](develop-solution.md#always-verify-state-after-every-mutation))
 
 ## Flow
 

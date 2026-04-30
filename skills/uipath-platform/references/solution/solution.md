@@ -19,13 +19,24 @@ A UiPath Solution is a container that groups multiple automation projects (proce
 
 ```
 MySolution/
-├── MySolution.uipx          <- Solution manifest
-├── ProjectA/                <- Automation project
-│   ├── project.json / project.uiproj
-│   └── *.cs / *.xaml
-├── ProjectB/
-└── config.json              <- Optional environment config
+├── MySolution.uipx                       <- Manifest. Source of truth: project list + IDs + StudioMinVersion.
+├── <ProjectName>/
+│   ├── project.uiproj OR project.json    <- Required for add/import. Type auto-detected.
+│   ├── bindings.json                     <- Agent runtime bindings. NOT scanned by refresh.
+│   ├── bindings_v2.json                  <- Solution refresh reads this (if it exists).
+│   └── ...
+├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
+│   └── solution_folder/
+│       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `project remove`.
+│       └── process/{process,flow}/<name>.json   <- Auto-created on add. Auto-cleaned on remove.
+└── userProfile/<user-uuid>/              <- Appears after first `project remove`.
 ```
+
+> `.uipx` and `resources/solution_folder/` must always agree on the set of projects. Diffing them is the fastest way to detect a corrupted state — see [develop-solution.md - Field-tested gotchas](develop-solution.md#field-tested-gotchas).
+>
+> The `.uipx` also carries a `StudioMinVersion` field (e.g. `2025.10.0`). If users hit a version-mismatch when opening the solution, that's the constraint to check.
+
+> **Coded apps are not registered in `.uipx`.** UiPath Coded Web Apps and Coded Action Apps have no `project.uiproj` / `project.json` — `uip solution project add` does not apply, and they are not packed by `uip solution pack`. They deploy independently via `uip codedapp publish` / `deploy`. A coded app directory can sit alongside a solution but is not part of its manifest. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
 ---
 
@@ -57,8 +68,8 @@ uip solution
   │     ├── remove <projectPath> [solutionFile] Unregister a project from .uipx
   │     └── import --source <path>              Copy external project into solution and register
   ├── resource
-  │     ├── list [solutionPath]           List local, remote, or all resources
-  │     └── refresh [solutionPath]        Sync resource declarations from project bindings
+  │     ├── list --solution-folder <path>     List local, remote, or all resources
+  │     └── refresh --solution-folder <path>  Sync resource declarations from project bindings
   ├── deploy
   │     ├── run -n <name>                 Deploy a published solution package
   │     ├── status <id>                   Check deployment status
