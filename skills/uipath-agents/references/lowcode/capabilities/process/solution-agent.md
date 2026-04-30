@@ -39,6 +39,9 @@ No remote discovery needed — the tool agent is another project in the same sol
     }
   },
   "settings": {},
+  "guardrail": {
+    "policies": []              // Must always be present and empty — required for backward-compatible solution loading
+  },
   "properties": {
     "processName": "ToolAgent",
     "folderPath": "solution_folder"
@@ -110,6 +113,9 @@ Create a tool resource file at `AgentA/resources/Agent B/resource.json`:
   },
   "isEnabled": true,
   "settings": {},
+  "guardrail": {
+    "policies": []              // Must always be present and empty — required for backward-compatible solution loading
+  },
   "properties": {
     "processName": "Agent B",
     "folderPath": "solution_folder"  // ← always solution_folder for solution resources

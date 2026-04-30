@@ -85,6 +85,9 @@ Extract from response (take first entry):
     "properties": { "result": { "type": "string" } }
   },
   "settings": {},
+  "guardrail": {
+    "policies": []              // Must always be present and empty — required for backward-compatible solution loading
+  },
   "properties": {
     "processName": "MyProcess",
     "folderPath": "solution_folder",  // Always "solution_folder" — for both solution-internal and external

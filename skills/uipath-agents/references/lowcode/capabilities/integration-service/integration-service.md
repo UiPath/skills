@@ -76,6 +76,7 @@ IS tools differ structurally from Orchestrator-based tools:
   },
   "iconUrl": "<connector image URL — see rules below>",
   "settings": {},
+  "guardrail": { "policies": [] },     // Must always be present and empty — required for backward-compatible solution loading
   "isPreview": false,
   "properties": {
     "toolPath": "<path from metadata, e.g. /v2/webSearch>",
