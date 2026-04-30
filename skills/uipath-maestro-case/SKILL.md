@@ -42,6 +42,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively from 
 13. **All skill artifacts: Read + Write/Edit only.** Applies to `caseplan.json`, `sdd.md`, `sdd.draft.md`, `tasks.md`, `tasks/registry-resolved.json`. No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save these files. Bash subprocesses OK for stdout-only helpers (e.g., id generation), CLI metadata fetches, validate, debug, and solution scaffold/upload. See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
 14. **Always run `uip solution resource refresh` before `uip solution upload` or `uip maestro case debug`** — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
 15. **Never auto-invoke `uipath-solution-design`.** On Phase 0 threshold breach or stuck-round detection, print plain-text suggestion of the skill name. User re-invokes manually. No tool-call cross-skill handoff.
+16. **Caseplan task `type` enum is closed — 9 values, schema-kebab.** Any task node written into `caseplan.json` MUST have `type` exactly one of: `process` | `agent` | `rpa` | `action` | `api-workflow` | `case-management` | `execute-connector-activity` | `wait-for-connector` | `wait-for-timer`. **Never** write the plugin folder name (`connector-activity`, `connector-trigger`) or the CLI `--type` flag value into the JSON node — those name the planning artifacts, not the schema. Never write `external-agent`, `wait-for-event`, or any hallucinated value — there is no plugin to back them. See [references/case-schema.md § Task type](references/case-schema.md) and the Plugin Index naming-asymmetry table below.
 
 ## Workflow
 
@@ -123,17 +124,19 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 
 **Tasks** (`references/plugins/tasks/`):
 
-| Plugin | sdd.md component type |
-|--------|-----------------------|
-| [process](references/plugins/tasks/process/planning.md) | PROCESS, AGENTIC_PROCESS |
-| [agent](references/plugins/tasks/agent/planning.md) | AGENT |
-| [rpa](references/plugins/tasks/rpa/planning.md) | RPA |
-| [action](references/plugins/tasks/action/planning.md) | HITL |
-| [api-workflow](references/plugins/tasks/api-workflow/planning.md) | API_WORKFLOW |
-| [case-management](references/plugins/tasks/case-management/planning.md) | CASE_MANAGEMENT |
-| [connector-activity](references/plugins/tasks/connector-activity/planning.md) | CONNECTOR_ACTIVITY |
-| [connector-trigger](references/plugins/tasks/connector-trigger/planning.md) | CONNECTOR_TRIGGER |
-| [wait-for-timer](references/plugins/tasks/wait-for-timer/planning.md) | TIMER (in-stage) |
+> **Naming asymmetry — read carefully.** Three names exist for connector + timer tasks. Pick the right one by column. Schema-kebab is the only value that goes into `caseplan.json` `type` (Rule 16).
+
+| sdd.md `Type:` value / caseplan.json `type` (schema-kebab) | Plugin folder | CLI `--type` flag (`tasks describe`) |
+|---|---|---|
+| `process` | [process](references/plugins/tasks/process/planning.md) | `process` |
+| `agent` | [agent](references/plugins/tasks/agent/planning.md) | `agent` |
+| `rpa` | [rpa](references/plugins/tasks/rpa/planning.md) | `rpa` |
+| `action` | [action](references/plugins/tasks/action/planning.md) | `action` |
+| `api-workflow` | [api-workflow](references/plugins/tasks/api-workflow/planning.md) | `api-workflow` |
+| `case-management` | [case-management](references/plugins/tasks/case-management/planning.md) | `case-management` |
+| `execute-connector-activity` | [connector-activity](references/plugins/tasks/connector-activity/planning.md) | `connector-activity` |
+| `wait-for-connector` | [connector-trigger](references/plugins/tasks/connector-trigger/planning.md) | `connector-trigger` |
+| `wait-for-timer` | [wait-for-timer](references/plugins/tasks/wait-for-timer/planning.md) | `wait-for-timer` (no CLI describe needed) |
 
 **Triggers** (`references/plugins/triggers/`):
 

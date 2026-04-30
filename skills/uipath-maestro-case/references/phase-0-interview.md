@@ -144,7 +144,7 @@ On `Re-validate`, structural checks:
 
 - Required fields per Round 2 §Required (case name, prefix, ≥1 trigger, ≥1 stage, ≥1 task per stage with type, ≥1 case exit)
 - Every stage has ≥1 task entry
-- Every task has a `Type:` from the 10-type set
+- Every task has a `Type:` from the closed 9-value schema enum (`process` | `agent` | `rpa` | `action` | `api-workflow` | `case-management` | `execute-connector-activity` | `wait-for-connector` | `wait-for-timer`). Reject `external-agent`, `connector-activity`, `connector-trigger`, or any other value (SKILL.md Rule 16).
 - Every task has at minimum a `Description:` line
 - **Exit Condition WHEN ↔ Marks Complete pairing** (sdd-template.md Key Rule 4 — applies to both stage exit and case exit):
   - **Stage exit:** `Marks Stage Complete: Yes` → must use `required-tasks-completed` / `required-stages-completed`; `No` → may use `selected-tasks-completed(...)`. Flag any `Yes + selected-tasks-completed` pair as error.

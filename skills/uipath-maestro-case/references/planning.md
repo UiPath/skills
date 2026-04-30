@@ -71,17 +71,19 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.1 Task Type catalog
 
-| sdd.md component type | Plugin |
-|-----------------------|--------|
-| PROCESS, AGENTIC_PROCESS | `plugins/tasks/process/` |
-| AGENT | `plugins/tasks/agent/` |
-| RPA | `plugins/tasks/rpa/` |
-| HITL | `plugins/tasks/action/` |
-| API_WORKFLOW | `plugins/tasks/api-workflow/` |
-| CASE_MANAGEMENT | `plugins/tasks/case-management/` |
-| CONNECTOR_ACTIVITY | `plugins/tasks/connector-activity/` |
-| CONNECTOR_TRIGGER | `plugins/tasks/connector-trigger/` |
-| TIMER (in-stage) | `plugins/tasks/wait-for-timer/` |
+> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` skeleton instead.
+
+| sdd.md `Type:` / caseplan.json `type` | Plugin folder |
+|---|---|
+| `process` (covers `AGENTIC_PROCESS` legacy label) | `plugins/tasks/process/` |
+| `agent` | `plugins/tasks/agent/` |
+| `rpa` | `plugins/tasks/rpa/` |
+| `action` | `plugins/tasks/action/` |
+| `api-workflow` | `plugins/tasks/api-workflow/` |
+| `case-management` | `plugins/tasks/case-management/` |
+| `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `wait-for-connector` | `plugins/tasks/connector-trigger/` |
+| `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
 ### 3.2 Trigger Type catalog (case-level)
 

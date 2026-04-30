@@ -24,7 +24,7 @@ build the case in the Case Designer without guessing.
 
 ### Key Rules
 
-1. **SLA placement:** SLA is supported on the **case**, on **stages**, and on **`action` tasks only**. Do NOT put SLA on `process`, `agent`, `rpa`, `api-workflow`, `external-agent`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, or `case-management` tasks.
+1. **SLA placement:** SLA is supported on the **case**, on **stages**, and on **`action` tasks only**. Do NOT put SLA on `process`, `agent`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, or `case-management` tasks.
 
 2. **No skip conditions:** Stage skip conditions are NOT supported in the schema. Do not generate them. Use task-level `shouldRunOnlyOnce` for re-entry behavior.
 
@@ -61,19 +61,20 @@ build the case in the Case Designer without guessing.
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
    - **IF** = the optional `conditionExpression` (JavaScript expression evaluated against case variables, e.g., `applicationStatus == "Approved"`)
 
-7. **Task types — choose based on WHAT THE TASK DOES, not its surface label.** All 10 types must be considered for every task:
+7. **Task types — closed enum of 9 values. Choose based on WHAT THE TASK DOES, not its surface label.** Any other value (e.g., `external-agent`, `connector-activity`, `wait-for-event`) is invalid and breaks downstream JSON generation. Consider all 9 for every task:
    - `action` — a human must review, approve, or make a judgment call. The task PAUSES for a person.
    - `agent` — AI reasoning: classification, criteria application, document analysis, risk assessment, triage. Use for any semi-structured reasoning.
    - `process` — deterministic multi-step BPMN: routing, orchestration, batch processing, report generation. No judgment (human or AI).
    - `rpa` — UI automation for legacy systems without APIs. An attended or unattended robot drives a desktop/web app.
    - `api-workflow` — structured API call with defined I/O. System-to-system.
-   - `external-agent` — AI agent hosted OUTSIDE UiPath (CrewAI, Salesforce Einstein, Databricks, LangChain, etc.)
    - `wait-for-timer` — waits for a duration, date, or schedule.
-   - `wait-for-connector` — waits for an Integration Service event from an external system.
+   - `wait-for-connector` — waits for an Integration Service event from an external system (in-stage trigger).
    - `execute-connector-activity` — executes a pre-built IS connector operation. Prefer over `api-workflow` when a connector exists.
    - `case-management` — starts a child case with its own lifecycle.
-   
+
    **A well-designed SDD uses a MIX of types.** If all tasks are `action`, the SDD is wrong — most processes have automated steps. If no tasks are `agent`, consider whether any task involves classification, criteria application, or document analysis.
+
+   **Externally-hosted AI agents** (CrewAI, Salesforce Einstein, Databricks, LangChain, etc.) have no first-class type in this skill. Model them as `api-workflow` (system-to-system invocation) or `execute-connector-activity` if a connector exists. Do not invent `external-agent`.
 
 ### Naming Conventions
 
@@ -207,7 +208,7 @@ The generated SDD must start with:
 
 | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|----------|---------------|---------|-----|
-| 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| external-agent \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
+| 1 | {task name} | {action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management} | {Yes \| No} | {Yes \| No} | {persona name or "—"} | {count unit or "—" (only for action tasks)} |
 
 > After the summary table, provide a detailed subsection for each task.
 
@@ -312,9 +313,9 @@ The generated SDD must start with:
 
 ---
 
-###### Process / Agent / RPA / API Workflow / External Agent Task Detail
+###### Process / Agent / RPA / API Workflow Task Detail
 
-> Use this block for `process`, `agent`, `rpa`, `api-workflow`, and `external-agent` tasks. These tasks do NOT support SLA — SLA column in the task summary should be "—".
+> Use this block for `process`, `agent`, `rpa`, and `api-workflow` tasks. These tasks do NOT support SLA — SLA column in the task summary should be "—".
 
 **Inputs:**
 

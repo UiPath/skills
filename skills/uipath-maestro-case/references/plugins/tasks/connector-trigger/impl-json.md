@@ -1,5 +1,7 @@
 # connector-trigger task — Implementation (Direct JSON Write)
 
+> **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling `uip maestro case tasks describe`. See SKILL.md Rule 16 + Plugin Index.
+
 > **Phase split.** Runs across both phases. Phase 2a writes `data.type-id` + `data.connection-id` only; **do NOT call `is triggers describe` in 2a**. Phase 2b runs `is triggers describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Write a `wait-for-connector` task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md).
