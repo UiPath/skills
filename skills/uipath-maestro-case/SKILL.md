@@ -30,7 +30,7 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 4. **Follow plugin per node type.** Open matching `planning.md` during planning + `impl-json.md` during execution. Never guess JSON shapes from memory.
 5. **`tasks.md` declarative only.** No shell commands inside. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. One T-entry per sdd.md declaration — every stage, edge, task, trigger, condition, SLA rule gets own T-number, even when value looks like default (`current-stage-entered`, `case-entered`, `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). Never group, never silently omit. Always regenerate from scratch. See [`references/planning.md` §4.0](references/planning.md).
 6. **HARD STOP after `tasks.md`.** AskUserQuestion: `Approve and proceed` / `Request changes`. Re-read `tasks.md` before executing.
-7. **Unresolved resource → skeleton task. Never fabricate IDs.** Keep `<UNRESOLVED: ...>` on `taskTypeId` / `typeId` / `connectionId`. Omit `inputs:` / `outputs:`. Execute by writing the task JSON node with `type` + `displayName` + structural fields, `data: {}`, no `taskTypeId` / `connectionId` keys. Conditions still reference skeleton's TaskId. See [references/skeleton-tasks.md](references/skeleton-tasks.md).
+7. **Unresolved resource → skeleton, never fabricate IDs.** Keep `<UNRESOLVED: ...>` markers in `tasks.md`. Skeleton **task**: node with `type` + `displayName` + structural fields, `data: {}`; conditions still reference the TaskId. Skeleton **event trigger**: node with render fields + `data.uipath: { serviceType: "Intsvc.EventTrigger" }` only (no other `data.uipath` keys); `entry-points.json` entry appended; trigger-edge to first stage created. See [references/skeleton-tasks.md](references/skeleton-tasks.md) and [references/plugins/triggers/event/impl-json.md § Skeleton fallback](references/plugins/triggers/event/impl-json.md).
 8. **Persist every registry resolution to `registry-resolved.json`** — search query, all matches, selected result, rationale.
 9. **Cross-task refs:** `"Stage Name"."Task Name".output_name` in planning, resolve to `=vars.<outputVarId>` at execution by reading source's `var` field. Discover output names via `uip maestro case tasks describe` — never fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md).
 10. **HARD STOP between Phase 2a and Phase 2b — unconditional, every run.** Run informational `validate` (no `--mode`), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2a validate errors — unbound inputs/missing conditions/missing SLA expected. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. **On `Publish for review`: print `DesignerUrl` as plain-text output BEFORE invoking the second AskUserQuestion — never embed URL only inside the question body.** Full contract in [`references/phased-execution.md`](references/phased-execution.md).
@@ -56,11 +56,12 @@ HARD STOP: AskUserQuestion approval. Loop on `Request changes`.
 Read [references/implementation.md](references/implementation.md) + [references/phased-execution.md](references/phased-execution.md). Builds structural shape only:
 
 1. Solution + project + root case (Step 6)
-2. Global variables + arguments (Step 6.1)
-3. Stages (Step 7), edges (Step 8), triggers
-4. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `is describe`); unresolved as skeletons per Rule 7
-5. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-6. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 2b` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+2. Triggers — manual / timer / event, including skeleton event triggers per Rule 7 (Step 6.1)
+3. Global variables + arguments (Step 6.2) — including In arguments whose `elementId` references a `TriggerId` captured in Step 6.1
+4. Stages (Step 7), edges (Step 8)
+5. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `is describe`); unresolved as skeletons per Rule 7
+6. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
+7. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resource refresh <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 2b` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
 ### Phase 2b — Detail build
 

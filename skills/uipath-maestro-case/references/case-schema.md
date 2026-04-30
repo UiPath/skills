@@ -116,6 +116,8 @@ No `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (
 
 `serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
+> **Skeleton form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.uipath` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md).
+
 ### b) Stage Node — `"case-management:Stage"`
 
 Standard workflow stage. Contains tasks.

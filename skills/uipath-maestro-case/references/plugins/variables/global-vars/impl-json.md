@@ -58,6 +58,8 @@ The `source` and `name` fields keep the original value — only `var` / `id` / `
 
 The trigger mapping bridges `inputs[]` to `inputOutputs[]` at runtime. Without it, `=vars.expenseId` would be empty.
 
+> **Skeleton trigger interaction:** if the producing trigger is a skeleton event trigger (per [`plugins/triggers/event/impl-json.md` § Skeleton fallback](../../triggers/event/impl-json.md)), write entries 1 + 2 referencing the skeleton's `trigger_xxxxxx` ID normally but **skip entry 3** — the skeleton has no `data.uipath.outputs` array. At runtime the trigger never fires, so the In arg falls back to its `default`.
+
 ## Out Argument — 2 entries
 
 1. **Companion inputOutput** in `inputOutputs[]` (name-based ID, with `default` if specified)
