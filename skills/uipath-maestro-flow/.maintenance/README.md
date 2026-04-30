@@ -10,7 +10,7 @@ The skill is organized into three peer capabilities:
 SKILL.md                                ← capability router (universal rules + 3-bucket intent)
 references/
 ├── shared/                             ← cross-capability primitives
-│   ├── commands.md                     ← flat CLI lookup
+│   ├── cli-commands.md                 ← flat CLI lookup
 │   ├── cli-conventions.md              ← --output json, login, FOLDER_KEY, etc.
 │   ├── file-format.md                  ← .flow JSON schema
 │   ├── variables-and-expressions.md    ← =js: Jint expressions
@@ -128,12 +128,46 @@ bash .maintenance/check-template.sh
 
 Returns `capabilities_checked=N missing_sections=M`. Exits non-zero if any `CAPABILITY.md` is missing a required section. Catches drift if a future edit removes or renames a canonical section.
 
+## Verifying no orphaned files
+
+Run the orphan-checker script to find `.md` files under `references/` that no other `.md` file links to:
+
+```bash
+bash .maintenance/check-orphans.sh
+```
+
+Returns `files_checked=N orphans=M`. Exits non-zero if any orphans are found. `CAPABILITY.md` files are excluded (they are entry points linked from SKILL.md and peer indexes; SKILL.md itself is excluded as the root entry point).
+
+Orphans typically appear after a refactor that removed inbound links but didn't delete the now-unreferenced file. Folder links count as inbound for every `.md` inside the folder, matching the agent-navigation convention used by `check-depth.sh`.
+
+## Verifying plugin folder pairs
+
+Run the plugin-pairs checker to verify every plugin folder has both `planning.md` and `impl.md` (the per-plugin convention):
+
+```bash
+bash .maintenance/check-plugin-pairs.sh
+```
+
+Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder is missing a required file. Catches half-deleted plugins or new plugin folders that haven't been completed.
+
+## Running the full suite
+
+Run all six checkers in one invocation:
+
+```bash
+bash .maintenance/check-all.sh
+```
+
+Continues running all checkers even when one fails — the goal is to surface every issue in a single pass. Exits non-zero if any checker fails.
+
 ## When to run these checkers
 
-- Before committing changes that move files or rewrite link paths
+- Before committing changes that move files or rewrite link paths — `check-all.sh` covers everything in one pass
 - Before merging a PR that touches `references/`
 - After a refactoring phase
-- Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md` to confirm structural conformance
+- After deleting a doc — run `check-orphans.sh` to confirm nothing else became orphaned
+- Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md`
+- After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present
 
 The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.
 

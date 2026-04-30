@@ -6,8 +6,6 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 # UiPath Flow Skill
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Comprehensive guide for creating, editing, validating, debugging, publishing, and diagnosing UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into three capabilities — **Author**, **Operate**, **Diagnose** — each with its own index doc.
 
 ## When to use this skill
@@ -39,16 +37,16 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 
 ## Capability router
 
-| I want to... | Read |
-| --- | --- |
-| Create a new flow or edit an existing one | [references/author/CAPABILITY.md](references/author/CAPABILITY.md) |
-| Publish, deploy, debug, or manage a flow's lifecycle | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
-| Diagnose a failed or misbehaving flow run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
-| Look up CLI command syntax | [references/shared/commands.md](references/shared/commands.md) |
-| Look up CLI conventions (`--output json`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
-| Understand the `.flow` JSON format | [references/shared/file-format.md](references/shared/file-format.md) |
-| Understand variables and `=js:` expressions | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) |
-| Wire one node's output into another node's input | [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md) |
+| I want to...                                                 | Read                                                                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
+| Publish, deploy, debug, or manage a flow's lifecycle         | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md)                             |
+| Diagnose a failed or misbehaving flow run                    | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md)                           |
+| Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                                   |
+| Look up CLI conventions (`--output json`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md)                     |
+| Understand the `.flow` JSON format                           | [references/shared/file-format.md](references/shared/file-format.md)                             |
+| Understand variables and `=js:` expressions                  | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) |
+| Wire one node's output into another node's input             | [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md)               |
 
 ## Critical rules (universal)
 
@@ -57,11 +55,12 @@ These rules apply across all three capabilities. Each capability index adds capa
 1. **ALWAYS use `--output json`** on all `uip` commands when parsing output programmatically.
 2. **Do NOT run `flow debug` without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs).
 3. **Resource discovery order — search before creating.** When the prompt references an existing resource by name ("use the X agent", "call the Y API workflow", "invoke the Z RPA process"), follow this order strictly before deciding the resource doesn't exist:
-    1. **Tenant registry search** — `uip maestro flow registry search "<name>" --output json`. Requires `uip login`; returns published resources.
-    2. **In-solution local discovery** — `uip maestro flow registry list --local --output json`. No login required; returns sibling projects in the same `.uipx` solution.
-    3. **Only then create/scaffold** — scaffold an inline agent, mock, or create-new-resource only when both searches return no match AND either the user explicitly asks to embed/inline/create, or no published resource can satisfy the requirement.
+   1. **Tenant registry search** — `uip maestro flow registry search "<name>" --output json`. Requires `uip login`; returns published resources.
+   2. **In-solution local discovery** — `uip maestro flow registry list --local --output json`. No login required; returns sibling projects in the same `.uipx` solution.
+   3. **Only then create/scaffold** — scaffold an inline agent, mock, or create-new-resource only when both searches return no match AND either the user explicitly asks to embed/inline/create, or no published resource can satisfy the requirement.
 
-    The words "coded" and "low-code" describe the *implementation style* of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/author/references/plugins/rpa/impl.md), [agent](references/author/references/plugins/agent/impl.md)).
+   The words "coded" and "low-code" describe the _implementation style_ of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. `node add` auto-falls back to local discovery when a node type is not found in the cached registry. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/author/references/plugins/rpa/impl.md), [agent](references/author/references/plugins/agent/impl.md)).
+
 4. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
 5. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), use the `AskUserQuestion` tool with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue.
 6. **A Flow project MUST live inside a solution** — always scaffold the solution first (`uip solution new <Name>`), then `cd <Name>` and run `uip maestro flow init <Name>`. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested). Running `uip maestro flow init` in a bare directory produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload, packaging, and downstream tooling. See [author/greenfield.md](references/author/references/greenfield.md) Step 2.

@@ -41,7 +41,7 @@ Instance ID: <instanceId>
 
 If either value is missing from the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
 
-See [shared/commands.md — uip maestro flow debug](../../shared/commands.md#uip-maestro-flow-debug) for additional options.
+See [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-commands.md#uip-maestro-flow-debug) for additional options.
 
 ## Process run — trigger a deployed process
 

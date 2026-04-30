@@ -45,7 +45,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | **Diagnose a publish/upload structural error** | [diagnose/failure-modes.md — Single-nested layout](references/failure-modes.md#single-nested-layout) |
 | **Diagnose `Folder does not exist` on a resource node** | [diagnose/failure-modes.md — Missing `bindings[]` on resource node](references/failure-modes.md#missing-bindings-on-resource-node) |
 | **Triage "validate passes, debug faults"** | [diagnose/failure-modes.md — `flow validate` passes, `flow debug` faults](references/failure-modes.md#flow-validate-passes-flow-debug-faults) |
-| **Look up `instance` / `incident` CLI syntax** | [shared/commands.md](../shared/commands.md) + [diagnose/troubleshooting-guide.md — CLI command reference](references/troubleshooting-guide.md#cli-command-reference) |
+| **Look up `instance` / `incident` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) + [diagnose/troubleshooting-guide.md — CLI command reference](references/troubleshooting-guide.md#cli-command-reference) |
 
 ## Anti-patterns
 
@@ -63,7 +63,7 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 
 ### Cross-capability (shared)
 
-- [shared/commands.md](../shared/commands.md) — flat CLI lookup including `instance` / `incident` / `job` subcommands
+- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `instance` / `incident` / `job` subcommands
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — `--folder-key` requirement, login state, JSON output shape
 - [shared/file-format.md](../shared/file-format.md) — to correlate faulting element IDs back to `.flow` nodes
 - [shared/node-output-wiring.md](../shared/node-output-wiring.md) — referenced from MST-9107 failure mode

@@ -78,7 +78,7 @@ Tidy:
 
 ### Reference
 
-[author capability](../../author/CAPABILITY.md) — see "Always run `flow tidy` after edits" in critical rules; [shared/commands.md — uip maestro flow tidy](../../shared/commands.md#uip-maestro-flow-tidy).
+[author capability](../../author/CAPABILITY.md) — see "Always run `flow tidy` after edits" in critical rules; [shared/cli-commands.md — uip maestro flow tidy](../../shared/cli-commands.md#uip-maestro-flow-tidy).
 
 ---
 

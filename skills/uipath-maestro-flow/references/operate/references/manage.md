@@ -31,7 +31,7 @@ uip maestro flow instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json    #
 ## What's next
 
 - **Need to inspect why an instance faulted before deciding pause/cancel/retry?** Triage via [DIAGNOSE.md](../../diagnose/CAPABILITY.md) first — get incidents and runtime variables before intervening.
-- **Need to look up the full `instance` CLI surface?** See [shared/commands.md](../../shared/commands.md) and [diagnose/troubleshooting-guide.md — CLI command reference](../../diagnose/references/troubleshooting-guide.md#cli-command-reference).
+- **Need to look up the full `instance` CLI surface?** See [shared/cli-commands.md](../../shared/cli-commands.md) and [diagnose/troubleshooting-guide.md — CLI command reference](../../diagnose/references/troubleshooting-guide.md#cli-command-reference).
 
 ## Anti-patterns
 

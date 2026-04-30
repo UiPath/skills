@@ -47,7 +47,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 | **Resume a paused instance** | [operate/manage.md](references/manage.md) |
 | **Cancel an instance** | [operate/manage.md](references/manage.md) |
 | **Retry a faulted instance** | [operate/manage.md](references/manage.md) (after diagnosing root cause via [DIAGNOSE.md](../diagnose/CAPABILITY.md)) |
-| **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/commands.md](../shared/commands.md) |
+| **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
 | **My flow run failed** | [DIAGNOSE.md](../diagnose/CAPABILITY.md) |
 
 ## Anti-patterns
@@ -68,7 +68,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 ### Cross-capability (shared)
 
-- [shared/commands.md](../shared/commands.md) — flat CLI lookup including `solution upload`, `solution resource refresh`, `flow pack`, `flow debug`, `flow process`, `flow job`, `flow instance`
+- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `solution upload`, `solution resource refresh`, `flow pack`, `flow debug`, `flow process`, `flow job`, `flow instance`
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, FOLDER_KEY, UIPCLI_LOG_LEVEL, JSON output shape
 - [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — `--inputs` JSON shape for `flow debug`
 

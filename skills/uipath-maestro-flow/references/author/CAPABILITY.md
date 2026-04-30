@@ -52,7 +52,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 | **Generate a flow plan** | [author/planning-arch.md](references/planning-arch.md) + [author/planning-impl.md](references/planning-impl.md) |
 | **Choose the right node type** | [author/planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [shared/file-format.md](../shared/file-format.md) |
-| **Look up CLI commands** | [shared/commands.md](../shared/commands.md) |
+| **Look up CLI commands** | [shared/cli-commands.md](../shared/cli-commands.md) |
 | **Add a Script node** | [author/plugins/script/impl.md](references/plugins/script/impl.md) |
 | **Wire nodes with edges** | [author/editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
@@ -129,7 +129,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 ### Cross-capability (shared)
 
 - [shared/file-format.md](../shared/file-format.md) — `.flow` JSON schema
-- [shared/commands.md](../shared/commands.md) — flat CLI lookup
+- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — CLI mechanics every capability needs
 - [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — variable system + `=js:` Jint expressions
 - [shared/node-output-wiring.md](../shared/node-output-wiring.md) — canonical `=js:$vars.X.output.Y` rule

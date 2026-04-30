@@ -26,7 +26,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --output json
 ```
 
-Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [commands.md — uip maestro flow hitl add](../../../../shared/commands.md#uip-maestro-flow-hitl-add).
+Handles full lifecycle: writes node, adds definition entry once, regenerates `variables.nodes`. Wire the `completed` port after it returns. Full flag reference: [commands.md — uip maestro flow hitl add](../../../../shared/cli-commands.md#uip-maestro-flow-hitl-add).
 
 ### Quick Reference
 
