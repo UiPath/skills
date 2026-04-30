@@ -900,7 +900,8 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
 12. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
 13. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
-14. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
+14. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
+15. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
 
 ## Walkthrough
 
@@ -914,7 +915,26 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent) first.
 
-### Step 2 — Fetch and verify available validators (mandatory)
+### Step 2 — Verify target tools exist (required for Tool-scoped guardrails)
+
+**Skip this step if the guardrail targets only `"Agent"` or `"Llm"` scope with no `matchNames`.**
+
+If the guardrail will use `selector.scopes: ["Tool"]` with `selector.matchNames`, list the tools already added to the agent:
+
+```bash
+uip agent tool list --output json
+```
+
+For each tool name you plan to put in `matchNames`:
+- **Found in `Data`** — proceed.
+- **Not found** — **STOP.** Do not add the guardrail yet. Add the tool first, then return here:
+  - External Orchestrator process (RPA / agent / API / agentic): [../process/external.md](../process/external.md)
+  - Solution-internal agent: [../process/solution-agent.md](../process/solution-agent.md)
+  - Integration Service tool: [../integration-service/integration-service.md](../integration-service/integration-service.md)
+
+> `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
+
+### Step 3 — Fetch and verify available validators (mandatory)
 
 ```bash
 uip agent guardrails list --output json
@@ -928,7 +948,7 @@ Before adding any built-in validator, check the `Data` array for the requested v
 
 Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
 
-### Step 3 — Add a guardrail to agent.json
+### Step 4 — Add a guardrail to agent.json
 
 For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–5, 8).
 
@@ -972,7 +992,7 @@ Quick template — built-in PII validator:
 ]
 ```
 
-### Step 4 — Validate
+### Step 5 — Validate
 
 ```bash
 uip agent validate "<AGENT_NAME>" --output json
