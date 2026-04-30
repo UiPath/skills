@@ -215,13 +215,17 @@ async function main() {
     }
 
     if (onOrgSelect) {
-      console.log(`Organization selection detected (target=${TARGET_ORG || "<unset>"}). Dumping DOM…`);
-      await dumpOrgSelectDom(page);
+      console.log(`Organization selection detected (target=${TARGET_ORG || "<unset>"}).`);
 
       if (!TARGET_ORG) {
+        await dumpOrgSelectDom(page);
         throw new Error("Org-select page appeared but ORG env var is empty. Set ORG to the target org slug.");
       }
 
+      // The org-select URL fires before the SPA hydrates the tile list.
+      // Poll for the target tile to appear before giving up — the page
+      // can take 5-10s to fetch user orgs on alpha, and our previous
+      // one-shot lookup raced the render and false-failed the job.
       // Resolve an ElementHandle for the org tile, trying CSS selectors
       // first then falling back to text-content match. We click via the
       // ElementHandle (Puppeteer's real-mouse CDP path), NOT inside
@@ -234,19 +238,11 @@ async function main() {
         `[data-test-id*="${TARGET_ORG}"]`,
         `[aria-label*="${TARGET_ORG}"]`,
       ];
-      let handle = null;
-      let pickedBy = null;
-      for (const sel of cssSelectors) {
-        const el = await page.$(sel);
-        if (el) {
-          handle = el;
-          pickedBy = `CSS:${sel}`;
-          break;
+      const findHandle = async () => {
+        for (const sel of cssSelectors) {
+          const el = await page.$(sel);
+          if (el) return { handle: el, pickedBy: `CSS:${sel}` };
         }
-      }
-      if (!handle) {
-        // Text-content match. Returns the element node; if no match,
-        // returns null — checked via .asElement() below.
         const candidate = await page.evaluateHandle((org) => {
           const lower = org.toLowerCase();
           const els = document.querySelectorAll(
@@ -259,19 +255,28 @@ async function main() {
           return null;
         }, TARGET_ORG);
         if (candidate.asElement()) {
-          handle = candidate.asElement();
-          pickedBy = `text-match("${TARGET_ORG}")`;
-        } else {
-          await candidate.dispose();
+          return { handle: candidate.asElement(), pickedBy: `text-match("${TARGET_ORG}")` };
         }
+        await candidate.dispose();
+        return null;
+      };
+
+      let resolved = null;
+      const deadline = Date.now() + 30000;
+      while (Date.now() < deadline) {
+        resolved = await findHandle();
+        if (resolved) break;
+        await new Promise((r) => setTimeout(r, 750));
       }
 
-      if (!handle) {
+      if (!resolved) {
+        await dumpOrgSelectDom(page);
         throw new Error(
-          `Could not find a clickable element for org "${TARGET_ORG}" on alpha's org-select page. ` +
+          `Could not find a clickable element for org "${TARGET_ORG}" on alpha's org-select page after 30s. ` +
           `See the DOM dump above and the screenshot saved to AUTH_DEBUG_DIR.`
         );
       }
+      const { handle, pickedBy } = resolved;
 
       console.log(`Picking org via ${pickedBy}…`);
       await handle.evaluate((el) => el.scrollIntoView({ block: "center" }));

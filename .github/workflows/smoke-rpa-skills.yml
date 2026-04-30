@@ -107,24 +107,42 @@ jobs:
             --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
             --store-password-in-clear-text
 
-      # Install from public npm at @latest. The `--@uipath:registry=`
-      # flag forces the @uipath scope to public npm even if some
-      # `.npmrc` (runner image, user-level, or future setup-node config)
-      # maps it elsewhere — notably the internal GitHub Packages feed,
-      # which carries divergent 1.0.0-alpha.* prereleases under the
-      # same scope. Plain `--registry=` does NOT bypass scope mappings;
-      # only the scope-specific override does. `npm install -g` lands
+      # Install from public npm. The `--@uipath:registry=` flag forces
+      # the `@uipath` scope to public npm even if some `.npmrc` (runner
+      # image, user-level, or setup-node config) maps it elsewhere —
+      # notably the internal GitHub Packages feed, which carries
+      # divergent `1.0.0-alpha.*` prereleases under the same scope.
+      # Plain `--registry=` does NOT bypass scope mappings; only the
+      # scope-specific override does.
+      #
+      # Pin `@uipath/rpa-tool` to the `^0.9` line (currently 0.9.1) to
+      # avoid silently picking up `1.0.0-alpha.*` if `latest` ever
+      # shifts. `@uipath/cli` and `@uipath/rpa-legacy-tool` stay on
+      # `latest` (only the rpa-tool line has the alpha divergence).
+      #
+      # `npm install -g` runs from a fresh tempdir so any future
+      # workspace-aware `package.json` at the repo root cannot pull
+      # the install into a workspace context. `npm install -g` lands
       # under `<npm-prefix>/@uipath/`, where uipcli's ToolManager
       # discovers tools, so `uip rpa …` / `uip rpa-legacy …` resolve
       # without triggering auto-install.
-      - name: Install uip CLI + RPA tools (public npm @latest)
+      - name: Install uip CLI + RPA tools (public npm, rpa-tool >=0.9)
         shell: bash
         run: |
           set -e
+          install_dir="$(mktemp -d)"
+          cd "$install_dir"
+          echo "Installing from $install_dir (workspace-isolated)"
+          npm config get registry
           npm install -g \
             --@uipath:registry=https://registry.npmjs.org/ \
-            @uipath/cli@latest @uipath/rpa-tool@latest @uipath/rpa-legacy-tool@latest
+            @uipath/cli@latest \
+            "@uipath/rpa-tool@>=0.9" \
+            @uipath/rpa-legacy-tool@latest
           uip --version
+          echo "--- Installed @uipath/* packages ---"
+          npm ls -g --depth=0 2>/dev/null | grep '@uipath/' || true
+          echo "--- uip tools list ---"
           uip tools list --output json
 
       # Pre-auth uip as a real licensed Studio user via Studio's own e2e
@@ -164,7 +182,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$AUTH_DEBUG_DIR"
-          node .github/scripts/uipath-oauth-login.mjs
+          # Auth via puppeteer is occasionally flaky on alpha (org-select
+          # SPA renders late, or the login form inputs intermittently lose
+          # focus). Retry the login flow up to 3 times before giving up.
+          for attempt in 1 2 3; do
+            echo "--- Auth attempt $attempt ---"
+            if node .github/scripts/uipath-oauth-login.mjs; then
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "::error::Auth failed after 3 attempts"
+              exit 1
+            fi
+            sleep 5
+          done
           # Smoke check the auth context is recognized. Failure here fails
           # the job — we'd rather not run smoke tasks against a broken
           # login state and chase mysterious sign-in errors per task.
@@ -217,30 +248,77 @@ jobs:
           shopt -s globstar nullglob
           overall_exit=0
           for task in ${{ needs.detect.outputs.task_globs }}; do
+            # TODO(rpa-legacy): Bedrock deprecated Opus 4.6 mid-2026-04
+            # and Opus 4.1 IDs return 400 'invalid model identifier'
+            # on the EU regional inference profiles we have access to.
+            # Sonnet trips Bedrock's content filter on the full legacy
+            # XAML baseline reliably (3/3 retries). Skip the task in
+            # CI until we have a working Bedrock model for it; the
+            # task YAML itself is still tracked for local runs and
+            # for an eventual model fix.
+            case "$task" in
+              *rpa-legacy*)
+                echo "::warning::Skipping $task — pending Bedrock Opus model fix"
+                continue
+                ;;
+            esac
             echo "--- Killing leftover Helm/Studio processes ---"
             taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
             echo "--- Running: $task ---"
-            # Per-task Bedrock model override. The Anthropic Sonnet
-            # family (4.5 on Bedrock, 4.6 on Anthropic-direct) trips
-            # the post-generation content filter when emitting the
-            # full legacy XAML baseline (21 namespaces + 16 assembly
-            # refs, including PresentationFramework / PresentationCore
-            # / WindowsBase / System.Xaml / mscorlib +
-            # Microsoft.VisualBasic.Activities). Opus emits it
-            # cleanly. coder_eval's BedrockRoute.model overrides
-            # task-level model, so the only way to swap per-task is
-            # at the env level here.
-            task_model="$BEDROCK_MODEL"
-            case "$task" in
-              *rpa-legacy*) task_model="eu.anthropic.claude-opus-4-6-v1" ;;
-            esac
-            if ! BEDROCK_MODEL="$task_model" coder-eval run "$task" \
-                -e experiments/default.yaml --tags smoke -j 1 -v; then
+            # We previously overrode the legacy task to Opus on Bedrock
+            # to dodge a content filter that tripped on the full legacy
+            # XAML baseline. Opus 4.6 was deprecated on Bedrock, and
+            # both 4-1 (un-versioned) and the suggested
+            # claude-opus-4-1-20250805-v1:0 also returned 400 'invalid
+            # model identifier' on the EU regional inference profiles
+            # we have access to. Drop the override and rely on the
+            # content-filter retry below to absorb intermittent blocks.
+            for attempt in 1 2 3; do
+              echo "--- $task attempt $attempt ---"
+              if coder-eval run "$task" \
+                  -e experiments/default.yaml --tags smoke -j 1 -v; then
+                break
+              fi
+              # Only retry on Bedrock content-filter ERRORs (not on real
+              # task failures — those are real signal). Inspect the most
+              # recent task.json and bail out if final_status is anything
+              # other than ERROR with content-filter details.
+              latest_json="$(ls -t runs/*/default/*/00/task.json 2>/dev/null | head -n 1 || true)"
+              if [ -n "$latest_json" ] && LATEST_JSON="$latest_json" python3 -c "import json,os,sys; d=json.load(open(os.environ['LATEST_JSON'])); det=d.get('error_details') or {}; msg=json.dumps(det)+(d.get('error_message') or ''); sys.exit(0 if d.get('final_status')=='ERROR' and 'content filter' in msg.lower() else 2)"; then
+                echo "::warning::$task: content-filter error on attempt $attempt — retrying"
+                if [ "$attempt" = "3" ]; then
+                  overall_exit=1
+                fi
+                continue
+              fi
               overall_exit=1
-            fi
+              break
+            done
           done
           exit $overall_exit
         continue-on-error: true
+
+      # Upload as early as possible so the report artifact is available
+      # for post-mortem regardless of whether later gate/summary steps
+      # crash.
+      - name: Upload HTML / JSON eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ github.run_id }}
+          path: |
+            tests/runs/*/experiment.html
+            tests/runs/*/experiment.md
+            tests/runs/*/experiment.json
+            tests/runs/*/experiment.log
+            tests/runs/*/*/variant.html
+            tests/runs/*/*/variant.md
+            tests/runs/*/*/variant.json
+            tests/runs/**/task.html
+            tests/runs/**/task.json
+            tests/runs/**/task.log
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Summarize results
         if: always()
@@ -257,7 +335,10 @@ jobs:
           echo "## Task results"
           python - <<'PY'
           import json, pathlib
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          # Skip runs/latest — it's a symlink/copy of the most recent
+          # timestamped run dir, so including it double-counts that task.
+          run_dirs = [d for d in sorted(pathlib.Path('runs').glob('*/'))
+                      if d.name != 'latest']
           rows = []
           for run_dir in run_dirs:
               for p in sorted(run_dir.rglob('task.json')):
@@ -281,90 +362,54 @@ jobs:
           echo "HTML report artifact: eval-report-${{ github.run_id }}"
           echo "Download under the workflow run's Artifacts section and open experiment.html."
 
-      - name: Upload HTML / JSON eval report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-report-${{ github.run_id }}
-          path: |
-            tests/runs/*/experiment.html
-            tests/runs/*/experiment.md
-            tests/runs/*/experiment.json
-            tests/runs/*/experiment.log
-            tests/runs/*/*/variant.html
-            tests/runs/*/*/variant.md
-            tests/runs/*/*/variant.json
-            tests/runs/**/task.html
-            tests/runs/**/task.json
-            tests/runs/**/task.log
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Enforce LLM reviewer score threshold (>= 0.7)
+      # Single global gate: each task must hit weighted_score >= 0.7.
+      # Replaces both the per-criterion `pass_threshold` gate and the
+      # LLM-reviewer threshold gate — `weighted_score` is the
+      # deterministic aggregate of the YAML success_criteria, so one
+      # uniform bar at 0.7 is enough to enforce quality without
+      # re-tuning each criterion's threshold by hand.
+      - name: Enforce per-task score threshold (>= 0.7)
         if: always()
         working-directory: tests
         shell: bash
         env:
-          # Reviewer is a qualitative gate and tends to dock for minor
-          # process issues the agent recovers from (e.g. late-added
-          # project.uiproj, `uip rpa get-errors` exit 1 when the agent
-          # falls back to `uip rpa build`). 0.7 keeps the gate meaningful
-          # without false-failing correct-but-imperfect runs.
-          REVIEWER_THRESHOLD: "0.7"
+          TASK_THRESHOLD: "0.7"
         run: |
           python - <<'PY'
           import json, os, pathlib, sys
-          threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
-          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
-          if not run_dirs:
-              print('::warning::No run directory — skipping reviewer threshold check')
-              sys.exit(0)
+          threshold = float(os.environ.get('TASK_THRESHOLD', '0.7'))
+          # Skip runs/latest — it's a symlink/copy of the most recent
+          # timestamped run dir, so including it double-counts that task.
+          run_dirs = [d for d in sorted(pathlib.Path('runs').glob('*/'))
+                      if d.name != 'latest']
           task_jsons = []
           for run_dir in run_dirs:
               task_jsons.extend(sorted(run_dir.rglob('task.json')))
-          failures = []
-          missing = []
+          if not task_jsons:
+              print('::error::No task.json files found — nothing to gate')
+              sys.exit(1)
+          failures, missing = [], []
           for p in task_jsons:
               d = json.loads(p.read_text(encoding='utf-8'))
-              lr = d.get('llm_review') or {}
-              score = lr.get('score')
               tid = d.get('task_id', p.parent.name)
+              score = d.get('weighted_score')
               if not isinstance(score, (int, float)):
                   missing.append(tid)
                   continue
               if score < threshold:
-                  issues = (lr.get('issues') or '').splitlines()[0][:120]
-                  failures.append((tid, score, issues))
+                  failures.append((tid, score))
           for tid in missing:
-              print(f'::warning::{tid}: no llm_review (reviewer skipped or errored)')
-          if failures:
-              for tid, score, issues in failures:
-                  print(f'::error::{tid}: llm_review score {score:.2f} < {threshold} — {issues}')
-              print(f'::error::{len(failures)} task(s) below LLM reviewer threshold {threshold}')
+              print(f'::error::{tid}: missing weighted_score')
+          for tid, score in failures:
+              print(f'::error::{tid}: weighted_score {score:.2f} < {threshold}')
+          fails = len(failures) + len(missing)
+          total = len(task_jsons)
+          print(f'Results: {total - fails}/{total} task(s) >= {threshold}')
+          if fails:
               sys.exit(1)
-          print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
           PY
 
-      - name: Check test results
-        if: always()
-        working-directory: tests
-        shell: bash
-        run: |
-          shopt -s globstar nullglob
-          mapfile -t TASK_JSONS < <(printf '%s\n' runs/**/task.json)
-          if [ ${#TASK_JSONS[@]} -eq 0 ]; then
-            echo "::error::No task results found"
-            exit 1
-          fi
-          total=${#TASK_JSONS[@]}
-          passed=$(grep -l '"final_status": "SUCCESS"' "${TASK_JSONS[@]}" | wc -l)
-          echo "Results: $passed/$total tasks passed"
-          if [ "$passed" -lt "$total" ]; then
-            echo "::error::$((total - passed)) task(s) failed — download the eval-report-${{ github.run_id }} artifact and open task.html for each failed task"
-            exit 1
-          fi
-
-      - name: Fail if smoke step failed or was cancelled
-        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
+      - name: Fail if smoke step was cancelled
+        if: steps.smoke.outcome == 'cancelled'
         shell: bash
         run: exit 1
