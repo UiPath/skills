@@ -72,7 +72,7 @@ Always check `Result` first. On failure, `Message` and `Instructions` carry the 
 
 | Capability | Login required? |
 |---|---|
-| **Author** | No — `flow init`, `validate`, `tidy`, registry (OOTB nodes), Direct JSON edits, planning all work offline |
+| **Author** | No — `flow init`, `validate`, `tidy`, registry (OOTB nodes), `Edit` / `Write` edits, planning all work offline |
 | **Operate** | **Yes** — `solution upload`, `solution resource refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 

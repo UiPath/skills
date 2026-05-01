@@ -196,7 +196,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
 
 ## Creating a Subflow
 
-For the step-by-step procedure, see [JSON: Create a subflow](../../editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
+For the step-by-step procedure, see [Edit/Write: Create a subflow](../../editing-operations-json.md#create-a-subflow). Use the parent node JSON and subflow definition structures above for the node-specific fields.
 
 ## Debug
 

@@ -58,7 +58,7 @@ See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary reso
 
 ## Step 1 — Check login status
 
-Greenfield steps 2–6 work without login (`flow init`, `validate`, `tidy`, registry OOTB nodes, Direct JSON edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.
+Greenfield steps 2–6 work without login (`flow init`, `validate`, `tidy`, registry OOTB nodes, `Edit` / `Write` edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.
 
 ```bash
 uip login status --output json
@@ -152,7 +152,9 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-**Read [editing-operations.md](editing-operations.md).** Direct JSON is the default for all edits. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
+**Read [editing-operations.md](editing-operations.md).** `Edit` / `Write` is the default for all edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. CLI is used for connector, connector-trigger, and inline-agent nodes (see their plugin `impl.md`) or when the user explicitly opts in to CLI.
+
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `uip maestro flow ...`, `Edit`, or `Write` — STOP. Do not reach for `python`, `node`, `jq`, `sed`, `awk`, or shell heredocs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/delete/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 

@@ -2,45 +2,63 @@
 
 Strategy selection and shared concepts for modifying `.flow` files. Two implementation strategies are available — choose one per operation and follow the corresponding guide.
 
+## Tool Selection Ladder
+
+> **Pick the lowest-numbered tool that fits the operation. If none fit, stop and ask the user — never reach for `python`, `node`, `jq`, `sed`, `awk`, or shell heredocs.**
+>
+> 1. **Connector / connector-trigger / inline-agent node** → `uip maestro flow node configure` (carve-out — auto-populates `inputs.detail` + `bindings_v2.json`).
+> 2. **Add/delete an OOTB node, add/delete an edge, add/delete a variable** → `uip maestro flow node {add,delete}` / `edge {add,delete}` / `variable add` (auto-manages `definitions[]` and `variables.nodes`).
+> 3. **In-place value tweak** (script body, expression, `typeVersion`, single-field input change, bracket→dot-access fix) → `Edit`.
+> 4. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write`.
+> 5. **Anything else** → STOP and ask the user. Do not reach for a scripting language.
+
+### Why not Python / Node / jq / sed?
+
+- The CLI auto-manages cross-cutting state (`definitions[]`, `variables.nodes`, edge references, layout). A scripting mutation bypasses that and forces hand-rolling it — extra surface for mistakes.
+- `Edit` shows a line-by-line diff in the transcript; a script is an opaque payload. The user reviews tool calls, not script bodies.
+- `Edit` calls are atomic per-call. A coordinated multi-section change is *not* one transaction — it's a sequence of `Edit` calls the user can interrupt between. Treating it as a single Python script removes that interruption point.
+
+If the change feels too tangled for a sequence of `Edit` calls, use `Write` for the whole file or stop and ask the user — see the `Edit`/`Write` recipes in [editing-operations-json.md](editing-operations-json.md) and the SKILL.md rule on forbidden tools.
+
 ## Default Strategy
 
-> **Default to Direct JSON for all `.flow` edits.** Use CLI only when the user explicitly requests CLI, or for connector, connector-trigger, or inline-agent nodes (see carve-out rows in the matrix below).
+> **Default to Edit / Write for all `.flow` edits.** Use CLI only when the user explicitly requests CLI, or for connector, connector-trigger, or inline-agent nodes (see carve-out rows in the matrix below).
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
-| **Direct JSON** (default) | [editing-operations-json.md](editing-operations-json.md) | Default for all `.flow` edits — node/edge CRUD, variables, subflows, output mapping, in-place input updates. |
+| **Edit / Write** (default) | [editing-operations-json.md](editing-operations-json.md) | Default for all `.flow` edits — node/edge CRUD, variables, subflows, output mapping, in-place input updates. |
 | **CLI** (opt-in / carve-outs) | [editing-operations-cli.md](editing-operations-cli.md) | Connector, connector-trigger, and inline-agent nodes (carve-outs); or when the user explicitly requests CLI. |
 
 ---
 
 ## Strategy Selection Matrix
 
-Use this table to determine which strategy to follow for each operation. **Direct JSON is the default**; use CLI only for the carve-out rows or when the user explicitly opts in.
+Use this table to determine which strategy to follow for each operation. **Edit / Write is the default**; use CLI only for the carve-out rows or when the user explicitly opts in.
 
 | Operation | Default | Alternative | Notes |
 |-----------|---------|-------------|-------|
-| Add a node | **Direct JSON** | CLI (opt-in) | CLI still auto-manages definitions/variables when opted in. |
-| Add a HITL QuickForm node | **Direct JSON** | CLI (opt-in) via `uip maestro flow hitl add` | Dedicated command also handles definition + `variables.nodes`. Wire `completed` port after. See [hitl/impl.md](plugins/hitl/impl.md). |
-| Delete a node | **Direct JSON** | CLI (opt-in) | |
-| Add an edge | **Direct JSON** | CLI (opt-in) | Remember `targetPort` (Rule #6). |
-| Delete an edge | **Direct JSON** | CLI (opt-in) | |
-| Update node inputs | **Direct JSON** | — | In-place edit; preserves node ID and `$vars`. |
-| Add/edit workflow variable | **Direct JSON** | — | JSON-only; CLI does not support. |
-| Add variable update | **Direct JSON** | — | JSON-only; CLI does not support. |
-| Map outputs on End node | **Direct JSON** | — | JSON-only. |
-| Create a subflow | **Direct JSON** | — | JSON-only. |
-| Replace trigger (non-connector) | **Direct JSON** | CLI (opt-in) | |
-| Replace mock with real resource (non-connector) | **Direct JSON** | CLI (opt-in) | |
-| Insert node between two existing nodes | **Direct JSON** | CLI (opt-in) | |
-| Insert a decision branch | **Direct JSON** | CLI (opt-in) | |
-| Remove a node and reconnect | **Direct JSON** | CLI (opt-in) | |
-| **Configure a connector node** | **CLI** (carve-out) | Direct JSON (fallback) | `uip maestro flow node configure --detail` auto-populates `inputs.detail` + `bindings_v2.json`. |
-| **Configure a connector trigger** | **CLI** (carve-out) | Direct JSON (fallback) | Same as above. |
+| Add a node | **Edit / Write** | CLI (opt-in) | CLI still auto-manages definitions/variables when opted in. |
+| Add a HITL QuickForm node | **Edit / Write** | CLI (opt-in) via `uip maestro flow hitl add` | Dedicated command also handles definition + `variables.nodes`. Wire `completed` port after. See [hitl/impl.md](plugins/hitl/impl.md). |
+| Delete a node | **Edit / Write** | CLI (opt-in) | |
+| Add an edge | **Edit / Write** | CLI (opt-in) | Remember `targetPort` (Rule #6). |
+| Delete an edge | **Edit / Write** | CLI (opt-in) | |
+| Update node inputs | **Edit** | — | In-place edit; preserves node ID and `$vars`. |
+| Add/edit workflow variable | **Edit** | — | Edit-only; CLI does not support. |
+| Add variable update | **Edit** | — | Edit-only; CLI does not support. |
+| Map outputs on End node | **Edit** | — | Edit-only. |
+| Create a subflow | **Edit / Write** | — | Edit-only (or `Write` for fresh template). |
+| Replace trigger (non-connector) | **Edit** | CLI (opt-in) | |
+| Replace mock with real resource (non-connector) | **Edit** | CLI (opt-in) | |
+| Insert node between two existing nodes | **Edit** | CLI (opt-in) | |
+| Insert a decision branch | **Edit** | CLI (opt-in) | |
+| Remove a node and reconnect | **Edit** | CLI (opt-in) | |
+| **Configure a connector node** | **CLI** (carve-out) | Edit (fallback) | `uip maestro flow node configure --detail` auto-populates `inputs.detail` + `bindings_v2.json`. |
+| **Configure a connector trigger** | **CLI** (carve-out) | Edit (fallback) | Same as above. |
 | **Add an inline agent node** | **CLI** (carve-out) | — | Scaffolded via `uip agent init --inline-in-flow`. |
 
 ### Mixing strategies
 
-The default strategy is Direct JSON. Mixing is still common: for connector, connector-trigger, or inline-agent nodes, use the CLI as documented in their respective plugin `impl.md`. For everything else, use Direct JSON unless the user explicitly asks for CLI.
+The default strategy is Edit / Write. Mixing is still common: for connector, connector-trigger, or inline-agent nodes, use the CLI as documented in their respective plugin `impl.md`. For everything else, use `Edit` (or `Write` for wholesale rewrites) unless the user explicitly asks for CLI.
 
 ---
 
@@ -87,14 +105,14 @@ See [variables-and-expressions.md](../../shared/variables-and-expressions.md) fo
 
 | I need to... | Go to |
 |---|---|
-| Add/delete nodes or edges | [JSON guide](editing-operations-json.md) (default) or [CLI guide](editing-operations-cli.md) (opt-in) |
-| Change a node's inputs | [JSON guide — Update node inputs](editing-operations-json.md#update-node-inputs) |
-| Configure a connector node | [CLI guide — Configure a connector node](editing-operations-cli.md#configure-a-connector-node) (carve-out) or [JSON guide — Connector Node Configuration](editing-operations-json.md#connector-node-configuration-direct-json) (fallback) |
-| Manage variables | [JSON guide — Variable Operations](editing-operations-json.md#variable-operations) |
-| Map outputs on End nodes | [JSON guide — Add output mapping](editing-operations-json.md#add-output-mapping-on-an-end-node) |
-| Create a subflow | [JSON guide — Create a subflow](editing-operations-json.md#create-a-subflow) |
-| Replace a mock placeholder (non-connector) | [JSON guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI guide — Replace a mock](editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) |
-| Replace a trigger type (non-connector) | [JSON guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
+| Add/delete nodes or edges | [Edit/Write guide](editing-operations-json.md) (default) or [CLI guide](editing-operations-cli.md) (opt-in) |
+| Change a node's inputs | [Edit/Write guide — Update node inputs](editing-operations-json.md#update-node-inputs) |
+| Configure a connector node | [CLI guide — Configure a connector node](editing-operations-cli.md#configure-a-connector-node) (carve-out) or [Edit/Write guide — Connector Node Configuration](editing-operations-json.md#connector-node-configuration-edit--write-fallback) (fallback) |
+| Manage variables | [Edit/Write guide — Variable Operations](editing-operations-json.md#variable-operations) |
+| Map outputs on End nodes | [Edit/Write guide — Add output mapping](editing-operations-json.md#add-output-mapping-on-an-end-node) |
+| Create a subflow | [Edit/Write guide — Create a subflow](editing-operations-json.md#create-a-subflow) |
+| Replace a mock placeholder (non-connector) | [Edit/Write guide — Replace a mock](editing-operations-json.md#replace-a-mock-with-a-real-resource-node) (default) or [CLI guide — Replace a mock](editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) (opt-in) |
+| Replace a trigger type (non-connector) | [Edit/Write guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
 | Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
 | Understand the `.flow` JSON schema | [file-format.md](../../shared/file-format.md) |
 | Look up CLI flags and syntax | [cli-commands.md](../../shared/cli-commands.md) |
