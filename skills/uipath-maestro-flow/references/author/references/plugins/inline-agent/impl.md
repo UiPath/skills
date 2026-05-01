@@ -21,7 +21,7 @@ This creates `<FlowProjectDir>/<projectId-uuid>/` with:
 - `features/` — empty
 - `resources/` — empty (add tool resource files here later)
 
-**Record the returned `ProjectId`** — the flow node's `--source` flag (or `model.source` field for direct-JSON authoring) must match it exactly. The same UUID is also the subdirectory name and the `agent.json.projectId` value.
+**Record the returned `ProjectId`** — the flow node's `--source` flag (or `inputs.source` field for direct-JSON authoring) must match it exactly. The same UUID is also the subdirectory name and the `agent.json.projectId` value.
 
 ## Configure `agent.json`
 
@@ -73,11 +73,11 @@ uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
   --output json
 ```
 
-`--source` populates `model.source` with the inline agent's `projectId` (the canonical canvas convention — the manifest declares `model.source: true` to signal this). The command automatically:
+`--source` populates the inline-agent's `projectId` UUID on the node. The current `node add` implementation writes the UUID to `model.source` (the legacy shape — governed by `node-service.ts:535-545` which still keys off the manifest's `model.source: true` flag); the canvas writes to `inputs.source` (canonical post-flow-core-0.2.50). Both keys are accepted by `flow validate` for backwards compatibility. The dual-key inconsistency between `node add` and the canvas is tracked in MST-9308. For directly hand-authored flows, prefer `inputs.source`. The command automatically:
 
 - Adds the node to `nodes` with a generated `id`
 - Adds the definition to `definitions` (if not already present)
-- The definition carries `model.serviceType: "Orchestrator.StartInlineAgentJob"` — propagated to the node's `model` block at write time
+- The definition carries `model.serviceType: "Orchestrator.StartInlineAgentJob"` — the runtime hydrates BPMN type and serviceType from the definition at emit time
 
 **Save the returned node ID** — you need it when wiring edges.
 
@@ -139,6 +139,7 @@ For agent.json prompt configuration and solution resource mechanics, see the `ui
 
 The instance carries only per-instance data (`inputs`, `display`). BPMN type, serviceType, version, and context templates come from the definition in `definitions[]`.
 The inline-agent node carries `inputs`, `outputs`, `display`, AND a `model` block. The `model.source` is the canonical location for the agent's `projectId` UUID — that's where the canvas writes it and where the validator hydrates from. Leave `inputs` empty when authoring directly; the canvas/validator hydrates `inputs.systemPrompt`/`userPrompt` from `agent.json.messages[]` on load.
+The inline-agent node carries `inputs`, `outputs`, and `display`. The agent's `projectId` UUID lives at `inputs.source` (canonical post-flow-core-0.2.50; older `.flow` files may carry the same UUID at `model.source` — read-only legacy compat). Leave the prompt fields empty when authoring directly; the canvas / `flow validate` hydrates `inputs.systemPrompt` / `inputs.userPrompt` from `<projectId>/agent.json.messages[]` on load.
 
 ```json
 {
@@ -152,7 +153,9 @@ The inline-agent node carries `inputs`, `outputs`, `display`, AND a `model` bloc
     "agentOutputVariables": [
       { "id": "content", "type": "string" }
   "display": { "label": "Classify Intent" },
-  "inputs": {},
+  "inputs": {
+    "source": "<projectId-uuid>"
+  },
   "outputs": {
     "output": {
       "type": "object",
@@ -166,17 +169,6 @@ The inline-agent node carries `inputs`, `outputs`, `display`, AND a `model` bloc
       "source": "=result.Error",
       "var": "error"
     }
-  },
-  "model": {
-    "source": "<projectId-uuid>",
-    "type": "bpmn:ServiceTask",
-    "serviceType": "Orchestrator.StartInlineAgentJob",
-    "version": "v2",
-    "context": [
-      { "name": "_label", "type": "string", "value": "Classify Intent" },
-      { "name": "name", "type": "string", "value": "Classify Intent" },
-      { "name": "entryPoint", "type": "string", "value": "" }
-    ]
   }
 }
 ```
@@ -189,6 +181,10 @@ Notes:
 - `model.source` — the inline agent's `projectId` UUID; must match the subdirectory name and `agent.json.projectId`. The validator hydrates prompts from the colocated `<projectId>/agent.json` at validate time. Putting the UUID at `inputs.source` instead leaves hydration short-circuited and surfaces as `[REQUIRED_FIELD] systemPrompt is required`.
 - `inputs` stays empty in the source `.flow`. The canvas writes mirrored prompt fields to `inputs.systemPrompt` / `inputs.userPrompt` as a storage-backed mirror of `agent.json.messages[]` — the runtime reads `agent.json`, not the node `inputs`. For direct authoring, leave `inputs` empty and ensure `agent.json` carries the real prompts.
 - `model` block carries the BPMN type, serviceType, version, and per-instance context templates from the definition. Unlike resource nodes (rpa, agentic-process, etc.), inline agents do not use process-style bindings (`resourceKey`, `folderPath`).
+- `inputs.source` — the inline agent's `projectId` UUID; must match the subdirectory name and `agent.json.projectId`. This is the canonical write location post-flow-core-0.2.50. The validator hydrates prompts from the colocated `<projectId>/agent.json` at validate time.
+- `inputs.systemPrompt` / `inputs.userPrompt` stay absent in directly-authored `.flow` files. The canvas writes them as a storage-backed mirror of `agent.json.messages[]`, but the runtime reads from `agent.json`, not the node. For direct authoring, populate `agent.json.messages[]` and let hydration fill the mirror.
+- **No `model` block on the instance.** BPMN type, `serviceType`, `version`, and per-instance `context` templates all come from the definition in `definitions[]` (copied verbatim from the `uip maestro flow registry get` output). Older `.flow` files may carry a partial `model` block on the instance (legacy shape from before the inputs.source migration); the runtime reads `model.source` as a fallback for those, but new flows should not write it.
+- Inline agents do not use process-style bindings (`resourceKey`, `folderPath`) — those are for resource nodes (rpa, agentic-process, etc.).
 
 ## Accessing Output
 
@@ -225,7 +221,7 @@ uip maestro flow validate <FlowName>.flow --output json
 | `bindings_v2.json` is empty after `node add` of an agent-tool process | CLI did not auto-generate bindings | Re-add the agent-tool node via `node add` (which auto-regenerates the file) |
 | `Orchestrator.StartAgentJob` error at runtime | Wrong definition (published-agent definition attached to inline-agent node) | Replace the `definitions[]` entry with the one from `uip maestro flow registry get uipath.agent.autonomous --output json` — it carries `model.serviceType: "Orchestrator.StartInlineAgentJob"`. See [Replace a definition entry](#replace-a-definition-entry) for the exact mechanic |
 | Prompts authored on `inputs.systemPrompt` / `inputs.userPrompt` get clobbered on next save | Those fields are a canvas-side mirror of `agent.json.messages[]` — `inputsToStorage` rewrites `agent.json` from the node, then `storageToInputs` rewrites the node from `agent.json` on next load | Author prompts in `agent.json.messages[]`; leave `inputs` empty for direct authoring |
-| `flow validate` returns `[REQUIRED_FIELD] "systemPrompt" is required` and `[REQUIRED_FIELD] "userPrompt" is required` on an inline-agent node | Validator's hydration step short-circuited — typically because the `projectId` UUID is at `inputs.source` instead of `model.source` (canvas convention), or the `<projectId>/` directory is missing, or `agent.json.messages[]` has empty `content` | Verify `model.source = <projectId-uuid>` (NOT `inputs.source`); verify `<FlowDir>/<projectId>/agent.json` exists; verify `agent.json.messages[]` has non-empty `content` for both `system` and `user` roles. The validator will hydrate prompts from `agent.json` and pass once the canonical shape is in place. **Do not** insert placeholder strings into `inputs.systemPrompt`/`userPrompt` — they round-trip into `agent.json` via the storage bridge and corrupt the agent definition |
+| `flow validate` returns `[REQUIRED_FIELD] "systemPrompt" is required` and `[REQUIRED_FIELD] "userPrompt" is required` on an inline-agent node | Validator's hydration step short-circuited — the `projectId` UUID source key is missing entirely, or the `<projectId>/` directory doesn't exist, or `agent.json.messages[]` has empty `content` | Verify the UUID is set at `inputs.source` (canonical) or `model.source` (legacy fallback) and matches the colocated subdirectory; verify `<FlowDir>/<projectId>/agent.json` exists; verify `agent.json.messages[]` has non-empty `content` for both `system` and `user` roles. The validator hydrates prompts from `agent.json` and passes once all three checks hold. **Do not** insert placeholder strings into `inputs.systemPrompt`/`userPrompt` — they round-trip into `agent.json` via the storage bridge and corrupt the agent definition |
 | `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and `agent.json.projectId` |
@@ -260,7 +256,7 @@ Same pattern works for any node type — substitute the `nodeType` string in bot
 
 The validator hydrates prompts from `<FlowDir>/<projectId>/agent.json` at validate time. When this error fires, hydration short-circuited. Check in order:
 
-1. **UUID source key** — the `projectId` must be at `model.source`, not `inputs.source`:
+1. **UUID source key** — the `projectId` UUID must be set at `inputs.source` (canonical post-flow-core-0.2.50) or `model.source` (legacy fallback for older `.flow` files):
 
     ```bash
     python3 - <<'PY'
@@ -273,7 +269,7 @@ The validator hydrates prompts from `<FlowDir>/<projectId>/agent.json` at valida
     PY
     ```
 
-    If UUID is at `inputs.source`, move it to `model.source`:
+    If neither key is set, add `inputs.source`:
 
     ```bash
     python3 - <<'PY'
@@ -281,10 +277,25 @@ The validator hydrates prompts from `<FlowDir>/<projectId>/agent.json` at valida
     flow = json.load(open("<FILE>.flow"))
     for node in flow["nodes"]:
         if node.get("type") == "uipath.agent.autonomous":
-            inputs = node.get("inputs") or {}
-            uuid = inputs.pop("source", None)
+            node.setdefault("inputs", {}).setdefault("source", "<projectId-uuid>")
+    json.dump(flow, open("<FILE>.flow", "w"), indent=2)
+    PY
+    ```
+
+    Substitute `<projectId-uuid>` with the UUID returned by `uip agent init --inline-in-flow`. If only `model.source` is set, leave it — the validator reads it as a backwards-compat fallback. To migrate from `model.source` to `inputs.source`, move the value:
+
+    ```bash
+    python3 - <<'PY'
+    import json
+    flow = json.load(open("<FILE>.flow"))
+    for node in flow["nodes"]:
+        if node.get("type") == "uipath.agent.autonomous":
+            model = node.get("model") or {}
+            uuid = model.pop("source", None)
             if uuid:
-                node.setdefault("model", {})["source"] = uuid
+                node.setdefault("inputs", {})["source"] = uuid
+                if not model:
+                    node.pop("model", None)
     json.dump(flow, open("<FILE>.flow", "w"), indent=2)
     PY
     ```
@@ -302,9 +313,10 @@ The validator hydrates prompts from `<FlowDir>/<projectId>/agent.json` at valida
 - **Do not use `model.agentProjectId`** — use `inputs.source`.
 - **Do not put real prompt content on `inputs.systemPrompt` / `inputs.userPrompt`** — they are ignored at runtime; the runtime reads prompts from `agent.json.messages[]`. The fields exist on the node only because the registry schema demands them; populate with single-character placeholders (`" "`) when `flow validate` complains, never with real content.
 - **Do not put the `projectId` UUID at `inputs.source`** — the canonical canvas convention is `model.source`. The validator's prompt hydration step looks at `model.source` first; UUID at `inputs.source` leaves hydration short-circuited and produces a misleading `[REQUIRED_FIELD] systemPrompt is required` error. Match the manifest's `model.source: true` declaration.
+- **Do not write the `projectId` UUID to a custom or invented key** — set `inputs.source` (canonical post-flow-core-0.2.50). `model.source` is read as a legacy fallback for older `.flow` files but should not be written by new authoring; the dual-key migration is tracked in MST-9308.
 - **Do not author prompts on `inputs.systemPrompt` / `inputs.userPrompt`** — those fields are a canvas-side mirror of `agent.json.messages[]`. The storage bridge (`inputsToStorage` / `storageToInputs`) round-trips between the two; whatever you write on the node will overwrite `agent.json.messages[]` on next save, then be overwritten by `agent.json` on next load. Author prompts in `agent.json.messages[]` only.
 - **Do not use `inputs.agentProjectId` or `model.agentProjectId`** — use `inputs.source`.
-- **Do not put a `model` block on the instance** — `serviceType`, BPMN type, and context live in the definition only (copied from the registry). A published-agent node's definition uses `Orchestrator.StartAgentJob`; an inline-agent node must use the `uipath.agent.autonomous` definition with `Orchestrator.StartInlineAgentJob`.
+- **Do not put a `model` block on the instance** — `serviceType`, BPMN type, and context live in the definition only (copied from the registry). A published-agent node's definition uses `Orchestrator.StartAgentJob`; an inline-agent node must use the `uipath.agent.autonomous` definition with `Orchestrator.StartInlineAgentJob`. Older `.flow` files may still carry a partial `model` block on the instance (legacy from before the inputs.source migration); leave it as-is when editing those files but do not introduce one in new flows.
 - **Do not create `entry-points.json` or `project.uiproj` inside the inline agent directory** — those belong only to standalone agent projects.
 - **Do not name the inline agent folder with a human-readable name** — the folder name must be the `projectId` UUID.
 - **Do not use `uip agent tool add`** for inline-in-flow agents — hand-author the tool's `resource.json` instead.
