@@ -1,0 +1,75 @@
+task_id: skill-flow-ixp-activation-listing
+description: >
+  IxP listing activation — user asks what IxP models / runtime projects are
+  available from a Maestro flow. Read-only Q&A, not a build task.
+
+  Asserts the agent invoked the uipath-maestro-flow Skill and ran the IxP
+  registry-search listing command (per references/plugins/ixp/impl.md —
+  Listing Published Models). Also asserts the agent did NOT take the build
+  path: no .flow file should be created for a listing question.
+
+  Failure here is signal about the IxP plugin's Listing Published Models /
+  Listing Available Models sections — do NOT relax assertions, tighten the
+  copy.
+
+tags: [uipath-maestro-flow, smoke, activation, ixp, listing]
+
+# Listing is a one-shot Q&A — no need for the full activation budget.
+task_timeout: 300
+
+agent:
+  type: claude-code
+  max_turns: 20
+  turn_timeout: 300
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+dataset:
+  rows:
+    - id: runtime-projects
+      prompt: >-
+        What runtime projects can I access in flow?
+
+    - id: ixp-models
+      prompt: >-
+        What IxP models can I access in maestro?
+
+    - id: published-extractors
+      prompt: >-
+        What document extractors can I access in flow?
+
+initial_prompt: |
+  ${row.prompt}
+
+  Important:
+  - The `uip` CLI is already available.
+  - Use `--output json` on all uip commands.
+
+success_criteria:
+  - type: skill_triggered
+    expected: "yes"
+    skill_name: "uipath:uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched the registry for IxP node types (listing path)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b[^\n]*ixp'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Inverted check: a listing/Q&A task should NOT create a .flow file.
+  # Same `../..` rationale as activation.yaml — dataset-fanout cwd is
+  # <run>/artifacts/<outer_task_id>/<row_id>/. `! find ... | grep -q .` exits
+  # 0 when no .flow file is found (PASS) and 1 when one exists (FAIL).
+  - type: run_command
+    description: "No .flow file was created (listing is read-only Q&A, not a build task)"
+    command: '! find ../.. -name "*.flow" -type f | grep -q .'
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

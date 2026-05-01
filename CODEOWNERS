@@ -55,6 +55,10 @@
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 
+# IXP
+/skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
+/tests/tasks/uipath-maestro-flow/single_node/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
+
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
