@@ -236,6 +236,8 @@ When a debug or process run fails, read **[troubleshooting-guide.md](troubleshoo
 
 **Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply a different fix — do not repeat identical commands or re-apply the same fix. Track round count.
 
+**Per-round timeout.** If a debug run exceeds 10 minutes wall-clock, treat the round as inconclusive and advance to the next round (counts toward the 3-round limit). Advisory — do not hard-kill the subprocess; classify by elapsed time and move on.
+
 After the 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask the user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
 
 ## Step 15 — Optional: Publish to Studio Web
