@@ -23,7 +23,7 @@ Pre-populate these via `TodoWrite` when entering this journey. The list is edit-
 
 **[editing-operations.md](editing-operations.md)** — `Edit` / `Write` is the default for all edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. CLI is used only for connector, connector-trigger, and inline-agent nodes (carve-outs), or when you explicitly request it. Read the strategy selection matrix before any modification.
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `uip maestro flow ...`, `Edit`, or `Write` — STOP and ask the user. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 ## Common edits
 
