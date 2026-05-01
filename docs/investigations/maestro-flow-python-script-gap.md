@@ -9,7 +9,7 @@
 The skill activated correctly and the agent loaded the right references. **The pivot at L137 to bulk-`Write` the `.flow` was sanctioned by the skill** — Direct JSON is the documented default for everything except connector / connector-trigger / inline-agent nodes. The Python heredoc scripts are a downstream consequence of two real gaps:
 
 1. **A documented vs. enforced contradiction inside the inline-agent contract.** The `inline-agent/impl.md` says *don't* set `inputs.systemPrompt` / `inputs.userPrompt`, but `uip maestro flow validate` rejects the flow with `REQUIRED_FIELD` on those exact two paths. Faced with the contradiction, the agent had to satisfy *one* of them — it picked the validator.
-2. **No edit-tooling guidance for Direct JSON.** "Direct JSON" is the strategy; the skill never tells the agent *how* to do non-trivial structural edits (replace a definition entry, insert nested fields). The agent invented `python3 <<'EOF'` heredocs because Edit is brittle for nested JSON and Write-the-whole-file rewrites the layout. There is also **no `node update` CLI** (editing-operations-cli.md:158 explicitly confirms this).
+2. **No edit-tooling guidance for Direct JSON.** "Direct JSON" is the strategy; the skill never tells the agent *how* to do non-trivial structural edits (replace a definition entry, insert nested fields). The agent invented `python3 <<'EOF'` heredocs because Edit is brittle for nested JSON and Write-the-whole-file rewrites the layout. There is also **no `node update` CLI** (`editing-operations-cli.md` § "Update node inputs" explicitly confirms this).
 
 The mock data, the registry-definition replacement, and the upload-result parsing all use Python for the same reason: small, correct, hard to do safely with `Edit`.
 

@@ -73,7 +73,7 @@ uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
   --output json
 ```
 
-`--source` populates the inline-agent's `projectId` UUID on the node. The current `node add` implementation writes the UUID to `model.source` (the legacy shape — governed by `node-service.ts:535-545` which still keys off the manifest's `model.source: true` flag); the canvas writes to `inputs.source` (canonical post-flow-core-0.2.50). Both keys are accepted by `flow validate` for backwards compatibility. The dual-key inconsistency between `node add` and the canvas is tracked in MST-9308. For directly hand-authored flows, prefer `inputs.source`. The command automatically:
+`--source` populates the inline-agent's `projectId` UUID on the node. The current `node add` writes the UUID to `model.source` (legacy shape); the canvas writes to `inputs.source` (canonical post-flow-core-0.2.50). `flow validate` accepts both for backwards compatibility. **For directly hand-authored flows, write `inputs.source`** — match the canvas, not the CLI's legacy shape. The command automatically:
 
 - Adds the node to `nodes` with a generated `id`
 - Adds the definition to `definitions` (if not already present)
@@ -229,7 +229,7 @@ uip maestro flow validate <FlowName>.flow --output json
 
 ## Repair Recipes
 
-Direct JSON repairs for scenarios that don't have a CLI shortcut (`uip maestro flow node update` does not exist — see [editing-operations-cli.md](../../editing-operations-cli.md) line 158). Recipes use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); copy verbatim and substitute `<FILE>.flow`.
+Direct JSON repairs for scenarios that don't have a CLI shortcut (`uip maestro flow node update` does not exist — see [editing-operations-cli.md § Update node inputs](../../editing-operations-cli.md#update-node-inputs-expression-script-body-label-etc)). Recipes use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); copy verbatim and substitute `<FILE>.flow`.
 
 ### Replace a definition entry
 
