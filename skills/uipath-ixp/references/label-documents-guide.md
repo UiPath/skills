@@ -31,17 +31,16 @@ uip ixp labellings get-predictions <project-name> <document-id> --output json
 
 This returns the document's predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
 
-### 2b. Download image and OCR text
+### 2b. Download the document file
 
-- **If files already exist** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse them — do NOT re-download.
-- **Otherwise, download** the document file and OCR text:
+- **If the file already exists** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse it — do NOT re-download.
+- **Otherwise, download:**
 
 ```bash
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
-uip ixp documents get-text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/<document-id>.txt --output json
 ```
 
-Use the document ID as the filename. Pass `-o` **without an extension** — the CLI detects the actual format (PDF, PNG, JPG, …) from the file content and appends the correct extension. Read the resolved `Path` from the response and use that for the next step. These files persist across sessions — check for existing files before downloading.
+Use the document ID as the filename. Pass `-o` **without an extension** — the CLI detects the actual format (PDF, PNG, JPG, …) from the file content and appends the correct extension. Read the resolved `Path` from the response and use that for the next step. Files persist across sessions — check for existing files before downloading.
 
 ### 2c. Review predictions field-by-field
 
