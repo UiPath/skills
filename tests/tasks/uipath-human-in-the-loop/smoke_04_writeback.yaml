@@ -14,12 +14,42 @@ initial_prompt: |
   enriches the missing vendor and cost-center fields using company data, and
   writes the corrected records back to SAP.
 
-  Analyze whether this flow needs any human checkpoints.
+  Analyze whether this flow needs any human checkpoints. Write a
+  recommendation.json file with:
+  {
+    "hitl_needed": <true or false>,
+    "pattern": "<pattern name if applicable>",
+    "reason": "<why HITL is or is not needed>",
+    "proposed_insertion_point": "<where in the flow>"
+  }
 
 success_criteria:
-  - type: skill_triggered
-    description: "Agent invoked the uipath-human-in-the-loop skill"
-    skill_name: "uipath-human-in-the-loop"
-    expected: "yes"
+  - type: file_exists
+    description: "Agent wrote a recommendation.json"
+    path: "recommendation.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent proactively identified HITL is needed (write-back detection)"
+    path: "recommendation.json"
+    includes:
+      - '"hitl_needed": true'
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent named a write-back / validation / enrichment pattern (any one, case-tolerant)"
+    path: "recommendation.json"
+    assertions:
+      - expression: "pattern"
+        operator: contains
+        expected: "rite"
+      - expression: "pattern"
+        operator: contains
+        expected: "alid"
+      - expression: "pattern"
+        operator: contains
+        expected: "nrich"
+    weight: 1.5
+    pass_threshold: 0.33
