@@ -168,7 +168,7 @@ Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder
 
 ## Running the full suite
 
-Run all six checkers in one invocation:
+Run all seven checkers in one invocation:
 
 ```bash
 bash .maintenance/check-all.sh
