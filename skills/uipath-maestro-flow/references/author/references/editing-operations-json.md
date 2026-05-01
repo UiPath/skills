@@ -146,6 +146,8 @@ Use `Edit` to add an edge object to the `edges` array:
 
 **Critical:** `targetPort` is required on every edge. Omitting it produces a validation error.
 
+**Edge ID:** generate a UUID (matches CLI behavior) or use `e-<sourceNodeId>-<targetNodeId>` if uniqueness across the flow is guaranteed. Short, hand-picked names risk collision when the same source/target pair gets a second edge later.
+
 See each plugin's `planning.md` or [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type.
 
 ### Delete an edge
