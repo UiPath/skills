@@ -166,9 +166,32 @@ bash .maintenance/check-plugin-pairs.sh
 
 Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder is missing a required file. Catches half-deleted plugins or new plugin folders that haven't been completed.
 
+## Verifying `uip` command references
+
+Run the uip-command checker to verify every `uip ...` invocation in fenced code blocks resolves to a real command in the installed CLI:
+
+```bash
+bash .maintenance/check-uip-commands.sh
+```
+
+Returns `commands_checked=N unknown=M`. Exits non-zero if any referenced command path is unknown to `uip`. Verification is **help-only** — the checker walks each command path with `uip <prefix> --help`, confirms the requested segment appears in the parent's `Subcommands` list, and never executes the command for real. Help responses are cached per prefix.
+
+The checker:
+
+- Scans only fenced code blocks tagged `bash`, `sh`, `shell`, `zsh`, `console`, or unlabelled. Inline backtick references like `` `uip maestro flow init` `` are skipped (out of scope for v1).
+- Stops the path at the first flag, placeholder (`<...>`), shell metachar, comment (`#`), path-literal, or non-kebab-case token — so positional args like `uip maestro flow registry search outlook` don't get mistreated as subcommands.
+- Treats trailing tokens after a leaf-with-positional-args (e.g. `uip maestro flow registry search <keyword>`) as arguments, not missing subcommands.
+- Falls back gracefully if `uip` is not installed: warns and exits 0. Pass `--strict` to fail in CI.
+
+Pass specific files to scan only those (e.g. for pre-commit on staged files):
+
+```bash
+bash .maintenance/check-uip-commands.sh references/shared/cli-commands.md
+```
+
 ## Running the full suite
 
-Run all seven checkers in one invocation:
+Run all eight checkers in one invocation:
 
 ```bash
 bash .maintenance/check-all.sh
@@ -184,6 +207,7 @@ Continues running all checkers even when one fails — the goal is to surface ev
 - After deleting a doc — run `check-orphans.sh` to confirm nothing else became orphaned
 - Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md`
 - After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present
+- After a `uip` CLI version bump — run `check-uip-commands.sh` to catch any commands that were renamed or removed
 
 The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.
 

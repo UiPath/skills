@@ -98,7 +98,7 @@ All `uip maestro flow instance` and `uip maestro flow incident get` commands req
 Get the folder key:
 
 ```bash
-uip orchestrator folder list --output json
+uip or folders list --output json
 ```
 
 Or pull it from the job/process context (e.g., `Data.folderKey` on a job status response, or from the debug output's surrounding metadata).
