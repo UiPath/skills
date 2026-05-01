@@ -72,28 +72,34 @@ The secret is shown only once.
 
 ### Step 4 — Assign Folder Permissions (Orchestrator)
 
-The robot needs access to Orchestrator folders containing its processes, assets, and queues. These commands use the `uipath-platform` skill's Orchestrator commands.
+The robot needs access to Orchestrator folders containing its processes, assets, and queues.
 
 ```bash
 # List available folders
 uip or folders list --output json
-
-# Assign robot to folder (via Orchestrator API)
-# Use the folder-level user/role assignment
 ```
 
-> For detailed Orchestrator folder and permission management, use the `uipath-platform` skill.
+Folder-level role assignment is managed via Orchestrator. Use the Orchestrator REST API if CLI commands are not available:
+
+```bash
+source ~/.uipath/.auth
+curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Folders/UiPath.Server.Configuration.OData.AssignUsers" \
+  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"assignments":{"UserIds":[<ROBOT_ACCOUNT_ID>],"RolesPerFolder":[{"FolderId":<FOLDER_ID>,"RoleId":<ROLE_ID>}]}}'
+```
 
 ### Step 5 — Create Machine Template (Orchestrator)
 
-Create a machine template and assign it to the same folder as the robot.
+Create a machine template and assign it to the same folder as the robot. Use the Orchestrator REST API:
 
 ```bash
-# Create machine template (via Orchestrator API)
-# Assign machine template to the folder
+source ~/.uipath/.auth
+curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/MachineTemplates" \
+  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"Name":"<MACHINE_TEMPLATE_NAME>","Type":"Standard"}'
 ```
-
-> Machine template management is handled via the `uipath-platform` skill or the Orchestrator REST API.
 
 ### Step 6 — Connect Robot to Machine
 
@@ -172,11 +178,9 @@ Common role groups for human users:
 ```bash
 # List folders
 uip or folders list --output json
-
-# Assign user to specific folders with appropriate roles
 ```
 
-> For folder permission management, use the `uipath-platform` skill.
+Assign user to folders via Orchestrator REST API (same pattern as robot onboarding Step 4 above).
 
 ### Step 4 — User Signs In
 

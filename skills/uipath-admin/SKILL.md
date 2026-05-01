@@ -1,7 +1,7 @@
 ---
 name: uipath-admin
 description: "UiPath Admin — Identity Server management via uip admin identity. Users, groups, robot accounts, external apps (OAuth2), credential generation (Client ID/Secret). Onboarding workflows for human users and unattended robots. For Orchestrator folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
-allowed-tools: Bash, Read, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath Admin
@@ -10,7 +10,7 @@ allowed-tools: Bash, Read, Glob, Grep
 
 Identity Server management via `uip admin identity`. Users, groups, robot accounts, external OAuth2 apps.
 
-## When to Use
+## When to Use This Skill
 
 - **Manage identity users** — list, create, invite, update, delete
 - **Manage groups** — CRUD + add/remove members
@@ -24,30 +24,104 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 ## Critical Rules
 
 1. **Verify login first.** Run `uip login status --output json`. If not logged in: `uip login`.
-
 2. **Resolve organization ID first.** Every identity command requires `--organization <ORG_ID>`. Extract from `uip login status --output json` (field: `organizationId`). Never hardcode UUIDs.
-
 3. **Discover before creating.** Always `list` before `create` to avoid duplicates. Robot account and group names must be unique within a partition.
-
 4. **Use `--output json` on all commands.** Parse programmatically. Present results conversationally.
-
 5. **Secrets shown only once.** When creating external apps or generating secrets, secret value appears only in creation response. Warn user to save immediately.
-
 6. **External apps require scopes at creation.** `--scope` is required. Common scopes: `OR.Folders`, `OR.Assets`, `OR.Queues`, `OR.Jobs`, `OR.Machines`.
-
 7. **Group membership uses user IDs, not usernames.** Resolve IDs via `users list` before `groups add-members` or `groups remove-members`.
-
 8. **Confirm before delete.** Always confirm with user before running `delete` on users, groups, robot accounts, or external apps.
+9. **Stop on error.** If any command fails, show error to user. Do not retry auth failures — ask user to run `uip login`.
+
+## What NOT to Do
+
+1. **Never hardcode organization IDs.** Resolve dynamically from `uip login status`.
+2. **Never skip `list`.** Duplicate robot accounts or groups cause confusing errors.
+3. **Never pass usernames to group membership.** Only user IDs (UUIDs) accepted.
+4. **Never assume secrets persist.** Returned once at creation. If lost, generate new one.
+5. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
 
 ## Quick Start
 
+Create a robot account with OAuth2 credentials — the most common identity workflow.
+
+### Step 0 — Verify login
+
 ```bash
 uip login status --output json
-uip admin identity users list --organization <ORG_ID> --output json
-uip admin identity groups list --organization <ORG_ID> --output json
-uip admin identity robot-accounts list --organization <ORG_ID> --output json
-uip admin identity external-apps list --organization <ORG_ID> --output json
 ```
+
+If not logged in: `uip login`. Extract `organizationId` from response.
+
+### Step 1 — Check for existing robot accounts
+
+```bash
+uip admin identity robot-accounts list --organization <ORG_ID> --output json
+```
+
+### Step 2 — Create robot account
+
+```bash
+uip admin identity robot-accounts create "<NAME>" \
+  --organization <ORG_ID> \
+  --display-name "<DISPLAY_NAME>" \
+  --output json
+```
+
+### Step 3 — Create external app for credentials
+
+```bash
+uip admin identity external-apps create "<APP_NAME>" \
+  --organization <ORG_ID> \
+  --scope "OR.Folders,OR.Assets,OR.Queues,OR.Jobs" \
+  --output json
+```
+
+Save `id` (Client ID) and `secret` (Client Secret) from response — secret shown only once.
+
+### Step 4 — Assign to group
+
+```bash
+uip admin identity groups list --organization <ORG_ID> --output json
+uip admin identity groups add-members <GROUP_ID> \
+  --organization <ORG_ID> \
+  --user-ids "<ROBOT_ACCOUNT_ID>" \
+  --output json
+```
+
+## Key Concepts
+
+### Organization Hierarchy
+
+```
+Organization (org)
+  └── Partition (= org in most cases)
+        ├── Users           ← human identities
+        ├── Groups          ← role containers (BuiltIn + Custom)
+        ├── Robot Accounts  ← unattended automation identities
+        └── External Apps   ← OAuth2 clients (Client ID + Secret)
+```
+
+### Robot Account vs External App
+
+| Concept | Purpose |
+|---------|---------|
+| **Robot account** | Identity — who the robot is |
+| **External app** | Credentials — how the robot authenticates (Client ID + Secret) |
+
+Full robot onboarding requires both. See [onboarding-workflows.md](references/onboarding-workflows.md).
+
+## Completion Output
+
+After any mutation (create, update, delete, invite, add-members, remove-members, generate-secret):
+
+1. Show the command result (success or failure)
+2. For creates: display the new resource ID
+3. For external-app create or generate-secret: **highlight the secret value and warn user to save it**
+4. Offer logical next steps:
+   - After creating a robot account → "Create an external app for credentials?"
+   - After creating an external app → "Add the robot to a group?"
+   - After inviting a user → "Check user list to see when they accept?"
 
 ## Task Navigation
 
@@ -60,21 +134,11 @@ uip admin identity external-apps list --organization <ORG_ID> --output json
 | **Manage external apps** (OAuth2 + secrets) | [references/external-app-management.md](references/external-app-management.md) |
 | **Onboard user or robot** (end-to-end) | [references/onboarding-workflows.md](references/onboarding-workflows.md) |
 
-## What NOT to Do
+## References
 
-1. **Never hardcode organization IDs.** Resolve dynamically from `uip login status`.
-2. **Never skip `list`.** Duplicate robot accounts or groups cause confusing errors.
-3. **Never pass usernames to group membership.** Only user IDs (UUIDs) accepted.
-4. **Never assume secrets persist.** Returned once at creation. If lost, generate new one.
-5. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
-
-## Troubleshooting
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `Not logged in` | Auth expired or missing | `uip login` |
-| `HTTP 401` | Invalid/expired token | `uip login` |
-| `HTTP 403` | Insufficient permissions | Needs admin/org-admin role |
-| `Organization ID not available` | No org context | `uip login status --output json` — verify `organizationId` |
-| `already exists` | Duplicate name | `list` first to check existing resources |
-| `No fields to update` | No change flags | Provide `--name`, `--email`, etc. |
+- **[identity-commands.md](references/identity-commands.md)** — Complete CLI reference for all `uip admin identity` commands with flags, arguments, and output codes
+- **[user-management.md](references/user-management.md)** — User lifecycle workflows: discover, create, invite, update, delete, pagination, sorting
+- **[group-management.md](references/group-management.md)** — Group CRUD, membership management (add/remove members), built-in vs custom groups
+- **[robot-account-management.md](references/robot-account-management.md)** — Robot account lifecycle, relationship to external apps
+- **[external-app-management.md](references/external-app-management.md)** — OAuth2 client management, secret generation/rotation, scope reference
+- **[onboarding-workflows.md](references/onboarding-workflows.md)** — End-to-end workflows: robot account onboarding, human user onboarding, bulk onboarding

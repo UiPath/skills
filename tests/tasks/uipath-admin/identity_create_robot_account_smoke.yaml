@@ -1,0 +1,87 @@
+task_id: skill-admin-identity-create-robot-account-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to create
+  a robot account. Tests the discover-before-create pattern (Critical
+  Rule #3) and correct create command with --organization and
+  --display-name flags.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable.
+tags: [uipath-admin, smoke, create]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a new robot account named "invoice-bot" with display name
+  "Invoice Processing Bot" in my UiPath organization.
+
+  Save a summary to report.json in the current working directory with
+  at minimum:
+    {
+      "robot_name": "invoice-bot",
+      "create_command": "<the exact uip admin identity robot-accounts create command>",
+      "listed_first": true or false,
+      "commands_attempted": ["<list of all uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant
+    in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, record the result in
+    report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip admin identity command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed robot accounts first (discover before create)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran robot-accounts create with --organization"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+create\s+.*--organization'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included --display-name flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+create\s+.*--display-name'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json records correct robot name and list-first pattern"
+    path: "report.json"
+    assertions:
+      - expression: "robot_name"
+        operator: equals
+        expected: "invoice-bot"
+      - expression: "listed_first"
+        operator: equals
+        expected: true
+    weight: 1.5
+    pass_threshold: 0.75

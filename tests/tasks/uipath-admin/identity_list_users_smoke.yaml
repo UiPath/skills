@@ -1,0 +1,86 @@
+task_id: skill-admin-identity-list-users-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-admin skill to list
+  identity users. Tests correct CLI namespace (`uip admin identity`),
+  --output json convention, and --organization requirement (Critical
+  Rule #2).
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, list]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  List all users in my UiPath organization using the identity CLI.
+
+  Save a summary to report.json in the current working directory with
+  at minimum:
+    {
+      "command_used": "<the exact uip admin identity command you ran>",
+      "commands_attempted": ["<list of all uip commands you attempted>"],
+      "organization_resolved": true or false
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant
+    in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, record the result in
+    report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip admin identity command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran users list with --organization and --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+identity\s+users\s+list\s+.*--organization'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on identity commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+identity\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references uip admin identity namespace"
+    path: "report.json"
+    includes:
+      - "uip admin identity"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure"
+    path: "report.json"
+    assertions:
+      - expression: "length(command_used)"
+        operator: gte
+        expected: 10
+      - expression: "length(commands_attempted)"
+        operator: gte
+        expected: 1
+    weight: 1.0
+    pass_threshold: 0.75
