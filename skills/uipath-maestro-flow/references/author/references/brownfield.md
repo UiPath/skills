@@ -4,6 +4,21 @@ Recipe-driven journey for targeted changes to an existing `.flow` file. Author t
 
 > **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
 
+## Suggested initial todos
+
+Pre-populate these via `TodoWrite` when entering this journey. The list is edit-shaped — adapt to the user's actual change (single edit → drop discovery rows; multi-node refactor → add per-node rows). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
+
+- [ ] Locate `.flow` file and read current structure
+- [ ] Confirm what the user wants changed
+- [ ] Discover any new node types via registry (if adding nodes)
+- [ ] Apply edit(s) — JSON-direct or CLI per [editing-operations.md](editing-operations.md)
+- [ ] Re-wire edges affected by the change
+- [ ] Update variables / output mappings if scope changed
+- [ ] Run `flow validate` and fix any errors
+- [ ] Run `flow tidy` to normalize layout
+- [ ] Report file path + change summary + remaining mocks/missing connections
+- [ ] Ask "what's next" (publish / debug / deploy)
+
 ## Read this first
 
 **[editing-operations.md](editing-operations.md)** — Direct JSON is the default for all edits. CLI is used only for connector, connector-trigger, and inline-agent nodes (carve-outs), or when you explicitly request it. Read the strategy selection matrix before any modification.

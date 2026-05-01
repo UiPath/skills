@@ -4,6 +4,19 @@ Intervene in a running or faulted Flow instance: pause, resume, cancel, retry. A
 
 > **Stub-with-content.** This guide ships with the canonical command list. Use-case framing (when to pause vs cancel, retry semantics, partial-flow recovery) is a TODO for a future expansion.
 
+## Suggested initial todos
+
+Pre-populate these via `TodoWrite` when entering this journey. See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
+
+- [ ] Confirm logged in (`uip login status`)
+- [ ] Resolve folder key (`uip or folders list`)
+- [ ] Resolve instance ID (from prior debug run, `flow job status`, or `instance list`)
+- [ ] Confirm desired action (pause / resume / cancel / retry)
+- [ ] **For retry:** confirm root cause was diagnosed first (see [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md))
+- [ ] Execute the lifecycle command
+- [ ] Verify new instance state
+- [ ] Report new state to user
+
 ## Pre-flight
 
 1. **Logged in.** `uip login status --output json` returns success.

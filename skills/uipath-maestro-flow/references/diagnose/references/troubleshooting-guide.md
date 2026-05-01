@@ -4,6 +4,19 @@ Diagnostic workflow for failed debug runs and deployed process runs. All command
 
 > **`--folder-key` is required.** All `instance` and `incident get` commands require `--folder-key <FOLDER_KEY>`. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
+## Suggested initial todos
+
+Pre-populate these via `TodoWrite` when entering this journey. The list mirrors the priority ladder — **leave unchecked rungs in place even if root cause is found early; they document where you stopped.** See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
+
+- [ ] Resolve instance ID and folder key
+- [ ] Fetch incidents for the failed run
+- [ ] Identify error category, message, and faulting element
+- [ ] Inspect runtime variable state at failure
+- [ ] Correlate faulting element ID to a node in the `.flow` file
+- [ ] Pull traces (only if previous steps insufficient)
+- [ ] Classify root cause (known failure mode? new pattern?)
+- [ ] Recommend next action (re-author, retry, cancel, escalate)
+
 ## Diagnostic priority
 
 Investigate in this order — each step adds context, stop when you have enough to diagnose the root cause:

@@ -2,6 +2,21 @@
 
 Execute a flow on demand and monitor progress. Three modes: **debug** (controlled re-run with full Studio Web visibility), **process run** (trigger a deployed process), **job inspection** (status and traces). All require `uip login`.
 
+## Suggested initial todos
+
+Pre-populate these via `TodoWrite` when entering this journey. Adapt to the mode (debug vs process run vs job inspection). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
+
+- [ ] Confirm logged in (`uip login status`)
+- [ ] Identify run mode (debug / process run / job inspection)
+- [ ] **For debug:** confirm explicit user consent — flow has real side effects
+- [ ] **For debug:** refresh solution resources (`solution resource refresh`)
+- [ ] Build `--inputs` JSON if the flow has input parameters
+- [ ] Trigger the run (`flow debug` or `flow process run`)
+- [ ] Capture Studio Web URL + Instance ID from output
+- [ ] Monitor job status (`flow job status`) until terminal
+- [ ] Pull traces only if status is faulted (`flow job traces`)
+- [ ] Report URL + Instance ID + final status to user
+
 ## Pre-flight
 
 1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
