@@ -27,6 +27,7 @@ defaults:
   agent:
     type: claude-code
     permission_mode: bypassPermissions
+    isolation: true
     model: claude-sonnet-4-6
     max_turns: 20
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
