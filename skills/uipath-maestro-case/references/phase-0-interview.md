@@ -2,7 +2,7 @@
 
 Phase 0 generates `sdd.md` interactively when none is provided. Output is approved by the user, then handed to Phase 1 unchanged. Lightweight by design: complex/multi-product processes redirect to `uipath-solution-design`.
 
-> **Authoritative for the interview path only.** Trigger detection, round shape, threshold redirect, hard-stop, resumption. Phase 1 logic stays in [planning.md](planning.md). Phase 2a/2b stays in [phased-execution.md](phased-execution.md).
+> **Authoritative for the interview path only.** Trigger detection, round shape, threshold redirect, hard-stop, resumption. Phase 1 logic stays in [planning.md](planning.md). Phases 2–6 stay in [phased-execution.md](phased-execution.md).
 
 ## When Phase 0 runs
 

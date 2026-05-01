@@ -1,10 +1,10 @@
-# Planning Phase: sdd.md → tasks.md
+# Phase 1 — Planning: sdd.md → tasks.md
 
-Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`). This phase discovers registry resources, resolves task type IDs, and produces a declarative specification that the [Implementation Phase](implementation.md) executes via direct JSON writes to `caseplan.json`.
+Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
-> **Exit gate:** The user must explicitly approve `tasks.md` before the Implementation Phase begins.
+> **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
 > - Root case → `plugins/case/planning.md`
@@ -258,6 +258,6 @@ Present the generated `tasks.md` to the user and ask for explicit approval befor
 
 Use **AskUserQuestion** with options: `Approve and proceed`, `Request changes`.
 
-If the user requests changes, update `tasks.md` and re-present. Do NOT proceed to the Implementation Phase until the user explicitly approves.
+If user requests changes, update `tasks.md` and re-present. Do NOT proceed to Phase 2 until user explicitly approves.
 
-**After approval:** re-read `tasks.md` before proceeding to the [Implementation Phase](implementation.md). `tasks.md` is the complete handoff artifact — all resolved IDs, inputs, outputs, and references are captured there.
+**After approval:** re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)). `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.

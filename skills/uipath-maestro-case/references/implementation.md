@@ -1,12 +1,12 @@
-# Implementation Phase: tasks.md → caseplan.json
+# Phases 2–6 — Execution: tasks.md → caseplan.json
 
-Execute the approved `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally debug or publish.
+Execute approved `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally publish and debug. Five phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Publish** → **Phase 6 Debug**.
 
-> **Prerequisite:** The user must have explicitly approved `tasks.md` from the [Planning Phase](planning.md) before starting.
+> **Prerequisite:** User must have explicitly approved `tasks.md` from [Phase 1 Planning](planning.md) before starting.
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Two sub-phases with a hard stop.** Execution is split into **Phase 2a** (skeleton build — structural nodes only) and **Phase 2b** (detail build — values, conditions, SLA). Between them, an **AskUserQuestion** hard stop lets the user optionally publish the skeleton to Studio Web for visual review before committing to detail work. Read [phased-execution.md](phased-execution.md) for the phase contract, informational Phase 2a validate, hard-stop prompt, re-entry protocol, and abort semantics. The step numbering below marks the phase boundary.
+> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (skeleton build), **Phase 3 — Implementation** (detail build), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbering below marks phase boundaries.
 
 ## Per-plugin execution
 
@@ -39,9 +39,9 @@ issues = []  # shared across all steps
 
 ---
 
-# Phase 2a — Skeleton build (Steps 6 – 9.5)
+# Phase 2 — Prototyping (Steps 6 – 9.5)
 
-Steps 6 through 9.5 build the structural skeleton: solution, project, root case, global variables, stages, edges, triggers, and tasks without value binding. Full contract in [phased-execution.md § Phase 2a](phased-execution.md).
+Steps 6 through 9.5 build structural skeleton: solution, project, root case, global variables, stages, edges, triggers, and tasks without value binding. Full contract in [phased-execution.md § Phase 2](phased-execution.md#phase-2--prototyping).
 
 ## Step 6 — Create the Case project structure
 
@@ -80,19 +80,19 @@ For each edge in `tasks.md §4.5`, execute per [`plugins/edges/impl-json.md`](pl
 
 For multi-trigger cases, add the additional triggers first via the appropriate trigger plugin, then wire their IDs as edge sources.
 
-## Step 9 — Add tasks (Phase 2a shape)
+## Step 9 — Add tasks (Phase 2 shape)
 
-For each task entry in `tasks.md §4.6`, open the matching plugin's `impl-json.md`. **Capture the `TaskId`** — cross-task references and conditions in Phase 2b need it.
+For each task entry in `tasks.md §4.6`, open matching plugin's `impl-json.md`. **Capture the `TaskId`** — cross-task references and conditions in Phase 3 need it.
 
-**Phase 2a writes task shape but defers value binding to Phase 2b.** Per-class shape:
+**Phase 2 writes task shape but defers value binding to Phase 3.** Per-class shape:
 
-| Task class | Phase 2a `data` content |
+| Task class | Phase 2 `data` content |
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from `uip maestro case tasks describe --type <type> --id <entityKey>`. Each input's `value` is `""`. Outputs populated per plugin. |
-| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `is resources describe` / `is triggers describe` in 2a** — schema discovery happens in Phase 2b. |
+| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `is resources describe` / `is triggers describe` in Phase 2** — schema discovery happens in Phase 3. |
 | Unresolved (any class) | Skeleton task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
-**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references are written in Phase 2b Step 9.6 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
+**Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
 
 **Pass `lane: <n>` on every task** (or the plugin's equivalent JSON field), incrementing per task within a stage (starting at 0). Lane is a FE layout coordinate; it does not affect execution.
 
@@ -115,7 +115,7 @@ After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json
 
 ## Step 9.5 — Skeleton-mode validate + HARD STOP
 
-End of Phase 2a. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Hard stop](phased-execution.md). This section is a bridge — do NOT duplicate that contract here.
+End of Phase 2. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Phase 2 hard stop](phased-execution.md#phase-2-hard-stop). This section is a bridge — do NOT duplicate contract here.
 
 1. Run informational validate (regular, no `--mode` flag):
 
@@ -123,28 +123,28 @@ End of Phase 2a. Full contract (summary content, prompt options, publish branch,
    uip maestro case validate "<caseplan.json path>" --output json
    ```
 
-   **Do NOT halt on errors or warnings.** Phase 2a output is expected invalid (unbound inputs, missing conditions, missing SLA — all filled in Phase 2b). Capture error + warning counts for the summary; do not attempt to classify "expected" vs "unexpected" errors.
+   **Do NOT halt on errors or warnings.** Phase 2 output is expected invalid (unbound inputs, missing conditions, missing SLA — all filled in Phase 3). Capture error + warning counts for summary; do not classify "expected" vs "unexpected" errors.
 
-2. Print the hard-stop summary, including the captured validate counts ([phased-execution.md § Summary content](phased-execution.md)).
+2. Print hard-stop summary, including captured validate counts ([phased-execution.md § Summary content](phased-execution.md#summary-content)).
 
-3. Execute the hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md) and following sections. Unconditional — SKILL.md Rule #24.
+3. Execute hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md#prompt) and following sections. Unconditional — SKILL.md Rule 11.
 
-On continue (either `Skip publish and continue` or `Continue to phase 2b` after publish): proceed to Step 9.6.
+On continue (either `Skip publish and continue` or `Continue to phase 3` after publish): proceed to Step 9.6.
 
 ---
 
-# Phase 2b — Detail build (Steps 9.6 – 13)
+# Phase 3 — Implementation (Steps 9.6 – 11)
 
-Steps 9.6 onwards wire connector task schemas, input/output values, conditions, and SLA. Full contract in [phased-execution.md § Phase 2b](phased-execution.md).
+Steps 9.6 onwards wire connector task schemas, input/output values, conditions, and SLA. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
 
-## Step 9.6 — Phase 2b re-entry
+## Step 9.6 — Phase 3 re-entry
 
-Before any 2b mutation:
+Before any Phase 3 mutation:
 
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
-2. **Re-read `caseplan.json`** — rebuild name → ID maps from the authoritative artifact. See [phased-execution.md § Phase 2b re-entry protocol](phased-execution.md) for which fields to index.
+2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 
-Never trust in-memory maps from Phase 2a without re-reading `caseplan.json` — context may be compacted across the hard stop.
+Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
 ## Step 9.7 — Connector task detail
 
@@ -180,83 +180,60 @@ For each condition in `tasks.md §4.7`, open the matching plugin's `impl-json.md
 
 ## Step 11 — SLA and escalation
 
-Group `tasks.md §4.8` entries by target (root or stage), then compose and write the full `slaRules[]` array per target in a single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules.
+Group `tasks.md §4.8` entries by target (root or stage), then compose and write full `slaRules[]` array per target in single mutation per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules.
+
+End of Phase 3 mutations. Proceed directly to Phase 4 — no hard stop between Phase 3 and Phase 4.
+
+---
+
+# Phase 4 — Validate (Steps 12 – 12.1)
+
+Authoritative validation. Full contract — command, retry policy, AskUserQuestion options — in [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). This section is a bridge — do NOT duplicate contract here.
 
 ## Step 12 — Full validate
 
-End of Phase 2b mutations. Run full-mode validate (no `--mode` flag):
-
-```bash
-uip maestro case validate <file> --output json
-```
-
-On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to Step 13.
-
-On failure: output lists `[error]` and `[warning]` entries with path and message. Fix the reported issues (usually via a targeted re-run of the earlier step) and re-run `validate`.
-
-**Retry policy.** Up to 3 validation retries per session. After the 3rd failure, halt and ask the user with **AskUserQuestion**: show the remaining errors and options — `Retry with fix`, `Pause for manual edit`, `Abort`.
+Run validate per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On success: proceed to Step 12.1. On 3rd failure: hard-stop prompt per the same section.
 
 ## Step 12.1 — Dump issue log
 
-Write the issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md), grouped by plugin with a summary index. This file is the source of truth for the completion report. Write it even if zero issues were logged (confirms a clean build).
+Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md). On Phase 4 success → proceed to Phase 5.
 
-## Step 13 — Post-build prompt
+---
 
-Once validation passes, report results then ask user what to do next.
+# Phase 5 — Publish (Steps 13, 15)
 
-### Report fields
+Optional Studio Web upload. Full contract — report fields, prompt options, publish commands, pack/publish warning — in [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish). This section is a bridge — do NOT duplicate contract here.
 
-1. File path of `caseplan.json`
-2. What was built — summary of stages, edges, tasks, conditions, SLA
-3. Validation status — `validate` pass/fail + remaining errors
-4. Skeleton tasks + unresolved resources — list every skeleton (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [skeleton-tasks.md](skeleton-tasks.md).
-5. Missing connections — connector tasks needing IS connections that don't exist yet
+## Step 13 — Completion report + Publish prompt
 
-Use **AskUserQuestion** with options:
+Print report fields and run AskUserQuestion per [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish). On `Publish to Studio Web` → Step 15. On `Skip to Debug` → Phase 6.
 
-- `Run debug session` — proceed to Step 14.
-- `Publish to Studio Web` — proceed to Step 15.
-- `Done` — exit.
-- `Something else` — free-form prompt.
+## Step 15 — Publish to Studio Web
 
-After debug or publish completes, return to this prompt so the user can chain the other action (e.g., debug first, then publish). Exit when the user selects `Done`.
+Run `uip solution resource refresh` then `uip solution upload` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes). Print `DesignerUrl`. Proceed to Phase 6.
 
-For further authoring changes (add a task, tweak a condition, etc.), the user updates `sdd.md` and re-runs the skill from Phase 1 — this skill does not offer in-place incremental edits.
+---
 
-## Step 14 — Optional: Debug session
+# Phase 6 — Debug (Step 14)
 
-> Debug executes the case for real — it will send emails, post messages, call APIs, write to databases. Only run debug when the user explicitly asks. Never run it automatically.
+Optional CLI debug run. Full contract — debug command, safety warning, loop behavior — in [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). This section is a bridge — do NOT duplicate contract here.
 
-```bash
-uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json
-```
+## Step 14 — Debug prompt + session
 
-Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
+Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). Loop on completion until `Done`. Never auto-run (Rule 12).
 
 ## Step 14a — Troubleshoot failed case
 
 When a debug or process run fails, read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
 
-**Diagnose → fix → re-run loop.** After each diagnostic pass, classify the root cause and act:
+**Diagnose → fix → re-run loop.** After each diagnostic pass, classify root cause and act:
 
-1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply the targeted fix via the matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 14 debug.
-2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to the user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
+1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 14 debug.
+2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
 3. **Inconclusive** (no actionable cause): proceed to next round per retry policy.
 
-**Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply a different fix — do not repeat identical commands or re-apply the same fix. Track round count.
+**Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply different fix — do not repeat identical commands or re-apply same fix. Track round count.
 
-**Per-round timeout.** If a debug run exceeds 10 minutes wall-clock, treat the round as inconclusive and advance to the next round (counts toward the 3-round limit). Advisory — do not hard-kill the subprocess; classify by elapsed time and move on.
+**Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
 
-After the 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask the user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
-
-## Step 15 — Optional: Publish to Studio Web
-
-**Default publish target.** Uploads the case to Studio Web for visualization and editing.
-
-```bash
-uip solution upload "<SolutionDir>" --output json
-```
-
-Accepts the solution directory (the folder containing the `.uipx`) directly — no intermediate bundling step. `upload` pushes to Studio Web — share the returned URL with the user.
-
-> **Do NOT run `uip maestro case pack` + `uip solution publish` unless the user explicitly asks for Orchestrator deployment.** That path puts the case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
+After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
