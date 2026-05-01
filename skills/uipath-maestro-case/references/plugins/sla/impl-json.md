@@ -4,7 +4,7 @@ direct-json: supported
 
 # sla — JSON Implementation
 
-> **Phase split.** Phase 2b only. Phase 2a does not write SLA or escalation rules. See [`../../phased-execution.md`](../../phased-execution.md).
+> **Phase split.** Phase 3 only. Phase 2 does not write SLA or escalation rules. See [`../../phased-execution.md`](../../phased-execution.md).
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 

@@ -1,6 +1,6 @@
 # rpa task — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 2a writes shape with empty input values. Phase 2b binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape
 
@@ -53,7 +53,7 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 4. Append to target stage's `tasks[laneIndex][]`
 
-> Entry conditions added in Step 10. Input value bindings in Phase 2b per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
+> Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
 ## Post-Write Verification
 

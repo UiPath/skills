@@ -138,7 +138,7 @@ uip maestro case debug <projectDirectory> --log-level debug --output json
 
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 2b execution to discover the per-resource schema.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution to discover the per-resource schema.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
