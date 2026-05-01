@@ -80,3 +80,6 @@
 
 # Access Policy Governance skill (CLI-based ToolUsePolicy management)
 /skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
+# Admin skill (Identity Server management)
+/skills/uipath-admin/ @UiPath/Identity
