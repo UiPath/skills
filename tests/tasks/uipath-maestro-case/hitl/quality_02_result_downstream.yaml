@@ -1,0 +1,229 @@
+task_id: skill-case-hitl-quality-result-downstream
+description: >
+  Quality test: agent correctly references a HITL action task's output in a
+  downstream task using the `=vars.<varId>` runtime path. Tests cross-task
+  binding from an action task to a follow-up task in a later stage.
+tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 110
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Case Management project named "ExpenseApprovalCase" with
+  this shape:
+
+    Manual Trigger
+      → Stage "Review" — HITL action task "Review Expense":
+          inputs (read-only):  expenseAmount, requesterName, category
+          outputs (filled in): approved (Boolean, required),
+                               comments (Text, optional)
+      → Stage "Record" — process task "Log Decision":
+          input: decisionLogText (Text)
+            bound from a case variable that captures
+            "Decision: <approved>, Comments: <comments>" derived from the
+            Review Expense action task's output
+
+  The Log Decision input MUST be bound to a case variable whose value
+  references the action task's output via the runtime variable path
+  `=vars.<varId>` (read the action task's output `var` field after Phase 2a
+  to discover the correct varId — never fabricate).
+
+  Use the same name for solution and project so the case file lives at
+  ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json.
+
+  Write this sdd.md to sdd.md first, then build from it:
+
+  ```
+  # SDD — ExpenseApprovalCase
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |----------|-------|
+  | Case Name | ExpenseApprovalCase |
+  | Case Description | Reviews and records an employee expense decision. |
+  | Case Identifier | Prefix: EAC, Type: constant |
+  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+
+  ### Case Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |-------------|--------|---------------|-------------------------|
+  | None        | Manual | N/A           | —                        |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |------|-----|------|---------------------|
+  | required-stages-completed | — | Case exited | Yes |
+
+  ### Case Variables
+  | Variable | Type | Default | Description | Produced By | Consumed By |
+  |----------|------|---------|-------------|-------------|-------------|
+  | expenseAmount  | Number  | —     | Expense amount.       | (input)            | Review Expense |
+  | requesterName  | String  | —     | Employee name.        | (input)            | Review Expense |
+  | category       | String  | —     | Expense category.     | (input)            | Review Expense |
+  | approved       | Boolean | —     | Reviewer decision.    | Review Expense     | Log Decision   |
+  | comments       | String  | —     | Reviewer comments.    | Review Expense     | Log Decision   |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Review
+  **Type:** Stage
+  **Description:** Reviewer approves or rejects the expense.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | case-entered | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Review Expense | action | Yes | No | Reviewer | — |
+
+  ##### Task 1.1: Review Expense
+  **Type:** action
+  **Description:** Reviewer approves or rejects the expense.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **HITL Implementation:** Action App: Review Expense
+
+  **Input Schema:**
+  | Field         | Type    | Binding        | Required |
+  |---------------|---------|----------------|----------|
+  | expenseAmount | Number  | expenseAmount  | Yes |
+  | requesterName | String  | requesterName  | Yes |
+  | category      | String  | category       | Yes |
+
+  **Output Schema:**
+  | Field    | Type    | Binding |
+  |----------|---------|---------|
+  | approved | Boolean | -> approved |
+  | comments | String  | -> comments |
+
+  ### Stage 2: Record
+  **Type:** Stage
+  **Description:** Records the decision for downstream consumers.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-completed("Review") | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Log Decision | process | Yes | No | — | — |
+
+  ##### Task 2.1: Log Decision
+  **Type:** process
+  **Description:** Logs the reviewer decision and comments downstream.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **Inputs:**
+  | Variable | Type | Binding |
+  |----------|------|---------|
+  | approved | Boolean | "Review"."Review Expense".approved |
+  | comments | String  | "Review"."Review Expense".comments |
+  ```
+
+  Important:
+  - The `uip` CLI is already available.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step.
+  - If either resource is unresolved, write a skeleton task per the
+    skeleton-tasks reference. tasks.md MUST still record the cross-task
+    references in a fenced wiring-notes code block (e.g.
+    `approved <- "Review"."Review Expense".approved`). When both tasks
+    resolve, the downstream input MUST be bound via `=vars.<varId>`.
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root**:
+  {
+    "caseplan_path": "<path to caseplan.json>",
+    "action_task_id": "<id of Review Expense>",
+    "downstream_task_id": "<id of Log Decision>",
+    "skeleton_action": <true|false>,
+    "result_path_used": "<actual binding string used in caseplan.json or wiring-notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains both action and process tasks"
+    path: "ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+      - '"type": "process"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR Review Expense.approved reference in tasks.md"
+    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "tasks.md records the action output binding for approved"
+    path: "tasks/tasks.md"
+    includes:
+      - "approved"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures task IDs and the binding path"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "action_task_id"
+        operator: not_equals
+        expected: ""
+      - expression: "downstream_task_id"
+        operator: not_equals
+        expected: ""
+      - expression: "result_path_used"
+        operator: not_equals
+        expected: ""
+    weight: 2.0
+    pass_threshold: 0.75

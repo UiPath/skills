@@ -1,0 +1,166 @@
+task_id: skill-case-hitl-smoke-stage-exit-on-action
+description: >
+  Smoke test: agent wires a stage exit on a HITL action task's completion
+  using `selected-tasks-completed` referencing the action TaskId, and routes
+  to a downstream stage. Verifies the exit-condition rule type and that the
+  TaskId is referenced from the rule.
+tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 105
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Case Management project named "PurchaseApprovalCase" with
+  this shape:
+
+    Manual Trigger → Stage "Review" (one HITL action task: manager approves
+    the purchase) → Stage "Recorded" (regular stage, no tasks) → Case end
+
+  The "Review" stage MUST exit (without marking complete — i.e. exit-only,
+  Marks Stage Complete: No) when the action task completes, using a
+  `selected-tasks-completed` rule that references the action task. The
+  "Recorded" stage's entry condition is `selected-stage-exited("Review")`,
+  and the case completes when all required stages complete.
+
+  Use the same name for solution and project so the case file lives at
+  PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json.
+
+  Write this sdd.md to sdd.md first, then build from it:
+
+  ```
+  # SDD — PurchaseApprovalCase
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |----------|-------|
+  | Case Name | PurchaseApprovalCase |
+  | Case Description | Tracks a purchase through manager approval and recording. |
+  | Case Identifier | Prefix: PAC, Type: constant |
+  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+
+  ### Case Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |-------------|--------|---------------|-------------------------|
+  | None        | Manual | N/A           | —                        |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |------|-----|------|---------------------|
+  | required-stages-completed | — | Case exited | Yes |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Review
+  **Type:** Stage
+  **Description:** Manager reviews the purchase request.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | case-entered | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | selected-tasks-completed("Review Purchase") | — | exit-only | No |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Review Purchase | action | Yes | No | Manager | — |
+
+  ##### Task 1.1: Review Purchase
+  **Type:** action
+  **Description:** Manager approves or rejects the purchase.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **HITL Implementation:** Action App: Review Purchase
+
+  ### Stage 2: Recorded
+  **Type:** Stage
+  **Description:** Approval is recorded.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-exited("Review") | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  (none)
+  ```
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step.
+  - Skeleton action task is acceptable if the action-app is unresolved.
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root** with
+  exactly these keys:
+  {
+    "caseplan_path": "<relative path to caseplan.json>",
+    "action_task_id": "<id of the action task>",
+    "review_stage_id": "<id of the Review stage>",
+    "exit_rule_type": "<the WHEN value used on Review's exit, e.g. selected-tasks-completed>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json was created"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains an action task"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Review stage exits via selected-tasks-completed"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    includes:
+      - "selected-tasks-completed"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json records selected-tasks-completed as the exit rule"
+    path: "report.json"
+    includes:
+      - "selected-tasks-completed"
+    weight: 1.5
+    pass_threshold: 1.0
