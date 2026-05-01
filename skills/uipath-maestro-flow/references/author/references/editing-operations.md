@@ -4,13 +4,13 @@ Strategy selection and shared concepts for modifying `.flow` files. Two implemen
 
 ## Tool Selection Ladder
 
-> **Pick the lowest-numbered tool that fits the operation. If none fit, stop and ask the user — never reach for `python`, `node`, `jq`, `sed`, `awk`, or shell heredocs.**
+> **Pick the lowest-numbered tool that fits the operation. If none fit, stop and ask the user. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, shell heredocs) are a last resort and require explicit user approval — see rung 5.**
 >
 > 1. **Connector / connector-trigger / inline-agent node** → `uip maestro flow node configure` (carve-out — auto-populates `inputs.detail` + `bindings_v2.json`).
 > 2. **Add/delete an OOTB node, add/delete an edge, add/delete a variable** → `uip maestro flow node {add,delete}` / `edge {add,delete}` / `variable add` (auto-manages `definitions[]` and `variables.nodes`).
 > 3. **In-place value tweak** (script body, expression, `typeVersion`, single-field input change, bracket→dot-access fix) → `Edit`.
 > 4. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write`.
-> 5. **Anything else** → STOP and ask the user. Do not reach for a scripting language.
+> 5. **Anything else** → STOP and ask the user. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and only proceed after the user explicitly approves that path for this specific change.
 
 ### Why not Python / Node / jq / sed?
 

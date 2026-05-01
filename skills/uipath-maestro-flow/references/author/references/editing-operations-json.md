@@ -2,7 +2,7 @@
 
 All flow file modifications via the `Edit` and `Write` tools (read-modify-write of the `.flow` JSON file). This strategy gives full control over every field but requires manual management of definitions, variables, and edge integrity.
 
-> **Apply every recipe in this file with the `Edit` tool (default) or the `Write` tool (only when ≥70% of nodes change).** Each recipe shows the JSON payload that goes into the `new_string` parameter of an `Edit` call. **Never** use `python`, `node`, `jq`, `sed`, `awk`, or shell heredocs to mutate the `.flow` file — see SKILL.md rule on forbidden tools and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
+> **Apply every recipe in this file with the `Edit` tool (default) or the `Write` tool (only when ≥70% of nodes change).** Each recipe shows the JSON payload that goes into the `new_string` parameter of an `Edit` call. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort for mutations and require explicit user approval after you've surfaced the trade-offs — see SKILL.md rule on scripted mutations and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
 >
 > **When to use this strategy:** Edit / Write is the default for all `.flow` edits. Use CLI (see [editing-operations-cli.md](editing-operations-cli.md)) only for connector, connector-trigger, and inline-agent nodes, or when the user explicitly requests CLI. See [editing-operations.md](editing-operations.md) for the strategy selection matrix.
 
