@@ -23,7 +23,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
    ```
    /tmp/ixp/<project-name>/
-   ├── docs/         # Document images (<document-id>.png, …) — downloaded once, reused across sessions
+   ├── docs/         # Document files (<document-id>.pdf, .png, …) — downloaded once, reused across sessions
    ├── text/         # OCR text files (<document-id>.txt, …) — downloaded once, reused across sessions
    ├── taxonomies/   # Taxonomy snapshots (v1.json, v2.json, …) — new version after each update-prompts
    └── prompts/      # Instruction update payloads (field_updates.json, group_updates.json, …)

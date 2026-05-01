@@ -86,11 +86,11 @@ The field `name` (e.g., `"Invoice Number"`, `"Description"`) is what you pass to
 uip ixp documents list <project-name> --output json
 
 # For each sample document:
-uip ixp documents get-image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
-uip ixp documents get-text <project-name> <document-id> --output json
+uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
+uip ixp documents get-text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/sample.txt --output json
 ```
 
-Save OCR output to `/tmp/ixp/<project-name>/text/sample.json`. View the images with the **Read tool** and review the OCR text. These files persist across sessions — check for existing files before downloading.
+The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** (handles PDF, PNG, JPG, etc.) and review the OCR text. These files persist across sessions — check for existing files before downloading.
 
 ### 1e. Check for unlabelled documents
 

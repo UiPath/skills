@@ -23,7 +23,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | Command | Description |
 |---------|-------------|
 | `uip ixp documents list <project-name> --output json` | List documents — returns `[{ DocumentId, AttachmentRef }]` |
-| `uip ixp documents get-image <project-name> <document-id> -o <path> --output json` | Download the document image (rendered page) for viewing |
+| `uip ixp documents download <project-name> <document-id> -o <path> --output json` | Download the original document file (PDF/PNG/JPG/etc.). The CLI auto-corrects the file extension to match the actual content; use the response `Path` field as the resolved location. |
 | `uip ixp documents get-text <project-name> <document-id> -o <path> --output json` | Get OCR text and save to file — use to cross-reference predicted values against the document |
 
 ## Labellings

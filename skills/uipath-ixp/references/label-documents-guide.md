@@ -34,20 +34,20 @@ This returns the document's predicted `Labels` (grouped by field group name), ea
 ### 2b. Download image and OCR text
 
 - **If files already exist** in `/tmp/ixp/<project-name>/docs/` from a previous session, reuse them — do NOT re-download.
-- **Otherwise, download** the document image and OCR text:
+- **Otherwise, download** the document file and OCR text:
 
 ```bash
-uip ixp documents get-image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id>.png --output json
+uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 uip ixp documents get-text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/<document-id>.txt --output json
 ```
 
-Use the document ID as the filename — it's unique and lets you match files to documents without tracking a counter. These files persist across sessions — check for existing files before downloading.
+Use the document ID as the filename. Pass `-o` **without an extension** — the CLI detects the actual format (PDF, PNG, JPG, …) from the file content and appends the correct extension. Read the resolved `Path` from the response and use that for the next step. These files persist across sessions — check for existing files before downloading.
 
 ### 2c. Review predictions field-by-field
 
-Use the **Read tool** to view the image, then review each predicted field against the document:
+Use the **Read tool** to view the document file (the Read tool handles PDF, PNG, JPG, etc. natively), then review each predicted field against the document:
 
-1. **Look at the image** to understand the document layout and where field values appear.
+1. **Look at the document** to understand the layout and where field values appear.
 2. **For each predicted field**, assign one of three verdicts:
    - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.
    - **CORRECTED** — the prediction found the right field in the right location, but the value is OCR-mangled (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`). The reference is correct but the text needs fixing.
