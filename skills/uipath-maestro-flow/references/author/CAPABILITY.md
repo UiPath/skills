@@ -4,7 +4,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 > **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout. The rules below are author-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout, **plain-English narration per logical step**, **granular `TodoWrite` list above the trivial threshold**. The rules below are author-scoped and apply on top.
 
 ## When to use this capability
 

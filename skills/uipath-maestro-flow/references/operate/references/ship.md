@@ -4,6 +4,18 @@ Publish journey for a Flow project. Two paths: **Studio Web upload** (default) a
 
 > **When to use which path:** if the user says "publish" without specifying where, default to Studio Web. Only use Orchestrator deploy when the user explicitly asks to deploy to Orchestrator. Studio Web upload lets the user visualize, inspect, edit, and publish from the browser; Orchestrator deploy puts the flow directly into a process, bypassing Studio Web — the user cannot visualize or edit it there.
 
+## Suggested initial todos
+
+Pre-populate these via `TodoWrite` when entering this journey. Drop the Orchestrator rows when the user is doing Studio Web upload (the default). See [shared/ux-narration-and-todos.md](../../shared/ux-narration-and-todos.md) for granularity, narration cadence, and pivot rules.
+
+- [ ] Confirm authoring complete (`flow validate` + `flow tidy` ran)
+- [ ] Confirm logged in (`uip login status`)
+- [ ] Refresh solution resources (`solution resource refresh`)
+- [ ] Choose path (Studio Web upload — default — or Orchestrator deploy)
+- [ ] Run `solution upload` (Studio Web path) **OR** `flow pack` + `solution publish` (Orchestrator path)
+- [ ] Verify Studio Web URL or Orchestrator package returned
+- [ ] Report URL / package details to user
+
 ## Pre-flight
 
 Before either publish path, ensure:
