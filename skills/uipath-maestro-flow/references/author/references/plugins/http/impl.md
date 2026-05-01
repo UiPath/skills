@@ -39,6 +39,12 @@ uip is connections list "<target-connector-key>" --output json
 uip is connections ping "<connection-id>" --output json
 ```
 
+If the list is empty, retry once with `--refresh` to bypass the CLI cache:
+
+```bash
+uip is connections list "<target-connector-key>" --refresh --output json
+```
+
 Record the `Id` and `FolderKey` from the connection.
 
 > **A healthy connection is required for connector mode.** If `uip is connections list` returns empty, retry once with `--refresh`. If still empty, **STOP** — the node cannot be configured without a real connection ID. Optionally offer to run `uip is connections create "<target-connector-key>"` to start the OAuth flow; the user must complete browser auth themselves, then re-run `uip is connections list` to pick up the new connection before resuming. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node. See [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors).
