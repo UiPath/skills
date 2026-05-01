@@ -140,7 +140,7 @@ Trigger nodes (manual, scheduled, connector triggers) have a single output — n
 }
 ```
 
-End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see [end/impl.md](../author/references/plugins/end/impl.md)).
+End/terminate nodes do **not** use this pattern — their `outputs` maps workflow-level output variables (see the [Author end plugin reference](../author/references/plugins/end/impl.md)).
 
 ## Layout
 
@@ -176,7 +176,7 @@ Each key in `layout.nodes` is a node `id`. `flow tidy` creates an entry for ever
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 
-**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See [subflow/impl.md](../author/references/plugins/subflow/impl.md).
+**Subflow layout is scoped.** Each subflow entry in `subflows[<id>]` has its **own** `layout.nodes` map for the nodes inside that subflow — they do NOT live in the top-level `layout.nodes`. Tidy handles both passes. See the [Author subflow plugin reference](../author/references/plugins/subflow/impl.md).
 
 ## Edge — both ports required
 
@@ -220,7 +220,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 
 > The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
 
-For full details on each node (ports, inputs, outputs, when to use), see [planning-arch.md](../author/references/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see [planning-impl.md](../author/references/planning-impl.md).
+For full details on each node (ports, inputs, outputs, when to use), see the [Author planning architecture guide](../author/references/planning-arch.md). For implementation resolution (registry lookups, connection binding, reference field resolution), see the [Author planning implementation guide](../author/references/planning-impl.md).
 
 Discover all available types:
 ```bash
@@ -460,7 +460,7 @@ Each resource node needs two binding entries (one for `name`, one for `folderPat
 
 **Why this is required.** The definition's `model.context[].value` fields are placeholders of the form `<bindings.{name}>` — deliberately invalid as runtime expressions, so they can't be confused with one. Before the BPMN is emitted, the runtime rewrites each placeholder to `=bindings.<id>` by finding a workflow-level binding with `(resourceKey, name)` matching the node's manifest `model.bindings.resourceKey` + the placeholder name. Without matching entries in top-level `bindings[]`, `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder" even though `uip maestro flow validate` passes.
 
-**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [AUTHOR.md](../author/CAPABILITY.md).
+**Definitions stay verbatim.** Do NOT rewrite `<bindings.*>` placeholders inside the `definitions` entry — the definition is the authoring template. See "Every node type needs a `definitions` entry" in [author/CAPABILITY.md](../author/CAPABILITY.md).
 
 See each resource plugin's `impl.md` for the full JSON per node type: [rpa](../author/references/plugins/rpa/impl.md), [agent](../author/references/plugins/agent/impl.md), [flow](../author/references/plugins/flow/impl.md), [agentic-process](../author/references/plugins/agentic-process/impl.md), [api-workflow](../author/references/plugins/api-workflow/impl.md), [hitl](../author/references/plugins/hitl/impl.md).
 

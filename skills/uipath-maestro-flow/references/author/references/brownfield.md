@@ -1,6 +1,6 @@
 # Brownfield — Edit an Existing Flow
 
-Recipe-driven journey for targeted changes to an existing `.flow` file. Author terminates at `validate` + `tidy`. To publish, run, or debug after edits, see [OPERATE.md](../../operate/CAPABILITY.md).
+Recipe-driven journey for targeted changes to an existing `.flow` file. Author terminates at `validate` + `tidy`. To publish, run, or debug after edits, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
 
 > **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
 
@@ -31,7 +31,7 @@ For each edit, run `uip maestro flow validate` once after **all** edits are comp
 ## After edits
 
 1. **Validate** — `uip maestro flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
-2. **Tidy** — `uip maestro flow tidy <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow tidy` after edits" in [AUTHOR.md](../CAPABILITY.md)) — without tidy, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
+2. **Tidy** — `uip maestro flow tidy <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow tidy` after edits" in [the Author capability index](../CAPABILITY.md)) — without tidy, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
 
 ## Completion Output
 
@@ -47,7 +47,7 @@ When you finish editing the flow, report to the user:
 
 ### What's next dropdown
 
-Authoring terminates here. Each option below hands off to Operate — read [OPERATE.md](../../operate/CAPABILITY.md) for the command sequence.
+Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) for the command sequence.
 
 | Option | What it does |
 | --- | --- |
@@ -56,4 +56,4 @@ Authoring terminates here. Each option below hands off to Operate — read [OPER
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it. |
 
-Do not run any of these actions without explicit user selection. Once the user picks an option, read [OPERATE.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.

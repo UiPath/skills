@@ -101,7 +101,7 @@ uip maestro flow instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json     
 uip maestro flow instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json                       # get current execution cursor positions
 ```
 
-> **Lifecycle commands** (`pause` / `resume` / `cancel` / `retry`) are operate concerns — see [operate/manage.md](../../operate/references/manage.md).
+> **Lifecycle commands** (`pause` / `resume` / `cancel` / `retry`) are operate concerns — see the [Operate manage guide](../../operate/references/manage.md).
 
 ### uip maestro flow incident
 

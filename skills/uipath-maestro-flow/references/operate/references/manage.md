@@ -30,10 +30,10 @@ uip maestro flow instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json    #
 
 ## What's next
 
-- **Need to inspect why an instance faulted before deciding pause/cancel/retry?** Triage via [DIAGNOSE.md](../../diagnose/CAPABILITY.md) first — get incidents and runtime variables before intervening.
-- **Need to look up the full `instance` CLI surface?** See [shared/cli-commands.md](../../shared/cli-commands.md) and [diagnose/troubleshooting-guide.md — CLI command reference](../../diagnose/references/troubleshooting-guide.md#cli-command-reference).
+- **Need to inspect why an instance faulted before deciding pause/cancel/retry?** Triage via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) first — get incidents and runtime variables before intervening.
+- **Need to look up the full `instance` CLI surface?** See [shared/cli-commands.md](../../shared/cli-commands.md) and the [Diagnose troubleshooting guide — CLI command reference](../../diagnose/references/troubleshooting-guide.md#cli-command-reference).
 
 ## Anti-patterns
 
-- **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [DIAGNOSE.md](../../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
+- **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never skip the `--folder-key` flag.** Without it the command rejects before reaching the API.

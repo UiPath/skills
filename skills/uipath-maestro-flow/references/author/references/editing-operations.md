@@ -59,7 +59,7 @@ These apply regardless of which strategy you use.
 
 - Layout (`layout.nodes`, `subflows[<id>].layout`) is owned by `uip maestro flow tidy` — do not hand-compute coordinates
 - When authoring a node, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); tidy rewrites it on save
-- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [commands.md](../../shared/cli-commands.md#uip-maestro-flow-tidy)
+- Run `uip maestro flow tidy <file>.flow` after edits and before publish/debug — see [cli-commands.md](../../shared/cli-commands.md#uip-maestro-flow-tidy)
 
 ### Edge rules
 
@@ -97,5 +97,5 @@ See [variables-and-expressions.md](../../shared/variables-and-expressions.md) fo
 | Replace a trigger type (non-connector) | [JSON guide — Replace trigger](editing-operations-json.md#replace-manual-trigger-with-scheduled-trigger) (default) or [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-scheduled-trigger) (opt-in) |
 | Replace a trigger type (connector trigger) | [CLI guide — Replace trigger](editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) (carve-out) |
 | Understand the `.flow` JSON schema | [file-format.md](../../shared/file-format.md) |
-| Look up CLI flags and syntax | [commands.md](../../shared/cli-commands.md) |
+| Look up CLI flags and syntax | [cli-commands.md](../../shared/cli-commands.md) |
 | Work with variables and expressions | [variables-and-expressions.md](../../shared/variables-and-expressions.md) |

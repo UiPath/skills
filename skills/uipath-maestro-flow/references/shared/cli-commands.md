@@ -2,11 +2,11 @@
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
-> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see [editing-operations-cli.md](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+> For node and edge commands (`node add/delete/list/configure`, `edge add/delete/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
 ## uip maestro flow init
 
-Scaffold a new Flow project directory. **Always create a solution first** (see [author/greenfield.md — Step 2](../author/references/greenfield.md)).
+Scaffold a new Flow project directory. **Always create a solution first** (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
 
 ```bash
 # 1. Create solution first
@@ -220,15 +220,15 @@ uip maestro flow hitl add <path/to/file.flow> \
 { "Result": "Success", "Code": "HitlNodeAdded", "Data": { "NodeId": "invoiceReview1", "NodeType": "uipath.human-in-the-loop", "Label": "Invoice Review", "DefinitionAdded": true } }
 ```
 
-After adding, wire the `completed` port to the next node — an unwired `completed` blocks the flow indefinitely. See [hitl/impl.md](../author/references/plugins/hitl/impl.md) for edge format.
+After adding, wire the `completed` port to the next node — an unwired `completed` blocks the flow indefinitely. See the [Author HITL plugin reference](../author/references/plugins/hitl/impl.md) for edge format.
 
 ## uip maestro flow instance / uip maestro flow incident
 
-See [troubleshooting-guide.md](../diagnose/references/troubleshooting-guide.md) for the full diagnostic workflow and command reference for `instance` and `incident` subcommands.
+See the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-guide.md) for the full diagnostic workflow and command reference for `instance` and `incident` subcommands.
 
 ## uip maestro flow node / uip maestro flow edge
 
-See [editing-operations-cli.md](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
+See the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/delete/list/configure` and `edge add/delete/list` syntax, flags, and auto-managed behaviors.
 
 ## uip maestro flow registry
 
