@@ -1,0 +1,297 @@
+task_id: skill-flow-ixp-e2e-project-selection
+description: >
+  E2E (project selection): on a tenant where the demo IxP project set is
+  published (one model per zip in scripts/ixp-demo-projects/packages/), the
+  agent must pick the published model that matches the user's document
+  domain — not fall back to core.logic.mock and not pick a different
+  domain's model.
+
+  Each row names a different document type (passport, receipt, bank
+  statement, …) and lists the fields the flow should extract. The prompts
+  deliberately do NOT name the IxP model, NodeType, or fully-qualified
+  name — picking the right entry from `registry search "uipath.ixp"` is
+  exactly the skill behaviour under test.
+
+  Per-row strictness comes from a run_command that switches on the row dir
+  in $(pwd) (dataset-fanout cwd is <run>/artifacts/<task_id>/<row_id>[/<iter>]/,
+  see comment in activation.yaml) and asserts BOTH the chosen NodeType
+  prefix AND the inputs.modelName match the published model for that row.
+
+  Validate-only: no `uip maestro flow debug`. The expected NodeType prefixes
+  and DisplayNames assume the runner publishes the IxP demo set as named
+  below — the source packages live outside this repo (CI runner / external
+  publisher), not under `scripts/`. If a publisher renames a project,
+  reconcile the case statement below against
+  `uip maestro flow registry search "uipath.ixp" --output json` on the
+  runner before merge.
+
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:ixp]
+
+task_timeout: 1200
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+dataset:
+  rows:
+    - id: aviation
+      prompt: >-
+        Build a Maestro flow that reads NTSB aviation accident investigation
+        final-report PDFs and extracts the NTSB number, event date, location
+        (city/state), aircraft make and model, and aircraft damage. Trigger
+        manually; the downstream script logs the NTSB number.
+
+    - id: birth-certificate
+      prompt: >-
+        Build a Maestro flow that reads scanned birth certificates and
+        extracts the child's full name, date of birth, place of birth, and
+        parents' names. Trigger manually; the downstream script logs the
+        child's full name.
+
+    - id: death-certificate
+      prompt: >-
+        Build a Maestro flow that reads scanned death certificates and
+        extracts the decedent's full name, date of death, place of death,
+        and cause of death. Trigger manually; the downstream script logs
+        the decedent's full name.
+
+    - id: employment-agreement
+      prompt: >-
+        Build a Maestro flow that reads employment agreement PDFs and
+        extracts the employee name, employer name, start date, base salary,
+        and termination/severance terms. Trigger manually; the downstream
+        script logs the employee name.
+
+    - id: health-insurance
+      prompt: >-
+        Build a Maestro flow that reads photos of health insurance cards
+        and extracts the member name, member ID, group number, insurer
+        name, and copay amounts. Trigger manually; the downstream script
+        logs the member ID.
+
+    - id: bank-statement
+      prompt: >-
+        Build a Maestro flow that reads bank statement PDFs and extracts
+        the institution name, account number, statement period, and ending
+        balance. Trigger manually; the downstream script logs the
+        institution name.
+
+    - id: passport
+      prompt: >-
+        Build a Maestro flow that reads passport scans and extracts the
+        holder's full name, passport number, nationality, date of birth,
+        and expiry date. Trigger manually; the downstream script logs the
+        passport number.
+
+    - id: receipt
+      prompt: >-
+        Build a Maestro flow that reads expense receipt photos and
+        extracts the merchant name, transaction date, total amount, and
+        currency. Trigger manually; the downstream script logs the
+        merchant name.
+
+    - id: icao
+      prompt: >-
+        Build a Maestro flow that reads the ICAO Air Transport Monthly
+        Monitor PDF and extracts the reporting period, top traffic figures,
+        and year-over-year change rates. Trigger manually; the downstream
+        script logs the reporting period.
+
+    - id: loan-application
+      prompt: >-
+        Build a Maestro flow that reads Uniform Residential Loan
+        Application (Fannie Mae Form 1003) PDFs and extracts the borrower
+        name, current address, employment and income details, loan amount,
+        and subject property address. Trigger manually; the downstream
+        script logs the borrower name.
+
+initial_prompt: |
+  ${row.prompt}
+
+  Important:
+  - The `uip` CLI is already available and the runner is logged in.
+  - Use `--output json` on all uip commands.
+  - Work inside the stated working directory — do NOT `cd` to a parent.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+  - Do NOT iterate on validation errors.
+
+success_criteria:
+  - type: skill_triggered
+    expected: "yes"
+    skill_name: "uipath:uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched the registry for IxP node types"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Same `../..` cwd rationale as activation.yaml:107-112: dataset-fanout cwd
+  # is <run>/artifacts/<outer_task_id>/<row_id>[/<iter>]/, so artifacts written
+  # by the agent live two levels up at most.
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: 'f=$(find ../.. -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Real IxP node landed — agent did NOT fall back to mock on a tenant where
+  # a domain-matching IxP project IS published.
+  - type: run_command
+    description: "Generated flow contains a real uipath.ixp.* node"
+    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp\." --include="*.flow" ../..'
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Inverted twin of the above. `! grep -q` exits 0 when no mock is found
+  # (PASS) and 1 when one exists (FAIL). Same `../..` rationale as above.
+  - type: run_command
+    description: "Generated flow does NOT contain a core.logic.mock fallback"
+    command: '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"core\.logic\.mock\"" --include="*.flow" ../..'
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Per-row strict check: BOTH the chosen NodeType AND inputs.modelName must
+  # match the published model for this row's domain. Expected strings are
+  # pinned from `uip maestro flow registry search "uipath.ixp" --output json`
+  # against the CI runner's tenant. Re-pin if the publisher re-publishes —
+  # the hex IDs are runtime-project IDs assigned at publish time, not the
+  # dataset IDs in scripts/ixp-demo-projects/datasets.jsonl.
+  - type: run_command
+    description: "IxP node references the exact published model for this row's domain (strict)"
+    command: |
+      case "$(pwd)" in
+        *aviation*)
+          model='aviation-investigation-final-report-demo-a42b1d4d-ixp'
+          nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.shared-aviation-investigation-final-report-demo-a42b1d4d-ixp'
+          ;;
+        *birth*)
+          model='birth_certificates_oob-6252526a-ixp'
+          nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.shared-birth-certificates-oob-6252526a-ixp'
+          ;;
+        *death*)
+          model='death_certificates_oob-56f11e28-ixp'
+          nt='uipath\.ixp\.death-certificates-oob-56f11e28-ixp\.shared-death-certificates-oob-56f11e28-ixp'
+          ;;
+        *employment*)
+          model='employment-agreements-d4ee40a0-ixp'
+          nt='uipath\.ixp\.employment-agreements-d4ee40a0-ixp\.shared-employment-agreements-d4ee40a0-ixp'
+          ;;
+        *health-insurance*)
+          model='health_insurance_cards_oob-c28ec12f-ixp'
+          nt='uipath\.ixp\.health-insurance-cards-oob-c28ec12f-ixp\.shared-health-insurance-cards-oob-c28ec12f-ixp'
+          ;;
+        *bank-statement*)
+          model='idp-benchmark---bank-statements-819106fb-ixp'
+          nt='uipath\.ixp\.idp-benchmark-bank-statements-819106fb-ixp\.shared-idp-benchmark-bank-statements-819106fb-ixp'
+          ;;
+        *passport*)
+          model='idp-benchmark---passports-6b2a616e-ixp'
+          nt='uipath\.ixp\.idp-benchmark-passports-6b2a616e-ixp\.shared-idp-benchmark-passports-6b2a616e-ixp'
+          ;;
+        *receipt*)
+          model='idp-benchmark---receipts-43af6412-ixp'
+          nt='uipath\.ixp\.idp-benchmark-receipts-43af6412-ixp\.shared-idp-benchmark-receipts-43af6412-ixp'
+          ;;
+        *icao*)
+          model='ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp'
+          nt='uipath\.ixp\.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp\.shared-ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp'
+          ;;
+        *loan*)
+          model='ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp'
+          nt='uipath\.ixp\.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp\.shared-ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp'
+          ;;
+        *)
+          echo "Unknown row in pwd: $(pwd)" >&2
+          exit 2
+          ;;
+      esac
+      f=$(find ../.. -name "*.flow" -print -quit)
+      if [ -z "$f" ]; then
+        echo "no .flow file under ../.." >&2
+        exit 1
+      fi
+      if ! grep -qF "\"modelName\": \"${model}\"" "$f"; then
+        echo "modelName mismatch — expected '${model}' in $f" >&2
+        grep -E '"modelName"' "$f" >&2 || true
+        exit 1
+      fi
+      if ! grep -qE "\"type\"[[:space:]]*:[[:space:]]*\"${nt}" "$f"; then
+        echo "NodeType mismatch — expected prefix '${nt}' in $f" >&2
+        grep -E '"type"[[:space:]]*:[[:space:]]*"uipath\.ixp' "$f" >&2 || true
+        exit 1
+      fi
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # Structural IxP-node invariants that uip maestro flow validate does NOT
+  # catch (the IxP node manifest only marks fileRef as required, so the
+  # validator accepts instances that crash the Studio Web property panel
+  # or break runtime $vars resolution). See references/plugins/ixp/impl.md
+  # "JSON Structure" — Build procedure & Authoring rules #1, #4, #6.
+  - type: run_command
+    description: "IxP node passes the invariants flow validate misses: inputs.model object, outputs.{output,error}, no legacy fields, fileRef is a $vars expression"
+    command: |
+      f=$(find ../.. -name "*.flow" -print -quit)
+      if [ -z "$f" ]; then
+        echo "no .flow file under ../.." >&2
+        exit 1
+      fi
+      python3 - "$f" <<'PY'
+      import json, sys
+      path = sys.argv[1]
+      with open(path) as fh:
+          flow = json.load(fh)
+      ixp = [n for n in flow.get('nodes', []) if isinstance(n, dict) and isinstance(n.get('type'), str) and n['type'].startswith('uipath.ixp.')]
+      if not ixp:
+          print(f'no uipath.ixp.* node in {path}', file=sys.stderr); sys.exit(1)
+      errors = []
+      forbidden = {'digitizationMode', 'documentTaxonomy', 'attachmentId', 'fileName', 'mimeType'}
+      for n in ixp:
+          nid = n.get('id', '<no-id>')
+          inputs = n.get('inputs') or {}
+          outputs = n.get('outputs') or {}
+          model = inputs.get('model')
+          if not isinstance(model, dict):
+              errors.append(f"{nid}: inputs.model missing or not an object (canvas crashes when clicking the node — impl.md rule #1)")
+          else:
+              for k in ('modelName', 'folderKey'):
+                  if not model.get(k):
+                      errors.append(f"{nid}: inputs.model.{k} missing (ixp-model-taxonomy destructures it — impl.md rule #1)")
+          fileRef = inputs.get('fileRef', '')
+          if not isinstance(fileRef, str) or not fileRef.startswith('=js:$vars.'):
+              errors.append(f"{nid}: inputs.fileRef must be a '=js:$vars.<upstream>.output.<field>' expression (impl.md rule #3)")
+          for port in ('output', 'error'):
+              if port not in outputs:
+                  errors.append(f"{nid}: outputs.{port} missing — downstream $vars.{nid}.{port} will not resolve (impl.md rule #4)")
+          legacy = sorted(forbidden & set(inputs.keys()))
+          if legacy:
+              errors.append(f"{nid}: inputs contains forbidden legacy field(s) {legacy} — these were removed from the standalone IxP schema (impl.md rule #6)")
+          if 'model' in n and n.get('model') is not None:
+              errors.append(f"{nid}: top-level 'model' block on the instance — it must live only in definitions[] (impl.md rule #5)")
+      if errors:
+          for e in errors:
+              print(e, file=sys.stderr)
+          sys.exit(1)
+      PY
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

@@ -1,0 +1,79 @@
+task_id: skill-flow-ixp-activation-negative
+description: >
+  Negative IxP routing — verifies the agent does NOT add a uipath.ixp.*
+  node when the user asks for a Maestro flow with no document-extraction
+  scope. Parent uipath-maestro-flow Skill must still fire (this is in-skill
+  plugin-routing coverage; "should not fire maestro-flow at all" is upstream
+  in coder_eval/tasks/uipath_flow/triggering/triggering.jsonl).
+
+  Each row carries a flow-shaped prompt that does not mention documents,
+  PDFs, invoices, receipts, contracts, forms, or field extraction. The IxP
+  plugin index / planning copy / SKILL.md must be tight enough that the
+  agent does not over-trigger.
+
+  Failure here means activation copy is too broad — tighten the trigger
+  signals, do NOT relax assertions.
+
+tags: [uipath-maestro-flow, smoke, activation, ixp, negative]
+
+# Trimmed vs the positive activation suite (40 turns / 900s) — negative rows
+# do not need to drive a full registry-search → node-add → validate loop.
+task_timeout: 600
+
+agent:
+  type: claude-code
+  max_turns: 20
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+dataset:
+  rows:
+
+    - id: stripe-http
+      prompt: >-
+        Create a flow with a manual trigger and an HTTP node that calls
+        api.stripe.com, then a script node that logs the response.
+
+    - id: rpa-orchestration
+      prompt: >-
+        Create a Maestro flow that orchestrates an RPA process and an
+        inline agent in sequence.
+
+    - id: structural-edit
+      prompt: >-
+        Add a decision branch and two end nodes to my existing .flow.
+
+initial_prompt: |
+  ${row.prompt}
+
+  Important:
+  - The `uip` CLI is already available.
+  - Use `--output json` on all uip commands.
+  - Work inside the stated working directory — do NOT `cd` to a parent.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+  - Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
+  - Exploration + an attempted node-add is enough — you do not need to build a working flow.
+
+success_criteria:
+  - type: skill_triggered
+    expected: "yes"
+    skill_name: "uipath:uipath-maestro-flow"
+    description: "Parent uipath-maestro-flow Skill fired (IxP-only routing is what this suite tests)"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Inverted twin of the positive activation.yaml grep.
+  # `shell=True` in coder_eval Sandbox.run_command means `!` works as a bash
+  # negator: grep -q exits 0 on match → ! flips to 1 (FAIL); exits 1 on
+  # no-match → ! flips to 0 (PASS). Same `../..` rationale as the positive
+  # test (dataset-fanout cwd is <run>/artifacts/<task>/<row>/).
+  - type: run_command
+    description: "No uipath.ixp.* node landed in any .flow file (negative IxP routing)"
+    command: '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp" --include="*.flow" ../..'
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
