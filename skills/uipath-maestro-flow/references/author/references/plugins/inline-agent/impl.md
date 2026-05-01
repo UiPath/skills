@@ -165,12 +165,66 @@ uip maestro flow validate <FlowName>.flow --output json
 | Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR `.agent-builder/agent.json` is stale | Set prompts in `agent.json`, re-run `uip agent validate --inline-in-flow` — see `uipath-agents` skill |
 | Studio Web debug: "Could not find process for tool" | `uip solution resource refresh` not run before upload | Run `uip solution resource refresh <SolutionRoot>` — see `uipath-agents` skill (`lowcode/solution-resources.md`) |
 | `bindings_v2.json` is empty after `node add` of an agent-tool process | CLI did not auto-generate bindings | Re-add the agent-tool node via `node add` (which auto-regenerates the file) |
+| `Orchestrator.StartAgentJob` error at runtime | Wrong definition (published-agent definition attached to inline-agent node) | Replace the `definitions[]` entry with the one from `uip maestro flow registry get uipath.agent.autonomous --output json` — it carries `model.serviceType: "Orchestrator.StartInlineAgentJob"`. See [Replace a definition entry](#replace-a-definition-entry) for the exact mechanic |
+| Prompts placed on `inputs.systemPrompt` / `inputs.userPrompt` are ignored | Prompts don't belong on the node | Move prompts to `agent.json.messages[]`; `inputs` on the node only carries `source` |
+| `flow validate` returns `[REQUIRED_FIELD] "systemPrompt" is required` and `[REQUIRED_FIELD] "userPrompt" is required` on an inline-agent node | Registry definition for `uipath.agent.autonomous` declares both fields as required even though the runtime ignores them on inline agents — known mismatch between registry schema and inline-agent contract | Insert single-character placeholder strings: `inputs.systemPrompt = " "`, `inputs.userPrompt = " "`. Real prompts continue to live in `agent.json.messages[]` and are what the runtime executes. See [Insert validator placeholders](#insert-validator-placeholders) for the recipe |
+| `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
+| Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
+| Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and `agent.json.projectId` |
+| Agent runs but returns empty `output.content` | Missing or malformed `contentTokens` in `agent.json` | Rebuild `messages[].contentTokens` using `{ "type": "simpleText", "rawString": "..." }` entries; see `uipath-agents` for detail |
+
+## Repair Recipes
+
+Direct JSON repairs for the two scenarios that don't have a CLI shortcut (`uip maestro flow node update` does not exist — see [editing-operations-cli.md](../../editing-operations-cli.md) line 158). Both recipes use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); copy verbatim and substitute `<FILE>.flow`.
+
+### Replace a definition entry
+
+Use when the `definitions[]` entry for a node type is wrong, stale, or hand-written. The fix is always: re-fetch from the registry, splice into `definitions[]` matching on `nodeType`.
+
+```bash
+uip maestro flow registry get uipath.agent.autonomous --output json > /tmp/registry_response.json
+python3 - <<'PY'
+import json
+new_def = json.load(open("/tmp/registry_response.json"))["Data"]["Node"]
+flow = json.load(open("<FILE>.flow"))
+for i, d in enumerate(flow["definitions"]):
+    if d.get("nodeType") == "uipath.agent.autonomous":
+        flow["definitions"][i] = new_def
+        break
+json.dump(flow, open("<FILE>.flow", "w"), indent=2)
+PY
+uip maestro flow validate <FILE>.flow --output json
+```
+
+Same pattern works for any node type — substitute the `nodeType` string in both the `registry get` command and the loop guard.
+
+### Insert validator placeholders
+
+Use when `flow validate` returns `REQUIRED_FIELD` for `inputs.systemPrompt` / `inputs.userPrompt` on an inline-agent node. Inserts `" "` placeholders without touching `agent.json` (where the real prompts live).
+
+```bash
+python3 - <<'PY'
+import json
+flow = json.load(open("<FILE>.flow"))
+for node in flow["nodes"]:
+    if node.get("type") == "uipath.agent.autonomous":
+        node.setdefault("inputs", {}).setdefault("systemPrompt", " ")
+        node["inputs"].setdefault("userPrompt", " ")
+json.dump(flow, open("<FILE>.flow", "w"), indent=2)
+PY
+uip maestro flow validate <FILE>.flow --output json
+```
+
+Idempotent — `setdefault` leaves real values alone if a later product change removes the validator requirement.
 
 ## What NOT to Do
 
 - **Do not set `inputs.systemPrompt` or `inputs.userPrompt` on the flow node** — prompts live in `agent.json`.
 - **Do not put a `model` block on the instance** — the node inherits `model` from `definitions[]`.
 - **Do not use `model.agentProjectId`** — use `inputs.source`.
+- **Do not put real prompt content on `inputs.systemPrompt` / `inputs.userPrompt`** — they are ignored at runtime; the runtime reads prompts from `agent.json.messages[]`. The fields exist on the node only because the registry schema demands them; populate with single-character placeholders (`" "`) when `flow validate` complains, never with real content.
+- **Do not use `inputs.agentProjectId` or `model.agentProjectId`** — use `inputs.source`.
+- **Do not put a `model` block on the instance** — `serviceType`, BPMN type, and context live in the definition only (copied from the registry). A published-agent node's definition uses `Orchestrator.StartAgentJob`; an inline-agent node must use the `uipath.agent.autonomous` definition with `Orchestrator.StartInlineAgentJob`.
 - **Do not create `entry-points.json` or `project.uiproj` inside the inline agent directory** — those belong only to standalone agent projects.
 - **Do not name the inline agent folder with a human-readable name** — the folder name must be the `projectId` UUID.
 - **Do not use `uip agent tool add`** for inline-in-flow agents — hand-author the tool's `resource.json` instead.
