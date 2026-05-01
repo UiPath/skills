@@ -87,10 +87,9 @@ uip ixp documents list <project-name> --output json
 
 # For each sample document:
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
-uip ixp documents get-text <project-name> <document-id> -o /tmp/ixp/<project-name>/text/sample.txt --output json
 ```
 
-The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** (handles PDF, PNG, JPG, etc.) and review the OCR text. These files persist across sessions — check for existing files before downloading.
+The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** (handles PDF, PNG, JPG, etc.). Files persist across sessions — check for existing files before downloading.
 
 ### 1e. Check for unlabelled documents
 
