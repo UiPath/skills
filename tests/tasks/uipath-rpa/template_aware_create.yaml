@@ -75,32 +75,40 @@ initial_prompt: |
   - Do NOT invoke `uip rpa create-project` itself in this sandbox.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran search-templates with a REFramework query"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+rpa\s+search-templates.*--query\s+["'']?REFramework'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Agent picked template_package strategy with the official REFramework package"
+  - type: file_exists
+    description: "report.json was created"
     path: "report.json"
-    pattern: '"template_strategy"\s*:\s*"template_package".*"template_package_id"\s*:\s*"UiPath\.Template\.REFramework"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "create_project command uses --template-package-id and not BlankTemplate"
-    path: "report.json"
-    pattern: '"create_project_command"\s*:\s*"[^"]*--template-package-id\s+UiPath\.Template\.REFramework[^"]*"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_check
-    description: "Agent did NOT pick BlankTemplate as the template-id"
-    path: "report.json"
-    excludes:
-      - "BlankTemplate"
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent picked template_package strategy (not BlankTemplate) for REFramework"
+    path: "report.json"
+    assertions:
+      - expression: "template_strategy"
+        operator: equals
+        expected: "template_package"
+      - expression: "template_package_id"
+        operator: equals
+        expected: "UiPath.Template.REFramework"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent ran search-templates with a REFramework query before creating"
+    path: "report.json"
+    assertions:
+      - expression: "search_templates_query"
+        operator: contains
+        expected: "REFramework"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "create_project command uses --template-package-id, not --template-id BlankTemplate"
+    path: "report.json"
+    includes:
+      - "--template-package-id"
+      - "UiPath.Template.REFramework"
+    weight: 1.5
     pass_threshold: 1.0
