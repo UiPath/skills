@@ -102,6 +102,22 @@ bash .maintenance/check-links.sh
 
 Returns `checked=N broken=M`. Both checkers skip links inside fenced code blocks and inline code spans, so example links in this README and in REFACTOR-PROPOSAL.md don't trigger false positives.
 
+## Verifying link text agrees with link URL
+
+Run the link-text checker to catch links whose **text looks like a file** but whose **URL points elsewhere**:
+
+```bash
+bash .maintenance/check-link-text.sh
+```
+
+Returns `checked=N broken=M`. Exits non-zero on any mismatch. Three failure modes, all hard failures:
+
+- **basename-mismatch** — text basename ≠ URL basename (e.g., text `AUTHOR.md`, URL `../CAPABILITY.md`).
+- **prefix-mismatch** — basenames agree but the directory hint in the text contradicts the URL's directory (e.g., text `operate/manage.md`, URL `references/manage.md`). Tolerated when the text directory is a suffix of the URL directory (e.g., text `author/greenfield.md`, URL `references/author/greenfield.md`).
+- **folder-url-but-text-is-file** — URL ends with `/` but text claims a file.
+
+Only links whose text contains a file-like token (extension `.md`, `.sh`, `.json`, `.js`, `.ts`, `.py`, `.cs`, `.xaml`, `.flow`, `.yaml`, `.yml`) are evaluated; descriptive text like `[JSON: Variable Operations](...)` is skipped. Same skip rules as `check-links.sh` (fenced code, inline code, http(s), slash commands, anchor-only).
+
 ## Verifying reachability depth
 
 Run the depth-checker script to verify every file under `references/` is reachable from `SKILL.md` within the configured max hops (default 2):
@@ -152,7 +168,7 @@ Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder
 
 ## Running the full suite
 
-Run all six checkers in one invocation:
+Run all seven checkers in one invocation:
 
 ```bash
 bash .maintenance/check-all.sh

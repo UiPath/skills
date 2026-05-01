@@ -61,15 +61,15 @@ uip maestro flow job status <job-key> --output json   # check status of a runnin
 uip maestro flow job traces <job-key> --output json   # stream the verbose execution timeline
 ```
 
-> **Traces are verbose** and contain the full execution timeline. Use them only when needed for diagnosis — start from incidents first via [DIAGNOSE.md](../../diagnose/CAPABILITY.md).
+> **Traces are verbose** and contain the full execution timeline. Use them only when needed for diagnosis — start from incidents first via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).
 
 ## What's next
 
-- **Run failed?** Triage via [DIAGNOSE.md](../../diagnose/CAPABILITY.md) — start with incidents, escalate to traces only if needed.
+- **Run failed?** Triage via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) — start with incidents, escalate to traces only if needed.
 - **Need to intervene in a running instance** (pause, resume, cancel, retry)? See [manage.md](manage.md).
 
 ## Anti-patterns
 
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
 - **Never skip `solution resource refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
-- **Never start diagnosis from `job traces`.** Traces are last-resort — see [DIAGNOSE.md](../../diagnose/CAPABILITY.md) for the priority ladder.
+- **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) for the priority ladder.

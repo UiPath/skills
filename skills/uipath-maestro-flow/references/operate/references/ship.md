@@ -8,7 +8,7 @@ Publish journey for a Flow project. Two paths: **Studio Web upload** (default) a
 
 Before either publish path, ensure:
 
-1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow tidy` was run. If not, send the user back to [AUTHOR.md](../../author/CAPABILITY.md).
+1. **Authoring is complete.** `uip maestro flow validate` passes and `uip maestro flow tidy` was run. If not, send the user back to [author/CAPABILITY.md](../../author/CAPABILITY.md).
 2. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
 3. **Solution resources are refreshed.** Always run this before `solution upload` or `solution publish` so that connection and process resource declarations are in sync with the project bindings:
 
@@ -50,7 +50,7 @@ For `uip solution publish` and the rest of the deployment workflow, see [/uipath
 
 - **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures (the deployed flow can't find its connections).
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. Confirm with the user before running `flow pack` + `solution publish`.
-- **Never publish a flow that hasn't been validated and tidied.** `flow validate` catches schema errors; `flow tidy` ensures Studio Web renders nodes correctly. Both are author-side gates — see [AUTHOR.md](../../author/CAPABILITY.md).
+- **Never publish a flow that hasn't been validated and tidied.** `flow validate` catches schema errors; `flow tidy` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../../author/CAPABILITY.md).
 
 ## What's next
 

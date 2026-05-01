@@ -11,6 +11,7 @@ cd "$ROOT" || exit 1
 
 CHECKERS=(
   "check-links.sh"
+  "check-link-text.sh"
   "check-anchors.sh"
   "check-depth.sh"
   "check-template.sh"

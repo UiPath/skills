@@ -2,7 +2,7 @@
 
 Capability index for the lifecycle of a flow as a deployed asset. Operate owns everything that touches the cloud — `solution resource refresh`, Studio Web upload, Orchestrator deploy, `flow debug`, `process run`, `job status/traces`, and `instance` lifecycle (pause, resume, cancel, retry). Requires `uip login`.
 
-> **Where you came from / where to go next.** Operate is downstream of Author (build the flow → ship it) and upstream of Diagnose (run faults → diagnose). Build/edit lives in [AUTHOR.md](../author/CAPABILITY.md); fault triage lives in [DIAGNOSE.md](../diagnose/CAPABILITY.md).
+> **Where you came from / where to go next.** Operate is downstream of Author (build the flow → ship it) and upstream of Diagnose (run faults → diagnose). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
 > **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout. The rules below are operate-scoped and apply on top.
 
@@ -27,44 +27,44 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 | Journey | Read |
 | --- | --- |
-| Publish a flow (Studio Web default, Orchestrator on request) | [operate/ship.md](references/ship.md) |
-| Run a flow on demand or check progress | [operate/run.md](references/run.md) |
-| Intervene in a running instance | [operate/manage.md](references/manage.md) |
+| Publish a flow (Studio Web default, Orchestrator on request) | [ship.md](references/ship.md) |
+| Run a flow on demand or check progress | [run.md](references/run.md) |
+| Intervene in a running instance | [manage.md](references/manage.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
-| **Publish a flow to Studio Web** | [operate/ship.md — Path 1](references/ship.md#path-1--studio-web-upload-default) |
-| **Deploy a flow to Orchestrator** (only if explicitly requested) | [operate/ship.md — Path 2](references/ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-platform](/uipath:uipath-platform) |
-| **Sync solution resource declarations** | [operate/ship.md — Pre-flight](references/ship.md#pre-flight) (the `uip solution resource refresh` step) |
-| **Debug a flow end-to-end** | [operate/run.md — Debug](references/run.md#debug--controlled-end-to-end-run) |
-| **Pass input arguments to `flow debug`** | [operate/run.md — Debug](references/run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
-| **Trigger a deployed process** | [operate/run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) |
-| **Check status of a running job** | [operate/run.md — Job inspection](references/run.md#job-inspection--status-and-traces) |
-| **Stream verbose execution traces** | [operate/run.md — Job inspection](references/run.md#job-inspection--status-and-traces) (use sparingly — see [DIAGNOSE.md](../diagnose/CAPABILITY.md)) |
-| **Pause a running instance** | [operate/manage.md](references/manage.md) |
-| **Resume a paused instance** | [operate/manage.md](references/manage.md) |
-| **Cancel an instance** | [operate/manage.md](references/manage.md) |
-| **Retry a faulted instance** | [operate/manage.md](references/manage.md) (after diagnosing root cause via [DIAGNOSE.md](../diagnose/CAPABILITY.md)) |
+| **Publish a flow to Studio Web** | [ship.md — Path 1](references/ship.md#path-1--studio-web-upload-default) |
+| **Deploy a flow to Orchestrator** (only if explicitly requested) | [ship.md — Path 2](references/ship.md#path-2--orchestrator-deploy-explicit-only) + [/uipath:uipath-platform](/uipath:uipath-platform) |
+| **Sync solution resource declarations** | [ship.md — Pre-flight](references/ship.md#pre-flight) (the `uip solution resource refresh` step) |
+| **Debug a flow end-to-end** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) |
+| **Pass input arguments to `flow debug`** | [run.md — Debug](references/run.md#debug--controlled-end-to-end-run) (the `--inputs` flag) |
+| **Trigger a deployed process** | [run.md — Process run](references/run.md#process-run--trigger-a-deployed-process) |
+| **Check status of a running job** | [run.md — Job inspection](references/run.md#job-inspection--status-and-traces) |
+| **Stream verbose execution traces** | [run.md — Job inspection](references/run.md#job-inspection--status-and-traces) (use sparingly — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
+| **Pause a running instance** | [manage.md](references/manage.md) |
+| **Resume a paused instance** | [manage.md](references/manage.md) |
+| **Cancel an instance** | [manage.md](references/manage.md) |
+| **Retry a faulted instance** | [manage.md](references/manage.md) (after diagnosing root cause via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md)) |
 | **Look up `solution` / `flow pack` / `flow debug` / `process` / `job` / `instance` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) |
-| **My flow run failed** | [DIAGNOSE.md](../diagnose/CAPABILITY.md) |
+| **My flow run failed** | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
 ## Anti-patterns
 
 - **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures.
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" → Studio Web upload. Confirm explicitly before running `flow pack` + `solution publish`.
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution against real systems.
-- **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [DIAGNOSE.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
-- **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [DIAGNOSE.md](../diagnose/CAPABILITY.md) for the priority ladder.
+- **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
+- **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
 
 ## References
 
 ### Operate-scoped
 
-- [operate/ship.md](references/ship.md) — Studio Web upload (default) and Orchestrator deploy (explicit)
-- [operate/run.md](references/run.md) — debug, process run, job status/traces
-- [operate/manage.md](references/manage.md) — instance lifecycle (pause, resume, cancel, retry)
+- [ship.md](references/ship.md) — Studio Web upload (default) and Orchestrator deploy (explicit)
+- [run.md](references/run.md) — debug, process run, job status/traces
+- [manage.md](references/manage.md) — instance lifecycle (pause, resume, cancel, retry)
 
 ### Cross-capability (shared)
 

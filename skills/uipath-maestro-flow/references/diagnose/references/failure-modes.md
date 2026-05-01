@@ -98,7 +98,7 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 
 ### Reference
 
-[author/plugins/hitl/impl.md](../../author/references/plugins/hitl/impl.md) — full HITL node reference including port wiring requirements.
+[Author HITL plugin reference](../../author/references/plugins/hitl/impl.md) — full HITL node reference including port wiring requirements.
 
 ---
 
@@ -128,8 +128,8 @@ uip is resources execute list <connector-key> <objectName> --connection-id <CURR
 
 ### Reference
 
-- [author/plugins/connector/impl.md — Step 4](../../author/references/plugins/connector/impl.md)
-- [author/plugins/connector-trigger/impl.md — Step 3](../../author/references/plugins/connector-trigger/impl.md)
+- [Author connector plugin — Step 4](../../author/references/plugins/connector/impl.md)
+- [Author connector-trigger plugin — Step 3](../../author/references/plugins/connector-trigger/impl.md)
 
 ---
 
@@ -166,7 +166,7 @@ If not, the `init` step was wrong — do not try to patch the layout by hand.
 
 ### Reference
 
-[author/greenfield.md — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+[Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
 
 ---
 

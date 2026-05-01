@@ -1,6 +1,6 @@
 # Greenfield — Create a New Flow
 
-End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `tidy`. To publish, run, or debug after this, see [OPERATE.md](../../operate/CAPABILITY.md).
+End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `tidy`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
 
 > **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
 
@@ -155,7 +155,7 @@ Common error categories:
 
 ## Step 6 — Tidy node layout
 
-After validation passes, **always** run tidy before publishing or debugging — this is the canonical layout step (see "Always run `flow tidy` after edits" in [AUTHOR.md](../CAPABILITY.md)). Tidy:
+After validation passes, **always** run tidy before publishing or debugging — this is the canonical layout step (see "Always run `flow tidy` after edits" in [the Author capability index](../CAPABILITY.md)). Tidy:
 
 - Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
 - Sets every non-stickyNote node's `size` to `{ "width": 96, "height": 96 }` so Studio Web renders square nodes (skipping this leaves any non-96 dimensions intact and produces misshapen rectangles — the MST-9061 failure mode)
@@ -180,7 +180,7 @@ When you finish building the flow, report to the user:
 
 ### What's next dropdown
 
-Authoring terminates here. Each option below hands off to Operate — read [OPERATE.md](../../operate/CAPABILITY.md) for the command sequence.
+Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) for the command sequence.
 
 | Option | What it does |
 | --- | --- |
@@ -189,4 +189,4 @@ Authoring terminates here. Each option below hands off to Operate — read [OPER
 | **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
-Do not run any of these actions without explicit user selection. Once the user picks an option, read [OPERATE.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.

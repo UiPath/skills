@@ -1,8 +1,8 @@
 # Author — Create and edit `.flow` files
 
-Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `tidy`; from there, hand off to [OPERATE.md](../operate/CAPABILITY.md) to publish, run, or debug.
+Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `tidy`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
 
-> **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [OPERATE.md](../operate/CAPABILITY.md); fault triage lives in [DIAGNOSE.md](../diagnose/CAPABILITY.md).
+> **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
 > **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json`, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, AskUserQuestion dropdown pattern, solution layout. The rules below are author-scoped and apply on top.
 
@@ -20,7 +20,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 ## Critical rules
 
 1. **Always validate node types against the registry before building.** Use `registry search`/`list` for discovery and `registry get` for detailed metadata and definitions.
-2. **ALWAYS follow the relevant plugin in [author/plugins/](references/plugins/) for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
+2. **ALWAYS follow the relevant plugin in [plugins/](references/plugins/) for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.
 3. **ALWAYS check for existing connections** before using a connector node — if no connection exists, tell the user before proceeding. See [connector/impl.md](references/plugins/connector/impl.md) for connection binding details.
 4. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [shared/file-format.md](../shared/file-format.md)).
 5. **`targetPort` is required on every edge** — `validate` rejects edges without it.
@@ -39,34 +39,34 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 | Journey | Read |
 | --- | --- |
-| Create a new flow from scratch | [author/greenfield.md](references/greenfield.md) |
-| Edit an existing flow | [author/brownfield.md](references/brownfield.md) |
+| Create a new flow from scratch | [greenfield.md](references/greenfield.md) |
+| Edit an existing flow | [brownfield.md](references/brownfield.md) |
 
 ## Common tasks
 
 | I need to... | Read these |
 | --- | --- |
-| **Create a new flow** | [author/greenfield.md](references/greenfield.md) |
-| **Edit an existing flow** | [author/brownfield.md](references/brownfield.md) + [author/editing-operations.md](references/editing-operations.md) |
-| **Add/delete/wire nodes and edges** | [author/editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
-| **Generate a flow plan** | [author/planning-arch.md](references/planning-arch.md) + [author/planning-impl.md](references/planning-impl.md) |
-| **Choose the right node type** | [author/planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
+| **Create a new flow** | [greenfield.md](references/greenfield.md) |
+| **Edit an existing flow** | [brownfield.md](references/brownfield.md) + [editing-operations.md](references/editing-operations.md) |
+| **Add/delete/wire nodes and edges** | [editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
+| **Generate a flow plan** | [planning-arch.md](references/planning-arch.md) + [planning-impl.md](references/planning-impl.md) |
+| **Choose the right node type** | [planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [shared/file-format.md](../shared/file-format.md) |
 | **Look up CLI commands** | [shared/cli-commands.md](../shared/cli-commands.md) |
-| **Add a Script node** | [author/plugins/script/impl.md](references/plugins/script/impl.md) |
-| **Wire nodes with edges** | [author/editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |
+| **Add a Script node** | [plugins/script/impl.md](references/plugins/script/impl.md) |
+| **Wire nodes with edges** | [editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
-| **Work with connector nodes** | [author/plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform](/uipath:uipath-platform) for Integration Service |
+| **Work with connector nodes** | [plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform](/uipath:uipath-platform) for Integration Service |
 | **Manage variables and expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) + [JSON: Variable Operations](references/editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) |
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
-| **Embed an AI agent tightly coupled to this flow** | [author/plugins/inline-agent/](references/plugins/inline-agent/) |
+| **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [editing-operations-cli.md](references/editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
-| **Add data transform nodes** | [author/plugins/transform/impl.md](references/plugins/transform/impl.md) |
-| **Create a subflow** | [author/plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
-| **Add a delay or scheduled trigger** | [author/plugins/delay/](references/plugins/delay/) or [author/plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
-| **Use queue nodes** | [author/plugins/queue/impl.md](references/plugins/queue/impl.md) |
+| **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |
+| **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
+| **Add a delay or scheduled trigger** | [plugins/delay/](references/plugins/delay/) or [plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
+| **Use queue nodes** | [plugins/queue/impl.md](references/plugins/queue/impl.md) |
 
 ## Anti-patterns
 
@@ -95,14 +95,14 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 ### Author-scoped
 
-- [author/greenfield.md](references/greenfield.md) — create-new-flow journey
-- [author/brownfield.md](references/brownfield.md) — edit-existing-flow journey
-- [author/editing-operations.md](references/editing-operations.md) — strategy selection (JSON default vs CLI carve-outs)
-- [author/editing-operations-json.md](references/editing-operations-json.md) — Direct JSON recipes (default)
-- [author/editing-operations-cli.md](references/editing-operations-cli.md) — CLI carve-outs and opt-in
-- [author/planning-arch.md](references/planning-arch.md) — capability discovery, plugin index, topology design
-- [author/planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules
-- [author/plugins/](references/plugins/) — per-node-type planning + impl docs:
+- [greenfield.md](references/greenfield.md) — create-new-flow journey
+- [brownfield.md](references/brownfield.md) — edit-existing-flow journey
+- [editing-operations.md](references/editing-operations.md) — strategy selection (JSON default vs CLI carve-outs)
+- [editing-operations-json.md](references/editing-operations-json.md) — Direct JSON recipes (default)
+- [editing-operations-cli.md](references/editing-operations-cli.md) — CLI carve-outs and opt-in
+- [planning-arch.md](references/planning-arch.md) — capability discovery, plugin index, topology design
+- [planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules
+- [plugins/](references/plugins/) — per-node-type planning + impl docs:
   - [connector](references/plugins/connector/) — IS connector nodes
   - [connector-trigger](references/plugins/connector-trigger/)
   - [script](references/plugins/script/) — Jint ES2020 JavaScript
