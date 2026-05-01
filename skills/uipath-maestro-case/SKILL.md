@@ -102,6 +102,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 | Edit caseplan.json directly | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
 | Surviving CLI commands (registry, validate, debug, runtime) | [references/case-commands.md](references/case-commands.md) |
+| Troubleshoot a failed case | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
 | Resolve task types from registry | [references/registry-discovery.md](references/registry-discovery.md) |
 | Wire inputs/outputs + cross-task refs + expression prefixes | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | Configure connector activity / trigger / event | [references/connector-integration.md](references/connector-integration.md) |
