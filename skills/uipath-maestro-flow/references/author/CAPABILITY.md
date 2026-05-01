@@ -13,7 +13,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 - Explore available node types via the registry
 - Validate a Flow file locally
 - Manage variables, subflows, expressions, and output wiring
-- Choose between Direct JSON and CLI editing strategies
+- Choose between Edit / Write and CLI editing strategies
 - Configure connector, connector-trigger, or inline-agent nodes
 - Plan a complex flow before building
 
@@ -27,7 +27,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 6. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <nodeType>` output. Never hand-write definitions. The definition is the sole source for BPMN type (`model.type`), serviceType, event definitions, and binding/context templates — none of that belongs on the instance.
 7. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.
 8. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete. Do not validate after each individual node add or edit — intermediate states are expected to be invalid.
-9. **Manage variables by editing `.flow` JSON directly** — there are no CLI commands for variable management. Add/remove/update variables in the `variables` section of the `.flow` file. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).
+9. **Manage variables with `Edit` against the `.flow` file** — there are no CLI commands for variable management. Use `Edit` to add/remove/update entries in the `variables` section of the `.flow` file. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).
 10. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).
 11. **`=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference in a value field.** That includes connector node `inputs.detail.bodyParameters` / `queryParameters` / `pathParameters`, HTTP `url`/`headers`/`body`, end node output `source`, variable update `expression`, loop `collection`, and subflow `inputs.<id>.source`. Without `=js:`, the BPMN runtime sees a literal string (e.g. `"vars.X.output.Id"`) — `flow validate` does not catch this; it manifests at runtime as the wrong value bound to the activity input (MST-9107). Do NOT use `=js:` on condition expressions (decision `expression`, switch case `expression`, HTTP branch `conditionExpression`) — those are always evaluated as JS automatically. See [shared/node-output-wiring.md](../shared/node-output-wiring.md) for the canonical rule and per-node-type field reference, and [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) for the underlying expression system.
 12. **Always run `flow tidy` after edits** — `uip maestro flow tidy <ProjectName>.flow` is the canonical layout step. Tidy arranges nodes horizontally, sets every node's `size` to `{ "width": 96, "height": 96 }`, and recurses into subflows (`subflows[<id>].layout`). Skipping tidy is the most common cause of misshapen rectangles in Studio Web.
@@ -57,14 +57,14 @@ Capability index for building new flows (greenfield) and editing existing flows 
 | **Wire nodes with edges** | [editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |
 | **Find the right node type** | Run `uip maestro flow registry search <keyword>` |
 | **Work with connector nodes** | [plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform](/uipath:uipath-platform) for Integration Service |
-| **Manage variables and expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) + [JSON: Variable Operations](references/editing-operations-json.md#variable-operations) |
+| **Manage variables and expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) + [Edit/Write: Variable Operations](references/editing-operations-json.md#variable-operations) |
 | **Write `=js:` expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) |
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [editing-operations-cli.md](references/editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |
-| **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [JSON: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
+| **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [Edit/Write: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
 | **Add a delay or scheduled trigger** | [plugins/delay/](references/plugins/delay/) or [plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |
 | **Use queue nodes** | [plugins/queue/impl.md](references/plugins/queue/impl.md) |
 
@@ -97,8 +97,8 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 - [greenfield.md](references/greenfield.md) — create-new-flow journey
 - [brownfield.md](references/brownfield.md) — edit-existing-flow journey
-- [editing-operations.md](references/editing-operations.md) — strategy selection (JSON default vs CLI carve-outs)
-- [editing-operations-json.md](references/editing-operations-json.md) — Direct JSON recipes (default)
+- [editing-operations.md](references/editing-operations.md) — strategy selection (Edit / Write default vs CLI carve-outs)
+- [editing-operations-json.md](references/editing-operations-json.md) — Edit / Write recipes (default)
 - [editing-operations-cli.md](references/editing-operations-cli.md) — CLI carve-outs and opt-in
 - [planning-arch.md](references/planning-arch.md) — capability discovery, plugin index, topology design
 - [planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules

@@ -54,7 +54,7 @@ Each key in `outputs` must match a variable `id` from `variables.globals` where 
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `outputs`.
 
-Output mapping must be added by editing the `.flow` JSON directly — see [JSON: Add output mapping](../../editing-operations-json.md#add-output-mapping-on-an-end-node).
+Output mapping must be added with `Edit` against the `.flow` file — see [Edit/Write: Add output mapping](../../editing-operations-json.md#add-output-mapping-on-an-end-node).
 
 ## Debug
 

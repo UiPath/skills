@@ -21,7 +21,7 @@ references/
 │       ├── greenfield.md               ← create-new-flow journey
 │       ├── brownfield.md               ← edit-existing-flow journey
 │       ├── editing-operations.md       ← strategy selection
-│       ├── editing-operations-json.md  ← Direct JSON recipes (default)
+│       ├── editing-operations-json.md  ← Edit / Write recipes (default)
 │       ├── editing-operations-cli.md   ← CLI carve-outs
 │       ├── planning-arch.md            ← topology/plugin index
 │       ├── planning-impl.md            ← registry/binding/wiring
@@ -116,7 +116,7 @@ Returns `checked=N broken=M`. Exits non-zero on any mismatch. Three failure mode
 - **prefix-mismatch** — basenames agree but the directory hint in the text contradicts the URL's directory (e.g., text `operate/manage.md`, URL `references/manage.md`). Tolerated when the text directory is a suffix of the URL directory (e.g., text `author/greenfield.md`, URL `references/author/greenfield.md`).
 - **folder-url-but-text-is-file** — URL ends with `/` but text claims a file.
 
-Only links whose text contains a file-like token (extension `.md`, `.sh`, `.json`, `.js`, `.ts`, `.py`, `.cs`, `.xaml`, `.flow`, `.yaml`, `.yml`) are evaluated; descriptive text like `[JSON: Variable Operations](...)` is skipped. Same skip rules as `check-links.sh` (fenced code, inline code, http(s), slash commands, anchor-only).
+Only links whose text contains a file-like token (extension `.md`, `.sh`, `.json`, `.js`, `.ts`, `.py`, `.cs`, `.xaml`, `.flow`, `.yaml`, `.yml`) are evaluated; descriptive text like `[Edit/Write: Variable Operations](...)` is skipped. Same skip rules as `check-links.sh` (fenced code, inline code, http(s), slash commands, anchor-only).
 
 ## Verifying reachability depth
 

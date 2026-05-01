@@ -15,7 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Direct JSON is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **`Edit` / `Write` is the default.** A dedicated CLI is available as an opt-in when the user explicitly requests it:
 
 ```bash
 uip maestro flow hitl add <path/to/file.flow> \
