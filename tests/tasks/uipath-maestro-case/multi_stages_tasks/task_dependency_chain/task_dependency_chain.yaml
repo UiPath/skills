@@ -1,0 +1,149 @@
+task_id: skill-case-multi-task-dependency-chain
+description: >
+  Build a Case Management definition that exercises task-driven stage
+  completion, the under-covered task-entry rule-types, and a non-timer
+  task type embedded in a multi-stage flow. Process stage contains two
+  sequential timers (task-entry runs-sequentially) and exits via
+  required-tasks-completed (marks-stage-complete: true). Finalize
+  contains a wait-for-connector-gated task referencing a string Variable
+  AND a number Variable inside its conditionExpression, a sibling-gated
+  task (task-entry selected-tasks-completed), and an adhoc PROCESS task
+  (registry unresolved → skeleton, exercising the non-timer task type
+  in a downstream stage that no other multi_stages_tasks test covers). Finalize
+  exits via selected-tasks-completed (marks-stage-complete: false)
+  routing to Done. Finalize entry uses selected-stage-completed on
+  Process. Closes gaps: stage-exit required-tasks-completed +
+  selected-tasks-completed, stage-entry selected-stage-completed,
+  task-entry runs-sequentially + adhoc + wait-for-connector +
+  selected-tasks-completed, both string AND number Variables referenced
+  inside a rule conditionExpression, and a non-timer (process) skeleton
+  task in a multi-stage flow.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:tasks, feature:conditions, feature:task-entry, feature:variables, feature:skeleton-task]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "TaskDependencyChain"
+  containing a project also named "TaskDependencyChain" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # TaskDependencyChain
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Process (regular stage) — runs a fixed two-step sequence.
+  - Finalize (regular stage) — gated review steps, conditional on Process.
+  - Done (regular stage) — terminal stage receiving Finalize exit.
+
+  ## Flow
+  - Manual trigger → Process
+  - Process → Finalize
+  - Finalize → Done
+
+  ## Variables
+  - region (Variable, type: string, default: "US") — case-level region
+    flag referenced inside a task-entry conditionExpression.
+  - priorityScore (Variable, type: number, default: 0) — case-level
+    numeric score referenced alongside region inside the same
+    task-entry conditionExpression.
+
+  ## Tasks
+  - First Step (wait-for-timer) — placed in the "Process" stage.
+    - Component type: TIMER (built-in).
+    - Duration: every 1 hour, repeat 5 times total (timeDuration "1h"
+      + repeat: 5 — exercises the wait-for-timer plugin's bounded
+      `repeat` flag, which no other multi_stages_tasks test sets).
+  - Second Step (wait-for-timer) — placed in the "Process" stage.
+    - Component type: TIMER (built-in).
+    - Trigger style: TIME-CYCLE (raw ISO 8601 repeating interval —
+      NOT every/at). Use time-cycle "R3/PT2H" (every 2 hours, 3
+      repetitions). The plugin should write
+      `data.timerType = "timeCycle"` and
+      `data.timeCycle = "R3/PT2H"`. This exercises the timeCycle
+      branch of the wait-for-timer plugin that no other multi_stages_tasks
+      test covers.
+  - Region Check (wait-for-timer) — placed in the "Finalize" stage.
+    - Component type: TIMER (built-in).
+    - Duration: every 1 hour (timeDuration "1h").
+  - Final Task (wait-for-timer) — placed in the "Finalize" stage.
+    - Component type: TIMER (built-in).
+    - Duration: every 1 hour (timeDuration "1h").
+  - Optional Audit (process task) — placed in the "Finalize" stage.
+    - Component type: PROCESS (UiPath process reference).
+    - Process Reference: Name "Optional Audit Process", Folder "Shared".
+    - Note: this process is NOT registered in the tenant. The agent
+      MUST follow the unresolved-fallback rule: leave taskTypeId as
+      `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton
+      process task (type: process, empty data). DO NOT fabricate a
+      taskTypeId. The skeleton's TaskId is still captured and the task
+      still carries its task-entry condition.
+
+  ## Task Entry Conditions
+  - First Step — task entry condition (display-name: "Sequential 1",
+    rule-type: runs-sequentially).
+  - Second Step — task entry condition (display-name: "Sequential 2",
+    rule-type: runs-sequentially).
+  - Region Check — task entry condition (display-name: "On region event",
+    rule-type: wait-for-connector,
+    condition-expression: "=js:vars.region == 'EU' && vars.priorityScore > 5 && metadata.tier == 'gold'").
+    The expression references both case Variables AND a case METADATA
+    field (`metadata.tier`) — exercises the `=metadata.X` reference
+    form that no other multi_stages_tasks test covers.
+  - Final Task — task entry condition (display-name: "After region check",
+    rule-type: selected-tasks-completed,
+    selected-tasks: "Region Check").
+  - Optional Audit — task entry condition (display-name: "On demand",
+    rule-type: adhoc).
+
+  ## Stage Entry Conditions
+  - Finalize — stage entry condition (display-name: "After Process",
+    rule-type: selected-stage-completed, selected-stage: "Process",
+    is-interrupting: false).
+
+  ## Stage Exit Conditions
+  - Process — stage exit condition (display-name: "All steps done",
+    type: exit-only, marks-stage-complete: true,
+    rule-type: required-tasks-completed).
+  - Finalize — stage exit condition (display-name: "Final task done",
+    type: exit-only, exit-to-stage: "Done",
+    marks-stage-complete: false,
+    rule-type: selected-tasks-completed,
+    selected-tasks: "Final Task").
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate TaskDependencyChain/TaskDependencyChain/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; tasks carry runs-sequentially/adhoc/wait-for-connector/selected-tasks-completed task-entry rules; First Step timer carries bounded repeat=5 (timeDuration); Second Step timer uses timeCycle (R3/PT2H); root has string variable 'region' AND number variable 'priorityScore' (both referenced alongside metadata.tier in Region Check conditionExpression); 'Optional Audit' is a process-typed skeleton task in Finalize"
+    command: "python3 $TASK_DIR/check_task_dependency_chain.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
