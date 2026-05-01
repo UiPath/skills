@@ -16,6 +16,8 @@ uip skills install
 
 Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
 
+For progressive discovery, `uip skills install` writes a compact catalog next to installed skills for file-copy agents, and Claude receives the same catalog through the plugin package. Agents and users can also inspect the catalog with `uip skills list`, `uip skills search "<goal>"`, and `uip skills show <skill>`.
+
 <details>
 <summary>Don't have Node.js installed?</summary>
 

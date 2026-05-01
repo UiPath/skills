@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - 'skills/*/SKILL.md'
+      - 'skills/*/references/**'
+      - 'skills/README.md'
+      - 'skills/INDEX.md'
+      - 'skills/skills.catalog.json'
+      - 'scripts/generate-skill-catalog.mjs'
       - '.github/workflows/validate-skills.yml'
 
 jobs:
@@ -15,7 +20,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Check description lengths
         run: |
           FILES=$(git diff origin/${{ github.base_ref }}...HEAD --name-only --diff-filter=ACM | grep 'skills/.*/SKILL\.md$' || true)
           bash hooks/validate-skill-descriptions.sh $FILES
+
+      - name: Check generated skill catalog is fresh
+        run: node scripts/generate-skill-catalog.mjs --check
