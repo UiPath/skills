@@ -48,7 +48,7 @@ Before labelling, configure the extraction model based on what the documents loo
 
 ```bash
 uip ixp documents list <project-name> --output json
-uip ixp documents get-image <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample.png --output json
+uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
 ```
 
 View with the **Read tool**, then decide:
