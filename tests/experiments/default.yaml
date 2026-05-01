@@ -18,6 +18,7 @@ defaults:
     # cutting before/after-hooks and coded-test-case off mid-task.
     max_turns: 40
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    isolation: true
     plugins:
       - type: "local"
         path: "$SKILLS_REPO_PATH"
