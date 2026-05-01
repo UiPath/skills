@@ -1,0 +1,114 @@
+task_id: skill-case-multi-fan-in-join
+description: >
+  Build a Case Management definition with a diamond topology — Triage
+  splits into two parallel branches (Validate, Enrich) that both feed into
+  a single Join stage. Join carries two stage-entry conditions, one
+  selected-stage-completed per upstream branch, exercising the
+  multi-upstream fan-in topology that no other multi_stages_tasks test covers.
+  In addition, the four stages collectively contain FIVE non-timer
+  tasks of FIVE DIFFERENT plugin types (rpa, api-workflow, action,
+  agent, case-management) — Triage carries both rpa and api-workflow
+  skeletons; the other three stages carry one task each. All
+  registry-unresolved, all emitted as skeletons per the skill's
+  unresolved-fallback rule. This closes five task-type plugin paths
+  (rpa, api-workflow, action, agent, case-management) inside a
+  multi-stage flow. Validates and asserts on edge structure (4
+  stage→stage edges into a single target), both entry rules on Join,
+  and the five skeleton task types each in its assigned stage.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:action, feature:agent, feature:case-management-task]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "FanInJoin" containing
+  a project also named "FanInJoin" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # FanInJoin
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Triage (regular stage) — initial stage; fans out to two parallel
+    branches.
+  - Validate (regular stage) — first parallel branch.
+  - Enrich (regular stage) — second parallel branch.
+  - Join (regular stage) — joins both branches; activates after BOTH
+    upstream branches have completed.
+
+  ## Flow
+  - Manual trigger → Triage
+  - Triage → Validate
+  - Triage → Enrich
+  - Validate → Join
+  - Enrich → Join
+
+  ## Stage Entry Conditions
+  - Join — stage entry condition (display-name: "After Validate",
+    rule-type: selected-stage-completed, selected-stage: "Validate",
+    is-interrupting: false). Fires when Validate completes.
+  - Join — stage entry condition (display-name: "After Enrich",
+    rule-type: selected-stage-completed, selected-stage: "Enrich",
+    is-interrupting: false). Fires when Enrich completes.
+
+  ## Tasks
+  None of the resources below are registered in the tenant. The agent
+  MUST follow the unresolved-fallback rule for every task: leave the
+  identifier (taskTypeId / connection-id) as `<UNRESOLVED: ...>`, omit
+  inputs/outputs/folder fields, and emit a SKELETON task (correct
+  `type` value, empty `data: {}`). DO NOT fabricate a taskTypeId. Each
+  TaskId is still captured.
+
+  - Triage Robot (rpa task) — placed in the "Triage" stage.
+    - Component type: RPA (UiPath robot reference).
+    - RPA Reference: Name "Initial Robot Triage", Folder "Shared".
+  - Triage API (api-workflow task) — placed in the "Triage" stage,
+    sibling of "Triage Robot".
+    - Component type: API_WORKFLOW (UiPath Coded API workflow).
+    - API Workflow Reference: Name "Triage API Workflow", Folder "Shared".
+  - Validate Submission (action task) — placed in the "Validate" stage.
+    - Component type: ACTION (UiPath Action App reference).
+    - Action App Reference: Name "Validate Submission", Folder "Shared".
+  - Enrich Data (agent task) — placed in the "Enrich" stage.
+    - Component type: AGENT (UiPath agent reference).
+    - Agent Reference: Name "Enrichment Agent", Folder "Shared".
+  - Sub-Case Review (case-management task) — placed in the "Join" stage.
+    - Component type: CASE_MANAGEMENT (sub-case task).
+    - Sub-Case Reference: Name "Final Review Sub-Case", Folder "Shared".
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate FanInJoin/FanInJoin/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Diamond topology: Triage→{Validate,Enrich}→Join with two selected-stage-completed entry rules on Join; FIVE skeleton tasks across 4 stages cover 5 distinct plugin types — Triage:{rpa, api-workflow}, Validate:action, Enrich:agent, Join:case-management — all with empty data (skeleton)"
+    command: "python3 $TASK_DIR/check_fan_in_join.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
