@@ -24,6 +24,10 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
   Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
+  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
+  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
+  and pass `--folder-key <key>` on every `uip is connections list` call.
+
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
