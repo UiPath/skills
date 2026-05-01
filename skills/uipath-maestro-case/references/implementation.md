@@ -160,8 +160,6 @@ After all connector tasks are done, **regenerate `bindings_v2.json`** once per [
 
 ## Step 9.8 — Bind task input/output values
 
-
-
 For each task's inputs in `tasks.md` order, write values into the existing `data.inputs[i].value` fields per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
 1. Literals / expressions (`input = "<value>"`): write `<value>` to `input.value`.
@@ -190,88 +188,39 @@ End of Phase 3 mutations. Proceed directly to Phase 4 — no hard stop between P
 
 # Phase 4 — Validate (Steps 12 – 12.1)
 
-Authoritative validation. Full contract in [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate).
+Authoritative validation. Full contract — command, retry policy, AskUserQuestion options — in [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). This section is a bridge — do NOT duplicate contract here.
 
 ## Step 12 — Full validate
 
-Run full-mode validate (no `--mode` flag):
-
-```bash
-uip maestro case validate <file> --output json
-```
-
-On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to Step 12.1.
-
-On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
-
-**Retry policy.** Up to 3 validation retries per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options — `Retry with fix`, `Pause for manual edit`, `Abort`.
+Run validate per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On success: proceed to Step 12.1. On 3rd failure: hard-stop prompt per the same section.
 
 ## Step 12.1 — Dump issue log
 
-Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md), grouped by plugin with summary index. Source of truth for completion report. Write even if zero issues logged (confirms clean build).
-
-On Phase 4 success → proceed to Phase 5.
+Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md). On Phase 4 success → proceed to Phase 5.
 
 ---
 
-# Phase 5 — Publish (Step 15)
+# Phase 5 — Publish (Steps 13, 15)
 
-Optional Studio Web upload. Full contract in [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish).
+Optional Studio Web upload. Full contract — report fields, prompt options, publish commands, pack/publish warning — in [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish). This section is a bridge — do NOT duplicate contract here.
 
 ## Step 13 — Completion report + Publish prompt
 
-Report results then ask user via **AskUserQuestion**:
-
-- `Publish to Studio Web` — proceed to Step 15.
-- `Skip to Debug` — proceed to Phase 6 without publishing.
-
-### Report fields
-
-1. File path of `caseplan.json`
-2. What was built — summary of stages, edges, tasks, conditions, SLA
-3. Validation status — `validate` pass + remaining warnings
-4. Skeleton tasks + unresolved resources — list every skeleton (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [skeleton-tasks.md](skeleton-tasks.md).
-5. Missing connections — connector tasks needing IS connections that don't exist yet
-
-For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.
+Print report fields and run AskUserQuestion per [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish). On `Publish to Studio Web` → Step 15. On `Skip to Debug` → Phase 6.
 
 ## Step 15 — Publish to Studio Web
 
-On `Publish to Studio Web` branch:
-
-```bash
-uip solution resource refresh "<SolutionDir>" --output json
-uip solution upload "<SolutionDir>" --output json
-```
-
-`resource refresh` MUST run before `upload` — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14). `upload` accepts solution directory (folder containing `.uipx`) directly — no intermediate bundling step. Print returned `DesignerUrl` on its own line. Proceed to Phase 6.
-
-> **Do NOT run `uip maestro case pack` + `uip solution publish` unless user explicitly asks for Orchestrator deployment.** That path puts case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
+Run `uip solution resource refresh` then `uip solution upload` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes). Print `DesignerUrl`. Proceed to Phase 6.
 
 ---
 
 # Phase 6 — Debug (Step 14)
 
-Optional CLI debug run. Full contract in [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug).
+Optional CLI debug run. Full contract — debug command, safety warning, loop behavior — in [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). This section is a bridge — do NOT duplicate contract here.
 
 ## Step 14 — Debug prompt + session
 
-After Phase 5 completes (whether published or skipped), prompt via **AskUserQuestion**:
-
-- `Run debug session` — proceed with debug.
-- `Done` — exit skill.
-
-> **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never run automatically** (Rule 12).
-
-On `Run debug session`:
-
-```bash
-uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json
-```
-
-Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
-
-After debug completes, return to Phase 6 prompt so user can re-run or exit. Exit only on `Done`.
+Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). Loop on completion until `Done`. Never auto-run (Rule 12).
 
 ## Step 14a — Troubleshoot failed case
 

@@ -46,7 +46,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively from 
 
 ## Workflow
 
-Five hard stops: **Phase 0** (interview → sdd.md, only when sdd.md absent) → approve → **Phase 1 Planning** (sdd.md → tasks.md) → approve → **Phase 2 Prototyping** (skeleton) → publish-for-review stop → **Phase 3 Implementation** (detail) → **Phase 4 Validate** (retry-cap stop on 3rd failure) → **Phase 5 Publish** (Publish vs Skip-to-Debug stop) → **Phase 6 Debug** (Run vs Done stop).
+Up to six hard stops (Phase 0 + Phase 4 conditional): **Phase 0** (interview → sdd.md, only when sdd.md absent) → approve → **Phase 1 Planning** (sdd.md → tasks.md) → approve → **Phase 2 Prototyping** (skeleton) → publish-for-review stop → **Phase 3 Implementation** (detail) → **Phase 4 Validate** (retry-cap stop on 3rd failure) → **Phase 5 Publish** (Publish vs Skip-to-Debug stop) → **Phase 6 Debug** (Run vs Done stop).
 
 ### Phase 0 — Interview (conditional)
 
