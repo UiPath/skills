@@ -2,7 +2,7 @@
 
 Diagnostic workflow for failed debug runs and deployed process runs. All commands require `uip login`.
 
-> **`--folder-key` is required.** All `instance` and `incident get` commands require `--folder-key <FOLDER_KEY>`. Get the folder key from `uip orchestrator folder list --output json` or from the job/process context.
+> **`--folder-key` is required.** All `instance` and `incident get` commands require `--folder-key <FOLDER_KEY>`. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
 ## Diagnostic priority
 

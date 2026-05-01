@@ -96,7 +96,7 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
 
 Template literals with `${...}` interpolation work because the whole expression is evaluated as JavaScript — `$vars` is a global in the `=js:` context. Plain string concatenation (`'Bearer ' + $vars.token`) works the same way.
 
-When calling `uip flow node configure --detail`, pass the `=js:` string verbatim — the CLI stores it in `inputs.detail.bodyParameters` unchanged:
+When calling `uip maestro flow node configure --detail`, pass the `=js:` string verbatim — the CLI stores it in `inputs.detail.bodyParameters` unchanged:
 
 ```bash
 uip maestro flow node configure <Project>.flow <nodeId> \

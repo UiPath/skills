@@ -53,9 +53,12 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 if [ "${#FILES[@]}" -eq 0 ]; then
+  # Scan the skill's published surface only: SKILL.md + references/.
+  # Skips .maintenance/, scratch files at the skill root (PLAN.md, PR_BODY.md),
+  # and anything else that isn't part of what agents load.
   while IFS= read -r f; do
     FILES+=("$f")
-  done < <(/usr/bin/find . -type f -name '*.md' -not -path './.maintenance/*' 2>/dev/null | /usr/bin/sort)
+  done < <({ [ -f SKILL.md ] && echo "./SKILL.md"; /usr/bin/find ./references -type f -name '*.md' 2>/dev/null; } | /usr/bin/sort)
 fi
 
 if [ "${#FILES[@]}" -eq 0 ]; then
@@ -145,6 +148,16 @@ def verify_path(path):
 
 FENCE_RE = re.compile(r"^```([a-zA-Z0-9_+-]*)\s*$")
 ACCEPTED_LANGS = {"", "bash", "sh", "shell", "zsh", "console"}
+# Inline single-backtick spans. Greedy is fine: ` cannot appear inside a
+# single-backtick span by definition (use double-backtick spans for that, which
+# we deliberately don't scan — they're rare and usually contain code samples).
+INLINE_RE = re.compile(r"`([^`\n]+)`")
+# Per-line opt-out marker: `<!-- uip-check-skip -->` anywhere on the line
+# suppresses checking for that line. Used for intentional historical references
+# (e.g. CLI version-comparison tables that document a removed prefix). For
+# table rows, place the marker inside a cell (e.g. `| ... | ... <!-- uip-check-skip --> |`)
+# so it doesn't break table structure — HTML comments render as nothing.
+SKIP_MARKER = "<!-- uip-check-skip -->"
 
 
 SUBCOMMAND_RE = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -161,6 +174,25 @@ def is_terminator(tok):
     if tok in {"|", ">", ">>", "<", "&&", "||", ";", "&", "$(", "`"}:
         return True
     return not SUBCOMMAND_RE.match(tok)
+
+
+def extract_path_from_uip_line(content):
+    """Tokenize a uip line and walk to extract the command path.
+
+    Returns the path list (possibly empty for bare `uip`).
+    Returns None if the line doesn't start with `uip`.
+    """
+    if content.startswith("$ "):
+        content = content[2:]
+    if not (content.startswith("uip ") or content.rstrip() == "uip"):
+        return None
+    tokens = content.split()
+    path = []
+    for tok in tokens[1:]:
+        if is_terminator(tok):
+            break
+        path.append(tok)
+    return path
 
 
 def extract_uip_commands(md_path):
@@ -184,24 +216,25 @@ def extract_uip_commands(md_path):
                 fence_lang = ""
             i += 1
             continue
-        if in_fence and fence_lang in ACCEPTED_LANGS:
-            start = i
-            joined = line
-            while joined.rstrip().endswith("\\") and i + 1 < len(lines):
-                joined = joined.rstrip()[:-1] + " " + lines[i + 1]
-                i += 1
-            content = joined.lstrip()
-            if content.startswith("$ "):
-                content = content[2:]
-            if content.startswith("uip ") or content.rstrip() == "uip":
-                tokens = content.split()
-                path = []
-                for tok in tokens[1:]:
-                    if is_terminator(tok):
-                        break
-                    path.append(tok)
+        if SKIP_MARKER in line:
+            i += 1
+            continue
+        if in_fence:
+            if fence_lang in ACCEPTED_LANGS:
+                start = i
+                joined = line
+                while joined.rstrip().endswith("\\") and i + 1 < len(lines):
+                    joined = joined.rstrip()[:-1] + " " + lines[i + 1]
+                    i += 1
+                path = extract_path_from_uip_line(joined.lstrip())
                 if path:
                     yield (start + 1, path)
+        else:
+            # Inline backtick spans outside fenced blocks.
+            for match in INLINE_RE.finditer(line):
+                path = extract_path_from_uip_line(match.group(1).strip())
+                if path:
+                    yield (i + 1, path)
         i += 1
 
 
