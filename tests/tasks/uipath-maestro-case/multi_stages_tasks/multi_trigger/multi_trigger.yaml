@@ -1,0 +1,80 @@
+task_id: skill-case-multi-multi-trigger
+description: >
+  Build a Case Management definition with THREE case-level triggers —
+  one manual trigger, one infinite timer trigger ("every 1 hour",
+  canonical R/PT1H), and one BOUNDED + SCHEDULED timer trigger ("every
+  day at 09:00 UTC, 5 times", canonical R5/<iso>/P1D). Each trigger
+  has its own outgoing edge to the single Run stage. Exercises the
+  multi-trigger code path (≥3 trigger nodes, three TriggerEdges), the
+  manual trigger plugin's serviceType "None", AND all three forms of
+  the timer plugin's timeCycle composition — infinite (R), bounded
+  (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>) —
+  closing the bounded-count + scheduled-start gaps in the timer
+  trigger plugin. Validates and asserts on the trigger nodes plus all
+  three TriggerEdges.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:trigger, feature:timer, feature:multi-trigger, feature:bounded-timer, feature:scheduled-timer]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "MultiTrigger" containing
+  a project also named "MultiTrigger" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # MultiTrigger
+
+  ## Triggers
+  - Manual trigger — user-initiated start of the case.
+  - Timer trigger (display-name: "Hourly") — runs every 1 hour (no
+    fixed start time, no repeat count). Use the canonical ISO 8601
+    repeating-interval form "R/PT1H".
+  - Timer trigger (display-name: "Daily 9am Limited") — runs every day
+    at 09:00 UTC, 5 times total. Use the canonical bounded form
+    "R5/2026-04-26T09:00:00.000Z/P1D" — five repetitions starting at
+    2026-04-26T09:00:00 UTC, with a 1-day cadence. This exercises the
+    bounded-count and explicit-start-time branches of the timer
+    plugin's timeCycle composition.
+
+  ## Stages
+  - Run (regular stage) — receives the case after any trigger fires.
+
+  ## Flow
+  - Manual trigger → Run
+  - Timer trigger "Hourly" → Run
+  - Timer trigger "Daily 9am Limited" → Run
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate MultiTrigger/MultiTrigger/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan has 3 triggers (manual + infinite-hourly R/PT1H + bounded-daily R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run"
+    command: "python3 $TASK_DIR/check_multi_trigger.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,125 @@
+task_id: skill-case-multi-linear-three-stages
+description: >
+  Build a Case Management definition with three regular stages chained
+  linearly behind a manual trigger. Adds an explicit case-entered
+  stage-entry condition on Intake, TWO parallel built-in wait-for-timer
+  tasks in Review that share the SAME current-stage-entered task-entry
+  condition (so both activate concurrently when Review is entered) and
+  occupy distinct lanes in data.tasks, one of which carries skipCondition
+  + shouldRunOnlyOnce flags, and three root-level case variables
+  exercising all three categories: a Variable (skipReview) referenced
+  by skipCondition, an In argument (caseRef) bridged through the trigger
+  output mapping, and an Out argument (finalDecision) returned to the
+  caller. Exercises: stage creation, edge inference (TriggerEdge +
+  Stage→Stage Edge), case-entered rule type, wait-for-timer task type,
+  task-entry conditions, parallel-task pattern (multiple tasks in one
+  stage with the same entry condition + distinct laneIndex), BaseTask
+  flags (skipCondition + shouldRunOnlyOnce), and the full Variable /
+  In / Out argument trio. Validates and asserts on the structural shape
+  of caseplan.json.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:stages, feature:edges, feature:conditions, feature:task-entry, feature:wait-for-timer, feature:parallel-tasks, feature:variables, feature:arguments]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "LinearThreeStages" containing
+  a project also named "LinearThreeStages" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # LinearThreeStages
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Intake (regular stage) — receives the case after the manual trigger.
+  - Review (regular stage) — follows Intake.
+  - Decision (regular stage) — follows Review and ends the linear flow.
+
+  ## Flow
+  - Manual trigger → Intake
+  - Intake → Review
+  - Review → Decision
+
+  ## Stage Entry Conditions
+  - Intake — stage entry condition (display-name: "On case entered",
+    rule-type: case-entered, is-interrupting: false). Fires the moment
+    the case is entered.
+
+  ## Variables
+  - skipReview (Variable, type: boolean, default: false) — internal
+    case-level flag controlling whether the Review timer runs.
+  - caseRef (In argument, type: string) — external reference passed
+    into the case when the manual trigger fires. Listed in the trigger
+    "Initial Variable Mapping".
+  - finalDecision (Out argument, type: string) — final decision string
+    returned to the caller when the case completes.
+  - dueDate (Variable, type: date) — internal case-level deadline.
+  - caseMetadata (Variable, type: object) — internal bag of structured
+    case metadata fields.
+  - attachments (Variable, type: array) — internal list of uploaded
+    attachment references.
+  - caseSchema (Variable, type: jsonSchema) — internal typed schema
+    describing the case payload. Body schema:
+    {"type": "object", "properties": {"caseId": {"type": "string"}}}.
+
+  ## Tasks
+  - Hold For 1 Hour (wait-for-timer) — placed in the "Review" stage.
+    - Component type: TIMER (in-stage timer; built-in, no registry).
+    - Duration: every 1 hour, no repeat (timeDuration "1h").
+    - shouldRunOnlyOnce: true.
+    - skipCondition: "=vars.skipReview" — skip the timer when the
+      skipReview variable is truthy.
+  - Notify Reviewer (wait-for-timer) — placed in the "Review" stage,
+    runs IN PARALLEL with "Hold For 1 Hour" (both share the same
+    current-stage-entered task-entry condition, so they activate
+    concurrently when Review is entered). Each task occupies its own
+    laneIndex in data.tasks per the FE layout convention.
+    - Component type: TIMER (in-stage timer; built-in, no registry).
+    - Duration: every 30 minutes (timeDuration "30m").
+    - isRequired: false — task-level isRequired flag explicitly set to
+      false (the only test exercising this).
+
+  ## Task Entry Conditions
+  - Hold For 1 Hour — task entry condition (display-name: "On stage
+    entered", rule-type: current-stage-entered). Fires when the
+    containing Review stage is entered.
+  - Notify Reviewer — task entry condition (display-name: "On stage
+    entered", rule-type: current-stage-entered). Same condition as
+    "Hold For 1 Hour" — both tasks fire in parallel.
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "3 stages + 3 edges (Stage→Stage edge labels use target-stage-name per inference rule #3) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in DISTINCT laneIndex lanes; root carries 7 variables exercising every Variable type (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, object caseMetadata, array attachments, jsonSchema caseSchema) including the trigger output mapping for caseRef In argument"
+    command: "python3 $TASK_DIR/check_linear_three_stages.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
