@@ -11,7 +11,7 @@ Pre-populate these via `TodoWrite` when entering this journey. The list is edit-
 - [ ] Locate `.flow` file and read current structure
 - [ ] Confirm what the user wants changed
 - [ ] Discover any new node types via registry (if adding nodes)
-- [ ] Apply edit(s) — JSON-direct or CLI per [editing-operations.md](editing-operations.md)
+- [ ] Apply edit(s) — Edit / Write or CLI per [editing-operations.md](editing-operations.md)
 - [ ] Re-wire edges affected by the change
 - [ ] Update variables / output mappings if scope changed
 - [ ] Run `flow validate` and fix any errors

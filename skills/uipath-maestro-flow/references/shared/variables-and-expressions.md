@@ -524,7 +524,7 @@ There are **no CLI commands** for adding or removing variables. Manage variables
 
 ### Adding node variables after manual node insertion
 
-When adding nodes via direct JSON edit (not CLI), you must also add corresponding entries to `variables.nodes`:
+When adding nodes via `Edit` (not CLI), you must also add corresponding entries to `variables.nodes`:
 
 ```json
 {
