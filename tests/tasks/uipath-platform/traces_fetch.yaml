@@ -2,7 +2,7 @@ task_id: skill-platform-traces-fetch
 description: >
   Smoke test: agent uses the uipath-platform skill to fetch LLM trace spans for a
   given job key against the live tenant. Verifies the agent knows to call
-  `uip traces spans get --job-key <guid> --output json` and record the result.
+  `uip traces spans get --job-key <guid> --output json`.
   A 404 response (no traces for this job key) is an acceptable outcome.
 tags: [uipath-platform, smoke, lifecycle:discover]
 
@@ -18,9 +18,6 @@ initial_prompt: |
 
   2. Fetch LLM trace spans for job key `11111111-2222-3333-4444-555566667777`:
      `uip traces spans get --job-key 11111111-2222-3333-4444-555566667777 --output json`
-
-  3. Save your findings to report.json — include the command you ran,
-     the outcome (success, 404, or error), and the span count (or null).
 
   Do NOT ask for approval or confirmation. Complete end-to-end in a single pass.
 
@@ -46,30 +43,5 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was written to the sandbox root"
-    path: "report.json"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json records the command used"
-    path: "report.json"
-    assertions:
-      - expression: "command"
-        operator: contains
-        expected: "uip"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json records an outcome field"
-    path: "report.json"
-    assertions:
-      - expression: "outcome"
-        operator: exists
     weight: 1.0
     pass_threshold: 1.0

@@ -28,16 +28,8 @@ initial_prompt: |
 
   3. Extract the job Key (GUID) from Data[0].Key in the response.
 
-  4. Fetch LLM trace spans for the completed job:
-     `uip traces spans get --job-key <job_key> --output json`
-
-  5. Save your findings to report.json:
-     {
-       "job_key": "<guid>",
-       "outcome": "success" or "error",
-       "span_count": <number of spans returned, or 0>,
-       "error": "<error message if any, or null>"
-     }
+  4. Fetch LLM trace spans for the completed job and save the raw output:
+     `uip traces spans get --job-key <job_key> --output json > spans.json`
 
   Do NOT ask for approval or confirmation. Complete end-to-end in a single pass.
 
@@ -75,8 +67,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "report.json was written to the sandbox root"
-    path: "report.json"
+    description: "spans.json (raw CLI output) was written to the sandbox root"
+    path: "spans.json"
     weight: 1.5
     pass_threshold: 1.0
 

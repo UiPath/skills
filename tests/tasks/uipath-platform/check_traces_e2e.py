@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Assert report.json has outcome=success and span_count >= 1."""
+"""Assert spans.json (raw uip traces spans get output) has Data with >= 1 span."""
 import json
 import sys
 from pathlib import Path
 
-report_path = Path("report.json")
-if not report_path.is_file():
-    sys.exit("FAIL: report.json not found")
+spans_path = Path("spans.json")
+if not spans_path.is_file():
+    sys.exit("FAIL: spans.json not found")
 
 try:
-    r = json.loads(report_path.read_text())
+    data = json.loads(spans_path.read_text())
 except json.JSONDecodeError as e:
-    sys.exit(f"FAIL: report.json is not valid JSON: {e}")
+    sys.exit(f"FAIL: spans.json is not valid JSON: {e}")
 
-if r.get("outcome") != "success":
-    sys.exit(f"FAIL: outcome={r.get('outcome')!r}, error={r.get('error')!r}")
+if data.get("Result") != "Success":
+    sys.exit(f"FAIL: Result={data.get('Result')!r}, Message={data.get('Message')!r}")
 
-count = r.get("span_count", 0)
-if not isinstance(count, int) or count < 1:
-    sys.exit(f"FAIL: span_count={count!r} — expected >= 1")
+spans = data.get("Data", [])
+if not isinstance(spans, list) or len(spans) < 1:
+    sys.exit(f"FAIL: span_count={len(spans)} — expected >= 1")
 
-print(f"OK: {count} spans returned for job {r.get('job_key')}")
+print(f"OK: {len(spans)} span(s) returned")
