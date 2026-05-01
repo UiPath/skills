@@ -31,22 +31,74 @@ initial_prompt: |
 
   Task 4: Get task "abc-123-def-456" — the user passed a GUID-style ID.
 
+  Save a summary to report.json:
+  {
+    "task_1_action": "<'refused' or 'attempted'>",
+    "task_1_reason": "<why>",
+    "task_2_action": "<'refused' or 'attempted'>",
+    "task_2_reason": "<why>",
+    "task_3_action": "<'refused' or 'attempted'>",
+    "task_3_reason": "<why>",
+    "task_4_action": "<'refused' or 'attempted'>",
+    "task_4_reason": "<why>"
+  }
+
   Important:
   - Do NOT run any uip tasks commands. This test is purely about refusal.
   - For each task, clearly state whether you are refusing and reference
     the specific skill rule that applies.
 
 success_criteria:
-  - type: skill_triggered
-    description: "Agent loaded the uipath-tasks skill before reasoning about the requests"
-    skill_name: "uipath-tasks"
-    expected: "yes"
-    weight: 2.0
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Agent must not run any uip tasks commands (test is purely about refusal)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+'
-    weight: 5.0
+  - type: json_check
+    description: "Agent refused to create a task (not in CLI scope)"
+    path: "report.json"
+    assertions:
+      - expression: "task_1_action"
+        operator: equals
+        expected: "refused"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused to complete an already-Completed task"
+    path: "report.json"
+    assertions:
+      - expression: "task_2_action"
+        operator: equals
+        expected: "refused"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused to complete a FormTask without --action/--data"
+    path: "report.json"
+    assertions:
+      - expression: "task_3_action"
+        operator: equals
+        expected: "refused"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused to use a GUID task ID (Action Center uses numeric IDs)"
+    path: "report.json"
+    assertions:
+      - expression: "task_4_action"
+        operator: equals
+        expected: "refused"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Reasons reference skill constraints (numeric IDs, action/data, already completed)"
+    path: "report.json"
+    includes:
+      - "numeric"
+    weight: 1.0
     pass_threshold: 1.0
