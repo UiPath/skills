@@ -13,6 +13,35 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 **Record the returned `ProjectId`** — the flow node's `--source` / `inputs.source` must match it exactly (and must match the subdirectory name and `agent.json.projectId`).
 
 For agent.json configuration and resource file setup, see the `uipath-agents` skill (`lowcode/agent-definition.md`, `lowcode/capabilities/inline-in-flow/inline-in-flow.md`).
+This creates `<FlowProjectDir>/<projectId-uuid>/` with:
+
+- `agent.json` — agent definition (model, prompts, schemas)
+- `flow-layout.json` — empty `{}`
+- `evals/eval-sets/` — empty
+- `features/` — empty
+- `resources/` — empty (add tool resource files here later)
+
+**Record the returned `ProjectId`** — the flow node's `--source` flag (or `model.source` field for direct-JSON authoring) must match it exactly. The same UUID is also the subdirectory name and the `agent.json.projectId` value.
+
+## Configure `agent.json`
+
+`uip agent init --inline-in-flow` scaffolds `agent.json` with empty `messages[].content` by design — you must populate prompts before `flow validate` passes. Edit `<FlowProjectDir>/<projectId>/agent.json`:
+
+1. Set `settings.model` (e.g., `"anthropic.claude-sonnet-4-6"`, `"gpt-4o-2024-11-20"`)
+2. Set `settings.temperature`, `settings.maxTokens`, `settings.maxIterations`
+3. Write system prompt in `messages[0].content` (must be non-empty) and rebuild `messages[0].contentTokens`
+4. Write user prompt in `messages[1].content` (must be non-empty) and rebuild `messages[1].contentTokens`
+5. Configure `inputSchema` and `outputSchema` if the agent needs structured I/O
+
+Use `type: "simpleText"` with `rawString` for `contentTokens`:
+
+```json
+"contentTokens": [
+  { "type": "simpleText", "rawString": "Your prompt text here" }
+]
+```
+
+For detailed agent configuration (contentTokens format, model settings, resource files, tool bindings), use the `uipath-agents` skill.
 
 ## Registry Validation
 
@@ -44,11 +73,11 @@ uip maestro flow node add <FlowName>.flow uipath.agent.autonomous \
   --output json
 ```
 
-`--source` populates `inputs.source` with the inline agent's `projectId`. The command automatically:
+`--source` populates `model.source` with the inline agent's `projectId` (the canonical canvas convention — the manifest declares `model.source: true` to signal this). The command automatically:
 
 - Adds the node to `nodes` with a generated `id`
 - Adds the definition to `definitions` (if not already present)
-- The definition carries `model.serviceType: "Orchestrator.StartInlineAgentJob"` — the instance does not
+- The definition carries `model.serviceType: "Orchestrator.StartInlineAgentJob"` — propagated to the node's `model` block at write time
 
 **Save the returned node ID** — you need it when wiring edges.
 
@@ -109,6 +138,7 @@ For agent.json prompt configuration and solution resource mechanics, see the `ui
 ## JSON Structure
 
 The instance carries only per-instance data (`inputs`, `display`). BPMN type, serviceType, version, and context templates come from the definition in `definitions[]`.
+The inline-agent node carries `inputs`, `outputs`, `display`, AND a `model` block. The `model.source` is the canonical location for the agent's `projectId` UUID — that's where the canvas writes it and where the validator hydrates from. Leave `inputs` empty when authoring directly; the canvas/validator hydrates `inputs.systemPrompt`/`userPrompt` from `agent.json.messages[]` on load.
 
 ```json
 {
@@ -121,6 +151,31 @@ The instance carries only per-instance data (`inputs`, `display`). BPMN type, se
     "agentInputVariables": [],
     "agentOutputVariables": [
       { "id": "content", "type": "string" }
+  "display": { "label": "Classify Intent" },
+  "inputs": {},
+  "outputs": {
+    "output": {
+      "type": "object",
+      "description": "The return value of the agent",
+      "source": "=result.response",
+      "var": "output"
+    },
+    "error": {
+      "type": "object",
+      "description": "Error information if the agent fails",
+      "source": "=result.Error",
+      "var": "error"
+    }
+  },
+  "model": {
+    "source": "<projectId-uuid>",
+    "type": "bpmn:ServiceTask",
+    "serviceType": "Orchestrator.StartInlineAgentJob",
+    "version": "v2",
+    "context": [
+      { "name": "_label", "type": "string", "value": "Classify Intent" },
+      { "name": "name", "type": "string", "value": "Classify Intent" },
+      { "name": "entryPoint", "type": "string", "value": "" }
     ]
   }
 }
@@ -131,6 +186,9 @@ Notes:
 - `inputs.source` — the inline agent's `projectId`; must match the subdirectory name and `agent.json.projectId`. Without it the node form falls back to expecting `inputs.systemPrompt` / `inputs.userPrompt` and reports "System prompt is required" on upload.
 - `inputs.systemPrompt` / `inputs.userPrompt` are **never set on the node** — prompts live in `agent.json`.
 - **No `model` block on the instance.** The node inherits `model` from `definitions[]`. A stale `model.serviceType` on the instance overrides the inheritance and causes runtime mismatch.
+- `model.source` — the inline agent's `projectId` UUID; must match the subdirectory name and `agent.json.projectId`. The validator hydrates prompts from the colocated `<projectId>/agent.json` at validate time. Putting the UUID at `inputs.source` instead leaves hydration short-circuited and surfaces as `[REQUIRED_FIELD] systemPrompt is required`.
+- `inputs` stays empty in the source `.flow`. The canvas writes mirrored prompt fields to `inputs.systemPrompt` / `inputs.userPrompt` as a storage-backed mirror of `agent.json.messages[]` — the runtime reads `agent.json`, not the node `inputs`. For direct authoring, leave `inputs` empty and ensure `agent.json` carries the real prompts.
+- `model` block carries the BPMN type, serviceType, version, and per-instance context templates from the definition. Unlike resource nodes (rpa, agentic-process, etc.), inline agents do not use process-style bindings (`resourceKey`, `folderPath`).
 
 ## Accessing Output
 
@@ -166,8 +224,8 @@ uip maestro flow validate <FlowName>.flow --output json
 | Studio Web debug: "Could not find process for tool" | `uip solution resource refresh` not run before upload | Run `uip solution resource refresh <SolutionRoot>` — see `uipath-agents` skill (`lowcode/solution-resources.md`) |
 | `bindings_v2.json` is empty after `node add` of an agent-tool process | CLI did not auto-generate bindings | Re-add the agent-tool node via `node add` (which auto-regenerates the file) |
 | `Orchestrator.StartAgentJob` error at runtime | Wrong definition (published-agent definition attached to inline-agent node) | Replace the `definitions[]` entry with the one from `uip maestro flow registry get uipath.agent.autonomous --output json` — it carries `model.serviceType: "Orchestrator.StartInlineAgentJob"`. See [Replace a definition entry](#replace-a-definition-entry) for the exact mechanic |
-| Prompts placed on `inputs.systemPrompt` / `inputs.userPrompt` are ignored | Prompts don't belong on the node | Move prompts to `agent.json.messages[]`; `inputs` on the node only carries `source` |
-| `flow validate` returns `[REQUIRED_FIELD] "systemPrompt" is required` and `[REQUIRED_FIELD] "userPrompt" is required` on an inline-agent node | Registry definition for `uipath.agent.autonomous` declares both fields as required even though the runtime ignores them on inline agents — known mismatch between registry schema and inline-agent contract | Insert single-character placeholder strings: `inputs.systemPrompt = " "`, `inputs.userPrompt = " "`. Real prompts continue to live in `agent.json.messages[]` and are what the runtime executes. See [Insert validator placeholders](#insert-validator-placeholders) for the recipe |
+| Prompts authored on `inputs.systemPrompt` / `inputs.userPrompt` get clobbered on next save | Those fields are a canvas-side mirror of `agent.json.messages[]` — `inputsToStorage` rewrites `agent.json` from the node, then `storageToInputs` rewrites the node from `agent.json` on next load | Author prompts in `agent.json.messages[]`; leave `inputs` empty for direct authoring |
+| `flow validate` returns `[REQUIRED_FIELD] "systemPrompt" is required` and `[REQUIRED_FIELD] "userPrompt" is required` on an inline-agent node | Validator's hydration step short-circuited — typically because the `projectId` UUID is at `inputs.source` instead of `model.source` (canvas convention), or the `<projectId>/` directory is missing, or `agent.json.messages[]` has empty `content` | Verify `model.source = <projectId-uuid>` (NOT `inputs.source`); verify `<FlowDir>/<projectId>/agent.json` exists; verify `agent.json.messages[]` has non-empty `content` for both `system` and `user` roles. The validator will hydrate prompts from `agent.json` and pass once the canonical shape is in place. **Do not** insert placeholder strings into `inputs.systemPrompt`/`userPrompt` — they round-trip into `agent.json` via the storage bridge and corrupt the agent definition |
 | `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and `agent.json.projectId` |
@@ -175,7 +233,7 @@ uip maestro flow validate <FlowName>.flow --output json
 
 ## Repair Recipes
 
-Direct JSON repairs for the two scenarios that don't have a CLI shortcut (`uip maestro flow node update` does not exist — see [editing-operations-cli.md](../../editing-operations-cli.md) line 158). Both recipes use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); copy verbatim and substitute `<FILE>.flow`.
+Direct JSON repairs for scenarios that don't have a CLI shortcut (`uip maestro flow node update` does not exist — see [editing-operations-cli.md](../../editing-operations-cli.md) line 158). Recipes use the `python3` heredoc pattern from [editing-operations-json.md — Edit Tooling](../../editing-operations-json.md#edit-tooling); copy verbatim and substitute `<FILE>.flow`.
 
 ### Replace a definition entry
 
@@ -198,24 +256,44 @@ uip maestro flow validate <FILE>.flow --output json
 
 Same pattern works for any node type — substitute the `nodeType` string in both the `registry get` command and the loop guard.
 
-### Insert validator placeholders
+### Resolve a `[REQUIRED_FIELD] systemPrompt is required` validator error
 
-Use when `flow validate` returns `REQUIRED_FIELD` for `inputs.systemPrompt` / `inputs.userPrompt` on an inline-agent node. Inserts `" "` placeholders without touching `agent.json` (where the real prompts live).
+The validator hydrates prompts from `<FlowDir>/<projectId>/agent.json` at validate time. When this error fires, hydration short-circuited. Check in order:
 
-```bash
-python3 - <<'PY'
-import json
-flow = json.load(open("<FILE>.flow"))
-for node in flow["nodes"]:
-    if node.get("type") == "uipath.agent.autonomous":
-        node.setdefault("inputs", {}).setdefault("systemPrompt", " ")
-        node["inputs"].setdefault("userPrompt", " ")
-json.dump(flow, open("<FILE>.flow", "w"), indent=2)
-PY
-uip maestro flow validate <FILE>.flow --output json
-```
+1. **UUID source key** — the `projectId` must be at `model.source`, not `inputs.source`:
 
-Idempotent — `setdefault` leaves real values alone if a later product change removes the validator requirement.
+    ```bash
+    python3 - <<'PY'
+    import json
+    flow = json.load(open("<FILE>.flow"))
+    for node in flow["nodes"]:
+        if node.get("type") == "uipath.agent.autonomous":
+            print("inputs.source:", node.get("inputs", {}).get("source"))
+            print("model.source: ", node.get("model", {}).get("source"))
+    PY
+    ```
+
+    If UUID is at `inputs.source`, move it to `model.source`:
+
+    ```bash
+    python3 - <<'PY'
+    import json
+    flow = json.load(open("<FILE>.flow"))
+    for node in flow["nodes"]:
+        if node.get("type") == "uipath.agent.autonomous":
+            inputs = node.get("inputs") or {}
+            uuid = inputs.pop("source", None)
+            if uuid:
+                node.setdefault("model", {})["source"] = uuid
+    json.dump(flow, open("<FILE>.flow", "w"), indent=2)
+    PY
+    ```
+
+2. **Subdirectory** — confirm `<FlowDir>/<projectId>/` exists and contains `agent.json`. If not, re-run `uip agent init "<FlowDir>" --inline-in-flow --output json`.
+
+3. **Prompts in `agent.json`** — `agent init --inline-in-flow` scaffolds `agent.json` with empty `messages[].content` by design. Edit `messages[0].content` (system) and `messages[1].content` (user) to real prompts before validate. Rebuild `messages[].contentTokens` to match — `[{ "type": "simpleText", "rawString": "<your prompt text>" }]` per message. Validation passes once both `content` strings are non-empty.
+
+> **Do not** patch `inputs.systemPrompt` / `inputs.userPrompt` on the node. The storage bridge writes node `inputs` back into `agent.json.messages[]` on every canvas save — placeholders inserted on the node corrupt the agent definition on the next round-trip.
 
 ## What NOT to Do
 
@@ -223,6 +301,8 @@ Idempotent — `setdefault` leaves real values alone if a later product change r
 - **Do not put a `model` block on the instance** — the node inherits `model` from `definitions[]`.
 - **Do not use `model.agentProjectId`** — use `inputs.source`.
 - **Do not put real prompt content on `inputs.systemPrompt` / `inputs.userPrompt`** — they are ignored at runtime; the runtime reads prompts from `agent.json.messages[]`. The fields exist on the node only because the registry schema demands them; populate with single-character placeholders (`" "`) when `flow validate` complains, never with real content.
+- **Do not put the `projectId` UUID at `inputs.source`** — the canonical canvas convention is `model.source`. The validator's prompt hydration step looks at `model.source` first; UUID at `inputs.source` leaves hydration short-circuited and produces a misleading `[REQUIRED_FIELD] systemPrompt is required` error. Match the manifest's `model.source: true` declaration.
+- **Do not author prompts on `inputs.systemPrompt` / `inputs.userPrompt`** — those fields are a canvas-side mirror of `agent.json.messages[]`. The storage bridge (`inputsToStorage` / `storageToInputs`) round-trips between the two; whatever you write on the node will overwrite `agent.json.messages[]` on next save, then be overwritten by `agent.json` on next load. Author prompts in `agent.json.messages[]` only.
 - **Do not use `inputs.agentProjectId` or `model.agentProjectId`** — use `inputs.source`.
 - **Do not put a `model` block on the instance** — `serviceType`, BPMN type, and context live in the definition only (copied from the registry). A published-agent node's definition uses `Orchestrator.StartAgentJob`; an inline-agent node must use the `uipath.agent.autonomous` definition with `Orchestrator.StartInlineAgentJob`.
 - **Do not create `entry-points.json` or `project.uiproj` inside the inline agent directory** — those belong only to standalone agent projects.
