@@ -31,7 +31,7 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 
 ## Step 0 — Resolve the `uip` binary and detect command prefix
 
-See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form.
+See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form. <!-- uip-check-skip -->
 
 ## Step 1 — Check login status
 

@@ -22,9 +22,9 @@ If `npm install -g` fails with a permission error, prompt the user to re-run wit
 ### Command prefix by version
 
 | Installed version | Command prefix | Example |
-|---|---|---|
+| --- | --- | --- |
 | **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
-| **< 0.3.4** | `uip flow` | `uip flow init MyProject` |
+| **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
 
 ```bash
 MIN_VERSION="0.3.4"
@@ -36,7 +36,7 @@ fi
 echo "Using: $FLOW_CMD (CLI version $CURRENT)"
 ```
 
-> **All commands across this skill are written as `uip maestro flow ...` (the ≥ 0.3.4 form).** If version detection above returns < 0.3.4, replace `uip maestro flow` with `uip flow`. Arguments and flags are identical — only the prefix differs. See UiPath/cli#841 for background on the restructuring.
+> **All commands across this skill are written as `uip maestro flow ...` (the ≥ 0.3.4 form).** If version detection above returns < 0.3.4, replace `uip maestro flow` with `uip flow`. Arguments and flags are identical — only the prefix differs. See UiPath/cli#841 for background on the restructuring. <!-- uip-check-skip -->
 
 ## 2. Always use `--output json`
 
@@ -98,7 +98,7 @@ All `uip maestro flow instance` and `uip maestro flow incident get` commands req
 Get the folder key:
 
 ```bash
-uip orchestrator folder list --output json
+uip or folders list --output json
 ```
 
 Or pull it from the job/process context (e.g., `Data.folderKey` on a job status response, or from the debug output's surrounding metadata).

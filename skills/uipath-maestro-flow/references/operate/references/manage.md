@@ -7,7 +7,7 @@ Intervene in a running or faulted Flow instance: pause, resume, cancel, retry. A
 ## Pre-flight
 
 1. **Logged in.** `uip login status --output json` returns success.
-2. **Folder key resolved.** Get it from `uip orchestrator folder list --output json` or from the job/process context. See [shared/cli-conventions.md — `--folder-key` requirement](../../shared/cli-conventions.md#5---folder-key-requirement).
+2. **Folder key resolved.** Get it from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md — `--folder-key` requirement](../../shared/cli-conventions.md#5---folder-key-requirement).
 3. **Instance ID known.** From a debug run (`Data.instanceId`), `flow job status` response, or `instance list`.
 
 ## Lifecycle commands

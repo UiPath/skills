@@ -166,9 +166,47 @@ bash .maintenance/check-plugin-pairs.sh
 
 Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder is missing a required file. Catches half-deleted plugins or new plugin folders that haven't been completed.
 
+## Verifying `uip` command references
+
+Run the uip-command checker to verify every `uip ...` invocation resolves to a real command in the installed CLI:
+
+```bash
+bash .maintenance/check-uip-commands.sh
+```
+
+Returns `commands_checked=N unknown=M`. Exits non-zero if any referenced command path is unknown to `uip`. Verification is **help-only** — the checker walks each command path with `uip <prefix> --help`, confirms the requested segment appears in the parent's `Subcommands` list, and never executes the command for real. Help responses are cached per prefix.
+
+The checker:
+
+- Scans `SKILL.md` and `references/**/*.md`. Skips `.maintenance/` and root-level scratch files (`PLAN.md`, `PR_BODY.md`).
+- Scans both **fenced code blocks** tagged `bash`, `sh`, `shell`, `zsh`, `console`, or unlabelled, **and inline backtick spans** like `` `uip maestro flow init` ``. Inline scanning catches doc-narrative drift that fenced-only scanning misses.
+- Stops the path at the first flag, placeholder (`<...>`), shell metachar, comment (`#`), path-literal, or non-kebab-case token — so positional args like `uip maestro flow registry search outlook` don't get mistreated as subcommands.
+- Treats trailing tokens after a leaf-with-positional-args (e.g. `uip maestro flow registry search <keyword>`) as arguments, not missing subcommands.
+- Falls back gracefully if `uip` is not installed: warns and exits 0. Pass `--strict` to fail in CI.
+
+Pass specific files to scan only those (e.g. for pre-commit on staged files):
+
+```bash
+bash .maintenance/check-uip-commands.sh references/shared/cli-commands.md
+```
+
+### Skipping intentional historical references
+
+Some docs reference removed commands on purpose — for example, a CLI version-comparison table that documents a pre-restructure prefix. Add `<!-- uip-check-skip -->` anywhere on the line to suppress checking for that line:
+
+```markdown
+> Replace `uip maestro flow` with `uip flow` if version < 0.3.4. <!-- uip-check-skip -->
+```
+
+For table rows, place the marker **inside a cell** so it doesn't break table structure (HTML comments render as nothing):
+
+```markdown
+| **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
+```
+
 ## Running the full suite
 
-Run all seven checkers in one invocation:
+Run all eight checkers in one invocation:
 
 ```bash
 bash .maintenance/check-all.sh
@@ -184,6 +222,7 @@ Continues running all checkers even when one fails — the goal is to surface ev
 - After deleting a doc — run `check-orphans.sh` to confirm nothing else became orphaned
 - Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md`
 - After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present
+- After a `uip` CLI version bump — run `check-uip-commands.sh` to catch any commands that were renamed or removed
 
 The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.
 

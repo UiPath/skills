@@ -80,15 +80,15 @@ Use when there is an existing deployed Action Center app that should serve as th
 **Published (tenant registry):**
 
 ```bash
-uip flow registry pull --force
-uip flow registry search "uipath.core.human-task" --output json
+uip maestro flow registry pull --force
+uip maestro flow registry search "uipath.core.human-task" --output json
 ```
 
 **In-solution (local, no login required):**
 
 ```bash
-uip flow registry list --local --output json
-uip flow registry get "<nodeType>" --local --output json
+uip maestro flow registry list --local --output json
+uip maestro flow registry get "<nodeType>" --local --output json
 ```
 
 Run from inside the flow project directory. Discovers sibling projects in the same `.uipx` solution.
@@ -97,10 +97,10 @@ Run from inside the flow project directory. Discovers sibling projects in the sa
 
 ```bash
 # Published (tenant registry)
-uip flow registry get "uipath.core.human-task.{key}" --output json
+uip maestro flow registry get "uipath.core.human-task.{key}" --output json
 
 # In-solution (local, no login required)
-uip flow registry get "uipath.core.human-task.{key}" --local --output json
+uip maestro flow registry get "uipath.core.human-task.{key}" --local --output json
 ```
 
 Confirm:
@@ -145,7 +145,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
 }
 ```
 
-> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip flow registry get` output. Both values come from the definition's `model.bindings`, never from the node instance.
+> `resourceKey` takes the form `<FolderPath>.<AppName>` and `resourceSubType` is the app type — confirm both from `uip maestro flow registry get` output. Both values come from the definition's `model.bindings`, never from the node instance.
 
 **Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`):**
 
@@ -196,7 +196,7 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip flow registry list --local`. Otherwise: `uip login` then `uip flow registry pull --force` |
+| Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
 | `completed` port unwired (Option 1) | Missing edge on output handle | Wire the `completed` output handle — an unwired `completed` blocks the flow indefinitely |

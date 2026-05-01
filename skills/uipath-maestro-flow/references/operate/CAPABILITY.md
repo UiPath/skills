@@ -20,7 +20,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 1. **Always run `uip solution resource refresh <SolutionDir>` before `solution upload` or `flow debug`.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct. The refresh syncs connection and process resource declarations from the project's `bindings_v2.json` files into the solution.
 2. **Default to Studio Web when the user says "publish" without specifier.** "Publish" → `uip solution upload <SolutionDir>`. Only run `uip maestro flow pack` + `uip solution publish` when the user explicitly asks to deploy to Orchestrator. The Orchestrator path bypasses Studio Web — the user cannot visualize or edit the flow there.
-3. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip orchestrator folder list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#5---folder-key-requirement).
+3. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#5---folder-key-requirement).
 4. **Always report Studio Web URL and Instance ID as the first two lines of any debug summary.** Parse `Data.studioWebUrl` and `Data.instanceId` from the JSON output. Use `<not returned by CLI>` if missing — never omit the line. Users need these immediately, not buried below status text.
 
 ## Workflow
