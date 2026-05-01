@@ -199,7 +199,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-maestro-flow, smoke, init, validate]
+tags: [uipath-maestro-flow, smoke, lifecycle:generate]
 
 sandbox:
   driver: tempdir
@@ -209,12 +209,17 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "WeatherAlert",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
+  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  inside a solution:
+  1. Create the solution first.
+  2. Create the Flow project inside that solution.
+  3. Link the project to the solution.
+
+  The correct flow-file path is:
+    WeatherAlert/WeatherAlert/WeatherAlert.flow
+
+  The task is NOT complete until `uip maestro flow validate` has passed for
+  that exact file path.
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -224,7 +229,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a solution with uip solution new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -232,7 +237,7 @@ success_criteria:
   - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -240,7 +245,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -248,7 +253,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on uip commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -256,7 +261,7 @@ success_criteria:
   - type: command_executed
     description: "Agent linked flow project to solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -266,32 +271,14 @@ success_criteria:
     path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "WeatherAlert"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
-    weight: 2.0
-    pass_threshold: 0.75
 ```
 
 Key patterns to note:
 - **No `agent:` block** — inherits everything from `experiments/default.yaml`
 - **No `max_iterations` or `llm_reviewer`** — inherited from the experiment config
 - **Minimal prompt** — describes the goal ("create and validate"), not the steps
-- **Multiple criteria types** — `command_executed`, `file_exists`, `json_check` cover different aspects
+- **Behavior-only criteria** — `command_executed` and `file_exists` verify real operations, not agent self-reports
 - **Weighted scoring** — core commands (`weight: 1.5`) matter more than supporting checks (`weight: 1.0`)
-
-For another example using `file_contains` and `run_command` criteria, see `tasks/uipath-maestro-flow/smoke/registry_discovery.yaml`. That test also demonstrates overriding a single field (`agent: max_turns: 14`) from the experiment defaults.
 
 ## Success Criteria Reference
 

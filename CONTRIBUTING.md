@@ -252,7 +252,7 @@ make test-uipath-maestro-flow  # run all tests for a specific skill
 3. Use minimal prompts — the goal is to test the skill's guidance quality, not hand-hold the agent
 4. Tag every task appropriately: `smoke`, `integration`, or `e2e`
 5. Follow the task ID pattern: `skill-<domain>-<capability>`
-6. **Do not score self-reports.** Don't ask the agent to write a `report.json` / `recommendation.json` summary and then have `success_criteria` read that file back — the agent can write any value. Score real artifacts (`.flow` content, generated CSVs), real operations (`run_command` re-executes a validation), or behavior signals (`command_executed`, `command_not_executed`, `skill_triggered`). See the "Anti-patterns to avoid" section in `tests/README.md`.
+6. **Do not score self-reports.** Don't ask the agent to write a `report.json` / `recommendation.json` summary and then have `success_criteria` read that file back — the agent can write any value. Score real artifacts (`.flow` content, generated CSVs), real operations (`run_command` re-executes a validation), or behavior signals (`command_executed`, `command_not_executed`, `skill_triggered`).
 
 See `tests/README.md` for the full task YAML template, success criteria reference, and examples from existing tests.
 
