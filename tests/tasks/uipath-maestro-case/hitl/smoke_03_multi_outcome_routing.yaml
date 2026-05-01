@@ -1,0 +1,224 @@
+task_id: skill-case-hitl-smoke-multi-outcome-routing
+description: >
+  Smoke test: agent builds a case where two divergent stage exits route to
+  separate downstream stages based on the HITL action task's reviewer
+  decision. Verifies two `selected-tasks-completed` exits with different
+  `IF` expressions on the same source stage, and that both downstream
+  stages have correct entry conditions.
+tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 110
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath Case Management project named "LeaveRequestCase" with this
+  shape:
+
+    Manual Trigger
+      → Stage "Review" (HITL action task: manager reviews leave request,
+        outputs `approved` boolean)
+        → on approve  → Stage "Approved"  (records approval)
+        → on reject   → Stage "Rejected"  (records rejection)
+
+  Implementation requirements:
+
+  - The "Review" stage has TWO routing exits (Marks Stage Complete: No),
+    both `selected-tasks-completed("Review Leave Request")` but with
+    different `IF` expressions:
+      - Approved branch: IF `approved == true`
+      - Rejected branch: IF `approved == false`
+  - The "Approved" and "Rejected" stages each enter on
+    `selected-stage-exited("Review")` and complete via
+    `required-tasks-completed` (exit-only, Marks Stage Complete: Yes).
+  - The case completes via `required-stages-completed`.
+  - Use the same name for solution and project so the case file lives at
+    LeaveRequestCase/LeaveRequestCase/caseplan.json.
+
+  Write this sdd.md to sdd.md first, then build from it:
+
+  ```
+  # SDD — LeaveRequestCase
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |----------|-------|
+  | Case Name | LeaveRequestCase |
+  | Case Description | Manager review of an employee leave request. |
+  | Case Identifier | Prefix: LRC, Type: constant |
+  | Priority | Choiceset: Low,Medium,High — Default: Medium |
+
+  ### Case Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |-------------|--------|---------------|-------------------------|
+  | None        | Manual | N/A           | —                        |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |------|-----|------|---------------------|
+  | required-stages-completed | — | Case exited | Yes |
+
+  ### Case Variables
+  | Variable | Type | Default | Description | Produced By | Consumed By |
+  |----------|------|---------|-------------|-------------|-------------|
+  | approved | Boolean | — | Manager decision on the leave request. | Review Leave Request | Review (exit) |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Review
+  **Type:** Stage
+  **Description:** Manager reviews and decides on the leave request.
+  **Required for Case Completion:** No
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | case-entered | — | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | selected-tasks-completed("Review Leave Request") | approved == true  | exit-only | No |
+  | selected-tasks-completed("Review Leave Request") | approved == false | exit-only | No |
+
+  #### Tasks
+  | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|-----------|------|----------|---------------|---------|-----|
+  | 1 | Review Leave Request | action | Yes | No | Manager | — |
+
+  ##### Task 1.1: Review Leave Request
+  **Type:** action
+  **Description:** Manager reviews the leave request and approves or rejects.
+
+  **Entry Condition:**
+  | WHEN | IF |
+  |------|-----|
+  | current-stage-entered | — |
+
+  **HITL Implementation:** Action App: Review Leave Request
+
+  **Output Schema:**
+  | Field | Type | Binding |
+  |-------|------|---------|
+  | approved | Boolean | -> approved |
+
+  ### Stage 2: Approved
+  **Type:** Stage
+  **Description:** Records that the leave was approved.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-exited("Review") | approved == true | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  (none)
+
+  ### Stage 3: Rejected
+  **Type:** Stage
+  **Description:** Records that the leave was rejected.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |------|-----|-------------|
+  | selected-stage-exited("Review") | approved == false | No |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |------|-----|-----------|---------------------|
+  | required-tasks-completed | — | exit-only | Yes |
+
+  #### Tasks
+  (none)
+  ```
+
+  Important:
+  - The `uip` CLI is already available.
+  - Treat the generated plan as pre-approved — do not block on any HARD STOP
+    / AskUserQuestion approval step.
+  - Skeleton action task is acceptable if the action-app is unresolved; the
+    `approved` output binding can stay as a planning note when the schema
+    cannot be discovered (skeleton tasks omit `data.outputs`).
+  - Do NOT run `uip maestro case debug`.
+
+  **REQUIRED — before finishing, write report.json at the sandbox root**:
+  {
+    "caseplan_path": "<relative path to caseplan.json>",
+    "action_task_id": "<id of the action task>",
+    "review_stage_id": "<id of the Review stage>",
+    "approve_branch_expression": "<IF expression used on the approved exit, e.g. approved == true>",
+    "reject_branch_expression":  "<IF expression used on the rejected exit, e.g. approved == false>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes"
+    command: "uip maestro case validate LeaveRequestCase/LeaveRequestCase/caseplan.json --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan contains an action task"
+    path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    includes:
+      - '"type": "action"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Caseplan uses selected-tasks-completed exits and selected-stage-exited entries"
+    path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    includes:
+      - "selected-tasks-completed"
+      - "selected-stage-exited"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Both branch expressions present on Review's exits"
+    path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
+    includes:
+      - "approved == true"
+      - "approved == false"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures stage/task IDs and both branch expressions"
+    path: "report.json"
+    assertions:
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "action_task_id"
+        operator: not_equals
+        expected: ""
+      - expression: "review_stage_id"
+        operator: not_equals
+        expected: ""
+      - expression: "approve_branch_expression"
+        operator: contains
+        expected: "approved"
+      - expression: "reject_branch_expression"
+        operator: contains
+        expected: "approved"
+    weight: 2.0
+    pass_threshold: 0.75
