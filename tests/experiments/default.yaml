@@ -12,6 +12,12 @@ defaults:
   agent:
     type: claude-code
     permission_mode: acceptEdits
+    # Auto-configures the SDK OS sandbox (bwrap on Linux), CLI permission
+    # engine, and path-scoped allowed_tools so cross-task reads/writes under
+    # <runs>/** are blocked. Requires bubblewrap + socat on Linux runners
+    # (installed by smoke-skills.yml; one-time apt on the daily VM).
+    # Silently no-ops on Windows (smoke-rpa-skills.yml).
+    isolation: true
     model: claude-sonnet-4-6
     # Coded RPA tasks (hooks setup + test case + project.json edits +
     # `uip rpa` calls) routinely take 25-30 turns end-to-end. 20 was
