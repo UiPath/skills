@@ -231,7 +231,7 @@ Only `Name` and `Description` are editable. `ProjectType` and `MainFile` are fix
 
 ## Resources Convention (v1.1.0)
 
-Resources are defined as individual files in the agent project's `resources/` directory — **not** inline in the root `agent.json`. Each resource gets its own subdirectory:
+Resources are defined as individual files in the agent project's `resources/` directory — **not** inline in the root `agent.json`. Prefer `uip agent tool add`, `uip agent context add`, and `uip agent escalation add` for supported resource creation; hand-edit resource JSON only for fields the CLI does not expose. Each resource gets its own subdirectory:
 
 ```
 Agent/
@@ -265,16 +265,18 @@ For each resource type's full schema, see the relevant capability file:
 
 ### Add an Input Field
 
-1. Add to `agent.json` → `inputSchema.properties` (and `.required` if mandatory)
-2. Mirror in `entry-points.json` → `entryPoints[0].input.properties` (and `.required`)
-3. Update `messages[1].content` and `contentTokens` if the field should appear in the user message
-4. Validate
+1. Prefer CLI: `uip agent input add "<fieldName>" --type string --description "<description>" --path "<AGENT_PATH>" --output json`
+2. If the CLI cannot express the needed shape, add to `agent.json` → `inputSchema.properties` (and `.required` if mandatory)
+3. Mirror manual edits in `entry-points.json` → `entryPoints[0].input.properties` (and `.required`)
+4. Update `messages[1].content` and `contentTokens` if the field should appear in the user message
+5. Validate
 
 ### Add an Output Field
 
-1. Add to `agent.json` → `outputSchema.properties`
-2. Mirror in `entry-points.json` → `entryPoints[0].output.properties`
-3. Validate
+1. Prefer CLI: `uip agent output add "<fieldName>" --type string --description "<description>" --path "<AGENT_PATH>" --output json`
+2. If the CLI cannot express the needed shape, add to `agent.json` → `outputSchema.properties`
+3. Mirror manual edits in `entry-points.json` → `entryPoints[0].output.properties`
+4. Validate
 
 ### Change Model Settings
 
