@@ -23,10 +23,16 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 
 ## Precondition: Project Context
 
-Before doing any work, check if `.claude/rules/project-context.md` exists in the project directory.
+Before doing any work, load or generate project context so the agent does not guess the project's mode, packages, namespace, entry points, or local conventions.
 
-**If the file exists** → check for staleness:
-1. Read the first line of `.claude/rules/project-context.md` to extract the metadata comment: `<!-- discovery-metadata: cs=N xaml=N deps=N -->`
+**Portable context locations** (check in this order):
+1. `AGENTS.md` at the project root, inside:
+   - `<!-- PROJECT-CONTEXT:START -->`
+   - `<!-- PROJECT-CONTEXT:END -->`
+2. `.claude/rules/project-context.md` when the workspace already uses Claude Code rules.
+
+**If generated context exists** → check for staleness:
+1. Read the first `<!-- discovery-metadata: cs=N xaml=N deps=N -->` line from the `AGENTS.md` project-context block or `.claude/rules/project-context.md`
 2. Count current files: Glob `**/*.cs` (excluding `.local/` and `.codedworkflows/`) and `**/*.xaml` in the project directory
 3. Count current dependencies: read `project.json` and count keys in the `.dependencies` object
 4. Compare the current counts against the stored metadata values
@@ -34,15 +40,15 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 6. If **any individual count differs by 60–70% or more** → run the discovery flow below
 7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
 
-**If the file does NOT exist** → run the discovery flow below.
+**If generated context does NOT exist** → run the discovery flow below.
 
 **Discovery flow** (used for both missing and stale context):
-1. Trigger the `uipath-project-discovery-agent` and wait for it to complete
-2. The agent returns the generated context document as its response
-3. Write the returned content to **both**:
-   - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
-   - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
-4. Then proceed with the skill workflow
+1. Run `uipath-project-discovery-agent` and wait for it to return the generated context document. If the host environment cannot trigger named agents, perform the same discovery inline using the discovery agent's workflow as the checklist.
+2. Persist the returned context in `AGENTS.md` as the portable source of truth:
+   - If `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers exist, replace only the content between them
+   - If no markers exist, append a new marked project-context block
+3. Also write `.claude/rules/project-context.md` only when the workspace already has a `.claude/` directory or the active host auto-loads Claude Code rules. Do not create host-specific context directories in otherwise agent-neutral projects.
+4. Use the generated context in the current session, then proceed with the skill workflow
 
 ## Step 0: Resolve PROJECT_DIR
 
@@ -284,7 +290,8 @@ Check `project.json` → `dependencies` for the required package.
 - **If absent** → install:
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output jsonuip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find activity docs (priority order)
