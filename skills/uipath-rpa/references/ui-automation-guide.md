@@ -14,12 +14,14 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via the `uia snapshot inspect` CLI to check whether the target app is open. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** using the installed UIA package's `uia-interact` window-listing procedure at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`. Use the exact command syntax from that installed file. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
 
 Do not re-inspect or keep polling after the initial check — subsequent capture and attach are `uia-configure-target`'s job. This single pre-flight exists only to drive the launch decision.
+
+Do not call low-level UIA snapshot commands from memory for this pre-flight. UIA command syntax lives in the installed `UiPath.UIAutomation.Activities` docs and can change with the package version.
 
 **Never use `Get-Process`, `tasklist`, `ps`, WMI, window-title scraping, or any other OS-level process command** to infer app state. They report processes, not UIA-visible windows; they miss background apps and name-mismatched binaries; and they produce wrong launch decisions.
 
