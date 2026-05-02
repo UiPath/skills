@@ -64,7 +64,7 @@ Use this canonical sample when the user has **no concrete intent** ("I want to c
 }
 ```
 
-> Replace `<ORG_UUID>` and `<TENANT_UUID>` from `~/.uipath/.auth` (Critical Rule #3). Replace `<AGENTIC_PROCESS_UUID>` and `<USER_UUID>` via [resource-lookup-guide.md](./resource-lookup-guide.md) once the user names a real process and user (Critical Rule #15). Resolve every `<…_UUID>` during Phase 1 — before the Spec is approved and Phase 2 composes the JSON. Never let a placeholder flow into the working file.
+> Replace `<ORG_UUID>` and `<TENANT_UUID>` from the safe auth-context workflow in [access-policy-commands.md](./access-policy-commands.md#auth-context-for-policy-payloads) (Critical Rule #3). Replace `<AGENTIC_PROCESS_UUID>` and `<USER_UUID>` via [resource-lookup-guide.md](./resource-lookup-guide.md) once the user names a real process and user (Critical Rule #15). Resolve every `<…_UUID>` during Phase 1 — before the Spec is approved and Phase 2 composes the JSON. Never let a placeholder flow into the working file.
 
 ---
 
@@ -104,7 +104,7 @@ Pick one to continue:
 
 Map the user's reply:
 
-- **Option 1** → seed the Spec Components Table from the [mapping table above](#how-the-sample-seeds-the-spec-components-table) — every row pre-filled. Run [resource-lookup-guide.md](./resource-lookup-guide.md) to resolve the Maestro and User UUIDs (do NOT keep `<…_UUID>` placeholders). Read `~/.uipath/.auth` for `organizationId` / `tenantId` (Critical Rule #3). Continue to the [planning-arch.md](./planning-arch.md) Review gate — explicit `yes` is still required.
+- **Option 1** → seed the Spec Components Table from the [mapping table above](#how-the-sample-seeds-the-spec-components-table) — every row pre-filled. Run [resource-lookup-guide.md](./resource-lookup-guide.md) to resolve the Maestro and User UUIDs (do NOT keep `<…_UUID>` placeholders). Gather `organizationId` / `tenantId` from the safe auth-context workflow (Critical Rule #3). Continue to the [planning-arch.md](./planning-arch.md) Review gate — explicit `yes` is still required.
 - **Option 2** → seed the Spec Components Table from the sample for rows the user did NOT change; mark the rows they want to change as `(missing)` and re-enter the [planning-arch.md](./planning-arch.md) iteration loop on those rows only.
 - **Option 3** → drop the sample, return to [planning-arch.md](./planning-arch.md) intent analysis with the user's full description and build the Spec from scratch.
 

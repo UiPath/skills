@@ -24,7 +24,7 @@ Both parts are kept in sync: every change to the table updates the narrative, an
 1. **Read the user's request.** Extract resource phrases, actor process phrases, tag phrases, and actor-identity phrases (user, robot user, or group — Critical Rule #16). Use the [Intent analysis](#intent-analysis) heuristics below.
 2. **If the user has no concrete intent or named ≤ 1 of the four phrase categories** (Resource / Actor Process / Actor Identity / Tag), route through [Sample-policy starter (when intent is missing or sparse)](#sample-policy-starter-when-intent-is-missing-or-sparse) BEFORE generating the Spec — show the canonical sample, let the user pick a path, and seed the Spec from the user's choice.
 3. **Generate the initial Spec — fully pre-filled.** Build the narrative paragraph and Spec Components Table with **a concrete value in every row** (don't leave rows empty for the user to fill in). For values the user explicitly supplied, use those. For values they didn't, apply sensible defaults (Critical Rule #11 — don't ask, just do):
-    - **Scope rows (Org / Tenant — read-only):** capture both rows from the active auth context BEFORE generating the rest of the Spec. Read **names** via `uip login status --output json` (`Data.Organization`, `Data.Tenant`) and **UUIDs** from `~/.uipath/.auth` (`organizationId`, `tenantId`). Render each row as `<NAME> (UUID <UUID>)`. Mark these rows as read-only — the user changes them by re-running `uip login` (Critical Rule #1), not by editing the Spec. They appear above the numbered rows so the user always sees which environment the policy will be authored against.
+    - **Scope rows (Org / Tenant — read-only):** capture both rows from the active auth context BEFORE generating the rest of the Spec. Read **names** via `uip login status --output json` (`Data.Organization`, `Data.Tenant`) and gather UUIDs with [access-policy-commands.md — Auth context for policy payloads](./access-policy-commands.md#auth-context-for-policy-payloads). Render each row as `<NAME> (UUID <UUID>)`. Mark these rows as read-only — the user changes them by re-running `uip login` (Critical Rule #1), not by editing the Spec. They appear above the numbered rows so the user always sees which environment the policy will be authored against.
     - **Row 1 (Name):** ALWAYS suggest a name derived from intent — never `(missing)`. Pattern: `"Allow <ResourceSummary> in <ActorProcessSummary>"` (e.g. `"Allow Production Agents in Maestro"`). Use user-facing names (`Maestro` for `AgenticProcess` — Critical Rule #14).
     - **Row 2 (Description):** auto-derive from the narrative paragraph.
     - **Row 3 (Status):** `Simulated` (Critical Rule #13).
@@ -157,8 +157,8 @@ Present the Spec as **structured narrative + Spec Components Table** every time.
 
 | # | Component | Allowed values | Current value | Required? |
 |---|-----------|---------------|--------------|-----------|
-| — | Organization (read-only)      | sourced from `uip login status` + `~/.uipath/.auth` — change via `uip login`     | <ORG_NAME> (UUID `<ORG_ID>`)                   | Scope (read-only) |
-| — | Tenant (read-only)            | sourced from `uip login status` + `~/.uipath/.auth` — change via `uip login`     | <TENANT_NAME> (UUID `<TENANT_ID>`)             | Scope (read-only) |
+| — | Organization (read-only)      | sourced from active auth context — change via `uip login`                       | <ORG_NAME> (UUID `<ORG_ID>`)                   | Scope (read-only) |
+| — | Tenant (read-only)            | sourced from active auth context — change via `uip login`                       | <TENANT_NAME> (UUID `<TENANT_ID>`)             | Scope (read-only) |
 | 1 | Policy name                   | string — always pre-filled                                                       | <suggested name>                               | Required |
 | 2 | Description                   | one sentence — auto-derived from the narrative above                             | <description>                                  | Required |
 | 3 | Status                        | `Simulated` (default) / `Active`                                                 | `Simulated`                                    | Required |
@@ -187,8 +187,8 @@ Every row gets a concrete value in the initial Spec (Critical Rule #11 — don't
 
 | Row | Required? | Default when not specified |
 |---|---|---|
-| — Organization (read-only) | Scope | Name from `uip login status` (`Data.Organization`); UUID from `~/.uipath/.auth` (`organizationId`). Not user-editable in the Spec. |
-| — Tenant (read-only) | Scope | Name from `uip login status` (`Data.Tenant`); UUID from `~/.uipath/.auth` (`tenantId`). Not user-editable in the Spec. |
+| — Organization (read-only) | Scope | Name from `uip login status` (`Data.Organization`); UUID from the safe auth-context workflow. Not user-editable in the Spec. |
+| — Tenant (read-only) | Scope | Name from `uip login status` (`Data.Tenant`); UUID from the safe auth-context workflow. Not user-editable in the Spec. |
 | 1 — Policy name | Required | Suggested from intent: `"Allow <ResourceSummary> in <ActorProcessSummary>"` |
 | 2 — Description | Required | Auto-derived from the narrative |
 | 3 — Status | Required | `Simulated` (Critical Rule #13) |
@@ -224,7 +224,7 @@ Spec row 2 (`Description`) is the **one-sentence summary** that the policy carri
 
 ### Spec rules
 
-- **Org / Tenant rows are read-only scope.** The two un-numbered rows at the top of the table show the active auth context — `<NAME> (UUID <UUID>)` for both Organization and Tenant. They are sourced from `uip login status --output json` (names) and `~/.uipath/.auth` (UUIDs) and are NOT user-editable in the Spec; if the user wants to author against a different org or tenant, route them to re-run `uip login` (Critical Rule #1) and regenerate the Spec. The same Scope is shown again at the Phase 2 review gate (Critical Rule #7).
+- **Org / Tenant rows are read-only scope.** The two un-numbered rows at the top of the table show the active auth context — `<NAME> (UUID <UUID>)` for both Organization and Tenant. They are sourced from `uip login status --output json` plus the safe auth-context workflow and are NOT user-editable in the Spec; if the user wants to author against a different org or tenant, route them to re-run `uip login` (Critical Rule #1) and regenerate the Spec. The same Scope is shown again at the Phase 2 review gate (Critical Rule #7).
 - **Narrative and table are kept in sync.** When the user changes a row, re-derive the narrative; when the user changes the narrative ("make it match this description"), re-derive the table by re-running [Intent analysis](#intent-analysis) on the new narrative. Both must reflect the same policy.
 - **Terminology (user-facing — Critical Rule #14):** say "Resource", "Actor Process", "Actor Identity", "tag filter", "Allow", "Simulated / Active" in the Spec. Never use the JSON field names (`selectors`, `executableRule`, `actorRule`, `operator: Or/And/None`) in the Spec. JSON terms appear only in Phase 2.
 - **Multi-type rows.** If the user names two resource types ("Agents and Flows"), each type gets its own row group — duplicate rows 5/6/7 once per type and label them `5a / 6a / 7a` for the first type, `5b / 6b / 7b` for the second, etc. Do the same for Actor Process rows (8/9/10) when multiple Actor Process types are named. The Spec table grows row-wise; it never collapses two types into one row.

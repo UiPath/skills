@@ -41,22 +41,36 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 For `evaluate`, login must target a specific tenant (not just an organization).
 
-### Reading `organizationId` and `tenantId`
+### Auth context for policy payloads
 
-The org and tenant UUIDs required in every `PolicyDefinition` live in `~/.uipath/.auth`:
+Every `PolicyDefinition` needs `organizationId` and `tenantId`, and every review gate must show the matching organization / tenant names. Treat this as auth context, not as general credential access.
 
 ```bash
-grep -E "UIPATH_ORGANIZATION_ID|UIPATH_TENANT_ID" ~/.uipath/.auth
+uip login status --output json
 ```
 
-Expected output:
+Use `Data.Organization` and `Data.Tenant` from the status response for display names. If the CLI status output does not include the UUIDs, extract only the non-secret scope fields from the local auth cache:
 
+```bash
+awk -F= '$1 ~ /^UIPATH_(ORGANIZATION|TENANT)_(ID|NAME)$/ {print $1 "=" substr($0, index($0, "=") + 1)}' "$HOME/.uipath/.auth"
 ```
+
+Expected scope fields:
+
+```text
+UIPATH_ORGANIZATION_NAME=<ORG_NAME>
+UIPATH_TENANT_NAME=<TENANT_NAME>
 UIPATH_ORGANIZATION_ID=<ORG_UUID>
 UIPATH_TENANT_ID=<TENANT_UUID>
 ```
 
-Copy these into `organizationId` and `tenantId` when composing a policy (see [planning-impl.md — Step 1](./planning-impl.md#step-1--gather-identity)). Never hardcode.
+Copy only the two UUIDs into `organizationId` and `tenantId` when composing a policy (see [planning-impl.md — Step 1](./planning-impl.md#step-1--gather-identity)). Use the names only in Spec scope rows and review gates.
+
+**Safety rules:**
+
+- Do not run `cat ~/.uipath/.auth`, `env`, `source ~/.uipath/.auth`, or broad `grep = ~/.uipath/.auth` in chat-visible workflows.
+- Do not print, store, or include `UIPATH_ACCESS_TOKEN` in any file, command output, PR, issue, or review gate.
+- If the auth cache is missing or lacks org / tenant UUIDs, stop and ask the user to re-run `uip login` or tenant selection. Do not invent IDs or continue with placeholders.
 
 ---
 

@@ -70,13 +70,13 @@ Map intent phrases to the three policy blocks. These priors feed directly into P
 2. **`policyType` is always `"ToolUsePolicy"`; `enforcement` is always `"Allow"`. Never emit `"Deny"`.**
     - **Why:** the API rejects `enforcement: "Deny"`; Deny is the runtime default when no Allow policy matches, so blocking is expressed as the complement of an Allow set.
     - **Applies to:** every create / update payload. When the user expresses Deny intent, silently translate to an Allow shape and never surface the mechanic (no "Deny→Allow flip" jargon, no `(flipped)` badge, no "enforcement: Deny is not authorable" caveat). See [plugins/tags/planning.md — Deny-to-Allow flip](./references/plugins/tags/planning.md#deny-to-allow-flip) for the decision logic.
-3. Read `organizationId` and `tenantId` from `~/.uipath/.auth` (see [planning-impl.md — Step 1](./references/planning-impl.md#step-1--gather-identity)). Never hardcode tenant or organization UUIDs.
+3. Gather the active organization / tenant context with the safe auth-context workflow in [access-policy-commands.md — Auth context for policy payloads](./references/access-policy-commands.md#auth-context-for-policy-payloads). Use `uip login status --output json` for names and extract only the non-secret org / tenant UUID fields when the CLI status output does not expose them. Never hardcode UUIDs, never print or source the full auth file, and never expose tokens in chat, logs, files, or review gates.
 4. **Three rule blocks; `actorRule` is optional.** A `ToolUsePolicy` access policy is composed of **Selection Rule** (`selectors[]`), **Actor Process Rule** (`executableRule`), and **Actor Identity Rule** (`actorRule`). The first two are mandatory; `actorRule` is emitted only when the user expressed actor-shaped intent — its absence means "any identity passes".
 5. **`values` is required on every entry; `tags` only on `selectors[]` / `executableRule`.**
     - **Why:** missing `values` returns `400 Bad Request`; `actorRule` does not accept a `tags` block today (the API rejects `actorRule.tags`).
     - **Applies to:** every entry under `selectors[]`, `executableRule.values[]`, and `actorRule.values[]` — use `["*"]` for "all of this type" even when `tags` narrow the scope. Never emit `actorRule.tags`.
 6. **Two-phase authoring is mandatory.** Never construct policy JSON from scratch. Author and approve a **Policy Spec** (natural-language narrative + Spec Components Table) via [planning-arch.md](./references/planning-arch.md) (Phase 1), then compose the concrete JSON via [planning-impl.md](./references/planning-impl.md) (Phase 2), which walks the approved Spec and delegates to each plugin's `impl.md` for block-level JSON.
-7. **Single confirmation gate per mutation.** Exactly one `yes / no` review precedes each `create`, `update`, or `delete` call. The gate must show: (a) the **Scope** — the organization name / tenant name plus their UUIDs, read from `~/.uipath/.auth` — so the user sees which environment is about to be mutated; (b) the complete policy JSON in chat; (c) clickable markdown links to **both** the Spec file (`/tmp/access-policy-<slug>.spec.md`, written by Phase 1) and the JSON working file (`/tmp/access-policy-<slug>.json`, written by Phase 2) using their **resolved absolute paths** (run `realpath` — never a relative path, a `<WORKING_FILE>` placeholder, or a `~/` path). For update flows the Spec file does not exist (Critical Rule #8) — show the Scope, the diff, and the JSON working file only. See [Confirmation-gate wording](#confirmation-gate-wording).
+7. **Single confirmation gate per mutation.** Exactly one `yes / no` review precedes each `create`, `update`, or `delete` call. The gate must show: (a) the **Scope** — the organization name / tenant name plus their UUIDs from the safe auth-context workflow — so the user sees which environment is about to be mutated; (b) the complete policy JSON in chat; (c) clickable markdown links to **both** the Spec file (`/tmp/access-policy-<slug>.spec.md`, written by Phase 1) and the JSON working file (`/tmp/access-policy-<slug>.json`, written by Phase 2) using their **resolved absolute paths** (run `realpath` — never a relative path, a `<WORKING_FILE>` placeholder, or a `~/` path). For update flows the Spec file does not exist (Critical Rule #8) — show the Scope, the diff, and the JSON working file only. See [Confirmation-gate wording](#confirmation-gate-wording).
 8. **For `update`: always `get` first and start from `Data` verbatim. Update is a full replacement.**
     - **Why:** any field you omit from the file is cleared on the server (including the whole `actorRule` block); a fresh Phase 1 Spec would silently wipe fields the user did not re-specify.
     - **Applies to:** every update flow. Use the returned `Data` object verbatim as the starting state, then strip audit fields (`isBuiltIn`, `isTemplate`, `createdBy`, `createdOn`, `modifiedBy`, `modifiedOn`, `deletedBy`, `deletedOn`).
@@ -129,7 +129,7 @@ The user reviews the pre-filled Spec and changes any row they want; the agent re
 
 ### Step 3 — Phase 2: compose the JSON via plugins
 
-Hand off to [planning-impl.md](./references/planning-impl.md). It reads `organizationId` and `tenantId` from `~/.uipath/.auth`, then walks each row of the approved **Spec Components Table** and reads the matching plugin's `impl.md`:
+Hand off to [planning-impl.md](./references/planning-impl.md). It gathers the active auth context, then walks each row of the approved **Spec Components Table** and reads the matching plugin's `impl.md`:
 
 - Each Resource entry (Spec rows 5–7 — type, scope, optional tag filter) → one `selectors[]` entry via [plugins/selector/impl.md](./references/plugins/selector/impl.md)
 - Each Actor Process entry (Spec rows 8–10 — type, scope, optional tag filter) → one `executableRule.values[]` entry via [plugins/executable/impl.md](./references/plugins/executable/impl.md)
@@ -141,14 +141,14 @@ Phase 2 reuses the slug Phase 1 used for the Spec file and writes the assembled 
 ### Step 4 — Single review gate
 
 Show a **short human-readable summary** that includes:
-- A **Scope** line on top — `Organization "<NAME>" / Tenant "<NAME>"` plus the matching `organizationId` / `tenantId` UUIDs read from `~/.uipath/.auth` — so the user always sees which environment they are about to mutate before approving.
+- A **Scope** line on top — `Organization "<NAME>" / Tenant "<NAME>"` plus the matching `organizationId` / `tenantId` UUIDs from the safe auth-context workflow — so the user always sees which environment they are about to mutate before approving.
 - One plain-English line per block — `Resources`, `Actor Process`, `Actor Identity` — with the per-entry technical breakdown tucked inside a collapsible `<details>` section.
 
 Then output the complete JSON as a ```json code block in the chat (do not rely on the file links alone — the user may not be able to open them), plus clickable markdown links to **both** files using their **resolved absolute paths** (Critical Rule #7):
 - `/tmp/access-policy-<slug>.spec.md` — the human-readable Policy Spec from Phase 1
 - `/tmp/access-policy-<slug>.json` — the JSON payload Phase 2 will submit
 
-See [policy-manage-guide.md — Create Step 4](./references/policy-manage-guide.md#step-4--single-review-gate) for the exact layout, the `~/.uipath/.auth` source-mapping for the Scope line, and the phrasing rules. Use the canonical wording from [Confirmation-gate wording](#confirmation-gate-wording) below. This is the only confirmation gate in the create flow.
+See [policy-manage-guide.md — Create Step 4](./references/policy-manage-guide.md#step-4--single-review-gate) for the exact layout, the auth-context source mapping for the Scope line, and the phrasing rules. Use the canonical wording from [Confirmation-gate wording](#confirmation-gate-wording) below. This is the only confirmation gate in the create flow.
 
 ### Step 5 — Create
 
@@ -197,7 +197,7 @@ Non-obvious mistakes the Critical Rules don't already cover by name. (Restatemen
 | **List policies** | [policy-manage-guide.md — List](./references/policy-manage-guide.md#list-policies) |
 | **Get a single policy by UUID** | [policy-manage-guide.md — Get](./references/policy-manage-guide.md#get-a-policy) |
 | **Evaluate a policy against a request context** | [access-policy-commands.md — evaluate](./references/access-policy-commands.md#uip-gov-access-policy-evaluate) — user-initiated only (Rule #13) |
-| **Resolve a process / agent / flow / user / robot name to a UUID** | [resource-lookup-guide.md](./references/resource-lookup-guide.md) — `uip or processes list` / `uip or folders list` / `uip or users list`; robot lookups use the REST fallback then resolve to a User UUID |
+| **Resolve a process / agent / flow / user / robot name to a UUID** | [resource-lookup-guide.md](./references/resource-lookup-guide.md) — `uip or processes list` / `uip or folders list` / `uip or users list`; robot intent resolves to the linked User UUID without exposing auth tokens |
 | **Compose a `selectors[]` entry (Selection Rule)** | [plugins/selector/planning.md](./references/plugins/selector/planning.md) + [plugins/selector/impl.md](./references/plugins/selector/impl.md) |
 | **Compose the `executableRule` block (Actor Process Rule)** | [plugins/executable/planning.md](./references/plugins/executable/planning.md) + [plugins/executable/impl.md](./references/plugins/executable/impl.md) |
 | **Compose the `actorRule` block (Actor Identity Rule)** | [plugins/actor/planning.md](./references/plugins/actor/planning.md) + [plugins/actor/impl.md](./references/plugins/actor/impl.md) |
@@ -342,7 +342,7 @@ Do not run any of these actions automatically. Wait for the user's selection.
 - **[resource-lookup-guide.md](./references/resource-lookup-guide.md)** — `uip or processes list` / `uip or folders list` / `uip or users list` lookups to resolve human-readable names to the UUIDs required by `selectors[].values`, `executableRule.values[].values`, and `actorRule.values[].values`. Route here whenever the user names a process, folder, or user without supplying a UUID.
 - **[planning-arch.md](./references/planning-arch.md)** — Phase 1: author a **Policy Spec** (narrative paragraph + Spec Components Table covering name, description, status, enforcement, resource selection, actor process, actor identity, tags, operators). The agent pre-fills every row; the user reviews and edits before approving, and approval is required before any JSON is composed.
 - **[sample-policy-guide.md](./references/sample-policy-guide.md)** — canonical Spec narrative + JSON (Production Agent + one Maestro + one User, Allow, Simulated). Phase 1 routes here when the user has no concrete intent or has gaps; surfaces a 3-option picker so the user can adopt, adapt, or replace the sample.
-- **[planning-impl.md](./references/planning-impl.md)** — Phase 2: walk the approved Spec Components Table and assemble the concrete `PolicyDefinition` JSON by reading `~/.uipath/.auth` for identity and each plugin's `impl.md` for block-level JSON.
+- **[planning-impl.md](./references/planning-impl.md)** — Phase 2: walk the approved Spec Components Table and assemble the concrete `PolicyDefinition` JSON by gathering the safe auth context and reading each plugin's `impl.md` for block-level JSON.
 - **[policy-manage-guide.md](./references/policy-manage-guide.md)** — Full CRUD lifecycle (list / get / create / update / delete). Owns the single final-review gate before every mutation.
 - **[plugins/selector/](./references/plugins/selector/)** — `selectors[]` (Selection Rule): resource/tool types (`Agent`, `AgenticProcess`, `RPAWorkflow`, `APIWorkflow`, `CaseManagement`, `Flow`), targeting modes, tag filters.
 - **[plugins/executable/](./references/plugins/executable/)** — `executableRule` (Actor Process Rule): executable types (`Agent`, `AgenticProcess`, `CaseManagement`, `Flow`), targeting modes, shared tag filter.
