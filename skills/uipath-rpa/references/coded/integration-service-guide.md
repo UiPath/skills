@@ -256,7 +256,8 @@ var response = await conn.ExecuteAsync(config, request);
 Run `uip rpa get-errors` on the written workflow file until 0 errors. Cap at 5 fix attempts.
 
 ```bash
-uip rpa get-errors --file-path "<WORKFLOW_FILE>" --project-dir "<PROJECT_DIR>" --output json```
+uip rpa get-errors --file-path "<WORKFLOW_FILE>" --project-dir "<PROJECT_DIR>" --output json
+```
 
 ---
 
