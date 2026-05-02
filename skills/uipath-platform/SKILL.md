@@ -20,19 +20,11 @@ Comprehensive guide for setting up and managing UiPath development environments,
 - User wants to set up a **CI/CD pipeline** for UiPath automation projects
 - User asks **how to deploy** an automation to Orchestrator
 
-## Auth token location
+## Authentication and Credential Safety
 
-The CLI stores credentials at **`~/.uipath/.auth`** after login:
-```
-UIPATH_URL=https://alpha.uipath.com
-UIPATH_ORG_NAME=my_org
-UIPATH_TENANT_NAME=my_tenant
-UIPATH_ACCESS_TOKEN=eyJ...
-UIPATH_ORGANIZATION_ID=...
-UIPATH_TENANT_ID=...
-```
+Use `uip login` and other supported `uip` commands for all platform operations. The CLI manages its own credential cache after login.
 
-This token can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case.
+Do **not** read, print, source, parse, copy, or expose cached credential files or access tokens. Do **not** build ad hoc `curl` calls against UiPath backend APIs with cached tokens. If the CLI does not expose an operation, stop and explain the unsupported operation, then ask the user whether they want to use a supported CLI workflow, a product API integration outside this skill, or file feedback for CLI coverage.
 
 ## Quick Start
 
@@ -227,37 +219,7 @@ The typical deployment workflow for a UiPath automation:
 ### Practical Deployment Notes
 
 - **Starting jobs requires runtimes.** If you get error 2818 "no runtimes configured", the target folder needs machine templates with Unattended/Development runtimes assigned.
-- **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
-
-## Orchestrator REST API (Fallback)
-
-When CLI commands are insufficient, use the Orchestrator REST API directly with the stored access token:
-
-```bash
-source ~/.uipath/.auth
-
-# Upload a .nupkg package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -F "file=@./MyProject.1.0.0.nupkg"
-
-# Create a process (release) from an uploaded package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"Name":"MyProcess","ProcessKey":"MyProject","ProcessVersion":"1.0.0"}'
-
-# Start a job
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Jobs/UiPath.Server.Configuration.OData.StartJobs" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"startInfo":{"ReleaseKey":"<RELEASE_KEY>","Strategy":"ModernJobsCount","JobsCount":1,"RuntimeType":"Unattended","InputArguments":"{}"}}'
-```
-
-The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip or folders list`).
+- **Unsupported operations.** If a platform operation is not available through `uip`, do not bypass the CLI with direct token or REST calls. Summarize the missing operation, include the `uip --help` / subcommand evidence you checked, and ask the user whether to use a supported CLI path or file feedback for CLI coverage.
 
 ## References
 
