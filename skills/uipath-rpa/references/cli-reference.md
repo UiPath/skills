@@ -64,6 +64,26 @@ Every `uip rpa` invocation accepts these flags:
 
 `--project-dir` defaults to the current working directory. When the project is elsewhere, pass the absolute path to the folder containing `project.json`.
 
+### Studio IPC Compatibility Preflight
+
+At the start of RPA work, record the CLI and Studio versions before running validation or execution commands:
+
+```bash
+uip --version
+uip rpa list-instances --output json
+```
+
+If Studio is running, read the Studio version and project directory from `list-instances`. If the project is not open, run `open-project` once, then list instances again. Keep these versions in mind for every Studio-backed validation, execution, build, and analysis command.
+
+Treat these as compatibility dead ends, not ordinary workflow errors:
+- `"Studio <version> does not support rpa-tool"`
+- `"does not have interop support"` or `"Requires Studio ..."`
+- `"Too many parameters for Task<string> ExecuteCommand"` from an IPC call
+- `get-errors`, `run-file`, `build`, or `analyze` hangs with no output after the configured timeout
+- standalone `build`/`analyze` fails because the project is already open in Studio while the Studio-backed command also fails or hangs
+
+When any of these appears, do **not** retry the same command in a loop and do not switch blindly between Studio-backed and standalone variants. Capture the exact command, `uip` version, Studio version, and error text, then tell the user that CLI/Studio compatibility is blocking automated validation or execution. Continue only with work that can be done safely without that command, and report the verification gap explicitly.
+
 ---
 
 ## Installed Package Activity Documentation
@@ -90,7 +110,8 @@ Located at `{projectRoot}/.local/docs/packages/{PackageId}/`.
 List running Studio Desktop instances and their IPC status. Hidden diagnostic command — does **not** report the auto-launched headless Studio (Helm) instances.
 
 ```bash
-uip rpa list-instances --output json```
+uip rpa list-instances --output json
+```
 
 No command-specific options. An empty `Data` array does NOT mean `uip rpa` won't work — headless Studio starts on demand.
 
@@ -104,7 +125,8 @@ Ensure a **Studio Desktop** instance is running. Only required before invoking `
 3. Start a new instance via `--studio-dir` -- poll until available
 
 ```bash
-uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json```
+uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json
+```
 
 ---
 
@@ -115,7 +137,8 @@ uip rpa start-studio --project-dir "<PROJECT_DIR>" --output json```
 Create a new UiPath project from a template.
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json
+```
 
 > **Flag names are non-standard.** Most `uip rpa` commands take `--project-dir` to identify the project. `create-project` instead uses `--name` (project name) + `--location` (parent directory). Do NOT use `--project-name` or `--project-dir` here — both fail with `error: required option '--name <string>' not specified`.
 
@@ -158,7 +181,8 @@ Returns `Data[*]` with `packageId`, `version`, `title`, `description`, `authors`
 Open an existing project in Studio. Only needed when explicitly loading a project that isn't already open (e.g. after `create-project`, or when switching projects). Most commands (`validate`, `run-file`) auto-resolve a Studio instance and open the project automatically, so this is rarely required.
 
 ```bash
-uip rpa open-project --project-dir "<PROJECT_DIR>" --output json```
+uip rpa open-project --project-dir "<PROJECT_DIR>" --output json
+```
 
 No command-specific options.
 
@@ -174,7 +198,8 @@ Run or debug a workflow file using Studio.
 # Run (default -- closes app on completion or error):
 uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 # Debug (pauses on error -- keeps app open for inspection/repair):
-uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json```
+uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command StartDebugging --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -192,7 +217,8 @@ uip rpa run-file --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --command St
 Return validation errors for a file or project. By default, forces Studio to re-validate before returning errors.
 
 ```bash
-uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
+uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -208,7 +234,8 @@ uip rpa get-errors [--file-path "<FILE>"] [--skip-validation] --output json```
 Build (compile) a UiPath project. Compiles all XAML expressions — catches runtime-compile failures that `get-errors` misses. Required before returning a project to the user (see [validation-guide.md § Project Build Verification](validation-guide.md#project-build-verification-required-before-returning-a-project)). Runs independently of Studio IPC; takes the project directory as a positional argument.
 
 ```bash
-uip rpa build "<PROJECT_DIR>" --log-level Warn --output json```
+uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -248,7 +275,8 @@ Each rule returns `severity` (`error` / `warning` / `info`), rule ID (e.g. `ST-D
 Install or update NuGet packages in the project.
 
 ```bash
-uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json```
+uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]' --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -267,7 +295,9 @@ Omit `version` to automatically resolve the latest compatible version (preferred
 Get available versions for a NuGet package.
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --output jsonuip rpa get-versions --package-id <PackageId> --include-prerelease --output json```
+uip rpa get-versions --package-id <PackageId> --output json
+uip rpa get-versions --package-id <PackageId> --include-prerelease --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -344,7 +374,8 @@ Returns JSON:
 Get unautomated test case IDs from Test Manager.
 
 ```bash
-uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json```
+uip rpa get-manual-test-cases --project-dir "<PROJECT_DIR>" --output json
+```
 
 No command-specific options.
 
@@ -355,7 +386,8 @@ No command-specific options.
 Get steps for specific test cases from Test Manager.
 
 ```bash
-uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json```
+uip rpa get-manual-test-steps --test-case-ids "id1,id2,id3" --project-dir "<PROJECT_DIR>" --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -528,10 +560,14 @@ When `uip` commands fail, diagnose by error category:
 | Error Pattern | Cause | Recovery |
 |---------------|-------|----------|
 | `"connection refused"`, `"EPIPE"`, `"pipe not found"` | Studio IPC not available. Headless Studio (Helm): NuGet restore failed or process exited. Studio Desktop: not running. | Re-run the command — headless Studio relaunches automatically. If it persists, raise `--timeout` and check the Helm restore output for NuGet errors. Only run `uip rpa start-studio` if the failing command is `diff`/`focus-activity` or `UIPATH_RPA_TOOL_USE_STUDIO=1` is set. |
+| `"does not support rpa-tool"`, `"does not have interop support"`, `"Requires Studio"` | Studio build does not support the CLI IPC protocol needed by the command | Stop retrying; record CLI/Studio versions and tell the user Studio must be updated or the command cannot be used in this environment |
+| `"Too many parameters for Task<string> ExecuteCommand"` | CLI and Studio IPC contract mismatch | Stop retrying; record CLI/Studio versions and report validation/execution as blocked by compatibility |
 | `"timeout"`, `"ETIMEDOUT"` | Command took too long. Cold Helm NuGet restore can take 30–90 s. | Raise the timeout: `uip rpa --timeout 600 <command>`. For `get-errors`, also try `--skip-validation`. |
+| Command produces no output until your shell timeout expires | Possible Studio IPC hang or package restore/build deadlock | Retry once with a larger `--timeout`; if it hangs again, treat as a compatibility/environment blocker and report it |
 | `"not authenticated"`, `401`, `403` | Auth required for cloud features | Run `uip login` and re-try |
 | `"package not found"`, `"version not available"` | Wrong package ID or version | Verify package name via `uip rpa find-activities`; omit `version` to auto-resolve latest |
-| `"project not found"`, `"no project open"` | Wrong project-dir or project not open in Studio | Verify `--project-dir` path, run `uip rpa open-project` |
+| `"project not found"`, `"no project open"` | Wrong project-dir or project not open | Verify `--project-dir` path; run `uip rpa open-project` only if the command needs an already-open project |
+| `"project is already opened in another Studio instance"` | Standalone compiler or wrong Studio instance is competing with an open project | Use the intended `--project-dir`, close idle Studio instances or ask the user to do so, then retry once |
 | `"file not found"` in `get-errors` | Wrong `--file-path` (must be relative to project) | Use path relative to project root, not absolute |
 | `"Studio is busy"`, `"operation in progress"` | Studio is processing a previous request | Wait a few seconds and retry the command |
 | Any unrecognized error | Unknown | Check `--verbose` flag: `uip rpa --verbose <command>` for debug details, inform the user |
@@ -547,7 +583,9 @@ When `uip` commands fail, diagnose by error category:
 Search for activities by keyword. Global search -- not limited to installed packages.
 
 ```bash
-uip rpa find-activities --query "<KEYWORD>" --output jsonuip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json```
+uip rpa find-activities --query "<KEYWORD>" --output json
+uip rpa find-activities --query "<KEYWORD>" --tags "<TAGS>" --limit 20 --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -565,7 +603,8 @@ Get the default XAML template for an activity. Two modes depending on whether th
 # Non-dynamic activity:
 uip rpa get-default-activity-xaml --activity-class-name "<FULLY_QUALIFIED_CLASS>" --output json
 # Dynamic activity (connector-backed):
-uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json```
+uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN_ID>" --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -580,7 +619,9 @@ uip rpa get-default-activity-xaml --activity-type-id "<TYPE_ID>" --connection-id
 Search example workflows by service tags.
 
 ```bash
-uip rpa list-workflow-examples --tags "service1,service2" --output jsonuip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json```
+uip rpa list-workflow-examples --tags "service1,service2" --output json
+uip rpa list-workflow-examples --tags "service1" --prefix "<PREFIX>" --limit 20 --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -595,7 +636,8 @@ uip rpa list-workflow-examples --tags "service1,service2" --output jsonuip rpa l
 Retrieve the full XAML content of an example workflow.
 
 ```bash
-uip rpa get-workflow-example --key "<BLOB_PATH>" --output json```
+uip rpa get-workflow-example --key "<BLOB_PATH>" --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -608,7 +650,9 @@ uip rpa get-workflow-example --key "<BLOB_PATH>" --output json```
 Focus an activity in the Studio Desktop designer view. **Requires a running Studio Desktop instance** — does not work against headless Studio. Run `uip rpa start-studio --project-dir "<PROJECT_DIR>"` first if Studio Desktop is not already up.
 
 ```bash
-uip rpa focus-activity --activity-id "<IDREF>" --output jsonuip rpa focus-activity --output json```
+uip rpa focus-activity --activity-id "<IDREF>" --output json
+uip rpa focus-activity --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -642,7 +686,8 @@ Use the `packageId` and `version` from results with `uip rpa create-project --te
 Close the current project in Studio.
 
 ```bash
-uip rpa close-project --output json```
+uip rpa close-project --output json
+```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|

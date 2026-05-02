@@ -56,6 +56,17 @@ REPEAT:
 
 See [cli-reference.md](cli-reference.md) for full `get-errors` and `run-file` command documentation.
 
+### When Validation Is Blocked by Studio IPC Compatibility
+
+The requirement to validate does not permit indefinite retries. Before the validation loop, record `uip --version` and `uip rpa list-instances --output json` so you know the CLI and Studio versions involved.
+
+If `get-errors`, `run-file`, `build`, or `analyze` reports a Studio/rpa-tool compatibility error, an IPC contract mismatch such as `Too many parameters for Task<string> ExecuteCommand`, or hangs with no output after the configured timeout, follow [cli-reference.md § Studio IPC Compatibility Preflight](cli-reference.md#studio-ipc-compatibility-preflight):
+
+1. Stop retrying the same command after one diagnostic retry.
+2. Do not claim the workflow is validated or runnable.
+3. Continue only with edits that can be made safely without that command.
+4. In the final response, state the exact command that was blocked, the CLI/Studio versions, and that validation or execution could not be completed in this environment.
+
 ## Project Build Verification (Required Before Returning a Project)
 
 Every project returned to the user must compile. After all files pass `get-errors`, run:
@@ -78,7 +89,8 @@ uip rpa run-file --file-path "<FILE>" --output json
 # Run with input arguments:
 uip rpa run-file --file-path "<FILE>" --input-arguments '{"key": "value"}' --output json
 # Run with verbose logging for debugging:
-uip rpa run-file --file-path "<FILE>" --log-level Verbose --output json```
+uip rpa run-file --file-path "<FILE>" --log-level Verbose --output json
+```
 
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior
@@ -112,7 +124,8 @@ C) <user-driven approach>
 ```
 Read: file_path="{projectRoot}/project.json"     -> check current dependencies
 
-Bash: uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'```
+Bash: uip rpa install-or-update-packages --packages '[{"id": "UiPath.Excel.Activities"}]'
+```
 
 Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
 
@@ -138,7 +151,8 @@ When `get-errors` returns an error referencing a specific activity (by IdRef or 
 # Focus a specific activity by its IdRef (from the error output):
 uip rpa focus-activity --activity-id "Assign_1"
 # Focus all activities sequentially (useful for walkthrough):
-uip rpa focus-activity```
+uip rpa focus-activity
+```
 
 This is especially useful when:
 - An error references an activity and you want the user to confirm the context
