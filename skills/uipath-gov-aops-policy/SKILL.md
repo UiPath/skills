@@ -53,7 +53,7 @@ When the user expresses a governance rule without naming a product, your job is 
 **Workflow for intent-based requests:**
 1. Run the bootstrap (aops-policy-manage-guide Step 1) to materialize every product's schema.
 2. Extract intent keywords from the user's phrasing.
-3. Rank products by `Grep` matches on each product's `form-template-locale-resource.json` (Case B). Present the top 3.
+3. Rank products by case-insensitive keyword matches in each product's `form-template-locale-resource.json` (Case B). Present the top 3.
 4. Do NOT hard-code the mapping above — always verify against the live locale files. Product names and fields change per release.
 5. If intent is ambiguous (matches multiple products) or zero products match, ask the user to clarify before proceeding.
 
@@ -61,7 +61,7 @@ When the user expresses a governance rule without naming a product, your job is 
 
 1. Always use `uip login` before running any `uip gov aops-policy` commands.
 2. Always use the product `name` (identifier) in CLI commands, not the `label` shown to the user.
-3. For `create`: always bootstrap before selecting or confirming a product. Run `uip gov aops-policy template list --output-dir "$SESSION_DIR/products" --output json` — this writes each product's `form-template.json` (whose top-level `product` object holds `{name, label}`), `form-data.json`, and `form-template-locale-resource.json` into `$SESSION_DIR/products/<ProductName>/`. The product catalog is implicit — enumerate products with the `Glob` tool on `$SESSION_DIR/products/*/form-template.json` and read `.product.{name, label}`. Do NOT create a separate `products.json` or run `product list`. Use the bootstrapped schemas to validate the user's chosen product against their stated intent; if the intent's fields live under a different product, suggest that product instead.
+3. For `create`: always bootstrap before selecting or confirming a product. Run `uip gov aops-policy template list --output-dir "$SESSION_DIR/products" --output json` — this writes each product's `form-template.json` (whose top-level `product` object holds `{name, label}`), `form-data.json`, and `form-template-locale-resource.json` into `$SESSION_DIR/products/<ProductName>/`. The product catalog is implicit — enumerate `$SESSION_DIR/products/*/form-template.json` and read `.product.{name, label}` from each file. Do NOT create a separate `products.json` or run `product list`. Use the bootstrapped schemas to validate the user's chosen product against their stated intent; if the intent's fields live under a different product, suggest that product instead.
 4. For `create`, read the form template, default form data, and locale labels from `$SESSION_DIR/products/<ProductName>/` (produced by the bootstrap). For `update`, the caller creates `$SESSION_DIR` first (see aops-policy-manage-guide update Step 1) and then configure-guide runs `template get` with `--output-form-data` and `--output-template-locale-resource` into the same per-product subfolder. Use the locale file for human-readable labels and the form-data (create) or existing policy data (update) for the working blueprint. Prefer Mode A (intent-based auto-fill) over field-by-field prompting whenever the user supplied any intent. Do not construct policy data JSON manually.
 5. Use the component `key` as the JSON key in policy data — never the label or humanized name.
 6. Write the raw policy data object to the data file — do not wrap it in `{ "data": {...} }`. The final policy data file must match the format of the form-data file produced by `template get --output-form-data`.
@@ -116,7 +116,7 @@ mkdir -p "$SESSION_DIR/products"
 uip gov aops-policy template list --output-dir "$SESSION_DIR/products" --output json
 ```
 
-This writes `form-template.json`, `form-data.json`, and `form-template-locale-resource.json` into `$SESSION_DIR/products/<ProductName>/` for every product. The product catalog is implicit — enumerate products with `Glob` on `$SESSION_DIR/products/*/form-template.json` and read `.product.{name, label}`.
+This writes `form-template.json`, `form-data.json`, and `form-template-locale-resource.json` into `$SESSION_DIR/products/<ProductName>/` for every product. The product catalog is implicit — enumerate `$SESSION_DIR/products/*/form-template.json` and read `.product.{name, label}` from each file.
 
 See [configure-aops-policy-data-guide.md — Step 1](./references/configure-aops-policy-data-guide.md) for the full bootstrap procedure.
 
@@ -125,7 +125,7 @@ See [configure-aops-policy-data-guide.md — Step 1](./references/configure-aops
 Two cases, per [aops-policy-manage-guide.md](./references/aops-policy-manage-guide.md):
 
 - **Case A — user named the product.** Use it silently (Critical Rule #11). Validate that the user's stated intent maps to fields in that product's schema; if not, suggest the better-fitting product.
-- **Case B — infer from intent.** Extract intent keywords and use `Grep` against every product's `form-template-locale-resource.json` to rank matches. Present the top 3 and let the user confirm. See the intent-mapping table above for priors.
+- **Case B — infer from intent.** Extract intent keywords and search every product's `form-template-locale-resource.json` to rank matches. Present the top 3 and let the user confirm. See the intent-mapping table above for priors.
 
 ### Step 4 — Configure policy data
 
@@ -162,7 +162,7 @@ Omit `--description`, `--priority`, `--availability` if the user did not supply 
 
 ### Step 7 — Post-create choice
 
-Use `AskUserQuestion` to offer next steps. See **Completion Output** below for the exact dropdown.
+Present the next steps as a numbered Markdown list. See **Completion Output** below for the exact options.
 
 ## Anti-patterns
 
@@ -192,7 +192,7 @@ Use `AskUserQuestion` to offer next steps. See **Completion Output** below for t
 | **Find a canonical recipe for a common governance intent** | [aops-governance-recipes-guide.md](./references/aops-governance-recipes-guide.md) — check here first; apply the recipe's product + field mapping before field-by-field prompting |
 | **Configure individual field values (form.io traversal)** | [configure-aops-policy-data-guide.md](./references/configure-aops-policy-data-guide.md) |
 | **Recognize a governance intent** | Intent-mapping table at the top of this SKILL.md |
-| **Pick the right product for an intent** | Bootstrap (Step 2) + `Grep` on locale files (Rule #3) + intent-mapping table |
+| **Pick the right product for an intent** | Bootstrap (Step 2) + keyword search on locale files (Rule #3) + intent-mapping table |
 
 ## Key Concepts
 
@@ -203,7 +203,7 @@ Use `AskUserQuestion` to offer next steps. See **Completion Output** below for t
 ### Case A vs Case B
 
 - **Case A** — the user named the product. Use it silently; validate intent against its schema.
-- **Case B** — the user described a rule but did not name a product. Rank products by `Grep` matches on each `form-template-locale-resource.json`. Present top 3.
+- **Case B** — the user described a rule but did not name a product. Rank products by keyword matches in each `form-template-locale-resource.json`. Present top 3.
 
 ### Deployed policy vs effective rules
 
@@ -265,20 +265,24 @@ When you finish a mutating operation, report:
 1. **Operation & result** — e.g., `Created policy <name> (GUID: <guid>) for product <productName>`.
 2. **Session directory** — print `$SESSION_DIR` so the user can inspect bootstrapped schemas and the `aops-policy-data.json` that was submitted.
 3. **Non-default fields set** — summary of fields the user configured vs. ones that stayed at defaults. (Omit this line after `delete`.)
-4. **Next step** — use `AskUserQuestion` to present a dropdown with these options (single post-mutation gate, per Critical Rule #12):
+4. **Next step** — present a numbered Markdown list under `### What would you like to do next?` with these options (single post-mutation gate, per Critical Rule #12):
 
-| Option | Action |
-|--------|--------|
-| **Deploy to a user** | Hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = user. |
-| **Deploy to a group** | Hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = group. |
-| **Deploy to the tenant** | Hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = tenant. |
-| **List policies to verify** | Run `uip gov aops-policy list --output json` and show the new/updated entry. |
-| **Query effective rules** | Run `deployed-policy list` (or `get`) per [aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md). |
-| **Something else** (last option) | Accept free-form string input and act on it (e.g., "just leave it", "export the policy data", "create another one"). |
+```markdown
+### What would you like to do next?
+
+1. **Deploy to a user** — hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = user.
+2. **Deploy to a group** — hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = group.
+3. **Deploy to the tenant** — hand off to [aops-policy-deploy-guide.md](./references/aops-policy-deploy-guide.md) with subject = tenant.
+4. **List policies to verify** — run `uip gov aops-policy list --output json` and show the new/updated entry.
+5. **Query effective rules** — run `deployed-policy list` (or `get`) per [aops-policy-deployed-guide.md](./references/aops-policy-deployed-guide.md).
+6. **Something else** — accept free-form string input and act on it (e.g., "just leave it", "export the policy data", "create another one").
+
+Reply with the number.
+```
 
 Do not run any of these actions automatically. Wait for the user's selection.
 
-**Per-operation adjustments to the dropdown:**
+**Per-operation adjustments to the list:**
 - After `create` or `update`: offer all options above.
 - After `deploy`: replace the three Deploy options with a single **Verify deployment** option that runs `deployed-policy get <licenseType> <productName> <tenantIdentifier>` to confirm the assignment took effect. Keep **Query effective rules** (via `deployed-policy list`) as the follow-up check for chain-resolved values.
 - After `delete`: offer only **List policies to verify** and **Something else**.

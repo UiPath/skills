@@ -45,7 +45,7 @@ For the full flag reference, see [aops-policy-commands.md — template list](./a
 
 Per-product fetch failures are collected by the CLI and do not abort the run; the command only exits non-zero if every product fails.
 
-> **Product catalog is implicit.** There is no `products.json` — each `form-template.json`'s top-level `product` object IS the catalog entry. The caller enumerates products via the `Glob` tool on `$SESSION_DIR/products/*/form-template.json` and reads `.product.{name, label}` from each file.
+> **Product catalog is implicit.** There is no `products.json` — each `form-template.json`'s top-level `product` object IS the catalog entry. The caller enumerates `$SESSION_DIR/products/*/form-template.json` and reads `.product.{name, label}` from each file.
 
 After Step 1, the session directory looks like:
 
@@ -159,7 +159,7 @@ Decide the interaction mode from the user's original request. **Prefer Mode A wh
 
 | Situation | Mode | Action |
 |-----------|------|--------|
-| User supplied intent keywords (*"disable Gemini and Claude"*, *"restrict to US and EU"*, etc.) | A | Grep locale resource + auto-fill matched fields |
+| User supplied intent keywords (*"disable Gemini and Claude"*, *"restrict to US and EU"*, etc.) | A | Search locale resource + auto-fill matched fields |
 | User named only the product (*"create a policy for Studio"*) | B | Paginated field-by-field prompting |
 | User explicitly asked *"show me every field"* | B | Paginated field-by-field prompting |
 | Mode A left required fields unset or some intent phrases unmapped | A → B for those fields only | See Mode A fallback below |
@@ -169,7 +169,7 @@ Decide the interaction mode from the user's original request. **Prefer Mode A wh
 If the user's original prompt describes how to configure the policy, or names specific fields to change, do NOT prompt field-by-field.
 
 0. **Recipe lookup first.** Before grepping the locale file, check [aops-governance-recipes-guide.md](./aops-governance-recipes-guide.md) for a recipe whose intent keywords match the user's ask. If a recipe matches, apply its product + field mapping directly to `$POLICY_DATA` — the recipes give you the correct `key` and value without locale-string guessing. Only proceed to step 1 below for intents not covered by any recipe, or for recipe-matched intents whose parameter values (e.g. `BlockedEmails`, `AllowedApplications`) still need to be extracted from the user's phrasing.
-1. Use the **`Grep` tool** (Claude's built-in — NOT `Bash(grep …)`, which prompts for permission every call) against `$SESSION_DIR/products/$PRODUCT_NAME/form-template-locale-resource.json` to find `label` / `description` entries matching the user's stated intent. Set `-i: true` (case-insensitive) and `output_mode: "content"`. Use the `Read` tool on the same file if you need surrounding structure to resolve a `key`.
+1. Search `$SESSION_DIR/products/$PRODUCT_NAME/form-template-locale-resource.json` case-insensitively to find `label` / `description` entries matching the user's stated intent. Read the surrounding JSON structure from the same file when needed to resolve a component `key`.
 2. Apply those values directly to `$POLICY_DATA` (skip Step 6 editgrid prompts unless the user's intent referenced a grid). Leave every unmatched field at its default (create) or existing value (update).
 3. **Required-field sweep.** For each field with `validate.required: true`, confirm `$POLICY_DATA` contains a non-empty value. If a required field is unset (create flow, default is empty) or cleared by the user's intent, drop to Mode B for that single field only — do not silently produce invalid data.
 4. **Runtime-rule empty-parameter check.** For runtime analyzer rules (e.g. `RT-UIA-001`, `RT-OUT-001`) and workflow analyzer allow/block-list rules, enabling the rule without populating its parameter array (`AllowedApplications`, `BlockedApplications`, `AllowedURLs`, `BlockedURLs`, `BlockedEmails`, etc.) produces a no-op policy that enforces nothing. If the user's intent names the rule but does not specify the list contents, STOP and ask for the list explicitly rather than saving an empty array. Do not silently write a do-nothing policy.
@@ -177,7 +177,7 @@ If the user's original prompt describes how to configure the policy, or names sp
 
 Prompt the user only if a specific field they clearly referenced is ambiguous (e.g. they said "restrict Claude" but there are two Claude-related fields). Do not confirm unchanged defaults — silence means "keep defaults".
 
-**Fallback — intent doesn't match any field.** If the `Grep` search returns no matches for an intent keyword in the locale resource (e.g. they said "block region X" but the product has no region field), stop and tell the user exactly which phrases could not be mapped. Do not silently drop them. Ask: *"I couldn't find fields for `<PHRASES>` under `<PRODUCT_LABEL>`. Would you like to (a) proceed without those settings, (b) pick a different product, or (c) enter field values manually?"*. If **some** intent phrases matched and others did not, apply the matches and ask the same three-way question only for the unmapped phrases — do not discard the partial auto-fill.
+**Fallback — intent doesn't match any field.** If the search returns no matches for an intent keyword in the locale resource (e.g. they said "block region X" but the product has no region field), stop and tell the user exactly which phrases could not be mapped. Do not silently drop them. Ask: *"I couldn't find fields for `<PHRASES>` under `<PRODUCT_LABEL>`. Would you like to (a) proceed without those settings, (b) pick a different product, or (c) enter field values manually?"*. If **some** intent phrases matched and others did not, apply the matches and ask the same three-way question only for the unmapped phrases — do not discard the partial auto-fill.
 
 If the caller's final review is rejected and the user asks to adjust specific fields, fall back to Mode B for those fields only.
 
@@ -316,7 +316,7 @@ Rules:
 
 Write the final `$POLICY_DATA` object to `$SESSION_DIR/aops-policy-data.json` (session-scoped, not product-scoped — only one policy is created per session). The format must be identical to `$SESSION_DIR/products/$PRODUCT_NAME/form-data.json` — a flat JSON object, no envelope.
 
-Use the `Write` tool to serialize `$POLICY_DATA` directly to `$SESSION_DIR/aops-policy-data.json`. Do NOT wrap the object in `{ "data": {...} }` — the CLI wraps it automatically.
+Serialize `$POLICY_DATA` directly to `$SESSION_DIR/aops-policy-data.json`. Do NOT wrap the object in `{ "data": {...} }` — the CLI wraps it automatically.
 
 Sanity-check the saved file:
 
