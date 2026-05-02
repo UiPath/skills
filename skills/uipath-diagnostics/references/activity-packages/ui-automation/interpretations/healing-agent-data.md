@@ -188,9 +188,9 @@ If `AnalysisResult[].AnalysisInformation[]` contains non-empty detections but `R
 
 ### Applying Fixes — MUST Ask the User
 
-When a fix is available, you MUST use `AskUserQuestion` to ask the user whether they want you to apply it. Do NOT skip this step. Do NOT just describe the fix — explicitly ask.
+When a fix is available, you MUST ask the user whether they want you to apply it. Do NOT skip this step. Do NOT just describe the fix — explicitly ask.
 
-When presenting the fix, first print the selectors as plain text output (NOT inside `AskUserQuestion` options or previews — XML selectors don't render correctly there). Then ask the question separately.
+When presenting the fix, first print the selectors as plain text output (not inside option labels or rich previews — XML selectors don't render correctly there). Then ask the question separately.
 
 **Step 1 — Print selectors as text:**
 
@@ -205,7 +205,7 @@ Recovered Fuzzy selector:
 <selector content from the chosen detection's FuzzyPartialSelector>
 ```
 
-**Step 2 — Ask the user** (via `AskUserQuestion`, with no previews):
+**Step 2 — Ask the user** (with no previews):
 
 **If RecoveryInfo with RecoverySuccessful: true:**
 - Tell the user the fix was proven at runtime
@@ -234,10 +234,11 @@ When `healing-fixes.json` contains actionable fixes, present the findings to the
 
 1. Match the XAML activity by `ActivityRefId` → `IdRef` attribute (unique within workflow)
 2. Check if the `uia-improve-selector` skill is available locally:
+   ```bash
+   find "<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills" \
+     -path "*/uia-improve-selector/USAGE.md" -print -quit
    ```
-   Glob: pattern="**/uia-improve-selector/USAGE.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/"
-   ```
-3. **If the skill exists:** ask the user if they want to improve the selector using it. If yes, read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form to produce `Target_Definition.json`, spawn a subagent with the Agent tool to run the skill with `--mode recover` against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
+3. **If the skill exists:** ask the user if they want to improve the selector using it. If yes, read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form to produce `Target_Definition.json`, invoke the skill with `--mode recover` using the host's normal skill/delegation mechanism (or run it sequentially in the current agent if delegation is unavailable), then run the write-back CLI command from the same form to persist the recovered selector.
 4. **If the skill does not exist:** update the activity's selector in XAML directly with the HA-recommended selector from `enhancedTarget`. Apply XML encoding per the XAML Selector Encoding rules above.
 5. Validate: `uip rpa get-errors --file-path "<WORKFLOW_FILE>" --output json --use-studio`
 
