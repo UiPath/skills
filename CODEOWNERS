@@ -80,3 +80,7 @@
 
 # Access Policy Governance skill (CLI-based ToolUsePolicy management)
 /skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
+# Audit skill (CLI: sources / events / export at org & tenant scope)
+/skills/uipath-audit/         @yadvender-uipath @CalinMPopa @chandhanshanth
+/tests/tasks/uipath-audit/    @yadvender-uipath @CalinMPopa @chandhanshanth
