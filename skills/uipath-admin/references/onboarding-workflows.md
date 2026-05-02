@@ -55,22 +55,7 @@ Common role groups for robots:
 - **Automation User** — can execute automations
 - **Robot Account Admin** — can manage other robot identities (rarely needed)
 
-### Step 3 — Generate OAuth2 Credentials
-
-Create an external app to generate Client ID + Secret for the robot.
-
-```bash
-# Create external app with scopes matching the robot's needs
-uip admin identity external-apps create "<ROBOT_NAME>-credentials" \
-  --organization <ORG_ID> \
-  --scope "OR.Folders,OR.Assets,OR.Queues,OR.Jobs,OR.Machines,OR.Execution" \
-  --output json
-```
-
-**Save the `id` (Client ID) and `secret` (Client Secret) from the response immediately.**
-The secret is shown only once.
-
-### Step 4 — Assign Folder Permissions (Orchestrator)
+### Step 3 — Assign Folder Permissions (Orchestrator)
 
 The robot needs access to Orchestrator folders containing its processes, assets, and queues.
 
@@ -89,7 +74,7 @@ curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrato
   -d '{"assignments":{"UserIds":[<ROBOT_ACCOUNT_ID>],"RolesPerFolder":[{"FolderId":<FOLDER_ID>,"RoleId":<ROLE_ID>}]}}'
 ```
 
-### Step 5 — Create Machine Template (Orchestrator)
+### Step 4 — Create Machine Template (Orchestrator)
 
 Create a machine template and assign it to the same folder as the robot. Use the Orchestrator REST API:
 
@@ -101,33 +86,20 @@ curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrato
   -d '{"Name":"<MACHINE_TEMPLATE_NAME>","Type":"Standard"}'
 ```
 
-### Step 6 — Connect Robot to Machine
+### Step 5 — Connect Robot to Machine
 
-On the target machine, connect the UiPath Robot using the credentials from Step 3:
+On the target machine, install UiPath Robot and connect it using Modern Auth. Robot credentials (Client ID + Secret) are provisioned automatically by Orchestrator when the machine connection is configured — this uses the dedicated `Robot.S2S` credential mechanism, not external apps.
 
-```bash
-# Non-interactive login using the generated credentials
-uip login \
-  --client-id "<CLIENT_ID>" \
-  --client-secret "<CLIENT_SECRET>" \
-  --tenant "<TENANT_NAME>" \
-  --output json
-```
+> Robot credential provisioning is managed by Orchestrator, not by the identity CLI. The identity CLI handles the robot account (identity) only.
 
 ### Verification
 
-After completing all steps, verify the robot is connected:
+After completing all steps, verify the robot account:
 
 ```bash
-# Verify the robot account exists
 uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
   --organization <ORG_ID> --output json
 
-# Verify the external app exists
-uip admin identity external-apps get <CLIENT_ID> \
-  --organization <ORG_ID> --output json
-
-# Verify folder access (via Orchestrator)
 uip or folders list --output json
 ```
 

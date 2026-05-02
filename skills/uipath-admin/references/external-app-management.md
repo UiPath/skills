@@ -2,7 +2,9 @@
 
 Workflows for managing OAuth2 external clients and their secrets via `uip admin identity external-apps`.
 
-External apps provide Client ID + Secret credentials used by robot accounts, API integrations, and external systems to authenticate with the UiPath platform.
+External apps provide Client ID + Secret credentials for API integrations, CI/CD pipelines, and external systems to authenticate with the UiPath platform.
+
+> **External apps are NOT robot credentials.** Robot accounts use a separate, dedicated credential mechanism provisioned by Orchestrator during machine connection. Use external apps for third-party integrations and service-to-service authentication only.
 
 ## Key Concepts
 

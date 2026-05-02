@@ -68,18 +68,7 @@ uip admin identity robot-accounts create "<NAME>" \
   --output json
 ```
 
-### Step 3 — Create external app for credentials
-
-```bash
-uip admin identity external-apps create "<APP_NAME>" \
-  --organization <ORG_ID> \
-  --scope "OR.Folders,OR.Assets,OR.Queues,OR.Jobs" \
-  --output json
-```
-
-Save `id` (Client ID) and `secret` (Client Secret) from response — secret shown only once.
-
-### Step 4 — Assign to group
+### Step 3 — Assign to group
 
 ```bash
 uip admin identity groups list --organization <ORG_ID> --output json
@@ -102,14 +91,17 @@ Organization (org)
         └── External Apps   ← OAuth2 clients (Client ID + Secret)
 ```
 
-### Robot Account vs External App
+### Robot Accounts vs External Apps
 
-| Concept | Purpose |
-|---------|---------|
-| **Robot account** | Identity — who the robot is |
-| **External app** | Credentials — how the robot authenticates (Client ID + Secret) |
+These are separate concepts — do not conflate them.
 
-Full robot onboarding requires both. See [onboarding-workflows.md](references/onboarding-workflows.md).
+| Concept | Purpose | Managed By |
+|---------|---------|------------|
+| **Robot account** | Identity — who the robot is | Identity Server (`uip admin identity`) |
+| **Robot credentials** | Per-robot Client ID + Secret for machine auth | Orchestrator (machine connection) |
+| **External app** | OAuth2 client for API integrations, CI/CD | Identity Server (`uip admin identity`) |
+
+Robot credentials are provisioned automatically by Orchestrator when connecting a robot to a machine — not by creating external apps.
 
 ## Completion Output
 
@@ -119,8 +111,8 @@ After any mutation (create, update, delete, invite, add-members, remove-members,
 2. For creates: display the new resource ID
 3. For external-app create or generate-secret: **highlight the secret value and warn user to save it**
 4. Offer logical next steps:
-   - After creating a robot account → "Create an external app for credentials?"
-   - After creating an external app → "Add the robot to a group?"
+   - After creating a robot account → "Assign to a group for role-based access?"
+   - After creating an external app → "Generate an additional secret?"
    - After inviting a user → "Check user list to see when they accept?"
 
 ## Task Navigation

@@ -2,7 +2,19 @@
 
 Workflows for managing Identity Server robot accounts via `uip admin identity robot-accounts`.
 
-Robot accounts represent unattended automation identities — they authenticate using Client ID + Secret (OAuth2) and run processes without human interaction.
+Robot accounts represent unattended automation identities that run processes without human interaction.
+
+## Credential Model
+
+Robot accounts use a dedicated credential mechanism managed by Orchestrator — when a robot is connected to a machine, Orchestrator provisions a robot-specific Client ID + Secret bound to the system-level `Robot.S2S` client. This is **separate from external apps**.
+
+| Concept | Purpose | Managed By |
+|---------|---------|------------|
+| **Robot account** | Identity — who the robot is | Identity Server (`uip admin identity`) |
+| **Robot credentials** | Per-robot Client ID + Secret for machine auth | Orchestrator (machine connection) |
+| **External app** | OAuth2 client for API integrations, CI/CD pipelines | Identity Server (`uip admin identity`) |
+
+> **Do not create external apps as robot credentials.** External apps are for third-party integrations and CI/CD — not for connecting robots to machines. Robot credentials are provisioned automatically when configuring a machine connection in Orchestrator.
 
 ## Workflow: List and Inspect Robot Accounts
 
@@ -40,7 +52,7 @@ uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
      --search "<NAME>" --output json
    ```
 
-4. **Next step:** Generate credentials for the robot account. See [external-app-management.md](external-app-management.md) for creating an external app with Client ID/Secret.
+4. **Next steps:** Assign to groups for role-based access, then configure machine connection in Orchestrator (which provisions robot credentials automatically).
 
 ## Workflow: Update a Robot Account
 
@@ -78,17 +90,6 @@ uip admin identity robot-accounts list --organization <ORG_ID> \
 uip admin identity robot-accounts list --organization <ORG_ID> \
   --order-by "Name" --order-direction "asc" --output json
 ```
-
-## Robot Account vs External App
-
-Robot accounts and external apps serve different purposes but work together:
-
-| Concept | Purpose |
-|---------|---------|
-| **Robot account** | The identity — who the robot is |
-| **External app** | The credentials — how the robot authenticates (Client ID + Secret) |
-
-To fully onboard a robot, you need both. See [onboarding-workflows.md](onboarding-workflows.md) for the end-to-end flow.
 
 ## Error Handling
 
