@@ -21,6 +21,14 @@ Full assistant for creating, editing, managing, and running UiPath automation pr
 - User wants to **call an Integration Service connector** (Jira, Salesforce, ServiceNow, Slack, etc.)
 - User wants to **use UI automation** to interact with desktop or web applications
 
+## Agent/LLM-Era Routing
+
+Use this skill when the requested outcome is a **deterministic automation**: interact with applications, move files, process records, call activities/connectors, run Orchestrator jobs, or implement coded/XAML workflow logic.
+
+Do **not** treat RPA as the primary implementation for a conversational agent, RAG assistant, evaluator, planner, tool-selection loop, or other LLM reasoning system. Route that primary agent work to the agent authoring workflow, and use RPA only for deterministic processes or tools the agent needs to call.
+
+When an agent needs RPA, build the RPA side as a stable callable automation with explicit inputs, outputs, validation, and failure modes. Keep nondeterministic LLM reasoning outside the RPA workflow unless the user explicitly requests an activity or connector that calls an AI service.
+
 ## Precondition: Project Context
 
 Before doing any work, check if `.claude/rules/project-context.md` exists in the project directory.
@@ -67,9 +75,12 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 
 | Scenario | Mode | Why |
 |----------|------|-----|
+| Conversational agent, RAG, evaluator, planner, or tool-selection loop | **Agent workflow, not RPA** | RPA is the deterministic execution layer; agent reasoning belongs in the agent authoring workflow |
+| Agent needs to click apps, move files, update records, or run a fixed process | **RPA workflow/tool** | Build a stable automation the agent can invoke with explicit inputs/outputs |
 | Standard RPA (Excel, email, file ops) | **XAML** (default) | Direct activity support, no code needed |
 | UI automation | **XAML** (default) | Full activity support; coded also works via `uiAutomation` service |
 | Integration Service connectors (XAML) | **XAML** | IS connector activities use XAML-specific dynamic activity config |
+| API-first automation with pagination, retry, typed JSON, or custom auth flow | **Coded** | C# is clearer and easier to test than nested XAML activities |
 | No matching activity for a subtask | **Coded fallback** | Small .cs invoked from XAML via `Invoke Workflow File` |
 | Complex data transforms, HTTP, parsing | **Coded** | C# is more natural than nested XAML activities |
 | Custom data models / DTOs | **Coded Source File** | XAML cannot define types — plain `.cs`, no `CodedWorkflow` base |
@@ -143,6 +154,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 | I need to... | Mode | Read these |
 |-------------|------|-----------|
+| **Decide RPA vs agent/coded workflow** | Both | [coded-vs-xaml-guide.md § RPA vs UiPath Agents](references/coded-vs-xaml-guide.md#rpa-vs-uipath-agents) |
 | **Choose coded vs XAML** | Both | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) |
 | **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [project-structure.md](references/project-structure.md) |
 | **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |
@@ -284,7 +296,8 @@ Check `project.json` → `dependencies` for the required package.
 - **If absent** → install:
 
 ```bash
-uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output jsonuip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa get-versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json
+uip rpa install-or-update-packages --packages '[{"id":"<PackageId>"}]' --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find activity docs (priority order)

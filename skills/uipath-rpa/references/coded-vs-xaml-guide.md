@@ -7,20 +7,36 @@ When to use coded workflows (C#), XAML workflows (low-code), Coded Source Files,
 Follow top-down. Stop at the first match.
 
 0. **Did the user specify a mode?** ("coded workflow", "XAML workflow", "create a .cs file", "low-code") → **Use what they asked for. Do not second-guess.**
-1. **Check the project's existing mode.** Match it unless there is a clear reason not to:
-   - **XAML-only project** → default to XAML. Only go coded if steps 3-6 below apply.
+1. **Is the request primarily agentic or LLM reasoning?** (chat assistant, RAG, evaluator, planner, tool-selection loop, multi-agent state machine) → **Use the agent authoring workflow for the primary implementation.** Build RPA only for deterministic app/process tools the agent will call.
+2. **Check the project's existing mode.** Match it unless there is a clear reason not to:
+   - **XAML-only project** → default to XAML. Only go coded if steps 4-7 below apply.
    - **Coded-only project** → default to coded. Activities (Excel, Mail, UI automation) are available via services on `CodedWorkflow`.
-   - **Hybrid project** → either mode is fine; pick the one that fits the task best using steps 2-8.
-   - **New project** → continue to step 2.
-2. **Can existing activities handle the task directly?** (read Excel, send email, move file, UI click/type, queue processing, connector calls) → **Use the project's current mode.** Both XAML activities and coded services can do these. No mode switch needed.
-3. **Does it define data models, DTOs, enums, or custom classes?** → **Coded Source File** (plain `.cs`, no `CodedWorkflow` base). XAML cannot define types — this is the one case where going hybrid is always justified.
-4. **Does it involve complex logic?** (5+ branches, LINQ queries, regex, algorithms, REST API calls with pagination/retry) → **Coded Workflow**. Both modes can handle logic, but coded is significantly clearer past 3-4 decision nodes.
-5. **Does it need unit tests or assertions on business logic?** → **Coded Workflow** + **Coded Test Case**.
-6. **Is it reusable utility code?** (helpers, formatters, validators, extension methods) → **Coded Source File**.
-7. **Is it a new project and still ambiguous?** → Ask the user. If they have no preference, default to XAML — it is the more common mode in UiPath projects.
-8. **Default** → match the project's dominant mode.
+   - **Hybrid project** → either mode is fine; pick the one that fits the task best using steps 3-9.
+   - **New project** → continue to step 3.
+3. **Can existing activities handle the task directly?** (read Excel, send email, move file, UI click/type, queue processing, connector calls) → **Use the project's current mode.** Both XAML activities and coded services can do these. No mode switch needed.
+4. **Does it define data models, DTOs, enums, or custom classes?** → **Coded Source File** (plain `.cs`, no `CodedWorkflow` base). XAML cannot define types — this is the one case where going hybrid is always justified.
+5. **Does it involve complex logic?** (5+ branches, LINQ queries, regex, algorithms, REST API calls with pagination/retry) → **Coded Workflow**. Both modes can handle logic, but coded is significantly clearer past 3-4 decision nodes.
+6. **Does it need unit tests or assertions on business logic?** → **Coded Workflow** + **Coded Test Case**.
+7. **Is it reusable utility code?** (helpers, formatters, validators, extension methods) → **Coded Source File**.
+8. **Is it a new project and still ambiguous?** → Ask the user. If they have no preference, default to XAML — it is the more common mode in UiPath projects.
+9. **Default** → match the project's dominant mode.
 
 ---
+
+## RPA vs UiPath Agents
+
+Use RPA when the work has a concrete, repeatable execution path: desktop/web UI automation, Excel/email/file processing, queue transactions, Integration Service connector calls, Orchestrator jobs, or deterministic coded/XAML workflow logic.
+
+Use a UiPath Agent when the primary work is natural-language reasoning, RAG, multi-step planning, tool selection, evaluation, conversation state, or choosing among multiple automations based on ambiguous user intent.
+
+When combining them, keep the boundary explicit:
+
+1. **Agent decides** — The agent interprets intent, plans, retrieves context, selects tools, and handles natural-language interaction.
+2. **RPA executes** — The RPA workflow performs a deterministic task with typed inputs, typed outputs, validation, logging, and predictable failure behavior.
+3. **Contract stays small** — Prefer a small number of stable arguments over broad free-form prompts. Return structured results an agent can inspect.
+4. **Mode follows the tool** — Use XAML when the callable tool is UI/activity-heavy; use coded workflows when it is API-first, data-transform-heavy, or needs typed models/tests.
+
+Avoid building an "agent" as a large RPA workflow filled with prompt strings and branching around LLM responses. That makes the automation hard to test and gives the agent fewer reliable execution tools.
 
 ## Use Coded Workflows When
 
