@@ -59,6 +59,10 @@ Workflow steps, response shape, downstream OR regeneration for coded vs XAML, an
 
 Once targets are registered in the OR (via `uia-configure-target` or indication fallback), attach them to XAML activities per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
+Target attachment is package-version-specific. If the installed package rejects a property from an example (for example a member that does not exist on `TargetApp` or `TargetAnchorable`), do not copy raw `.objects` content or fabricate alternate property names. Re-read the installed target-attachment guide, regenerate the target XAML/reference through the package-supported flow, and validate the edited workflow before continuing.
+
+If the attached target validates but fails at runtime because the element is invalid, suspect selector fragility before changing workflow logic. Re-run selector recovery/improvement from [uia-selector-recovery.md](uia-selector-recovery.md) or the installed UIA package docs, especially when selectors contain generated CSS classes, transient IDs, or other page-session tokens.
+
 ### Multi-Screen Workflows
 
 For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uia interact` advance belongs to one batch. Validate with `get-errors` after each batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
