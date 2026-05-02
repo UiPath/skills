@@ -199,12 +199,14 @@ Once the user signs in:
 
 Invite multiple users and assign them to the same group.
 
-### Step 1 — Invite All Users
+### Step 1 — Invite Each User
+
+Invite one at a time — `--name`/`--surname` apply to the entire request:
 
 ```bash
-uip admin identity users invite \
-  --email "user1@example.com,user2@example.com,user3@example.com" \
-  --output json
+uip admin identity users invite --email "user1@example.com" --name "Alice" --surname "Smith" --output json
+uip admin identity users invite --email "user2@example.com" --name "Bob" --surname "Jones" --output json
+uip admin identity users invite --email "user3@example.com" --name "Carol" --surname "Lee" --output json
 ```
 
 ### Step 2 — Wait for Acceptance

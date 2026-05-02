@@ -17,7 +17,24 @@ uip admin identity users list --organization <ORG_ID> --search "john" --output j
 uip admin identity users get <USER_ID> --output json
 ```
 
-## Workflow: Create a User
+## Workflow: Invite Users by Email (Preferred)
+
+> **`users invite` is the preferred method for adding users.** It sends an invitation email, letting the user set up their own credentials and accept the org invitation. Use `users create` only when direct account provisioning is required (e.g., service accounts, migration scripts). If the user asks to "add" or "create" a user, default to `invite` and confirm before using `create` instead.
+
+```bash
+uip admin identity users invite \
+  --email "user@example.com" \
+  --name "John" \
+  --surname "Doe" \
+  --output json
+```
+
+- Invite one user at a time — `--name` and `--surname` apply to the entire request, so bulk `--email` with different names produces incorrect results
+- The invited user receives an email and must accept to complete onboarding
+
+## Workflow: Create a User (Direct Provisioning)
+
+> **Ask for confirmation before using this command.** Explain that `users invite` is the standard onboarding method and confirm the user specifically wants direct account creation.
 
 1. List existing users to avoid duplicates:
    ```bash
@@ -38,22 +55,6 @@ uip admin identity users get <USER_ID> --output json
    ```bash
    uip admin identity users list --organization <ORG_ID> --search "<USERNAME>" --output json
    ```
-
-## Workflow: Invite Users by Email
-
-Invite one or more users to join the organization via email.
-
-```bash
-uip admin identity users invite \
-  --email "user1@example.com,user2@example.com" \
-  --name "John" \
-  --surname "Doe" \
-  --output json
-```
-
-- `--name` and `--surname` are applied to all invited users (use for single invites)
-- For bulk invites with different names, invite one at a time
-- The invited user receives an email and must accept to complete onboarding
 
 ## Workflow: Update a User
 

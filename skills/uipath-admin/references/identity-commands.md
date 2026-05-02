@@ -107,15 +107,19 @@ Invite users by email. Sends an invitation to join the organization.
 
 ```bash
 uip admin identity users invite \
-  --email "user1@example.com,user2@example.com" \
+  --email "user@example.com" \
+  --name "John" \
+  --surname "Doe" \
   --output json
 ```
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `-e, --email <emails>` | Yes | Comma-separated email addresses |
+| `-e, --email <email>` | Yes | Email address to invite |
 | `-n, --name <name>` | No | First name |
 | `--surname <surname>` | No | Last name |
+
+Invite one user at a time — `--name`/`--surname` apply to all emails in the request.
 
 **Output code:** `UsersInvited`
 
