@@ -43,7 +43,7 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 
 ## Quick Start
 
-Create a robot account with OAuth2 credentials — the most common identity workflow.
+The most common identity flow is **user management** — inviting users, assigning them to groups, and managing access. For robot account onboarding, see [onboarding-workflows.md](references/onboarding-workflows.md).
 
 ### Step 0 — Verify login
 
@@ -53,28 +53,30 @@ uip login status --output json
 
 If not logged in: `uip login`. Extract `organizationId` from response.
 
-### Step 1 — Check for existing robot accounts
+### Step 1 — Invite a user
 
 ```bash
-uip admin identity robot-accounts list --organization <ORG_ID> --output json
-```
-
-### Step 2 — Create robot account
-
-```bash
-uip admin identity robot-accounts create "<NAME>" \
-  --organization <ORG_ID> \
-  --display-name "<DISPLAY_NAME>" \
+uip admin identity users invite \
+  --email "<USER_EMAIL>" \
+  --name "<FIRST_NAME>" \
+  --surname "<LAST_NAME>" \
   --output json
 ```
 
-### Step 3 — Assign to group
+### Step 2 — Find the user once they accept
+
+```bash
+uip admin identity users list --organization <ORG_ID> \
+  --search "<USER_EMAIL>" --output json
+```
+
+### Step 3 — Assign to a group
 
 ```bash
 uip admin identity groups list --organization <ORG_ID> --output json
 uip admin identity groups add-members <GROUP_ID> \
   --organization <ORG_ID> \
-  --user-ids "<ROBOT_ACCOUNT_ID>" \
+  --user-ids "<USER_ID>" \
   --output json
 ```
 
