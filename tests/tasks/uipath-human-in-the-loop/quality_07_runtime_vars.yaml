@@ -1,7 +1,7 @@
 task_id: skill-hitl-quality-runtime-vars
 description: >
   Quality test: after adding a HITL node, agent must wire a downstream
-  script node that correctly references $vars.<NodeId>.result and
+  script node that correctly references $vars.<NodeId>.output and
   $vars.<NodeId>.status. Tests G1 and G2.
 tags: [uipath-human-in-the-loop, integration, runtime-variables]
 
@@ -25,7 +25,7 @@ initial_prompt: |
   Save results to report.json — use the actual node ID that was generated:
   {
     "hitl_node_id": "<the actual id of the HITL node>",
-    "result_variable": "$vars.<hitl_node_id>.result",
+    "result_variable": "$vars.<hitl_node_id>.output",
     "status_variable": "$vars.<hitl_node_id>.status",
     "validation_passed": true
   }
@@ -48,11 +48,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references a $vars result variable"
+    description: "report.json references a $vars output variable"
     path: "report.json"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 3.0
     pass_threshold: 1.0
 

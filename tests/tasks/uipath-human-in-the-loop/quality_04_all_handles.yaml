@@ -1,7 +1,7 @@
 task_id: skill-hitl-quality-completed-handle-and-result
 description: >
   Quality test: agent must wire the completed handle to a downstream node
-  and demonstrate how to read the human's decision using $vars.<nodeId>.result
+  and demonstrate how to read the human's decision using $vars.<nodeId>.output
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
@@ -22,13 +22,13 @@ initial_prompt: |
 
   Wire the completed handle from the HITL node to processResult. In the
   processResult script node body, show how to read the human's decision using
-  $vars.<hitl-node-id>.result.
+  $vars.<hitl-node-id>.output.
 
   Validate after adding and wiring. Save results to report.json:
   {
     "hitl_node_id": "<id>",
     "handles_wired": ["completed"],
-    "result_variable_expression": "$vars.<hitl-node-id>.result",
+    "result_variable_expression": "$vars.<hitl-node-id>.output",
     "commands_used": ["<list>"],
     "validation_passed": true
   }
@@ -72,10 +72,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references $vars result expression"
+    description: "report.json references $vars output expression"
     path: "report.json"
     includes:
       - "$vars"
-      - ".result"
+      - ".output"
     weight: 2.0
     pass_threshold: 1.0
