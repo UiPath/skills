@@ -1,0 +1,182 @@
+task_id: skill-flow-e2e-devcon-expense-approval
+description: >
+  DevCon end-to-end scenario: developer gives a vague expense approval requirement.
+  Agent must detect the HITL need, design a sensible schema with correct field types,
+  build the full flow (trigger → script → HITL → script → end), wire edges correctly
+  including the completed handle, and validate. Tests that both the maestro-flow and
+  human-in-the-loop skills work together across the full authoring lifecycle.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, e2e, integration, devcon]
+
+agent:
+  type: claude-code
+  max_turns: 120
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to automate our expense approval workflow. Here's the rough idea:
+
+  Employees submit expense reports through our internal system. We need a flow that:
+  - Pulls the expense details (let's mock this as a script for now — expense amount,
+    who submitted it, what category like "Travel" or "Equipment", and an expense ID)
+  - Sends it to a manager for review. The manager needs to see the details and either
+    approve or reject. If they reject, they should be able to add a reason. The
+    manager group is "expense-approvers".
+  - After the manager decides, we log the outcome in another script node — it should
+    read the manager's decision and their rejection reason if they rejected it.
+
+  I'm not sure exactly what all the fields should be, but the key ones are: the
+  amount (it's a number), the submitter's name (text), and the category (text).
+  The manager fills in their decision (approved yes/no) and optionally a reason.
+
+  Build the complete flow as a UiPath Flow project called "ExpenseApproval" in a
+  solution of the same name. Wire everything end-to-end and validate it.
+
+  After building, save a summary to report.json:
+  {
+    "solution": "ExpenseApproval",
+    "flow_file": "<relative path to the .flow file>",
+    "hitl_node_id": "<id of the HITL node>",
+    "hitl_schema": {
+      "input_fields": ["<list of field IDs shown to the manager>"],
+      "output_fields": ["<list of field IDs the manager fills in>"],
+      "outcomes": ["<list of outcome names>"]
+    },
+    "decision_access_path": "<$vars path used in the downstream logging script to read the manager's decision>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+solution\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used uip maestro flow hitl add to add the HITL node"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+hitl\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow file exists at correct double-nested path"
+    command: "test -f ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node is present with correct type"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node uses v1.0 schema (typeVersion 1.0)"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"typeVersion": "1.0"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Amount field uses number type (not text)"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"number"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Decision/approval field uses boolean type"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"boolean"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Completed handle is wired"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"completed"'
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Input fields are bound to upstream script output using correct v1.0 .output path"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - '"binding": "=js:$vars.'
+      - '.output.'
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Downstream script accesses HITL output via $vars.<nodeId>.output path"
+    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+    includes:
+      - "$vars."
+      - ".output."
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow validates successfully"
+    command: "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms correct HITL schema and access path"
+    path: "report.json"
+    assertions:
+      - expression: "solution"
+        operator: equals
+        expected: "ExpenseApproval"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+      - expression: "length(hitl_schema.input_fields)"
+        operator: gte
+        expected: 2
+      - expression: "length(hitl_schema.output_fields)"
+        operator: gte
+        expected: 1
+      - expression: "length(hitl_schema.outcomes)"
+        operator: gte
+        expected: 2
+      - expression: "decision_access_path"
+        operator: contains
+        expected: ".output."
+    weight: 3.0
+    pass_threshold: 0.75

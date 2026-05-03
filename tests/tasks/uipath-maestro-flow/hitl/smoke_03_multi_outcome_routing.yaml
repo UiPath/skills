@@ -31,7 +31,7 @@ initial_prompt: |
   Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
 
   The Decision node condition must reference the HITL result using the
-  correct runtime variable path ($vars.<nodeId>.result.<fieldName>).
+  correct runtime variable path ($vars.<nodeId>.output.<fieldName>).
 
   Do NOT run flow debug. Validate after building.
 
@@ -39,7 +39,7 @@ initial_prompt: |
   {
     "hitl_node_id": "<id>",
     "decision_node_id": "<id of the Decision node>",
-    "decision_expression": "<full expression used, e.g. $vars.hitl1.result.approved>",
+    "decision_expression": "<full expression used, e.g. $vars.hitl1.output.approved>",
     "validation_passed": true
   }
 
@@ -69,11 +69,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Decision node references HITL result variable"
+    description: "Decision node references HITL output variable"
     path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 2.5
     pass_threshold: 1.0
 

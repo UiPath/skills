@@ -22,7 +22,7 @@ uip maestro flow hitl add <path/to/file.flow> \
   --label "Invoice Review" \
   --priority High \
   --assignee finance-approvers \
-  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.result.invoiceId"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
+  --schema '{"inputs":[{"name":"invoiceId","binding":"fetchInvoice.output.invoiceId"}],"outputs":[{"name":"decision","required":true}],"outcomes":[{"name":"Approve"},{"name":"Reject"}]}' \
   --output json
 ```
 
@@ -54,8 +54,8 @@ Handles full lifecycle: writes node, adds definition entry once, regenerates `va
     "priority": "Low"
   },
   "outputs": {
-    "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
-    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
+    "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
   }
 }
 ```
@@ -65,9 +65,9 @@ BPMN type (`bpmn:UserTask`) and serviceType (`Actions.HITL`) come from the `uipa
 **Ports:** `input` (target) → `completed` (source)
 
 **Output variables:**
-- `$vars.{nodeId}.result` — object with all `output` / `inOut` fields the human filled in
-- `$vars.{nodeId}.result.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — `"completed"`
+- `$vars.{nodeId}.output` — object with all `output` / `inOut` fields the human filled in
+- `$vars.{nodeId}.output.{fieldName}` — individual field value
+- `$vars.{nodeId}.status` — selected outcome's action value (`"Continue"` or `"End"`)
 
 ---
 

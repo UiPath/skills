@@ -89,11 +89,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "result_variable references $vars.<nodeId>.result"
+    description: "result_variable references $vars.<nodeId>.output"
     path: "report.json"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 2.0
     pass_threshold: 1.0
 

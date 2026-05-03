@@ -2,7 +2,7 @@ task_id: skill-flow-hitl-quality-boolean-decision
 description: >
   Quality test: agent correctly wires a boolean HITL output field into a
   Decision node condition using the exact runtime path
-  $vars.<nodeId>.result.<fieldName>. Tests field-level variable access
+  $vars.<nodeId>.output.<fieldName>. Tests field-level variable access
   and that both Decision branches are wired to distinct downstream nodes.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
@@ -32,14 +32,14 @@ initial_prompt: |
   Wire: Trigger → Script → HITL →|completed| Decision → (two branches) → End
 
   The Decision node condition MUST use the exact field-level runtime variable
-  path — not just $vars.<nodeId>.result but specifically the approved field.
+  path — not just $vars.<nodeId>.output but specifically the approved field.
 
   Do NOT run flow debug. Validate after building.
 
   Save a summary to report.json:
   {
     "hitl_node_id": "<id>",
-    "decision_condition": "<full expression used, e.g. $vars.complianceReview1.result.approved>",
+    "decision_condition": "<full expression used, e.g. $vars.complianceReview1.output.approved>",
     "result_path_used": "<same or equivalent path referenced in the Decision>",
     "validation_passed": true
   }
@@ -63,11 +63,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Decision node condition references field-level HITL result"
+    description: "Decision node condition references field-level HITL output"
     path: "VendorApproval/VendorApproval/VendorApproval.flow"
     includes:
       - "$vars."
-      - ".result.approved"
+      - ".output.approved"
     weight: 3.0
     pass_threshold: 1.0
 
@@ -85,7 +85,7 @@ success_criteria:
     path: "report.json"
     includes:
       - "$vars."
-      - ".result.approved"
+      - ".output.approved"
     weight: 2.5
     pass_threshold: 1.0
 
