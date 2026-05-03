@@ -89,10 +89,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Agent captured the runtime result variable"
+    description: "Agent captured the runtime output variable"
     path: "report.json"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 1.5
     pass_threshold: 1.0

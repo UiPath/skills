@@ -1,6 +1,6 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [flow-commands.md — uip maestro flow hitl add](../../../../uipath-maestro-flow/references/flow-commands.md#uip-maestro-flow-hitl-add).
+The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is also available when the user explicitly requests it — see [cli-commands.md — uip maestro flow hitl add](../../../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).
 
 ---
 
@@ -42,11 +42,11 @@ The `id` field is the `$vars` path — `fetchInvoice.output` → `$vars.fetchInv
 |---|---|---|
 | HTTP node | `output` | `$vars.{nodeId}.output.body.{field}` |
 | Script node | `output` | `$vars.{nodeId}.output.{field}` |
-| Prior HITL node | `result`, `status` | `$vars.{nodeId}.result.{field}` |
+| Prior HITL node | `output`, `status` | `$vars.{nodeId}.output.{field}` |
 | Agent node | `output` | `$vars.{nodeId}.output.content` |
 | Trigger (manual) | `output` | `$vars.start.output.{field}` |
 
-For the full variable system, see → [uipath-maestro-flow — variables-and-expressions.md](../../../../uipath-maestro-flow/references/variables-and-expressions.md)
+For the full variable system, see → [uipath-maestro-flow — variables-and-expressions.md](../../../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
 
 ---
 
@@ -146,14 +146,14 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
 ```json
 {
   "nodeType": "uipath.human-in-the-loop",
-  "version": "1.0.0",
+  "version": "1.0",
   "category": "human-task",
   "tags": ["human-task", "hitl", "human-in-the-loop", "approval"],
   "sortOrder": 50,
   "display": {
     "label": "Human in the Loop",
     "icon": "users",
-    "shape": "rectangle"
+    "shape": "square"
   },
   "handleConfiguration": [
     {
@@ -162,11 +162,7 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
         {
           "id": "input",
           "type": "target",
-          "handleType": "input",
-          "constraints": {
-            "forbiddenSourceCategories": ["trigger"],
-            "validationMessage": "Human tasks cannot be directly triggered"
-          }
+          "handleType": "input"
         }
       ],
       "visible": true
@@ -195,8 +191,8 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop`
     "priority": "Normal"
   },
   "outputDefinition": {
-    "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
-    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
+    "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
   }
 }
 ```
@@ -217,15 +213,15 @@ Wire the `completed` output handle to the downstream node. Edge ID format: `{sou
 
 ## `variables.nodes` — Regenerate After Every Node Add/Remove
 
-The HITL node exposes two outputs (`result`, `status`). After adding it, **completely replace** `workflow.variables.nodes` by iterating all nodes and collecting their outputs:
+The HITL node exposes two outputs (`output`, `status`). After adding it, **completely replace** `workflow.variables.nodes` by iterating all nodes and collecting their outputs:
 
 ```json
 "variables": {
   "nodes": [
     {
-      "id": "invoiceReview1.result",
+      "id": "invoiceReview1.output",
       "type": "object",
-      "binding": { "nodeId": "invoiceReview1", "outputId": "result" }
+      "binding": { "nodeId": "invoiceReview1", "outputId": "output" }
     },
     {
       "id": "invoiceReview1.status",
@@ -251,7 +247,7 @@ The agent translates the user's business description into the `fields[]` and `ou
 | field `id` | lowercase label, spaces→`-`, strip non-alphanumeric. `"Invoice ID"` → `"invoiceid"`, `"Due Date"` → `"due-date"` |
 | `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
 | field `type` | `"string"` → `"text"`, `"number"` → `"number"`, `"boolean"` → `"boolean"`, `"date"` → `"date"` |
-| `binding` | Read `variables.nodes` to find `{nodeId}.{outputId}` for the upstream node, then construct `"=js:$vars.<nodeId>.<outputId>.<varName>"`. The outputId is `output` for HTTP/script/agent/trigger nodes, `result` for a prior HITL node — do not assume `.result.` universally |
+| `binding` | Read `variables.nodes` to find `{nodeId}.{outputId}` for the upstream node, then construct `"=js:$vars.<nodeId>.<outputId>.<varName>"`. The outputId is `output` for HTTP/script/agent/trigger nodes and for a prior HITL node (v1.0) — always read `variables.nodes` to confirm, never assume |
 | `variable` | output/inOut variable name — defaults to `id` if not specified |
 | `required` | omit if false; set `true` for mandatory outputs |
 | `outcomes[0]` | `isPrimary: true`, `outcomeType: "Positive"`, `action: "Continue"` |
@@ -330,14 +326,17 @@ After the HITL node, downstream nodes can reference:
 
 | Variable | Type | What it contains |
 |---|---|---|
-| `$vars.<nodeId>.result` | object | All `output` and `inOut` fields the human filled in |
-| `$vars.<nodeId>.result.<fieldVariable>` | varies | Individual field value (e.g. `$vars.invoiceReview1.result.decision`) |
-| `$vars.<nodeId>.status` | string | `"completed"` when the human submits the task |
+| `$vars.<nodeId>.output` | object | All `output` and `inOut` fields the human filled in, keyed by **field `id`** |
+| `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` property (e.g. `$vars.invoiceReview1.output.decision`) |
+| `$vars.<nodeId>.status` | string | Selected outcome's action value (`"Continue"` for primary, `"End"` for secondary) |
+
+> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `"decision"`), not by the `variable` property. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) — it does not change the key used in the output object. If a field has `"id": "dec1"` and `"variable": "approvalResult"`, access it as `$vars.nodeId.output.dec1`, not `.approvalResult`.
 
 **In a downstream script node:**
 ```javascript
-const result = $vars.invoiceReview1.result;
-if ($vars.invoiceReview1.status === "completed") {
-  await updateSystem(result.vendorName, result.costCenter);
+const output = $vars.invoiceReview1.output;
+// Access by field ID, not variable name
+if ($vars.invoiceReview1.status === "Continue") {
+  await updateSystem(output.vendorName, output.costCenter);
 }
 ```

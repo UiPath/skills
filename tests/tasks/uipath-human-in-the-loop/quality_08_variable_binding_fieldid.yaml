@@ -1,0 +1,113 @@
+task_id: skill-hitl-quality-variable-binding-fieldid
+description: >
+  Quality test: agent correctly uses field ID (not the variable property) when
+  accessing HITL output fields downstream. The output object is keyed by
+  field.id — $vars.<nodeId>.output.<fieldId>. Tests that the agent does not
+  confuse the variable property with the access key.
+tags: [uipath-human-in-the-loop, integration, variable-binding]
+
+agent:
+  type: claude-code
+  max_turns: 75
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "ContractReview" for legal contract approval:
+
+  1. Manual trigger
+  2. Script node — sets contract context (mock: contractId = "CTR-2026-001", value = 85000)
+  3. HITL node — legal reviewer approves the contract:
+       - Sees (read-only): contract ID, contract value
+       - Fills in: approved (boolean, required), comments (text, optional)
+       - The approved field must have id "approved" and variable "legalApproval"
+       - The comments field must have id "reviewcomments" and variable "legalNotes"
+       - Outcomes: Approve (primary), Reject
+  4. Script node — reads the reviewer's decision and logs:
+       "Approved: <approved value>, Comments: <comments value>"
+     The script MUST access the fields using the correct runtime variable path
+     based on field IDs ($vars.<nodeId>.output.approved and
+     $vars.<nodeId>.output.reviewcomments), NOT the variable property names.
+  5. End node
+
+  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+
+  Use the inline quickform node (uipath.human-in-the-loop).
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "approved_access_path": "<full path used to read approved field>",
+    "comments_access_path": "<full path used to read comments field>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate ContractReview/ContractReview/ContractReview.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node has approved field with correct id and variable"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - '"id": "approved"'
+      - '"variable": "legalApproval"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL node has comments field with id reviewcomments"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - '"id": "reviewcomments"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Downstream script references output by field ID .approved"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - ".output.approved"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Downstream script references output by field ID .reviewcomments"
+    path: "ContractReview/ContractReview/ContractReview.flow"
+    includes:
+      - ".output.reviewcomments"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Script does NOT reference .output.legalApproval or .output.legalNotes (variable names, not field IDs)"
+    command: "grep -L legalApproval ContractReview/ContractReview/ContractReview.flow"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json access paths use field IDs not variable names"
+    path: "report.json"
+    assertions:
+      - expression: "approved_access_path"
+        operator: contains
+        expected: ".output.approved"
+      - expression: "comments_access_path"
+        operator: contains
+        expected: ".output.reviewcomments"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 0.75

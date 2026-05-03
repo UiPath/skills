@@ -320,9 +320,9 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 
 **Definition entry** — same as QuickForm. See [hitl-node-quickform.md](hitl-node-quickform.md) for the full definition block. Add once to `workflow.definitions`, deduplicated by `nodeType`.
 
-**Edge wiring** — wire `completed`, `cancelled`, `timeout`. See [hitl-node-quickform.md](hitl-node-quickform.md) for edge format.
+**Edge wiring** — wire `completed` (only handle available in v1.0). See [hitl-node-quickform.md](hitl-node-quickform.md) for edge format.
 
-**`variables.nodes` regeneration** — add `result` and `status` entries for the new node, then replace the entire array. See [hitl-node-quickform.md](hitl-node-quickform.md) for the regeneration algorithm.
+**`variables.nodes` regeneration** — add `output` and `status` entries for the new node, then replace the entire array. See [hitl-node-quickform.md](hitl-node-quickform.md) for the regeneration algorithm.
 
 ---
 
@@ -330,5 +330,5 @@ All values below come directly from the `ParsedActionSchema` assembled in Step 4
 
 | Variable | Contents |
 |---|---|
-| `$vars.<nodeId>.result` | Outputs the human filled in via the app form |
-| `$vars.<nodeId>.status` | `"completed"`, `"cancelled"`, or `"timeout"` |
+| `$vars.<nodeId>.output` | Outputs the human filled in via the app form |
+| `$vars.<nodeId>.status` | Selected outcome's action value (`"Continue"` or `"End"`) |
