@@ -31,10 +31,7 @@ initial_prompt: |
     in this environment. Commands will fail with auth errors — that is
     expected. Run each command once, record the result (success or error)
     in report.json, and move on. Do NOT retry or attempt to login.
-  - Use --output json on every uip ixp command.
   - Do NOT prompt the user for confirmation — this is an automated test.
-  - Do NOT call REST APIs with curl, do NOT grep the codebase — only use
-    `uip ixp` CLI commands as documented in the skill.
 
 success_criteria:
   - type: command_executed
