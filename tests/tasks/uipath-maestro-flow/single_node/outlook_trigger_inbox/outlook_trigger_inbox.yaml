@@ -41,6 +41,10 @@ initial_prompt: |
   Step 3 for resolving the `parentFolderId` reference field against the bound
   connection. Do not reuse any folder ID you may have seen before.
 
+  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
+  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
+  and pass `--folder-key <key>` on every `uip is connections list` call.
+
 success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
   - type: run_command
