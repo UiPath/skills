@@ -39,11 +39,13 @@ Available: always — no `uip login` or registry pull required.
 
 **The output port must be wired.** A node with no edge on `completed` blocks the flow indefinitely.
 
-### Output Variables
+### Output Variables (v1.0 schema)
 
-- `$vars.{nodeId}.result` — object containing all output and inOut fields the human filled in
-- `$vars.{nodeId}.result.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — `"completed"`
+- `$vars.{nodeId}.output` — object containing all output and inOut fields the human filled in
+- `$vars.{nodeId}.output.{fieldName}` — individual field value (e.g., `$vars.poReview1.output.decision`)
+- `$vars.{nodeId}.status` — outcome action (e.g., `"Continue"` / `"End"`)
+
+> **v1.0** (per [`uipath-human-in-the-loop` skill](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)) uses `.output` for HITL value access. Older flows that emit `.result` predate v1.0 — new flows MUST use `.output`. When planning downstream consumers (decision/script/end nodes), reference values as `$vars.<hitlId>.output.<field>`.
 
 ### Schema Design
 
@@ -95,7 +97,7 @@ Trigger -> Process -> Decision (confidence ok?) ->
 
 In the node table:
 ```
-| hitlReview | Invoice Review | human-task | uipath.human-in-the-loop | inputs: [invoiceId, amount] outputs: [decision] outcomes: [Approve, Reject] | result, status |
+| hitlReview | Invoice Review | human-task | uipath.human-in-the-loop | inputs: [invoiceId, amount] outputs: [decision] outcomes: [Approve, Reject] | output, status |
 ```
 
 ---

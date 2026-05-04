@@ -1,8 +1,9 @@
 task_id: skill-flow-hitl-quality-result-downstream
 description: >
   Quality test: agent correctly references the HITL node's output via
-  $vars.<nodeId>.result in a downstream node. Tests that the agent knows
-  the result variable path and wires it into a decision or script node.
+  $vars.<nodeId>.output in a downstream node (v1.0 access pattern). Tests
+  that the agent knows the output variable path and wires it into a
+  decision or script node.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
@@ -36,7 +37,7 @@ initial_prompt: |
   Save a summary to report.json:
   {
     "hitl_node_id": "<id>",
-    "result_path": "<full variable path used in the script, e.g. $vars.hitlReview1.result.approved>",
+    "result_path": "<full variable path used in the script, e.g. $vars.hitlReview1.output.approved>",
     "validation_passed": true
   }
 
@@ -58,11 +59,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow references the HITL result variable"
+    description: "Flow references the HITL output variable (v1.0 access pattern)"
     path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 3.0
     pass_threshold: 1.0
 
@@ -75,11 +76,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json result_path references $vars and .result"
+    description: "report.json result_path references $vars and .output (v1.0 access pattern)"
     path: "report.json"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 2.5
     pass_threshold: 1.0
 

@@ -42,7 +42,7 @@ initial_prompt: |
       "outcomes":      ["<outcome names>"]
     },
     "priority": "<priority set>",
-    "result_variable": "<how the decision node reads the officer's decision>",
+    "result_variable": "<how the decision node reads the officer's decision — must reference an output field value, not the outcome status>",
     "validation_passed": true
   }
 
@@ -89,11 +89,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "result_variable references $vars.<nodeId>.result"
+    description: "result_variable references $vars.<nodeId>.output (v1.0 access pattern)"
     path: "report.json"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 2.0
     pass_threshold: 1.0
 

@@ -54,8 +54,8 @@ Handles full lifecycle: writes node, adds definition entry once, regenerates `va
     "priority": "Low"
   },
   "outputs": {
-    "result": { "type": "object", "description": "Task result data", "source": "=result", "var": "result" },
-    "status": { "type": "string", "description": "Task completion status", "source": "=status", "var": "status" }
+    "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
   }
 }
 ```
@@ -64,10 +64,12 @@ BPMN type (`bpmn:UserTask`) and serviceType (`Actions.HITL`) come from the `uipa
 
 **Ports:** `input` (target) → `completed` (source)
 
-**Output variables:**
-- `$vars.{nodeId}.result` — object with all `output` / `inOut` fields the human filled in
-- `$vars.{nodeId}.result.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — `"completed"`
+**Output variables (v1.0 schema):**
+- `$vars.{nodeId}.output` — object with all `output` / `inOut` fields the human filled in
+- `$vars.{nodeId}.output.{fieldName}` — individual field value (e.g., `$vars.poReview1.output.decision`)
+- `$vars.{nodeId}.status` — outcome action (e.g., `"Continue"` / `"End"`)
+
+> **Note:** v1.0 (per [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)) uses `.output` for HITL output access — same pattern as every other plugin. Older flows that emit `var: "result"` and access via `.result.<field>` predate v1.0; new flows MUST use `.output`.
 
 ---
 
