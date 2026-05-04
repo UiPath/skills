@@ -86,7 +86,7 @@ Use UiPath's LLM wrapper to route through UiPath's LLM Gateway for centralized m
 
 ### UiPathChatOpenAI
 
-> **CRITICAL: Never instantiate `UiPathChatOpenAI` at module level.** `uip codedagent init` imports your file to introspect the agent — module-level LLM clients will fail because auth may not have happened yet. Always use the **factory function pattern** (see below) to defer initialization.
+Instantiate `UiPathChatOpenAI` inside a factory function, not at module level. See [../lifecycle/build.md](../lifecycle/build.md) § Additional Instructions for the rule and the factory pattern below for the specific shape OpenAI Agents needs.
 
 ```python
 from uipath_openai_agents.chat import UiPathChatOpenAI

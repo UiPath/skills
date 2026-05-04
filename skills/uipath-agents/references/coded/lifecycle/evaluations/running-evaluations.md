@@ -8,7 +8,6 @@ This guide covers how to execute your evaluation sets and understand the results
 
 ```bash
 uip codedagent eval <entrypoint> <eval-file> \
-  --workers 4 \
   --no-report \
   --output-file eval-results.json
 ```
@@ -16,10 +15,17 @@ uip codedagent eval <entrypoint> <eval-file> \
 **Parameters:**
 - `<entrypoint>` - Agent entry point name from `entry-points.json`
 - `<eval-file>` - Path to evaluation set file
-- `--workers` - Number of parallel workers (1-8)
+- `--workers` - Number of parallel workers (default: 1)
+- `--eval-ids` - Python/JSON-style list of evaluation case IDs to run, for example `'["test-1-basic", "test-3-edge-case"]'` (default: `[]`, meaning all cases)
 - `--no-report` - Don't report to UiPath Cloud
 - `--output-file` - Save results to JSON file
-- `--mocker-cache` - Cache LLM responses for reproducibility
+- `--enable-mocker-cache` - Cache LLM responses for reproducibility
+
+Run a subset while debugging:
+
+```bash
+uip codedagent eval <entrypoint> <eval-file> --no-report --eval-ids '["test-1-basic"]'
+```
 
 ### Evaluation Discovery
 
@@ -88,20 +94,20 @@ A test fails if:
 ### Using Parallel Workers
 
 ```bash
-uip codedagent eval <entrypoint> <eval-file> --workers 8
+uip codedagent eval <entrypoint> <eval-file> --workers 4
 ```
 
 **Worker count recommendations:**
-- `1` - Sequential, useful for debugging
-- `4` - Default, good balance
-- `8` - Maximum, for large evaluation sets
+- `1` - Default sequential execution, useful for debugging and rate-limit-sensitive evaluators
+- `4` - Good balance for larger evaluation sets when dependencies and rate limits allow parallelism
+- Higher values - Use only when the agent, evaluators, and external services can safely handle the extra concurrency
 
 ### Caching LLM Responses
 
 For evaluators using LLMs (LLMJudge, Trajectory), enable mocker cache:
 
 ```bash
-uip codedagent eval <entrypoint> <eval-file> --mocker-cache
+uip codedagent eval <entrypoint> <eval-file> --enable-mocker-cache
 ```
 
 Benefits: Faster re-runs, reproducible results, lower API costs.
@@ -117,7 +123,7 @@ uip codedagent eval <entrypoint> <eval-file> --report --workers 4
 For local-only evaluations (no cloud connection needed), use `--no-report`:
 
 ```bash
-uip codedagent eval <entrypoint> <eval-file> --no-report --workers 4
+uip codedagent eval <entrypoint> <eval-file> --no-report
 ```
 
 ## Troubleshooting
@@ -137,4 +143,3 @@ uip codedagent eval <entrypoint> <eval-file> --no-report --workers 4
 - Verify API credentials are configured
 - Check model name is valid
 - Enable cache to reduce API calls
-
