@@ -1,16 +1,12 @@
 # Identity CLI Command Reference
 
-Complete reference for all `uip admin identity` commands. Every command supports `--output json` and `--login-validity <minutes>`.
+Complete reference for all `uip admin identity` commands. Every command supports `--output json` and `--login-validity <minutes>`. Organization ID is resolved automatically from the active login session.
 
 ## Prerequisites
 
 ```bash
-# Verify login
+# Verify login — org ID is resolved automatically
 uip login status --output json
-
-# Get organization ID — required for most commands
-# Use login refresh (field: OrganizationId) or read ~/.uipath/.auth (UIPATH_ORGANIZATION_ID)
-uip login refresh --output json
 ```
 
 ---
@@ -22,14 +18,11 @@ uip login refresh --output json
 List users in a partition.
 
 ```bash
-uip admin identity users list \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity users list --output json
 ```
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `-s, --search <term>` | No | Search by name or email |
 | `--order-by <field>` | No | Sort field (e.g., `UserName`, `Email`) |
 | `--order-direction <asc\|desc>` | No | Sort direction (default: asc) |
@@ -58,7 +51,6 @@ Create a new user.
 
 ```bash
 uip admin identity users create <USERNAME> \
-  --organization <ORG_ID> \
   --email <EMAIL> \
   --output json
 ```
@@ -66,7 +58,6 @@ uip admin identity users create <USERNAME> \
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<USERNAME>` | Yes | Username |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `-e, --email <email>` | Yes | Email address |
 | `-n, --name <name>` | No | First name |
 | `--surname <surname>` | No | Last name |
@@ -133,14 +124,8 @@ Invite one user at a time — `--name`/`--surname` apply to all emails in the re
 List all groups in a partition.
 
 ```bash
-uip admin identity groups list \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity groups list --output json
 ```
-
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 
 **Output code:** `GroupList`
 
@@ -149,9 +134,7 @@ uip admin identity groups list \
 Get group details by ID.
 
 ```bash
-uip admin identity groups get <GROUP_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity groups get <GROUP_ID> --output json
 ```
 
 **Output code:** `GroupDetails`
@@ -161,15 +144,12 @@ uip admin identity groups get <GROUP_ID> \
 Create a new group. Group names must be unique within a partition.
 
 ```bash
-uip admin identity groups create "<GROUP_NAME>" \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity groups create "<GROUP_NAME>" --output json
 ```
 
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<GROUP_NAME>` | Yes | Group name |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 
 **Output code:** `GroupCreated`
 
@@ -179,7 +159,6 @@ Rename a group.
 
 ```bash
 uip admin identity groups update <GROUP_ID> \
-  --organization <ORG_ID> \
   --name "<NEW_NAME>" \
   --output json
 ```
@@ -187,7 +166,6 @@ uip admin identity groups update <GROUP_ID> \
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<GROUP_ID>` | Yes | Group ID (UUID) |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `-n, --name <name>` | Yes | New group name |
 
 **Output code:** `GroupUpdated`
@@ -197,9 +175,7 @@ uip admin identity groups update <GROUP_ID> \
 Delete a group. Only custom groups can be deleted — built-in groups cannot.
 
 ```bash
-uip admin identity groups delete <GROUP_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity groups delete <GROUP_ID> --output json
 ```
 
 **Output code:** `GroupDeleted`
@@ -209,15 +185,12 @@ uip admin identity groups delete <GROUP_ID> \
 List members of a group.
 
 ```bash
-uip admin identity groups get-members <GROUP_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity groups get-members <GROUP_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<GROUP_ID>` | Yes | Group ID (UUID) |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `-l, --limit <number>` | No | Items to return (default: 50) |
 | `--offset <number>` | No | Items to skip (default: 0) |
 
@@ -229,7 +202,6 @@ Add users to a group. User IDs are required — resolve them via `users list` fi
 
 ```bash
 uip admin identity groups add-members <GROUP_ID> \
-  --organization <ORG_ID> \
   --user-ids "<USER_ID_1>,<USER_ID_2>" \
   --output json
 ```
@@ -237,7 +209,6 @@ uip admin identity groups add-members <GROUP_ID> \
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<GROUP_ID>` | Yes | Group ID (UUID) |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `--user-ids <ids>` | Yes | Comma-separated user IDs (UUIDs) |
 
 **Output code:** `GroupMembersAdded`
@@ -248,7 +219,6 @@ Remove users from a group.
 
 ```bash
 uip admin identity groups remove-members <GROUP_ID> \
-  --organization <ORG_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
@@ -264,14 +234,11 @@ uip admin identity groups remove-members <GROUP_ID> \
 List robot accounts in a partition.
 
 ```bash
-uip admin identity robot-accounts list \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity robot-accounts list --output json
 ```
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `-s, --search <term>` | No | Search by name |
 | `--order-by <field>` | No | Sort field (e.g., `Name`) |
 | `--order-direction <asc\|desc>` | No | Sort direction (default: asc) |
@@ -285,9 +252,7 @@ uip admin identity robot-accounts list \
 Get robot account details.
 
 ```bash
-uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> --output json
 ```
 
 **Output code:** `RobotAccountDetails`
@@ -298,7 +263,6 @@ Create a new robot account. Names must be unique within a partition.
 
 ```bash
 uip admin identity robot-accounts create "<NAME>" \
-  --organization <ORG_ID> \
   --display-name "<DISPLAY_NAME>" \
   --output json
 ```
@@ -306,7 +270,6 @@ uip admin identity robot-accounts create "<NAME>" \
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<NAME>` | Yes | Robot account name (unique) |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `--display-name <name>` | No | Display name (defaults to name) |
 
 **Output code:** `RobotAccountCreated`
@@ -317,7 +280,6 @@ Update a robot account's display name.
 
 ```bash
 uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
-  --organization <ORG_ID> \
   --display-name "<NEW_DISPLAY_NAME>" \
   --output json
 ```
@@ -329,9 +291,7 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 Delete a robot account.
 
 ```bash
-uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> --output json
 ```
 
 **Output code:** `RobotAccountDeleted`
@@ -345,9 +305,7 @@ uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> \
 List external OAuth2 apps in a partition.
 
 ```bash
-uip admin identity external-apps list \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity external-apps list --output json
 ```
 
 **Output code:** `ExternalClientList`
@@ -357,9 +315,7 @@ uip admin identity external-apps list \
 Get external app details including resources and scopes.
 
 ```bash
-uip admin identity external-apps get <CLIENT_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity external-apps get <CLIENT_ID> --output json
 ```
 
 **Output code:** `ExternalClientDetails`
@@ -370,7 +326,6 @@ Create a confidential external app. A client secret is auto-generated and return
 
 ```bash
 uip admin identity external-apps create "<APP_NAME>" \
-  --organization <ORG_ID> \
   --scope "OR.Folders,OR.Assets,OR.Queues" \
   --output json
 ```
@@ -378,7 +333,6 @@ uip admin identity external-apps create "<APP_NAME>" \
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<APP_NAME>` | Yes | App display name |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `--scope <scopes>` | Yes | Comma-separated scope names |
 | `--redirect-uri <uri>` | No | OAuth2 redirect URI |
 
@@ -392,7 +346,6 @@ Update an external app. At least one field flag is required.
 
 ```bash
 uip admin identity external-apps update <CLIENT_ID> \
-  --organization <ORG_ID> \
   --name "<NEW_NAME>" \
   --scope "OR.Folders,OR.Jobs" \
   --output json
@@ -401,7 +354,6 @@ uip admin identity external-apps update <CLIENT_ID> \
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<CLIENT_ID>` | Yes | External app ID |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `-n, --name <name>` | No | New display name |
 | `--redirect-uri <uri>` | No | New redirect URI |
 | `--scope <scopes>` | No | New comma-separated scopes (replaces existing) |
@@ -413,9 +365,7 @@ uip admin identity external-apps update <CLIENT_ID> \
 Delete an external app.
 
 ```bash
-uip admin identity external-apps delete <CLIENT_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity external-apps delete <CLIENT_ID> --output json
 ```
 
 **Output code:** `ExternalClientDeleted`
@@ -425,15 +375,12 @@ uip admin identity external-apps delete <CLIENT_ID> \
 Generate a new secret for an external app. The secret value is returned only once.
 
 ```bash
-uip admin identity external-apps generate-secret <CLIENT_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity external-apps generate-secret <CLIENT_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<CLIENT_ID>` | Yes | External app ID |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 | `--description <text>` | No | Description for the secret |
 | `--expiration <date>` | No | Expiration date (ISO 8601, e.g., `2027-01-01`) |
 
@@ -444,14 +391,11 @@ uip admin identity external-apps generate-secret <CLIENT_ID> \
 Delete a specific secret from an external app.
 
 ```bash
-uip admin identity external-apps delete-secret <SECRET_ID> \
-  --organization <ORG_ID> \
-  --output json
+uip admin identity external-apps delete-secret <SECRET_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
 |---------------|----------|-------------|
 | `<SECRET_ID>` | Yes | Secret ID (numeric) |
-| `--organization <id>` | Yes | Partition global ID (UUID) |
 
 **Output code:** `ExternalClientSecretDeleted`

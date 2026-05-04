@@ -8,10 +8,10 @@ Before creating or modifying users, list what exists.
 
 ```bash
 # List all users in the organization
-uip admin identity users list --organization <ORG_ID> --output json
+uip admin identity users list --output json
 
 # Search for a specific user
-uip admin identity users list --organization <ORG_ID> --search "john" --output json
+uip admin identity users list --search "john" --output json
 
 # Get full details for a specific user
 uip admin identity users get <USER_ID> --output json
@@ -38,13 +38,12 @@ uip admin identity users invite \
 
 1. List existing users to avoid duplicates:
    ```bash
-   uip admin identity users list --organization <ORG_ID> --search "<USERNAME>" --output json
+   uip admin identity users list --search "<USERNAME>" --output json
    ```
 
 2. If the user does not exist, create them:
    ```bash
    uip admin identity users create "<USERNAME>" \
-     --organization <ORG_ID> \
      --email "<EMAIL>" \
      --name "<FIRST_NAME>" \
      --surname "<LAST_NAME>" \
@@ -53,7 +52,7 @@ uip admin identity users invite \
 
 3. Verify creation:
    ```bash
-   uip admin identity users list --organization <ORG_ID> --search "<USERNAME>" --output json
+   uip admin identity users list --search "<USERNAME>" --output json
    ```
 
 ## Workflow: Update a User
@@ -92,10 +91,10 @@ For large user lists, use `--limit` and `--offset`:
 
 ```bash
 # First page (20 users)
-uip admin identity users list --organization <ORG_ID> --limit 20 --offset 0 --output json
+uip admin identity users list --limit 20 --offset 0 --output json
 
 # Second page
-uip admin identity users list --organization <ORG_ID> --limit 20 --offset 20 --output json
+uip admin identity users list --limit 20 --offset 20 --output json
 ```
 
 ## Sorting
@@ -103,7 +102,7 @@ uip admin identity users list --organization <ORG_ID> --limit 20 --offset 20 --o
 Sort results by field and direction:
 
 ```bash
-uip admin identity users list --organization <ORG_ID> \
+uip admin identity users list \
   --order-by "UserName" \
   --order-direction "asc" \
   --output json

@@ -26,12 +26,11 @@ Create the robot identity in Identity Server.
 
 ```bash
 # Check for existing robot accounts with the same name
-uip admin identity robot-accounts list --organization <ORG_ID> \
+uip admin identity robot-accounts list \
   --search "<ROBOT_NAME>" --output json
 
 # Create the robot account
 uip admin identity robot-accounts create "<ROBOT_NAME>" \
-  --organization <ORG_ID> \
   --display-name "<ROBOT_DISPLAY_NAME>" \
   --output json
 ```
@@ -44,11 +43,10 @@ Add the robot account to appropriate groups for role assignment.
 
 ```bash
 # List available groups to find the right role group
-uip admin identity groups list --organization <ORG_ID> --output json
+uip admin identity groups list --output json
 
 # Add the robot account to the desired group(s)
 uip admin identity groups add-members <GROUP_ID> \
-  --organization <ORG_ID> \
   --user-ids "<ROBOT_ACCOUNT_ID>" \
   --output json
 ```
@@ -100,7 +98,7 @@ After completing all steps, verify the robot account:
 
 ```bash
 uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
-  --organization <ORG_ID> --output json
+  --output json
 
 uip or folders list --output json
 ```
@@ -129,15 +127,14 @@ After the user accepts the invitation, add them to role groups.
 
 ```bash
 # List the user to get their ID
-uip admin identity users list --organization <ORG_ID> \
+uip admin identity users list \
   --search "<USER_EMAIL>" --output json
 
 # List available groups
-uip admin identity groups list --organization <ORG_ID> --output json
+uip admin identity groups list --output json
 
 # Add user to role group(s)
 uip admin identity groups add-members <GROUP_ID> \
-  --organization <ORG_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
@@ -188,7 +185,7 @@ uip admin identity users invite --email "user3@example.com" --name "Carol" --sur
 Users must accept their invitations before they appear in the user list. Check periodically:
 
 ```bash
-uip admin identity users list --organization <ORG_ID> \
+uip admin identity users list \
   --search "example.com" --output json
 ```
 
@@ -198,7 +195,6 @@ Once users appear in the list, collect their IDs and add them to the target grou
 
 ```bash
 uip admin identity groups add-members <GROUP_ID> \
-  --organization <ORG_ID> \
   --user-ids "<USER_ID_1>,<USER_ID_2>,<USER_ID_3>" \
   --output json
 ```

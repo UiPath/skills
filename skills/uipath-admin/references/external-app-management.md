@@ -30,24 +30,23 @@ External apps provide Client ID + Secret credentials for API integrations, CI/CD
 
 ```bash
 # List all external apps
-uip admin identity external-apps list --organization <ORG_ID> --output json
+uip admin identity external-apps list --output json
 
 # Get details including scopes and resources
 uip admin identity external-apps get <CLIENT_ID> \
-  --organization <ORG_ID> --output json
+  --output json
 ```
 
 ## Workflow: Create an External App
 
 1. Check for existing apps:
    ```bash
-   uip admin identity external-apps list --organization <ORG_ID> --output json
+   uip admin identity external-apps list --output json
    ```
 
 2. Create with required scopes:
    ```bash
    uip admin identity external-apps create "<APP_NAME>" \
-     --organization <ORG_ID> \
      --scope "OR.Folders,OR.Assets,OR.Jobs" \
      --output json
    ```
@@ -64,7 +63,6 @@ Use this when the original secret is lost or needs rotation.
 
 ```bash
 uip admin identity external-apps generate-secret <CLIENT_ID> \
-  --organization <ORG_ID> \
   --description "Rotated secret for production" \
   --expiration "2027-06-01" \
   --output json
@@ -79,13 +77,13 @@ uip admin identity external-apps generate-secret <CLIENT_ID> \
 1. Get the app details to find secret IDs:
    ```bash
    uip admin identity external-apps get <CLIENT_ID> \
-     --organization <ORG_ID> --output json
+     --output json
    ```
 
 2. Delete the specific secret:
    ```bash
    uip admin identity external-apps delete-secret <SECRET_ID> \
-     --organization <ORG_ID> --output json
+     --output json
    ```
 
 ## Workflow: Update an External App
@@ -94,7 +92,6 @@ Update name, scopes, or redirect URI. At least one field is required.
 
 ```bash
 uip admin identity external-apps update <CLIENT_ID> \
-  --organization <ORG_ID> \
   --name "<NEW_NAME>" \
   --scope "OR.Folders,OR.Jobs,OR.Queues" \
   --output json
@@ -109,7 +106,7 @@ uip admin identity external-apps update <CLIENT_ID> \
 2. Delete:
    ```bash
    uip admin identity external-apps delete <CLIENT_ID> \
-     --organization <ORG_ID> --output json
+     --output json
    ```
 
 ## Using Credentials for Authentication
@@ -125,10 +122,10 @@ uip login \
 ```
 
 This is the authentication method used by:
-- Unattended robots running on machines
 - CI/CD pipelines
 - External API integrations
 - Service-to-service calls
+- Automated scripts on headless machines
 
 ## Error Handling
 

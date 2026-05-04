@@ -39,9 +39,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran robot-accounts list with --organization"
+    description: "Agent ran robot-accounts list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+list\s+.*--organization'
+    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

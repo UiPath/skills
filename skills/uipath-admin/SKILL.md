@@ -24,7 +24,7 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 ## Critical Rules
 
 1. **Verify login first.** Run `uip login status --output json`. If not logged in: `uip login`.
-2. **Resolve organization ID first.** Every identity command requires `--organization <ORG_ID>`. Run `uip login refresh --output json` and extract from field `OrganizationId`. If `login refresh` is unavailable, read the org ID from `~/.uipath/.auth` (field: `UIPATH_ORGANIZATION_ID`). Never hardcode UUIDs.
+2. **Organization ID is resolved automatically from login.** The CLI reads org ID from the active session. No need to pass `--organization` unless overriding for a different partition.
 3. **Discover before creating.** Always `list` before `create` to avoid duplicates. Robot account and group names must be unique within a partition.
 4. **Use `--output json` on all commands.** Parse programmatically. Present results conversationally.
 5. **Secrets shown only once.** When creating external apps or generating secrets, secret value appears only in creation response. Warn user to save immediately.
@@ -45,14 +45,13 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 
 The most common identity flow is **user management** — inviting users, assigning them to groups, and managing access. For robot account onboarding, see [onboarding-workflows.md](references/onboarding-workflows.md).
 
-### Step 0 — Verify login and resolve org ID
+### Step 0 — Verify login
 
 ```bash
 uip login status --output json
-uip login refresh --output json
 ```
 
-If not logged in: `uip login`. Extract `OrganizationId` from the `login refresh` response.
+If not logged in: `uip login`. The CLI reads org ID from the active session automatically.
 
 ### Step 1 — Invite a user
 
@@ -67,16 +66,15 @@ uip admin identity users invite \
 ### Step 2 — Find the user once they accept
 
 ```bash
-uip admin identity users list --organization <ORG_ID> \
+uip admin identity users list \
   --search "<USER_EMAIL>" --output json
 ```
 
 ### Step 3 — Assign to a group
 
 ```bash
-uip admin identity groups list --organization <ORG_ID> --output json
+uip admin identity groups list --output json
 uip admin identity groups add-members <GROUP_ID> \
-  --organization <ORG_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```

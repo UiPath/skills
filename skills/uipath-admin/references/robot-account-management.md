@@ -20,35 +20,34 @@ Robot accounts use a dedicated credential mechanism managed by Orchestrator — 
 
 ```bash
 # List all robot accounts
-uip admin identity robot-accounts list --organization <ORG_ID> --output json
+uip admin identity robot-accounts list --output json
 
 # Search for a specific robot account
-uip admin identity robot-accounts list --organization <ORG_ID> --search "bot-name" --output json
+uip admin identity robot-accounts list --search "bot-name" --output json
 
 # Get full details
 uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
-  --organization <ORG_ID> --output json
+  --output json
 ```
 
 ## Workflow: Create a Robot Account
 
 1. Check for existing robot accounts to avoid name collisions:
    ```bash
-   uip admin identity robot-accounts list --organization <ORG_ID> \
+   uip admin identity robot-accounts list \
      --search "<NAME>" --output json
    ```
 
 2. Create the robot account:
    ```bash
    uip admin identity robot-accounts create "<NAME>" \
-     --organization <ORG_ID> \
      --display-name "<DISPLAY_NAME>" \
      --output json
    ```
 
 3. Verify creation:
    ```bash
-   uip admin identity robot-accounts list --organization <ORG_ID> \
+   uip admin identity robot-accounts list \
      --search "<NAME>" --output json
    ```
 
@@ -58,7 +57,6 @@ uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
 
 ```bash
 uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
-  --organization <ORG_ID> \
   --display-name "<NEW_DISPLAY_NAME>" \
   --output json
 ```
@@ -68,7 +66,7 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 1. Confirm the robot account exists:
    ```bash
    uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
-     --organization <ORG_ID> --output json
+     --output json
    ```
 
 2. Confirm with the user before proceeding.
@@ -76,18 +74,18 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 3. Delete:
    ```bash
    uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> \
-     --organization <ORG_ID> --output json
+     --output json
    ```
 
 ## Pagination and Sorting
 
 ```bash
 # Paginated list
-uip admin identity robot-accounts list --organization <ORG_ID> \
+uip admin identity robot-accounts list \
   --limit 10 --offset 0 --output json
 
 # Sorted by name
-uip admin identity robot-accounts list --organization <ORG_ID> \
+uip admin identity robot-accounts list \
   --order-by "Name" --order-direction "asc" --output json
 ```
 
