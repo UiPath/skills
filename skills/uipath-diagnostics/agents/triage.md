@@ -29,7 +29,12 @@ Goal: get the error message and match playbooks as fast as possible.
    - Check if each matched product/package has an `investigation_guide.md`. If yes, include its path.
    - Read all resolved investigation guides and apply their data correlation rules.
 4. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, write `needs_input.json` (see shared.md) asking for the missing detail. Do NOT continue when you can't reach the primary entity.
-5. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), default to the most recent. Do NOT fetch details for multiple entities. Write to raw/, write evidence summary.
+5. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), select ONE entity using this priority order, then do NOT fetch details for the others:
+   1. **Filter by process first.** If the user named a process explicitly, OR a process can be reasonably inferred from the working directory (e.g., the project's `project.json` name, the directory name), filter the candidate list to entities for that process and pick the most recent match.
+   2. **Ambiguity check.** If multiple plausible processes can be inferred (e.g., the directory has been renamed/republished under a different name) and the candidate list contains entities for processes that do NOT match the inferred name, do NOT default — write `needs_input.json` (see shared.md) asking the user which process they meant. Do not pick the most recent overall when the inferred process disagrees with the candidate's process.
+   3. **Fall back to most recent overall** only when no process can be inferred from the user's message OR the working directory.
+
+   Write to raw/, write evidence summary.
 6. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Match playbooks against the error message/type from the fetched data. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
 
 ### Confidence Gate

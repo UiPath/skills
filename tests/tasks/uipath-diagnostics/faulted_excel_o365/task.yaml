@@ -1,0 +1,176 @@
+task_id: skill-diagnostics-faulted-excel-o365
+description: >
+  Faithful replay of a real UiPath diagnostic investigation. The agent
+  runs the uipath-diagnostics skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session
+  (.investigation/raw/*.json). Success = the agent reaches the same
+  root cause as RESOLUTION.md: an Integration Service connection
+  (e62228b7-...) that lives in another user's workspace and is not
+  resolvable from the runner's Personal workspace, matching the
+  connection-invalid playbook.
+tags: [uipath-diagnostics, e2e, faulted-jobs, faithful-replay]
+
+# Inherits from experiments/default.yaml: model, permission_mode, plugins
+# ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
+# specific to this scenario. `type` is required by the TaskDefinition schema
+# even though it could be inherited.
+agent:
+  type: claude-code
+  # Need Skill/Agent/AskUserQuestion/TodoWrite beyond the default's set;
+  # the diagnostic skill orchestrates sub-agents.
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+  max_turns: 60
+  turn_timeout: 1200   # 20 min per turn; depth-verifier adds another sub-agent round
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
+    - type: template_dir
+      path: ../_shared/mock_template
+    # 2. Full project source — frozen snapshot of the failing process.
+    - type: template_dir
+      path: process
+    # 3. Per-scenario fixtures (manifest + .investigation/raw responses).
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock
+  # dispatcher instead of the real CLI installed on the host.
+  mock_path_dirs: ["mocks"]
+
+# Ground truth from RESOLUTION.md.
+# Hidden from the agent. Used by the llm_judge criteria below to score
+# whether the agent reached the same outcome as the real session.
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  This process is failing to run from Orchestrator, the last failing job is in my personal folder. Pinned job key: 3033bce6-5585-4455-aaec-db7a9f791126.
+
+  The project source for the failing process is at ./RPA Workflow/ in the
+  current working directory.
+
+success_criteria:
+  # Binary tool-invocation check: confirms the right skill ran at all.
+  - type: skill_triggered
+    description: "Agent invoked the uipath-diagnostics skill"
+    skill_name: "uipath:uipath-diagnostics"
+    expected: "yes"
+    weight: 1.0
+
+  # Single comprehensive agentic check: the diagnostic must (a) load the
+  # correct playbook AND (b) reach the same conclusion as RESOLUTION.md.
+  - type: llm_judge
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true       # task.reference (RESOLUTION.md) is shown to the judge
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .investigation/state.json
+      - .investigation/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md from the real investigation that diagnosed
+      this exact failing job. Treat it as the authoritative ground
+      truth.
+
+      The user's request was:
+        "This process is failing to run from Orchestrator, the last
+         failing job is in my personal folder. Pinned job key:
+         3033bce6-5585-4455-aaec-db7a9f791126."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/integration-service/playbooks/connection-invalid.md
+        because the runtime error
+          Office365Exception: "Connection [e62228b7-...] is invalid or
+          you do not have access to it"
+        is the verbatim signature of that playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the connection-invalid
+             playbook should appear (absolute or relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/products/integration-service/playbooks/.
+          3. state.json's `scope.domain` -- must include
+             "integration-service".
+
+        Acceptable / non-penalized: the agent may also Read the IS
+        investigation_guide, the Orchestrator investigation_guide, the
+        top-level investigation_guide, or neighboring playbooks
+        (connection-auth-expired, operation-failed). Exploring is
+        normal triage; do not deduct for it.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The published RPA.Workflow package references Integration
+            Service connection e62228b7-ffc2-49dc-a779-29207b0d2b6f.
+          - That connection is owned by original_email@test.com and is
+            bound to "solution_folder".
+          - The job ran from replacement_email@test.com's Personal
+            workspace folder 7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0.
+          - The runner's identity cannot resolve a connection that
+            lives in another user's workspace, so
+            ConnectionClient.GetConnectionAsync returns HTTP 404 and
+            the activity throws Office365Exception.
+        The reference fix:
+          - Create a new OneDrive/SharePoint connection in the
+            runner's workspace (or retarget to the existing
+            86ec2bec-fcde-44e3-a793-9bd3ea0cd0ab connection), update
+            the For-Each-Sheet activity, authenticate, and republish.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.connection_id`,
+             `requirements.error_message`,
+             `requirements.error_class`, `triage_summary`, scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the cross-workspace
+             connection problem.
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched the connection-invalid playbook AND
+             converged on the cross-workspace connection ownership
+             root cause (named the connection ID and explained why
+             it isn't resolvable in the runner's workspace).
+        0.8  Both dimensions partially correct: e.g., correct
+             playbook is matched but the conclusion describes the
+             connection-invalid signature without the cross-workspace
+             ownership nuance; or the conclusion fully matches but
+             the playbook is the IS investigation_guide rather than
+             the specific connection-invalid playbook.
+        0.5  Only one dimension is correct: e.g., agent identified
+             Integration Service / Microsoft 365 as the failing
+             surface but never matched a specific playbook and never
+             named the failing connection ID; OR the agent matched
+             the right playbook but never produced a coherent
+             conclusion.
+        0.2  Agent recognized SOME aspect of the issue (e.g.,
+             classified domain as integration-service) but neither
+             matched the playbook nor reached the conclusion.
+        0.0  Misdiagnosed (e.g., concluded a different root cause
+             such as workbook missing, auth-expired, or
+             non-IS issue), got blocked without progress, or
+             failed entirely.
+
+      Be substance-focused, not schema-focused. The skill's
+      intermediate file shapes may differ between runs -- look at the
+      meaning of what the agent recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+max_iterations: 1
+# Override experiments/default.yaml's 600s limit -- the multi-agent diagnostic
+# skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
+# 10-20 minutes when sub-agents run sequentially.
+task_timeout: 2400   # 40 min total; one extra phase (depth_check) + possible re-test round
+
+llm_reviewer:
+  enabled: false
