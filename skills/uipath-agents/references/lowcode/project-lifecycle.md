@@ -44,22 +44,9 @@ uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
 
 After scaffolding, add a `uipath.agent.autonomous` node to the flow with `model.source = <ProjectId>`. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
 
-### `uip agent guardrails list`
+### Guardrail authoring
 
-List available guardrail validator definitions with their allowed scopes, stages, and parameters.
-
-```bash
-uip agent guardrails list --output json
-```
-
-Returns an array of validator definitions. Each entry contains:
-- `Status` — `"Available"` (licensed, ready to use) or `"Unauthorised"` (user not entitled to use guardrails)
-- `Validator` — the `validatorType` string to use in `builtInValidator` guardrails
-- `AllowedScopes` — valid values for `selector.scopes`
-- `GuardrailStages` — object mapping each scope to its valid execution stages
-- `Parameters` — array of parameter definitions (`Type`, `Id`, `Required`)
-
-**Mandatory first step** before adding any built-in validator guardrail. Only use validators with `Status: "Available"`. If a validator is missing from the list, it does not exist on this tenant. If `Status: "Unauthorised"`, user is not entitled to use guardrails — do not add the guardrail, inform user accordingly.
+Current `uip agent` CLI versions do not expose `uip agent guardrails list` or a guardrail add command. Do not invent guardrail CLI commands. Author guardrails in the root `agent.json` `guardrails` array using [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md), then validate with `uip agent validate [path] --output json`.
 
 ### `uip agent validate`
 
@@ -332,7 +319,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Register project | `uip solution project add "<PATH>" --output json` | Solution directory | — |
 | Validate + migrate | `uip agent validate [path] --output json` | Agent dir or any with path | — |
-| List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
+| Author guardrails | Edit root `agent.json` `guardrails`, then `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
