@@ -1,12 +1,14 @@
 task_id: skill-ixp-confirm-predictions-smoke
 description: >
-  Skill-guided evaluation: agent uses field-level prediction confirmation
-  on a labelled document. Tests Critical Rule #8 (confirm at field level,
-  not document level — wrong predictions are left unannotated, NOT
-  corrected) and Rule #11 (Claude reviews predictions, never extracts
-  values manually). The agent must call `uip ixp labellings confirm` with
-  `--fields` listing only the correct field IDs, and must NOT use
-  `--corrections` for fields that were predicted incorrectly.
+  Skill-guided evaluation: a human review verdict is handed to the agent,
+  which must record it via `uip ixp labellings confirm` in the documented
+  shape. Tests Critical Rule #8 (confirm at field level, not document
+  level — wrong predictions are left unannotated, NOT corrected via
+  `--corrections`). The agent must call confirm with `--fields` listing
+  only the correct field IDs and must NOT pass `--corrections` for the
+  field that was predicted incorrectly. Rule #11 (agent-as-reviewer) is
+  not exercised here — there is no document to read in this offline
+  smoke; that is integration-tier coverage.
 
   Platform note: the smoke test runs without an authenticated tenant, so
   `uip ixp` commands that hit the service will fail with an auth error.
@@ -19,17 +21,17 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Document automation review for project `my_invoices-f1afa9ef-ixp`,
-  document `doc-abc-123`. After comparing the IXP model predictions
-  against the document, the reviewer concluded:
+  I just finished reviewing document `doc-abc-123` on IXP project
+  `my_invoices-f1afa9ef-ixp`. Here is my verdict on the model's
+  predictions:
 
-  - Invoice Number (field id `f-001`): prediction `INV-2025-0042` —
+  - Invoice Number (field id `f-001`): predicted `INV-2025-0042` —
     correct.
-  - Invoice Date (field id `f-002`): prediction `2025-01-15` — correct.
-  - Total Amount (field id `f-003`): prediction `$1,200.00` — WRONG, the
+  - Invoice Date (field id `f-002`): predicted `2025-01-15` — correct.
+  - Total Amount (field id `f-003`): predicted `$1,200.00` — WRONG, the
     document shows `$12,000.00`.
 
-  Record this review in the labelling system.
+  Record my review in the labelling system.
 
   Save a summary to report.json in the current working directory with at
   minimum:
