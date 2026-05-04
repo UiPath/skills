@@ -15,21 +15,40 @@ Manifest schema (v2):
       "version": 2,
       "rules": [
         { "match": "or jobs list", "file": "jobs_list.json" },
-        { "match": "auth status",  "file": "auth_status.json", "exit_code": 0 }
+        { "match": "auth status",  "file": "auth_status.json", "exit_code": 0 },
+        { "match": "docsai ask",   "passthrough": true }
       ],
       "expected_calls": [
         { "pattern": "or jobs get <key>", "min": 1, "description": "..." }
-      ]
+      ],
+      "unmocked_default": {
+        "response": "[]\n",
+        "exit_code": 0
+      }
     }
 
-The dispatcher itself only consumes `rules`. `expected_calls` is metadata
-for the post-run reporter; it is otherwise ignored here.
+Each rule has one of:
+    - `file: <path>` — return the canned response under responses/<file>.
+    - `passthrough: true` — proxy to the real `uip` CLI installed on the
+      host. Responses are cached under responses/_cache/<key>.json on
+      first run; subsequent runs replay the cache. Cache files are
+      committed alongside fixtures so tests stay reproducible offline.
 
-Matching is plain substring on `" ".join(argv[1:])`. First match wins, so
-list more specific patterns before more generic ones.
+Dispatch precedence:
+    1. First matching rule (substring; first match wins).
+    2. `unmocked_default` — if set, return its `response` + `exit_code`.
+    3. Otherwise, error on stderr (legacy behavior).
+
+Matching is plain substring on `" ".join(argv[1:])`. List specific
+patterns before generic ones. A passthrough rule with `match: "docsai ask"`
+is the typical way to proxy open-ended natural-language commands.
 """
 
+import hashlib
 import json
+import os
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -38,6 +57,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "responses"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 CALL_LOG_PATH = SCRIPT_DIR / ".calls.jsonl"
+CACHE_DIR = RESPONSES_DIR / "_cache"
 
 
 def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = None) -> None:
@@ -68,6 +88,83 @@ def _err(payload: dict, code: int) -> int:
     return code
 
 
+def _cache_key(args: str) -> str:
+    return hashlib.md5(args.encode("utf-8")).hexdigest()[:16]
+
+
+def _load_cache(args: str) -> dict | None:
+    """Return cached `{stdout, exit_code, args, cached_at}` or None."""
+    path = CACHE_DIR / f"{_cache_key(args)}.json"
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _save_cache(args: str, stdout: str, exit_code: int) -> None:
+    """Persist a passthrough response so subsequent runs replay offline."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path = CACHE_DIR / f"{_cache_key(args)}.json"
+    payload = {
+        "args": args,
+        "stdout": stdout,
+        "exit_code": exit_code,
+        "cached_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    try:
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _find_real_uip() -> str | None:
+    """Locate the real `uip` CLI on PATH, excluding the mock's own dir."""
+    self_dir = str(SCRIPT_DIR.resolve())
+    parts = []
+    for d in os.environ.get("PATH", "").split(os.pathsep):
+        if not d:
+            continue
+        try:
+            if Path(d).resolve() == SCRIPT_DIR.resolve():
+                continue
+        except (OSError, ValueError):
+            pass
+        parts.append(d)
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def _passthrough(args: str, original_argv: list[str], rule: dict) -> int:
+    """Proxy to the real `uip` CLI; cache the response for subsequent runs."""
+    cached = _load_cache(args)
+    if cached is not None:
+        sys.stdout.write(cached.get("stdout", ""))
+        exit_code = int(cached.get("exit_code", 0))
+        _log_call(args, rule, exit_code, error="passthrough_cached")
+        return exit_code
+
+    real_uip = _find_real_uip()
+    if real_uip is None:
+        _log_call(args, rule, 2, error="passthrough_no_real_uip")
+        return _err(
+            {"error": "passthrough requested but real uip not on PATH", "args": args},
+            2,
+        )
+
+    proc = subprocess.run(
+        [real_uip] + original_argv[1:],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    sys.stdout.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    _save_cache(args, proc.stdout, proc.returncode)
+    _log_call(args, rule, proc.returncode, error="passthrough_live")
+    return proc.returncode
+
+
 def main(argv: list[str]) -> int:
     args = " ".join(argv[1:])
 
@@ -76,18 +173,33 @@ def main(argv: list[str]) -> int:
         return _err({"error": "manifest.json missing", "path": str(MANIFEST_PATH)}, 2)
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+    # 1. First matching rule wins.
     for rule in manifest.get("rules", []):
         match = rule.get("match", "")
-        if match and match in args:
-            response_file = RESPONSES_DIR / rule["file"]
-            if not response_file.is_file():
-                _log_call(args, rule, 2, error="fixture_missing")
-                return _err({"error": "response file missing", "path": str(response_file)}, 2)
-            sys.stdout.write(response_file.read_text(encoding="utf-8"))
-            exit_code = int(rule.get("exit_code", 0))
-            _log_call(args, rule, exit_code)
-            return exit_code
+        if not match or match not in args:
+            continue
+        if rule.get("passthrough"):
+            return _passthrough(args, argv, rule)
+        response_file = RESPONSES_DIR / rule["file"]
+        if not response_file.is_file():
+            _log_call(args, rule, 2, error="fixture_missing")
+            return _err({"error": "response file missing", "path": str(response_file)}, 2)
+        sys.stdout.write(response_file.read_text(encoding="utf-8"))
+        exit_code = int(rule.get("exit_code", 0))
+        _log_call(args, rule, exit_code)
+        return exit_code
 
+    # 2. Unmocked default.
+    default = manifest.get("unmocked_default")
+    if isinstance(default, dict):
+        body = default.get("response", "")
+        exit_code = int(default.get("exit_code", 0))
+        sys.stdout.write(body)
+        _log_call(args, None, exit_code, error="unmocked_default")
+        return exit_code
+
+    # 3. Legacy error.
     _log_call(args, None, 1, error="unmocked")
     return _err({"error": "unmocked command", "args": args}, 1)
 
