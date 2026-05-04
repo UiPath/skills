@@ -16,8 +16,7 @@ sandbox:
 
 initial_prompt: |
   A document automation engineer wants to see every IXP project on the
-  tenant before deciding which one to iterate on. Use the uipath-ixp
-  skill.
+  tenant before deciding which one to iterate on.
 
   Save a summary to report.json in the current working directory with at
   minimum:
