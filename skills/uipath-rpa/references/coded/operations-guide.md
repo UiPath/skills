@@ -11,7 +11,7 @@ Creates a complete UiPath coded automation project from scratch. **ALWAYS use `u
 **1. Create the project with `uip rpa create-project`:**
 
 ```bash
-uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --studio-dir "<STUDIO_DIR>" --output json```
+uip rpa create-project --name "<NAME>" --location "<PARENT_DIR>" --output json```
 
 **Template options:**
 - `--template-id BlankTemplate` (default) — standard process project
@@ -404,7 +404,7 @@ namespace MyProjectName
 2. Add the package to `dependencies` with version in bracket notation: `"PackageName": "[version]"`
 3. Only add packages the project actually needs. Available UiPath packages and their latest v25.x versions:
    - `"UiPath.System.Activities": "[25.12.2]"` — system activities (assets, queues, credentials)
-   - `"UiPath.Testing.Activities": "[25.10.0]"` — testing and assertions
+   - `"UiPath.Testing.Activities": "[25.10.2]"` — testing and assertions. Pin this exact patch — `[25.10.0]` and `[25.10.1]` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
    - `"UiPath.UIAutomation.Activities": "[25.10.21]"` — UI automation
    - `"UiPath.Excel.Activities": "[3.3.1]"` — Excel automation
    - `"UiPath.Word.Activities": "[2.3.1]"` — Word automation

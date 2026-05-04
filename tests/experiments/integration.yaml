@@ -17,5 +17,15 @@ defaults:
         path: "$SKILLS_REPO_PATH"
     ignore_patterns: []
 
+  llm_reviewer:
+    enabled: true
+    model: claude-sonnet-4-6
+    temperature: 0.0
+    max_tokens: 800
+    prompt: |
+      Evaluate correctness and adherence to the skill's Critical Rules for
+      this integration test. Be terse and specific about any issues. Score
+      1.0 if the final state is correct and complete, lower otherwise.
+
 variants:
   - variant_id: default

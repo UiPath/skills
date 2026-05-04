@@ -1,10 +1,12 @@
 ---
 name: uipath-human-in-the-loop
-description: "[PREVIEW] Add Human-in-the-Loop node to a Flow, Maestro, or Coded Agent. Triggers on approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs schema, writes JSON directly."
+description: "UiPath Human-in-the-Loop node for Flow, Maestro, or Coded Agent. Approval gates, escalations, write-back validation, data enrichment — even without user saying 'HITL'. Designs task schema, writes JSON directly."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # UiPath Human-in-the-Loop Assistant
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Recognizes when a business process needs a human decision point, designs the task schema through conversation, and wires the HITL node into the automation — Flow, Maestro, or Coded Agent.
 
@@ -34,6 +36,9 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 4. **Validate after every change.** Run `uip maestro flow validate <file> --output json` after writing the node and edges. The `uip` CLI does not accept `--format`; using it produces `error: unknown option '--format'` and exit code 3.
 5. **Read the existing `.flow` file before adding.** Understand which nodes already exist and where the HITL checkpoint belongs in the flow.
 6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
+7. **Check existing node IDs before generating a new one.** Read `workflow.nodes[*].id` from the `.flow` file and pick the next available suffix (e.g. `invoiceReview1`, then `invoiceReview2`).
+8. **Never report a failed validation as done.** If `uip maestro flow validate` returns errors, diagnose from the JSON output and fix before reporting to the user.
+9. **Output fields are accessed by `field.id`, not `field.variable`.** The runtime result object uses field IDs as keys — `$vars.<nodeId>.output.<fieldId>`. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) but does NOT change the key used in the output object.
 
 ---
 
@@ -131,11 +136,22 @@ Present the user with three options. Do not choose on their behalf or perform an
 | 2 | **New Coded Action App** | `"custom"` | Scaffold a new React + TypeScript app inside the solution — full UI control |
 | 3 | **Existing Deployed App** | `"custom"` | Reference an app already deployed to Orchestrator |
 
+> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a Coded Action App later."
+
 | User selects | Next step |
 |---|---|
 | QuickForm | Read [references/hitl-node-quickform.md](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
 | New Coded Action App | Read [references/hitl-node-coded-action-app.md](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
 | Existing Deployed App → ask: "What is the name of the deployed action app?" | Read [references/hitl-node-apptask.md](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
+
+**Fallback rules — what to do when the chosen path hits a blocker:**
+
+| Path | Blocker | Response |
+|---|---|---|
+| Existing Deployed App | App not found in Orchestrator | "I couldn't find an app with that name. Would you like to try a different name, or fall back to QuickForm while you prepare the app?" |
+| New Coded Action App | No `dist/` build present in the source path | "The source folder doesn't have a `dist/` build yet. Run your build first (`npm run build` or equivalent), then come back. Or I can set up a QuickForm now so the flow is wired and ready — you can swap in the app later." |
+| New Coded Action App | User can't provide a source path | "If you don't have the app code ready yet, I'll use QuickForm to wire the HITL checkpoint. You can replace it with a Coded Action App once it's built." |
+| Any custom app | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
 
 ---
 
@@ -143,6 +159,34 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
 | Priority | "What priority should this task have? Options: Low, Medium, High (default: Low)" |
+
+---
+
+## Step 4b — Schema Design Resilience (QuickForm only)
+
+Apply these checks while designing the schema before confirming with the user.
+
+### Data type warnings
+
+Flag these patterns and confirm before proceeding:
+
+| Field description contains | Suggest type | Warning to show |
+|---|---|---|
+| "amount", "price", "cost", "total", "quantity", "count", "score", "percentage" | `number` | "I'm using `number` for `<field>` — confirm that's correct, or tell me if it should be text." |
+| "date", "deadline", "due", "scheduled" | `date` | "I'm using `date` for `<field>` — confirm, or use `text` if the format varies." |
+| "approved", "enabled", "active", "is ", "flag" | `boolean` | "I'm using `boolean` (true/false) for `<field>` — confirm, or use `text` if you need more than two states." |
+
+### Vague or incomplete schema descriptions
+
+If the user says something like "just add some fields" or "use whatever makes sense":
+
+1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file.
+2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
+3. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only and note: "There are no upstream nodes to pull data from, so the reviewer will fill in all fields from scratch."
+
+### Partial confirmation
+
+If the user says "yes but change X" or gives conditional approval, apply the change and re-show the full updated schema for final confirmation before writing. Never write with an unresolved change.
 
 ---
 
@@ -242,9 +286,13 @@ After completing the wiring:
 1. **What was inserted** — node ID, label, insertion point
 2. **Schema summary** — what the human will see (input-direction fields), fill in (output/inOut-direction fields), and click (outcomes). For deployed action app show the actionSchema from the retrieve-configuration api response here.
 3. **Edges wired** — which handles were connected and to which nodes; any handles left unwired
-4. **Runtime variables** — `$vars.<nodeId>.result` (object) and `$vars.<nodeId>.status` (string) and how to reference them downstream
+4. **Runtime variables** — `$vars.<nodeId>.output` (object) and `$vars.<nodeId>.status` (string) and how to reference them downstream
 5. **Validation result** — pass or errors to fix
-6. **Next step** — pack and publish when ready via `uipath-development` skill
+6. **Production readiness note:**
+   - **QuickForm**: ready to deploy once the solution is packaged. No additional build steps.
+   - **New Coded Action App**: the app must be built (`npm run build` inside the app source) and the solution packaged before the HITL task can be used in production. The app will appear with `appSystemName: null` until first deployment assigns it a system name.
+   - **Existing Deployed App**: ready to deploy immediately — the app is already live.
+7. **Next step** — pack and publish when ready via `uipath-development` skill
 
 ---
 

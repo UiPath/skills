@@ -1,9 +1,11 @@
 ---
 name: uipath-data-fabric
-description: "[PREVIEW] Data Fabric entity/record CRUD via uip df. Create entities, insert/query/update/delete records, CSV import, file attachments. For Orchestrator→uipath-platform. For Integration Service→uipath-platform."
+description: "UiPath Data Fabric entity/record CRUD via `uip df`. Create entities, insert/query/update/delete records, CSV import, file attachments. For Orchestrator→uipath-platform. For Integration Service→uipath-platform."
 ---
 
 # UiPath Data Fabric — Agent Skill
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Data Fabric is UiPath's structured data store. Entities are typed schemas;
 records are rows; file fields store binary attachments.
@@ -93,6 +95,7 @@ uip df records query <entity-id> \
 | Explore only native entities | `entities list --native-only` |
 | Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` |
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
+| Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |

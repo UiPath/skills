@@ -92,6 +92,8 @@ Input keys come from the `describe` response (Step 4): typically `body`, `queryP
 
 ## Filter Expression Syntax
 
+> **Note:** The direct JSON write path uses structured filter trees (see [connector-trigger-common.md §7](connector-trigger-common.md#7-build-input-values-and-filter)) instead of flat filter expressions. The CLI internally converts event parameters to a structured filter tree.
+
 Trigger `data.filter` (or `node.data.uipath.filter` for event triggers) uses the connector's filter DSL. Common patterns:
 
 | Pattern | Example |

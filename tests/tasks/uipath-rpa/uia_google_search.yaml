@@ -1,0 +1,159 @@
+task_id: skill-rpa-uia-google-search
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to build a standard
+  (XAML, VB.NET) UiPath project that drives a web browser — opening google.com,
+  typing a query, and clicking the search button via Use Application/Browser,
+  Type Into, and Click UIA activities with pre-known selectors. Validates the
+  full XAML surface the skill teaches: project.json with VisualBasic expression
+  language, ApplicationCard / TypeInto / Click activity XML, and the
+  `uip rpa get-errors` compile gate.
+tags: [uipath-rpa, smoke, uia, xaml]
+
+# Standard XAML + UIA activities. First `uip rpa` call restores packages
+# (incl. UIAutomation) + spins up Helm — 60–90s cold start. `get-errors`
+# on a XAML workflow with UIA activities can run another ~45s. Budget
+# accordingly.
+task_timeout: 1800
+agent:
+  type: claude-code
+  # Bumped from 40 → 60: CI run 24903966636 hit error_max_turns at 40 on
+  # this task after spending many turns on `uip rpa create-project`
+  # auth-retry loops. Prompt now tells the agent to hand-author
+  # project.json directly, but give turn headroom for the XAML
+  # discovery/edit cycles regardless.
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+llm_reviewer:
+  enabled: true
+  model: claude-sonnet-4-6
+  temperature: 0.0
+  max_tokens: 600
+  prompt: |
+    Evaluate whether the agent built a correct standard (XAML, VB.NET)
+    UiPath RPA project for this CI task using the canonical skill flow.
+
+    Score on:
+    - GoogleSearch/project.json exists with `"expressionLanguage":
+      "VisualBasic"` and UIA activity packages in dependencies.
+    - GoogleSearch/Main.xaml opens chrome.exe at google.com, types
+      "UiPath automation" into the search box, and clicks the search
+      button, using the three known selectors (chrome.exe URL,
+      textarea name='q', input name='btnK'). Either modern
+      (NApplicationCard + NTypeInto + NClick) or classic
+      (OpenBrowser + TypeInto + Click) is acceptable in CI — the
+      modern Object Repository / configure-target pipeline can't run
+      without an interactive Studio session.
+    - The harness runs `uip rpa build` programmatically; the build's
+      exit code is the compile gate.
+
+    Reply terse, developer-style. Score 1.0 if selectors + query are
+    right and the project compiles.
+
+initial_prompt: |
+  Build a standard UiPath RPA project named "GoogleSearch" (XAML
+  workflow, VisualBasic expression language) under ./GoogleSearch
+  that automates a simple Google search:
+
+    * Open https://www.google.com in Chrome
+    * Type the query "UiPath automation" into the search box
+    * Click the search button
+
+  Selectors (use these directly — Studio is not running interactively
+  so `uip rpa indicate` is not available):
+
+    App:    html app='chrome.exe' url='https://www.google.com'
+    Input:  webctrl tag='textarea' name='q'
+    Button: webctrl tag='input' name='btnK' type='submit'
+
+  Use whichever `UiPath.UIAutomation.Activities` activities you need
+  to open the browser, type the query, and click search — both modern
+  (`NApplicationCard` + `NTypeInto` + `NClick`) and classic
+  (`OpenBrowser` + `TypeInto` + `Click`) shapes are acceptable as long
+  as the project compiles. Author the XAML directly with the selectors
+  above; do NOT engage the multi-phase `uia-configure-target` /
+  Object Repository pipeline — Studio is not running interactively in
+  CI, so its OR registration steps can't complete and will time out.
+
+  Follow the uipath-rpa skill's normal flow for everything else
+  (project scaffolding, validation). The `uip` CLI is authenticated
+  against the sandbox tenant, so Helm-backed commands
+  (`create-project`, `get-default-activity-xaml`, `get-errors`)
+  work as documented in the skill.
+
+  Use `--output json` on any uip commands you run.
+
+success_criteria:
+  - type: file_exists
+    description: "project.json was created"
+    path: "GoogleSearch/project.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json targets VisualBasic"
+    path: "GoogleSearch/project.json"
+    includes:
+      - "VisualBasic"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Main.xaml workflow was created"
+    path: "GoogleSearch/Main.xaml"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml contains TypeInto + Click UIA activities (modern or classic)"
+    path: "GoogleSearch/Main.xaml"
+    includes:
+      - "TypeInto"
+      - "Click"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Main.xaml targets google.com with the expected query and selectors"
+    path: "GoogleSearch/Main.xaml"
+    includes:
+      - "google.com"
+      - "UiPath automation"
+      - "btnK"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Skill-fidelity signal: the skill teaches `uip rpa get-errors` as
+  # the canonical validation step. We don't gate on its exit code —
+  # the actual compile gate is the `uip rpa build` run_command below.
+  - type: command_executed
+    description: "Agent ran uip rpa get-errors on Main.xaml (skill-canonical validation)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+get-errors.*Main\.xaml'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Programmatic compile gate: harness invokes `uip rpa build` against
+  # the agent's project directly and gates on exit code 0. Replaces
+  # the old "did the agent call build" telemetry check — what matters
+  # is that the project actually compiles.
+  #
+  # Path note: the @uipath/rpa-tool wrapper double-resolves a relative
+  # positional arg (chdir's into the project, then re-resolves the
+  # same relative arg from inside), producing a doubled path
+  # `<sandbox>\GoogleSearch\GoogleSearch` and a
+  # DirectoryNotFoundException out of WorkflowCompiler. Pass an
+  # absolute path via cmd.exe's %CD% to bypass it. coder_eval runs
+  # this through subprocess shell=True, which is cmd.exe on Windows.
+  - type: run_command
+    description: "uip rpa build exits 0 against the agent's GoogleSearch project"
+    command: 'uip rpa build "%CD%\GoogleSearch" --output json'
+    expected_exit_code: 0
+    timeout: 180
+    weight: 2.0
+    pass_threshold: 1.0

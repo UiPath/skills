@@ -1,6 +1,8 @@
 # connector-trigger task — Implementation (Direct JSON Write)
 
-> **Phase split.** Runs across both phases. Phase 2a writes `data.type-id` + `data.connection-id` only; **do NOT call `is triggers describe` in 2a**. Phase 2b runs `is triggers describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling `uip maestro case tasks describe`. See SKILL.md Rule 16 + Plugin Index.
+
+> **Phase split.** Runs across both phases. Phase 2 writes `data.type-id` + `data.connection-id` only; **do NOT call `is triggers describe` in Phase 2**. Phase 3 runs `is triggers describe`, writes `data.inputs[]` / `data.outputs[]` schema, then binds values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Write a `wait-for-connector` task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md).
 
@@ -40,7 +42,7 @@ Generate task ID (`t` + 8 alphanumeric chars) and elementId (`<stageId>-<taskId>
 - **`data.context[]`** — per [common §Context array](../../../connector-trigger-common.md#context-array)
 - **`data.context[].metadata`** — per [common §Metadata body](../../../connector-trigger-common.md#metadata-body) + [common §essentialConfiguration](../../../connector-trigger-common.md#essentialconfiguration)
 - **`data.inputs[]`** — per [common §Input body](../../../connector-trigger-common.md#input-body-from-tasksmd-values). **Include `elementId`** on each input.
-- **`data.outputs[]`** — copy verbatim from `tasks describe` (Step 2). Set `elementId` to the task's elementId. Copy `_jsonSchema` from Error output if present.
+- **`data.outputs[]`** — copy from `tasks describe` (Step 2). Set `elementId` to the task's elementId. Copy `_jsonSchema` from Error output if present. **Dedup:** apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) — if a `var` value (`response`, `error`) already exists in any task in `caseplan.json`, suffix with a counter starting at 2. Update `var`, `id`, `value`, `target`; keep `name`, `displayName`, `source` unchanged.
 - **`data.bindings[]`** — empty array `[]`
 - **`entryConditions`** — do NOT auto-inject. Step 10 handles them.
 

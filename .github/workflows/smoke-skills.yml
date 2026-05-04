@@ -30,10 +30,31 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
 
-          # If test infrastructure changed, run all smoke tests
+          # RPA + rpa-legacy skills run on the Windows workflow
+          # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
+          # the full lifecycle (`uip rpa` / `uip rpa-legacy` CLI) is
+          # what's being exercised — so we skip those tasks here.
+          WINDOWS_SKILLS="uipath-rpa uipath-rpa-legacy"
+
+          # If test infrastructure changed, run all smoke tests except
+          # the Windows-only ones.
           if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$'; then
-            echo "task_globs=tasks/**/*.yaml" >> "$GITHUB_OUTPUT"
-            echo "Running all smoke tests (test infrastructure changed)"
+            shopt -s globstar nullglob
+            GLOBS=""
+            for f in tests/tasks/**/*.yaml; do
+              case "$f" in
+                tests/tasks/uipath-rpa/*|tests/tasks/uipath-rpa-legacy/*) continue ;;
+              esac
+              GLOBS="$GLOBS ${f#tests/}"
+            done
+            GLOBS=$(echo "$GLOBS" | xargs)
+            if [ -z "$GLOBS" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "No non-Windows smoke tasks to run."
+            else
+              echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
+              echo "Running all non-Windows smoke tests (test infrastructure changed)"
+            fi
             exit 0
           fi
 
@@ -50,10 +71,15 @@ jobs:
             exit 0
           fi
 
-          # Build task glob pattern for changed skills that have tests
+          # Build task glob pattern for changed skills that have tests.
+          # Skip the Windows-only RPA skills — they run on smoke-rpa-skills.yml.
           GLOBS=""
           UNTESTED=""
           for skill in $SKILLS; do
+            if echo "$WINDOWS_SKILLS" | grep -qw "$skill"; then
+              echo "Skipping $skill (runs on Windows — see smoke-rpa-skills.yml)"
+              continue
+            fi
             if [ -d "tests/tasks/$skill" ]; then
               if [ -n "$GLOBS" ]; then
                 GLOBS="$GLOBS tasks/$skill/**/*.yaml"
@@ -123,7 +149,11 @@ jobs:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 18+ smoke tasks at ~1–2 min each + env setup. 60 min was getting
+    # cancelled when the matrix grew + LLM reviewer was retrying on quota
+    # exhaustion. 120 min covers worst-case reviewer-retry storms without
+    # masking real hangs.
+    timeout-minutes: 120
     name: Run skill smoke tests
     steps:
       - uses: actions/checkout@v4
@@ -133,12 +163,6 @@ jobs:
           repository: UiPath/coder_eval
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
-
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/uipcli
-          token: ${{ secrets.GH_PAT }}
-          path: .uipcli
 
       - uses: actions/setup-python@v5
         with:
@@ -150,30 +174,79 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: oven-sh/setup-bun@v2
-
       - name: Install coder-eval
         working-directory: .coder_eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      - name: Build and install uip CLI from source
-        working-directory: .uipcli
-        env:
-          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_NPM_REGISTRY_TOKEN }}
+      # Install from public npm at @latest. `--@uipath:registry=`
+      # forces the @uipath scope to public npm regardless of any
+      # `.npmrc` scope mapping (e.g., to the internal GitHub Packages
+      # feed, which carries divergent 1.0.0-alpha.* prereleases). See
+      # smoke-rpa-skills.yml for the full rationale.
+      - name: Install uip CLI (public npm @latest)
         run: |
-          bun install
-          bun run build
-          cd packages/cli && npm link
+          npm install -g \
+            --@uipath:registry=https://registry.npmjs.org/ \
+            @uipath/cli@latest
+          uip --version
+
+      # Pre-auth uip via the CLI's documented env-var bypass so non-RPA
+      # smoke tasks (orchestrator / integration-service / data-fabric / ...)
+      # have a logged-in CLI without the agent ever calling `uip login`.
+      # See smoke-rpa-skills.yml for the chain rationale; this Linux job
+      # doesn't go through Helm, but the same UIPATH_CLI_* env vars
+      # satisfy the JS CLI's general auth state too.
+      - name: Mint UiPath service-account token + enable env-auth
+        env:
+          UIPATH_CLIENT_ID:     ${{ secrets.UIPATH_CLIENT_ID }}
+          UIPATH_CLIENT_SECRET: ${{ secrets.UIPATH_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -fsS -X POST \
+            "https://alpha.uipath.com/identity_/connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=$UIPATH_CLIENT_ID" \
+            -d "client_secret=$UIPATH_CLIENT_SECRET" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read" \
+            | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          {
+            echo "UIPATH_CLI_ENABLE_ENV_AUTH=true"
+            echo "UIPATH_CLI_AUTH_TOKEN=$TOKEN"
+            echo "UIPATH_CLI_ORGANIZATION_NAME=${{ secrets.UIPATH_ORG_NAME }}"
+            echo "UIPATH_CLI_ORGANIZATION_ID=${{ secrets.UIPATH_ORG_ID }}"
+            echo "UIPATH_CLI_TENANT_NAME=${{ secrets.UIPATH_TENANT_NAME }}"
+            echo "UIPATH_CLI_TENANT_ID=${{ secrets.UIPATH_TENANT_ID }}"
+          } >> "$GITHUB_ENV"
+          UIPATH_CLI_ENABLE_ENV_AUTH=true \
+          UIPATH_CLI_AUTH_TOKEN="$TOKEN" \
+          UIPATH_CLI_ORGANIZATION_NAME="${{ secrets.UIPATH_ORG_NAME }}" \
+          UIPATH_CLI_ORGANIZATION_ID="${{ secrets.UIPATH_ORG_ID }}" \
+          UIPATH_CLI_TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}" \
+          UIPATH_CLI_TENANT_ID="${{ secrets.UIPATH_TENANT_ID }}" \
+            uip login status --output json
 
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
+          # Route the agent through AWS Bedrock. The Anthropic workspace
+          # hit its API usage limit (resets 2026-05-01), so DirectRoute
+          # is blocked. Bedrock has a separate quota.
+          #
+          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
+          # token spend — coder_eval's reviewer only supports Anthropic
+          # direct or UiPath LLM Gateway, not Bedrock). If the shared
+          # workspace quota is still drained when the reviewer fires,
+          # orchestrator._run_final_llm_review swallows the error and
+          # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         working-directory: tests
         id: smoke
         run: |
@@ -182,17 +255,116 @@ jobs:
             -e experiments/default.yaml --tags smoke -j 1 -v
         continue-on-error: true
 
-      - name: Print results and fail if tests failed
+      - name: Summarize results
         if: always()
         working-directory: tests
         run: |
-          for f in runs/*/experiment.md runs/*/default/variant.md runs/*/default/*/task.json; do
-            if [ -f "$f" ]; then
-              echo "=== $f ==="
-              cat "$f"
-              echo ""
-            fi
-          done
-          if [ "${{ steps.smoke.outcome }}" = "failure" ]; then
-            exit 1
+          # Find the most recent run directory (tests may not have produced
+          # one on catastrophic install failures).
+          run_dir=$(ls -td runs/*/ 2>/dev/null | head -n 1)
+          if [ -z "$run_dir" ]; then
+            echo "::warning::No run directory found — nothing to summarize"
+            exit 0
           fi
+          echo "Run directory: $run_dir"
+          echo ""
+          echo "## Task results"
+          python - <<'PY'
+          import json
+          import pathlib
+          run_dir = sorted(pathlib.Path('runs').glob('*/'))[-1]
+          rows = []
+          for p in sorted(run_dir.rglob('task.json')):
+              d = json.loads(p.read_text(encoding='utf-8'))
+              lr = d.get('llm_review') or {}
+              rows.append((
+                  d.get('task_id', '?'),
+                  d.get('final_status', '?'),
+                  d.get('weighted_score'),
+                  lr.get('score'),
+              ))
+          if not rows:
+              print('  (no task.json files found)')
+          width = max((len(r[0]) for r in rows), default=4)
+          for task_id, status, score, llm_score in rows:
+              score_s = f"{score:.2f}" if isinstance(score, (int, float)) else '   —'
+              llm_s = f"{llm_score:.2f}" if isinstance(llm_score, (int, float)) else '   —'
+              print(f"  {task_id:<{width}}  status={status:<8}  score={score_s}  llm={llm_s}")
+          PY
+          echo ""
+          echo "HTML report artifact: eval-report-${{ github.run_id }}"
+          echo "Download under the workflow run's Artifacts section and open experiment.html."
+
+      - name: Upload HTML / JSON eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ github.run_id }}
+          # Use ** so the pattern still matches the replicate-index segment
+          # that coder_eval adds to per-task run dirs (runs/<ts>/<variant>/<task>/<NN>/).
+          path: |
+            tests/runs/*/experiment.html
+            tests/runs/*/experiment.md
+            tests/runs/*/experiment.json
+            tests/runs/*/experiment.log
+            tests/runs/*/*/variant.html
+            tests/runs/*/*/variant.md
+            tests/runs/*/*/variant.json
+            tests/runs/**/task.html
+            tests/runs/**/task.json
+            tests/runs/**/task.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Quality gate: fail the job if any task's LLM reviewer score is
+      # below 0.7, independent of deterministic criteria. The reviewer
+      # catches skill-adherence regressions that file-exists /
+      # file-contains checks miss (e.g. agent called the wrong subcommand
+      # but still produced the right output shape). 0.7 (not 0.8) gives
+      # the qualitative verdict room to dock for minor process issues the
+      # agent already recovered from without false-failing correct runs.
+      - name: Enforce LLM reviewer score threshold (>= 0.7)
+        if: always()
+        working-directory: tests
+        env:
+          REVIEWER_THRESHOLD: "0.7"
+        # Single-quoted heredoc keeps Python literals intact. Threshold
+        # is read from the env so we don't have to escape dollar signs.
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, sys
+          threshold = float(os.environ.get('REVIEWER_THRESHOLD', '0.8'))
+          run_dirs = sorted(pathlib.Path('runs').glob('*/'))
+          if not run_dirs:
+              print('::warning::No run directory — skipping reviewer threshold check')
+              sys.exit(0)
+          run_dir = run_dirs[-1]
+          task_jsons = sorted(run_dir.rglob('task.json'))
+          failures = []
+          missing = []
+          for p in task_jsons:
+              d = json.loads(p.read_text(encoding='utf-8'))
+              lr = d.get('llm_review') or {}
+              score = lr.get('score')
+              tid = d.get('task_id', p.parent.name)
+              if not isinstance(score, (int, float)):
+                  missing.append(tid)
+                  continue
+              if score < threshold:
+                  issues = (lr.get('issues') or '').splitlines()[0][:120]
+                  failures.append((tid, score, issues))
+          for tid in missing:
+              print(f'::warning::{tid}: no llm_review (reviewer skipped or errored)')
+          if failures:
+              for tid, score, issues in failures:
+                  print(f'::error::{tid}: llm_review score {score:.2f} < {threshold} — {issues}')
+              print(f'::error::{len(failures)} task(s) below LLM reviewer threshold {threshold}')
+              sys.exit(1)
+          print(f'All {len(task_jsons)} task(s) passed llm_review >= {threshold}')
+          PY
+
+      - name: Fail if tests failed
+        # Also catch `cancelled` (the job timeout firing) so a truncated
+        # run is not silently reported green.
+        if: steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled'
+        run: exit 1

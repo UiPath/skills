@@ -26,7 +26,7 @@ Returns `Entry`, `Config`, and `Connections`.
 
 - **Single connection** → use it.
 - **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED>`. See each plugin's unresolved fallback.
+- **Empty `Connections`** → mark `<UNRESOLVED>`. Both plugins emit skeletons at execution time (different shapes per plugin) — see [skeleton-tasks.md](skeleton-tasks.md) for connector-task skeletons and [`plugins/triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md) for event-trigger skeletons.
 
 Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
 
@@ -82,20 +82,91 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 {"parentFolderId": "AAMkADNm..."}
 ```
 
-**filter** — translate SDD filter criteria using `filterFields` from Step 3. Use JMESPath syntax. Supports `=vars.X` for runtime case variable references:
+**filter** — translate SDD filter criteria using `filterFields` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI converts the tree to a JMESPath expression automatically.
 
-| Pattern | JMESPath |
+#### Filter tree shape
+
+```json
+{
+  "groupOperator": 0,
+  "index": 0,
+  "filters": [
+    {
+      "id": "<fieldName from filterFields>",
+      "operator": "<PascalCase operator>",
+      "value": { "value": "<literal>", "rawString": "\"<literal>\"", "isLiteral": true }
+    }
+  ],
+  "groups": []
+}
+```
+
+- `groupOperator`: `0` (And) or `1` (Or) — combines sibling filters and groups
+- `filters[]`: leaf conditions. `id` must be a field name from `filterFields` (Step 3)
+- `groups[]`: nested sub-trees for mixed AND/OR logic (empty for simple cases)
+
+#### Operators
+
+| Pattern | Operator |
 |---|---|
-| Exact match (static) | `(fieldName == 'value')` |
-| Exact match (dynamic variable) | `(fieldName == '=vars.variableName')` |
-| Substring match | `(contains(fieldName, 'value'))` |
-| Multiple conditions | `(fieldA == 'x' && fieldB == 'y')` |
+| Exact match | `"Equals"` |
+| Not equal | `"NotEquals"` |
+| Substring match | `"Contains"` |
+| Does not contain | `"NotContains"` |
+| Starts with | `"StartsWith"` |
+| Greater than | `"GreaterThan"` |
+| Less than | `"LessThan"` |
+| Is empty | `"IsEmpty"` |
+| Is not empty | `"IsNotEmpty"` |
+| One of (multi-value) | `"In"` |
+| Not one of | `"NotIn"` |
+| Is null | `"IsNull"` |
+| Is not null | `"IsNotNull"` |
+
+> See the IS SDK `FilterOperator` enum for the complete list (includes `Like`, `NotLike`, datetime operators, etc.).
+
+#### Examples
+
+Single filter (AND with one leaf):
+```json
+{ "groupOperator": 0, "index": 0, "filters": [
+    { "id": "subject", "operator": "Contains", "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }
+], "groups": [] }
+```
+
+Multiple conditions (AND):
+```json
+{ "groupOperator": 0, "index": 0, "filters": [
+    { "id": "project", "operator": "Equals", "value": { "value": "PROJ", "rawString": "\"PROJ\"", "isLiteral": true } },
+    { "id": "issuetype", "operator": "Equals", "value": { "value": "Bug", "rawString": "\"Bug\"", "isLiteral": true } }
+], "groups": [] }
+```
+
+Nested AND/OR (e.g., "status is Open AND (priority > 3 OR assignee is null)"):
+```json
+{ "groupOperator": 0, "index": 0, "filters": [
+    { "id": "status", "operator": "Equals", "value": { "value": "Open", "rawString": "\"Open\"", "isLiteral": true } }
+], "groups": [
+    { "groupOperator": 1, "index": 1, "filters": [
+        { "id": "priority", "operator": "GreaterThan", "value": { "value": 3, "rawString": "\"3\"", "isLiteral": true } },
+        { "id": "assignee", "operator": "IsNull", "value": null }
+    ], "groups": [] }
+] }
+```
+
+No filter (trigger fires on all events): omit `filter` from the tasks.md entry entirely.
+
+#### Dynamic variable limitation
+
+The filter tree only supports `isLiteral: true` values. When a filter requires runtime case variable references (`=vars.X`), write the `body.filters.expression` JMESPath string directly and leave `essentialConfiguration.filter` as `null`. This is a known SDK limitation shared with flow-tool.
 
 Only use field names that appear in `filterFields`. If a filter cannot be translated unambiguously, **AskUserQuestion**.
 
 ---
 
 ## Implementation — Shared Metadata Fetches (read-only CLI)
+
+> **Each connector task runs its own `get-connection`.** Even when two tasks share the same `connection-id`, the Entry and Config objects differ between activity and trigger types. Never reuse another task's CLI output.
 
 ### Step 1 — Get connection details + Entry
 
@@ -112,7 +183,9 @@ uip case registry get-connection \
 | `Entry` | `.Data.Entry` (full object) | `{ displayName: "Email Received", ... }` |
 | `Config` | `.Data.Config` | `{ connectorKey, objectName, eventOperation, eventMode, version, supportsStreaming }` |
 | `folderKey` | `.Data.Connections[selected].folder.key` | `"87fd6cec-..."` |
+| `folderName` | `.Data.Connections[selected].folder.name` | `"57d6e3b0's workspace"` |
 | `connectorName` | `.Data.Connections[selected].connector.name` | `"Microsoft Outlook 365"` |
+| `connectionName` | `.Data.Connections[selected].name` | `"my-outlook-connection"` |
 
 ### Step 2 — Get enriched metadata + outputs
 
@@ -128,6 +201,7 @@ uip case tasks describe --type connector-trigger \
 |---|---|---|
 | `enrichment.operation` | `.Data.enrichment.operation` | `"EMAIL_RECEIVED"` |
 | `enrichment.connectorVersion` | `.Data.enrichment.connectorVersion` | `"1.35.48"` |
+| `enrichment.configuration` | `.Data.enrichment.configuration` | `"=jsonString:{\"essentialConfiguration\":{...}}"` |
 | `outputs` | `.Data.outputs` | Array with response schema + Error |
 
 ---
@@ -158,7 +232,7 @@ Every context entry MUST include `"type": "string"` (or `"type": "json"` for met
     "objectName": "<object-name>",
     "eventType": "<enrichment.operation>",
     "eventMode": "<event-mode from tasks.md>",
-    "configuration": "=jsonString:<essentialConfiguration>",
+    "configuration": "<enrichment.configuration from Step 2 — copy as-is>",
     "uiPathActivityTypeId": "<type-id>",
     "errorState": { "issues": [] }
   },
@@ -178,17 +252,19 @@ Every context entry MUST include `"type": "string"` (or `"type": "json"` for met
 
 ### essentialConfiguration
 
-```
-=jsonString:{"essentialConfiguration":{"instanceParameters":{"connectorKey":"<connector-key>","objectName":"<object-name>","activityType":"CuratedWaitFor","version":"<Config.version>","eventOperation":"<enrichment.operation>","eventMode":"<event-mode>","supportsStreaming":<Config.supportsStreaming>},"objectName":"<object-name>","packageVersion":"<Config.version>","connectorVersion":"<enrichment.connectorVersion>","executionType":null,"httpMethod":null,"path":null,"filter":null}}
-```
+Copy `enrichment.configuration` from Step 2 as-is. The CLI pre-builds this `=jsonString:` string using the full `Entry.configuration` as `instanceParameters` (with `activityType` overridden to `"CuratedWaitFor"`) and includes `connectorVersion` and `filter` when available.
 
-> **Critical:** `activityType` MUST be `"CuratedWaitFor"` — NOT `Config.activityType` (which is `"CuratedTrigger"`).
+> **Do NOT hand-construct this string.** The CLI returns the correct pre-built configuration. Hand-constructing produces incomplete `instanceParameters` and risks using the wrong `activityType`.
 
-> `filter` is always `null` in essentialConfiguration. The filter goes in `inputs[].body.filters.expression` only.
+> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 8 — do not hand-construct.
+
+> **Critical:** The CLI already overrides `activityType` to `"CuratedWaitFor"` (NOT `Config.activityType` which is `"CuratedTrigger"`). Case `wait-for-connector` tasks use different runtime semantics than Flow triggers.
+
+> When a structured filter tree is provided (from §7), store it in `essentialConfiguration.filter` so Studio Web can round-trip the filter UI. The derived JMESPath expression goes in `inputs[].body.filters.expression`. When no filter is needed, `filter` stays `null`.
 
 ### Input body (from tasks.md values)
 
-If `input-values` has event parameters, convert to JMESPath + combine with `filter`:
+If `input-values` has event parameters, the CLI auto-generates the JMESPath expression from the structured filter tree. The body contains:
 
 ```json
 {
@@ -210,12 +286,20 @@ Create 2 entries in `root.data.uipath.bindings[]`:
 
 Both share `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
 
+### Root-level bindings post-sync
+
+After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `get-connection` failed.
+
+> **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 (after all connector tasks), not per-task. See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md).
+
 ---
 
 ## What NOT to Do (shared)
 
 - **Do NOT use `CuratedTrigger`** in essentialConfiguration. It MUST be `CuratedWaitFor`.
-- **Do NOT put filter in `essentialConfiguration.filter`.** It stays `null`. Filter goes in `body.filters.expression`.
+- **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree (§7); the CLI derives the expression automatically.
+- **Do NOT use `filterExpression` as a CLI input.** The CLI rejects raw `filterExpression` strings (MST-8802).
+- **Never reuse a reference ID from a prior case or session.** Reference IDs (mailbox folders, Slack channels, Jira projects) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources execute list` against the current `--connection-id`.
 - **Do NOT add `body.parameters`.** Only `body.filters.expression` + `body.queryParams`.
 - **Do NOT auto-inject `entryConditions`** (for tasks). Step 10 handles them.
 

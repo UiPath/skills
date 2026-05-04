@@ -1,0 +1,108 @@
+task_id: skill-hitl-quality-inout-field-access
+description: >
+  Quality test: agent correctly uses inOut direction for fields the human both
+  sees and can modify (write-back validation pattern). Verifies that inOut fields
+  appear in $vars.<nodeId>.output (same as output fields), and that the binding
+  pre-fills the value while still allowing the human to edit it.
+tags: [uipath-human-in-the-loop, integration, schema-design, inout, variable-binding]
+
+agent:
+  type: claude-code
+  max_turns: 90
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "RCAReview" for AI-generated root cause analysis review:
+
+  1. Manual trigger
+  2. Script node (id suggestion: "generateRCA") — sets AI-generated output:
+       output.ticketId = "INC-5521"
+       output.rcaDraft = "Network timeout caused by misconfigured firewall rule"
+       output.confidence = 0.68
+  3. HITL node — support lead reviews the RCA:
+       Input fields (read-only, bound to upstream):
+         - Ticket ID: bound to generateRCA.output.ticketId (text)
+         - Confidence Score: bound to generateRCA.output.confidence (number)
+       InOut fields (pre-filled from upstream but human CAN edit before submitting):
+         - RCA Text: pre-filled from generateRCA.output.rcaDraft, human can correct it
+           (direction must be "inOut", NOT "output" and NOT "input")
+       Output fields (human fills in from scratch):
+         - severity (text, required): agent's severity assessment
+       Outcomes: Approve (primary), Request Changes
+  4. Script node — logs the final RCA:
+       References $vars.<hitl-node-id>.output.rcatext (using field ID)
+       References $vars.<hitl-node-id>.output.severity
+  5. End node
+
+  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+
+  Use the inline quickform node (uipath.human-in-the-loop).
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "rca_field_direction": "<direction value used for the RCA text field>",
+    "rca_field_has_binding": true,
+    "rca_access_path": "<$vars path used in downstream script>",
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate RCAReview/RCAReview/RCAReview.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "RCA text field has inOut direction"
+    path: "RCAReview/RCAReview/RCAReview.flow"
+    includes:
+      - '"direction": "inOut"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "inOut field is pre-filled with upstream binding"
+    path: "RCAReview/RCAReview/RCAReview.flow"
+    includes:
+      - '"direction": "inOut"'
+      - "generateRCA"
+      - ".output.rcaDraft"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Downstream script accesses RCA via output object (inOut fields appear in output)"
+    path: "RCAReview/RCAReview/RCAReview.flow"
+    includes:
+      - "$vars."
+      - ".output."
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms inOut direction and correct access path"
+    path: "report.json"
+    assertions:
+      - expression: "rca_field_direction"
+        operator: equals
+        expected: "inOut"
+      - expression: "rca_field_has_binding"
+        operator: equals
+        expected: true
+      - expression: "rca_access_path"
+        operator: contains
+        expected: ".output."
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 0.75

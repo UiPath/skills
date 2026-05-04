@@ -91,16 +91,25 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | SLA escalation | `esc_` | 6 | `esc_gH2jKl` |
 | Binding | `b` | 8 | `b3KmNp7Q9` |
 
-### Algorithm
+### Algorithm — inline, no subprocess
 
-Match the CLI exactly:
+Prefixed IDs are picked **inline by the agent** while writing the JSON. No `node -e`, no Bash subprocess. The schema requires only: prefix + `count` chars from `[A-Za-z0-9]` + within-case uniqueness. Cryptographic randomness is NOT required (the CLI uses `Math.random()`-grade entropy too).
+
+Steps:
 
 1. Start with the prefix string.
-2. Generate `count * 2` random bytes (over-sampled to reduce refills).
-3. For each byte, if the byte value is < `248` (the largest multiple of 62 ≤ 256), take `byte % 62` and look up the character in `[A-Za-z0-9]`. Otherwise skip the byte.
-4. Stop once `count` characters have been appended.
+2. Pick `count` chars from `[A-Za-z0-9]` (62 chars). Constraints:
+   - **Mix uppercase, lowercase, and digits** in every ID. Pure-letter or pure-digit suffixes look like patterns, not IDs.
+   - **No sequential alphabet** (`abcdef`, `xyz123`) and no obvious dictionary words (`secret`, `loginX`).
+   - **No reuse within the same caseplan.** Before embedding the ID, scan all existing `id` values in the just-Read `caseplan.json` (and `id-map.json` if loaded). If collision, pick again.
+   - **Different IDs in the same write must differ from each other**, not just from existing IDs.
+3. Concatenate prefix + chars. Embed via Write/Edit.
 
-Every skill run generates fresh random IDs — no determinism.
+The 62-char alphabet at length 6 = 56B combinations; at length 8 = 218T. Collision risk inside a single caseplan (~30 IDs) is negligible — the per-write existing-ID scan in step 2 is the safety net.
+
+> **UUID v4 fields are different.** `operate.json.projectId` and `entry-points.json` `uniqueId` follow `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx` with version + variant bits. Agent-picking those is too error-prone — keep the `node -e "console.log(crypto.randomUUID())"` stdout-only Bash one-liner for those two fields. Prefixed-IDs (`Stage_`, `t`, `Rule_`, etc.) are inline.
+
+Every skill run generates fresh IDs — no determinism.
 
 ### Sidecar `id-map.json`
 
@@ -136,13 +145,23 @@ All mutations to `caseplan.json` (and sibling files like `entry-points.json`, `i
 - **Write** to rewrite the whole file.
 - **Edit** for narrowly-scoped, unambiguous in-place replacements.
 
-**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`. The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
+**Do NOT** shell out to `python`, `node`, `jq`, `sed`, `awk`, or any other process to read, parse, transform, or write the JSON. No helper scripts, no inline one-liners that modify files, no `python3 -c '... json.load ... json.dump ...'`, no `node -e "...fs.writeFileSync...".` The agent holds the parsed object in its own reasoning; the file system is touched only via Read/Write/Edit.
 
 This is a hard constraint — it keeps every mutation reviewable in the tool-call transcript and prevents silent state changes the user cannot audit.
 
+**Anti-patterns that count as file mutation (forbidden — write the file via the Write/Edit tool instead):**
+
+- `node -e "const fs=require('fs'); ... fs.writeFileSync(...)"` — the `node -e` permission is for stdout-only helpers, not file I/O.
+- `node -e "..."` / `python -c "..."` / `jq '...' caseplan.json` followed by `> caseplan.json`, `>> caseplan.json`, or `| tee caseplan.json` — shell redirection onto a skill artifact is mutation, regardless of which interpreter ran.
+- `cat caseplan.json | jq '...'` even if you only "intend to print" — `jq` is forbidden; use Read.
+- `sed -i` / `awk -i inplace` / `python -c "open('caseplan.json','w')..."` — same family, all forbidden.
+- `bash -c "...>caseplan.json..."` — wrapping the redirection in another shell does not exempt it.
+
 Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issues.append(...)`, `existingTriggers = schema.nodes.filter(...)`, etc.) are **specifications of intent**, not commands to execute. Read them, apply the logic in-head, then use Read/Write/Edit to realize the mutation.
 
-**Bash is still used for**: ID randomness (`node -e "..."` one-liners that print to stdout only — see "Generate a fresh ID" below), `uip solution new` / `uip solution project add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
+**Bash is still used for**: UUID v4 generation only (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution new` / `uip solution project add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
+
+**Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `edge_`, `c`, `r`, `b`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
 ### Read → modify → write
 
@@ -152,14 +171,18 @@ Always read `caseplan.json` fully with the Read tool, modify the in-memory objec
 
 ### Generate a fresh ID
 
-Per the algorithm above. Use a Bash + `node -e` one-liner that **only prints the ID to stdout** — the agent consumes the printed value and embeds it via Write/Edit. No file I/O inside the subprocess.
+**Inline — no subprocess.** Per § ID Generation § Algorithm above. Pick chars in-head following the constraints (mixed case + digits, no sequential, no dictionary words), scan existing IDs in the just-Read `caseplan.json` for collisions, embed via Write/Edit.
 
-```bash
-# Bash + node one-liner for Stage_ prefix, 6 chars — stdout only, no file access
-node -e "const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';let s='Stage_';for(let i=0;i<6;i++)s+=c[Math.floor(Math.random()*62)];console.log(s)"
+Examples — agent picks these directly when writing JSON:
+
+```
+Stage_  + "kQ7mNt"  → "Stage_kQ7mNt"
+t       + "8GQTYo8O" → "t8GQTYo8O"
+Rule_   + "jdBFrJ"  → "Rule_jdBFrJ"
+edge_   + "Qz7hVr"  → "edge_Qz7hVr"
 ```
 
-If the Bash tool is unavailable for any reason, fall back to a pseudo-random ID composed in reasoning from the algorithm above — still no subprocess touching the file.
+> **UUID v4 only** (`operate.json.projectId`, `entry-points.json` `uniqueId`) uses `node -e "console.log(crypto.randomUUID())"` — see § Tool usage. Prefixed-IDs above never call Bash.
 
 ### Add a node (Trigger / Stage / ExceptionStage)
 

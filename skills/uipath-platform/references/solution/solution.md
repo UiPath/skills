@@ -50,7 +50,14 @@ graph LR
     D --> E[publish]
     E --> F[deploy run]
     F --> G[activate]
+    C --> H[upload]
 ```
+
+Two distinct distribution paths from the same solution source:
+- **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
+- **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
+
+Always run `resource refresh` before either path so the bundled artefact files and `userProfile/<userId>/debug_overwrites.json` reflect the current cloud state.
 
 ---
 
@@ -68,8 +75,9 @@ uip solution
   │     ├── remove <projectPath> [solutionFile] Unregister a project from .uipx
   │     └── import --source <path>              Copy external project into solution and register
   ├── resource
-  │     ├── list --solution-folder <path>     List local, remote, or all resources
-  │     └── refresh --solution-folder <path>  Sync resource declarations from project bindings
+  │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
+  │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
+  │     └── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
   ├── deploy
   │     ├── run -n <name>                 Deploy a published solution package
   │     ├── status <id>                   Check deployment status

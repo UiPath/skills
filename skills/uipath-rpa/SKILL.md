@@ -1,6 +1,7 @@
 ---
 name: uipath-rpa
-description: "[PREVIEW] UiPath automations — coded workflows (C#), XAML workflows, hybrid projects. Create, edit, build, run, debug. Deploy→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
+description: "UiPath RPA — create, edit, build, run, debug `.cs` coded workflows and `.xaml` workflows. UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Deploy→uipath-platform. Test reports→uipath-test. Agents→uipath-agents. Legacy→uipath-rpa-legacy."
+when_to_use: "User wants to create, edit, debug, or run a UiPath automation — '.cs' coded workflows or '.xaml' files. Triggers: 'build a workflow', 'automate Excel/email/web/PDF/queue items', 'add a try-catch', 'fix this XAML error', 'scrape this site', 'process invoices', 'create a test case', or project.json shows UiPath dependencies. NOT for '.flow' files (→uipath-maestro-flow), Python agents (→uipath-agents), legacy .NET 4.6.1 projects (→uipath-rpa-legacy)."
 ---
 
 # UiPath RPA Assistant
@@ -43,11 +44,11 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
    - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
 4. Then proceed with the skill workflow
 
-## Step 0: Resolve PROJECT_DIR and Environment
+## Step 0: Resolve PROJECT_DIR
 
-Before creating or modifying anything, determine which project to work with and ensure Studio is running. See [references/environment-setup.md](references/environment-setup.md) for the full procedure.
+Before creating or modifying anything, determine which project to work with. See [references/environment-setup.md](references/environment-setup.md) for the full procedure.
 
-**Quick check:** Find `project.json` to establish `{projectRoot}`, run `uip rpa list-instances --output json` to verify Studio, and `uip rpa open-project` if needed.
+**Quick check:** Find `project.json` to establish `{projectRoot}`. That's it — no Studio Desktop check needed. `uip rpa` auto-launches a headless Studio (UiPath.Studio.Helm NuGet) on first call. Studio Desktop is required only for `diff` and `focus-activity`.
 
 ## Project Type Detection
 
@@ -86,7 +87,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 
 ### Common Rules (Both Modes)
 
-1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, running Studio instances, then CWD. Only create when confirmed no project matches AND user explicitly requests creation.
+1. **NEVER create a project without confirming none exists.** Follow Step 0 resolution: check explicit path, project name, then CWD for `project.json`. Only create when confirmed no project matches AND user explicitly requests creation.
 2. **ALWAYS use `uip rpa create-project`** to create new projects — never write `project.json` or scaffolding manually.
    - **Before creating, decide if a template is needed.** If the user names a template ("REFramework", "Robotic Enterprise Framework", "based on the X template"), an industry/domain pattern (SAP, ERP, banking, mainframe), or otherwise hints at a non-blank starter, run `uip rpa search-templates --query "<term>" --output json` first. Selection rule against `Data[*]`:
      - **User named a specific non-Official template** (e.g. "Enhanced REFramework", "Lite ReFrameWork") AND a `Marketplace` item's `title` or `packageId` substring-matches the user's specific qualifier → ask the user (Official + that Marketplace item are both candidates). Do NOT auto-pick.
@@ -104,6 +105,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 7. **For UI automation workflows**, MUST follow the target configuration workflow in [references/ui-automation-guide.md](references/ui-automation-guide.md). NEVER hand-write selectors — use `uia-configure-target` exclusively.
+7a. **[UIA] Verify UIA prerequisites before invoking `uia-configure-target`.** UIA minimum is `26.4.1-preview` (source-of-truth: [uia-prerequisites.md](references/uia-prerequisites.md) — kept in sync with that file). Run the prerequisite check in that file. If `UiPath.UIAutomation.Activities` is below the minimum or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent: ask the user to upgrade or fall back to indication authoring — never silently route to a non-existent skill path. If the plan header records `UI capture: indication-only`, skip `uia-configure-target` entirely and use indication authoring.
 8. **Use `--output json`** on all CLI commands whose output is parsed programmatically.
 
 ### Execution Discipline (Both Modes)
@@ -133,7 +135,7 @@ For the full decision flowchart, InvokeCode extraction rules, and detailed hybri
 18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
 20. **[XAML] ViewState handling depends on the operation.** When editing existing files, do NOT modify ViewState on nodes you are not changing. When generating new Flowchart/StateMachine/ProcessDiagram workflows, generate ViewState for each node (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). For Sequences, ViewState is optional.
-21. **[XAML] Use `get-default-activity-xaml` output** as a starting point — don't construct activity XAML from memory.
+21. **[XAML] Reading `<Activity>.md` is a precondition for `get-default-activity-xaml` — for every activity, not just complex ones.** Workflow: (1) `find-activities` → class name, (2) read `<Activity>.md` and extract a property checklist (required + use-case-relevant), (3) `get-default-activity-xaml` → starter element, (4) **diff your checklist against the starter and add what's missing** — an empty checklist means you skipped step 2, go back. Doc lookup order: primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `skills/uipath-rpa/references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty. Skip-tax: `get-default-activity-xaml` omits any property at type default — for `NTypeInto` that's 2 of 20. Self-exempting "this activity is simple" is the failure mode. Full procedure: [xaml/xaml-basics-and-rules.md § Activity Property Surface](references/xaml/xaml-basics-and-rules.md#activity-property-surface-and-starter-xaml).
 22. **[XAML] MUST read [references/xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md)** before generating or editing any XAML.
 23. **[XAML] NEVER change `expressionLanguage` or `targetFramework` on an existing project.** Both fields in `project.json` are fixed at creation time and apply to every XAML file in the project — flipping `expressionLanguage` (VisualBasic ↔ CSharp) invalidates every expression, and flipping `targetFramework` (Windows ↔ Portable/cross-platform, or Legacy) invalidates package references and activity compatibility. **Do not attempt in-place conversion.** If the user wants to convert an existing project, confirm with them, copy the project to a temporary folder, create a new project via `uip rpa create-project --expression-language <VisualBasic|CSharp> --target-framework <Windows|Portable|Legacy>`, make sure all the defined workflows in the old project have an equivalent in the new project. Delete the copied project just after the new project has been successfully generated and the user agree with the changes.
 

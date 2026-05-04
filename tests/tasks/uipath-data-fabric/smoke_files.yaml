@@ -61,7 +61,7 @@ success_criteria:
   - type: command_executed
     description: "Agent uploaded file using files upload with --file flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+files\s+upload\s+.*--file'
+    command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -69,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent downloaded file using files download with --destination flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+files\s+download\s+.*--destination'
+    command_pattern: '(?s)uip\s+df\s+files\s+download\s+.*--destination'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

@@ -5,9 +5,9 @@ task_id: skill-hitl-e2e-gdpr-compliance-greenfield
 description: >
   Authoring E2E golden scenario (green field): agent builds a GDPR deletion
   request flow with a privacy officer sign-off checkpoint. Tests proactive
-  compliance pattern detection, schema design with Reject path, timeout wiring.
-  Real business use case. Full Discover -> Plan -> Build -> Verify loop.
-  Does not deploy or run the flow.
+  compliance pattern detection, schema design with Reject path, and timeout
+  duration configuration. Real business use case. Full Discover -> Plan ->
+  Build -> Verify loop. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 agent:
@@ -34,8 +34,8 @@ initial_prompt: |
       "outputs": ["<what they fill in>"],
       "outcomes": ["<their choices>"]
     },
-    "timeout_configured": "<ISO 8601 duration used>",
-    "handles_wired": ["<list of handles wired>"],
+    "timeout_configured": "<ISO 8601 duration used, e.g. P7D>",
+    "handles_wired": ["completed"],
     "validation_passed": true
   }
 
@@ -74,10 +74,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Timeout handle is wired"
+    description: "completed handle is wired"
     path: "report.json"
     includes:
-      - "timeout"
+      - "completed"
     weight: 1.5
     pass_threshold: 1.0
 

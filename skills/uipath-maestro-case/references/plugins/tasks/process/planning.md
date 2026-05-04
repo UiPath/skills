@@ -35,7 +35,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 
 ## Unresolved Fallback
 
-If no match is found across both cache files after `uip maestro case registry pull --force`:
+If no match is found across both cache files after `registry pull`:
 
 - Mark the task line: `<UNRESOLVED: process "<name>" in folder "<folder>" not found in registry>`
 - Omit `inputs:` and `outputs:`; capture intended wiring in a fenced ```` ```text ```` code block (not `#` prefixed — it renders as markdown H1).

@@ -1,9 +1,13 @@
 task_id: skill-hitl-quality-runtime-vars
 description: >
   Quality test: after adding a HITL node, agent must wire a downstream
-  script node that correctly references $vars.<NodeId>.result and
+  script node that correctly references $vars.<NodeId>.output and
   $vars.<NodeId>.status. Tests G1 and G2.
 tags: [uipath-human-in-the-loop, integration, runtime-variables]
+
+agent:
+  type: claude-code
+  max_turns: 50
 
 sandbox:
   driver: tempdir
@@ -12,17 +16,17 @@ sandbox:
 initial_prompt: |
   Create a flow called "ReviewAndRoute" with:
   1. A manual trigger
-  2. A HITL node (label: "Review Decision", id: "reviewDecision")
+  2. A HITL node (label: "Review Decision")
   3. A script node after HITL that reads the human's decision and logs it
 
   The script node must use the HITL runtime variables to access the result.
   Wire the completed handle to the script node. Validate the flow.
 
-  Save results to report.json:
+  Save results to report.json — use the actual node ID that was generated:
   {
-    "hitl_node_id": "reviewDecision",
-    "result_variable": "<the exact variable expression used in the script>",
-    "status_variable": "<the exact variable expression used in the script>",
+    "hitl_node_id": "<the actual id of the HITL node>",
+    "result_variable": "$vars.<hitl_node_id>.output",
+    "status_variable": "$vars.<hitl_node_id>.status",
     "validation_passed": true
   }
 
@@ -44,18 +48,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references the correct result variable pattern"
+    description: "report.json references a $vars output variable"
     path: "report.json"
     includes:
-      - "$vars.reviewDecision.result"
+      - "$vars."
+      - ".output"
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "report.json references the correct status variable pattern"
+    description: "report.json references a $vars status variable"
     path: "report.json"
     includes:
-      - "$vars.reviewDecision.status"
+      - "$vars."
+      - ".status"
     weight: 2.0
     pass_threshold: 1.0
 

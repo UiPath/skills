@@ -60,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran records import with --file flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+import\s+.*--file'
+    command_pattern: '(?s)uip\s+df\s+records\s+import\s+.*--file'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

@@ -42,7 +42,8 @@ The eight bindable resource types are:
 
 | SDK Service | Method Pattern | Resource Type | Identifier Param |
 |------------|---------------|---------------|-----------------|
-| `.assets.retrieve` / `.retrieve_async` / `.retrieve_credential` / `.retrieve_credential_async` | `("name", folder_path="folder")` | `asset` | `name` (positional) |
+| `.assets.retrieve` / `.retrieve_async` | `("name", folder_path="folder")` | `asset` | `name` (positional) |
+| `.assets.retrieve_credential` / `.retrieve_credential_async` | `("name", folder_path="folder")` | `asset` (with `SubType: "credentialAsset"` in metadata) | `name` (positional) |
 | `.queues.create_item` / `.create_item_async` / `.create_items` / `.create_items_async` / `.create_transaction_item` / `.create_transaction_item_async` | `item={"Name": "queue_name", ...}` or `queue_name="queue_name"` | `queue` | `item["Name"]` or `queue_name` |
 | `.processes.invoke` / `.invoke_async` | `(name="name", ..., folder_path="folder")` | `process` | `name` |
 | `.buckets.*` (all methods: `retrieve`, `upload`, `download`, `delete`, `list_files`, etc.) | `(name="name", folder_path="folder")` | `bucket` | `name` |
@@ -54,6 +55,12 @@ The eight bindable resource types are:
 Use Grep to find calls matching these patterns across all project Python files. Then read the surrounding code to extract the literal string values for resource name and folder path.
 
 **Important:** Only literal or constant-resolvable string arguments can be bound. If a value is truly dynamic (computed at runtime from function calls, f-strings with variables, environment variables, or user input), flag it to the user — it requires manual handling or refactoring. Module-level constants (e.g., `BUCKET = "my-bucket"`) are NOT dynamic — resolve them to their literal values.
+
+**SubType inference during scanning:**
+
+First check the project's pinned `uipath` version (see **SubType Metadata → Version-detection rule**). If `uipath < 2.10.58`, **skip SubType entirely** — emit no `SubType` for any binding, including `retrieve_credential*`.
+
+If `uipath >= 2.10.58`, then for `retrieve_credential` / `retrieve_credential_async` calls always emit `"SubType": "credentialAsset"` — the method name is definitive. For all other calls, follow the full lookup procedure in the **SubType Metadata** section below: fetch metadata → filter by kind → disambiguate from code → fall back to `AskUserQuestion` → omit `SubType` if the user skips. Omitting `SubType` is always safe — `uipath push` still creates a virtual placeholder for supported kinds, just with the base `kind` only.
 
 ### Step 3: Compare with Existing Bindings
 
@@ -98,6 +105,7 @@ For the exact JSON structure of each resource type, consult `bindings-reference.
 - `ActivityName` in metadata always uses the `_async` variant name
 - Connection entries use `ConnectionId` instead of `name` and have no `folderPath`
 - The `app` resource type uses the app name as `DisplayLabel`; all others use `"FullName"`
+- `SubType` is an optional metadata field — see the **SubType Metadata** section for the full lookup procedure and the `retrieve_credential*` shortcut.
 - Entrypoint fields (`EntryPointUniqueId`, `EntryPointPath`) are optional in any resource's `value` block, but when present must include a `displayName` set to the entrypoint's `filePath` from `entry-points.json`
 
 ### Step 6: Verify
@@ -136,6 +144,8 @@ For detailed bindings.json schema, all eight resource type templates, SDK method
 | Duplicate key in resources array | Same resource scanned from multiple code paths | Deduplicate — keep one entry per unique key |
 | Missing project root | No `pyproject.toml` or `uipath.json` found | Verify the working directory is a UiPath agent project |
 | Stale entries after refactor | Old resource calls removed but bindings.json not updated | Run the full sync workflow to detect and remove orphaned entries |
+| Push creates wrong asset type as virtual resource | Missing `SubType` in metadata for a `retrieve_credential*` call | Add `"SubType": "credentialAsset"` to the asset's metadata and re-run `uipath push` |
+| Push warns "was not found" for connection/mcpServer/index | These kinds do not support virtual-resource fallback | Create the resource in Orchestrator / Integration Service before running `uipath push` |
 
 ## Additional Instructions
 
@@ -216,6 +226,29 @@ credential = sdk.assets.retrieve_credential("cred_name", folder_path="folder_key
 **Parameter extraction:**
 - `name` — first positional argument to `retrieve_async()` / `retrieve()`
 - `folder_path` — keyword argument `folder_path=`
+
+**Credential asset variant — `retrieve_credential` / `retrieve_credential_async`:**
+
+When the SDK call is `retrieve_credential` or `retrieve_credential_async`, add `"SubType": "credentialAsset"` to the metadata block. The rest of the binding entry is identical:
+
+```json
+{
+  "resource": "asset",
+  "key": "<name>.<folder_path>",
+  "value": {
+    "name": { "defaultValue": "<name>", "isExpression": false, "displayName": "Name" },
+    "folderPath": { "defaultValue": "<folder_path>", "isExpression": false, "displayName": "Folder Path" }
+  },
+  "metadata": {
+    "ActivityName": "retrieve_async",
+    "BindingsVersion": "2.2",
+    "DisplayLabel": "FullName",
+    "SubType": "credentialAsset"
+  }
+}
+```
+
+This SubType is required for `uipath push` to create a credential-asset placeholder (rather than a plain string asset) when the asset doesn't yet exist in Orchestrator.
 
 ---
 
@@ -530,6 +563,224 @@ server = sdk.mcp.retrieve(slug="mcp_server_slug", folder_path="folder_path")
 
 ---
 
+## SubType Metadata
+
+The `SubType` field in a resource's `metadata` block specifies a sub-classification of the resource `kind`. It is **optional** but should be emitted when determinable, so `uipath push` can create the correct virtual-resource placeholder when the resource isn't found in the catalog (see `Virtual Resource Fallback on uipath push` below).
+
+> **Minimum `uipath` version: 2.10.58 ([PyPI](https://pypi.org/project/uipath/)).** Below that version, **omit `SubType` entirely** — older `uipath push` releases ignore the field, so emitting it gives no benefit and just adds noise to `bindings.json`.
+>
+> **Version-detection rule (run before the lookup procedure):**
+>
+> 1. Read the project's `pyproject.toml` (or `requirements.txt` / `uv.lock`) and extract the resolved `uipath` version.
+> 2. If the version is **`>= 2.10.58`**, follow the full lookup procedure.
+> 3. If the version is **`< 2.10.58`** (or unspecified / unresolvable), **ask the user** before falling back. Do **not** run the upgrade command yourself. Call `AskUserQuestion` with the warning prefix and two options:
+>
+>    - **Question:** `⚠️ uipath is pinned to <version>. SubType support requires uipath >= 2.10.58 — without it every binding will be written with no SubType. Do you want to upgrade?`
+>    - **Option A — Yes, upgrade `uipath`** — print the upgrade command for the user to run themselves and stop the workflow. Tell them to re-run the bindings task after the upgrade lands. Suggested commands (do **not** execute them):
+>      ```bash
+>      uv add 'uipath>=2.10.58'      # uv-managed projects (default)
+>      # Poetry: poetry add 'uipath@^2.10.58'
+>      # pip:    pip install --upgrade 'uipath>=2.10.58'
+>      ```
+>    - **Option B — No, continue with current version** — skip the entire SubType lookup, do **not** call `AskUserQuestion` for sub-types, and write every binding with no `SubType` in `metadata` (including `retrieve_credential*`). Tell the user once: *"`uipath` is pinned to `<version>`; SubType emission is disabled."*
+
+### Authoritative source for valid SubType values
+
+The valid SubType values for each kind are defined by the Studio Web Resource Builder metadata. **Do not hardcode or guess** — always look them up from one of these two sources:
+
+1. **Preferred — live endpoint** (when authenticated against a UiPath tenant):
+   ```
+   GET https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata
+   ```
+   Example: `https://cloud.uipath.com/myorg/studio_/backend/api/resourcebuilder/metadata`. Returns the up-to-date list of supported kinds/types for the target tenant.
+
+2. **Fallback — bundled snapshot:** `assets/solutions/metadata.json` (relative to the skill root). Use when the live endpoint is unreachable or the agent is not authenticated. May be stale; the file's `_snapshotDate` shows when it was captured.
+
+### Metadata structure
+
+The two sources return slightly different shapes. The agent only needs `{kind, type}` from each entry — everything else can be ignored.
+
+**Live endpoint** — array of full entries:
+
+```json
+[
+  { "kind": "asset", "type": "stringAsset", "versions": [ ... ] },
+  { "kind": "asset", "type": "credentialAsset", "versions": [ ... ] },
+  { "kind": "queue", "versions": [ ... ] }
+]
+```
+
+**Bundled snapshot** — wrapper with trimmed entries (only `kind` and `type` are kept):
+
+```json
+{
+  "_snapshotDate": "2026-04-24",
+  "_source": "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata",
+  "_note": "...",
+  "entries": [
+    { "kind": "asset", "type": "stringAsset" },
+    { "kind": "asset", "type": "credentialAsset" },
+    { "kind": "queue", "type": null }
+  ]
+}
+```
+
+In both shapes:
+
+- `kind` — maps directly to the binding's `resource` field.
+- `type` — optional. When present, this is the `SubType` value to emit. When `null` or absent, the kind has no sub-type.
+- A kind may appear in multiple entries (one per valid sub-type). Example: `asset` has 5 entries (`stringAsset`, `integerAsset`, `booleanAsset`, `credentialAsset`, `secretAsset`).
+
+### Lookup procedure
+
+For each binding, follow these steps:
+
+1. **Fetch metadata.** Try the live endpoint first; on any failure (network error, auth failure, non-200 response), read `assets/solutions/metadata.json`. From the bundled snapshot, read the `entries` array; from the live endpoint, use the top-level array directly.
+2. **Filter by `kind`.** Select all entries where `kind` equals the binding's `resource` value.
+3. **Collect candidate `type` values.** Build a set from the `type` field of the matched entries, dropping `null`/absent values.
+4. **Choose a SubType:**
+   - **No candidates** (all entries lack `type`) → omit `SubType`.
+   - **One candidate** → emit it as `SubType`.
+   - **Multiple candidates** → try code-based disambiguation first (see rules below). If no rule matches, ask the user. Use the path that fits the candidate count:
+     - **≤ 3 candidates** → call `AskUserQuestion` with each candidate as an `option` (`label` = the `type` string). `AskUserQuestion`'s `options` array is capped at 4 entries, and one slot is reserved for the trailing `skip`. The harness presents a picker UI and returns the chosen `label` directly — no numbered list needed in the prompt body.
+     - **≥ 4 candidates** → emit a plain-text **numbered list** (one per line, `N. <type>`) ending with a final numbered `skip` line. The user replies with just the number; map it back to the `type` string. Do not use `AskUserQuestion` here — the list won't fit.
+     Either way, include the resource name and folder in the prompt for context. If the user picks `skip` (or its number), omit `SubType`.
+
+   **Numbered-list rules** (plain-text path only):
+   - One candidate per line, prefixed with `N. ` (1-indexed).
+   - The last line is always `N. skip` (where `N` is the next index after the last real candidate).
+   - Never expect the user to type the SubType name verbatim — they reply with the number.
+
+### Refreshing the bundled snapshot
+
+When the live endpoint adds new kinds or types, regenerate `assets/solutions/metadata.json` from an authenticated tenant:
+
+```bash
+curl -s -H "Authorization: Bearer <TOKEN>" \
+  "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata" \
+| jq --arg date "$(date -u +%Y-%m-%d)" '{
+    _snapshotDate: $date,
+    _source: "https://<BASE_URL>/<ORG_ID>/studio_/backend/api/resourcebuilder/metadata",
+    _note: "Trimmed projection: agents only consume {kind, type} for SubType lookup.",
+    entries: [.[] | {kind, type}]
+  }' > skills/uipath-agents/assets/solutions/metadata.json
+```
+
+### Known code-based disambiguation rules
+
+Apply these rules in order. Only fall through to the `AskUserQuestion` prompt if none of them produces a confident match.
+
+| Kind | Rule | SubType | Confidence |
+|------|------|---------|------------|
+| `asset` | SDK call is `retrieve_credential` or `retrieve_credential_async` | `credentialAsset` | **High** — method name is definitive |
+| `asset` | The returned value is used/type-annotated as `str` (plain text context, no password/secret naming) | `stringAsset` | Medium — confirm with user if unsure |
+| `asset` | The returned value is used/type-annotated as `int` | `integerAsset` | Medium |
+| `asset` | The returned value is used/type-annotated as `bool` | `booleanAsset` | Medium |
+| `asset` | The variable name or surrounding context suggests a password/API key/credential (e.g. `password`, `api_key`, `secret`, `token`, `pwd`), even without `retrieve_credential*` | `credentialAsset` or `secretAsset` — **ask the user which** | Medium — presence of sensitive naming is a strong signal but `credentialAsset` vs `secretAsset` is not distinguishable from code |
+
+**How to apply the code-based heuristics for `retrieve` / `retrieve_async`:**
+
+1. Find the assignment target: `x = await sdk.assets.retrieve_async("my_asset", folder_path="Finance")`.
+2. Check for a type annotation: `x: str = ...` → `stringAsset`; `x: int = ...` → `integerAsset`; `x: bool = ...` → `booleanAsset`.
+3. If no annotation, check how `x` is used downstream:
+   - Passed to a function expecting `str`, concatenated with strings, used in string formatting → `stringAsset`.
+   - Used in arithmetic, compared numerically → `integerAsset`.
+   - Used in `if x:` as a truth check where Orchestrator stores it as boolean → `booleanAsset`.
+4. Check the variable name and surrounding context against sensitive patterns (`password`, `pwd`, `api_key`, `secret`, `token`, `credential`). If a match is found, prompt the user to choose between `credentialAsset` and `secretAsset` (they differ in how Orchestrator exposes the value).
+5. If the heuristic is inconclusive or produces only medium confidence, fall through to the `AskUserQuestion` prompt with the heuristic's best guess pre-highlighted.
+
+### Asking the user (example prompts)
+
+When multiple candidates remain, prompt with a **numbered list** of candidates from the metadata, plus a final `skip` option. The user replies with the number; map it back to the `type` string (or omit `SubType` if they pick `skip`). Examples:
+
+- **Asset** (after excluding the credential shortcut above — `credentialAsset` is omitted because `retrieve_credential*` is already handled with high confidence at line 654):
+
+  ```
+  Select the asset sub-type for `db_config` in folder `Finance`:
+  1. stringAsset
+  2. integerAsset
+  3. booleanAsset
+  4. secretAsset
+  5. skip
+  ```
+
+- **Bucket**:
+
+  ```
+  Select the backing storage for bucket `reports` in folder `Shared`:
+  1. orchestratorBucket
+  2. amazonBucket
+  3. azureBucket
+  4. skip
+  ```
+
+- **App (`sdk.tasks.*`)**:
+
+  ```
+  Select the app sub-type for `ApprovalApp` in folder `HR`:
+  1. Coded
+  2. CodedAction
+  3. skip
+  ```
+
+- **MCP Server**:
+
+  ```
+  Select the MCP server sub-type for slug `my-server`:
+  1. Coded
+  2. Command
+  3. Remote
+  4. UiPath
+  5. skip
+  ```
+
+- **Process (`sdk.processes.invoke` / `sdk.jobs.resume`)**:
+
+  ```
+  Select the target process sub-type for `InvoiceProcessor` in folder `Finance/Invoices`:
+  1. process
+  2. agent
+  3. flow
+  4. api
+  5. caseManagement
+  6. processOrchestration
+  7. testAutomationProcess
+  8. webApp
+  9. mcpServer
+  10. skip
+  ```
+
+Always include a final `skip` option — it means "I don't know, emit no SubType." User replies with the number only; never expect them to type the SubType name. Batch prompts when possible (one question per binding, sent together) to minimize interruption.
+
+> **Preserve user-supplied SubType values.** When updating an existing `bindings.json`, do not overwrite a SubType value that is already present unless the referenced resource no longer exists in code. Do not re-prompt the user for bindings whose `SubType` is already set.
+
+### Behavior of SubType during push
+
+- If the resource is **found in the catalog**, `SubType` in metadata is ignored — the catalog's sub-type is used.
+- If the resource is **not found in the catalog** and the kind supports virtual creation, `SubType` is passed as the `type` field of the virtual-resource creation request. A missing `SubType` for an ambiguous kind results in a virtual resource with only a base `kind`, which may fail or create a placeholder of the wrong type.
+
+---
+
+## Virtual Resource Fallback on uipath push
+
+Starting with `uipath` 2.10.52, `uipath push` creates a virtual resource placeholder when a binding's resource isn't found in the Resource Catalog — the project can be deployed before its dependencies exist. The fallback only works for a subset of kinds.
+
+The push command fetches the supported-kinds list from `/studio_/backend/api/resourcebuilder/metadata` at push time. The static fallback (used when that endpoint is unreachable) is `app, asset, bucket, process, queue, taskCatalog, trigger`.
+
+| Catalog-miss behavior | Kinds |
+|----------------------|---------|
+| **Creates a virtual resource placeholder** (uses `SubType` from metadata for the placeholder's `type`). Project still deploys. | `app`, `asset`, `bucket`, `process`, `queue`, `taskCatalog`, `trigger` (static fallback; the live endpoint may add more) |
+| **Warns and skips.** The resource must exist in Integration Service before push. | `connection` |
+| **Warns and skips.** The resource must exist in Orchestrator before push. | `mcpServer`, `index`, and any kind absent from the supported list |
+
+### Implications for binding generation
+
+1. **Emit `SubType` only when `uipath >= 2.10.58`.** Below that version, omit `SubType` from every binding — see **SubType Metadata → Version-detection rule**. When the version gate is met, always emit `"SubType": "credentialAsset"` for `retrieve_credential*` asset calls; without it the virtual-resource fallback creates a plain string asset placeholder, causing runtime failures when the agent expects a credential.
+2. **Warn the user about non-fallback kinds.** For `connection`, `mcpServer`, and `index` bindings, the referenced resource must exist in Orchestrator before `uipath push`. If it doesn't, the binding is skipped with a warning and the agent will fail at runtime. Flag this to the user when generating such bindings.
+3. **Optional `SubType` for bucket.** The bucket's backing storage is not inferable from code. Consider asking the user which storage type their buckets use, so virtual-resource fallback creates the correct kind.
+
+---
+
 ## Entrypoint Binding
 
 Any resource in `bindings.json` can optionally be linked to an entrypoint defined in `entry-points.json`. This is done by adding `EntryPointUniqueId` and/or `EntryPointPath` to the resource's `value` block.
@@ -612,17 +863,20 @@ Key fields for binding:
 
 ## SDK Method to Resource Type Mapping
 
-| SDK Property | Methods | Resource Type | Resource Identifier Param | ActivityName |
-|-------------|---------|---------------|--------------------------|-------------|
-| `sdk.assets` | `retrieve`, `retrieve_async`, `retrieve_credential`, `retrieve_credential_async` | `asset` | `name` (1st positional) | `retrieve_async` |
-| `sdk.queues` | `create_item`, `create_item_async`, `create_items`, `create_items_async`, `create_transaction_item`, `create_transaction_item_async` | `queue` | `item["Name"]` or `queue_name` | `create_item_async` |
-| `sdk.processes` | `invoke`, `invoke_async` | `process` | `name` | `invoke_async` |
-| `sdk.jobs` | `resume`, `resume_async` | `process` | `process_name` | `invoke_async` |
-| `sdk.buckets` | ALL methods (`retrieve`, `upload`, `download`, `delete`, `list_files`, etc.) | `bucket` | `name` | `retrieve_async` |
-| `sdk.tasks` | `create`, `create_async`, `retrieve`, `retrieve_async` | `app` | `app_name` | `create_async` |
-| `sdk.context_grounding` | ALL methods (`retrieve`, `search`, `add_to_index`, `create_index`, `delete`, `ingest_data`, etc.) | `index` | `name` or `index_name` | `retrieve_async` |
-| `sdk.connections` | `retrieve`, `retrieve_async` | `connection` | `key` (1st positional) | *(none)* |
-| `sdk.mcp` | `retrieve`, `retrieve_async` | `mcpServer` | `slug` | `retrieve_async` |
+The `SubType (default)` column below is a quick-reference for the most common case. **The authoritative list of valid SubType values per kind is the Resource Builder metadata** — always run the lookup procedure from `SubType Metadata` before emitting a value.
+
+| SDK Property | Methods | Resource Type | Resource Identifier Param | ActivityName | SubType (default) |
+|-------------|---------|---------------|--------------------------|-------------|---------------------|
+| `sdk.assets` | `retrieve`, `retrieve_async` | `asset` | `name` (1st positional) | `retrieve_async` | *(omit — code can't disambiguate `stringAsset` / `integerAsset` / `booleanAsset` / `secretAsset`)* |
+| `sdk.assets` | `retrieve_credential`, `retrieve_credential_async` | `asset` | `name` (1st positional) | `retrieve_async` | `credentialAsset` |
+| `sdk.queues` | `create_item`, `create_item_async`, `create_items`, `create_items_async`, `create_transaction_item`, `create_transaction_item_async` | `queue` | `item["Name"]` or `queue_name` | `create_item_async` | *(omit — kind has no sub-type)* |
+| `sdk.processes` | `invoke`, `invoke_async` | `process` | `name` | `invoke_async` | *(omit — target process type not known here)* |
+| `sdk.jobs` | `resume`, `resume_async` | `process` | `process_name` | `invoke_async` | *(omit — target process type not known here)* |
+| `sdk.buckets` | ALL methods (`retrieve`, `upload`, `download`, `delete`, `list_files`, etc.) | `bucket` | `name` | `retrieve_async` | *(omit — ask user for `orchestratorBucket` / `amazonBucket` / `azureBucket`)* |
+| `sdk.tasks` | `create`, `create_async`, `retrieve`, `retrieve_async` | `app` | `app_name` | `create_async` | *(omit — user chooses `Coded` / `CodedAction` / default)* |
+| `sdk.context_grounding` | ALL methods (`retrieve`, `search`, `add_to_index`, `create_index`, `delete`, `ingest_data`, etc.) | `index` | `name` or `index_name` | `retrieve_async` | *(omit — must exist in Orchestrator; no virtual fallback)* |
+| `sdk.connections` | `retrieve`, `retrieve_async` | `connection` | `key` (1st positional) | *(none)* | *(omit — must exist in Integration Service; no virtual fallback)* |
+| `sdk.mcp` | `retrieve`, `retrieve_async` | `mcpServer` | `slug` | `retrieve_async` | *(omit — sub-type is one of `Coded` / `Command` / `Remote` / `UiPath`; ask user)* |
 
 **Note on ActivityName:** Always use the `_async` variant in the `ActivityName` metadata field, regardless of whether the code uses the sync or async version.
 
@@ -725,6 +979,7 @@ async def main() -> Response:
     uipath = UiPath()
 
     asset = await uipath.assets.retrieve_async("my_asset", folder_path="Finance")
+    password = await uipath.assets.retrieve_credential_async("db_password", folder_path="Finance")
     conn = await uipath.connections.retrieve_async("salesforce_conn")
     result = await uipath.processes.invoke_async(
         name="InvoiceProcessor", input_arguments={"id": "123"}, folder_path="Finance/Invoices"
@@ -749,6 +1004,16 @@ async def main() -> Response:
         "EntryPointUniqueId": { "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f", "isExpression": false, "displayName": "agent" }
       },
       "metadata": { "ActivityName": "retrieve_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName" }
+    },
+    {
+      "resource": "asset",
+      "key": "db_password.Finance",
+      "value": {
+        "name": { "defaultValue": "db_password", "isExpression": false, "displayName": "Name" },
+        "folderPath": { "defaultValue": "Finance", "isExpression": false, "displayName": "Folder Path" },
+        "EntryPointUniqueId": { "defaultValue": "708b62c7-15f1-46d8-9564-5d03c6a8668f", "isExpression": false, "displayName": "agent" }
+      },
+      "metadata": { "ActivityName": "retrieve_async", "BindingsVersion": "2.2", "DisplayLabel": "FullName", "SubType": "credentialAsset" }
     },
     {
       "resource": "connection",

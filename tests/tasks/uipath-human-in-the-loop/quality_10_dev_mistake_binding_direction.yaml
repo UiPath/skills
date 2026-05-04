@@ -1,0 +1,120 @@
+task_id: skill-hitl-quality-dev-mistake-binding-direction
+description: >
+  Developer mistake test: agent must correctly wire upstream variable bindings
+  on input-direction fields and must NOT add binding on output-direction fields.
+  Tests that the agent reads variables.nodes to construct bindings, uses the
+  correct fieldId-based outputId path, and never puts binding on an output field.
+tags: [uipath-human-in-the-loop, integration, variable-binding, developer-mistake]
+
+agent:
+  type: claude-code
+  max_turns: 90
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "SupplierOnboarding" for supplier vetting:
+
+  1. Manual trigger
+  2. Script node (id suggestion: "fetchSupplier") — sets supplier data:
+       output.supplierName = "Acme Corp"
+       output.riskScore = 72
+       output.country = "DE"
+  3. HITL node — compliance officer reviews the supplier:
+       Input fields (read-only, MUST be bound to upstream script output):
+         - Supplier Name: bound to fetchSupplier node's supplierName output
+         - Risk Score:    bound to fetchSupplier node's riskScore output (number)
+         - Country:       bound to fetchSupplier node's country output
+       Output fields (filled by the officer, NO binding — the officer fills these in):
+         - approved (boolean, required)
+         - risk_notes (text, optional)
+       Outcomes: Approve (primary), Reject
+  4. Decision node — routes on approved field:
+       - true  → Script node that logs "Supplier approved: <supplierName>"
+       - false → Script node that logs "Supplier rejected"
+  5. End nodes for both branches
+
+  Wire: Trigger → Script → HITL →|completed| Decision → both branches → End
+
+  Use the inline quickform node (uipath.human-in-the-loop).
+  Read variables.nodes before writing input field bindings — use the exact
+  $vars path from the node's outputId entry.
+  Output fields must NOT have a binding property.
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "supplier_name_binding": "<full binding expression used>",
+    "risk_score_binding": "<full binding expression used>",
+    "approved_has_binding": false,
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Input fields have binding expressions pointing to upstream script output"
+    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
+    includes:
+      - '"binding": "=js:$vars.'
+      - "fetchSupplier"
+      - ".output.supplierName"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Risk score field is bound and uses number type"
+    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
+    includes:
+      - ".output.riskScore"
+      - '"number"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "HITL has boolean output field for approved"
+    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
+    includes:
+      - '"direction": "output"'
+      - '"boolean"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Decision node references HITL output by field ID"
+    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
+    includes:
+      - "$vars."
+      - ".output.approved"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms bindings and approved has no binding"
+    path: "report.json"
+    assertions:
+      - expression: "supplier_name_binding"
+        operator: contains
+        expected: "=js:$vars."
+      - expression: "supplier_name_binding"
+        operator: contains
+        expected: "fetchSupplier"
+      - expression: "approved_has_binding"
+        operator: equals
+        expected: false
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 0.75

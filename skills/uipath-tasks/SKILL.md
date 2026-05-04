@@ -1,10 +1,13 @@
 ---
 name: uipath-tasks
-description: "[PREVIEW] Manage UiPath Action Center tasks via CLI. Use when: list/assign/complete tasks, or user mentions 'Action Center'/'tasks'/'uip tasks'. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+when_to_use: "User says 'approve task', 'pending approval', 'pending action item', 'review action', 'list my tasks', 'reassign task' in an Orchestrator/Action Center context. NOT for TaskCreate/TaskUpdate (general session-task tracking) or Document Understanding validation."
 user-invocable: true
 ---
 
 # UiPath Tasks (Action Center) — Agent Skill
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Action Center is UiPath's human-in-the-loop platform. Tasks represent work items
 that require human input — form approvals, document validation, data labeling, and more.

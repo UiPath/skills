@@ -62,6 +62,6 @@ The case file lives inside a solution + project structure. After T01 completes, 
       caseplan.json                ← § Write caseplan.json writes
 ```
 
-Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.2.
+Planning-phase contract: T01 emits all 5 scaffold files + `caseplan.json` inside `<SolutionDir>/<ProjectName>/`. CLI `uip solution new` and `uip solution project add` bookend T01 as Step 6.0 and Step 6.0b.
 
 See [implementation.md Step 6](../../implementation.md) for the authoritative 3-step execution sequence.

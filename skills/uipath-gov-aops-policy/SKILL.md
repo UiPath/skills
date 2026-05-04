@@ -1,10 +1,12 @@
 ---
 name: uipath-gov-aops-policy
-description: "[PREVIEW] UiPath AOps governance — enforce rules (\"block/restrict/require X\") by mapping intent to a Product policy via `uip gov aops-policy`. Create/update/delete/list/deploy policies to users, groups, tenants. For platform ops→uipath-platform."
+description: "UiPath AOps governance — enforce rules (\"block/restrict/require X\") by mapping intent to a Product policy via `uip gov aops-policy`. Create/update/delete/list/deploy policies to users, groups, tenants. For platform ops→uipath-platform."
 allowed-tools: Bash, Read, Write, Grep, Glob
 ---
 
 # UiPath AOps Governance
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Skill for managing AOps governance policies and deploying them to users, groups, or tenants via the `uip gov aops-policy` CLI.
 

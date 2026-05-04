@@ -20,13 +20,13 @@ Does the skill follow the canonical layout and conventions?
 - `description` is under 1024 characters (repo cap; Claude Code's hard truncation for `description` + `when_to_use` is 1,536 chars — run `hooks/validate-skill-descriptions.sh` to verify)
 - `description` front-loads the skill identity and unique file/domain signals (e.g., `.cs`, `.xaml`, `.flow`, `interact`) within the first ~100 characters
 - `description` includes compact `→` redirects for commonly confused sibling skills (e.g., `For XAML→uipath-rpa`)
-- `description` starts with `[PREVIEW]` for new/unstable skills
+- `description` starts with the brand/domain identity (e.g., `UiPath`, `UiPath RPA`) — NOT a metadata tag like `[PREVIEW]`. Preview status belongs in the SKILL.md body
 - SKILL.md body follows the expected section order: Title, When to Use, Critical Rules, Workflow/Quick Start, Reference Navigation, Anti-patterns
 - Reference files use kebab-case naming with `-guide.md` / `-template.md` suffixes
 - Folder organization is logical (references/, assets/, scripts/)
 - No orphaned files (every file is reachable from SKILL.md)
 
-**Red flags:** missing frontmatter fields, name mismatch, description over 1024 chars, verbose TRIGGER/DO NOT TRIGGER clauses, frontmatter fields nested under `metadata:`, no Critical Rules section, unreachable files.
+**Red flags:** missing frontmatter fields, name mismatch, description over 1024 chars, description prefixed with `[PREVIEW]` or other metadata tags (displaces high-value matching tokens), verbose TRIGGER/DO NOT TRIGGER clauses, frontmatter fields nested under `metadata:`, no Critical Rules section, unreachable files.
 
 ### 2. Consistency (1-5)
 

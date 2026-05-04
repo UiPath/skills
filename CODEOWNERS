@@ -28,6 +28,9 @@
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @cosmyo @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 
+# Guardrails capability docs
+/skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
@@ -51,6 +54,9 @@
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden
+
+# Review skill
+/skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA skill
 /skills/uipath-rpa-legacy/ @roalexandru

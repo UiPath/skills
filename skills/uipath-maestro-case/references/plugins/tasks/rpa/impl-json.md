@@ -1,12 +1,8 @@
 # rpa task — Implementation (Direct JSON Write)
 
-> **Phase split.** Runs across both phases. Phase 2a writes shape: full `data.inputs[]` schema from `tasks describe`, each `value` empty (`""`). Phase 2b binds values via [`../../variables/io-binding/impl-json.md`](../../variables/io-binding/impl-json.md). See [`../../../phased-execution.md`](../../../phased-execution.md).
-
-Cross check the RPA task metadata via CLI, then write the task directly into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md`. Shape is identical to `process` except `type: "rpa"`.
+> **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape
-
-> **ID and elementId format.** Task `id` is `t` + 8 random chars. `elementId` is the composite `${stageId}-${taskId}`.
 
 ```json
 {
@@ -17,52 +13,52 @@ Cross check the RPA task metadata via CLI, then write the task directly into `ca
   "isRequired": true,
   "shouldRunOnlyOnce": true,
   "data": {
-    "name": "InvoiceExtractor",
-    "folderPath": "Finance",
-    "inputs": [ /* from planning enrichment */ ],
-    "outputs": [ /* from planning enrichment */ ],
-    "context": { "taskTypeId": "b2c3d4e5-6789-01ab-cdef-234567890abc" }
+    "name": "=bindings.bG0SraLpg",
+    "folderPath": "=bindings.bH1iJK2lm",
+    "inputs": [],
+    "outputs": []
   }
 }
 ```
 
-## All Attributes
-
-Same shape as `ProcessTask` — see [process/impl-json.md § All Attributes](../process/impl-json.md#all-attributes). Only difference:
-
-- `type` is `"rpa"` (never `"process"`, even though the registry entry shares the process registry)
+- `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
+- `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
+- **Do not flip to `type: "process"`** based on registry. The `rpa` vs `process` distinction comes from sdd.md intent.
 
 ## Procedure
 
-**Step 0 — Get enriched metadata + outputs:**
-
-Run `tasks describe` against the resolved `entityKey` and save the JSON response — this is the source of truth for `data.inputs[]` / `data.outputs[]` in Step 1. Use `--type rpa` even though the registry entry shares the process registry.
+**Step 0 — Get inputs/outputs schema:**
 
 ```bash
 uip maestro case tasks describe --type rpa --id "<entityKey>" --output json
 ```
 
-Capture the response (input/output schema with names, types, and ids). If `tasks describe` fails or returns no schema, fall back to the planning-captured schema from `tasks.md`; if that is also missing, treat the task as skeleton per [skeleton-tasks.md](../../../skeleton-tasks.md).
+Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [skeleton-tasks.md](../../../skeleton-tasks.md).
 
-**Step 1 — Write task with populated data:**
+**Step 1 — Root-level bindings:**
 
-1. Generate task ID: `t` + 8 alphanumeric chars (unique across all tasks)
-2. Generate elementId: `<stageId>-<taskId>`
-3. Set top-level fields (`type: "rpa"`, `displayName`, `isRequired`, `shouldRunOnlyOnce`) from tasks.md per the Task JSON Shape above
-4. Set `data.name` from tasks.md `name`
-5. Set `data.folderPath` from tasks.md `folder-path`
-6. Set `data.context.taskTypeId` to the `entityKey` from `tasks.md` (captured during planning — RPA tasks share the process registry per [planning.md § Registry Resolution](planning.md))
-7. Write `data.inputs[]` / `data.outputs[]` using the schema captured in Step 0 (falling back to the planning-captured schema in tasks.md if Step 0 was unavailable). Each input is `{ name, type, id, var, elementId, value: "" }`; each output is `{ name, type, id, var, value, source, target, elementId }`. See [variables/io-binding/impl-json.md](../../variables/io-binding/impl-json.md) for shape details.
-8. Write the task to the target stage's `tasks[]` array (in its own task set / lane)
+Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
 
-> **Handled elsewhere.** Input value bindings happen in outer-workflow Step 9 — see [variables/io-binding/impl-json.md](../../variables/io-binding/impl-json.md). Entry conditions are added in Step 10.
+| `propertyAttribute` | `resource` | `resourceSubType` | `default` |
+|---|---|---|---|
+| `"name"` | `"process"` | — | `name` from tasks.md |
+| `"folderPath"` | `"process"` | — | `folder-path` from tasks.md |
 
-> **Do not flip to `type: "process"`** based on where the `entityKey` was found. The `rpa` vs `process` distinction comes from the sdd.md intent, not from the registry.
+Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate by `default + resource + resourceKey`.
+
+**Step 2 — Write task:**
+
+1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
+2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
+3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+4. Append to target stage's `tasks[laneIndex][]`
+
+> Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
 ## Post-Write Verification
 
-Confirm the task exists in the correct stage with:
-
 - `type: "rpa"` (NOT `"process"`)
-- `data.context.taskTypeId` non-empty (unless intentionally skeleton)
-- `data.inputs` and `data.outputs` populated from the planning-captured schema
+- `data.name` and `data.folderPath` start with `=bindings.`
+- `root.data.uipath.bindings[]` has 2 entries: `resource: "process"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
+- `data.inputs` and `data.outputs` populated (unless skeleton)
+- `id` captured in `id-map.json`

@@ -18,7 +18,7 @@ From the SDD "Case Variables" table:
 
 ## tasks.md Entry Format
 
-One T-entry per variable/argument. Place after case file (T01) and trigger (T02), before stages:
+One T-entry per variable/argument. Place after the case file (T01) and **all** trigger T-entries (T02+), before stages. The first variable lands at `T03` only when there is exactly one trigger; in multi-trigger cases it lands at `T0<last-trigger>+1`. The example below assumes a single trigger at T02:
 
 ```markdown
 ## T03: Declare In argument "employeeName"

@@ -13,6 +13,21 @@ description: >
   commands to succeed at runtime.
 tags: [uipath-rpa-legacy, smoke, create, validate]
 
+task_timeout: 1200
+agent:
+  type: claude-code
+  # Historically pinned to Opus to dodge a Sonnet content-filter trip
+  # on the full legacy XAML baseline (21 namespaces + 16 assembly
+  # refs including PresentationFramework/PresentationCore/
+  # WindowsBase/System.Xaml/mscorlib + Microsoft.VisualBasic.Activities).
+  # Both Opus 4.6 and 4.1 are now invalid on the EU Bedrock inference
+  # profiles available to us (400 'invalid model identifier'), so
+  # the override was dropped. The default Sonnet from default.yaml
+  # applies; intermittent content-filter blocks are absorbed by the
+  # workflow-level 3-attempt retry on content-filter ERRORs.
+  max_turns: 40
+  turn_timeout: 900
+
 sandbox:
   driver: tempdir
   python: {}
@@ -22,19 +37,19 @@ initial_prompt: |
   that logs "Hello from legacy" using a LogMessage activity. Follow the skill's
   full workflow: create the project, generate the XAML, and attempt validation.
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "HelloLegacy",
-      "target_framework": "Legacy",
-      "commands_used": ["<list of uip commands you ran>"]
-    }
+  Deliverables (place all files inside a `./HelloLegacy/` subdirectory):
+  - `./HelloLegacy/project.json`
+  - `./HelloLegacy/Main.xaml`
+
+  Whether you scaffold via `uip rpa-legacy create-project` (which creates
+  the HelloLegacy/ folder for you) or hand-author, the files MUST end up
+  under `./HelloLegacy/` — that's where the validator looks.
 
   Important:
-  - The `uip` CLI is already available in the environment.
+  - The `uip` CLI is already available in the environment and is
+    authenticated against the sandbox tenant in this CI step.
   - Do not run `uip rpa-legacy debug` — just attempt validation.
-  - The underlying CLI backend may not work on non-Windows hosts; that is
-    acceptable — what matters is that you produce correct files and invoke
-    the correct commands.
+  - Use `--output json` on the uip CLI commands you run.
 
 success_criteria:
   - type: command_executed
@@ -92,19 +107,3 @@ success_criteria:
       - "Hello from legacy"
     weight: 1.0
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "HelloLegacy"
-      - expression: "target_framework"
-        operator: equals
-        expected: "Legacy"
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 1
-    weight: 1.5
-    pass_threshold: 0.75

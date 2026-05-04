@@ -1,0 +1,95 @@
+task_id: skill-hitl-quality-dev-mistake-wrong-type
+description: >
+  Developer mistake test: agent must infer and apply correct field types from
+  the business description, not default everything to text. Tests that the agent
+  uses boolean for yes/no decisions, number for amounts, and date for deadlines —
+  even when the developer's schema description is vague or uses wrong types.
+tags: [uipath-human-in-the-loop, integration, schema-design, developer-mistake]
+
+agent:
+  type: claude-code
+  max_turns: 75
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "ExpenseReview" for expense claim approval:
+
+  1. Manual trigger
+  2. Script node — sets expense context (mock: amount = 1250.50, submittedDate = "2026-04-01")
+  3. HITL node — finance reviewer checks the expense:
+       - Sees (read-only): expense amount (should be a NUMBER), submission date (should be a DATE)
+       - Fills in:
+           - approved: a yes/no decision (should be BOOLEAN, not text)
+           - rejection_reason: optional explanation if rejected (text)
+           - approved_amount: the amount actually approved, may differ from requested (should be NUMBER)
+       - Outcomes: Approve (primary), Reject
+  4. Script node — logs: "Approved: <approved>, Amount: <approved_amount>"
+  5. End node
+
+  Wire: Trigger → Script → HITL →|completed| Script (log) → End
+
+  Use the inline quickform node (uipath.human-in-the-loop).
+  Do NOT run flow debug. Validate after building.
+
+  Save a summary to report.json:
+  {
+    "hitl_node_id": "<id>",
+    "field_types": {
+      "amount": "<type used>",
+      "submittedDate": "<type used>",
+      "approved": "<type used>",
+      "approved_amount": "<type used>"
+    },
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate ExpenseReview/ExpenseReview/ExpenseReview.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "approved field uses boolean type"
+    path: "ExpenseReview/ExpenseReview/ExpenseReview.flow"
+    includes:
+      - '"boolean"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "amount fields use number type"
+    path: "ExpenseReview/ExpenseReview/ExpenseReview.flow"
+    includes:
+      - '"number"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms correct types were used"
+    path: "report.json"
+    assertions:
+      - expression: "field_types.approved"
+        operator: equals
+        expected: "boolean"
+      - expression: "field_types.amount"
+        operator: equals
+        expected: "number"
+      - expression: "field_types.approved_amount"
+        operator: equals
+        expected: "number"
+      - expression: "field_types.submittedDate"
+        operator: equals
+        expected: "date"
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 0.75
