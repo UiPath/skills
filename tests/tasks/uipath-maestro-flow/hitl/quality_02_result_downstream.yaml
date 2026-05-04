@@ -24,7 +24,7 @@ initial_prompt: |
        - Reviewer sees: expense amount, requester name, category (all read-only)
        - Reviewer fills in: approved (boolean), comments (text, optional)
        - Outcomes: Approve (primary), Reject
-  3. Script node — reads the reviewer's decision from the HITL result and
+  3. Script node — reads the reviewer's decision from the HITL output and
      logs: "Decision: <approved value>, Comments: <comments value>"
      The script must reference the HITL output via the correct runtime variable path.
   4. End node
