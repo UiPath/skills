@@ -149,9 +149,11 @@ uip solution deploy run \
   --output json
 ```
 
-Creates folder, provisions resources, and activates. Polls until `DeploymentSucceeded`.
+Creates the folder, provisions resources, and activates the deployment in one call. A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. Pass `--skip-activate` to opt out of auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`).
 
 ### Activate Existing Deployment
+
+Run only when `--skip-activate` was passed during deploy, or to retry a failed auto-activation after fixing the underlying cause (e.g. missing config).
 
 ```bash
 uip solution deploy activate "<DEPLOYMENT_NAME>" --output json

@@ -59,13 +59,19 @@ uip resource triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key <process-key> \
   --cron "0 0 9 ? * 1-5" \
-  --time-zone "UTC" \
+  --time-zone "Europe/Bucharest" \
   --runtime-type Unattended \
   --job-priority Normal \
   --folder-path "Finance" --output json
 ```
 
-Additional options: `--calendar-key` (skip holidays, from `uip or calendars list`), `--stop-strategy` (`SoftStop`|`Kill`), `--input-arguments` (JSON).
+`--time-zone` takes an IANA time zone ID (e.g. `UTC`, `Europe/Bucharest`, `America/Los_Angeles`).
+
+Additional options:
+- `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then enable them in bulk via `triggers enable`.
+- `--calendar-key` — skip holidays, from `uip or calendars list`.
+- `--stop-strategy` — `SoftStop` or `Kill`.
+- `--input-arguments` — JSON-encoded input arguments map.
 
 ### Queue Trigger
 

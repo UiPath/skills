@@ -68,7 +68,21 @@ Unregister a project from the `.uipx` manifest. Does NOT delete files from disk.
 uip solution project remove ./InvoiceAutomation/OldProject --output json
 ```
 
-## Step 5: List Resources
+## Step 5: List Projects
+
+Enumerate the projects registered in the local `.uipx` manifest. Reads only on-disk metadata — no backend call, so safe to use offline or in CI checks.
+
+```bash
+# from inside the solution dir
+uip solution project list --output json
+
+# or with an explicit solution folder
+uip solution project list --solution-folder ./InvoiceAutomation --output json
+```
+
+`Name` is read from each project's `project.uiproj`, falling back to the directory basename if the manifest is missing or unreadable. Empty solutions return `Data: []`.
+
+## Step 6: List Resources
 
 Show resources declared in the solution, available in Orchestrator, or both. Run from inside the solution directory (default), or pass `--solution-folder <path>` to target another location.
 
@@ -90,7 +104,7 @@ uip solution resource list --solution-folder ./InvoiceAutomation --output json
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
-## Step 6: Refresh Resources
+## Step 7: Refresh Resources
 
 Re-scan all projects and sync resource declarations from their `bindings_v2.json` files. Refresh is the only way to reconcile a solution's local artefacts with cloud entities — run it after adding/importing projects, after editing `bindings_v2.json`, or before any `pack` / `upload`.
 
@@ -137,7 +151,7 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
-## Step 7: Get a Single Resource Configuration
+## Step 8: Get a Single Resource Configuration
 
 Fetch the full configuration (`spec`, `apiVersion`, `isOverridable`, `resourceOverwrite`) for a specific resource by key. Useful when you need the resolved server state for a binding — e.g., constructing a deploy override, resolving an entry-point ID, inspecting a connection's authentication mode.
 
@@ -181,7 +195,7 @@ If you need the full server spec for a resource that's already in the solution (
 
 `list --source remote` returns entities from RCS that are **visible to your user** — including ones not bound to this solution. `get` is solution-context-aware: it considers anything in your `.uipx`'s solution_folder as "local", and falls back to RCS for everything else. A key shown by `list --source remote` that isn't bound to the solution will resolve via the FPS fallback.
 
-## Step 8: Upload to Studio Web
+## Step 9: Upload to Studio Web
 
 Upload the solution for browser-based editing. Accepts a directory, `.uipx` file, or `.uis` archive.
 
@@ -191,7 +205,7 @@ uip solution upload ./InvoiceAutomation --output json
 
 If the `SolutionId` in `.uipx` matches an existing Studio Web solution, the upload overwrites it.
 
-## Step 9: Delete from Studio Web
+## Step 10: Delete from Studio Web
 
 Remove a solution from Studio Web by its UUID (returned by `upload`).
 
