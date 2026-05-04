@@ -137,7 +137,8 @@ bucket/orchestratorBucket/...        │
 | `process` (external) | `properties.processName` | `properties.folderPath` (literal `Folder`) | One per external process tool |
 | `process` (solution-internal) | `properties.processName` | `"solution_folder"` (placeholder) | Resolved at deploy |
 | `index` | `indexName` | top-level `folderPath` (literal `Folder`) | StorageBucket-backed only |
-| `app` (escalation) | `channel.properties.appName` | `channel.properties.folderPath` (literal `Folder`) | One per Action Center channel |
+| `app` (escalation) | `channel.properties.appName` | `channel.properties.folderName` (literal `Folder`, translated to binding `folderPath`) | One per Action Center channel |
+| `app` (guardrail escalation) | `action.app.name` | `action.app.folderName` (literal `Folder`, translated to binding `folderPath`) | One per `$actionType: "escalate"` guardrail action |
 | `connection` | `properties.connection.name` | — (omitted) | Bound by `connection.id` |
 
 ```jsonc
