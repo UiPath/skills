@@ -8,9 +8,11 @@ End-to-end workflows for onboarding users and robots to the UiPath platform. The
 # 1. Verify login
 uip login status --output json
 
-# 2. Extract organization ID from the response (field: organizationId)
-# Store as ORG_ID for all subsequent commands
+# 2. Get organization ID (field: OrganizationId in the response)
+uip login refresh --output json
 ```
+
+If `login refresh` is unavailable, read `UIPATH_ORGANIZATION_ID` from `~/.uipath/.auth`.
 
 ---
 

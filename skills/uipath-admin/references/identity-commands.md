@@ -8,8 +8,9 @@ Complete reference for all `uip admin identity` commands. Every command supports
 # Verify login
 uip login status --output json
 
-# Extract organization ID from the response — required for all commands
-# Field: organizationId (UUID)
+# Get organization ID — required for most commands
+# Use login refresh (field: OrganizationId) or read ~/.uipath/.auth (UIPATH_ORGANIZATION_ID)
+uip login refresh --output json
 ```
 
 ---

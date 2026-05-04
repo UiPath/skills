@@ -24,7 +24,7 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 ## Critical Rules
 
 1. **Verify login first.** Run `uip login status --output json`. If not logged in: `uip login`.
-2. **Resolve organization ID first.** Every identity command requires `--organization <ORG_ID>`. Extract from `uip login status --output json` (field: `organizationId`). Never hardcode UUIDs.
+2. **Resolve organization ID first.** Every identity command requires `--organization <ORG_ID>`. Run `uip login refresh --output json` and extract from field `OrganizationId`. If `login refresh` is unavailable, read the org ID from `~/.uipath/.auth` (field: `UIPATH_ORGANIZATION_ID`). Never hardcode UUIDs.
 3. **Discover before creating.** Always `list` before `create` to avoid duplicates. Robot account and group names must be unique within a partition.
 4. **Use `--output json` on all commands.** Parse programmatically. Present results conversationally.
 5. **Secrets shown only once.** When creating external apps or generating secrets, secret value appears only in creation response. Warn user to save immediately.
@@ -45,13 +45,14 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 
 The most common identity flow is **user management** — inviting users, assigning them to groups, and managing access. For robot account onboarding, see [onboarding-workflows.md](references/onboarding-workflows.md).
 
-### Step 0 — Verify login
+### Step 0 — Verify login and resolve org ID
 
 ```bash
 uip login status --output json
+uip login refresh --output json
 ```
 
-If not logged in: `uip login`. Extract `organizationId` from response.
+If not logged in: `uip login`. Extract `OrganizationId` from the `login refresh` response.
 
 ### Step 1 — Invite a user
 
