@@ -73,6 +73,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | Found | Surface | How HITL is added |
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
+| `caseplan.json` (any `*.json` with `root.type: "case-management:root"`) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
 | `agent.json` | **Coded Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
 
@@ -128,7 +129,11 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 ## Step 3 — Choose Task Type
 
-Present the user with three options. Do not choose on their behalf or perform any registry search.
+**The options differ by surface.** Present the options for the detected surface and confirm before doing anything.
+
+### Surface: Flow
+
+Present three options. Do not choose on behalf of the user or perform any registry search.
 
 | # | Option | `inputs.type` value | Description |
 |---|---|---|---|
@@ -152,6 +157,31 @@ Present the user with three options. Do not choose on their behalf or perform an
 | New Coded Action App | No `dist/` build present in the source path | "The source folder doesn't have a `dist/` build yet. Run your build first (`npm run build` or equivalent), then come back. Or I can set up a QuickForm now so the flow is wired and ready — you can swap in the app later." |
 | New Coded Action App | User can't provide a source path | "If you don't have the app code ready yet, I'll use QuickForm to wire the HITL checkpoint. You can replace it with a Coded Action App once it's built." |
 | Any custom app | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
+
+---
+
+### Surface: Case
+
+Present two options. Do not choose on behalf of the user or pull the registry.
+
+| # | Option | Description |
+|---|---|---|
+| 1 | **Generic action task** | Simple approval — no deployed app needed. Human sees `taskTitle` in Action Center and completes the task. No structured form fields. |
+| 2 | **App-based action task** | Uses a deployed Action Center app with custom input/output fields. Requires the app to exist in Orchestrator. |
+
+> **If the user is unsure or says "just pick one":** Default to Generic. Say: "I'll use a generic action task — no deployed app needed, quickest to set up. You can upgrade to an app-based task later if you need custom form fields."
+
+| User selects | Next step |
+|---|---|
+| Generic action task | Read [references/hitl-casetask-action.md — Path 1](references/hitl-casetask-action.md#path-1--generic-action-task-no-deployed-app), then continue with Step 4 |
+| App-based action task → ask: "What is the name of the deployed Action Center app?" | Read [references/hitl-casetask-action.md — Path 2](references/hitl-casetask-action.md#path-2--app-based-action-task-deployed-action-center-app), then continue with Step 4 |
+
+**Fallback rules:**
+
+| Path | Blocker | Response |
+|---|---|---|
+| App-based | App not found in registry or `action-apps-index.json` | "I couldn't find that app. Would you like to try a different name, or use a generic task while the app is prepared?" |
+| Any | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
 
 ---
 
@@ -245,6 +275,30 @@ After writing, validate:
 uip maestro flow validate <file> --output json
 ```
 
+### Surface: Case
+
+Read the `caseplan.json` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON is the default.**
+
+Full reference: **[references/hitl-casetask-action.md](references/hitl-casetask-action.md)** — task JSON shape (generic and app-based), field reference, assignee handling, post-write verification, and downstream output access.
+
+**CLI (opt-in):** When the user explicitly requests a CLI command:
+
+```bash
+uip maestro case hitl add <caseplan.json> <stageId> \
+  --label "<TaskLabel>" \
+  --priority <Low|Medium|High> \
+  --assignee <email-or-group> \
+  --output json
+```
+
+After writing, validate:
+
+```bash
+uip maestro case validate <caseplan.json> --output json
+```
+
+---
+
 ### Surface: Coded Agent
 
 The Coded Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
@@ -303,3 +357,4 @@ After completing the wiring:
 - **[Coded Action App (inline)](references/hitl-node-coded-action-app.md)** — Scaffold a new React coded action app inside the solution; full project template, resource files, HITL node JSON.
 - **[HITL Business Pattern Recognition](references/hitl-patterns.md)** — Signal tables for detecting when a process needs a human checkpoint. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Canonical task deep-link forms. Read before surfacing any task URL to the user; covers the missing-tenant-slug anti-pattern (which the portal-UI misclassifies as "Orchestrator not enabled") and the API-host vs UI-host mapping.
+- **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, generic vs app-based flavors, CLI opt-in, field reference, downstream output access.
