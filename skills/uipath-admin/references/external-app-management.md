@@ -80,10 +80,9 @@ uip admin identity external-apps generate-secret <CLIENT_ID> \
      --output json
    ```
 
-2. Delete the specific secret:
+2. Delete the specific secret (only secret ID needed — no client ID):
    ```bash
-   uip admin identity external-apps delete-secret <SECRET_ID> \
-     --output json
+   uip admin identity external-apps delete-secret <SECRET_ID> --output json
    ```
 
 ## Workflow: Update an External App

@@ -111,13 +111,15 @@ uip admin identity users invite \
 | `-n, --name <name>` | No | First name |
 | `--surname <surname>` | No | Last name |
 
-Invite one user at a time — `--name`/`--surname` apply to all emails in the request.
+Always include `--name` and `--surname` when the user's full name is known. Invite one user at a time.
 
 **Output code:** `UsersInvited`
 
 ---
 
 ## Groups — `uip admin identity groups`
+
+> **Group ID is a positional argument, not a flag.** Write `groups get <GROUP_ID>`, NOT `groups get --group-id <GROUP_ID>`. Same for `add-members`, `remove-members`, `get-members`, `update`, `delete`.
 
 ### `groups list`
 
@@ -229,6 +231,8 @@ uip admin identity groups remove-members <GROUP_ID> \
 
 ## Robot Accounts — `uip admin identity robot-accounts`
 
+> **IDs and names are positional arguments, not flags.** Write `robot-accounts get <ID>`, NOT `robot-accounts get --id <ID>`. Same for `create <NAME>`, `update <ID>`, `delete <ID>`.
+
 ### `robot-accounts list`
 
 List robot accounts in a partition.
@@ -299,6 +303,8 @@ uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> --output json
 ---
 
 ## External Apps — `uip admin identity external-apps`
+
+> **IDs and names are positional arguments, not flags.** Write `external-apps get <CLIENT_ID>`, NOT `external-apps get --client-id <CLIENT_ID>`. Same for `create <NAME>`, `update <ID>`, `delete <ID>`, `generate-secret <ID>`, `delete-secret <ID>`.
 
 ### `external-apps list`
 
@@ -388,7 +394,7 @@ uip admin identity external-apps generate-secret <CLIENT_ID> --output json
 
 ### `external-apps delete-secret`
 
-Delete a specific secret from an external app.
+Delete a specific secret. Takes only the secret ID — no client ID needed.
 
 ```bash
 uip admin identity external-apps delete-secret <SECRET_ID> --output json

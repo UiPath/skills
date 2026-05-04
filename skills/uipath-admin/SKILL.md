@@ -40,6 +40,7 @@ Identity Server management via `uip admin identity`. Users, groups, robot accoun
 3. **Never pass usernames to group membership.** Only user IDs (UUIDs) accepted.
 4. **Never assume secrets persist.** Returned once at creation. If lost, generate new one.
 5. **Never delete built-in groups.** `type: "BuiltIn"` groups cannot be deleted. Only custom groups.
+6. **Never pass IDs as flags.** Resource IDs and names are positional arguments: `groups add-members <GROUP_ID> --user-ids ...`, NOT `--group-id <GROUP_ID>`. Same for all `get`, `update`, `delete`, `create` subcommands.
 
 ## Quick Start
 

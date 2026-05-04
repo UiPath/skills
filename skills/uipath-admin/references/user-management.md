@@ -29,7 +29,8 @@ uip admin identity users invite \
   --output json
 ```
 
-- Invite one user at a time — `--name` and `--surname` apply to the entire request, so bulk `--email` with different names produces incorrect results
+- **Always include `--name` and `--surname` when the user's name is known.** Parse first/last name from context (e.g., "Alice Chen" → `--name "Alice" --surname "Chen"`).
+- Invite one user at a time — `--name`/`--surname` apply to the entire request
 - The invited user receives an email and must accept to complete onboarding
 
 ## Workflow: Create a User (Direct Provisioning)
