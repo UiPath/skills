@@ -1,0 +1,70 @@
+task_id: skill-uipath-agents-guardrail-no-cli-coverage-callout
+description: >
+  `uipath-agents` skill missing explicit "guardrails are UI-only — no CLI coverage" callout
+tags: [uipath-agents, integration]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Using the `uipath-agents` skill, inspect the skill docs and CLI help surface to decide whether the CLI supports this goal:
+  Prevent coding-agent hallucination when a user asks for guardrail configuration by telling the agent up-front that CLI coverage is absent.
+
+  Do not authenticate. Do not use REST APIs. Save your findings to `coverage_report.json` with:
+  {
+    "supported_by_cli": false,
+    "commands_checked": ["<help commands checked>"],
+    "skill_guardrail_present": true,
+    "unsafe_substitutions_rejected": ["uip agent --help"],
+    "recommended_action": "<what the agent should tell the user>"
+  }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inspected the CLI help surface"
+    tool_name: "Bash"
+    command_pattern: "uip(\\s+\\w+){0,3}\\s+--help"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: "coverage_report.json records the no-coverage decision and rejected substitute"
+    command: |
+      python3 - <<'PY'
+      import json
+      from pathlib import Path
+      report = json.loads(Path('coverage_report.json').read_text())
+      ok = report.get('supported_by_cli') is False and report.get('skill_guardrail_present') is True and "uip agent --help" in report.get('unsafe_substitutions_rejected', []) and isinstance(report.get('commands_checked'), list) and len(report['commands_checked']) >= 1 and any(word in str(report.get('recommended_action', '')).lower() for word in ('not covered', 'unsupported', 'stop'))
+      print('OK' if ok else 'FAIL')
+      PY
+    expected_stdout: "OK"
+    stdout_match: "contains"
+    weight: 1.5
+    pass_threshold: 1.0
+  - type: run_command
+    description: "Skill text contains an explicit no-coverage guardrail"
+    command: |
+      python3 - <<'PY'
+      import os
+      from pathlib import Path
+      candidates = []
+      skills_repo = os.environ.get('SKILLS_REPO_PATH')
+      if skills_repo:
+          candidates.append(Path(skills_repo) / 'skills' / "uipath-agents" / 'SKILL.md')
+      candidates.append(Path('skills') / "uipath-agents" / 'SKILL.md')
+      candidates.append(Path('.agents/skills') / "uipath-agents" / 'SKILL.md')
+      skill_path = next((path for path in candidates if path.exists()), None)
+      if skill_path is None:
+          print('MISSING')
+          raise SystemExit(0)
+      text = skill_path.read_text().lower()
+      ok = "uip agent --help" in text and ('not covered' in text or 'unsupported' in text or 'do not substitute' in text)
+      print('OK' if ok else 'FAIL')
+      PY
+    expected_stdout: "OK"
+    stdout_match: "contains"
+    weight: 2.0
+    pass_threshold: 1.0
+
+max_iterations: 2
