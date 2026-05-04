@@ -76,6 +76,14 @@ After establishing `PROJECT_DIR`, determine whether this is a **coded** or **XAM
 | Unit tests with assertions | **Coded Test Case** | `[TestCase]` with Arrange/Act/Assert |
 | User explicitly requests coded/XAML | **User's choice** | Never second-guess explicit preference |
 
+### UI Automation Boundaries
+
+For any task whose business behavior is "open an app/browser, click, type, scrape visible UI, submit a form, or verify UI state", the interaction layer MUST be UiPath UI Automation — `NApplicationCard` plus UIA activities (XAML), or `uiAutomation.Open`/`Attach` plus Object Repository descriptors (coded). Do NOT substitute `InvokeCode`, PowerShell, Selenium, Playwright, Chrome DevTools Protocol, raw DOM JavaScript, HTTP form posts, or external browser-driver scripts. The coded fallback rows above apply only to non-UI helper logic (data transforms, parsing, DTOs, calculations, API-only integrations).
+
+If target configuration is unavailable, fall back to the documented UIA indication path — never to an external browser automation shortcut.
+
+See [ui-automation-guide.md § Mandatory: Generate Targets Before Writing Any UI Code](references/ui-automation-guide.md#mandatory-generate-targets-before-writing-any-ui-code) for the full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope.
+
 **Hybrid pattern** — XAML orchestration + coded fallback for logic with no matching activity:
 
     Main.xaml                  ← orchestration (XAML)
