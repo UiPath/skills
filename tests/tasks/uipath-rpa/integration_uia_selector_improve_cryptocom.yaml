@@ -1,0 +1,95 @@
+task_id: skill-rpa-integration-uia-selector-improve-cryptocom
+description: >
+  Skill-guided evaluation: when asked to scrape live data from a modern
+  web app where stable selectors are not available out-of-the-box
+  (crypto.com's price table — dynamically-generated class names, no
+  `name` / `aaname` on table rows or cells), the uipath-rpa skill
+  must route the agent through the full uia-configure-target capture
+  / improve / register pipeline rather than guessing selectors from
+  the URL or page structure.
+
+  Validates the end-to-end flow: uia-improve-selector subagent
+  invocation and resulting selector quality on Main.xaml. Two
+  deterministic `command_executed` checks gate the canonical CLI
+  calls; a `run_command` check runs the generic
+  `_shared/check_xaml_targets.py` on `Main.xaml` with
+  `_shared/resources/cryptocom/eth_targets.rules.json` to assert
+  exactly 2 TargetAnchorables, each anchored on `colName` +
+  `visibleinnertext='*ETH*'` with no `css-selector` and no
+  `tableRow=`.
+
+tags: [uipath-rpa, integration, lifecycle:generate, uia]
+
+task_timeout: 1800
+agent:
+  type: claude-code
+  model: claude-opus-4-7
+  max_turns: 200
+  turn_timeout: 1000
+  # `Agent` is required — improve-selector spawns parallel subagents.
+  allowed_tools: ["Skill", "Agent", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  # No python venv: agent runs `uip`, not Python.
+  template_sources:
+    - type: template_dir
+      path: ./_shared
+      mount_point: _shared
+
+# Serve the cryptocom fixture locally so the test is hermetic.
+pre_run:
+  - command: "python _shared/serve.py start 18765"
+    timeout: 30
+    fail_on_error: true
+
+post_run:
+  - command: "python _shared/serve.py stop"
+    timeout: 10
+
+initial_prompt: |
+  Build a standard UiPath RPA project named "EthPriceScrape" (XAML,
+  VisualBasic) under ./EthPriceScrape that does the following with
+  UI automation:
+
+    * Opens http://127.0.0.1:18765/CryptoComEEE.html in Microsoft Edge
+    * Locates the Ethereum row in the price table
+    * Reads the current price and market cap for Ethereum
+    * Closes the opened Edge window
+
+  Just save the data into variables. Do not add unnecessary
+  activities.
+
+  After the automation is built, close Microsoft Edge.
+
+  Use `--output json` on any uip commands you run.
+
+success_criteria:
+  # Agent consulted the configure-target docs.
+  - type: command_executed
+    description: "Agent read configure-target docs (workflows policy or SKILL.md)"
+    tool_name: "Read"
+    command_pattern: 'configure-target'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # selector-intelligence validate runs once per improve-selector
+  # subagent (price + market cap = 2 calls).
+  - type: command_executed
+    description: "Agent ran selector-intelligence validate for both elements (improve-selector internal)"
+    tool_name: "Bash"
+    command_pattern: 'selector-intelligence\s+validate'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Selector-quality gate: enforces target count and per-target
+  # FullSelectorArgument forbidden/required attribute patterns.
+  - type: run_command
+    description: "FullSelectorArgument anchors on colName + visibleinnertext='*ETH*'; no css-selector or tableRow"
+    command: "python _shared/check_xaml_targets.py EthPriceScrape/Main.xaml --rules _shared/resources/cryptocom/eth_targets.rules.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
