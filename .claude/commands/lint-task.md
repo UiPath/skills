@@ -146,10 +146,13 @@ When raising Medium or High, **name the most-similar neighbor** in the issue des
 
 **Applies only if** the task's `tags` include a flow-building skill (e.g. `uipath-maestro-flow`) AND the task's tier is `e2e` or `integration` (smoke is exempt — smoke tests legitimately stop at validate).
 
-**Raise a High issue if:**
-- No `command_executed` criterion matches `flow\s+debug` (i.e. test never runs `uip maestro flow debug`)
+`flow validate` checks JSON shape only; it cannot tell you whether the flow actually produces the right output. A wrong flow that happens to be schema-valid would pass a validate-only test.
 
-`flow validate` checks JSON shape only; it cannot tell you whether the flow actually produces the right output. Real correctness for e2e/integration flow tests requires `flow debug` (or equivalent platform execution). A wrong flow that happens to be schema-valid would pass a validate-only test.
+Severity:
+- **High** — `e2e` tier with no `command_executed` matching `flow\s+debug`. End-to-end means the test should exercise the runtime; without `flow debug`, an e2e test cannot verify correctness.
+- **Medium** — `integration` tier with no `flow debug`. Many integration tasks legitimately run without a live tenant in the sandbox; the gap is real but the constraint is well-understood.
+
+**Description-rationale carve-out.** If the task's `description` field explicitly documents the rationale for skipping `flow debug` (e.g. "validate-only because no live tenant", "skipping debug due to trigger-fired execution unreliability"), downgrade the severity by one level (High → Medium, Medium → Low) and quote the rationale in the issue. Authors who document deliberate trade-offs should not be punished as harshly as silent omissions.
 
 ## Phase 4 — Compose Per-Task Report
 
@@ -185,7 +188,15 @@ After all tasks, print one summary line:
 ═══ <N> tasks linted: <C> Critical, <H> High, <M> Medium, <L> Low, <O> OK ═══
 ```
 
-If multiple tasks share the same root cause (e.g. 4 tasks share the same self-report anti-pattern), call that out once at the bottom under `themes:` rather than repeating the issue per-task.
+If multiple tasks share the same root cause (e.g. 4 tasks share the same self-report anti-pattern), call that out once at the bottom under `themes:` rather than repeating the issue per-task. Number themes (Theme 1, Theme 2, …) so per-task lines can reference them.
+
+**Theme-aware downgrade.** When a per-task issue is fully captured by a theme:
+
+- Replace the per-task issue line with `[<severity>] axis X: see Theme N` (no description repetition; the theme entry carries the full description).
+- **Downgrade the affected task's overall verdict by one level** (Critical → High, High → Medium, Medium → Low, Low → OK). The systemic finding stays visible at theme severity; per-task lines show membership without amplifying noise.
+- The theme entry itself retains the original severity and full description.
+
+A task whose only issues are all captured by themes is effectively "an instance of a known cluster" — its individual verdict reflects how much extra signal it adds beyond the cluster, which is little. The cluster's severity is what readers should react to.
 
 ## Rules
 
