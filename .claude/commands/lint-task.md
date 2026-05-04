@@ -73,11 +73,13 @@ Do **not** penalize:
 - Stating the high-level goal and expected output ("Use `uip` to list Flow processes and save the results")
 - Naming the artifact when the agent has to know it (e.g. file paths are part of the goal, not the procedure)
 - Routing context ("Use the `<skill-name>` skill workflow") — that's a skill-trigger hint, not over-specification
+- **Ground-truth anchors.** Literals in the prompt that match expected values checked by `success_criteria` (e.g. prompt says "respond with 'amazing day'", criterion `file_contains` checks for `"amazing day"`). These are test fixtures — the prompt is supplying the expected output the test grades against, not leaking procedure. Same for input values the criteria assert downstream.
+- **Tag-justified node/feature names.** If the prompt names a node type or feature that's also the test's `node:X` or feature tag (e.g. "Use a Switch node" on a `node:switch` task, "using a Loop node" on a `node:loop` task), that's deliberate scoping, not over-specification — the test's whole point is to exercise that node type.
 
 Severity:
 - **High** — prompt is essentially a recipe; the skill is not actually being tested because any agent could follow the recipe without invoking it
 - **Medium** — prompt prescribes 2+ procedure steps or non-trivial flags
-- **Low** — prompt leaks one minor detail (e.g. a single flag, a file path that wasn't necessary to specify)
+- **Low** — prompt leaks one minor detail (e.g. a single flag, a file path that wasn't necessary to specify) that is *not* covered by either carve-out above
 
 ### C. Meaningful coverage
 
@@ -135,10 +137,12 @@ For each of the 5 nearest files, compare:
 
 If two tasks differ only in surface-level naming (renamed entity, slightly different prompt wording, same criteria template), they're near-duplicates.
 
+**Scaffold reuse is not duplication.** Tasks that share a YAML scaffold (same sandbox config, same general structure of `success_criteria`, same prompt template) but exercise *materially distinct operations* — e.g. `add_node`, `remove_node`, `move_node`, `update_node` all sharing an edit-flow scaffold while testing entirely different edits — are good template reuse, not duplicates. Do not raise an issue in this case. Only raise when the *operation under test* substantively overlaps.
+
 Severity:
 - **High** — this task and a sibling are interchangeable; one of them is pure infra cost with no marginal coverage
 - **Medium** — substantial overlap with one neighbor; mild novelty (e.g. different connector but same shape)
-- **Low** — same area as neighbors but materially different input or topology
+- **Low** — same general area as neighbors *and* materially-similar operation (different input but same logic). If the operation is materially distinct, do not raise.
 
 When raising Medium or High, **name the most-similar neighbor** in the issue description.
 
@@ -192,9 +196,18 @@ If multiple tasks share the same root cause (e.g. 4 tasks share the same self-re
 
 **Theme-aware downgrade.** When a per-task issue is fully captured by a theme:
 
-- Replace the per-task issue line with `[<severity>] axis X: see Theme N` (no description repetition; the theme entry carries the full description).
 - **Downgrade the affected task's overall verdict by one level** (Critical → High, High → Medium, Medium → Low, Low → OK). The systemic finding stays visible at theme severity; per-task lines show membership without amplifying noise.
 - The theme entry itself retains the original severity and full description.
+
+**Suppress the issue list when fully theme-captured.** If *every* issue on a task is captured by a theme (i.e. the task adds no unique findings beyond cluster membership), drop the `issues:` and `suggested fixes:` blocks entirely and emit a one-line verdict instead:
+
+```
+─── tests/tasks/<skill>/<file>.yaml ───────────────────────────
+
+verdict: <Low | Medium | …> (theme-captured; see Theme 1, 3)
+```
+
+If a task has *some* unique issues plus *some* theme-captured ones, keep the issues block but list only the unique issues (drop the `see Theme N` lines). The theme list at the top of the report makes membership visible across tasks; repeating "see Theme N" per task is pure clutter.
 
 A task whose only issues are all captured by themes is effectively "an instance of a known cluster" — its individual verdict reflects how much extra signal it adds beyond the cluster, which is little. The cluster's severity is what readers should react to.
 

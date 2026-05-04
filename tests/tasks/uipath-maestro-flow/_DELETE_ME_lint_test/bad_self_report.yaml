@@ -1,0 +1,56 @@
+task_id: skill-flow-DELETEME-lint-self-test
+description: >
+  TEMPORARY — deliberately bad task used to validate the lint-tasks GitHub
+  Action. Hits multiple rubric axes (self-report, over-specification, weak
+  coverage, gameable criteria, e2e without flow debug). Delete this file and
+  the enclosing _DELETE_ME_lint_test/ folder before merging the lint workflow
+  PR.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow named "DeleteMe" with a single Script node. Follow these
+  steps exactly:
+
+  1. Run `uip solution new DeleteMe`.
+  2. Run `uip maestro flow init DeleteMe/DeleteMe --output json`.
+  3. Run `uip solution project add DeleteMe/DeleteMe DeleteMe`.
+  4. Edit `DeleteMe/DeleteMe/DeleteMe.flow` to add one `core.action.script`
+     node wired between trigger and end.
+  5. Run `uip maestro flow validate DeleteMe/DeleteMe/DeleteMe.flow`.
+  6. Save a summary of what you did to `report.json`:
+     {
+       "solution_created": <true or false>,
+       "flow_validated": <true or false>,
+       "status": "<'success' or 'failure'>"
+     }
+
+success_criteria:
+  - type: file_exists
+    description: "Agent created the self-report"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Self-reported solution_created is true"
+    path: "report.json"
+    assertions:
+      - expression: "solution_created"
+        operator: equals
+        expected: true
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Self-reported status is success"
+    path: "report.json"
+    assertions:
+      - expression: "status"
+        operator: equals
+        expected: "success"
+    weight: 1.0
+    pass_threshold: 1.0
