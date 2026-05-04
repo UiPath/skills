@@ -199,7 +199,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-maestro-flow, smoke, init, validate]
+tags: [uipath-maestro-flow, smoke, lifecycle:generate]
 
 sandbox:
   driver: tempdir
@@ -209,12 +209,17 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  Save a summary of what you did to report.json with at minimum:
-    {
-      "project_name": "WeatherAlert",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
+  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  inside a solution:
+  1. Create the solution first.
+  2. Create the Flow project inside that solution.
+  3. Link the project to the solution.
+
+  The correct flow-file path is:
+    WeatherAlert/WeatherAlert/WeatherAlert.flow
+
+  The task is NOT complete until `uip maestro flow validate` has passed for
+  that exact file path.
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -224,7 +229,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a solution with uip solution new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+new'
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -232,7 +237,7 @@ success_criteria:
   - type: command_executed
     description: "Agent initialized a Flow project with uip maestro flow init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+init'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -240,7 +245,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the .flow file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -248,7 +253,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on uip commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -256,7 +261,7 @@ success_criteria:
   - type: command_executed
     description: "Agent linked flow project to solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+add'
+    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -266,32 +271,14 @@ success_criteria:
     path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "WeatherAlert"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
-    weight: 2.0
-    pass_threshold: 0.75
 ```
 
 Key patterns to note:
 - **No `agent:` block** — inherits everything from `experiments/default.yaml`
 - **No `max_iterations` or `llm_reviewer`** — inherited from the experiment config
 - **Minimal prompt** — describes the goal ("create and validate"), not the steps
-- **Multiple criteria types** — `command_executed`, `file_exists`, `json_check` cover different aspects
+- **Behavior-only criteria** — `command_executed` and `file_exists` verify real operations, not agent self-reports
 - **Weighted scoring** — core commands (`weight: 1.5`) matter more than supporting checks (`weight: 1.0`)
-
-For another example using `file_contains` and `run_command` criteria, see `tasks/uipath-maestro-flow/smoke/registry_discovery.yaml`. That test also demonstrates overriding a single field (`agent: max_turns: 14`) from the experiment defaults.
 
 ## Success Criteria Reference
 
@@ -325,58 +312,77 @@ Verify a file was created in the sandbox. From `init_validate.yaml`:
 
 ### `file_contains`
 
-Verify a file contains expected strings. From `registry_discovery.yaml`:
+Verify a file contains (or excludes) expected strings. From `uipath-maestro-flow/hitl/smoke_01_hitl_node_placed.yaml`:
 
 ```yaml
 - type: file_contains
-  description: "Report contains expected fields"
-  path: "registry_report.json"
+  description: "Flow contains the inline HITL node type"
+  path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
   includes:
-    - "node_types_found"
-    - "commands_used"
-    - "http_node_type"
-    - "script_node_type"
-  weight: 1.5
+    - '"uipath.human-in-the-loop"'
+  weight: 3.0
   pass_threshold: 1.0
 ```
+
+`excludes:` is also supported — useful for asserting a file does not contain a deprecated flag or forbidden value.
 
 ### `json_check`
 
-Validate JSON file structure and values using JSONPath assertions. From `init_validate.yaml`:
-
-```yaml
-- type: json_check
-  description: "report.json has correct structure and values"
-  path: "report.json"
-  assertions:
-    - expression: "project_name"
-      operator: equals
-      expected: "WeatherAlert"
-    - expression: "validation_passed"
-      operator: equals
-      expected: true
-    - expression: "length(commands_used)"
-      operator: gte
-      expected: 3
-  weight: 2.0
-  pass_threshold: 0.75   # at least 75% of assertions must pass
-```
-
-Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
+Validate JSON file structure and values using JMESPath assertions. Supported operators: `equals`, `gte`, `lte`, `gt`, `lt`, `contains`.
 
 ### `run_command`
 
-Execute an arbitrary shell command and check the exit code. From `registry_discovery.yaml`:
+Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-data-fabric/integration_csv_import.yaml`:
 
 ```yaml
 - type: run_command
-  description: "registry_report.json is valid JSON"
-  command: "python -c \"import json; json.load(open('registry_report.json'))\""
-  timeout: 10
+  description: "inventory.csv has at least 4 data rows (header + 4)"
+  command: "awk 'END { exit (NR >= 5 ? 0 : 1) }' inventory.csv"
+  timeout: 5
   expected_exit_code: 0
-  weight: 1.0
+  weight: 2.0
   pass_threshold: 1.0
 ```
+
+Or byte-equality for upload/download round-trips:
+
+```yaml
+- type: run_command
+  description: "Downloaded file is byte-identical to the original"
+  command: "cmp -s original.txt downloaded.txt"
+  timeout: 5
+  expected_exit_code: 0
+```
+
+### `skill_triggered`
+
+Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Supports positive (`expected: "yes"`) and negative (`expected: "no"`) assertions:
+
+```yaml
+- type: skill_triggered
+  description: "Agent invoked the uipath-human-in-the-loop skill"
+  skill_name: "uipath-human-in-the-loop"
+  expected: "yes"
+  weight: 3.0
+  pass_threshold: 1.0
+```
+
+Un-fakeable — the criterion inspects `turn_records.commands` directly. The negative form (`expected: "no"`) is the right primitive for smoke tests where the agent should NOT trigger a particular skill.
+
+### `command_not_executed`
+
+Counterpart to `command_executed`. Verifies the agent did NOT run a prohibited command. Use for refusal / negative-guard tests:
+
+```yaml
+- type: command_not_executed
+  description: "Agent must not delete an entity"
+  tool_name: "Bash"
+  command_pattern: 'uip\s+df\s+entities\s+delete'
+  weight: 3.0
+  pass_threshold: 1.0
+```
+
+Score is binary: 1.0 when matches ≤ `max_count` (default `0`), else 0.0. Empty `turn_records` → trivially passes.
 
 ## Weight and Threshold Guidance
 
@@ -384,11 +390,11 @@ Execute an arbitrary shell command and check the exit code. From `registry_disco
 
 | Weight | When to use | Example from existing tests |
 |--------|-------------|---------------------------|
-| `1.0` | Supporting checks | `--output json` flag used, file is valid JSON |
+| `1.0` | Supporting checks | `--output json` flag used, presence of an auxiliary file |
 | `1.5` | Core behavior | `uip solution new` executed, `.flow` file created |
-| `2.0` | Critical validation | `report.json` has correct structure and values |
+| `2.0` | Important artifact content | `.flow` file contains the expected node type or handle wiring |
 | `3.0` | Primary artifact validity | `uip maestro flow validate` passes on the generated flow file |
-| `5.0–6.0` | End-to-end execution | Check script runs flow debug and verifies output correctness |
+| `5.0–6.0` | End-to-end execution | Check script runs `flow debug` and verifies output correctness |
 
 **`pass_threshold`** is the fraction of the criterion that must pass. For `json_check` with multiple assertions, `0.75` means 75% of assertions must pass. For most criteria, use `1.0` (all-or-nothing).
 

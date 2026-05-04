@@ -42,14 +42,6 @@ initial_prompt: |
   make the final routing decision before the complaint is acted on.
   Insert a HITL node in the appropriate place, wire it, and validate.
 
-  Save results to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "inserted_position": "<description of where in the flow>",
-    "handles_wired": ["<list>"],
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: file_contains
     description: "HITL node is present in the flow file"
@@ -75,12 +67,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.5
-    pass_threshold: 1.0

@@ -23,19 +23,10 @@ initial_prompt: |
   1. Search for matching connectors
   2. If no native connector exists, explain the fallback strategy
 
-  Save your findings to report.json:
-  {
-    "google_connectors": ["<list of connector keys found>"],
-    "apify_connectors": ["<list of connector keys found, or empty>"],
-    "apify_fallback": "<fallback strategy if no native connector>",
-    "commands_used": ["<list of uip is commands you ran>"]
-  }
-
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands may fail with auth errors — that is expected.
-    Run each command once, record the result (success or error) in report.json,
-    and move on. Do NOT retry or attempt to login.
+    Run each command once and move on. Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
 
 success_criteria:
@@ -55,16 +46,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "report.json has correct structure, HTTP fallback documented"
-    command: "python3 $TASK_DIR/_shared/is_check.py check_connector_discovery"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0

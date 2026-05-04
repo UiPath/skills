@@ -65,18 +65,6 @@ initial_prompt: |
        - every collected record has Active=true
        - total count == 300
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<LargePaginationTest entity ID>",
-    "import_count": <number of records imported>,
-    "pagination_pages_fetched": <number of list calls made for full traversal>,
-    "pagination_total_unique_ids": <count of unique record IDs across all pages>,
-    "pagination_no_duplicates": <true if no duplicate IDs>,
-    "filtered_pages_fetched": <number of query calls made for Active=true filter>,
-    "filtered_active_count": <count of records returned by Active=true filter>,
-    "filtered_all_active": <true if every filtered record has Active=true>
-  }
-
   Do NOT delete the entity — the test harness handles cleanup.
 
 success_criteria:
@@ -118,30 +106,23 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
+  - type: run_command
+    description: "bulk_500.csv has exactly 500 data rows (header + 500)"
+    command: "awk 'END { exit (NR == 501 ? 0 : 1) }' bulk_500.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "500 records paginated without duplicates; 300 Active=true records confirmed"
-    path: "report.json"
-    assertions:
-      - expression: "pagination_total_unique_ids"
-        operator: equals
-        expected: 500
-      - expression: "pagination_no_duplicates"
-        operator: equals
-        expected: true
-      - expression: "filtered_active_count"
-        operator: equals
-        expected: 300
-      - expression: "filtered_all_active"
-        operator: equals
-        expected: true
-    weight: 5.0
-    pass_threshold: 0.75
+  - type: file_contains
+    description: "bulk_500.csv has the required header columns"
+    path: "bulk_500.csv"
+    includes:
+      - "Name"
+      - "Score"
+      - "Active"
+    weight: 1.5
+    pass_threshold: 1.0
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

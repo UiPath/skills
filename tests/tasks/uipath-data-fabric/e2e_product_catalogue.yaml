@@ -25,7 +25,7 @@ initial_prompt: |
   Price (DECIMAL), InStock (BOOLEAN), SKU (STRING), Poster (FILE). Create the
   entity with all six fields before importing. Seed it with 15 products
   (5 per category: Electronics / Clothing / Home) by generating and importing
-  a CSV (CSV does not include the Poster column). Then:
+  a CSV named `products.csv` (CSV does not include the Poster column). Then:
 
   - Query all Electronics products and confirm you get exactly 5.
   - Apply a 10% price increase to the 2 most expensive products across all
@@ -36,18 +36,6 @@ initial_prompt: |
     expensive product.
   - Confirm the final state: total products, how many are in stock, how
     many are Electronics.
-
-  Save a summary to report.json:
-  {
-    "entity_id": "<ProductCatalogue entity ID>",
-    "total_products": <count>,
-    "electronics_count": <count from query>,
-    "price_updated_count": 2,
-    "out_of_stock_count": 3,
-    "in_stock_count": <total_products minus out_of_stock_count>,
-    "image_uploaded_to_sku": "<SKU of the product the image was uploaded to>",
-    "most_expensive_product_name": "<name>"
-  }
 
   Do NOT delete the entity.
 
@@ -117,29 +105,24 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
+    description: "products.csv was generated"
+    path: "products.csv"
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "15 products, 5 Electronics, 2 price updates, 3 out of stock"
-    path: "report.json"
-    assertions:
-      - expression: "total_products"
-        operator: equals
-        expected: 15
-      - expression: "electronics_count"
-        operator: equals
-        expected: 5
-      - expression: "price_updated_count"
-        operator: equals
-        expected: 2
-      - expression: "out_of_stock_count"
-        operator: equals
-        expected: 3
-    weight: 5.0
-    pass_threshold: 0.75
+  - type: run_command
+    description: "products.csv has 15 data rows (header + 15)"
+    command: "awk 'END { exit (NR == 16 ? 0 : 1) }' products.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "product_hero.jpg placeholder image was created"
+    path: "product_hero.jpg"
+    weight: 1.0
+    pass_threshold: 1.0
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

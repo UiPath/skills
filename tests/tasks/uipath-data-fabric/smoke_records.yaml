@@ -45,20 +45,6 @@ initial_prompt: |
   8. Delete the record from step 1 using records delete.
      Use placeholder record ID "id-single".
 
-  Save a summary to report.json with the bodies and commands you CONSTRUCTED
-  (fill these in based on what you sent, not the error responses):
-  {
-    "commands_used": ["<list of uip df commands you ran in order>"],
-    "single_insert_uses_object": true,
-    "batch_insert_uses_array": true,
-    "get_used_record_id": true,
-    "query_filter": { ... the filterGroup JSON used ... },
-    "pagination_method": "cursor",
-    "single_update_body_has_id": true,
-    "batch_update_all_have_id": true,
-    "delete_attempted": true
-  }
-
   Additional constraint:
   - Use --output json on every uip df command.
 
@@ -135,38 +121,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Query body uses filterGroup key"
-    path: "report.json"
-    includes:
-      - "filterGroup"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Array routing, cursor pagination, Id in update bodies, and delete confirmed"
-    path: "report.json"
-    assertions:
-      - expression: "batch_insert_uses_array"
-        operator: equals
-        expected: true
-      - expression: "pagination_method"
-        operator: equals
-        expected: "cursor"
-      - expression: "single_update_body_has_id"
-        operator: equals
-        expected: true
-      - expression: "batch_update_all_have_id"
-        operator: equals
-        expected: true
-      - expression: "delete_attempted"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 0.75

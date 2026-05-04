@@ -20,53 +20,37 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath Flow that processes GDPR data deletion requests. Each
-  request must be reviewed and signed off by a privacy officer before the
-  deletion runs — we need an audit trail for every decision. If the officer
-  doesn't respond within 7 days, escalate automatically.
+  Build a UiPath Flow named "GdprDeletionApproval" that processes GDPR
+  data deletion requests. Each request must be reviewed and signed off by
+  a privacy officer before the deletion runs — we need an audit trail for
+  every decision. If the officer doesn't respond within 7 days, escalate
+  automatically.
 
-  Save results to report.json:
-  {
-    "project_name": "<name used>",
-    "hitl_node_id": "<id>",
-    "schema": {
-      "inputs": ["<what the privacy officer sees>"],
-      "outputs": ["<what they fill in>"],
-      "outcomes": ["<their choices>"]
-    },
-    "timeout_configured": "<ISO 8601 duration used, e.g. P7D>",
-    "handles_wired": ["completed"],
-    "validation_passed": true
-  }
+  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
+  Give the privacy officer Approve and Reject outcomes. Configure the node
+  with a 7-day ISO 8601 timeout duration (e.g. "P7D") so the request
+  expires automatically if the officer does not respond.
+
+  Validate the flow when you're done.
 
 success_criteria:
+  - type: file_exists
+    description: "Flow file was created at the expected path"
+    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_contains
-    description: "report.json contains a HITL node ID (non-placeholder)"
-    path: "report.json"
+    description: "Flow contains the inline HITL node type"
+    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
-      - '"hitl_node_id": "'
-    weight: 2.0
+      - '"uipath.human-in-the-loop"'
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Timeout duration is captured in report.json (ISO 8601)"
-    path: "report.json"
-    includes:
-      - '"timeout_configured": "P'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent validated the flow"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Schema includes Approve and Reject outcomes"
-    path: "report.json"
+    description: "Flow exposes Approve and Reject outcomes"
+    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
       - "Approve"
       - "Reject"
@@ -74,19 +58,32 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "completed handle is wired"
-    path: "report.json"
+    description: "Flow wires the completed handle"
+    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
-      - "completed"
+      - '"completed"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Flow configures a 7-day ISO 8601 timeout (P7D or PT168H or similar)"
+    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
+    pattern: '"P(7D|T168H|1W)"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran flow validate during the session"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.0
+  - type: run_command
+    description: "uip flow validate passes against the authored .flow file"
+    command: "uip maestro flow validate GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

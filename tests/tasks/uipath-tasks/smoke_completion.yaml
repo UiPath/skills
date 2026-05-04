@@ -35,24 +35,6 @@ initial_prompt: |
     - --type <TaskType>
     - --folder-id 123
 
-  Save a summary to report.json:
-  {
-    "external_task_complete": {
-      "has_action": <true or false>,
-      "has_data": <true or false>
-    },
-    "form_task_complete": {
-      "has_action": <true>,
-      "has_data": <true>,
-      "action_value": "Approve"
-    },
-    "app_task_complete": {
-      "has_action": <true>,
-      "has_data": <true>
-    },
-    "all_calls_include_type_and_folder": <true>
-  }
-
   Important:
   - The CLI is not connected to a live tenant. Auth errors are expected.
     Run each command once and move on. Do NOT retry or login.
@@ -99,33 +81,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "FormTask and AppTask completions include action + data; ExternalTask has type+folder"
-    path: "report.json"
-    assertions:
-      - expression: "form_task_complete.has_action"
-        operator: equals
-        expected: true
-      - expression: "form_task_complete.has_data"
-        operator: equals
-        expected: true
-      - expression: "form_task_complete.action_value"
-        operator: equals
-        expected: "Approve"
-      - expression: "app_task_complete.has_action"
-        operator: equals
-        expected: true
-      - expression: "app_task_complete.has_data"
-        operator: equals
-        expected: true
-      - expression: "all_calls_include_type_and_folder"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 1.0

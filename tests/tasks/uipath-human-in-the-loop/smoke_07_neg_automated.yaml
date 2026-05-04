@@ -15,23 +15,12 @@ initial_prompt: |
   invoice follows the same template: extract 5 fixed fields, validate against
   PO numbers, post to SAP. There are no exceptions and no edge cases — the
   business has signed off on full automation with no human review steps for
-  this supplier. Create a recommendation.json with:
-  {
-    "hitl_needed": <true or false>,
-    "reason": "<why>"
-  }
+  this supplier.
 
 success_criteria:
-  - type: file_exists
-    description: "Agent wrote a recommendation.json"
-    path: "recommendation.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Agent correctly determined HITL is NOT needed"
-    path: "recommendation.json"
-    includes:
-      - '"hitl_needed": false'
+  - type: skill_triggered
+    description: "Agent did NOT invoke the uipath-human-in-the-loop skill (HITL not appropriate here)"
+    skill_name: "uipath-human-in-the-loop"
+    expected: "no"
     weight: 3.0
     pass_threshold: 1.0

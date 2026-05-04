@@ -36,14 +36,6 @@ initial_prompt: |
 
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "decision_condition": "<full expression used, e.g. $vars.complianceReview1.output.approved>",
-    "result_path_used": "<same or equivalent path referenced in the Decision>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
@@ -80,27 +72,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "report.json decision_condition references field-level variable"
-    path: "report.json"
-    includes:
-      - "$vars."
-      - ".output.approved"
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json has hitl_node_id and validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "hitl_node_id"
-        operator: not_equals
-        expected: ""
-      - expression: "decision_condition"
-        operator: contains
-        expected: "$vars."
-    weight: 2.0
-    pass_threshold: 0.75

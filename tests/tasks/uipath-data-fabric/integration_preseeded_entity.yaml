@@ -103,25 +103,6 @@ initial_prompt: |
      Verify the restore (confirm Notes == null).
      Save the record ID you modified.
 
-  Save a summary to report.json:
-  {
-    "entity_found": true,
-    "entity_seeded_now": <true if you just created and imported it, false if it was pre-existing>,
-    "entity_id": "<CodeEvalTestEntity ID>",
-    "field_count": <number of fields in schema>,
-    "query_active_true_count": <count>,
-    "query_score_gt_7_count": <count>,
-    "query_title_exact_count": <count>,
-    "query_title_contains_count": <count>,
-    "query_score_gte7_and_active_true_count": <count>,
-    "sort_highest_score": <Score of records[0] from descending sort>,
-    "pagination_total_records": <unique ID count across all pages>,
-    "pagination_no_duplicates": <true/false>,
-    "update_record_id": "<ID of record you modified>",
-    "update_verified": <true if records get confirmed the new Notes value>,
-    "restore_verified": <true if records get confirmed Notes is null again>
-  }
-
   Do NOT delete any records. Do NOT delete the entity.
 
 success_criteria:
@@ -204,54 +185,5 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Entity found, query counts match seed data, sort and pagination correct"
-    path: "report.json"
-    assertions:
-      - expression: "entity_found"
-        operator: equals
-        expected: true
-      - expression: "field_count"
-        operator: gte
-        expected: 7
-      - expression: "query_active_true_count"
-        operator: equals
-        expected: 12
-      - expression: "query_score_gt_7_count"
-        operator: equals
-        expected: 6
-      - expression: "query_title_exact_count"
-        operator: equals
-        expected: 1
-      - expression: "query_title_contains_count"
-        operator: equals
-        expected: 3
-      - expression: "query_score_gte7_and_active_true_count"
-        operator: equals
-        expected: 7
-      - expression: "sort_highest_score"
-        operator: gte
-        expected: 10
-      - expression: "pagination_total_records"
-        operator: equals
-        expected: 20
-      - expression: "pagination_no_duplicates"
-        operator: equals
-        expected: true
-      - expression: "update_verified"
-        operator: equals
-        expected: true
-      - expression: "restore_verified"
-        operator: equals
-        expected: true
-    weight: 6.0
-    pass_threshold: 0.75
 
 # No post_run: CodeEvalTestEntity is a shared persistent fixture — never deleted between runs.

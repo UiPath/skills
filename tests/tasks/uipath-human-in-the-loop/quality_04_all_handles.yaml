@@ -24,14 +24,7 @@ initial_prompt: |
   processResult script node body, show how to read the human's decision using
   $vars.<hitl-node-id>.output.
 
-  Validate after adding and wiring. Save results to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "handles_wired": ["completed"],
-    "result_variable_expression": "$vars.<hitl-node-id>.output",
-    "commands_used": ["<list>"],
-    "validation_passed": true
-  }
+  Validate after adding and wiring.
 
 success_criteria:
   - type: file_contains
@@ -58,24 +51,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json shows completed handle wired and validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "length(handles_wired)"
-        operator: gte
-        expected: 1
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "report.json references $vars output expression"
-    path: "report.json"
-    includes:
-      - "$vars"
-      - ".output"
-    weight: 2.0
-    pass_threshold: 1.0

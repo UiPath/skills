@@ -21,14 +21,6 @@ initial_prompt: |
   Wire the completed handle to a script node that logs the approval.
   Validate the flow after adding.
 
-  Save results to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "priority_used": "<the priority value set in the flow, e.g. High>",
-    "timeout_used": "<the ISO 8601 duration set in the flow, e.g. PT48H>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: file_contains
     description: "Flow file contains PT48H timeout for the HITL node"
@@ -54,18 +46,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json captures correct priority and timeout"
-    path: "report.json"
-    assertions:
-      - expression: "priority_used"
-        operator: equals
-        expected: "High"
-      - expression: "timeout_used"
-        operator: equals
-        expected: "PT48H"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 0.75

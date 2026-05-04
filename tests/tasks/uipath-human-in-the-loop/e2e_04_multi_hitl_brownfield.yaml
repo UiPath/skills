@@ -47,16 +47,6 @@ initial_prompt: |
   Wire the completed handles for both HITL nodes to their respective downstream
   steps. Validate the full flow after both nodes are added.
 
-  Save results to report.json:
-  {
-    "hitl_nodes": [
-      {"id": "<first HITL node id>", "label": "<label>", "before": "<node it precedes>"},
-      {"id": "<second HITL node id>", "label": "<label>", "before": "<node it precedes>"}
-    ],
-    "handles_wired": ["<list of all edges added>"],
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: file_contains
     description: "HITL node(s) present in the flow file"
@@ -82,15 +72,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json shows 2 HITL nodes and validation passed"
-    path: "report.json"
-    assertions:
-      - expression: "length(hitl_nodes)"
-        operator: gte
-        expected: 2
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 1.0

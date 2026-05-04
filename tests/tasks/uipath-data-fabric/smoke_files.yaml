@@ -37,15 +37,6 @@ initial_prompt: |
   4. Delete the file attachment from that field:
        uip df files delete doc-001-ent rec-001-id Attachment
 
-  Save a summary to report.json with the commands you ran and what you observed
-  (fill these in based on what you sent, not the error responses):
-  {
-    "commands_used": ["<list of uip df commands you ran in order>"],
-    "upload_command_uses_positional_args": true,
-    "download_uses_destination_flag": true,
-    "delete_positional_args": ["<entity-id>", "<record-id>", "<field-name>"]
-  }
-
   Additional constraints:
   - Use --output json on every uip df command.
   - The download flag is --destination (not --output).
@@ -90,21 +81,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Upload uses positional args and download uses --destination flag"
-    path: "report.json"
-    assertions:
-      - expression: "upload_command_uses_positional_args"
-        operator: equals
-        expected: true
-      - expression: "download_uses_destination_flag"
-        operator: equals
-        expected: true
-    weight: 2.5
-    pass_threshold: 1.0

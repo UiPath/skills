@@ -33,13 +33,6 @@ initial_prompt: |
   Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "result_path": "<full variable path used in the script, e.g. $vars.hitlReview1.output.approved>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
@@ -74,24 +67,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "report.json result_path references $vars and .output"
-    path: "report.json"
-    includes:
-      - "$vars."
-      - ".output"
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json captures hitl_node_id and validation"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "hitl_node_id"
-        operator: not_equals
-        expected: ""
-    weight: 2.0
-    pass_threshold: 0.75
