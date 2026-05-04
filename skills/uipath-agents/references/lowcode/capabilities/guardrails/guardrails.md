@@ -38,7 +38,7 @@ The `selector` field controls where the guardrail applies.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
-| `matchNames` | string[] | No | Target specific tools by name. |
+| `matchNames` | string[] | Yes (when `Tool` in scopes) | Target tools by name. Required when `"Tool"` is in `scopes` — always list tool names explicitly. |
 
 ### Scope Definitions
 
@@ -47,6 +47,39 @@ The `selector` field controls where the guardrail applies.
 | `Agent` | Agent-level input/output | Yes | Yes |
 | `Llm` | LLM request/response | Yes | Yes |
 | `Tool` | Individual tool calls | Yes | Yes |
+
+> **Custom guardrails only support `Tool` scope with exactly one tool in `matchNames`.** `Agent` and `Llm` scopes are valid only for `builtInValidator` guardrails. Custom guardrail rules (word/number/boolean/always) depend on the specific tool's input/output schema, so `matchNames` must contain exactly one tool name. To apply the same custom rule to multiple tools, create a separate custom guardrail per tool.
+
+### Combining Multiple Scopes
+
+When a guardrail applies to more than one scope (e.g., both `Agent` and `Tool`), combine them into a **single guardrail** with multiple values in the `scopes` array — do NOT create separate guardrails per scope.
+
+```json
+"selector": { "scopes": ["Agent", "Tool"], "matchNames": ["MyTool"] }
+```
+
+### matchNames — Supported Tool Types
+
+`matchNames` targets tools by their resource name in agent.json. Only the following tool types support guardrails:
+
+| Tool type | Description |
+|-----------|-------------|
+| `agent` | Low-code or coded agent |
+| `process` | RPA (XAML workflow) |
+| `activity` | Activity-based tool |
+| `builtInTool` | Built-in platform tool |
+| `ixpTool` | IXP tool |
+| Integration Service connector | IS connector tool |
+
+Do not generate guardrails targeting tool types not in this list.
+
+### matchNames — "All Tools" Behavior
+
+When targeting all tools, `matchNames` must **explicitly list every tool resource name** from the agent's `resources/` directory. Do not omit `matchNames` to imply "all tools."
+
+1. Read the agent's `resources/` directory to discover all tool resource names.
+2. If the agent has **no tool resources**, do not add the guardrail — inform the user: *"No tool resources found in this agent. Cannot add a tool-scoped guardrail."*
+3. Populate `matchNames` with every discovered tool name.
 
 ### Built-in Validator Scope Support
 
@@ -326,7 +359,7 @@ Custom guardrails use deterministic rules you define. They have a `rules` array 
   "name": "Block forbidden terms",
   "description": "Prevents agent from using blacklisted words",
   "enabledForEvals": true,
-  "selector": { "scopes": ["Agent", "Llm"] },
+  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
   "action": { "$actionType": "block", "reason": "Forbidden term detected" },
   "rules": [
     {
@@ -443,9 +476,10 @@ uip agent guardrails list --output json
 
 Before adding any built-in validator, check the `Data` array for the requested `Validator` value:
 
-1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail.
+1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail. Do NOT generate a custom guardrail as a fallback — inform the user and stop.
 2. **`Status: "Available"`** — validator is licensed and ready. Proceed with configuration.
 3. **`Status: "Unauthorised"`** — validator exists but the user is not entitled to use guardrails. Inform user: *"You are not entitled to use the `<name>` guardrail. You can view the configuration but cannot apply it to agents. Contact your UiPath administrator to enable guardrail entitlements."* Do not add the guardrail.
+4. **Validator does not support the requested scope** — if the user requests a scope (e.g., `Agent`, `Llm`) not listed in `AllowedScopes` for that validator, inform the user which scopes are supported. Do NOT auto-generate a custom guardrail as a workaround. You may suggest a custom guardrail as an alternative, but only if the user explicitly confirms — and only for `Tool` scope (custom guardrails do not support `Agent` or `Llm` scopes).
 
 Only configure guardrails for validators with `Status: "Available"`.
 
@@ -462,7 +496,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
   "name": "PII Detection",
   "description": "Detects PII in tool outputs",
   "enabledForEvals": true,
-  "selector": { "scopes": ["Tool"] },
+  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
   "action": { "$actionType": "block", "reason": "PII detected" },
   "validatorType": "pii_detection",
   "validatorParameters": [
@@ -541,7 +575,8 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Tool"]
+    "scopes": ["Agent", "Tool"],
+    "matchNames": ["MyToolName"]
   }
 }
 ```
@@ -698,7 +733,7 @@ PostExecution only — no content exists to check before the LLM generates outpu
 }
 ```
 
-### Example 7: Custom Word Rule — Log on All Fields
+### Example 7: Custom Word Rule — Log on All Tool Fields
 
 ```json
 {
@@ -722,7 +757,8 @@ PostExecution only — no content exists to check before the LLM generates outpu
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Llm"]
+    "scopes": ["Tool"],
+    "matchNames": ["MyToolName"]
   }
 }
 ```
@@ -892,7 +928,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 3. **Do not add `user_prompt_attacks` to Tool or Agent scope** — Llm only, PreExecution only.
 4. **Do not add `intellectual_property` to Tool scope** — only `"Llm"` and `"Agent"` scopes are supported.
 5. **Do not add `intellectual_property` to PreExecution stage** — PostExecution only.
-6. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
+6. **Do not omit `matchNames` when `Tool` is in `scopes`** — always explicitly list the target tool names. See [matchNames — "All Tools" Behavior](#matchnames--all-tools-behavior).
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
@@ -902,6 +938,11 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 13. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
 14. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
 15. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
+16. **Do not use `Agent` or `Llm` scopes on custom guardrails** — custom guardrails (`$guardrailType: "custom"`) only support `"Tool"` scope with exactly one tool in `matchNames`. Custom rules depend on the tool's input/output schema, so they cannot target multiple tools. Create a separate custom guardrail per tool.
+17. **Do not auto-generate a custom guardrail as fallback** — when a built-in validator is unavailable, unsupported for the requested scope, or unauthorized, inform the user and stop. Do not silently generate a custom guardrail as a workaround. You may suggest a custom guardrail alternative (for `Tool` scope only), but only generate it after explicit user confirmation.
+18. **Do not create separate guardrails per scope** — when a guardrail applies to multiple scopes (e.g., `Agent` and `Tool`), combine them into a single guardrail with `"scopes": ["Agent", "Tool"]`. Do not create two separate guardrail objects with identical configuration differing only in scope.
+19. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
+20. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
 
 ## Walkthrough
 
@@ -942,9 +983,10 @@ uip agent guardrails list --output json
 
 Before adding any built-in validator, check the `Data` array for the requested validator:
 
-1. **Not found in list** — validator does not exist on this tenant. Inform user and stop.
+1. **Not found in list** — validator does not exist on this tenant. Inform user and stop. Do NOT generate a custom guardrail as a fallback.
 2. **`Status: "Available"`** — proceed with configuration.
 3. **`Status: "Unauthorised"`** — user is not entitled to use guardrails. Inform user they can view the configuration but cannot apply it to agents. Stop.
+4. **Scope not supported** — if the requested scope is not in `AllowedScopes`, inform the user which scopes are valid. Do NOT auto-generate a custom guardrail as a workaround (custom guardrails only support `Tool` scope). You may suggest a custom guardrail alternative, but only generate it after explicit user confirmation.
 
 Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
 
