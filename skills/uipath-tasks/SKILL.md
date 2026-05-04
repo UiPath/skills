@@ -205,3 +205,4 @@ For deeper guidance, read these files only when needed:
 - `references/task-lifecycle.md` — Listing and getting tasks, type-hint endpoint routing, and the full discover→assign→complete workflow
 - `references/task-completion.md` — Completion endpoint routing, required fields per task type
 - `references/task-assignment.md` — Assign, reassign, unassign patterns and user discovery
+- `references/action-center-urls.md` — Canonical Action Center URL patterns; **read this before constructing or sharing any task deep-link** (avoids MST-9322 "Orchestrator not enabled" misclassification when the tenant slug is missing)
