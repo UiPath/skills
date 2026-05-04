@@ -1,0 +1,76 @@
+task_id: skill-ixp-list-projects-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-ixp skill to list IXP
+  projects on the tenant. Tests whether the skill teaches the correct CLI
+  namespace (`uip ixp projects list`) and the `--output json` convention.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip ixp` commands that hit the service will fail with an auth error.
+  That is acceptable — what matters is that the agent invokes the correct
+  command with the correct flags.
+tags: [uipath-ixp, smoke, lifecycle:discover]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A document automation engineer wants to see every IXP project on the
+  tenant before deciding which one to iterate on. Use the uipath-ixp
+  skill.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "list_command": "<exact uip ixp projects list command you ran>",
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once, record the result (success or error)
+    in report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip ixp command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do NOT call REST APIs with curl, do NOT grep the codebase — only use
+    `uip ixp` CLI commands as documented in the skill.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip ixp projects list` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the current CLI namespace and avoids REST/curl shortcuts"
+    path: "report.json"
+    includes:
+      - "uip ixp projects list"
+    excludes:
+      - "curl"
+      - "/api/"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure"
+    path: "report.json"
+    assertions:
+      - expression: "length(list_command)"
+        operator: gte
+        expected: 10
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 1
+    weight: 1.5
+    pass_threshold: 0.75
