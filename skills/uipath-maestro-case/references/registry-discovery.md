@@ -12,6 +12,8 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uipcli/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
 
+> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). The Rule 17 / § MUST-Confirm-Before-Skeleton-Fallback gate only applies to **empty matches inside an existing cache**; a missing file is a precondition failure, not a 0-result lookup. If the file is still absent after a successful pull, the tenant has no resources of that type — proceed to skeleton.
+
 ## CLI Search Gaps
 
 The `uip maestro case registry search` command has known gaps. In particular, it fails to return results for certain resource types even when the resource is present in the cache (most commonly affecting **action-apps** / HITL tasks). When search returns an empty or incomplete result for a resource you know exists:
@@ -21,6 +23,28 @@ The `uip maestro case registry search` command has known gaps. In particular, it
 3. Record the gap in `registry-resolved.json` so the audit trail reflects the fallback.
 
 Direct cache-file inspection is the authoritative discovery method for this skill.
+
+## MUST Confirm Before Skeleton Fallback
+
+> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any skeleton T-entry.
+
+Required prompt shape:
+
+```
+Question: <N> registry lookup(s) returned 0 matches: <comma-list of <name> in <folder>>.
+          Run `uip maestro case registry pull --force` to bypass the cache and re-resolve?
+Header:   Force pull
+Options:
+  - Yes, force pull and re-resolve
+      → run `uip maestro case registry pull --force`, re-search caches, update registry-resolved.json with the second-pass results.
+        Any STILL-empty lookups go to skeleton ONLY after this round.
+  - Skip and use skeletons
+      → proceed to per-plugin Unresolved Fallback paths for the unmatched lookups.
+```
+
+**Apply once per planning batch, not per-task.** A single prompt covers every empty in that batch.
+
+**Do NOT pre-judge.** Resource-name heuristics ("looks vendor-specific, won't be in registry anyway", "this is an obvious custom connector") are the user's call to make, not the agent's. Always ask. SKILL.md Rule 17.
 
 ## Cache File Index
 
@@ -92,13 +116,16 @@ for item in data:
 
 ### 3. Handle Empty Results
 
+> **Required precondition.** Before reaching this step, the [§ MUST: Confirm Before Skeleton Fallback](#must-confirm-before-skeleton-fallback) gate above MUST have been satisfied. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate.
+
 If no match is found across all relevant cache files:
 
-1. Force-refresh the cache and retry. **Confirm with the user via the `AskUserQuestion` tool before running** — force pull bypasses the cache, is network-heavy, and may be slow:
+1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Yes, force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
    ```bash
+   # already executed during the gate's "Yes" branch:
    uip maestro case registry pull --force
    ```
-2. If still no match, mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]`
+2. If still no match (or user picked `Skip`), mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
 
 ### 4. Return All Matches
 
