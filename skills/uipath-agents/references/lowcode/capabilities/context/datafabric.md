@@ -41,8 +41,6 @@ No `indexName` and no `settings` for DataFabric contexts. The shape is entirely 
 
 **Not auto-generated.** Solution-level resource generation for DataFabric contexts is not yet supported by `uip solution resource refresh` — the agent-level `resource.json` is written, but you must hand-author any solution manifests needed.
 
-DataFabric contexts also have no top-level `folderPath` field in `resource.json` — folder context is per-entity (`entitySet[].folderId`) — so the `folderPath` propagation rule (see [../../critical-rules.md](../../critical-rules.md) Rule 11) does not apply here. No DataFabric binding is emitted into `bindings_v2.json` today.
-
 ## Gotchas
 
 `contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.

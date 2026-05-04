@@ -56,7 +56,6 @@ No remote discovery needed — the tool agent is another project in the same sol
 Key differences from external tools:
 - `location` is `"solution"` (not `"external"`)
 - `referenceKey` is empty `""` — validate resolves it from the solution's `resources/solution_folder/process/agent/<ToolAgent>.json`
-- `folderPath` stays `"solution_folder"` — solution-internal tools deploy with the solution and have no fixed Orchestrator folder until then. The placeholder propagates verbatim into `bindings_v2.json` and is resolved at deploy time. (External tools, by contrast, carry the literal `Folder` from `uip solution resource list`. See [external.md](external.md) and [../../critical-rules.md](../../critical-rules.md) Rule 11.)
 - No `exampleCalls` required in `properties` (only external tools require this)
 
 ## Solution-Level Files

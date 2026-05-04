@@ -20,7 +20,7 @@ IS tools differ structurally from Orchestrator-based tools:
 - Additional top-level fields: `iconUrl`, `isPreview`
 - No `referenceKey` or `argumentProperties`
 - Solution-level resources use `connection/` (not `package/` + `process/`)
-- **Connection bindings are exempt from `folderPath` propagation** — they are bound by `connection.id`. `uip agent validate` emits `bindings_v2.json` Connection entries with `name` only; no `folderPath` field is written. Folder context is carried instead by `properties.connection.folder.{key,path}` on the agent-level resource. (See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Rule 12 for the broader rule.)
+- **Connection bindings are exempt from `folderPath` propagation** — they are bound by `connection.id`.
 
 ## Agent-Level Resource Shape
 

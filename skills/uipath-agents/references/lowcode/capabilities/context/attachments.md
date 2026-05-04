@@ -39,7 +39,7 @@ For other context variants, see [context.md](context.md).
 
 ## Solution-Level Files
 
-None. No solution-level file is produced — attachments are runtime-only. No binding is emitted into `bindings_v2.json`, so the `folderPath` propagation rule (see [../../critical-rules.md](../../critical-rules.md) Rule 11) does not apply — there is no `folderPath` field on the agent-level `resource.json` for attachments.
+None. No solution-level file is produced — attachments are runtime-only.
 
 ## Gotchas
 
