@@ -69,10 +69,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "report.json records completed as the edge handle"
     path: "report.json"
-    includes:
-      - "completed"
+    assertions:
+      - expression: "edge_from_hitl"
+        operator: equals
+        expected: "completed"
     weight: 1.5
     pass_threshold: 1.0

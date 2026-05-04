@@ -3,15 +3,20 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to create
   a new UiPath Flow project inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate]
+tags: [uipath-maestro-flow, smoke, lifecycle-generate]
+
+agent:
+  type: claude-code
+  max_turns: 20
+  turn_timeout: 600
 
 sandbox:
   driver: tempdir
   python: {}
 
 initial_prompt: |
-  Create a new UiPath Flow project called "WeatherAlert" and make sure it
-  validates successfully.
+  Create a new UiPath Flow project called "WeatherAlert" inside a UiPath
+  solution also called "WeatherAlert".
 
   Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
   inside a solution:
@@ -22,80 +27,37 @@ initial_prompt: |
   The correct flow-file path is:
     WeatherAlert/WeatherAlert/WeatherAlert.flow
 
-  The task is NOT complete until `uip maestro flow validate` has passed for
-  that exact file path.
-
-  **REQUIRED — before finishing, write report.json at the sandbox root** with
-  at minimum:
-    {
-      "project_name": "WeatherAlert",
-      "commands_used": ["<list of uip commands you ran>"],
-      "validation_passed": true
-    }
-
   Important:
   - The `uip` CLI is already available in the environment.
-  - Do not run `uip maestro flow debug` — just validate locally.
+  - Do not run `uip maestro flow debug`.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created a solution with uip solution new"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+new'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent initialized a Flow project with uip maestro flow init"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent validated the .flow file"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on uip commands"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent linked flow project to solution"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+project\s+add'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "Flow file was created inside the solution"
     path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json has correct structure and values"
-    path: "report.json"
-    assertions:
-      - expression: "project_name"
-        operator: equals
-        expected: "WeatherAlert"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "length(commands_used)"
-        operator: gte
-        expected: 3
+  - type: run_command
+    description: "Generated flow validates"
+    command: "uip maestro flow validate WeatherAlert/WeatherAlert/WeatherAlert.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+new'
+    min_count: 1
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized the Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

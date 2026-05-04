@@ -1,0 +1,45 @@
+task_id: skill-flow-command-prefix-detection
+description: >
+  Skill-guided evaluation: `uipath-maestro-flow` should help the agent
+  determine the correct Flow command prefix for the installed CLI and then
+  create and validate a local Flow project with that prefix.
+tags: [uipath-maestro-flow, smoke, namespace, validate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Using the `uipath-maestro-flow` skill, determine the correct Flow command
+  prefix for the installed UiPath CLI, then create a new Flow project named
+  `NamespaceCheck` inside a UiPath solution also named `NamespaceCheck`.
+
+  Do not run debug.
+
+success_criteria:
+  - type: file_exists
+    description: "Generated flow file exists"
+    path: "NamespaceCheck/NamespaceCheck/NamespaceCheck.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent selected a supported Flow init command prefix"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated flow validates"
+    command: |
+      if uip maestro flow validate --help >/dev/null 2>&1; then
+        uip maestro flow validate NamespaceCheck/NamespaceCheck/NamespaceCheck.flow --output json
+      else
+        uip flow validate NamespaceCheck/NamespaceCheck/NamespaceCheck.flow --output json
+      fi
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

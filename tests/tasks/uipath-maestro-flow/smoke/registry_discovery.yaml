@@ -3,7 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore
   available Flow node types via the registry. Tests whether the skill teaches
   the correct registry workflow (pull, list/search, get).
-tags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]
+tags: [uipath-maestro-flow, smoke, lifecycle-discover, feature-registry]
 
 agent:
   type: claude-code
@@ -70,22 +70,39 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Report contains expected fields"
-    path: "registry_report.json"
-    includes:
-      - "node_types_found"
-      - "commands_used"
-      - "http_node_type"
-      - "script_node_type"
+    command: |
+      python3 - <<'PY'
+      import json
+
+      data = json.load(open("registry_report.json"))
+      required = [
+          "node_types_found",
+          "commands_used",
+          "http_node_type",
+          "script_node_type",
+      ]
+      assert all(key in data for key in required), data
+      print("OK")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Report identifies the correct HTTP and script node types"
-    path: "registry_report.json"
-    includes:
-      - "core.action.http"
-      - "core.action.script"
+    command: |
+      python3 - <<'PY'
+      import json
+
+      data = json.load(open("registry_report.json"))
+      assert data.get("http_node_type") == "core.action.http", data
+      assert data.get("script_node_type") == "core.action.script", data
+      print("OK")
+      PY
+    expected_stdout: "OK"
+    stdout_match: contains
     weight: 1.0
     pass_threshold: 1.0
