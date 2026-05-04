@@ -93,6 +93,26 @@ uip maestro flow edge list <ProjectName>.flow --output json
 
 Returns all edges with `id`, `sourceNodeId`, `sourcePort`, `targetNodeId`, `targetPort`.
 
+### Update a node
+
+```bash
+uip maestro flow node update <ProjectName>.flow <NODE_ID> --output json \
+  --input '<INPUT_JSON>' \
+  --label "<LABEL>" \
+  --source <UUID>
+```
+
+Mutates an existing node's `inputs`, `display.label`, or inline-agent `source` **without changing its `id`** — so downstream `$vars.{nodeId}.output` references and edges stay intact. Pass at least one of `--input`, `--label`, `--source`.
+
+**What the CLI handles automatically:**
+- Shallow-merges `--input` JSON into `node.inputs` (sibling keys you don't pass are preserved)
+- Sets `node.display.label` from `--label`
+- Routes `--source` to `inputs.source` (current flow-core), falling back to `model.source` on legacy flows; errors if neither slot exists
+
+**Use this for** plain `inputs` edits — script body, expression, decision condition, inline-agent `systemPrompt` / `userPrompt` / `source`, label changes.
+
+**Do NOT use this for `inputs.detail` on connector / managed-HTTP nodes** — those carry connection bindings that must be regenerated together. Use `node configure` (below), which fully replaces `inputs.detail` and rewrites `bindings_v2.json`.
+
 ### Configure a connector node
 
 After adding a connector node with `node add`, configure it with connection details:
@@ -155,9 +175,17 @@ These combine primitives to accomplish common editing tasks. Each recipe assumes
 
 ### Update node inputs (expression, script body, label, etc.)
 
-The CLI does not have a `node update` command. **Do not use delete + re-add** — `node add` generates a new node ID, which breaks all downstream `$vars.{nodeId}.output` expressions and requires re-wiring every edge.
+Use [`node update`](#update-a-node) — preserves the node `id`, so downstream `$vars.{nodeId}.output` references and edges stay intact. **Do not use delete + re-add** — `node add` mints a new ID and forces every edge and `$vars.{nodeId}.output` reference to be rewired.
 
-Instead, use `Edit` to modify the node's `inputs` (and optionally `display.label`) directly in the `.flow` JSON file. See [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs).
+```bash
+uip maestro flow node update <ProjectName>.flow <NODE_ID> --output json \
+  --input '<PARTIAL_INPUTS_JSON>' \
+  --label "<NEW_LABEL>"
+```
+
+For `inputs.detail` mutations on connector / managed-HTTP nodes, use `node configure` (which also regenerates bindings) — not `node update`.
+
+For variable-block edits (`variables.globals` / `variables.nodes`), see [Edit/Write: Update node inputs](editing-operations-json.md#update-node-inputs).
 
 ### Insert a node between two existing nodes
 
