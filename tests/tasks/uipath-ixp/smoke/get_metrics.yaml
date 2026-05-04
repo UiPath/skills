@@ -1,0 +1,87 @@
+task_id: skill-ixp-get-metrics-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-ixp skill to fetch
+  per-field validation metrics (F1/Precision/Recall) for an existing IXP
+  project before deciding which fields to iterate on. Tests whether the
+  skill teaches the correct CLI command (`uip ixp projects get-metrics`),
+  the positional project-Name argument (NOT Title), and the `--output
+  json` convention. Per the skill's improve-prompts-guide, get-metrics is
+  the canonical first step before any prompt update.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip ixp` commands that hit the service will fail with an auth error.
+  That is acceptable — what matters is that the agent invokes the correct
+  command with the correct flags.
+tags: [uipath-ixp, smoke, lifecycle:discover]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A document automation engineer wants to inspect the per-field F1 scores
+  of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on
+  prompts. Use the uipath-ixp skill.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "project_name": "my_invoices-f1afa9ef-ixp",
+      "metrics_command": "<exact uip ixp projects get-metrics command you ran>",
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once, record the result (success or error)
+    in report.json, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip ixp command.
+  - Pass the project Name (`my_invoices-f1afa9ef-ixp`) — NOT a Title — as
+    the positional argument.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do NOT call REST APIs with curl, do NOT grep the codebase — only use
+    `uip ixp` CLI commands as documented in the skill.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip ixp projects get-metrics <project-name>` with --output json against the requested project Name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the current CLI namespace and avoids REST/curl shortcuts"
+    path: "report.json"
+    includes:
+      - "uip ixp projects get-metrics"
+      - "my_invoices-f1afa9ef-ixp"
+    excludes:
+      - "curl"
+      - "/api/"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has correct structure"
+    path: "report.json"
+    assertions:
+      - expression: "project_name"
+        operator: equals
+        expected: "my_invoices-f1afa9ef-ixp"
+      - expression: "length(metrics_command)"
+        operator: gte
+        expected: 10
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 1
+    weight: 1.5
+    pass_threshold: 0.75
