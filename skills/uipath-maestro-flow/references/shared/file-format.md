@@ -64,7 +64,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This includes control-flow nodes that "feel" trivial — `core.control.end`, `core.logic.terminate`, etc. all require `display: { "label": "..." }`. The schema does not exempt them.
+**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that "feel" trivial.
 
 > **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
 >
@@ -96,6 +96,7 @@ Example — manual start trigger:
   "id": "start",
   "type": "core.trigger.manual",
   "typeVersion": "1.0.0",
+  "display": { "label": "Manual trigger" },
   "inputs": {
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
   },
@@ -318,6 +319,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
+      "display": { "label": "Manual trigger" },
       "inputs": {
         "entryPointId": "<uuid>"
       },
@@ -357,6 +359,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "end",
       "type": "core.logic.terminate",
       "typeVersion": "1.0.0",
+      "display": { "label": "End" },
       "inputs": {}
     }
   ],

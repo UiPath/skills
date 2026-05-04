@@ -213,6 +213,8 @@ Use `Edit` to map every `out` variable in `variables.globals` on every reachable
 {
   "id": "doneSuccess",
   "type": "core.control.end",
+  "typeVersion": "1.0.0",
+  "display": { "label": "Done" },
   "inputs": {},
   "outputs": {
     "<VARIABLE_ID>": {
