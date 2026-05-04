@@ -1,0 +1,97 @@
+task_id: skill-ixp-confirm-predictions-smoke
+description: >
+  Skill-guided evaluation: agent uses field-level prediction confirmation
+  on a labelled document. Tests Critical Rule #8 (confirm at field level,
+  not document level — wrong predictions are left unannotated, NOT
+  corrected) and Rule #11 (Claude reviews predictions, never extracts
+  values manually). The agent must call `uip ixp labellings confirm` with
+  `--fields` listing only the correct field IDs, and must NOT use
+  `--corrections` for fields that were predicted incorrectly.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip ixp` commands that hit the service will fail with an auth error.
+  That is acceptable — what matters is that the agent invokes the correct
+  command shape with the correct flags.
+tags: [uipath-ixp, smoke, lifecycle:execute]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Document automation review for project `my_invoices-f1afa9ef-ixp`,
+  document `doc-abc-123`. After comparing the IXP model predictions
+  against the document, the reviewer concluded:
+
+  - Invoice Number (field id `f-001`): prediction `INV-2025-0042` —
+    correct.
+  - Invoice Date (field id `f-002`): prediction `2025-01-15` — correct.
+  - Total Amount (field id `f-003`): prediction `$1,200.00` — WRONG, the
+    document shows `$12,000.00`.
+
+  Record this review in the labelling system.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "project_name": "my_invoices-f1afa9ef-ixp",
+      "document_id": "doc-abc-123",
+      "confirm_command": "<exact uip ixp labellings confirm command you ran>",
+      "confirmed_field_ids": ["<field IDs you confirmed>"],
+      "skipped_field_ids": ["<field IDs you left unannotated>"],
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once, record the result (success or error)
+    in report.json, and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?\s+.*--fields'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Confirm command lists only the correct field IDs"
+    path: "report.json"
+    includes:
+      - "f-001"
+      - "f-002"
+    excludes:
+      - "--corrections"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent confirmed only the two correct fields and skipped the wrong one"
+    path: "report.json"
+    assertions:
+      - expression: "length(confirmed_field_ids)"
+        operator: equals
+        expected: 2
+      - expression: "length(skipped_field_ids)"
+        operator: gte
+        expected: 1
+    weight: 2.0
+    pass_threshold: 1.0
