@@ -1,6 +1,6 @@
 # Lint coder-eval Task YAML
 
-Score a coder-eval task YAML against a quality rubric and surface anti-patterns. Advisory only — does not modify files.
+Review a coder-eval task YAML against a quality rubric and surface anti-patterns. Advisory only — does not modify files.
 
 **Input:** `$ARGUMENTS`
 - A path to one task YAML, e.g. `tests/tasks/uipath-maestro-flow/smoke/init_validate.yaml`
@@ -12,6 +12,19 @@ Score a coder-eval task YAML against a quality rubric and surface anti-patterns.
 This command is the source of truth for the rubric. The PR-bot workflow (`.github/workflows/lint-tasks.yml`) reads this file and applies the same rubric to changed YAMLs at PR time.
 
 ---
+
+## Severity Levels
+
+Every issue is tagged with one of four severities:
+
+| Level | Meaning |
+|---|---|
+| **Critical** | Test cannot meaningfully validate the skill — must fix |
+| **High** | Test is broken or misleading in a way that wastes infra cost or hides regressions — should fix before merge |
+| **Medium** | Quality gap that reduces signal but doesn't break the test — should fix |
+| **Low** | Polish — nice to have |
+
+The task's overall **verdict** is the max severity across all issues raised. A task with no issues is **OK**.
 
 ## Phase 1 — Resolve Targets
 
@@ -29,57 +42,53 @@ For each resolved task file, run Phases 2–4 in parallel where possible.
 For each target task file:
 
 1. Read the full YAML.
-2. List sibling task YAMLs in the same folder (e.g. all `*.yaml` in `tests/tasks/uipath-maestro-flow/smoke/`). These are the "nearby files" used for duplicate detection.
+2. List sibling task YAMLs in the same folder. These are the "nearby files" used for duplicate detection.
 3. Read up to **5** nearby files. If more exist, pick the 5 closest by shared tags (most tag-overlap first, ties broken by alphabetical filename).
-4. If the task is in a folder that only contains itself, expand the search to the parent skill directory (e.g. `tests/tasks/uipath-maestro-flow/**/*.yaml`) and pick the same 5 by tag overlap.
+4. If the task is in a folder that only contains itself, expand the search to the parent skill directory and pick the same 5 by tag overlap.
 
 ## Phase 3 — Apply the Rubric
 
-Score the task on six axes. Each axis is 0–10 unless marked binary. Pass threshold for the overall verdict is **7/10 average across applicable axes, AND no binary FAILs**.
+Evaluate the task against six axes. Each axis can produce zero or more issues, each tagged with a severity.
 
-### A. Self-report anti-pattern (binary: PASS / FAIL)
+### A. Self-report anti-pattern
 
-**FAIL the task if both are true:**
+**Raise a Critical issue if both are true:**
 
 1. The `initial_prompt` instructs the agent to write a summary, status, audit, or report file (common names: `report.json`, `summary.json`, `result.json`, `audit.json`, `output.json`, `status.json`). Look for verbs like "save", "write", "create", "produce" near the filename. Custom names that fit the same shape ("a JSON report describing what you did", "a results file with your decisions") count too — judge semantically.
 2. One or more `success_criteria` entries (`file_contains`, `file_check`, `json_check`, `file_matches_regex`) reads that same file as their evidence.
 
-This is the dominant anti-pattern flagged in the 2026-04-30 audit (skills PR #507). The agent grades its own homework, hallucination-prone, and bypasses the deterministic criteria coder-eval was built for.
+**Why it's broken:** the test should check what the agent *did* (commands run, artifacts produced) using deterministic criteria, not what the agent *claims* it did in a self-written summary. The agent grades its own homework, the result is hallucination-prone, and the deterministic criteria coder-eval was built for are bypassed.
 
-**Why it's banned:** the test should check what the agent *did* (commands run, artifacts produced) using deterministic criteria, not what the agent *claims* it did.
+### B. Prompt over-specification
 
-### B. Prompt over-specification (0–10)
-
-**Score how much the prompt leaks the answer or the procedure that the skill should be teaching.**
+Evaluate how much `initial_prompt` leaks the procedure that the skill should be teaching.
 
 Penalize:
 - Step-by-step instructions in `initial_prompt` ("1. Walk the discovery hierarchy, 2. List all packages, 3. ...") — the skill should teach the procedure, the prompt should state the goal
-- Prescribing specific CLI flags (`Use --output json on every uip tm command`) — the skill teaches when to use flags
+- Prescribing specific CLI flags ("Use --output json on every uip tm command") — the skill teaches when to use flags
 - Prescribing exact file paths or output formats that `success_criteria` then check (e.g. prompt says "save to `processes.json`", criterion checks `path: processes.json` exists)
 - Bulleted imperatives that read like "do X, then Y, then Z" rather than "achieve goal G"
 
 Do **not** penalize:
 - Stating the high-level goal and expected output ("Use `uip` to list Flow processes and save the results")
 - Naming the artifact when the agent has to know it (e.g. file paths are part of the goal, not the procedure)
-- Routing context ("Use the `uipath-maestro-flow` skill workflow") — that's a skill-trigger hint, not over-specification
+- Routing context ("Use the `<skill-name>` skill workflow") — that's a skill-trigger hint, not over-specification
 
-Anchor:
-- 9–10: minimal goal-only prompt, agent must use the skill to figure out how
-- 7–8: states goal + a small amount of necessary context (e.g. naming a tenant, providing inputs)
-- 5–6: leaks 1–2 steps or flags
-- 3–4: prompt is mostly a recipe; skill is barely needed
-- 0–2: prompt is the recipe; criteria just verify obedience
+Severity:
+- **High** — prompt is essentially a recipe; the skill is not actually being tested because any agent could follow the recipe without invoking it
+- **Medium** — prompt prescribes 2+ procedure steps or non-trivial flags
+- **Low** — prompt leaks one minor detail (e.g. a single flag, a file path that wasn't necessary to specify)
 
-### C. Meaningful coverage (0–10)
+### C. Meaningful coverage
 
-**Score whether the criteria actually validate skill correctness, vs. trivial existence checks.**
+Evaluate whether `success_criteria` actually validate skill correctness, vs. trivial existence checks.
 
 Penalize:
 - Only `file_exists` (no content check)
-- Only `command_executed` with no output validation (agent ran the command but did anything else with it)
+- Only `command_executed` with no output validation
 - `llm_judge` as the only or dominant criterion (graded by an LLM with no ground truth)
 - Criteria that would pass for any non-empty / well-formed input regardless of correctness
-- For `command_executed`, `min_count: 1` with a very loose regex (`uip\s+.*`) — proves nothing about correctness
+- For `command_executed`, `min_count: 1` with a very loose regex — proves nothing about correctness
 
 Reward:
 - `json_check` with assertions on actual output values
@@ -88,70 +97,59 @@ Reward:
 - `pytest` with non-trivial test count
 - A mix of "did the agent do the thing" (`command_executed`) **and** "is the output correct" (`json_check`/`run_command`)
 
-Anchor:
-- 9–10: every criterion ties to observable correctness; output values are checked, not just file presence
-- 7–8: at least one strong correctness check, plus existence/command checks
-- 5–6: command_executed + file_exists, no content validation
-- 3–4: only existence checks, or only loose command pattern matches
-- 0–2: criteria that pass for any input
+Severity:
+- **High** — no criterion validates correctness; only existence or loose command pattern matches
+- **Medium** — at least one correctness check exists but key outputs go unvalidated
+- **Low** — minor coverage gap (e.g. one expected file isn't content-checked)
 
-### D. Could pass for the wrong reason (0–10) — *higher = harder to game*
+### D. Could pass for the wrong reason
 
-**Score whether a trivial / dummy / hard-coded implementation could satisfy the criteria without exercising the skill.**
+Evaluate whether a trivial / dummy / hard-coded implementation could satisfy the criteria without exercising the skill.
 
 Specifically ask: if the agent skipped the skill entirely and wrote `{"status": "ok"}` to the expected file, or echoed the expected stdout, would the test pass? If yes, the test is gameable.
 
 Penalize:
-- Self-report files (already caught by axis A but compounds the score here)
+- Self-report files (already raised under axis A — do not double-count, but reference here)
 - `file_contains` with strings the agent could trivially write without invoking the skill (e.g. expecting `"success"` in the output)
-- `command_executed` patterns so loose that any usage of the CLI passes (e.g. `uip\s+.*`)
+- `command_executed` patterns so loose that any usage of the CLI passes
 - Tests where the criteria can be satisfied without actually invoking the underlying CLI/SDK that the skill teaches
-- Tests where success is determined by the agent's self-report
 
 Reward:
 - Criteria tied to side effects in the real platform (created entities, deployed processes, debug runs)
 - Output files whose contents are produced by a real CLI call, not the agent's prose
 - Cross-checks (agent ran command X **and** file Y contains the output of X)
 
-Anchor:
-- 9–10: the test cannot pass without actually invoking the skill's tooling correctly
-- 7–8: gaming would require non-trivial effort and produce obvious red flags
-- 5–6: a careful agent could pass without using the skill, but the prompt nudges it the right way
-- 3–4: a lazy agent could pass by writing the expected strings to disk
-- 0–2: a dummy implementation passes; the skill is not actually exercised
+Severity:
+- **Critical** — a dummy implementation passes; the skill is not exercised at all (typically co-occurs with axis A)
+- **High** — a lazy agent passes by writing expected strings to disk without using the skill
+- **Medium** — a careful agent could game the criteria but the prompt nudges the right way
+- **Low** — minor gameability, e.g. one weak criterion among several strong ones
 
-### E. Near-duplicate (vs. nearby files) (0–10) — *higher = more unique*
-
-**Score how much marginal coverage this task adds over its nearest siblings.**
+### E. Near-duplicate of nearby files
 
 For each of the 5 nearest files, compare:
 - Same skill features tested?
 - Same CLI commands required?
-- Same workflow shape (e.g. both create-then-validate)?
+- Same workflow shape?
 - Same primary node types / connectors / criteria types?
 
 If two tasks differ only in surface-level naming (renamed entity, slightly different prompt wording, same criteria template), they're near-duplicates.
 
-Anchor:
-- 9–10: covers a feature/path no neighbor covers
-- 7–8: same area as neighbors but materially different input or topology
-- 5–6: substantial overlap with one neighbor, mild novelty
-- 3–4: another task tests almost the same thing
-- 0–2: this task and a sibling are interchangeable
+Severity:
+- **High** — this task and a sibling are interchangeable; one of them is pure infra cost with no marginal coverage
+- **Medium** — substantial overlap with one neighbor; mild novelty (e.g. different connector but same shape)
+- **Low** — same area as neighbors but materially different input or topology
 
-When scoring below 7, **name the most-similar neighbor** in the report.
+When raising Medium or High, **name the most-similar neighbor** in the issue description.
 
-### F. Maestro-flow: validate-only is weak (binary FLAG, only applies when relevant)
+### F. Validate-only flow tests miss correctness
 
-**Applies only if** the task's `tags` include `uipath-maestro-flow` AND the task's `tier` is `e2e` or `integration` (smoke is exempt — smoke tests legitimately stop at validate).
+**Applies only if** the task's `tags` include a flow-building skill (e.g. `uipath-maestro-flow`) AND the task's tier is `e2e` or `integration` (smoke is exempt — smoke tests legitimately stop at validate).
 
-**FLAG if:**
-- No `command_executed` criterion matches `flow\s+debug` (i.e. test never runs `uip maestro flow debug`), AND
-- The task is supposed to verify correctness end-to-end
+**Raise a High issue if:**
+- No `command_executed` criterion matches `flow\s+debug` (i.e. test never runs `uip maestro flow debug`)
 
-`flow validate` checks JSON shape only; it cannot tell you whether the flow actually produces the right output. Real correctness for e2e/integration maestro-flow tests requires `flow debug` (or equivalent platform execution).
-
-Smoke-tier validate-only tests are fine — that's what smoke is for. Anything tagged `e2e` or `integration` that stops at validate is implicitly an axis-D fail (could pass for the wrong reason: a wrong flow that happens to be schema-valid).
+`flow validate` checks JSON shape only; it cannot tell you whether the flow actually produces the right output. Real correctness for e2e/integration flow tests requires `flow debug` (or equivalent platform execution). A wrong flow that happens to be schema-valid would pass a validate-only test.
 
 ## Phase 4 — Compose Per-Task Report
 
@@ -160,31 +158,34 @@ For each task, print:
 ```
 ─── tests/tasks/<skill>/<file>.yaml ───────────────────────────
 
-overall: <X>/10  <✅ pass | ❌ below threshold | ❌ FAIL: <axis name>>
-
-A. self-report anti-pattern   <PASS | FAIL>
-B. prompt over-specification  <X>/10
-C. meaningful coverage        <X>/10
-D. hard to game               <X>/10
-E. unique vs. neighbors       <X>/10  <neighbor: <filename> if <7>
-F. maestro-flow debug check   <PASS | FAIL | N/A>
+verdict: <OK | Low | Medium | High | Critical>
 
 issues:
-  - <axis letter> <severity>: <one-line description with line refs>
-  - ...
+  - [Critical] axis A: <one-line description with line refs>
+  - [High]     axis B: <one-line description with line refs>
+  - [Medium]   axis E: <description, neighbor: foo.yaml>
+  - [Low]      axis C: <description>
 
 suggested fixes:
-  - <concrete change to make, e.g. "replace report.json self-report with command_executed for `uip df entity delete` (expected exit code != 0)">
+  - <concrete change to make>
   - ...
+```
+
+If a task has no issues, print:
+
+```
+─── tests/tasks/<skill>/<file>.yaml ───────────────────────────
+
+verdict: OK
 ```
 
 After all tasks, print one summary line:
 
 ```
-═══ <N> tasks linted: <P> pass, <F> fail. Avg <X>/10. ═══
+═══ <N> tasks linted: <C> Critical, <H> High, <M> Medium, <L> Low, <O> OK ═══
 ```
 
-If multiple tasks fail with the same root cause (e.g. 4 tasks share the `report.json` anti-pattern), call that out once at the bottom under `themes:` rather than repeating the issue per-task.
+If multiple tasks share the same root cause (e.g. 4 tasks share the same self-report anti-pattern), call that out once at the bottom under `themes:` rather than repeating the issue per-task.
 
 ## Rules
 
@@ -192,5 +193,5 @@ If multiple tasks fail with the same root cause (e.g. 4 tasks share the `report.
 2. **Cite line numbers.** When flagging an issue, give the line range in the YAML so the author can navigate.
 3. **Be concrete in suggested fixes.** "Improve the test" is not actionable. "Replace `file_exists: report.json` with `command_executed` matching `uip df entity get` plus `json_check` on its output" is.
 4. **Skip `_shared/` and check scripts.** Only lint task YAMLs. `_shared/check_*.py` files are helpers.
-5. **Don't re-litigate skill choice.** This linter scores test design, not whether the skill itself is well-named or scoped. Skill-level review is `/test-coverage` and `.claude/rules/skill-review.md`.
+5. **Stay in scope.** This linter scores test design only. Skill-content quality is out of scope.
 6. **Be terse.** One line per issue. The author can drill in if needed; the report is for triage.

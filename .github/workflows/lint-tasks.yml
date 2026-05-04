@@ -1,5 +1,8 @@
 name: Lint coder-eval Tasks
 
+# Runs only on PRs that are out of draft state. Drafts are skipped via the
+# job-level `if` check below; the workflow re-fires on the `ready_for_review`
+# event when the author flips a draft to ready.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -17,9 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Only run on non-fork, non-draft PRs (Anthropic API key required)
+    # Skip drafts (only run when the PR is ready for review) and skip forks
+    # (Anthropic API key is required and not available to forked PRs).
     if: |
-      !github.event.pull_request.draft &&
+      github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
 
     permissions:
@@ -43,13 +47,13 @@ jobs:
             You are running an **advisory** lint on coder-eval task YAMLs added or
             modified by this PR. Never fail the check. Post exactly ONE comment on
             the PR with the results. The lint catches a small set of high-impact
-            anti-patterns identified in the 2026-04-27 quality audit; it does not
-            block merge.
+            anti-patterns; it does not block merge.
 
             ## Step 1 — Read the rubric
 
             Read `.claude/commands/lint-task.md` end-to-end. That file is the
-            source of truth for the scoring rubric (axes A–F). Apply the same
+            source of truth for the scoring rubric (axes A–F) and the four
+            severity levels (Critical / High / Medium / Low). Apply the same
             rubric here. Do NOT restate the rubric in the PR comment — link to it.
 
             ## Step 2 — Identify changed task YAMLs
@@ -84,8 +88,8 @@ jobs:
             happened. The convention is honor-system; the lint just enforces that
             the author claimed it.
 
-            **If no such claim is present, this is a MAJOR issue** — flag it
-            prominently in the comment under "Missing evidence of passing run".
+            **If no such claim is present, raise a High-severity issue** —
+            flag it prominently in the comment under "Evidence of passing run".
             Suggest the author edit the PR description to add a line like:
               "Ran `<task-id>` locally and it passed."
 
@@ -97,9 +101,9 @@ jobs:
 
             For each file, follow the rubric in `.claude/commands/lint-task.md`:
               - Read up to 5 nearest sibling tasks (same folder, then same skill
-                if folder is sparse) for axes E (near-duplicate).
-              - Score axes A–F.
-              - Compose per-task scores and a short list of specific issues.
+                if folder is sparse) for axis E (near-duplicate).
+              - Evaluate axes A–F and produce a list of severity-tagged issues.
+              - Compose a short, concrete list of suggested fixes per issue.
 
             ## Step 5 — Within-PR duplicate check
 
@@ -109,8 +113,11 @@ jobs:
                 surface-level naming differences)?
               - If yes, flag a "Within-PR duplicates" cluster in the comment with
                 the cluster members and a one-line justification.
-              - This is in addition to the per-file axis E score (which compares
+              - This is in addition to the per-file axis E check (which compares
                 to existing siblings on main).
+              - If multiple files are interchangeable, raise the cluster as
+                **High** severity. If they overlap substantially but each adds
+                some marginal coverage, raise as **Medium**.
 
             ## Step 6 — Compose ONE PR comment
 
@@ -120,7 +127,7 @@ jobs:
             ```markdown
             ## Coder-eval task lint (advisory)
 
-            <One sentence: N task YAMLs changed; M pass; K below threshold; J binary FAIL.>
+            <One sentence: N task YAMLs changed; verdict counts: <C> Critical, <H> High, <M> Medium, <L> Low, <O> OK.>
 
             Rubric: [.claude/commands/lint-task.md](.claude/commands/lint-task.md). This check is advisory and never blocks merge.
 
@@ -128,48 +135,43 @@ jobs:
 
             <One of:>
             - ✅ Author confirms passing run: "<quote the relevant phrase from PR body>"
-            - ❌ **MAJOR**: PR body does not claim the changed tasks have been run and passed. Please edit the PR description to add a line like: `Ran <task-id> locally and it passed.` This is required for new/modified coder-eval tasks per the 2026-04-27 quality conventions.
+            - ❌ **High** — PR body does not claim the changed tasks have been run and passed. Please edit the PR description to add a line like: `Ran <task-id> locally and it passed.`
 
             ### Per-task lint
 
             <For each changed file, a compact block:>
 
-            #### `tests/tasks/<skill>/<file>.yaml` — <overall>/10 <emoji>
-
-            | Axis | Score |
-            |---|---|
-            | A. self-report anti-pattern | PASS / **FAIL** |
-            | B. prompt over-specification | <X>/10 |
-            | C. meaningful coverage | <X>/10 |
-            | D. hard to game | <X>/10 |
-            | E. unique vs. neighbors | <X>/10 |
-            | F. maestro-flow debug check | PASS / **FAIL** / N/A |
+            #### `tests/tasks/<skill>/<file>.yaml` — verdict: <OK | Low | Medium | High | Critical>
 
             **Issues:**
-            - <axis letter> <one-line description, with line refs from the YAML>
-            - ...
+            - [Critical] axis A: <one-line description with line refs>
+            - [High] axis B: <one-line description with line refs>
+            - [Medium] axis E: <description, neighbor: foo.yaml>
+            - [Low] axis C: <description>
 
             **Suggested fixes:**
             - <concrete change>
             - ...
+
+            <If a task has no issues, just write "verdict: OK" and omit Issues / Suggested fixes.>
 
             ### Within-PR duplicates
 
             <Either:>
             - No duplicate clusters detected.
             <Or, if 2+ added files cluster:>
-            - **Cluster 1:** `<file_a.yaml>`, `<file_b.yaml>` — <one-line justification, e.g. "both create+validate a flow with a single script node, only entity name differs">. Consider combining into one parametrized task or dropping one.
+            - **[High] Cluster 1:** `<file_a.yaml>`, `<file_b.yaml>` — <one-line justification, e.g. "both create+validate a flow with a single script node, only entity name differs">. Consider combining into one parametrized task or dropping one.
 
             ### Themes
 
-            <If 2+ tasks fail for the same root cause, call it out once here. Otherwise omit this section.>
-            - <e.g. "3 tasks share the `report.json` self-report anti-pattern — see audit thread.">
+            <If 2+ tasks share the same root cause, call it out once here. Otherwise omit this section.>
+            - <e.g. "3 tasks share the same self-report anti-pattern.">
 
             ### Conclusion
 
             <One of:>
             - ✅ All changed tasks pass the rubric. Evidence of passing run confirmed.
-            - ⚠ <N> task(s) below threshold and/or evidence missing. Advisory only — not blocking merge.
+            - ⚠ <N> task(s) have issues, max severity <Critical | High | Medium | Low>. Advisory only — not blocking merge.
             ```
 
             ## Rules
@@ -180,8 +182,8 @@ jobs:
               `gh pr comment --edit-last` if available, otherwise post a new one
               and prefix it with "(updated)".
             - **Advisory tone.** This never blocks merge. Use language like
-              "consider", "suggested", "please". The only hard claim is the binary
-              axes A and F, and even those are advisory.
+              "consider", "suggested", "please". Even Critical / High issues are
+              advisory in this workflow.
             - **Be concrete.** Cite line numbers from the YAML. "Improve the test"
               is not a fix; "replace `file_exists: report.json` with
               `command_executed` matching `uip df entity get` + `json_check` on its
