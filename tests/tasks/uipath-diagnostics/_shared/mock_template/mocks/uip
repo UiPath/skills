@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Generic uip mock dispatcher.
+
+Reads <script_dir>/responses/manifest.json and dispatches each invocation to
+the first matching rule's response file. All canned data lives in per-scenario
+files under responses/; this script is shared across scenarios and never
+needs editing when a new scenario is added.
+
+Every invocation is appended to <script_dir>/.calls.jsonl so post-run
+analysis can compare expected vs performed commands and surface
+exploration the agent did beyond the manifest's `expected_calls`.
+
+Manifest schema (v2):
+    {
+      "version": 2,
+      "rules": [
+        { "match": "or jobs list", "file": "jobs_list.json" },
+        { "match": "auth status",  "file": "auth_status.json", "exit_code": 0 }
+      ],
+      "expected_calls": [
+        { "pattern": "or jobs get <key>", "min": 1, "description": "..." }
+      ]
+    }
+
+The dispatcher itself only consumes `rules`. `expected_calls` is metadata
+for the post-run reporter; it is otherwise ignored here.
+
+Matching is plain substring on `" ".join(argv[1:])`. First match wins, so
+list more specific patterns before more generic ones.
+"""
+
+import json
+import sys
+import time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RESPONSES_DIR = SCRIPT_DIR / "responses"
+MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
+CALL_LOG_PATH = SCRIPT_DIR / ".calls.jsonl"
+
+
+def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = None) -> None:
+    """Append a structured record of this invocation to .calls.jsonl.
+
+    Best-effort: any logging error is swallowed so a broken log file never
+    breaks an agent's command. The file is the source of truth for
+    expected-vs-performed coverage analysis after the run.
+    """
+    record = {
+        "ts": time.time(),
+        "args": args,
+        "matched_rule": rule.get("match") if rule else None,
+        "fixture": rule.get("file") if rule else None,
+        "exit_code": exit_code,
+    }
+    if error:
+        record["error"] = error
+    try:
+        with CALL_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError:
+        pass
+
+
+def _err(payload: dict, code: int) -> int:
+    sys.stderr.write(json.dumps(payload) + "\n")
+    return code
+
+
+def main(argv: list[str]) -> int:
+    args = " ".join(argv[1:])
+
+    if not MANIFEST_PATH.is_file():
+        _log_call(args, None, 2, error="manifest_missing")
+        return _err({"error": "manifest.json missing", "path": str(MANIFEST_PATH)}, 2)
+
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    for rule in manifest.get("rules", []):
+        match = rule.get("match", "")
+        if match and match in args:
+            response_file = RESPONSES_DIR / rule["file"]
+            if not response_file.is_file():
+                _log_call(args, rule, 2, error="fixture_missing")
+                return _err({"error": "response file missing", "path": str(response_file)}, 2)
+            sys.stdout.write(response_file.read_text(encoding="utf-8"))
+            exit_code = int(rule.get("exit_code", 0))
+            _log_call(args, rule, exit_code)
+            return exit_code
+
+    _log_call(args, None, 1, error="unmocked")
+    return _err({"error": "unmocked command", "args": args}, 1)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

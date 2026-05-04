@@ -4,7 +4,7 @@ Guide to creating new UiPath agents with AI-powered business logic implementatio
 
 ## Initial Setup
 
-Follow the [Project Setup Guide](../lifecycle/setup.md) to create your project directory, scaffold with `uip codedagent new`, install dependencies, and authenticate. All subsequent commands use the `uip codedagent` CLI wrapper.
+Follow the [Project Setup Guide](../lifecycle/setup.md) to create your project directory, scaffold with `uip codedagent new`, and install dependencies. Setup/build/init are unauthenticated; check authentication before cloud-backed run/eval/deploy/push. All subsequent commands use the `uip codedagent` CLI wrapper.
 
 ## Workflow
 
@@ -19,7 +19,7 @@ The schemas should be written as pydantic types.
 
 ### Step 2: Choose Agent Type
 
-#### Simple Function Agent (no LLM framework)
+#### Coded Function Agent (no LLM framework)
 
 For agents with deterministic logic, SDK calls, or simple processing — use `main.py` with a traced function:
 
@@ -124,7 +124,7 @@ Describe your agent's functionality, then implement the main function (or graph 
 
 ### Step 4: Generate Entry Points
 
-Run `uip codedagent init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Running uipath init](../lifecycle/setup.md#running-uipath-init) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
+Run `uip codedagent init` to generate `entry-points.json`, `uipath.json`, `bindings.json`, and documentation files. See the [Workflow](../lifecycle/setup.md#workflow) section in Project Setup for details on entrypoint registration, auto-detection, and troubleshooting.
 
 ### Step 5: Create Smoke Evaluation Set
 
@@ -148,4 +148,4 @@ The created agent will include:
 - Input/output fields are strongly typed with Pydantic
 - The agent works globally and can call any UiPath SDK services
 - Generated `entry-points.json` enables integration with UiPath Cloud
-- If you require authentication, run `uip login --output json` then `uip login tenant set "<TENANT>" --output json`.
+- If cloud-backed work requires authentication, run `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.

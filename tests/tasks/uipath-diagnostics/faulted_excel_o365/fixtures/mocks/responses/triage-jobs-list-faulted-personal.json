@@ -1,0 +1,97 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "State": "Faulted",
+      "ProcessName": "MacOS-excel-localproc",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-04-01T11:05:20.893Z",
+      "EndTime": "2026-04-01T11:05:25.247Z",
+      "CreationTime": "2026-04-01T11:05:19.137Z",
+      "Id": 47602501
+    },
+    {
+      "Key": "100c2f87-c1b1-4aba-9488-63ca964b951c",
+      "State": "Faulted",
+      "ProcessName": "MacOS-excel-localproc",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-04-01T07:20:39.520Z",
+      "EndTime": "2026-04-01T07:20:43.403Z",
+      "CreationTime": "2026-03-31T16:31:03.350Z",
+      "Id": 47591023
+    },
+    {
+      "Key": "68051472-bc1a-4188-93fc-b65dad14cd99",
+      "State": "Faulted",
+      "ProcessName": "MacOS-excel-localproc",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-03-31T16:29:09.680Z",
+      "EndTime": "2026-03-31T16:29:12.290Z",
+      "CreationTime": "2026-03-31T16:29:08.500Z",
+      "Id": 47590968
+    },
+    {
+      "Key": "dbb32a90-89a9-4af1-bcee-6ab43a4c7c74",
+      "State": "Faulted",
+      "ProcessName": "MacOS-excel-localproc",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-03-31T16:21:24.293Z",
+      "EndTime": "2026-03-31T16:21:28.030Z",
+      "CreationTime": "2026-03-31T16:21:23.680Z",
+      "Id": 47590771
+    },
+    {
+      "Key": "d8cac54f-83fc-4637-9eee-d367479b009d",
+      "State": "Faulted",
+      "ProcessName": "MacOS-excel-localproc",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-03-31T15:51:12.433Z",
+      "EndTime": "2026-03-31T15:51:16.310Z",
+      "CreationTime": "2026-03-31T15:51:11.627Z",
+      "Id": 47590094
+    },
+    {
+      "Key": "91e5b90e-57da-4f85-991f-48461fc71e0b",
+      "State": "Faulted",
+      "ProcessName": "RPA.Workflow",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-03-31T15:04:06.730Z",
+      "EndTime": "2026-03-31T15:04:16.130Z",
+      "CreationTime": "2026-03-31T15:04:06.060Z",
+      "Id": 47589186
+    },
+    {
+      "Key": "3033bce6-5585-4455-aaec-db7a9f791126",
+      "State": "Faulted",
+      "ProcessName": "RPA.Workflow",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "DESKTOP-HOME-WO",
+      "StartTime": "2026-03-31T10:15:49.240Z",
+      "EndTime": "2026-03-31T10:15:57.013Z",
+      "CreationTime": "2026-03-31T10:15:46.003Z",
+      "Id": 47583596
+    }
+  ]
+}
