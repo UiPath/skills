@@ -38,6 +38,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 6. **The definition entry is added once.** Check `workflow.definitions` — if `uipath.human-in-the-loop` is already there, do not add it again.
 7. **Check existing node IDs before generating a new one.** Read `workflow.nodes[*].id` from the `.flow` file and pick the next available suffix (e.g. `invoiceReview1`, then `invoiceReview2`).
 8. **Never report a failed validation as done.** If `uip maestro flow validate` returns errors, diagnose from the JSON output and fix before reporting to the user.
+9. **Output fields are accessed by `field.id`, not `field.variable`.** The runtime result object uses field IDs as keys — `$vars.<nodeId>.output.<fieldId>`. The `variable` property creates a separate workflow-global variable (`$vars.{variable}`) but does NOT change the key used in the output object.
 
 ---
 
@@ -285,7 +286,7 @@ After completing the wiring:
 1. **What was inserted** — node ID, label, insertion point
 2. **Schema summary** — what the human will see (input-direction fields), fill in (output/inOut-direction fields), and click (outcomes). For deployed action app show the actionSchema from the retrieve-configuration api response here.
 3. **Edges wired** — which handles were connected and to which nodes; any handles left unwired
-4. **Runtime variables** — `$vars.<nodeId>.result` (object) and `$vars.<nodeId>.status` (string) and how to reference them downstream
+4. **Runtime variables** — `$vars.<nodeId>.output` (object) and `$vars.<nodeId>.status` (string) and how to reference them downstream
 5. **Validation result** — pass or errors to fix
 6. **Production readiness note:**
    - **QuickForm**: ready to deploy once the solution is packaged. No additional build steps.

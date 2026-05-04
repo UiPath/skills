@@ -1,0 +1,6 @@
+[ERROR] Error pinging connection 'e62228b7-ffc2-49dc-a779-29207b0d2b6f': HTTP 404: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it
+{
+  "Result": "Failure",
+  "Message": "HTTP 404: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it",
+  "Instructions": "Run 'uip is connections edit <connection-id>' to re-authenticate, or 'uip is connections create <connector-key>' to create a new connection."
+}

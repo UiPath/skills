@@ -37,8 +37,8 @@ graph LR
     B --> C[resource refresh]
     C --> D[pack]
     D --> E[publish]
-    E --> F[deploy run]
-    F --> G[activate]
+    E --> F["deploy run<br/>(auto-activate by default)"]
+    F -->|--skip-activate| G[activate]
     C --> H[upload]
 ```
 
@@ -62,16 +62,17 @@ uip solution
   ├── project
   │     ├── add <projectPath> [solutionFile]    Register an existing subfolder in .uipx
   │     ├── remove <projectPath> [solutionFile] Unregister a project from .uipx
-  │     └── import --source <path>              Copy external project into solution and register
+  │     ├── import --source <path>              Copy external project into solution and register
+  │     └── list                                List projects registered in the local .uipx (no backend call)
   ├── resource
   │     ├── list                          List local, remote, or all resources (--solution-folder, default cwd)
   │     ├── refresh                       Sync resource declarations from project bindings (--solution-folder, default cwd)
   │     └── get <resource-key>            Get full configuration for a single resource — local or remote (--solution-folder, default cwd)
   ├── deploy
-  │     ├── run -n <name>                 Deploy a published solution package
+  │     ├── run -n <name>                 Deploy a published solution package (auto-activates by default; pass --skip-activate to opt out)
   │     ├── status <id>                   Check deployment status
   │     ├── list                          List deployments
-  │     ├── activate <name>               Activate a deployment
+  │     ├── activate <name>               Activate a deployment (only needed after --skip-activate or to retry a failed auto-activation)
   │     ├── uninstall <name>              Uninstall a deployment
   │     └── config
   │           ├── get <package-name>      Fetch default deploy config

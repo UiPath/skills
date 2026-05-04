@@ -26,7 +26,7 @@ Returns `Entry`, `Config`, and `Connections`.
 
 - **Single connection** → use it.
 - **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED>`. See each plugin's unresolved fallback.
+- **Empty `Connections`** → mark `<UNRESOLVED>`. Both plugins emit skeletons at execution time (different shapes per plugin) — see [skeleton-tasks.md](skeleton-tasks.md) for connector-task skeletons and [`plugins/triggers/event/impl-json.md` § Skeleton fallback](plugins/triggers/event/impl-json.md) for event-trigger skeletons.
 
 Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
 
@@ -256,7 +256,7 @@ Copy `enrichment.configuration` from Step 2 as-is. The CLI pre-builds this `=jso
 
 > **Do NOT hand-construct this string.** The CLI returns the correct pre-built configuration. Hand-constructing produces incomplete `instanceParameters` and risks using the wrong `activityType`.
 
-> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 7 — do not hand-construct.
+> If `enrichment.configuration` is absent (older CLI version), defer to skeleton task per Rule 8 — do not hand-construct.
 
 > **Critical:** The CLI already overrides `activityType` to `"CuratedWaitFor"` (NOT `Config.activityType` which is `"CuratedTrigger"`). Case `wait-for-connector` tasks use different runtime semantics than Flow triggers.
 

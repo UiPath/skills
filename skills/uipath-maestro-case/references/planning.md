@@ -1,10 +1,10 @@
-# Planning Phase: sdd.md → tasks.md
+# Phase 1 — Planning: sdd.md → tasks.md
 
-Generate a reviewable task plan (`tasks.md`) from the design document (`sdd.md`). This phase discovers registry resources, resolves task type IDs, and produces a declarative specification that the [Implementation Phase](implementation.md) executes via direct JSON writes to `caseplan.json`.
+Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
-> **Exit gate:** The user must explicitly approve `tasks.md` before the Implementation Phase begins.
+> **Exit gate:** User must explicitly approve `tasks.md` before Phase 2 begins.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
 > - Root case → `plugins/case/planning.md`
@@ -54,7 +54,11 @@ If not logged in, prompt the user to log in. The registry pull caches all resour
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
 
-`sdd.md` is the **sole input**. It describes stages, tasks, edges, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. The skill does not validate or gap-fill sdd.md — trust it as written.
+If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after Round 4 approval.
+
+`sdd.md` is the **sole input**. It describes stages, tasks, edges, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
+
+> **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
 ## Step 3 — Resolve resources
 
@@ -67,17 +71,19 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.1 Task Type catalog
 
-| sdd.md component type | Plugin |
-|-----------------------|--------|
-| PROCESS, AGENTIC_PROCESS | `plugins/tasks/process/` |
-| AGENT | `plugins/tasks/agent/` |
-| RPA | `plugins/tasks/rpa/` |
-| HITL | `plugins/tasks/action/` |
-| API_WORKFLOW | `plugins/tasks/api-workflow/` |
-| CASE_MANAGEMENT | `plugins/tasks/case-management/` |
-| CONNECTOR_ACTIVITY | `plugins/tasks/connector-activity/` |
-| CONNECTOR_TRIGGER | `plugins/tasks/connector-trigger/` |
-| TIMER (in-stage) | `plugins/tasks/wait-for-timer/` |
+> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` skeleton instead.
+
+| sdd.md `Type:` / caseplan.json `type` | Plugin folder |
+|---|---|
+| `process` (covers `AGENTIC_PROCESS` legacy label) | `plugins/tasks/process/` |
+| `agent` | `plugins/tasks/agent/` |
+| `rpa` | `plugins/tasks/rpa/` |
+| `action` | `plugins/tasks/action/` |
+| `api-workflow` | `plugins/tasks/api-workflow/` |
+| `case-management` | `plugins/tasks/case-management/` |
+| `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `wait-for-connector` | `plugins/tasks/connector-trigger/` |
+| `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
 ### 3.2 Trigger Type catalog (case-level)
 
@@ -142,15 +148,51 @@ Consult [`plugins/case/planning.md`](plugins/case/planning.md) for required fiel
 
 Title format: `Declare <category> "<name>"` where category is `In argument`, `Out argument`, or `variable`.
 
-One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and trigger (T02), before stages. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
+One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and **all** trigger T-entries (T02+) — i.e., after the last trigger row, before stages. In multi-trigger cases the variables block starts at `T0<last-trigger>+1`, not at `T03`. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
 
 Task-output variables (produced by tasks during execution) do NOT get T-entries here — they are wired automatically during task creation (§4.6).
 
-### 4.3 Configure trigger (T02)
+### 4.3 Configure trigger(s) (T02+)
 
 Title format: `Configure <trigger-type> trigger "<name>"`
 
 Consult the corresponding trigger plugin (`plugins/triggers/<type>/planning.md`) for required fields.
+
+**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. See [edges/planning.md § Multi-Trigger Cases](plugins/edges/planning.md#multi-trigger-cases) for the matching N edges from triggers to the first stage.
+
+Each trigger row uses its plugin's full field set — see `plugins/triggers/<type>/planning.md` for the per-type entry format. Worked example — sdd.md declares 3 entry-point rows (one manual + two events), one of which is unresolved:
+
+```markdown
+## T02: Configure manual trigger "Operator Starts Case"
+- display-name: "Operator Starts Case"
+- description: "Operator kicks off a case from the portal"
+- order: after T01
+- verify: Confirm node appended; capture TriggerId
+
+## T03: Configure event trigger "New Inbound Email"
+- type-id: <uiPathActivityTypeId>
+- connection-id: <connection-uuid>
+- connector-key: uipath-microsoft-office-365-outlook
+- object-name: Email
+- event-operation: created
+- event-mode: webhooks
+- input-values: {"parentFolderId": "AAMkADNm..."}
+- filter: "(contains(subject, 'urgent'))"
+- order: after T02
+- verify: Confirm trigger configured with correct event parameters
+
+## T04: Configure event trigger "Jira Issue Created"
+- type-id: <UNRESOLVED: no IS connection for uipath-atlassian-jira>
+- connection-id: <UNRESOLVED>
+- connector-key: <UNRESOLVED>
+- object-name: <UNRESOLVED>
+- event-operation: <UNRESOLVED>
+- event-mode: <UNRESOLVED>
+- order: after T03
+- verify: trigger skipped at execution; user attaches after registering connection
+```
+
+Do **not** collapse the unresolved trigger into a note on T02 or omit it entirely — execution behavior for unresolved event triggers is documented in [`triggers/event/planning.md § Unresolved Fallback`](plugins/triggers/event/planning.md#unresolved-fallback), but the planning row is still required.
 
 ### 4.4 Create stages
 
@@ -216,6 +258,6 @@ Present the generated `tasks.md` to the user and ask for explicit approval befor
 
 Use **AskUserQuestion** with options: `Approve and proceed`, `Request changes`.
 
-If the user requests changes, update `tasks.md` and re-present. Do NOT proceed to the Implementation Phase until the user explicitly approves.
+If user requests changes, update `tasks.md` and re-present. Do NOT proceed to Phase 2 until user explicitly approves.
 
-**After approval:** re-read `tasks.md` before proceeding to the [Implementation Phase](implementation.md). `tasks.md` is the complete handoff artifact — all resolved IDs, inputs, outputs, and references are captured there.
+**After approval:** re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)). `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.

@@ -1,14 +1,14 @@
 task_id: skill-flow-hitl-quality-result-downstream
 description: >
   Quality test: agent correctly references the HITL node's output via
-  $vars.<nodeId>.result in a downstream node. Tests that the agent knows
-  the result variable path and wires it into a decision or script node.
+  $vars.<nodeId>.output in a downstream node. Tests that the agent knows
+  the output variable path and wires it into a decision or script node.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
-  max_turns: 25
+  max_turns: 47
   turn_timeout: 900
 
 sandbox:
@@ -23,7 +23,7 @@ initial_prompt: |
        - Reviewer sees: expense amount, requester name, category (all read-only)
        - Reviewer fills in: approved (boolean), comments (text, optional)
        - Outcomes: Approve (primary), Reject
-  3. Script node — reads the reviewer's decision from the HITL result and
+  3. Script node — reads the reviewer's decision from the HITL output and
      logs: "Decision: <approved value>, Comments: <comments value>"
      The script must reference the HITL output via the correct runtime variable path.
   4. End node
@@ -51,11 +51,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow references the HITL result variable"
+    description: "Flow references the HITL output variable"
     path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 3.0
     pass_threshold: 1.0
 

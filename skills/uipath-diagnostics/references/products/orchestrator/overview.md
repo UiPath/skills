@@ -60,11 +60,12 @@ Organization (cloud.uipath.com)
 ```
 uip or folders list-current-user                    — list all accessible folders (Personal, Solution, Standard)
 uip or folders get <key-or-path>                    — get folder details
-uip or jobs list --folder-key <key>                  — list jobs in a folder. Filters: --state, --process-name, --created-after/before, --started-after/before
+uip or jobs list --folder-key <key>                 — list jobs in a folder. Filters: --state, --process-name, --created-after/before, --started-after/before
 uip or jobs get <key>                               — job details: state, arguments, timing, machine, errors
-uip or jobs logs <key>                               — robot execution logs (--level Error, --limit N). Folder inferred from key.
-uip or jobs traces <key>                             — job execution traces (activity states, variable snapshots, execution path)
-uip or jobs history <key>                            — job state transition history (Pending → Running → Faulted, with timestamps)
+uip or jobs logs <key>                              — robot execution logs (--level Error, --limit N). Folder inferred from key.
+uip traces spans get --job-key <key>                — job execution traces (activity states, execution path)
+uip traces spans get <trace_id>                     — job execution traces based on the 'jobInformation.TraceId' field
+uip or jobs history <key>                           — job state transition history (Pending → Running → Faulted, with timestamps)
 uip or machines list                                — list registered machines
 uip or licenses info                                — license allocation and usage
 ```
@@ -74,8 +75,9 @@ Key commands for diagnostics:
 - `uip or jobs list --folder-key <key> --state Faulted` — find faulted jobs in a folder. Use `--process-name`, `--created-after/before` to narrow results
 - `uip or jobs get <key>` — starting point for any job investigation
 - `uip or jobs logs <key> --level Error` — quickly find error entries in execution logs
-- `uip or jobs traces <key>` — job execution traces (activity states, execution path)
+- `uip traces spans get --job-key <key>` — job execution traces (activity states, execution path)
+- `uip traces spans get <trace_id>` — job execution traces based on the 'jobInformation.TraceId' field
 - `uip or jobs history <key>` — job state transition history with timestamps
 
-Additional resource commands are available via `uip resources --help`.
+Queue and queue-item commands are documented in the investigation guide's Queue Item Data Bundle section.
 

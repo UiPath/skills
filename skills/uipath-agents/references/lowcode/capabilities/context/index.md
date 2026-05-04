@@ -30,8 +30,9 @@ Each entry returns:
 | Field | Use as |
 |-------|--------|
 | `Key` | index GUID (informational — not stored in the agent resource) |
-| `Name` | exact `indexName` to set in the context resource |
-| `Folder` / `FolderKey` | folder context for the ECS `$expand=dataSource` follow-up call below |
+| `Name` | exact `indexName` to set in the context resource → also propagates as binding `name` |
+| `Folder` | literal folder path → top-level `folderPath` (e.g., `"Shared/Knowledge"`) and binding `folderPath`. Refresh uses `(name, folderPath)` jointly to look up the index in ECS. |
+| `FolderKey` | folder GUID — used as `X-UIPATH-FolderKey` header for the ECS `$expand=dataSource` follow-up call below |
 
 `resource list` does not return the data source type. Query ECS once to confirm StorageBucket backing and get the bucket name:
 
@@ -56,7 +57,7 @@ Check `dataSource.@odata.type`:
   "name": "<ContextName>",              // display name; matches the folder under resources/
   "description": "",
   "contextType": "index",
-  "folderPath": "solution_folder",
+  "folderPath": "Shared/Knowledge",     // Literal Folder from `uip solution resource list`. Propagates verbatim into bindings_v2.json.
   "indexName": "<IndexName>",           // MUST match the ECS index Name exactly (case-sensitive)
   "settings": {
     "retrievalMode": "semantic",        // "semantic" | "structured" | "deeprag" | "batchtransform"
@@ -92,14 +93,17 @@ For `contextType: "index"` with a StorageBucket-backed ECS index, `uip agent val
 {
   "resource": "index",
   "key": "<IndexName>",
-  "value": { "name": { "defaultValue": "<IndexName>", "isExpression": false, "displayName": "Index Name" } },
+  "value": {
+    "name":       { "defaultValue": "<IndexName>", "isExpression": false, "displayName": "Index Name" },
+    "folderPath": { "defaultValue": "<Folder>",    "isExpression": false }
+  },
   "metadata": { "bindingsVersion": "2.2", "solutionsSupport": "true" }
 }
 ```
 
-into `bindings_v2.json` at the agent project root. `uip solution resource refresh` then:
+into `bindings_v2.json` at the agent project root. `folderPath` is propagated verbatim from the agent-level `resource.json`'s top-level `folderPath` field. `uip solution resource refresh` then:
 
-1. Calls ECS `GET ecs_/v2/indexes/AllAcrossFolders?$filter=Name eq '<IndexName>'&$expand=dataSource` — resolves the index GUID, folder key, and data source type.
+1. Calls ECS `GET ecs_/v2/indexes/AllAcrossFolders?$filter=Name eq '<IndexName>'&$expand=dataSource` — resolves the index GUID, folder key, and data source type. With the binding's `folderPath` set, refresh narrows multi-folder name collisions to the exact deployment.
 2. If `dataSource.@odata.type` is not `#UiPath.Vdbs.Domain.Api.V20Models.StorageBucketDataSource`, warns + skips (other data sources — GoogleDrive, OneDrive, Dropbox, Confluence, Attachments — are not yet wired).
 3. Calls Orchestrator `GET orchestrator_/odata/Buckets?$filter=Name eq '<BucketName>'` with the index's `folderKey` as `X-UIPATH-FolderKey` — gets the bucket `Identifier` GUID.
 4. Registers the bucket as a solution resource via the resource-builder SDK — writes `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`.
@@ -181,7 +185,7 @@ All failures (index not found, ambiguous name match, non-StorageBucket data sour
   "name": "<ContextName>",
   "description": "",
   "contextType": "index",
-  "folderPath": "solution_folder",
+  "folderPath": "<FOLDER>",             // literal Folder from Step 2 (e.g., "Shared/Knowledge")
   "indexName": "<INDEX_NAME>",          // exact ECS index name from Step 2
   "settings": {
     "retrievalMode": "semantic",

@@ -5,9 +5,9 @@ task_id: skill-hitl-e2e-gdpr-compliance-greenfield
 description: >
   Authoring E2E golden scenario (green field): agent builds a GDPR deletion
   request flow with a privacy officer sign-off checkpoint. Tests proactive
-  compliance pattern detection, schema design with Reject path, timeout wiring.
-  Real business use case. Full Discover -> Plan -> Build -> Verify loop.
-  Does not deploy or run the flow.
+  compliance pattern detection, schema design with Reject path, and timeout
+  duration configuration. Real business use case. Full Discover -> Plan ->
+  Build -> Verify loop. Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 agent:
