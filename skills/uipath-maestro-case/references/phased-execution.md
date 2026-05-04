@@ -4,6 +4,19 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
+## v20 mode (Rule 17 softening)
+
+When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
+
+| Phase | v19 behavior | v20 behavior |
+|---|---|---|
+| 2 — Prototyping | Informational validate, no halt on errors | Identical (already informational) |
+| 4 — Validate | Authoritative validate, 3-retry cap, hard stop on 3rd failure | **Informational only** — capture errors to `build-issues.md`, no retry loop, no hard stop. Reason: CLI may not yet accept v20 top-level shape. |
+| 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
+| 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
+
+Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 17).
+
 ## Why phased
 
 After `tasks.md` is approved, skill does **not** build full case in one pass. It builds **skeleton** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
@@ -26,7 +39,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 - Solution + project scaffolding (`uip solution new`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with `root` block populated (name, caseIdentifier, empty `nodes[]`, empty `edges[]`, empty `caseExitConditions[]`).
-- Global variables and arguments — `root.data.uipath.variables` (`inputs`, `outputs`, `inputOutputs`) fully declared.
+- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 17).
 - Stages — all StageIds generated and captured.
 - Edges — all edges written; sources and targets resolve.
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
@@ -118,7 +131,7 @@ Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and co
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"` or `"case-management:ExceptionStage"`, keyed on `data.label`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
-   - Variable name → `var` ID (from `root.data.uipath.variables.{inputs,outputs,inputOutputs}`).
+   - Variable name → `var` ID (path schema-dependent: v19 from `root.data.uipath.variables.{inputs,outputs,inputOutputs}`; v20 from top-level `variables.{inputs,outputs,inputOutputs}`).
 3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
@@ -152,7 +165,9 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+> **v20 mode override.** When `tasks.md` carries `Schema: v20`, Phase 4 runs **informational** — capture errors and warnings to `build-issues.md`, do NOT retry, do NOT hard-stop on counter exhaustion. Proceed to Phase 5 regardless. Reason: CLI may not yet accept v20 top-level shape; failure does not invalidate the caseplan.json that the skill emitted (Rule 17). v19 retry policy below applies only when `Schema: v19`.
+
+**v19 retry policy.** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
@@ -177,6 +192,12 @@ Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams resul
 
 After debug completes, return to Phase 5 prompt so user can re-run or move on. Proceed to Phase 6 only on `Skip to Publish`.
 
+> **v20 mode.** When `tasks.md` carries `Schema: v20`, print this plain-text warning line BEFORE the AskUserQuestion:
+> ```
+> > v20 mode: uip maestro case debug may reject top-level shape until CLI catches up. Failure does not invalidate caseplan.json.
+> ```
+> On debug failure in v20 mode, append `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` to the troubleshoot context in `build-issues.md` so the user does not chase a bogus root cause.
+
 ### Report fields (printed before prompt)
 
 1. File path of `caseplan.json`.
@@ -196,6 +217,12 @@ After Phase 5 (whether debugged or skipped), prompt via **AskUserQuestion**:
 
 - `Publish to Studio Web` — run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Exit skill.
 - `Done` — exit skill without publishing.
+
+> **v20 mode.** When `tasks.md` carries `Schema: v20`, print this plain-text warning line BEFORE the AskUserQuestion:
+> ```
+> > v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.
+> ```
+> If `Publish to Studio Web` is picked and upload fails, dump full response to `tasks/upload-response.json`, print the path, then re-show this Phase 6 AskUserQuestion. Do not auto-exit on upload failure — let user decide whether to retry or `Done`.
 
 ### Publish notes
 

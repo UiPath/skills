@@ -29,16 +29,46 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 
 ## Target resolution
 
+Read the `Schema:` header from `tasks.md` to pick the root-target path. Stage-target path is identical across schemas.
+
+### v19
+
 - `target: "root"` → `root.data.slaRules` (**inside `root.data`** — sibling of `intsvcActivityConfig` and `uipath`, NOT a top-level key and NOT a direct child of `root`)
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (inside the stage node's `data`)
+
+### v20
+
+- `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block, NOT `root.data.slaRules` — there is no `root` in v20)
+- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (unchanged from v19 — node internals are identical)
+
+### Common
+
 - Accepted node types: `case-management:Stage` and `case-management:ExceptionStage`.
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
 
 ## Recipe — one target
 
-After grouping T-entries by target, compose the `slaRules` array and write it into the target's **`data`** object (`root.data` for root target, `node.data` for stage target). The key is `slaRules` — a sibling of `intsvcActivityConfig` / `uipath` (root) or `label` / `tasks` (stage). It is **not** a top-level key in caseplan.json.
+After grouping T-entries by target, compose the `slaRules` array and write it into the target's location per the table above. The composed array shape is **identical** across v19 and v20 — only the destination path differs.
 
-For the root target, the resulting shape is:
+### Composed array (both schemas)
+
+```json
+[
+  {
+    "expression": "=js:<translated-condition-1>",
+    "count": <n>, "unit": "<min|h|d|w|m>",
+    "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
+  },
+  { "...additional conditional rules in sdd order..." },
+  {
+    "expression": "=js:true",
+    "count": <default.count>, "unit": "<default.unit>",
+    "escalationRule": [ <escalations with attach-to == default> ]
+  }
+]
+```
+
+### v19 root-target shape
 
 ```json
 {
@@ -50,27 +80,33 @@ For the root target, the resulting shape is:
     "data": {
       "intsvcActivityConfig": "v2",
       "uipath": { "...": "..." },
-      "slaRules": [
-        {
-          "expression": "=js:<translated-condition-1>",
-          "count": <n>, "unit": "<min|h|d|w|m>",
-          "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
-        },
-        { "...additional conditional rules in sdd order..." },
-        {
-          "expression": "=js:true",
-          "count": <default.count>, "unit": "<default.unit>",
-          "escalationRule": [ <escalations with attach-to == default> ]
-        }
-      ]
+      "slaRules": [ <composed array above> ]
     }
   }
 }
 ```
 
-For a stage target, the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`, etc.).
+### v20 root-target shape
 
-> **Common failure:** emitting `slaRules` at the caseplan top level (sibling of `root` / `nodes` / `edges`) or directly on `root` (sibling of `data`). Both are wrong — `uip maestro case validate` will not surface the rules, and runtime ignores them. Always nest inside `data`.
+```json
+{
+  "id": "case-aBcDeFgHiJ",
+  "version": "20.0.0",
+  "metadata": {
+    "caseIdentifier": "<...>",
+    "caseUnifiedSchemaEnabled": true,
+    "slaRules": [ <composed array above> ]
+  },
+  "...": "..."
+}
+```
+
+For a stage target (both schemas), the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`).
+
+> **Common failures:**
+> - **v19:** emitting `slaRules` at the caseplan top level or directly on `root` (sibling of `data`). Both wrong — must nest inside `data`.
+> - **v20:** emitting `slaRules` under a non-existent `root` key, or under `root.data.slaRules`. Both wrong — must nest under top-level `metadata`. There is no `root` key in v20.
+> - **Either:** writing `slaRules` to a stage's top level (sibling of `id`/`type`). Stage SLA always lives under `node.data.slaRules` regardless of schema.
 
 Emission rules:
 
@@ -119,8 +155,9 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Post-write validation
 
-- Confirm `root.data.slaRules` or `node.data.slaRules` exists with the expected entries. **Verify the key is nested under `data`, not directly on `root` / on the stage node, and not at the caseplan top level.**
+- **v19:** confirm `root.data.slaRules` or `node.data.slaRules` exists with the expected entries. Verify the key is nested under `data`.
+- **v20:** confirm `metadata.slaRules` (top-level) or `node.data.slaRules` (stage) exists. Verify v20's root-target uses `metadata` — not `root.data` (which doesn't exist in v20).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
-- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).
+- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target). In v20 mode, validate may reject due to CLI lag — capture output to build-issues.md, do not retry-loop (Rule 17).
 

@@ -17,16 +17,28 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 | Stage render fields | Emit `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node |
 | Connector task default entry condition | Emit the default `current-stage-entered` entry condition on every connector task |
 | Edge cleanup on stage removal | Find and remove every edge where `source` or `target` equals the removed stage's ID |
-| Root-level bindings cleanup | Prune `root.data.uipath.bindings` entries no longer referenced by any task |
+| Root-level bindings cleanup | Prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
 | `id-map.json` sidecar | Initialize on T01 (case plugin); append per plugin as IDs are generated; flush to disk at end of run (or after each plugin for durability) |
 | `caseplan.json` file creation | T01 (case plugin) writes the file from scratch; downstream plugins mutate in place |
 
 ---
 
+## v20 layout-strip (Rule 18)
+
+In v20 mode, the following Pre-flight Checklist items become **NOOPs** because layout state lives in top-level `layout`, not on each node:
+
+- **Item 3 (Stage render fields)** — do NOT emit `style`, `measured`, `width`, `zIndex` on Stage nodes. v20 nodes carry `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` only.
+- **Item 4 (Position computation)** — do NOT compute or emit `position.x`, `position.y` on Stage nodes (or Trigger nodes). FE auto-layouts on canvas load.
+- **Edges** — do NOT emit `data.waypoints` (lifted to `layout.edges[<edgeId>].waypoints` when present; skill emits empty `layout: {}`).
+
+Skill emits empty `layout: {}` at top level in v20 — never populates `layout.nodes` or `layout.edges`. Layout authoring is a canvas-time concern, not a skill concern.
+
+**v19 mode preserves all current Pre-flight rules** — Items 3, 4 apply as written below.
+
 ## Pre-flight Checklist
 
-Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
+Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents. **In v20 mode, Items 3 and 4 are NOOPs** — see § v20 layout-strip above.
 
 1. **Canonical `caseplan.json` location.** The file lives at `<SolutionDir>/<ProjectName>/caseplan.json` (next to `project.uiproj`). Every Read/Write must target that exact path — not a stray copy in the solution root or working directory.
    - **For the `case` plugin (T01)**: neither `caseplan.json` nor the 5 scaffold files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) exist before the plugin runs. `uip solution new` (Step 6.0, CLI) creates the solution dir + `.uipx` only. T01 creates the project dir and writes all 6 files directly — § Scaffold writes the 5 boilerplate files, § Write caseplan.json writes the root skeleton. See [plugins/case/impl-json.md](plugins/case/impl-json.md). Pre-scaffold check: `<SolutionDir>/<SolutionName>.uipx` exists AND none of the 5 scaffold files exist yet in `<SolutionDir>/<ProjectName>/`.
@@ -76,20 +88,21 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `count` random characters drawn uniformly from `[A-Za-z0-9]` (62 chars). Source: `cli/packages/case-tool/src/utils/shortId.ts`.
 
-| Entity | Prefix | Suffix length | Example |
-|---|---|---|---|
-| Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` |
-| Trigger (secondary — any subtype: manual / timer / event) | `trigger_` | 6 | `trigger_xY2mNp` |
-| Initial trigger (first trigger in the case) | fixed literal `trigger_1` | — | `trigger_1` |
-| Edge | `edge_` | 6 | `edge_Qz7hVr` |
-| Task | `t` | 8 | `t8GQTYo8O` |
-| Task entry condition | `c` | 8 | `c4fGhJ2Mn` |
-| Task entry rule | `r` | 8 | `rK9xQw3Lp` |
-| Stage / case / task file-level condition | `Condition_` | 6 | `Condition_xC1XyX` |
-| Rule inside those conditions | `Rule_` | 6 | `Rule_jdBFrJ` |
-| Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` |
-| SLA escalation | `esc_` | 6 | `esc_gH2jKl` |
-| Binding | `b` | 8 | `b3KmNp7Q9` |
+| Entity | Prefix | Suffix length | Example | Notes |
+|---|---|---|---|---|
+| Case (v20 only — top-level `id`) | `case-` | 10 | `case-aBcDeFgHiJ` | Replaces v19 hardcoded `root.id = "root"`. v19 keeps the literal `"root"` — no generation. |
+| Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` | |
+| Trigger (secondary — any subtype: manual / timer / event) | `trigger_` | 6 | `trigger_xY2mNp` | |
+| Initial trigger (first trigger in the case) | fixed literal `trigger_1` | — | `trigger_1` | |
+| Edge | `edge_` | 6 | `edge_Qz7hVr` | |
+| Task | `t` | 8 | `t8GQTYo8O` | |
+| Task entry condition | `c` | 8 | `c4fGhJ2Mn` | |
+| Task entry rule | `r` | 8 | `rK9xQw3Lp` | |
+| Stage / case / task file-level condition | `Condition_` | 6 | `Condition_xC1XyX` | |
+| Rule inside those conditions | `Rule_` | 6 | `Rule_jdBFrJ` | |
+| Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` | |
+| SLA escalation | `esc_` | 6 | `esc_gH2jKl` | |
+| Binding | `b` | 8 | `b3KmNp7Q9` | |
 
 ### Algorithm — inline, no subprocess
 
@@ -226,7 +239,7 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 1. Read `caseplan.json`.
 2. Remove the node from `schema.nodes` by ID.
 3. Remove every edge where `source` or `target` equals the removed node's ID.
-4. If the node was a stage containing a connector task, prune `root.data.uipath.bindings` entries referenced only by that task.
+4. If the node was a stage containing a connector task, prune entries from the bindings array (v19: `root.data.uipath.bindings`; v20: top-level `bindings`) referenced only by that task.
 5. Write.
 
 ### Delete an edge

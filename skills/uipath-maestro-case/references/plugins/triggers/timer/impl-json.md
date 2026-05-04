@@ -6,6 +6,8 @@ direct-json: supported
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
+> **v20 layout-strip (Rule 18).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip position-computation. Keep `data.parentElement` (when applicable per Case A vs B below), `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shapes below show v19 fields; v20 strips listed fields and skips position math. `entry-points.json` shape is identical across schemas.
+
 ## Purpose
 
 Add a scheduled trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. Dual-file write: `caseplan.json` + `entry-points.json`.
@@ -116,8 +118,9 @@ After writing, confirm:
 - `node.data.uipath.serviceType == "Intsvc.TimerTrigger"`
 - `node.data.uipath.timerType == "timeCycle"`
 - `node.data.uipath.timeCycle` is byte-identical to the input string
-- For Case A: node has no `style`/`measured`/`width`/`height`/`data.parentElement`
-- For Case B: `style == measured == {width: 96, height: 96}` and `data.parentElement == {id: "root", type: "case-management:root"}`
+- For Case A (v19): node has no `style`/`measured`/`width`/`height`/`data.parentElement`
+- For Case B (v19): `style == measured == {width: 96, height: 96}` and `data.parentElement == {id: "root", type: "case-management:root"}`
+- **v20 (both Case A and Case B):** node has NO `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 18). `data.parentElement` retained when Case B applies; absent in Case A — same logic as v19, just no layout fields
 - `entry-points.json.entryPoints` has a new entry with `filePath` containing the new `triggerId` and `displayName` matching `node.data.label`
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.

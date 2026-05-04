@@ -1,6 +1,6 @@
 # Global Variables — Planning
 
-Case-level data lives in `root.data.uipath.variables`. The key distinction is **variables** vs **arguments**:
+Case-level data lives in the variables block (v19: `root.data.uipath.variables`; v20: top-level `variables` — see Rule 17). The key distinction is **variables** vs **arguments**:
 
 | Concept | Arrays | When |
 |---|---|---|
@@ -46,7 +46,7 @@ One T-entry per variable/argument. Place after the case file (T01) and **all** t
 ## T05: Declare Out argument "finalDecision"
 - category: Out
 - type: string
-- verify: Confirm entry exists in root.data.uipath.variables
+- verify: Confirm entry exists in the variables block (per schema)
 ```
 
 Task-output variables are wired automatically during task creation (§4.6) — no T-entry needed here.
