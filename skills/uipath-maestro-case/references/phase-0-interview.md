@@ -10,11 +10,13 @@ Strict binary trigger. **Any `sdd.md` present at the resolved path → no interv
 
 ```
 Step 1. Skill invoked.
-Step 2. If user did not pass an sdd.md path: ask path. Default proposed = ./sdd.md.
+Step 2. Determine SDD candidate path:
+        Step 2a. If user prompt names any `.md` path or filename (any name, not just `sdd.md`), treat it as the candidate. Examples that count: `loan-sdd_md.md`, `./specs/onboarding.md`, `case_demo_sdd.md`. Resolve relative paths against cwd.
+        Step 2b. If no `.md` reference in prompt, default candidate = `./sdd.md`. Ask user to confirm or supply different path before proceeding.
 Step 3. Resolve path. Stat the file.
 Step 4. File exists → exit Phase 0. Hand to Phase 1.
 Step 5. File absent →
-        Step 5a. Check for sdd.draft.md at same path. If present → resume prompt (§Resumption).
+        Step 5a. Check for `<basename>.draft.md` (e.g., `sdd.draft.md` if candidate was `sdd.md`) at same directory. If present → resume prompt (§Resumption).
         Step 5b. No draft → entry prompt (§Entry).
 ```
 
