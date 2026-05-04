@@ -38,7 +38,7 @@ Use this table to determine which strategy to follow for each operation. **Edit 
 | Operation | Default | Alternative | Notes |
 |-----------|---------|-------------|-------|
 | Add a node | **Edit / Write** | CLI (opt-in) | CLI still auto-manages definitions/variables when opted in. |
-| Add a HITL QuickForm node | **Edit / Write** | CLI (opt-in) via `uip maestro flow hitl add` | Dedicated command also handles definition + `variables.nodes`. Wire `completed` port after. See [hitl/impl.md](plugins/hitl/impl.md). |
+| Add a HITL QuickForm node | **Edit / Write** | — | Current `uip maestro flow` CLI builds do not expose a HITL-specific add command. Wire `completed` port after. See [hitl/impl.md](plugins/hitl/impl.md). |
 | Delete a node | **Edit / Write** | CLI (opt-in) | |
 | Add an edge | **Edit / Write** | CLI (opt-in) | Remember `targetPort` (Rule #6). |
 | Delete an edge | **Edit / Write** | CLI (opt-in) | |

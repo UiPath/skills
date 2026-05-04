@@ -94,7 +94,7 @@ The HITL node's `completed` output handle has no outgoing edge — there is no c
 
 ### Fix
 
-Add an edge from the HITL node's `completed` port to the next node in the flow. After running `uip maestro flow hitl add`, always wire the `completed` port before validating.
+Add an edge from the HITL node's `completed` port to the next node in the flow. Always wire the `completed` port before validating.
 
 ### Reference
 

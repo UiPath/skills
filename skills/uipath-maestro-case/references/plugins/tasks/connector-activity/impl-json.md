@@ -27,7 +27,7 @@ The `tasks.md` entry provides:
 ### Step 1 — Get connection details + Entry
 
 ```bash
-uip case registry get-connection \
+uip maestro case registry get-connection \
   --type typecache-activities \
   --activity-type-id "<type-id>" --output json
 ```
@@ -46,7 +46,7 @@ uip case registry get-connection \
 ### Step 2 — Get enriched metadata + outputs
 
 ```bash
-uip case tasks describe --type connector-activity \
+uip maestro case tasks describe --type connector-activity \
   --id "<type-id>" \
   --connection-id "<connection-id>" --output json
 ```

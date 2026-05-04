@@ -222,7 +222,7 @@ flowchart LR
 **Dependencies:** none
 **References:** §9 Project Structure
 
-> Create a Maestro Flow project named `<FLOW_PROJECT_NAME>` using `uip flow init`.
+> Create a Maestro Flow project named `<FLOW_PROJECT_NAME>` using `uip maestro flow init`.
 > Verify the project structure matches §9 before proceeding.
 
 ### Task 2 — Define variables and triggers

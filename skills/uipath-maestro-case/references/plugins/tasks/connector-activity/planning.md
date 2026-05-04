@@ -23,7 +23,7 @@ Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on 
 ### 2. Resolve the connection
 
 ```bash
-uip case registry get-connection \
+uip maestro case registry get-connection \
   --type typecache-activities \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```

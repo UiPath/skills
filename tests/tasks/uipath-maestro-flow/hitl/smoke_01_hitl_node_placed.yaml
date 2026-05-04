@@ -63,7 +63,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip flow validate passes"
+    description: "uip maestro flow validate passes"
     command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
     timeout: 30
     expected_exit_code: 0
