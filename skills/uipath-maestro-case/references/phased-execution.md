@@ -84,7 +84,7 @@ Use **AskUserQuestion** with three options:
 
 #### On `Publish for review`
 
-1. Run `uip solution resource refresh "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
+1. Run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
 2. Parse `DesignerUrl` from response.
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
@@ -168,7 +168,7 @@ On Phase 4 success → proceed to Phase 5.
 
 After Phase 4 success, report results then ask user via **AskUserQuestion**:
 
-- `Publish to Studio Web` — run `uip solution resource refresh "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Proceed to Phase 6.
+- `Publish to Studio Web` — run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Proceed to Phase 6.
 - `Skip to Debug` — proceed to Phase 6 without publishing.
 
 ### Report fields (printed before prompt)
