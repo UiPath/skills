@@ -21,7 +21,7 @@ sandbox:
 initial_prompt: |
   A document automation engineer wants to inspect the per-field F1 scores
   of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on
-  prompts. Use the uipath-ixp skill.
+  prompts.
 
   Save a summary to report.json in the current working directory with at
   minimum:
