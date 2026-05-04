@@ -28,3 +28,6 @@
 # Add your team here when contributing a new node category file
 /skills/uipath-maestro-flow/references/nodes/_contribution-template.md @bai-uipath @rockymadden
 /skills/uipath-maestro-flow/references/nodes/is-activity.md @baishalighosh @chandusailella @bai-uipath @rockymadden
+
+# Automation Discovery skill
+/skills/uipath-automation-discovery/ @uisherif
