@@ -36,7 +36,7 @@ For all process tool variants:
 
 ## Sibling Files
 
-- [external.md](external.md) — full walkthrough for the 4 external Orchestrator process types (RPA / agent / api / agentic process). Covers discovery via Releases API + GetPackageEntryPointsV2.
+- [external.md](external.md) — full walkthrough for the 4 external Orchestrator process types (RPA / agent / api / agentic process). Covers CLI discovery via `uip solution resource list` + `uip solution resource get`.
 - [solution-agent.md](solution-agent.md) — solution-internal agent tool + multi-agent solution topology (parent + tool agents in one solution).
 - [solution-files.md](solution-files.md) — hand-authoring fallback reference for solution-level process and package declarations + debug_overwrites. Used when `uip solution resource refresh` cannot auto-generate the files.
 

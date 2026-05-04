@@ -198,7 +198,7 @@ uip solution resource list [solutionPath] \
   "Kind": "Process",               // matches --kind
   "Type": "agent",                 // subtype: process/agent/api/processOrchestration/webApp for Process; Workflow Action/Coded/CodedAction for App; connector key for Connection; orchestratorBucket for Bucket
   "Folder": "Shared/MyFolder",     // fully-qualified folder path
-  "FolderKey": "<folder-guid>"     // folder GUID — use as X-UIPATH-FolderKey header and in debug_overwrites.json
+  "FolderKey": "<folder-guid>"     // folder GUID — refresh writes it into debug_overwrites.json
 }
 ```
 
@@ -216,7 +216,7 @@ uip solution resource list [solutionPath] \
 | `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
 | `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
 
-**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For those, you still hit the kind-specific API (see capability files). `resource list` is the identification step — it tells you *that* a resource exists and *where*.
+**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` resources, follow up with `uip solution resource get <KEY> --output json`. For other kinds (`App`, `Index`, `Connection`, `Bucket`), see the kind-specific capability files. `resource list` is the identification step — it tells you *that* a resource exists and *where*.
 
 ## End-to-End Example — New Standalone Agent
 

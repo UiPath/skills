@@ -2,7 +2,7 @@
 
 When `uip solution resource refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [external.md](external.md).
 
-This is also the canonical location for the "How to get the values" extraction logic — Releases API, GetPackageEntryPointsV2, and JWT decoding.
+It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding extraction path — used when `uip solution resource get` is unavailable (older `uip` builds, RCS unreachable, custom deployments). For the standard CLI-driven extraction, see [external.md § Discovery](external.md#discovery).
 
 > **`folders[].fullyQualifiedName` carries the literal `Folder`** (e.g., `"Shared"`, `"Shared/Sales"`) returned by `uip solution resource list` — the same value the agent-level `resource.json` writes into `properties.folderPath` and that `bindings_v2.json` propagates. Templates show `<Folder>` as the placeholder; examples show `"Shared"` as a concrete value. Auto-generated declarations for **solution-internal projects** (created by `uip solution project add`) keep `"solution_folder"` instead — they have no fixed Orchestrator folder until deploy. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
 
@@ -464,6 +464,8 @@ For the generic debug_overwrites shape (capability-agnostic), see [../../solutio
 
 ## How to Get the Values
 
+> **Fallback path.** When `uip solution resource get` is available, use it instead — see [external.md § Discovery](external.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
+
 > **SECURITY: Never read `~/.uipath/.auth` directly** — the access token must not appear in Claude's context. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
 
 ### Step 1: Discover the process and its folder
@@ -479,7 +481,6 @@ Returns, for each match:
   - `agent` → `process/agent/`
   - `api` → `process/api/`
   - `processOrchestration` → `process/processOrchestration/`
-  - `webApp` → not a runnable process tool; use `--kind App` for escalations instead.
 - `Folder` — literal Orchestrator folder path (e.g., `"Shared/Sales"`). Use as: agent-level `resource.json` `properties.folderPath`, solution-level `folders[].fullyQualifiedName` (in both process and package declarations), and `folderFullyQualifiedName` in `debug_overwrites.json`.
 - `FolderKey` — folder GUID. Use as `X-UIPATH-FolderKey` header in Steps 2-3 and as `folderKey` in `debug_overwrites.json`.
 
