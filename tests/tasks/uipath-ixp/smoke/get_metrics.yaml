@@ -40,9 +40,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip ixp projects get-metrics <project-name>` against the requested project Name"
+    description: "Agent invoked `uip ixp projects get-metrics` against the requested project Name (positional or via --project-name flag)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+["'']?my_invoices-f1afa9ef-ixp["'']?(\s|$)'
+    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+.*my_invoices-f1afa9ef-ixp'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

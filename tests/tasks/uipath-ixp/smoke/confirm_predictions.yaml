@@ -103,17 +103,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent split the four predictions into 2 confirmed, 1 corrected, 1 skipped"
+    description: "Agent assigned each field to its correct disposition"
     path: "report.json"
     assertions:
-      - expression: "length(confirmed_field_ids)"
-        operator: equals
-        expected: 2
-      - expression: "length(corrected_field_ids)"
-        operator: equals
-        expected: 1
-      - expression: "length(skipped_field_ids)"
-        operator: equals
-        expected: 1
+      - expression: "confirmed_field_ids"
+        operator: contains
+        expected: "f-001"
+      - expression: "confirmed_field_ids"
+        operator: contains
+        expected: "f-002"
+      - expression: "corrected_field_ids"
+        operator: contains
+        expected: "f-003"
+      - expression: "skipped_field_ids"
+        operator: contains
+        expected: "f-004"
     weight: 2.5
     pass_threshold: 1.0
