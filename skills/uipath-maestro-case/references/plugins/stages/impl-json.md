@@ -145,7 +145,7 @@ Same as regular v20 (no layout fields), with `type: "case-management:ExceptionSt
 
 ## Semantic position
 
-The new node is added to the top-level `schema.nodes` array. Append or prepend — both are valid for the frontend. Append is preferred for simpler diffing.
+The new node is added to the top-level `nodes` array. Append or prepend — both are valid for the frontend. Append is preferred for simpler diffing.
 
 ## Post-write validation
 
