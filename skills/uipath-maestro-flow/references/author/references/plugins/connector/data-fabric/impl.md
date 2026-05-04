@@ -1,15 +1,62 @@
-# Data Fabric Activity Nodes — Implementation
+# Data Fabric Activity Nodes
 
-Step-by-step guide for building Data Fabric connector nodes in a `.flow` file.
+Data Fabric connector nodes (`uipath-uipath-dataservice`) give a Flow direct read/write access to UiPath Data Fabric entities via an Integration Service connection. For the standard IS connector workflow, see [parent connector impl.md](../impl.md).
 
-- For activity selection, entity discovery: [planning.md](planning.md)
-- For the standard IS connector workflow: [connector/impl.md](../impl.md)
+---
+
+## Activity Selection
+
+| User says | Activity | Node type suffix |
+|---|---|---|
+| "query" / "list" / "search" / "find records" | Query Entity Records | `query-entity-records` |
+| "create" / "insert" / "add a record" | Create Entity Record | `create-entity-record` |
+| "update" / "modify" / "edit field" | Update Entity Record | `update-entity-record` |
+| "delete" / "remove" | Delete Entity Record | `delete-entity-record` |
+| "get by id" / "fetch one record" | Get Entity Record by ID | `get-entity-record-by-id` |
+
+"Get all records matching X" → Query. "Get the record with ID Y" → Get by ID.
+
+---
+
+## Pre-Build Checklist
+
+**1. Entity name** — `uip df entities list --native-only`. Use the exact CamelCase `Name` (e.g. `BankDetails`). For Create/Update, also `uip df entities get <entity-ID>` for field names — skip system fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`).
+
+**2. Connection** — Per [parent planning.md § Check Connector Connections](../planning.md#check-connector-connections), filter by `ConnectorKey = "uipath-uipath-dataservice"`. Capture `Id` (→ `connectionId`), `FolderKey`, and `Name` (→ binding name).
+
+**3. Project name** — use what the user specifies; suggest `<EntityName>Flow` if they don't provide one.
+
+---
+
+## Activity Parameter Defaults
+
+| Activity | Defaults |
+|---|---|
+| Query Entity Records | `start=0`, `limit=100`, `expansionLevel="3"`, `isAscending=false` |
+| Create / Update / GetById | `expansionLevel="3"` |
+| Delete | _(none)_ |
+
+No body fields provided for Create → ask the user (field names are entity-specific). `expansionLevel` is always a **string** `"3"`, not a number.
+
+**Paging:** To retrieve more than `limit=100` records, increment `start` by `limit` on each pass (e.g. `start=0`, then `start=100`, etc.) and repeat the Query node until the result count is less than `limit`. Use a Script node to accumulate results across pages.
+
+---
+
+## CEQL Filter Reference
+
+Data Fabric Query passes a **raw CEQL string** under `queryParameters.queryExpression` — not the structured filter tree used by other connectors. For full operator syntax (`=`, `>`, `LIKE`, `IS NULL`, `AND` / `OR`), see [uipath-platform — Filter Trees (CEQL)](../../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+
+| Pattern | Example |
+|---|---|
+| Equality | `AccountNumber = '788'` |
+| AND / Compare | `BankName = 'HDFC' AND Amount > 1000` |
+| Contains | `AccountHolderName LIKE '%Kumar%'` |
 
 ---
 
 ## Step 1 — Resolve the Connection
 
-Run `uip is connections list --output json` — filter for `ConnectorKey = "uipath-uipath-dataservice"` and `State = "Enabled"`. Capture `Id` (→ `<connectionId>`), `FolderKey` (→ `<folderKey>`), and `Name` (→ `<IS connection Name>`). See [connector/impl.md](../impl.md) Step 1 for full connection selection rules, ping verification, and recovery steps.
+Per [parent impl.md § Step 1](../impl.md#step-1--fetch-and-bind-a-connection), filter by `ConnectorKey = "uipath-uipath-dataservice"`. Capture `Id` (→ `<connectionId>`), `FolderKey` (→ `<folderKey>`), and `Name` (→ `<IS connection Name>`).
 
 ---
 
@@ -25,42 +72,18 @@ Use the exact CamelCase `Name` (e.g. `BankDetails`). For Create/Update, also run
 
 ## Step 3 — Set Up the Flow File
 
-Add these to your `.flow` file:
+Author the standard top-level `bindings[]` pair (`ConnectionId` + `FolderKey`) per [parent impl.md § Authoring top-level `bindings[]`](../impl.md#authoring-top-level-bindings). Data Fabric specifics:
 
-**1. `runtime: "maestro"` at the flow root** — required or the flow will not execute.
+- Connection binding `name` = the IS connection display name (not the `<CONNECTOR_KEY> connection` placeholder), since `node configure` is run with this value pre-resolved.
+- Both bindings share the same `resourceKey` = `<connectionId>`.
 
-**2. `bindings[]`** — use the actual IS connection display name (from `uip is connections list`), not a connector-key placeholder:
-
-```json
-"bindings": [
-  {
-    "id": "bDFConn",
-    "name": "<IS connection Name>",
-    "type": "string",
-    "resource": "Connection",
-    "resourceKey": "<connectionId>",
-    "default": "<connectionId>",
-    "propertyAttribute": "ConnectionId"
-  },
-  {
-    "id": "bDFFolder",
-    "name": "FolderKey",
-    "type": "string",
-    "resource": "Connection",
-    "resourceKey": "<connectionId>",
-    "default": "<folderKey>",
-    "propertyAttribute": "FolderKey"
-  }
-]
-```
-
-> For resolution mechanics and why these entries are required, see [flow-file-format.md — Bindings](../../../flow-file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
-
-**3. `definitions[]`** — add one entry per activity type used. Copy the complete entry from the Definitions Templates section below.
+Add one `definitions[]` entry per activity type used — copy the complete entry from the Definitions Templates section below. The `form` block is required ([parent impl.md § Critical: Connector Definition Must Include `form`](../impl.md#critical-connector-definition-must-include-form)).
 
 ---
 
 ## Step 4 — Create `bindings_v2.json`
+
+> **Data Fabric exception to [parent impl.md § Bindings](../impl.md#bindings--top-level-flow-bindings).** The parent guide says `bindings_v2.json` is regenerated from top-level `bindings[]` and must never be hand-edited. For Data Fabric Maestro Flow projects this regeneration does not happen — Studio Web returns 500 on designer load if `bindings_v2.json` is missing or shaped differently from the block below. Author it by hand using the exact format here.
 
 Create this file manually alongside the `.flow` file.
 
@@ -101,55 +124,36 @@ Create `resources/solution_folder/connection/uipath-uipath-dataservice/<IS conne
 
 ## Step 6 — Write Connector Nodes
 
-`uip maestro flow node add` fails for `uipath.connector.*` types — write nodes directly into the `.flow` JSON using the templates below.
+Write nodes directly into the `.flow` JSON using the templates below — `uip maestro flow node add` does not support `uipath.connector.*` types.
 
-For each node:
-- Set `connectionId`, `connectionResourceId` (same value), `connectionFolderKey`, `pathParameters.entityName`, and `bodyParameters`/`queryParameters` as needed.
-- Copy the `configuration` string verbatim from the templates, replacing only `<EntityName>`.
+For each node, set `connectionId`, `connectionResourceId` (same value), `connectionFolderKey`, `pathParameters.entityName`, and `bodyParameters`/`queryParameters` as needed. Copy the `configuration` string verbatim from the templates, replacing only `<EntityName>`.
 
-### Setting Field Values
+For wiring upstream node outputs (`=js:$vars.<sourceNodeId>.output.<field>`), see [parent impl.md § Step 5b](../impl.md#step-5b--wire-outputs-from-previous-nodes). Data Fabric specifics:
 
-| Value type | Example |
-|---|---|
-| Static string | `"BankName": "HDFC Bank"` |
-| Previous node output (single record) | `"recordId": "=js:$vars.<sourceNodeId>.output.Id"` |
-| Array element (query result) | `"recordId": "=js:$vars.<sourceNodeId>.output[0].Id"` |
-| CEQL filter | `"queryExpression": "<FilterExpression>"` (e.g. `"FieldName = 'value' AND OtherField > 10"`) |
-
-`expansionLevel` is always string `"3"`. Static values and CEQL expressions do not use `=js:`. Variable references always do.
+- `expansionLevel` is always string `"3"`, never a number.
+- `queryExpression` is a raw CEQL string — no `=js:` prefix (e.g., `"queryExpression": "FieldName = 'value' AND OtherField > 10"`).
 
 ---
 
 ## Step 7 — Run `node configure` and Restore Configuration
 
-See [connector/impl.md](../impl.md) Step 6 for full `node configure` mechanics. Run it on each connector node from inside the solution directory:
+Run `uip maestro flow node configure` on each connector node per [parent impl.md § Step 6](../impl.md#step-6--configure-the-node). Use `method` and `endpoint` from the Activity Reference table below; pass `pathParameters.entityName` and any activity-specific `queryParameters`/`bodyParameters` in `--detail`.
 
-```bash
-uip maestro flow node configure <ProjectName>/<ProjectName>.flow <nodeId> \
-  --detail '{"connectionId":"<id>","folderKey":"<key>","method":"<METHOD>","endpoint":"<endpoint>","pathParameters":{"entityName":"<EntityName>"},"queryParameters":{...}}' \
-  --output json
-```
-
-`node configure` resets `customFieldsRequestDetails` to `null` in the `configuration` string. After running it, restore the correct `configuration` string on all nodes except Delete using the exact strings from the Configuration Strings section. Delete is the only node where `customFieldsRequestDetails: null` is correct.
+> **Data Fabric quirk — restore `configuration` after configure.** `node configure` resets `customFieldsRequestDetails` to `null` in the `configuration` string. Restore the correct `configuration` string on **every node except Delete** using the exact strings from the Configuration Strings section below. Delete is the only activity where `customFieldsRequestDetails: null` is correct.
 
 ---
 
-## `inputs.detail` — Field Reference
+## `inputs.detail` — Data Fabric Specifics
 
-| Field | Notes |
+For the full set of `inputs.detail` fields populated by `node configure`, see [parent impl.md § How Connector Nodes Differ from OOTB](../impl.md#how-connector-nodes-differ-from-ootb). Data Fabric–specific values:
+
+| Field | Value |
 |---|---|
 | `connector` | Always `"uipath-uipath-dataservice"` |
-| `connectionId` | UUID from `uip is connections list` |
-| `connectionResourceId` | Same UUID as `connectionId` — both required |
-| `connectionFolderKey` | Folder UUID from `uip is connections list` |
-| `method` | HTTP method — see activity table below |
-| `endpoint` | API path — see activity table below |
-| `pathParameters` | `{ "entityName": "<CamelCaseEntityName>" }` |
-| `queryParameters` | Activity-specific — `expansionLevel` is always string `"3"`, not number |
+| `connectionResourceId` | Same UUID as `connectionId` — both required (Data Fabric requires both) |
+| `pathParameters` | `{ "entityName": "<CamelCaseEntityName>" }` — every Data Fabric activity uses this |
 | `bodyParameters` | Required for Create/Update; omit for Query/Delete/GetById |
-| `uiPathActivityTypeId` | Fixed UUID per activity — see table below |
-| `errorState` | Always `{ "issues": [] }` |
-| `telemetryData` | Connector telemetry object — see activity table below |
+| `method` / `endpoint` / `uiPathActivityTypeId` / `telemetryData` | Per-activity values — see Activity Reference table below |
 | `configuration` | `=jsonString:{...}` — see Configuration Strings section below |
 
 ### Activity Reference
