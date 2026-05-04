@@ -43,15 +43,6 @@ initial_prompt: |
   Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "rca_field_direction": "<direction value used for the RCA text field>",
-    "rca_field_has_binding": true,
-    "rca_access_path": "<$vars path used in downstream script>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
@@ -88,21 +79,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms inOut direction and correct access path"
-    path: "report.json"
-    assertions:
-      - expression: "rca_field_direction"
-        operator: equals
-        expected: "inOut"
-      - expression: "rca_field_has_binding"
-        operator: equals
-        expected: true
-      - expression: "rca_access_path"
-        operator: contains
-        expected: ".output."
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 0.75

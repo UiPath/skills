@@ -27,7 +27,7 @@ initial_prompt: |
   The HITL node must use the inline quickform style (uipath.human-in-the-loop).
   Show the finance manager the relevant invoice fields, give them Approve and
   Reject outcomes, and wire the completed handle to the downstream SAP step.
-  Use $vars.<hitl-node-id>.result downstream to access the manager's decision.
+  Use $vars.<hitl-node-id>.output downstream to access the manager's decision.
 
   Validate the flow when you're done.
 
@@ -72,9 +72,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Downstream step references $vars.<hitl-node-id>.result"
+    description: "Downstream step references $vars.<hitl-node-id>.output"
     path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    pattern: '\$vars\.[A-Za-z0-9_-]+\.result'
+    pattern: '\$vars\.[A-Za-z0-9_-]+\.output'
     weight: 1.5
     pass_threshold: 1.0
 

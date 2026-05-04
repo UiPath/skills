@@ -28,9 +28,8 @@ initial_prompt: |
 
   The HITL node must use the inline quickform style (uipath.human-in-the-loop).
   Give the privacy officer Approve and Reject outcomes. Configure the node
-  with a 7-day ISO 8601 timeout (e.g. "P7D") and wire the timeout handle
-  separately from the completed handle so the escalation path is reachable
-  on timeout.
+  with a 7-day ISO 8601 timeout duration (e.g. "P7D") so the request
+  expires automatically if the officer does not respond.
 
   Validate the flow when you're done.
 
@@ -59,11 +58,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow wires the completed and timeout handles"
+    description: "Flow wires the completed handle"
     path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
       - '"completed"'
-      - '"timeout"'
     weight: 2.0
     pass_threshold: 1.0
 

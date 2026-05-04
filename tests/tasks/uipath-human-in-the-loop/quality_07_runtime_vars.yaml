@@ -19,8 +19,10 @@ initial_prompt: |
   2. A HITL node (label: "Review Decision")
   3. A script node after HITL that reads the human's decision and logs it
 
-  The script node must use the HITL runtime variables to access the result.
-  Wire the completed handle to the script node. Validate the flow.
+  The script node must read the reviewer's decision via the HITL output
+  runtime variable ($vars.<nodeId>.output) and ALSO check the completion
+  status via the status runtime variable ($vars.<nodeId>.status). Wire the
+  completed handle to the script node. Validate the flow.
 
 success_criteria:
   - type: file_contains
@@ -37,5 +39,19 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Downstream script references the HITL output runtime variable"
+    path: "ReviewAndRoute/ReviewAndRoute/ReviewAndRoute.flow"
+    pattern: '\$vars\.[A-Za-z0-9_-]+\.output'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Downstream script references the HITL status runtime variable"
+    path: "ReviewAndRoute/ReviewAndRoute/ReviewAndRoute.flow"
+    pattern: '\$vars\.[A-Za-z0-9_-]+\.status'
+    weight: 2.0
     pass_threshold: 1.0
 

@@ -38,14 +38,6 @@ initial_prompt: |
   Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "approved_access_path": "<full path used to read approved field>",
-    "comments_access_path": "<full path used to read comments field>",
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
@@ -96,18 +88,3 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json access paths use field IDs not variable names"
-    path: "report.json"
-    assertions:
-      - expression: "approved_access_path"
-        operator: contains
-        expected: ".output.approved"
-      - expression: "comments_access_path"
-        operator: contains
-        expected: ".output.reviewcomments"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 0.75

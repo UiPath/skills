@@ -45,15 +45,6 @@ initial_prompt: |
   Output fields must NOT have a binding property.
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "supplier_name_binding": "<full binding expression used>",
-    "risk_score_binding": "<full binding expression used>",
-    "approved_has_binding": false,
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
@@ -100,21 +91,3 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms bindings and approved has no binding"
-    path: "report.json"
-    assertions:
-      - expression: "supplier_name_binding"
-        operator: contains
-        expected: "=js:$vars."
-      - expression: "supplier_name_binding"
-        operator: contains
-        expected: "fetchSupplier"
-      - expression: "approved_has_binding"
-        operator: equals
-        expected: false
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 0.75
