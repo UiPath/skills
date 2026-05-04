@@ -26,9 +26,9 @@ Each entry returns:
 | Field | Use as |
 |-------|--------|
 | `Key` | release Key (GUID) — used as `referenceKey` in the agent resource |
-| `Name` | process display name. Refresh resolves processes by name only, so pick a name that is unique in the tenant; when multiple processes share a name across folders, refresh imports the first RCS match. |
+| `Name` | process display name → agent resource `properties.processName` and binding `name` |
 | `Type` | maps 1:1 to the agent resource `type`: `"process"` / `"agent"` / `"api"` / `"processOrchestration"`. `"webApp"` entries are not runnable process tools — use the [escalation capability](../escalation/escalation.md) instead. |
-| `Folder` | fully-qualified folder path |
+| `Folder` | fully-qualified folder path → agent resource `properties.folderPath` (literal, e.g. `"Shared/Sales"`) and binding `folderPath`. Refresh uses `(name, folderPath)` jointly to look up RCS, so pasting the exact `Folder` string here also disambiguates same-named processes deployed in different folders. |
 | `FolderKey` | folder GUID — use as `X-UIPATH-FolderKey` header in steps 2-3 |
 
 ### 2. Get ProcessKey + ProcessVersion + FeedId via Releases API
@@ -90,7 +90,7 @@ Extract from response (take first entry):
   },
   "properties": {
     "processName": "MyProcess",
-    "folderPath": "solution_folder",  // Always "solution_folder" — for both solution-internal and external
+    "folderPath": "Shared/Sales",     // External: literal Folder from `uip solution resource list`. Solution-internal: "solution_folder".
     "exampleCalls": []                // Required for external tools
   },
   "id": "<uuid>",              // Stable; generate once, never change
@@ -132,17 +132,16 @@ Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON 
 uip solution resource list --kind Process --source remote --search "<TOOL_NAME>" --output json
 # Each entry returns:
 #   Key       → release Key (GUID) — used as referenceKey in the agent resource
-#   Name      → process display name. Refresh resolves processes by name only,
-#               so pick a name that is unique in the tenant; when multiple
-#               processes share a name across folders, refresh imports the
-#               first RCS match.
+#   Name      → process display name → properties.processName + binding name
 #   Type      → maps 1:1 to the agent resource type:
 #                  "process" → RPA (XAML)
 #                  "agent" → low-code / coded agent
 #                  "api" → API workflow
 #                  "processOrchestration" → agentic process
 #                  "webApp" → skip; use the escalation capability (App kind)
-#   Folder    → fully-qualified folder path
+#   Folder    → literal folder path → properties.folderPath + binding folderPath.
+#               Refresh uses (name, folderPath) jointly to look up RCS, so the exact
+#               Folder string here disambiguates same-named processes in different folders.
 #   FolderKey → folder GUID — use as X-UIPATH-FolderKey header in steps 3-4
 
 # 3. Query Releases API for ProcessKey, ProcessVersion, FeedId, and raw .NET arg schemas (RPA only)
@@ -170,7 +169,7 @@ Then create the agent-level resource file:
 
 **Agent-level resource** — `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json`
 
-Set `"location": "external"`, `"type"` directly from `resource list`'s `Type` field (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath": "solution_folder"`, `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See § Tool resource.json Shape above for the full template.
+Set `"location": "external"`, `"type"` directly from `resource list`'s `Type` field (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath"` to the literal `Folder` string from `resource list` (e.g., `"Shared/Sales"`), `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See § Tool resource.json Shape above for the full template.
 
 ```bash
 # 5. Configure agent.json (system prompt, model, schemas)
