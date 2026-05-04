@@ -131,7 +131,7 @@ Check every field in `eventParameters.fields` where `required: true`. All requir
 
 1. Collect all required event parameter fields
 2. For each, check if the user's prompt provides a value
-3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`
+3. If any required field is missing, **ask the user** — list the missing fields with their `displayName`. Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
 
 ### Step 4b — Map trigger output fields for downstream nodes

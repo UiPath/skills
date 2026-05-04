@@ -61,7 +61,7 @@ For `uip solution publish` and the rest of the deployment workflow, see [/uipath
 ## Anti-patterns
 
 - **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures (the deployed flow can't find its connections).
-- **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. Confirm with the user before running `flow pack` + `solution publish`.
+- **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. When the target is ambiguous, confirm via `AskUserQuestion` with **Studio Web upload** / **Orchestrator deploy** / **Something else** as options before running `flow pack` + `solution publish`. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
 - **Never publish a flow that hasn't been validated and tidied.** `flow validate` catches schema errors; `flow tidy` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../../author/CAPABILITY.md).
 
 ## What's next

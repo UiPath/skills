@@ -4,13 +4,13 @@ Strategy selection and shared concepts for modifying `.flow` files. Two implemen
 
 ## Tool Selection Ladder
 
-> **Pick the lowest-numbered tool that fits the operation and is allowed by default.** Rung 4 (CLI for OOTB add/delete) is opt-in only — skip past it unless the user has explicitly requested CLI. If no rung fits, stop and ask the user. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, shell heredocs) are a last resort and require explicit user approval — see rung 5.
+> **Pick the lowest-numbered tool that fits the operation and is allowed by default.** Rung 4 (CLI for OOTB add/delete) is opt-in only — skip past it unless the user has explicitly requested CLI. If no rung fits, stop and ask the user via `AskUserQuestion`. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, shell heredocs) are a last resort and require explicit user approval — see rung 5.
 >
 > 1. **Connector / connector-trigger / inline-agent node** → `uip maestro flow node configure` (carve-out — auto-populates `inputs.detail` + `bindings_v2.json`).
 > 2. **Any other `.flow` mutation** (add/delete OOTB nodes, add/delete edges, add/edit variables, in-place value tweaks, output mapping, subflows) → `Edit`.
 > 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write`.
 > 4. **CLI alternative for OOTB add/delete** (`uip maestro flow node {add,delete}` / `edge {add,delete}` / `variable add`) → opt-in only, when the user explicitly requests CLI. Same outcome as rung 2 but with an opaque diff.
-> 5. **Anything else** → STOP and ask the user. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and only proceed after the user explicitly approves that path for this specific change.
+> 5. **Anything else** → STOP and ask the user via `AskUserQuestion`. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and present finite options — typically **Use `Edit` instead** / **Use `Write` (full rewrite)** / **Approve the script for this change** / **Cancel** / **Something else**. Only proceed after the user explicitly approves that path for this specific change. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
 
 ### Why not Python / Node / jq / sed?
 
@@ -18,7 +18,7 @@ Strategy selection and shared concepts for modifying `.flow` files. Two implemen
 - `Edit` shows a line-by-line diff in the transcript; a script is an opaque payload. The user reviews tool calls, not script bodies.
 - `Edit` calls are atomic per-call. A coordinated multi-section change is *not* one transaction — it's a sequence of `Edit` calls the user can interrupt between. Treating it as a single Python script removes that interruption point.
 
-If the change feels too tangled for a sequence of `Edit` calls, use `Write` for the whole file or stop and ask the user — see the `Edit`/`Write` recipes in [editing-operations-json.md](editing-operations-json.md) and the SKILL.md rule on forbidden tools.
+If the change feels too tangled for a sequence of `Edit` calls, use `Write` for the whole file or stop and ask the user via `AskUserQuestion` (see rung 5 above) — see the `Edit`/`Write` recipes in [editing-operations-json.md](editing-operations-json.md) and the SKILL.md rule on forbidden tools.
 
 ## Default Strategy
 
