@@ -94,7 +94,7 @@ If any quantitative threshold breached → §Soft redirect.
 
 ### Round 3 — Registry resolution
 
-For each task in `sdd.draft.md`, search the matching cache file under `~/.uipcli/case-resources/` by name keywords. Filename varies by component type — common cases:
+For each task in `sdd.draft.md`, search the matching cache file under `~/.uip/case-resources/` by name keywords. Filename varies by component type — common cases:
 
 - `process-index.json`, `agent-index.json`, `api-index.json`, `processOrchestration-index.json`, `caseManagement-index.json` — `<type>-index.json` shape
 - `action-apps-index.json` — kebab + plural for HITL action apps

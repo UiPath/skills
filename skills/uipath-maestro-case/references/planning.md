@@ -48,7 +48,7 @@ uip login status --output json
 uip maestro case registry pull
 ```
 
-If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uipcli/case-resources/` so subsequent searches are local disk lookups.
+If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 ## Step 2 — Locate and parse the design document
 

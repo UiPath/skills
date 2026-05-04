@@ -10,7 +10,7 @@ During sdd.md → task.md interpretation, when you need to determine:
 
 ## Prerequisites
 
-Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uipcli/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
+Run `uip maestro case registry pull` before any lookups. This populates the local cache at `~/.uip/case-resources/`. All subsequent discovery is done by reading these cache files directly — **do not** rely on `uip maestro case registry search` as the primary discovery method. See the "CLI Search Gaps" section below for the reason.
 
 > **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). The Rule 17 / § MUST-Confirm-Before-Skeleton-Fallback gate only applies to **empty matches inside an existing cache**; a missing file is a precondition failure, not a 0-result lookup. If the file is still absent after a successful pull, the tenant has no resources of that type — proceed to skeleton.
 
@@ -48,7 +48,7 @@ Options:
 
 ## Cache File Index
 
-Each resource type has a `<type>-index.json` file at `~/.uipcli/case-resources/`:
+Each resource type has a `<type>-index.json` file at `~/.uip/case-resources/`:
 
 | File | Identifier field | Name field | Folder field |
 |------|-----------------|------------|--------------|
@@ -92,7 +92,7 @@ For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache look
 For each task in the sdd.md, extract the **name** and **folder path** from the Process References table, then filter the cache file:
 
 ```bash
-cat ~/.uipcli/case-resources/<type>-index.json | python3 -c "
+cat ~/.uip/case-resources/<type>-index.json | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 for item in data:

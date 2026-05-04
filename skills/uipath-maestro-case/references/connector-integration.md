@@ -13,7 +13,7 @@ Consult this reference when planning or implementing any of:
 ## Prerequisites
 
 1. `uip login` — tenant-scoped connectors are only visible after authentication.
-2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uipcli/case-resources/`.
+2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
 3. A healthy Integration Service connection must exist for the connector. If `Connections` is empty after `get-connection`, the user must create one in IS before proceeding.
 
 ## Three-Step Resolution Pipeline

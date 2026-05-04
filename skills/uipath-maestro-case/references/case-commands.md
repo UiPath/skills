@@ -210,7 +210,7 @@ Options for `get`:
 
 Output: `{ MatchCount, Resources: [{ ResourceType, Resource }] }`.
 
-Cache lives at `~/.uipcli/case-resources/` and expires after 30 minutes.
+Cache lives at `~/.uip/case-resources/` and expires after 30 minutes.
 
 ### uip maestro case registry get-connector
 
