@@ -2,12 +2,12 @@ task_id: skill-ixp-confirm-predictions-smoke
 description: >
   Skill-guided evaluation: agent reviews IXP model predictions against an
   inline document excerpt and records its verdict via `uip ixp labellings
-  confirm`. Tests Critical Rule #11 (agent reviews predictions, never
-  extracts values manually) and Rule #8 (confirm correct fields via
-  `--fields`; skip wrong-field predictions WITHOUT using `--corrections`
-  — that flag is reserved for OCR-mangled values where the model picked
-  the right region but rendered it wrong, not for cases where the model
-  picked the wrong value entirely).
+  confirm`. Exercises all three branches of Critical Rule #8:
+  cleanly-correct fields are confirmed via `--fields`; OCR-mangled fields
+  (right region, wrong text) are corrected via `--corrections`; and
+  wrong-field predictions (model picked the wrong value entirely) are
+  left unannotated. Also tests Rule #11 (agent reviews predictions,
+  never extracts values manually).
 
   Platform note: the smoke test runs without an authenticated tenant, so
   `uip ixp` commands that hit the service will fail with an auth error.
@@ -34,10 +34,11 @@ initial_prompt: |
   IXP model predictions:
   - Invoice Number (field id `f-001`): `INV-2025-0042`
   - Invoice Date (field id `f-002`): `2025-01-15`
-  - Vendor Name (field id `f-003`): `Acme Corp`
+  - Total Amount (field id `f-003`): `$1,200.00`
+    (the model located the Total line but the OCR mis-read the digits)
+  - Vendor Name (field id `f-004`): `Acme Corp`
 
-  Compare each prediction to the document and decide which to confirm
-  and which to leave unannotated.
+  Compare each prediction to the document and record your verdict.
 
   Save a summary to report.json in the current working directory with at
   minimum:
@@ -45,8 +46,9 @@ initial_prompt: |
       "project_name": "my_invoices-f1afa9ef-ixp",
       "document_id": "doc-abc-123",
       "confirm_command": "<exact uip ixp labellings confirm command you ran>",
-      "confirmed_field_ids": ["<field IDs you confirmed>"],
-      "skipped_field_ids": ["<field IDs you left unannotated>"],
+      "confirmed_field_ids": ["<field IDs confirmed via --fields>"],
+      "corrected_field_ids": ["<field IDs corrected via --corrections>"],
+      "skipped_field_ids": ["<field IDs left unannotated>"],
       "commands_used": ["<list of uip commands you attempted>"]
     }
 
@@ -63,7 +65,15 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?\s+.*--fields'
     min_count: 1
-    weight: 2.5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --corrections with the OCR-mangled field's corrected value"
+    tool_name: "Bash"
+    command_pattern: '--corrections\s+.*f-003.*\$?12,?000\.00'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -81,25 +91,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Confirm command lists only the correct field IDs"
+    description: "Confirm command confirms cleanly-correct fields and corrects the OCR-mangled one"
     path: "report.json"
     includes:
       - "f-001"
       - "f-002"
-    excludes:
+      - "f-003"
+      - "12,000.00"
       - "--corrections"
     weight: 2.0
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent confirmed only the two correct fields and skipped the wrong one"
+    description: "Agent split the four predictions into 2 confirmed, 1 corrected, 1 skipped"
     path: "report.json"
     assertions:
       - expression: "length(confirmed_field_ids)"
         operator: equals
         expected: 2
-      - expression: "length(skipped_field_ids)"
-        operator: gte
+      - expression: "length(corrected_field_ids)"
+        operator: equals
         expected: 1
-    weight: 2.0
+      - expression: "length(skipped_field_ids)"
+        operator: equals
+        expected: 1
+    weight: 2.5
     pass_threshold: 1.0
