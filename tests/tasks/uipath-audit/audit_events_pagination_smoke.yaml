@@ -1,0 +1,99 @@
+task_id: skill-audit-events-pagination-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-audit skill to query
+  audit events with a bounded time window and a >200 limit, exercising
+  the skill's pagination rule. The CLI tool paginates internally for
+  --limit > 200 (server-side maxCount cap), so the agent should pass
+  --limit, NOT roll its own cursor loop with --before / --before-id.
+
+  Platform note: commands fail with auth errors in this environment;
+  what matters is the agent's CLI invocation pattern.
+tags: [uipath-audit, smoke, events, pagination]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A compliance reviewer wants the 500 most recent tenant audit events
+  from the last 30 days. Use the uipath-audit skill.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "events_command": "<exact uip admin audit events command you ran>",
+      "from": "<the --from-date value you passed>",
+      "to": "<the --to-date value you passed>",
+      "limit": <the --limit value you passed, as a number>,
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant.
+    Commands will fail with auth errors — that is expected. Do NOT retry
+    or attempt to login.
+  - Use --output json on every uip admin audit command.
+  - The skill teaches that the CLI handles >200 internally — pass
+    --limit 500, do NOT loop manually on --from-date/--to-date or chase cursors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant events` with both --from-date and --to-date ISO 8601 bounds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\d{4}-\d{2}-\d{2}.*--to-date\s+\d{4}-\d{2}-\d{2}'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --limit 500 (or any value > 200) — single call, not a manual loop"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--limit\s+(?:[2-9]\d{2,}|[1-9]\d{3,})'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the events call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json must NOT show a manual loop on --from-date/--to-date or any cursor flag (CLI handles pagination internally)"
+    path: "report.json"
+    excludes:
+      - "--before "
+      - "--after "
+      - "--before-id"
+      - "--after-id"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has the expected shape with a >200 limit"
+    path: "report.json"
+    assertions:
+      - expression: "limit"
+        operator: gte
+        expected: 201
+      - expression: "length(events_command)"
+        operator: gte
+        expected: 20
+      - expression: "length(from)"
+        operator: gte
+        expected: 8
+      - expression: "length(to)"
+        operator: gte
+        expected: 8
+    weight: 1.5
+    pass_threshold: 0.75

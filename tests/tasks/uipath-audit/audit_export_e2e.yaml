@@ -1,0 +1,133 @@
+task_id: skill-audit-export-e2e
+description: >
+  End-to-end skill-guided evaluation: agent uses the uipath-audit skill
+  to drive a complete investigation — discover sources, query events
+  in a window, then export the same window to a ZIP. Validates the
+  full sources → events → export chain plus the export's required
+  --from-date / --to-date / --output-file flags.
+
+  Platform note: commands fail with auth errors in this environment.
+  E2e tests still validate the CLI invocation surface — the agent must
+  produce the right command sequence with the right flags.
+tags: [uipath-audit, e2e, export]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  A security reviewer needs the full audit history for the last 7 days
+  on the active tenant. They want to:
+
+    1. See what audit event sources are visible (so they know what's
+       being captured).
+    2. Get a quick preview of the most recent events for context.
+    3. Get the entire 7-day window as a ZIP for offline review.
+
+  Use the uipath-audit skill end-to-end. Output the ZIP to
+  ./audit-last-7d.zip in the current working directory.
+
+  Save a summary to report.json with at minimum:
+    {
+      "sources_command":  "<uip admin audit tenant sources ... command>",
+      "events_command":   "<uip admin audit tenant events ... command>",
+      "export_command":   "<uip admin audit tenant export ... command>",
+      "export_output_file": "<the --output-file value you passed>",
+      "export_from":      "<the --from-date value>",
+      "export_to":        "<the --to-date value>",
+      "commands_used":    ["<every uip command you attempted>"]
+    }
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-audit skill and follow its workflow.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant.
+    Commands will fail with auth errors — that is expected. Run each
+    command once, record the result in report.json, and continue. Do
+    NOT retry or attempt to login.
+  - Use --output json on sources and events. (export does not need it
+    for the data — only the metadata envelope is JSON.)
+
+success_criteria:
+  # 1. sources discovery happened first
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant sources` (discovery before query)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # 2. events query with a bounded window
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant events` with --from-date and --to-date ISO bounds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\d{4}-\d{2}-\d{2}.*--to-date\s+\d{4}-\d{2}-\d{2}'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # 3. export with both required bounds AND --output-file
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\d{4}-\d{2}-\d{2}.*--to-date\s+\d{4}-\d{2}-\d{2}.*--output-file\s+\S+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # 4. export written to the requested path
+  - type: command_executed
+    description: "Agent's export targeted ./audit-last-7d.zip"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\.?/?audit-last-7d\.zip'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # 5. report.json produced
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json shows the full sources → events → export chain"
+    path: "report.json"
+    includes:
+      - "uip admin audit tenant sources"
+      - "uip admin audit tenant events"
+      - "uip admin audit tenant export"
+    excludes:
+      - "uip admin aops-policy"
+      - "uip audit "
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures the export bounds and output path"
+    path: "report.json"
+    assertions:
+      - expression: "export_output_file"
+        operator: contains
+        expected: "audit-last-7d.zip"
+      - expression: "length(export_from)"
+        operator: gte
+        expected: 8
+      - expression: "length(export_to)"
+        operator: gte
+        expected: 8
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 3
+    weight: 1.5
+    pass_threshold: 0.75

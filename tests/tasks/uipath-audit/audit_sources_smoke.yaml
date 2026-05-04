@@ -1,0 +1,90 @@
+task_id: skill-audit-sources-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-audit skill to list audit
+  event sources at both org and tenant scopes. Tests whether the skill
+  teaches the correct CLI namespace (`uip admin audit <scope> sources`,
+  not legacy alternatives), the `--output json` convention, and the
+  scope-discipline rule (org vs tenant basePath).
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip admin audit` commands that hit the service will fail with an auth
+  error. That is acceptable — what matters is that the agent invokes the
+  correct commands with the correct flags.
+tags: [uipath-audit, smoke, sources]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  An admin wants to discover what kinds of audit events are visible at
+  each scope (organization-level and tenant-level) before drilling in.
+  Use the uipath-audit skill to fetch the source catalog at BOTH scopes.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "org_sources_command": "<exact uip admin audit org sources command you ran>",
+      "tenant_sources_command": "<exact uip admin audit tenant sources command you ran>",
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in
+    this environment. Commands will fail with auth errors — that is
+    expected. Run each command once, record the result in report.json,
+    and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip admin audit command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip admin audit org sources` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip admin audit tenant sources` with --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references both scopes and avoids legacy `uip admin aops-policy` / hand-rolled `--scope` flags"
+    path: "report.json"
+    includes:
+      - "uip admin audit org sources"
+      - "uip admin audit tenant sources"
+    excludes:
+      - "uip admin aops-policy"
+      - "uip admin audit --scope"
+      - "uip audit"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json has the expected shape"
+    path: "report.json"
+    assertions:
+      - expression: "length(org_sources_command)"
+        operator: gte
+        expected: 10
+      - expression: "length(tenant_sources_command)"
+        operator: gte
+        expected: 10
+      - expression: "length(commands_used)"
+        operator: gte
+        expected: 2
+    weight: 1.0
+    pass_threshold: 0.75

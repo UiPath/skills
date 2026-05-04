@@ -6,6 +6,15 @@
 
 set -e
 
+# Opt-out for contributors developing CLI features against a `bun link`'d
+# workspace binary — the published @uipath/cli on npm doesn't yet have
+# their unmerged commands, and re-installing it every session clobbers
+# the workspace link.
+if [ -n "$SKIP_UIP_AUTO_INSTALL" ]; then
+  echo "SKIP_UIP_AUTO_INSTALL is set; skipping global install of @uipath/cli + @uipath/rpa-tool." >&2
+  exit 0
+fi
+
 # ── helpers ──────────────────────────────────────────────────────────
 fail() {
   echo "$1" >&2
