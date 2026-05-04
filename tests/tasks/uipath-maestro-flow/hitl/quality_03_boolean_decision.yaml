@@ -25,7 +25,7 @@ initial_prompt: |
        - Sees (read-only): vendor name, credit score
        - Fills in: approved (boolean, required), risk_notes (text, optional)
        - Outcomes: Approve (primary), Reject
-  4. Decision node — branches on the `approved` boolean from the HITL result:
+  4. Decision node — branches on the `approved` boolean from the HITL output:
        - true  → Script node that logs "Vendor onboarded" → End
        - false → Script node that logs "Vendor rejected" → End
 
