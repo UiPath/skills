@@ -14,14 +14,28 @@ initial_prompt: |
   enriches the missing vendor and cost-center fields using company data, and
   writes the corrected records back to SAP.
 
-  Analyze whether this flow needs any human checkpoints. Write a
-  recommendation.json file with:
+  Analyze whether this flow needs any human checkpoints. If yes, identify
+  which canonical HITL pattern from the `uipath-human-in-the-loop` skill
+  applies. The skill's `references/hitl-patterns.md` enumerates six
+  canonical patterns; pick exactly one and emit its machine name verbatim.
+
+  Write a `recommendation.json` file with this exact shape:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<pattern name if applicable>",
+    "pattern": "<one of the canonical pattern names listed below>",
     "reason": "<why HITL is or is not needed>",
     "proposed_insertion_point": "<where in the flow>"
   }
+
+  Use EXACTLY one of these machine names for `pattern` (lowercase,
+  hyphenated, no extra adjectives or prefixes — names mirror the
+  section titles in `references/hitl-patterns.md`):
+    - approval-gate
+    - exception-escalation
+    - data-enrichment
+    - compliance-checkpoint
+    - write-back-validation
+    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -39,17 +53,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent named a write-back / validation / enrichment pattern (any one, case-tolerant)"
+    description: >
+      Agent picked a canonical HITL pattern that fits an "AI enriches data,
+      writes it back to a system of record" scenario. Write-back-validation
+      (HITL before write to system of record), data-enrichment (HITL fills
+      / validates incomplete data), and agentic-output-review (human
+      verifies AI output before downstream use) are all documented in
+      `references/hitl-patterns.md` as applicable here.
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
-        operator: contains
-        expected: "rite"
-      - expression: "pattern"
-        operator: contains
-        expected: "alid"
-      - expression: "pattern"
-        operator: contains
-        expected: "nrich"
+        operator: regex
+        expected: "^(write-back-validation|data-enrichment|agentic-output-review)$"
     weight: 1.5
-    pass_threshold: 0.33
+    pass_threshold: 1.0
