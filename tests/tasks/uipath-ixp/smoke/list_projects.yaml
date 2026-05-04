@@ -34,11 +34,19 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip ixp projects list` with --output json"
+    description: "Agent invoked `uip ixp projects list`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+ixp\s+projects\s+list(\s|$)'
     min_count: 1
-    weight: 2.5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists

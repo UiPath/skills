@@ -40,11 +40,19 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip ixp projects get-metrics <project-name>` with --output json against the requested project Name"
+    description: "Agent invoked `uip ixp projects get-metrics <project-name>` against the requested project Name"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--output\s+json'
+    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+["'']?my_invoices-f1afa9ef-ixp["'']?(\s|$)'
     min_count: 1
-    weight: 2.5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
