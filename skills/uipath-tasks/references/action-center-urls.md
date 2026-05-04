@@ -14,7 +14,7 @@ target surface; both require all four segments below.
 
 ### 1. Action Center inbox deep-link
 
-```
+```text
 https://{host}/{org}/{tenant}/orchestrator_/actions/inbox/{taskKey}
 ```
 
@@ -25,7 +25,7 @@ https://{host}/{org}/{tenant}/orchestrator_/actions/inbox/{taskKey}
 
 ### 2. Action Center standalone task URL
 
-```
+```text
 https://{host}/{org}/{tenant}/actions_/current-task/tasks/{taskId}
 ```
 
@@ -50,7 +50,7 @@ Every URL above MUST include:
 
 ## MST-9322: what NOT to produce
 
-```
+```text
 ❌ https://alpha.uipath.com/popoc/orchestrator_/actions/inbox/<taskKey>
                           ^^^^^^^
                           tenant slug missing
@@ -59,7 +59,7 @@ Every URL above MUST include:
 The portal-UI parser interprets `actions` (the next segment) as the tenant
 name, then redirects to:
 
-```
+```text
 /portal_/unregistered?serviceType=orchestrator&organizationName=popoc&tenantName=actions
 ```
 
@@ -84,6 +84,12 @@ these URLs.
 If `uip login status` reports a base URL of `https://alpha.api.uipath.com`,
 strip the `api.` prefix before building an Action Center URL.
 
+> **Note:** the table covers the four common public environments. Regional
+> (e.g. EU-specific) and private/dedicated cloud hosts may use different
+> prefixes. When in doubt, take the host from `uip login status --output
+> json` and apply the same `api.X → X` transformation; if the base URL
+> already lacks the `api.` prefix, use it verbatim.
+
 ## Agent guidance: when surfacing a task URL to the user
 
 If your skill needs to print or hand off an Action Center URL:
@@ -99,16 +105,28 @@ If your skill needs to print or hand off an Action Center URL:
 4. **Choose the form** based on the destination: inbox-with-list-context
    (`/orchestrator_/actions/inbox/{taskKey}`) vs. direct-task-view
    (`/actions_/current-task/tasks/{taskId}`).
-5. **Verify before sharing** — paste the constructed URL into a browser
-   on the same tenant and confirm it lands on the task, not on the
-   `/portal_/unregistered` page. The "Orchestrator is not enabled" page
-   is the exact MST-9322 symptom — if you see it, your URL is malformed.
+5. **Self-check before handing off** — before printing the URL, validate
+   that it matches the canonical pattern (`/orchestrator_/actions/inbox/`
+   or `/actions_/current-task/tasks/`) and that **all four segments**
+   (`{host}`, `{org}`, `{tenant}`, `{taskKey}` or `{taskId}`) are present
+   and non-empty. If any segment is missing, refuse to emit the URL and
+   tell the user which piece of context you couldn't resolve. Then hand
+   the URL off to the user for click-through verification — if they land
+   on the `/portal_/unregistered` "Orchestrator is not enabled" page,
+   that's the MST-9322 symptom and the URL is malformed (re-check `{tenant}`).
 
 ## CLI-side helpers (for tool authors)
 
 The `uip` CLI ships canonical builders in `@uipath/common`. If you're
 extending the CLI rather than constructing URLs by hand from a skill,
 import these:
+
+> **Availability:** these helpers ship in `@uipath/common` once the
+> companion CLI PR ([UiPath/cli#1565](https://github.com/UiPath/cli/pull/1565))
+> lands. If your `bun install` predates that merge, the imports below
+> will not resolve — pull a fresh `@uipath/common`, or hand-build the
+> URL following the canonical patterns above (the runtime contract is
+> identical).
 
 ```typescript
 import {
