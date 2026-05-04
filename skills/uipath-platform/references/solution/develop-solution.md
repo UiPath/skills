@@ -90,8 +90,6 @@ uip solution resource list --kind Queue --search "Invoice" --output json
 uip solution resource list --solution-folder ./InvoiceAutomation --output json
 ```
 
-> The solution path is now a `--solution-folder` flag, not a positional argument. The positional form was removed in `solution-tool@1.0.0-alpha.20260429.5761` with no backward compatibility — running it produces `error: too many arguments for 'list'. Expected 0 arguments but got 1.`
-
 | Option | Values | Default |
 |--------|--------|---------|
 | `--solution-folder <path>` | Path to solution root | Current working directory |
@@ -121,14 +119,7 @@ uip solution resource refresh --solution-folder ./InvoiceAutomation --output jso
 
 ### What `refresh` actually does
 
-> The solution path is a `--solution-folder` flag, not a positional argument. The positional form was removed in `solution-tool@1.0.0-alpha.20260429.5761` with no backward compatibility. If you see `error: too many arguments for 'refresh'. Expected 0 arguments but got 1.`, you are running an old example — switch to `--solution-folder`.
-
-> **`Result: Success` is unreliable — always check stderr.** Schema errors in `bindings_v2.json` are logged to stderr as `ERROR [ResourceBuilder:BindingsMetadataSerializer]` lines but the JSON returns `Result: Success` with `Created: 0, Imported: 0, Skipped: 0`. Treat `Created==0 && Imported==0 && Skipped==0` while bindings exist on disk as a refresh failure. Capture stderr and grep for `ERROR` before declaring success:
->
-> ```bash
-> uip solution resource refresh --solution-folder ./InvoiceAutomation --output json 2> refresh.err
-> grep -i "ERROR" refresh.err && echo "REFRESH FAILED" || echo "ok"
-> ```
+> **`Result: Success` only means the CLI executed — not that the refresh service inside it succeeded.** The underlying service can fail (e.g., schema errors in `bindings_v2.json` logged to stderr as `ERROR [ResourceBuilder:BindingsMetadataSerializer] ...`) while the JSON still returns `Result: Success` with `Created: 0, Imported: 0, Skipped: 0`. Always inspect stderr for `ERROR` lines, and treat `Created==0 && Imported==0 && Skipped==0` while bindings exist on disk as a refresh failure.
 
 ## Step 7: Upload to Studio Web
 1. **Discover bindings** — reads `bindings_v2.json` from each project (solution root copy is also read for agent projects).
@@ -276,9 +267,9 @@ If `.uipx` and `resources/solution_folder/` disagree, follow the recovery proced
 | File | Created by | Read by |
 |---|---|---|
 | `bindings.json` | `uipath init` (coded agent) | the agent at runtime |
-| `bindings_v2.json` | nothing automatically | `uip solution resource refresh` |
+| `bindings_v2.json` | `uip maestro flow new`, Maestro Case scaffold, Studio Web (mirrors agent bindings up to solution root) | `uip solution resource refresh` |
 
-Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas differ, and `resource refresh` will silently fail (see "false success" gotcha above). The `bindings_v2.json` schema is currently undocumented; hand-authoring it produces the opaque error `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. Until a worked example is published, author resource bindings inside Studio (which knows the live schema), then run `resource refresh`. If a project genuinely needs bindings that the agent must produce, surface the limitation to the user — do not invent a shape.
+Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas differ, and `resource refresh` will silently fail (see "false success" gotcha above). Naive hand-authoring or copy-paste from `bindings.json` produces the opaque error `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. When a project's tooling already manages `bindings_v2.json` (Flow / Case / agent solutions), edit through that product's commands rather than the file directly, then run `resource refresh` to reconcile.
 
 ### `resource refresh` reports false success on schema errors
 
@@ -343,7 +334,7 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `--solution-folder` defaults to cwd
 
-`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly. Older docs and examples that pass the path as a positional (`uip solution resource list ./InvoiceAutomation`) are out of date.
+`resource list / refresh / get` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
 
 ### `resource get` for cross-folder inspection
 
@@ -358,7 +349,7 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Create a fresh solution | `uip solution new <name>` | Accepts an existing empty directory; drops `.uipx` inside |
 | Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
 | Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
-| Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Note `--solution-folder` flag**, not positional. **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
+| Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
 | List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |

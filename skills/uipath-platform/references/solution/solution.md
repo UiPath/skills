@@ -25,6 +25,10 @@ MySolution/
 │   ├── bindings.json                     <- Agent runtime bindings. NOT scanned by refresh.
 │   ├── bindings_v2.json                  <- Solution refresh reads this (if it exists).
 │   └── ...
+├── <AnotherProjectName>/                 <- A solution can host many projects side-by-side.
+│   ├── project.uiproj OR project.json
+│   ├── bindings_v2.json
+│   └── ...
 ├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
 │   └── solution_folder/
 │       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `project remove`.

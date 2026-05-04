@@ -4,7 +4,7 @@ When to use coded workflows (C#), XAML workflows (low-code), Coded Source Files,
 
 ## Mode is a per-workflow choice, not a project setting
 
-`uip rpa create-project` produces a mode-agnostic project — both `project.uiproj` and `project.json` are scaffolded, and the project can host coded workflows (`.cs`), XAML workflows (`.xaml`), or both. There is no `--coded` flag at create time. The coded vs XAML decision happens when you add a workflow to the project (or when an existing project's dominant mode dictates the default — see step 1 below).
+`uip rpa create-project` produces a mode-agnostic project — both `project.uiproj` and `project.json` are scaffolded, and the project can host coded workflows (`.cs`), XAML workflows (`.xaml`), or both. The coded vs XAML decision happens when you add a workflow to the project (or when an existing project's dominant mode dictates the default — see step 1 below).
 
 ## Decision Flowchart
 
