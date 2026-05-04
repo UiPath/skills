@@ -1,6 +1,21 @@
 # RPA Product Guide
 
-Load this guide when Level 1 of the [Product Selection Guide](product-selection-guide.md) selects **RPA**, or when a Solution composition at Level 1.75 includes one or more RPA projects. All RPA-specific decisions live here: sub-type signals, sub-type confirmation (Level 1.5), authoring mode (Level 2), and RPA project decomposition (Level 2.5 Part A). The cross-product merge into the unified project list stays in Level 2.5 Part B of the main selection guide.
+Load this guide when Level 1 of the [Product Selection Guide](product-selection-guide.md) selects **RPA**, or when a Solution composition at Level 1.75 includes one or more RPA projects.
+
+This file is the **canonical home** for RPA-specific levels:
+
+- **Level 1.5** — RPA sub-type selection (Process / Library / Test Automation)
+- **Level 2** — Authoring mode (XAML / Coded C# / Hybrid)
+- **Level 2.5 Part A** — RPA decomposition signals (Single Project vs Master Project)
+- **R-07 naming convention** — `<PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>`
+- **REFramework guidance** — when to use REFramework vs Sequence
+
+Cross-product levels live in the [Product Selection Guide](product-selection-guide.md):
+
+- Level 1 (primary scope)
+- Level 1.75 (Solution composition)
+- Level 2.5 Part B (merge into unified project list)
+- Level 3 (capability add-ons)
 
 ## Signals per RPA sub-type
 

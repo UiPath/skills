@@ -1,17 +1,20 @@
 # Product Selection Guide
 
-This is the most important decision the SDD makes. Select the wrong product and the implementation plan is wrong. This guide produces a scope recommendation from PDD signals, covering all 7 UiPath products and multi-project Solutions.
+This is the most important decision the SDD makes. Select the wrong product and the architecture is wrong. This guide produces a scope recommendation from PDD signals, covering all 7 UiPath products and multi-project Solutions.
 
 ## Levels of Decision
 
-| Level | Decision | Scope |
-|---|---|---|
-| **1. Primary scope** | Single product or multi-project Solution? | All PDDs |
-| **1.5. RPA sub-type** | Process, Library, or Test Automation | Only when RPA is selected at Level 1 (or included in a Solution) |
-| **1.75. Solution composition** | Which products and how many projects of each | Only when Level 1 = Solution |
-| **2. Authoring mode** | XAML, Coded C#, or Hybrid | Per RPA project in the final list |
-| **2.5. Project decomposition** | Final project list with roles, frameworks, queues | All scopes (trivial for single-project; substantive for RPA Process queue patterns and Solutions) |
-| **3. Capabilities** | HITL, Integration Service, API Workflow as component | All products |
+This file is the canonical home for **Levels 1, 1.75, 2.5 Part B, and 3**. RPA-specific levels (**1.5, 2, 2.5 Part A**) live in the [RPA Product Guide](rpa-product-guide.md) and are stubbed here to point at it.
+
+| Level | Decision | Scope | Canonical home |
+|---|---|---|---|
+| **1. Primary scope** | Single product or multi-project Solution? | All PDDs | This file |
+| **1.5. RPA sub-type** | Process, Library, or Test Automation | Only when RPA is selected at Level 1 (or included in a Solution) | [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) |
+| **1.75. Solution composition** | Which products and how many projects of each | Only when Level 1 = Solution | This file |
+| **2. Authoring mode** | XAML, Coded C#, or Hybrid | Per RPA project in the final list | [RPA Product Guide](rpa-product-guide.md#level-2--authoring-mode) |
+| **2.5. Part A — RPA decomposition** | Single Project vs Master Project per RPA Process | Per RPA Process project in the scope | [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) |
+| **2.5. Part B — Merge** | Final unified project list with roles, frameworks, queues | All scopes | This file |
+| **3. Capabilities** | HITL, Integration Service, API Workflow as component | All products | This file |
 
 ## Level 1 — Primary Scope Selection
 
@@ -272,7 +275,7 @@ Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Au
 
 ## Level 3 — Capability Add-ons
 
-These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section and create implementation tasks that will route to the correct skill.
+These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. `uipath-planner` reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
 
 ### HITL (Human-in-the-Loop)
 
@@ -285,7 +288,7 @@ These are capabilities added to the primary product, not standalone products. Wh
 - "Validate before writing back..."
 - "Fills in missing data..."
 
-**How to flag:** In the Flow / Maestro / Agent template, add a "HITL Touchpoints" line in the relevant section (node table, agent description). In the implementation plan, add a task "Add HITL node per §X" — this will route to the `uipath-human-in-the-loop` skill at execution.
+**How to flag:** In the Flow / Maestro / Agent template, add a "HITL Touchpoints" line in the relevant section (node table, agent description). The planner will pick this up and add a "Add HITL node per §X" task that routes to `uipath-human-in-the-loop`.
 
 ### Integration Service
 
@@ -295,7 +298,7 @@ These are capabilities added to the primary product, not standalone products. Wh
 - Third-party SaaS system mentioned (not a custom web app): Salesforce, Jira, ServiceNow, Slack, HubSpot, Workday, Zendesk, etc.
 - "Create a ticket in...", "Post a message to...", "Read records from..."
 
-**How to flag:** In the Application Inventory section, list the connector explicitly. In the implementation plan, add a task "Configure X connector" — this will route to the `uipath-platform` skill at execution.
+**How to flag:** In the Application Inventory section, list the connector explicitly with `Access Method = Integration Service — <slug>`. The planner will add a "Configure X connector" task that routes to `uipath-platform`.
 
 ### API Workflow (as integrated component)
 
@@ -305,7 +308,7 @@ These are capabilities added to the primary product, not standalone products. Wh
 - The primary product invokes a callable system-to-system integration
 - Input/output is structured JSON, not UI
 
-**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, Agent tools, Case tasks). In the implementation plan, add a task "Create API Workflow X" — future API Workflow skill will handle; for now, reference the API Workflow template.
+**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to the API Workflow specialist.
 
 ## Template Mapping
 

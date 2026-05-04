@@ -13,7 +13,9 @@ Before reading the PDD, ask the user how they want the interaction to work. Use 
 > 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, and generate the full SDD. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
 
-Remember the execution mode for the rest of this session — reference it before each checkpoint to decide whether to pause or proceed. In **Autonomous** mode:
+Record the choice — it goes into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagates to `uipath-planner` for task review behavior.
+
+In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation)
 - Skip Phase 2 architecture review (generate, do not wait)
 - Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
@@ -24,7 +26,7 @@ In **Interactive** mode:
 
 ### Step 0.5: Create Progress Tasks
 
-After getting the execution mode, create progress-tracking tasks via `TaskCreate`. These give the user a real-time checklist of where the SDD generation stands.
+Create progress-tracking tasks via `TaskCreate` so the user can see where the SDD generation stands.
 
 ```
 TaskCreate: subject="Read PDD and extract data",        activeForm="Reading PDD…"
@@ -33,14 +35,13 @@ TaskCreate: subject="Generate architecture (Phase 2)",   activeForm="Generating 
 TaskCreate: subject="Generate full SDD (Phase 3)",       activeForm="Generating SDD sections…"
 TaskCreate: subject="Resolve SME review items",          activeForm="Resolving SME review items…"
 TaskCreate: subject="Write SDD to disk",                 activeForm="Writing SDD…"
-TaskCreate: subject="Create implementation tasks",       activeForm="Creating implementation tasks…"
 ```
 
 Mark each task `in_progress` when starting and `completed` when done.
 
-**Rule G-8 — Task creation is best-effort and never blocks SDD output.** If any `TaskCreate` or `TaskUpdate` call fails at any point (tool unavailable, runtime error, timeout), log a single warning to the user, continue the SDD generation without progress tasks, and do not retry. The SDD file itself — and, in Phase 3, the Implementation Plan section inside it — is the authoritative deliverable. Progress tasks are a UX convenience only. This rule applies to both the progress tasks created here and the implementation tasks created in Phase 3 Step 3.
+**Rule G-8 — Task creation is best-effort and never blocks SDD output.** If any `TaskCreate` or `TaskUpdate` call fails (tool unavailable, runtime error, timeout), log a single warning to the user, continue the SDD generation without progress tasks, and do not retry. The SDD file itself is the authoritative deliverable. Progress tasks are a UX convenience only.
 
-These are **separate from** the Implementation Plan tasks created in Phase 3 Step 3. These track the SDD generation process itself; those track the downstream implementation work.
+These tasks track SDD generation. Implementation tasks are owned by `uipath-planner` and are created when the user loads the planner with this SDD — do NOT create implementation tasks here.
 
 ### Step 1: Read the PDD
 
@@ -106,56 +107,23 @@ Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workfl
 
 Scan for missing or vague information. Use the Gap Detection Checklist in the [PDD Analysis Guide](pdd-analysis-guide.md) to classify each gap as `[DEFAULT]` or `[SME REVIEW]`.
 
-### Step 4: Select the Primary Scope
+### Step 4: Run Levels in Order
 
 > **Progress:** Mark "Read PDD and extract data" as `completed`. Mark "Select product" as `in_progress`.
 
-Apply the [Product Selection Guide](product-selection-guide.md) Level 1 decision table. Produce:
+This step orchestrates four levels of decision. Each level lives in its own canonical reference; this guide does not restate them. Run in order — output of each level feeds the next.
 
-- **Primary scope** — one of: Agents, Coded Apps, API Workflows, Case Management, Maestro Flow, **RPA** (sub-type next), **Solution** (composition next)
-- **Solution signals** — note any that matched, even if Level 1 picked a single product (these become candidate additional projects if the user customizes)
-- **Reasoning** — bullet points mapping PDD signals to the chosen scope
-- **Alternatives considered** — rejected scopes and why
+| Level | Decision | Canonical reference | When |
+|---|---|---|---|
+| **Level 1** | Primary scope (Agents / Coded Apps / API Workflows / Case / Flow / RPA / Solution) | [Product Selection Guide → Level 1](product-selection-guide.md#level-1--primary-scope-selection) | Always |
+| **Level 1.5** | RPA sub-type (Process / Library / Test Automation) | [RPA Product Guide → Level 1.5](rpa-product-guide.md#level-15--rpa-sub-type-selection) | Run when Level 1 = RPA. For Solution composition with RPA projects, defer to Pass C of Level 1.75. |
+| **Level 1.75** | Solution composition (which products and how many) | [Product Selection Guide → Level 1.75](product-selection-guide.md#level-175--solution-composition) | Run when Level 1 = Solution OR user picks "Solution (customize)" in Step 6 |
+| **Level 2.5 Part A** | RPA decomposition (Single vs Master Project) | [RPA Product Guide → Level 2.5 Part A](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) | Run for every RPA Process project in the scope |
+| **Level 2.5 Part B** | Merge into unified project list | [Product Selection Guide → Level 2.5 Part B](product-selection-guide.md#part-b--merge-into-the-final-project-list) | Always — produces the canonical project list |
 
-### Step 4.25: RPA Sub-type Selection (if RPA or Solution includes RPA)
+This step's output goes into the Phase 1 summary at Step 6 and drives the Phase 2 architectural core.
 
-If Level 1 selected **RPA**, run Level 1.5 from the [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) to confirm the sub-type (Process / Library / Test Automation). Always ask the user via `AskUserQuestion` even when only one signal set matches.
-
-If Level 1 selected **Solution** and the composition includes RPA projects, defer Level 1.5 to Step 4.3 Pass C — sub-type runs once per RPA project in the composition.
-
-### Step 4.3: Solution Composition (if Level 1 = Solution OR user customizes)
-
-Run Level 1.75 from the [Product Selection Guide](product-selection-guide.md) when:
-
-- Level 1 selected **Solution** (auto-proceed), OR
-- The user picked "Solution (customize)" from the recommendation screen in Step 6
-
-Execute the three passes:
-
-1. **Pass A** — paired multi-select `AskUserQuestion` (two questions in one call, 4 options each, `multiSelect: true`) with the recommended products pre-checked.
-2. **Pass B** — resolve counts per product using numbered-choice questions.
-3. **Pass C** — per-RPA-project, run Level 1.5 from the [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) to pick sub-type.
-
-Output: the Level 1.75 project list with Product, Sub-type, Source Signal columns.
-
-### Step 4.5: Run Project Decomposition
-
-Run Level 2.5 for every scope. The work is trivial for single-project scopes and substantive for RPA Process and Solutions.
-
-**Part A — RPA decomposition signals** (per RPA Process project in the scope). See [RPA Product Guide → Level 2.5 Part A](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals).
-1. Evaluate the 6 decomposition signals against the PDD data extracted in Step 2.
-2. If 2+ signals match → **Master Project** for that RPA Process. Select the pattern (Dispatcher/Performer, Dispatcher/DU/Output, etc.).
-3. If 0-1 signals match → **Single Project** for that RPA Process.
-
-Skip Part A for RPA Library, RPA Test Automation, and non-RPA products.
-
-**Part B — Merge into unified project list.** See [Product Selection Guide → Level 2.5 Part B](product-selection-guide.md#part-b--merge-into-the-final-project-list).
-1. Combine every project produced by Part A with the non-RPA projects from Level 1 / Level 1.75.
-2. Produce the unified project list with columns Product, Sub-type, Role, Framework, Input Queue, Output Queue.
-3. For any Master Projects, include the queue schema table.
-4. Note cross-product integration points (Flow → RPA, Agent tool → API Workflow, etc.).
-
-This decision is critical — it determines the §10-§12 structure of the RPA template, the Project Inventory section of every non-RPA template, and the Solution overview SDD structure. Getting it wrong means rewriting the SDD.
+> Level 2 (Authoring mode — XAML / Coded / Hybrid) is decided per RPA project at Phase 2 Step 2 from [RPA Product Guide → Level 2](rpa-product-guide.md#level-2--authoring-mode). Level 3 (Capability add-ons — HITL, Integration Service, etc.) is detected during PDD analysis and flagged in template sections during Phase 2 Step 4.
 
 ### Step 5: Check for Agent/Coded App Gaps
 
@@ -209,7 +177,7 @@ Then call `AskUserQuestion` with the confirmation question from the Product Sele
 
 **If the user picks "Solution (customize)":** re-run Level 1.75 per the customize branch in the guide, then re-emit this summary with the customized project list, then re-ask the confirmation question. Max 3 revisions — after that, proceed with the latest composition.
 
-**If the user picks a single-product alternative:** re-run Step 4 (and Step 4.25 if RPA) with the user's choice as the forced primary.
+**If the user picks a single-product alternative:** re-run Step 4 with the user's choice as the forced primary (including Level 1.5 if it's RPA).
 
 Ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed.
 
@@ -337,8 +305,10 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - Compliance Constraints (Case)
 - Roles & RACI Matrix (Case)
 - Evaluation Criteria (Agents)
-- Testing Strategy (including End-to-End Pipeline Test for RPA Master Projects)
-- Implementation Plan (final section — task breakdown, using Master Project or Single Project plan per §10)
+- **Testing Strategy — always thorough.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Do NOT ask the user about test depth — depth is non-negotiable here. Implementation specialists may scope tests down at execution time if the user wants a quick MVP.
+- **Next Steps — points at `uipath-planner`.** Replaces the legacy "Implementation Plan" section. The planner owns the implementation task list; this skill does not generate one.
+
+> **What Phase 3 does NOT produce:** an Implementation Plan section, a task list, or `TaskCreate` calls for implementation work. Those are owned by `uipath-planner`. The SDD's `## Next Steps` section points the user at the planner, and that is the entire handoff surface.
 
 ### Step 1.5: Resolve SME Review Items
 
@@ -367,7 +337,24 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
 
 1. Assemble all sections in template order.
-2. If any `[SME REVIEW]` items remain, add a consolidated warning section after Document History and before the Table of Contents:
+2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing handoff to `uipath-planner` — the planner detects SDDs by this exact heading. Fields:
+
+   ```markdown
+   ## Planner Handoff
+
+   | Field | Value |
+   |---|---|
+   | **Execution autonomy** | <autonomous | interactive>          ← from Phase 1 Step 0
+   | **SDD scope** | <single-product | solution>                  ← from Phase 1 Step 4 (Level 1 / Level 1.75)
+   | **Project list section** | §10 / §3 / Project Inventory      ← template-specific (RPA: §10; Flow: §3 + §7; etc.)
+   | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md`             ← planner writes here on first run
+   | **Generated by** | uipath-solution-design v<VERSION>
+   | **Generation date** | <YYYY-MM-DD>
+   ```
+
+   Do NOT rename the `## Planner Handoff` heading — the planner pattern-matches on it.
+
+3. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header and before the Table of Contents:
 
 ```markdown
 ## Action Required — SME Review Items
@@ -379,11 +366,22 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > These items are marked `[SME REVIEW]` in the document. The automation can be built with defaults, but these must be verified before production.
 ```
 
-3. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
-4. Write the output file(s) to the current working directory:
-   - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB_CASE>-sdd.md`.
-   - **Solution scope:** the solution overview at `<SOLUTION_NAME_KEBAB>-solution-sdd.md` PLUS one per-project SDD at `<PROJECT_NAME_KEBAB>-sdd.md` for each project in the unified project list. Put the `[SME REVIEW]` warning block in the solution overview AND in any per-project file where a review item lives in that project.
-5. Output a summary in the conversation:
+4. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
+5. **Re-run handling.** If `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user via `AskUserQuestion`:
+
+   > An SDD already exists at `<sdd-path>`. How should I proceed?
+   >
+   > 1. **Keep the existing SDD and stop** *(recommended)* — load `uipath-planner` if you want to refresh the task list
+   > 2. **Regenerate from the PDD** — overwrites the existing SDD
+   > 3. **Generate alongside as `<name>-v2-sdd.md`** — for diffing
+
+   Default is "keep" — overwriting an SDD the user might have hand-edited is the more destructive action.
+
+6. Write the output file(s) to the current working directory:
+   - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB>-sdd.md`.
+   - **Solution scope:** the solution overview at `<SOLUTION_NAME_KEBAB>-solution-sdd.md` PLUS one per-project SDD at `<PROJECT_NAME_KEBAB>-sdd.md` for each project in the unified project list. Put the `[SME REVIEW]` warning block in the solution overview AND in any per-project file where a review item lives in that project. Each per-project SDD gets its own `## Planner Handoff` header.
+
+7. Output a summary in the conversation:
 
 ```markdown
 ## SDD Generated
@@ -393,40 +391,19 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 ...
 
 <SME_REVIEW_COUNT> unresolved SME review items (if any — list them).
+
+**Next:** load `uipath-planner` and pass it the SDD path. The planner will derive the task list and emit live `TaskCreate` calls.
 ```
 
-### Step 3: Create Live Tasks
+### Step 3: Hand Off to the Planner
 
-> **Progress:** Mark "Write SDD to disk" as `completed`. Mark "Create implementation tasks" as `in_progress`.
+> **Progress:** Mark "Write SDD to disk" as `completed`. All progress tasks are now done.
 
-Create tasks via TaskCreate that map to the Implementation Plan section. Apply rule G-8 (defined in Step 0.5): if any `TaskCreate` call fails, log a single warning, continue, and do not retry — the Implementation Plan section in the SDD file is the authoritative deliverable.
+The SDD is the deliverable for this skill. **Do not generate an Implementation Plan section. Do not create implementation `TaskCreate` calls. Do not start executing.**
 
-Each task must:
+Tell the user the next step explicitly:
 
-1. Have a clear, actionable subject in imperative form
-2. Reference exact SDD sections in the description
-3. Include the anti-hallucination rule: "Use values, mappings, and structure exactly as documented in the SDD. Do not infer or guess."
-4. Have proper dependencies set via `addBlockedBy`
+> The SDD is written. Load `uipath-planner` and pass it `<sdd-path>` to generate the implementation task list. The planner will write `<process-kebab>-tasks.md` alongside the SDD and emit live tasks routing to specialist skills.
 
-Task ordering follows the Implementation Plan section of the selected template. Integrated component tasks come BEFORE tasks that use them (e.g., create the RPA process before building the Flow node that calls it).
-
-### Step 4: Execute the Implementation Plan (conditional)
-
-> **Progress:** Mark "Create implementation tasks" as `completed`. All progress tasks are now done.
-
-Only proceed if the user's intent implies implementation — they asked to "create", "build", "implement", "set up", or "make" a project from a PDD. If the user asked to "design", "architect", or "generate an SDD", stop here. The SDD and task list are the deliverables.
-
-When proceeding, work through the tasks in dependency order. The agent will activate the appropriate skills for each task automatically based on the task description.
-
-Mark each task as `completed` via TaskUpdate as you finish it. If a task fails or is blocked, keep it `in_progress` and diagnose the issue before moving on.
-
-When all tasks are complete, output a final summary:
-
-```markdown
-## Implementation Complete
-
-**Projects created:** <LIST_OF_PROJECT_NAMES_AND_TYPES>
-**Tasks completed:** <COMPLETED_COUNT> / <TOTAL_COUNT>
-**Skipped tasks:** <LIST_OR_NONE>
-**Remaining `[SME REVIEW]` items:** <LIST_OR_NONE>
+If the user's intent implies implementation ("create / build / implement / set up / make"), the main agent will load `uipath-planner` automatically when this skill returns. If the user only asked to "design / architect / generate an SDD", stop here — the SDD is enough.
 ```

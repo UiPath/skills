@@ -1,13 +1,27 @@
 ---
 name: uipath-solution-design
-description: "UiPath PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), generate implementation-ready SDD. For project setup→uipath-platform."
+description: "UiPath PDD→SDD: analyze PDDs (PDF/docx/md), pick scope (single product or multi-project Solution: RPA/Flow/Case/Agents/Apps/API Workflows), write implementation-ready SDD. For task plans→uipath-planner. For project setup→uipath-platform."
 ---
 
 # UiPath Solution Design
 
 > **Preview** — skill is under active development; surface and behavior may change.
 
-Transform a Process Design Document (PDD) into an implementation-ready Solution Design Document (SDD) that a coding agent can build from. Select the right UiPath scope — either a single product (RPA Process/Library/Test Auto, Maestro Flow, Case Management, Agents, Coded Apps, or API Workflows) or a multi-project Solution composing several of them — based on PDD signals.
+Transform a Process Design Document (PDD) into an implementation-ready Solution Design Document (SDD). Select the right UiPath scope — either a single product (RPA Process/Library/Test Auto, Maestro Flow, Case Management, Agents, Coded Apps, or API Workflows) or a multi-project Solution composing several of them — based on PDD signals.
+
+After the SDD is written, hand off to `uipath-planner`. The planner reads the SDD, derives the per-skill task list, and routes execution to the correct specialists.
+
+## When to Use This Skill
+
+- User provides a PDD (PDF, docx, markdown) and asks to design or build from it
+- User asks to design / architect / generate an SDD for a UiPath automation
+- User describes a complex automation involving multiple products (RPA + Agents, Flow + API Workflows, etc.) and wants architecture before code
+- A skill or main agent detected a PDD and redirected the user here
+
+**Skip this skill** when:
+- The request is a simple, well-defined single-skill task (e.g., "create a workflow that sends an email") — load the specialist (`uipath-rpa`, `uipath-agents`, etc.) directly.
+- An SDD already exists and the user wants the implementation task list — load `uipath-planner` directly with the SDD path.
+- The user's input is not a PDD (no process steps, application inventory, or exception handling) — clarify intent or redirect to `uipath-planner`.
 
 ## Critical Rules
 
@@ -15,32 +29,34 @@ Transform a Process Design Document (PDD) into an implementation-ready Solution 
 2. **Never invent selectors, UI targets, or element identifiers.** The SDD covers architecture only — selectors require application inspection at development time.
 3. **Follow the phased interaction model.** Read the full PDD first, recommend a product, present a summary with clarifying questions, get architecture approval, then generate the complete SDD. See [SDD Generation Guide](references/sdd-generation-guide.md).
 4. **Fill gaps with `[DEFAULT]` or `[SME REVIEW]`.** Use `[DEFAULT]` for industry-standard patterns (retry counts, timeouts). Use `[SME REVIEW]` for gaps requiring business knowledge. Never silently invent business rules.
-5. **The Project Structure section is the most important section.** It must list every workflow file (or node / stage / tool / page / step) with its responsibility, inputs, outputs, and which PDD steps it covers. Run Level 2.5 (Project Decomposition) from the Product Selection Guide BEFORE designing project structure — it produces the unified project list that drives structure for every scope, including Solutions (multi-product) and RPA Master Projects (queue-connected sub-projects using REFramework).
+5. **The Project Structure section is the most important section.** It must list every workflow file (or node / stage / tool / page / step) with its responsibility, inputs, outputs, and which PDD steps it covers. Run Level 2.5 (Project Decomposition) BEFORE designing project structure — see Levels guide.
 6. **RPA data definitions follow the implementation mode.** For Coded C# or Hybrid mode: use C# `record` (immutable) or `class` (mutable). No inheritance. Max 15 properties per type. Default to `string` unless the PDD specifies numeric, date, or boolean operations. For XAML mode: use dictionary keys or DataTable columns.
 7. **Non-RPA products use their native type system.** For Agents, Coded Apps, Flow, Case Management, and API Workflows: use the JSON schema or type definition appropriate to that product's template.
-8. **Always generate the Implementation Plan.** Write it as the final SDD section AND create live tasks via TaskCreate with dependencies. Do not ask the user — generate it automatically. If TaskCreate is unavailable or fails, the plan section in the SDD file is sufficient — do not block SDD completion.
-9. **Select the primary scope BEFORE designing architecture.** The scope (single product or Solution) determines the template(s) and project structure. Use the [Product Selection Guide](references/product-selection-guide.md) Level 1 → Level 1.5 (RPA sub-type) → Level 1.75 (Solution composition) → Level 2.5 (project decomposition). Present the recommended scope first with single-product alternatives and "Solution (customize)" below. The skill that builds the workflows/nodes/tasks owns the final detailed decisions.
-10. **Write the SDD to the current working directory.** For single-product scope, one file at `<PROCESS_NAME_KEBAB_CASE>-sdd.md`. For Solution scope, a `<SOLUTION_NAME_KEBAB>-solution-sdd.md` overview plus one `<PROJECT_NAME_KEBAB>-sdd.md` per project in the unified project list. If the user specifies a path, use that instead.
-11. **If the user's intent implies implementation, execute the plan after SDD approval.** When the user asks to "create", "build", "implement", "set up", "make", "prepare", or "scaffold" a project from a PDD, proceed to work through the implementation tasks in dependency order — the agent will activate the appropriate skills for each task. When the user asks to "design", "architect", or "generate an SDD", stop after writing the SDD. If intent is ambiguous, use `AskUserQuestion` to clarify.
-12. **Use AskUserQuestion for Agent/Coded App gaps.** If the primary product is Agents or Coded Apps and the PDD lacks required details (framework, tools, pages, flows), use `AskUserQuestion` to ask if the user wants to proceed with gap-filling or use a different product. Never auto-fallback.
-13. **All user questions use numbered-choice format by default; use `multiSelect: true` only for Solution composition.** Every `AskUserQuestion` uses a blockquote with numbered options and a `*(recommended)*` tag on the default choice. This applies to execution mode, language, product gap-filling, fallback selection, SME review resolution, RPA sub-type, and scope confirmation. The **one exception** is Level 1.75 Pass A (Solution composition), which uses paired `multiSelect: true` questions (4 options each, two questions in one call) to let the user check every product the Solution should include.
+8. **Write the `## Planner Handoff` header into every SDD.** This is a load-bearing contract — `uipath-planner` detects SDDs by this exact heading. Every template carries a `<!-- DO NOT RENAME -->` comment above the heading. Fields: Execution autonomy, SDD scope, Project list section, Tasks file, Generated by, Generation date.
+9. **Select the primary scope BEFORE designing architecture.** The scope (single product or Solution) determines the template(s) and project structure. Use the [Product Selection Guide](references/product-selection-guide.md) Level 1 → Level 1.5 (RPA sub-type) → Level 1.75 (Solution composition) → Level 2.5 (project decomposition). Present the recommended scope first with single-product alternatives and "Solution (customize)" below.
+10. **Write the SDD to the current working directory.** For single-product scope, one file at `<PROCESS_NAME_KEBAB>-sdd.md`. For Solution scope, a `<SOLUTION_NAME_KEBAB>-solution-sdd.md` overview plus one `<PROJECT_NAME_KEBAB>-sdd.md` per project in the unified project list.
+11. **Do not generate an Implementation Plan inside the SDD.** Implementation tasks are owned by `uipath-planner`. The SDD ends with a `## Next Steps` section pointing at the planner. Architecture only — no task lists, no skill routing prompts, no TaskCreate calls.
+12. **Always generate a thorough §17 Testing Strategy.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Test depth is non-negotiable — never offer the user a "happy path only" option. Implementation specialists may scope down at execution time if needed.
+13. **Use AskUserQuestion for Agent/Coded App gaps.** If the primary product is Agents or Coded Apps and the PDD lacks required details (framework, tools, pages, flows), use `AskUserQuestion` to ask if the user wants to proceed with gap-filling or use a different product. Never auto-fallback.
+14. **All user questions use numbered-choice format by default; use `multiSelect: true` only for Solution composition.** Every `AskUserQuestion` uses a blockquote with numbered options and a `*(recommended)*` tag on the default choice. The **one exception** is Level 1.75 Pass A (Solution composition), which uses paired `multiSelect: true` questions (4 options each, two questions in one call) to let the user check every product the Solution should include.
 
 ## Workflow
 
-The SDD generation follows 3 phases. Before starting, ask the user for their preferred execution mode (Autonomous or Interactive). See [SDD Generation Guide](references/sdd-generation-guide.md) for detailed steps. All user questions use numbered-choice format.
+The SDD generation has 3 phases. Detail in the [SDD Generation Guide](references/sdd-generation-guide.md). All user questions use numbered-choice format.
 
-1. **Phase 1 — PDD Analysis & Scope Selection.** Ask execution mode. Read the full PDD, extract structured information, run Level 1 (primary scope) → Level 1.5 (RPA sub-type if applicable) → Level 1.75 (Solution composition if applicable) → Level 2.5 (project decomposition). In Interactive mode, present a summary with the recommended scope (single product or Solution) at the top and single-product alternatives + "Solution (customize)" below. In Autonomous mode, proceed without pausing. For Agent/Coded App products with missing info, use `AskUserQuestion` for gap-filling or fallback (both modes).
-2. **Phase 2 — Architecture Review.** Load the product-specific template. Generate the architectural core. In Interactive mode, present for review. In Autonomous mode, proceed without pausing.
-3. **Phase 3 — Full SDD Generation.** Generate all remaining sections. Resolve `[SME REVIEW]` items by asking the user before writing (both modes). Write the SDD to disk and create the implementation plan. If the user's intent implies implementation (see Critical Rule 11), proceed to execute the tasks in dependency order.
+1. **Phase 1 — PDD Analysis & Scope Selection.** Ask execution mode (Autonomous or Interactive). Read the full PDD, extract structured information, run Level 1 (primary scope) → Level 1.5 (RPA sub-type if applicable) → Level 1.75 (Solution composition if applicable) → Level 2.5 (project decomposition). In Interactive mode, present a summary with the recommended scope at the top and alternatives below. In Autonomous mode, proceed without pausing. For Agent/Coded App products with missing info, use `AskUserQuestion` for gap-filling or fallback (both modes).
+2. **Phase 2 — Architecture Review.** Load the product-specific template. Generate the architectural core sections (template-specific — see Phase 2 Step 2 of the generation guide). In Interactive mode, present for review. In Autonomous mode, proceed without pausing.
+3. **Phase 3 — Full SDD Generation.** Generate all remaining sections including the thorough §17 Testing Strategy. Resolve `[SME REVIEW]` items by asking the user before writing (both modes). Write the `## Planner Handoff` header. Write the SDD to disk. Tell the user to load `uipath-planner` next.
 
 ## Reference Navigation
 
 | File | Purpose |
 |------|---------|
-| [SDD Generation Guide](references/sdd-generation-guide.md) | Detailed instructions for each phase of SDD generation |
+| [SDD Generation Guide](references/sdd-generation-guide.md) | Phase orchestrator — Phase 1, 2, 3 step-by-step instructions |
 | [PDD Analysis Guide](references/pdd-analysis-guide.md) | How to extract structured data from PDDs in any format |
-| [Product Selection Guide](references/product-selection-guide.md) | Level 1 scope selection (single product vs Solution), Solution composition (Level 1.75), cross-product project-list merge (Level 2.5 Part B), capability add-ons, template mapping |
-| [RPA Product Guide](references/rpa-product-guide.md) | RPA-only: sub-type signals, Level 1.5 sub-type confirmation, Level 2 authoring mode, Level 2.5 Part A decomposition patterns, REFramework guidance. Load when Level 1 = RPA or a Solution includes RPA. |
+| [Product Selection Guide](references/product-selection-guide.md) | Canonical home for **Level 1** (primary scope), **Level 1.75** (Solution composition), **Level 2.5 Part B** (cross-product project list merge), **Level 3** (capability add-ons), template mapping |
+| [RPA Product Guide](references/rpa-product-guide.md) | RPA-only canonical home for **Level 1.5** (sub-type), **Level 2** (authoring mode), **Level 2.5 Part A** (RPA decomposition), R-07 naming convention, REFramework guidance. Load when Level 1 = RPA or a Solution includes RPA. |
+| [Package Selection Guide](references/package-selection-guide.md) | NuGet package selection per Application Inventory; Integration Service vs NuGet decision rules; per-product dependency manager (RPA: NuGet, Coded Apps: npm, etc.). Load when filling §14 Packages or equivalent. |
 | [RPA Template](assets/templates/rpa-sdd-template.md) | SDD template for RPA Process / Library / Test Automation |
 | [Flow Template](assets/templates/flow-sdd-template.md) | SDD template for Maestro Flow |
 | [Case Management Template](assets/templates/case-sdd-template.md) | SDD template for Case Management |
@@ -51,17 +67,17 @@ The SDD generation follows 3 phases. Before starting, ask the user for their pre
 ## Anti-patterns
 
 1. **Copying the PDD structure into the SDD.** The SDD must reorganize content for implementation, not mirror the PDD's document flow.
-2. **Defaulting to RPA Process when the PDD describes something else.** Use the Product Selection Guide's decision tree. A PDD with AI reasoning signals should go to Agents; a PDD with stages/SLA/approval should go to Case Management; etc.
+2. **Defaulting to RPA Process when the PDD describes something else.** Use the Product Selection Guide's decision tree. A PDD with AI reasoning signals should go to Agents; a PDD with stages/SLA/approval should go to Case Management.
 3. **Inventing selectors from screenshots.** Screenshots help understand the UI flow but cannot produce reliable selectors. Leave selector work for development time.
-4. **Generating the full SDD without user checkpoint.** Always present the product recommendation (end of Phase 1) AND the architecture (Phase 2) before generating the rest. The product choice and project structure are the hardest to fix later.
+4. **Generating the full SDD without user checkpoints.** Always present the product recommendation (end of Phase 1) AND the architecture (Phase 2) before generating the rest. The product choice and project structure are the hardest to fix later.
 5. **Asking the user about every gap.** Use `[DEFAULT]` for standard patterns. Only escalate with `[SME REVIEW]` for business-knowledge gaps. Use `AskUserQuestion` only for Agent/Coded App gap-filling.
-6. **Skipping the Implementation Plan.** The task breakdown is a required output, not optional. It bridges the SDD to actual development work.
-7. **Making the final implementation decision.** The SDD recommends product, mode, and structure; the specialized skills decide the details. Keep recommendations lightweight with brief justifications.
+6. **Generating an Implementation Plan section inside the SDD.** Implementation tasks belong to `uipath-planner`, not solution-design. Every SDD ends with `## Next Steps` pointing at the planner. Do not include Task 1 / Task 2 / Task N task templates. Do not call TaskCreate. Architecture only.
+7. **Asking the user about test coverage depth.** §17 Testing Strategy is always thorough — happy path, edge cases, error scenarios, e2e for Master Projects. The implementation specialist scopes down at execution time if the user wants a quick MVP; the SDD does not.
 8. **Generating overly abstract workflow/node/task descriptions.** Each item in the inventory must have a concrete responsibility, specific PDD step references, and defined inputs/outputs.
 9. **Auto-falling-back from Agents/Coded Apps to another product without asking.** If the PDD is missing product-specific details, use `AskUserQuestion` — the user chooses whether to proceed with gap-filling or pick a different product.
 10. **Inlining HITL schema for Flow/Maestro/Agent products.** HITL for those products is owned by the `uipath-human-in-the-loop` skill. Flag touchpoints only. Case Management is the exception — it handles HITL tasks inline.
-11. **Putting everything in a single RPA project when the PDD has distinct processing stages.** If the PDD describes email ingestion + data extraction + output generation + reporting, these are separate projects connected by Orchestrator queues — not one monolithic process. Run Level 2.5 (Project Decomposition) from the Product Selection Guide to decide. A single project is only appropriate for simple linear processes with no independent failure/retry per stage.
-11.5. **Forcing a single-product scope when the PDD describes multiple coordinated projects.** If the PDD needs (for example) 2 RPA Libraries + 1 Test Automation project, or a Flow plus callable API Workflows, the correct scope is **Solution** — not a single-product SDD that buries the rest as "integrated components". Watch the Level 1 Solution Signals and offer Solution (customize) as an alternative on the recommendation screen so the user can check every product the design needs.
-12. **Ignoring REFramework for queue-based transactional processing.** REFramework is the standard UiPath framework for Performer projects that consume from Orchestrator queues. It provides built-in transaction retry, state management, and exception routing. Using a custom framework for this pattern leads to fragile, non-standard implementations.
-13. **Omitting NuGet package dependencies.** Developers need to know which packages to install. Infer packages from the Application Inventory (DU → IntelligentOCR, email → Mail.Activities or MicrosoftOffice365.Activities, etc.) and list them in §14 Packages.
-
+11. **Putting everything in a single RPA project when the PDD has distinct processing stages.** If the PDD describes email ingestion + data extraction + output generation + reporting, these are separate projects connected by Orchestrator queues — not one monolithic process. Run Level 2.5 Part A from the RPA Product Guide.
+12. **Forcing a single-product scope when the PDD describes multiple coordinated projects.** If the PDD needs (for example) 2 RPA Libraries + 1 Test Automation project, or a Flow plus callable API Workflows, the correct scope is **Solution** — not a single-product SDD that buries the rest as "integrated components". Watch the Level 1 Solution Signals and offer Solution (customize) as an alternative on the recommendation screen.
+13. **Ignoring REFramework for queue-based transactional processing.** REFramework is the standard UiPath framework for Performer projects that consume from Orchestrator queues. Custom frameworks for this pattern lead to fragile, non-standard implementations.
+14. **Omitting NuGet package dependencies.** Developers need to know which packages to install. Infer packages from the Application Inventory and list them in §14 Packages — see the [Package Selection Guide](references/package-selection-guide.md).
+15. **Renaming the `## Planner Handoff` heading.** It is the load-bearing detection marker for `uipath-planner`. The exact heading is required. Each template carries a `<!-- DO NOT RENAME -->` comment.
