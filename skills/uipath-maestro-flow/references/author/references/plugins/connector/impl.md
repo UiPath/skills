@@ -16,6 +16,8 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
    - `bodyParameters` — field-value pairs for the request body. Read field names from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
    - `queryParameters` — field-value pairs for query string parameters. Read from `connectorMethodInfo.parameters[]` where `type: query` (`registry get`) or `parameters[]` (`is resources describe`).
    - `pathParameters` — field-value pairs for path placeholders in `endpoint` (e.g. `{conversationsInfoId}`). Read from `connectorMethodInfo.parameters[]` where `type: path` (`registry get`) or `parameters[]` (`is resources describe`).
+   - `filter` — structured FilterBuilder tree for list/query operations. See Step 6a.
+   - `customFieldsRequestDetails` — design-time cache for connectors with an api-type ObjectAction at top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]` (e.g. Jira `GenerateSchema`, Dataservice V3 `FetchObjectMetadataTenant`). camelCase keys; `parameterValues` as `[key, value]` tuples. See Step 6c.
 
 ---
 
@@ -134,6 +136,16 @@ Examples in `inputs.detail`:
 
 **Run `is resources describe` (Step 3) before this step.** The full metadata tells you which fields are required, what types they expect, and which need reference resolution. Do not guess field names or skip the metadata check — required fields missing from `--detail` cause runtime errors that `flow validate` does not catch.
 
+> **Re-configure is full rebuild, not partial merge — every `--detail` field omitted gets dropped.** Each `node configure` call constructs a fresh `inputs.detail` object (`connector-service.ts:792-803`) and a fresh `essentialConfiguration` blob from `--detail` only. Anything not in this call's `--detail` is dropped from the rewritten flow:
+>
+> | If you omit on re-configure | What happens |
+> |---|---|
+> | `bodyParameters` / `queryParameters` / `pathParameters` | Field is removed from `inputs.detail` (the prior values are NOT preserved) |
+> | `filter` | `savedFilterTrees` is omitted from the `=jsonString:` blob; `queryParameters.<filterParamName>` is not re-derived |
+> | `customFieldsRequestDetails` | Resets to `null` inside the `=jsonString:` blob |
+>
+> **Rule:** always re-pass the full intended `--detail` shape — connection plumbing + every parameter bucket + filter tree + customFieldsRequestDetails — even when changing one field. The CLI does not read the prior `inputs.detail` to fill gaps.
+
 #### Step 6a — Detect FilterBuilder parameters
 
 Before writing `--detail`, scan the operation's `parameters[]` (from Step 3 / `registry get`) for any entry with `design.component === "FilterBuilder"`. This applies to **any** operation, not only List operations — connectors render the FilterBuilder UI for any param flagged this way.
@@ -146,6 +158,16 @@ For every match:
 - Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
+
+**Dynamic-entity connectors (e.g. Dataservice V3) — fallback workflow.** When filterable fields are resolved at design time via an `actionType: "api"` action keyed off a parent field (V3's `FetchObjectMetadataTenant` keyed off `tenantEntityName`), the CLI's `--detail.filter` validator rejects leaf field IDs not in static metadata. Symptom: `Failed to build filter for activity "...": Filter references field 'X' which is not present in trigger metadata`. The CLI also rejects raw `--detail.queryParameters.<filterParamName>` for FilterBuilder params.
+
+Workaround:
+
+1. `node configure` with `bodyParameters` / `queryParameters` and `customFieldsRequestDetails` — omit `filter`.
+2. `Edit` the `.flow` file to inject both halves:
+   - Runtime: `inputs.detail.queryParameters.<filterParamName>` = compiled CEQL string (e.g. `"test = 'Active'"`)
+   - Design-time: `essentialConfiguration.savedFilterTrees.<filterParamName>` = structured tree (inside the `=jsonString:` blob)
+3. Validate. Both halves must be present or Studio Web round-trip shows an empty FilterBuilder.
 
 #### Step 6b — Run configure
 
@@ -169,6 +191,114 @@ The command populates `inputs.detail` and creates workflow-level `bindings` entr
 > **Do not use `filterExpression`** — that field is the trigger / JMESPath path. See [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees).
 
 > **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail "$(cat /tmp/detail.json)" --output json`
+
+#### Step 6c — Populate custom fields (api-type ObjectActions)
+
+Some connectors expose extensible/custom fields driven by parent-field selections (e.g. Jira's project + issue type → custom Jira fields, Mailchimp's list_id → audience-specific merge fields, Dataservice V3's `tenantEntityName` → entity field schema). Studio Web caches the parent values that drive the "fetch custom fields" ObjectAction so the runtime can replay the fetch on each invocation. The CLI passes this through verbatim.
+
+**When it applies — check both locations.** An api-type action may live at either:
+
+- Top-level `objectActions[]` with PascalCase `ActionType: "Api"` (older shape, e.g. Jira `GenerateSchema`)
+- `connectorMethodInfo.design.actions[]` with lowercase `actionType: "api"` (newer shape, e.g. Dataservice V3 `FetchObjectMetadataTenant`)
+
+Studio Web's dispatcher matches `ObjectActionType.Api === 'api'` (case-sensitive lowercase string) — both shapes go through the same `_processCustomFieldsRequestAction` code path with no per-connector branching. Always grep both locations from `registry get` output before deciding the connector has none.
+
+Each api-type entry has `name` (the `ObjectActionName`) and `apiConfiguration.{url,body}` with `{token}` placeholders — those tokens name the parent fields whose values must be in `parameterValues`.
+
+**Token encoding rule.** Tokens are encoded via Studio Web's `NamingHelper.getValidIdentifier` before being used as `parameterValues` keys (so they match design-property names at lookup time). Substitutions (applied longest-first):
+
+| Match in token | Encoded as |
+|---|---|
+| `:::` | `_sub_` |
+| `[*]` | `_array` |
+| `::` | `_sub_` |
+| `.` | `_sub_` |
+
+Examples: `fields.project.key` → `fields_sub_project_sub_key`; `items[*]` → `items_array`; `tenantEntityName` → `tenantEntityName` (unchanged). When in doubt, copy the encoded key verbatim from a Studio Web export.
+
+> **`customFieldsRequestDetails` is COMPLEMENTARY to `bodyParameters` / `queryParameters`, not a substitute.** Same parent-field values must appear in BOTH places, with different keys:
+>
+> | Location | Purpose | Key shape |
+> |---|---|---|
+> | `bodyParameters` / `queryParameters` / `pathParameters` | Runtime input — what the connector actually sends to its API | **Raw** field names (e.g. `fields.project.key`, `tenantEntityName`) |
+> | `essentialConfiguration.customFieldsRequestDetails.parameterValues` | Design-time replay cache — drives the parent-field-driven schema fetch when Studio Web re-opens the activity | **Encoded** keys (e.g. `fields_sub_project_sub_key`, `tenantEntityName`) |
+>
+> Concrete (Jira Create Issue): `bodyParameters.fields.project.key = "ENGCE"` AND `parameterValues = [["fields_sub_project_sub_key", "ENGCE"]]`. Concrete (Dataservice V3): `queryParameters.tenantEntityName = "sanjeettest2"` AND `parameterValues = [["tenantEntityName", "sanjeettest2"]]`. Dropping the runtime-input copy on the assumption that the cache covers it leaves Studio Web with no field value to bind at runtime — manifests as `DAP-DT-_2003 refField with name <X> not found` at activity load.
+
+**Shape (verified against Solution 386 — Jira Create Issue):**
+
+```json
+"customFieldsRequestDetails": {
+  "objectActionName": "GenerateSchema",
+  "parameterValues": [
+    ["fields_sub_project_sub_key", "ENGCE"],
+    ["fields_sub_issuetype_sub_id", "3"]
+  ]
+}
+```
+
+Rules:
+
+- camelCase keys (`objectActionName`, `parameterValues`). PascalCase rejected at validate time.
+- `parameterValues` is an **array of `[key, value]` tuples** — never an object map. Studio Web emits its `Map<string,string|null>` via `Array.from(entries())`; the CLI rejects object-map form.
+- Tuple value is `string` or `null`. Use `null` for tokens the user has not yet set.
+- The CLI does NOT validate ObjectAction existence or token coverage — agent is responsible. Read `apiConfiguration.url` / `body` from the action (top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]`) to discover required tokens.
+
+**CLI invocation — pass BOTH halves.** The runtime input bucket (`bodyParameters` / `queryParameters` / `pathParameters`) AND the design-time cache (`customFieldsRequestDetails`) must both appear in the same `--detail`. Omitting the runtime bucket is the most common mistake — the cache alone does not feed the connector at runtime.
+
+Jira Create Issue (raw `fields.project.key` in body + encoded `fields_sub_project_sub_key` in cache):
+
+```bash
+uip maestro flow node configure <file> <nodeId> --detail "$(cat <<'JSON'
+{
+  "connectionId": "<id>",
+  "folderKey": "<key>",
+  "method": "POST",
+  "endpoint": "/curated_create_issue",
+  "bodyParameters": {
+    "fields.project.key": "ENGCE",
+    "fields.issuetype.id": "3",
+    "fields.summary": "Created from Maestro"
+  },
+  "customFieldsRequestDetails": {
+    "objectActionName": "GenerateSchema",
+    "parameterValues": [
+      ["fields_sub_project_sub_key", "ENGCE"],
+      ["fields_sub_issuetype_sub_id", "3"]
+    ]
+  }
+}
+JSON
+)" --output json
+```
+
+Dataservice V3 Query Entity Records (raw `tenantEntityName` in queryParameters + same key encoded — unchanged here, no dots — in cache):
+
+```bash
+uip maestro flow node configure <file> <nodeId> --detail "$(cat <<'JSON'
+{
+  "connectionId": "<id>",
+  "folderKey": "<key>",
+  "method": "POST",
+  "endpoint": "/v3/QueryEntityRecords/query",
+  "queryParameters": {
+    "entityScope": "tenant",
+    "tenantEntityName": "sanjeettest2"
+  },
+  "customFieldsRequestDetails": {
+    "objectActionName": "FetchObjectMetadataTenant",
+    "parameterValues": [
+      ["tenantEntityName", "sanjeettest2"]
+    ]
+  }
+}
+JSON
+)" --output json
+```
+
+The CLI embeds the payload verbatim in `essentialConfiguration.customFieldsRequestDetails` inside the `=jsonString:` blob. Top-level `inputs.detail.customFieldsRequestDetails` is NOT set — the field lives only inside `essentialConfiguration`.
+
+If neither location contains an `actionType: "api"` / `ActionType: "Api"` entry, the connector does not support custom fields — omit the field (CLI emits `null`).
 
 ---
 
@@ -260,6 +390,8 @@ For every unique connection used in the flow, add **two entries** to top-level `
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
 The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and appends the two top-level `bindings[]` entries. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
+
+> **CLI side-effect — duplicate empty bindings.** `node configure` currently appends placeholder entries with `resourceKey: ""` and no `default` alongside the resolved pair (4 entries per configure call instead of 2). Validate passes; they're harmless but verbose. Remove the empty pair via `Edit` after configure if you care about clean diffs.
 
 **Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two binding entries — do not add duplicates. Matching is by `name` only (the `<CONNECTOR_KEY> connection` placeholder is unique per connector), so any node whose definition resolves against `<bindings.<CONNECTOR_KEY> connection>` picks up the shared binding pair.
 
@@ -371,6 +503,9 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Connector key not found | Wrong key name | Run `uip is connectors list --output json` — keys are often prefixed with `uipath-` |
 | FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
 | `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
+| `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
+| Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
+| `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
 
 ### Debug Tips
 
