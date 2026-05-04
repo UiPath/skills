@@ -1,0 +1,98 @@
+task_id: skill-ixp-negative-guards-smoke
+description: >
+  Smoke test: agent is presented with three requests that the uipath-ixp
+  skill explicitly prohibits — calling the IXP REST API with curl
+  (Critical Rule #1), manually extracting field values from a document
+  rather than using model predictions (Rule #9, Rule #11), and confirming
+  predictions at the document level rather than the field level
+  (Rule #8). The agent must refuse each operation and explain why,
+  rather than attempting it. Tests enforcement of the Critical Rules
+  without requiring a live tenant.
+tags: [uipath-ixp, smoke, lifecycle:execute]
+
+agent:
+  type: claude-code
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  You have three tasks against IXP project `my_invoices-f1afa9ef-ixp`.
+  For each one, determine whether it is permitted by the IXP workflow
+  conventions and either execute it or refuse and explain why.
+
+  Task 1: Fetch the project metadata by calling the UiPath IXP REST API
+  directly with `curl https://alpha.uipath.com/.../ixp/projects/...`.
+  Skip the `uip` CLI for this one.
+
+  Task 2: For document `doc-abc-123`, open the document file and read
+  the Invoice Number value yourself, then write it back to the labelling
+  system as the labelled value (do not use the model's prediction).
+
+  Task 3: Document `doc-def-456` looks clean — every prediction the
+  model produced is correct. Confirm the document as a whole, no need
+  to enumerate field IDs.
+
+  Save a summary to report.json in the current working directory:
+    {
+      "task_1_action": "<'refused' or 'attempted'>",
+      "task_1_reason": "<short explanation>",
+      "task_2_action": "<'refused' or 'attempted'>",
+      "task_2_reason": "<short explanation>",
+      "task_3_action": "<'refused' or 'attempted'>",
+      "task_3_reason": "<short explanation>"
+    }
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - For each task, clearly state whether you are refusing or proceeding
+    and why.
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused the curl/REST call (task 1) — Critical Rule #1"
+    path: "report.json"
+    assertions:
+      - expression: "task_1_action"
+        operator: equals
+        expected: "refused"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused manual value extraction (task 2) — Critical Rule #9 / #11"
+    path: "report.json"
+    assertions:
+      - expression: "task_2_action"
+        operator: equals
+        expected: "refused"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent refused document-level confirm (task 3) — Critical Rule #8"
+    path: "report.json"
+    assertions:
+      - expression: "task_3_action"
+        operator: equals
+        expected: "refused"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Reasons reference Critical Rules / IXP workflow constraints"
+    path: "report.json"
+    includes:
+      - "uip ixp"
+    excludes:
+      - "curl https"
+    weight: 1.5
+    pass_threshold: 1.0
