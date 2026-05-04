@@ -1,0 +1,103 @@
+task_id: skill-flow-ixp-smoke-scaffold-multinode
+description: >
+  Smoke: multi-script fan-out from an IxP extraction — manual trigger →
+  IxP extract → 3 script nodes (postReceipt, sendToValidation, logError).
+  Tests that the agent picks IxP, authors the extraction node, and wires
+  three downstream scripts that consume the extraction result.
+
+  Note on port shape: per references/plugins/ixp/impl.md, IxP exposes a single
+  output port `success` plus an `error` output variable in `$vars.{nodeId}`.
+  The "extracted / needsValidation / error" handles map onto that shape via
+  fan-out from the success port and per-script use of
+  `$vars.{ixpNode}.output.ExtractionResult.ResultsDocument.Fields[…]` (the
+  canonical access path) vs `$vars.{ixpNode}.error`. Assertions accept any
+  valid wiring that yields three named script nodes plus a passing flow
+  validate.
+
+  Validate-only: no `uip maestro flow debug`.
+
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:ixp]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a flow called "ReceiptIntake" with a manual trigger, an extractor
+  node, and add three script nodes named `postReceipt`, `sendToValidation`,
+  and `logError`. Wire all three scripts to consume the extraction result —
+  two off the success output, one off the error output. Document is in the
+  storage bucket named: ReceiptBucket. Model used: Receipt Model. Each of
+  the three script nodes logs OK when it receives its respective extraction
+  result.
+
+  Important:
+  - The `uip` CLI is already available.
+  - Use `--output json` on all uip commands.
+  - Work inside the stated working directory — do NOT `cd` to a parent.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+  - Do NOT iterate on validation errors.
+
+success_criteria:
+  - type: skill_triggered
+    expected: "yes"
+    skill_name: "uipath:uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched the registry for IxP node types"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the .flow file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on ReceiptIntake.flow"
+    command: "uip maestro flow validate ReceiptIntake/ReceiptIntake/ReceiptIntake.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/plugins/ixp/impl.md)"
+    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .'
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "All three script nodes are present by name"
+    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
+    includes:
+      - "postReceipt"
+      - "sendToValidation"
+      - "logError"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Scripts reference the extraction output via $vars expression"
+    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
+    includes:
+      - "$vars."
+    weight: 1.5
+    pass_threshold: 1.0

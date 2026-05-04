@@ -1,0 +1,122 @@
+task_id: skill-flow-ixp-integration-handle-routing
+description: >
+  Integration: IxP extraction wired into a Decision node that routes on a
+  field from the extracted content. Exercises field-level variable access
+  via the canonical IxP path
+  (`$vars.{ixpNode}.output.ExtractionResult.ResultsDocument.Fields.find(...)`)
+  and two-branch Decision wiring — the multi-node Quality scenario for IxP.
+
+  Validate-only: no `uip maestro flow debug`. Validation in CI is offline
+  (`uip maestro flow validate`).
+
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:ixp, node:decision]
+
+task_timeout: 900
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Flow project named "InvoiceRouter" that processes vendor
+  invoices:
+
+  1. Manual trigger.
+  2. IxP extraction node — extracts at least vendor name and total amount
+     from a PDF invoice using the model "Invoice Model" with the storage
+     bucket named "InvoiceBucket".
+  3. Decision node — branches on the extracted total amount: if greater
+     than 1000, route to a "HighValueReview" script; otherwise route to an
+     "AutoApprove" script.
+  4. Both downstream scripts contain a JavaScript that logs a one-line
+     summary including the extracted vendor name.
+
+  Wire: Trigger → IxP extract → Decision → (two branches: HighValueReview
+  / AutoApprove).
+
+  The Decision node condition MUST reference the extracted total amount
+  via the canonical IxP runtime path —
+  `$vars.<ixpNodeId>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName>')?.Values?.[0]`
+  — per references/plugins/ixp/impl.md ("Accessing Output").
+
+  Important:
+  - The `uip` CLI is already available.
+  - Use `--output json` on all uip commands.
+  - Work inside the stated working directory — do NOT `cd` to a parent.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+  - Do NOT iterate on validation errors.
+
+success_criteria:
+  - type: skill_triggered
+    expected: "yes"
+    skill_name: "uipath:uipath-maestro-flow"
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched the registry for IxP node types"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on InvoiceRouter.flow"
+    command: "uip maestro flow validate InvoiceRouter/InvoiceRouter/InvoiceRouter.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated flow contains an IxP extraction node or core.logic.mock fallback"
+    command: 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .'
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains a Decision node (core.logic.decision)"
+    path: "InvoiceRouter/InvoiceRouter/InvoiceRouter.flow"
+    includes:
+      - "core.logic.decision"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Decision condition references the canonical IxP output path ($vars.<ixp>.output.ExtractionResult.ResultsDocument.Fields)"
+    path: "InvoiceRouter/InvoiceRouter/InvoiceRouter.flow"
+    includes:
+      - "$vars."
+      - "ExtractionResult"
+      - "ResultsDocument"
+      - "Fields"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Both branch script nodes are present by name"
+    path: "InvoiceRouter/InvoiceRouter/InvoiceRouter.flow"
+    includes:
+      - "HighValueReview"
+      - "AutoApprove"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Both Decision branches wired (true and false handles)"
+    path: "InvoiceRouter/InvoiceRouter/InvoiceRouter.flow"
+    includes:
+      - '"true"'
+      - '"false"'
+    weight: 2.0
+    pass_threshold: 1.0

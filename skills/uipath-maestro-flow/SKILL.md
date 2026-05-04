@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-flow
-description: "UiPath Maestro Flow (.flow) — read, edit, author, debug. `uip` CLI: nodes, edges, subflows, scripts, variables, triggers, End nodes, registry. For C#/XAML→uipath-rpa. For agents→uipath-agents."
+description: "UiPath Maestro Flow (.flow) — read, edit, author, debug. `uip` CLI: nodes, edges, subflows, scripts, variables, triggers, End nodes, registry, IxP document extraction (PDFs, invoices, receipts, forms). For C#/XAML→uipath-rpa. For agents→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 

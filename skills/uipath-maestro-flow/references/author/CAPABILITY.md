@@ -63,6 +63,8 @@ Capability index for building new flows (greenfield) and editing existing flows 
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
+| **Extract structured fields from documents** | [plugins/ixp/](references/plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
+| **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](references/plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [editing-operations-cli.md](references/editing-operations-cli.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |
 | **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |
 | **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [Edit/Write: Create a subflow](references/editing-operations-json.md#create-a-subflow) |
@@ -125,6 +127,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
   - [hitl](references/plugins/hitl/) — human input via UiPath Apps
   - [agent](references/plugins/agent/) — published AI agent resources
   - [inline-agent](references/plugins/inline-agent/) — autonomous agent embedded in flow
+  - [ixp](references/plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)
   - [queue](references/plugins/queue/) — Orchestrator queue item creation
 
 ### Cross-capability (shared)
