@@ -1,11 +1,11 @@
 # Action Center URL patterns
 
 Reference guidance for constructing Action Center / Orchestrator task URLs.
-**The tenant slug is mandatory in every form.** Omitting it triggers
-[MST-9322](https://uipath.atlassian.net/browse/MST-9322) — the portal-UI
-misclassifies a tenant-less URL as "Orchestrator is not enabled for this
-tenant" even when the service is fully enabled, sending the user down a
-wrong support path (admin/license escalation instead of "fix your URL").
+**The tenant slug is mandatory in every form.** Without it, the portal-UI
+parser interprets the next URL segment as the tenant name and routes to
+the "Orchestrator is not enabled for this tenant" page even when the
+service is fully enabled — sending the user down a wrong support path
+(admin/license escalation instead of "fix your URL").
 
 ## The two canonical patterns
 
@@ -48,7 +48,7 @@ Every URL above MUST include:
 | `{tenant}` | Tenant **name** (e.g. `DefaultTenant`)                | **Mandatory.** Never substitute a path keyword like `actions` here. |
 | `{taskKey}` or `{taskId}` | From `uip tasks get` / `uip tasks list` JSON | Use `Key` (string GUID) for inbox; numeric `Id` for standalone. |
 
-## MST-9322: what NOT to produce
+## Anti-pattern: missing tenant slug
 
 ```text
 ❌ https://alpha.uipath.com/popoc/orchestrator_/actions/inbox/<taskKey>
@@ -113,7 +113,7 @@ If your skill needs to print or hand off an Action Center URL:
    tell the user which piece of context you couldn't resolve. Then hand
    the URL off to the user for click-through verification — if they land
    on the `/portal_/unregistered` "Orchestrator is not enabled" page,
-   that's the MST-9322 symptom and the URL is malformed (re-check `{tenant}`).
+   that's the missing-tenant symptom and the URL is malformed (re-check `{tenant}`).
 
 ## CLI-side helpers (for tool authors)
 
@@ -143,13 +143,10 @@ const taskUrl = buildActionCenterTaskUrl(uiHost, org, tenant, taskId);
 ```
 
 All three helpers throw if `tenant` (or `org` / `baseUrl`) is empty —
-this is the runtime backstop for the MST-9322 contract. See
+this is the runtime backstop for the tenant-required contract. See
 `packages/common/src/orchestrator-urls.ts` in the [CLI repo](https://github.com/UiPath/cli).
 
 ## Related
 
-* MST-9322 — primary ticket for this URL hygiene work.
-* MST-9188 — adjacent issue ("Hide Flow project option when Maestro
-  unlicensed") on the same `/portal_/unregistered` page surface.
 * `uipath-coded-apps/references/patterns.md` — already documents the
   standalone form for Coded Action App developers (React/TypeScript).
