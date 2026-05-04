@@ -73,6 +73,8 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 }
 ```
 
+> **`display` is required on every node** — including control-flow nodes (`core.control.end`, `core.logic.terminate`) where it may feel optional. Omitting it produces a vague `[(root)] Schema validation failed: Invalid input: expected object, received undefined` from `uip maestro flow validate`, which does NOT pinpoint the missing field. Always include `"display": { "label": "<label>" }` on every node, even bare end nodes. See [file-format.md — Node instance](../../shared/file-format.md#node-instance) and [MST-9368](https://uipath.atlassian.net/browse/MST-9368) for the validator-error-clarity follow-up.
+
 > **Node outputs are required.** Every node that produces data for downstream `$vars` references must include an `outputs` block. See [file-format.md — Node outputs](../../shared/file-format.md#node-outputs) for the standard patterns by node category (action nodes get `output` + `error`; trigger nodes get `output` only; end/terminate nodes do not use this pattern).
 
 > **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `source` for inline agents, `color`/`content` for sticky notes. See [file-format.md — Instance-specific fields that live in `inputs`](../../shared/file-format.md#instance-specific-fields-that-live-in-inputs).

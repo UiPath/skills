@@ -64,7 +64,15 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Required fields**: `id`, `type`, `typeVersion`
+**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This includes control-flow nodes that "feel" trivial — `core.control.end`, `core.logic.terminate`, etc. all require `display: { "label": "..." }`. The schema does not exempt them.
+
+> **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
+>
+> ```
+> [error] [(root)] Schema validation failed: Invalid input: expected object, received undefined
+> ```
+>
+> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
 
 > **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`).
 >
