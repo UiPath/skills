@@ -105,6 +105,7 @@ Capability index for building new flows (greenfield) and editing existing flows 
 - [planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](references/plugins/) — per-node-type planning + impl docs:
   - [connector](references/plugins/connector/) — IS connector nodes
+    - [connector/data-fabric](references/plugins/connector/data-fabric/) — Data Fabric entity activities (Query / Create / Update / Delete / Get by ID)
   - [connector-trigger](references/plugins/connector-trigger/)
   - [script](references/plugins/script/) — Jint ES2020 JavaScript
   - [http](references/plugins/http/) — `core.action.http.v2` (Managed HTTP Request)
