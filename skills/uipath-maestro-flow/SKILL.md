@@ -40,6 +40,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 | I want to...                                                 | Read                                                                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
+| Start from a known-good branching example                    | [references/examples/README.md](references/examples/README.md)                                   |
 | Publish, deploy, debug, or manage a flow's lifecycle         | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md)                             |
 | Diagnose a failed or misbehaving flow run                    | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md)                           |
 | Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                           |

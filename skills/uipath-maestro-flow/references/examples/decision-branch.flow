@@ -1,0 +1,950 @@
+{
+  "id": "00000000-0000-4000-8000-000000000114",
+  "version": "1.0.0",
+  "name": "DecisionBranchExample",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": "00000000-0000-4000-8000-000000000001",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "rollDice",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Roll Dice"
+      },
+      "inputs": {
+        "script": "const roll = Math.floor(Math.random() * 6) + 1;\nreturn { roll, isHigh: roll >= 4 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the dice roll script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "id": "checkHighRoll",
+      "type": "core.logic.decision",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "High Roll?"
+      },
+      "inputs": {
+        "expression": "$vars.rollDice.output.isHigh === true",
+        "trueLabel": "High",
+        "falseLabel": "Low"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      }
+    },
+    {
+      "id": "formatHigh",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Format High"
+      },
+      "inputs": {
+        "script": "return { message: `High roll: ${$vars.rollDice.output.roll}` };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the high-roll formatter",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "id": "formatLow",
+      "type": "core.action.script",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Format Low"
+      },
+      "inputs": {
+        "script": "return { message: `Low roll: ${$vars.rollDice.output.roll}` };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the low-roll formatter",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "id": "endHigh",
+      "type": "core.control.end",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "High Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "resultMessage": {
+          "source": "=js:$vars.formatHigh.output.message"
+        },
+        "roll": {
+          "source": "=js:$vars.rollDice.output.roll"
+        }
+      },
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    },
+    {
+      "id": "endLow",
+      "type": "core.control.end",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Low Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "resultMessage": {
+          "source": "=js:$vars.formatLow.output.message"
+        },
+        "roll": {
+          "source": "=js:$vars.rollDice.output.roll"
+        }
+      },
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-rollDice",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "rollDice",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-rollDice-checkHighRoll",
+      "sourceNodeId": "rollDice",
+      "sourcePort": "success",
+      "targetNodeId": "checkHighRoll",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkHighRoll-formatHigh",
+      "sourceNodeId": "checkHighRoll",
+      "sourcePort": "true",
+      "targetNodeId": "formatHigh",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkHighRoll-formatLow",
+      "sourceNodeId": "checkHighRoll",
+      "sourcePort": "false",
+      "targetNodeId": "formatLow",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-formatHigh-endHigh",
+      "sourceNodeId": "formatHigh",
+      "sourcePort": "success",
+      "targetNodeId": "endHigh",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-formatLow-endLow",
+      "sourceNodeId": "formatLow",
+      "sourcePort": "success",
+      "targetNodeId": "endLow",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Branch based on a true/false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "minHeight": 100,
+                  "placeholder": "e.g., $vars.data.status === \"approved\" && $vars.data.amount > 1000"
+                },
+                "label": "Expression",
+                "description": "JavaScript expression that evaluates to true or false"
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "Label shown when condition is true"
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "Label shown when condition is false"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "globals": [
+      {
+        "id": "resultMessage",
+        "direction": "out",
+        "type": "string",
+        "description": "Message from the branch that completed."
+      },
+      {
+        "id": "roll",
+        "direction": "out",
+        "type": "number",
+        "description": "Dice value from 1 to 6."
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        },
+        "description": "Data passed when manually triggering the workflow."
+      },
+      {
+        "id": "rollDice.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "rollDice",
+          "outputId": "output"
+        },
+        "description": "The return value of the dice roll script"
+      },
+      {
+        "id": "rollDice.error",
+        "type": "object",
+        "binding": {
+          "nodeId": "rollDice",
+          "outputId": "error"
+        },
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "formatHigh.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "formatHigh",
+          "outputId": "output"
+        },
+        "description": "The return value of the high-roll formatter"
+      },
+      {
+        "id": "formatHigh.error",
+        "type": "object",
+        "binding": {
+          "nodeId": "formatHigh",
+          "outputId": "error"
+        },
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "formatLow.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "formatLow",
+          "outputId": "output"
+        },
+        "description": "The return value of the low-roll formatter"
+      },
+      {
+        "id": "formatLow.error",
+        "type": "object",
+        "binding": {
+          "nodeId": "formatLow",
+          "outputId": "error"
+        },
+        "description": "Error information if the script fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "rollDice": {
+        "position": {
+          "x": 456,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "checkHighRoll": {
+        "position": {
+          "x": 656,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "formatHigh": {
+        "position": {
+          "x": 856,
+          "y": 44
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "formatLow": {
+        "position": {
+          "x": 856,
+          "y": 244
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endHigh": {
+        "position": {
+          "x": 1056,
+          "y": 44
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endLow": {
+        "position": {
+          "x": 1056,
+          "y": 244
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}
