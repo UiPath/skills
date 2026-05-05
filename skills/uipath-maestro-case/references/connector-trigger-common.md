@@ -189,7 +189,7 @@ When the trigger has event parameters (i.e. `caseShape.context[name="metadata"].
 <connection-id>_<startNode.id>
 ```
 
-`startNode.id` is the case's start-node id (existing in `caseplan.json`). This matches FE's `PackagingUtil.ts:227` convention.
+`startNode.id` is the case's start-node id (existing in `caseplan.json`). This matches FE's `PackagingUtil.ts:227` convention. **Per-plugin override:** for case-level event triggers, `startNode.id` is the trigger node's own id (the event trigger IS the start node for its case-entry path) — see [event/impl-json.md § Step 4](plugins/triggers/event/impl-json.md#step-4--mint-binding-ids-and-trigger-registration-key).
 
 Save them as `<connBindingId>`, `<folderBindingId>`, `<eventTriggerKey>` for Step 4.
 

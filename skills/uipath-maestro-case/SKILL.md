@@ -121,6 +121,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 | Resolve task types from registry | [references/registry-discovery.md](references/registry-discovery.md) |
 | Wire inputs/outputs + cross-task refs + expression prefixes | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | Configure connector activity / trigger / event | [references/connector-integration.md](references/connector-integration.md) |
+| Construct `case spec --input-details` JSON | [references/case-spec-input-details.md](references/case-spec-input-details.md) |
 | Skeleton tasks for unresolved resources | [references/skeleton-tasks.md](references/skeleton-tasks.md) |
 | Sync bindings_v2.json + connection resources | [references/bindings-v2-sync.md](references/bindings-v2-sync.md) |
 

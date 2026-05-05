@@ -2,7 +2,7 @@
 
 > **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 16 + Plugin Index.
 
-> **Phase split.** Runs across both phases. Phase 2 writes `data.type-id` + `data.connection-id` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
 
@@ -54,7 +54,7 @@ uip maestro case spec --type activity \
   --output json
 ```
 
-The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [§ Mutual exclusion with --skip-case-shape](#mutual-exclusion-with---skip-case-shape) in [case-spec-input-details.md](../../../case-spec-input-details.md)). The CLI returns the full `caseShape` populated with values from `--input-details`.
+The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [case-spec-input-details.md § Validation rules](../../../case-spec-input-details.md#validation-rules-invalidinputdetailserror-on-violation)). The CLI returns the full `caseShape` populated with values from `--input-details`.
 
 Save the response. The interesting parts:
 
@@ -181,7 +181,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 | Step failed | What gets populated | Log |
 |---|---|---|
-| `case spec` fails | Skeleton task per Rule 8 — `data.type-id` + `data.connection-id` only, no inputs/outputs/context | `[SKIPPED] case spec failed — skeleton task per Rule 8` |
+| `case spec` fails | Skeleton task per Rule 8 — `data.typeId` + `data.connectionId` only, no inputs/outputs/context | `[SKIPPED] case spec failed — skeleton task per Rule 8` |
 | Required-field gate fails (user declines) | Skeleton per Rule 8 OR re-prompt | `[SKIPPED] required field <name> missing — skeleton task per Rule 8` |
 | All succeed | Full population per Steps 5-10 including bindings_v2 sync | — |
 
@@ -198,7 +198,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 7. Root bindings exist for ConnectionId + folderKey with the minted ids
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
-10. `bindings_v2.json` `resources` array matches `root.data.uipath.bindings` after the deferred sync
+10. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
 
 ## What NOT to Do
 
