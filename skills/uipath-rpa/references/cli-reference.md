@@ -34,6 +34,8 @@ uip rpa --help                          # all rpa subcommands
 uip rpa get-errors --help               # parameters for a specific command
 ```
 
+> **Run `--help` standalone — never combine it with other flags.** `uip rpa <subcommand> --help --project-dir "<path>"` parses `--project-dir` as a positional command and exits with `unknown command '<path>'`. Drop every other flag when probing help.
+
 ---
 
 ## Global Options
@@ -236,8 +238,11 @@ uip rpa get-analyzer-rules --project-dir "<PROJECT_DIR>" --output json
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--project-dir` | No | Project directory. Defaults to CWD. |
+| `--scope` | No | Narrow results: `Activity`, `Workflow`, `Project`, or `Coded Workflow`. |
 
 Each rule returns `severity` (`error` / `warning` / `info`), rule ID (e.g. `ST-DBP-010`, `MA-DBP-028`), scope (`Activity` / `Workflow` / `Coded Workflow` / `Project`), title, and — when available — `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
+
+> **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more on projects with many activities packages. If the default 60 s shell timeout fires, retry with `--scope <ScopeYouNeed>` (e.g. `Activity` for single-activity generation, `Coded Workflow` for `.cs` authoring) — scoped calls return in seconds.
 
 ---
 
