@@ -58,6 +58,7 @@ uip maestro flow registry get <nodeType> --output json
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
+| `uipath.ixp.*`                  | [ixp/impl.md](plugins/ixp/impl.md)                             |
 
 For each node type, record:
 
