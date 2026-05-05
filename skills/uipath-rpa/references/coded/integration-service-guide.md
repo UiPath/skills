@@ -28,10 +28,10 @@ The skill resolves all metadata up-front using the `uipath-platform` skill's Int
 
 ## Required Package
 
-Add to `project.json` `dependencies`:
+**Always include `UiPath.IntegrationService.Activities` with version >= 1.25.0** in `project.json` `dependencies`:
 
 ```json
-"UiPath.IntegrationService.Activities": "[1.25.0]"
+"UiPath.IntegrationService.Activities": "[1.25.0,)"
 ```
 
 Add to the workflow file:
@@ -155,6 +155,7 @@ Create (or update) `.codedworkflows/ISConnections.cs`. One class per connector, 
 
 ```csharp
 // .codedworkflows/ISConnections.cs — managed by coding agent — regenerate via uipath-rpa skill when connections change.
+using UiPath.CodedWorkflows;
 using UiPath.IntegrationService.Activities.Runtime.CodedWorkflows;
 
 // Determine the namespace from other .cs files in the project root:
