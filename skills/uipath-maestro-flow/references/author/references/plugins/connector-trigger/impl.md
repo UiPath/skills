@@ -311,7 +311,7 @@ Then follow [/uipath:uipath-platform — triggers.md > Building Filter Trees fro
 | `{ "id": "subject", "operator": "contains", ... }` | Operator is case-sensitive — use PascalCase. | `"operator": "Contains"` |
 | `{ "value": "urgent" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }` |
 | `{ "isLiteral": false, "value": "${var}" }` | Expression values are not yet supported by the CLI port. | Resolve the value first, then pass it as a literal. |
-| Adding a freeform leaf for a connector-mandated field (e.g. Gmail folder, Slack channelId) | Mandatory filters derived from connector event metadata are emitted automatically by the CLI from `eventParameters` — duplicating them in the freeform tree double-applies the clause. | Set the value through `eventParameters` only; the CLI persists the mandatory JMES clause on `essentialConfiguration.mandatoryFilterExpression`. |
+| Adding a freeform leaf for a connector-mandated field (e.g. Gmail folder, Slack channelId) | Mandatory filters derived from connector event metadata are emitted automatically by the CLI from `eventParameters` — duplicating them in the freeform tree double-applies the clause. | Set the value through `eventParameters` only; the CLI AND-joins the mandatory JMES clause into the top-level `inputs.detail.filterExpression` (matching SW's `combinedFilterExpression`). It is *not* persisted on `essentialConfiguration` — SW classifies it optional and rebuilds it from input field values on restore. |
 
 ---
 

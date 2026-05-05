@@ -139,9 +139,11 @@ These steps assume the consuming skill has already loaded the trigger's `filterF
 
 ### Mandatory filter parameters
 
-Some triggers carry **mandatory event-parameter filters** the connector requires for subscription (e.g. Gmail Email Received always filters by folder; Slack message triggers filter by channel). These are **not** authored as freeform `filter` leaves. Set the value through `eventParameters` instead — the CLI runs it through the same mandatory-filter pipeline Studio Web uses (`buildMandatoryFilterExpression`) and persists the result on `essentialConfiguration.mandatoryFilterExpression`. The runtime `filterExpression` is the AND-join of the user's freeform tree and the mandatory clause; SW's translator reads it through `combinedFilterExpression`.
+Some triggers carry **mandatory event-parameter filters** the connector requires for subscription (e.g. Gmail Email Received always filters by folder; Slack message triggers filter by channel). These are **not** authored as freeform `filter` leaves. Set the value through `eventParameters` — the CLI runs it through the same mandatory-filter pipeline Studio Web uses (`buildMandatoryFilterExpression`) and AND-joins the result into the runtime `filterExpression` written at the **top level of the node's `inputs.detail`**. This matches what SW persists via `combinedFilterExpression`.
 
-Duplicating a mandatory clause in the freeform tree double-applies the constraint at runtime. Always set connector-mandated values via `eventParameters`, not `filter`.
+The mandatory clause is **not** persisted on `essentialConfiguration` — SW classifies it as optional (rebuilt from input field values on restore; only `filter`, the user-authored FilterTree, is essential per `TRIGGER_ACTIVITY_ESSENTIAL_PROPERTIES`). Persisting it there would diverge from SW's shape and double on the next save in SW.
+
+Duplicating a mandatory clause in the freeform `filter` tree double-applies the constraint at runtime. Always set connector-mandated values via `eventParameters`, not `filter`.
 
 ### Array-shaped fields
 
