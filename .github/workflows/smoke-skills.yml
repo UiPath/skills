@@ -247,12 +247,13 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
         working-directory: tests
         id: smoke
         run: |
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
-            -e experiments/default.yaml --tags smoke -j 1 -v
+            -e experiments/default.yaml --tags smoke -j "$TASK_PARALLELISM" -v
         continue-on-error: true
 
       - name: Summarize results
