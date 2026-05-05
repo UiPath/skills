@@ -64,7 +64,15 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Required fields**: `id`, `type`, `typeVersion`
+**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that "feel" trivial.
+
+> **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
+>
+> ```
+> [error] [(root)] Schema validation failed: Invalid input: expected object, received undefined
+> ```
+>
+> The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
 
 > **No `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`).
 >
@@ -88,6 +96,7 @@ Example — manual start trigger:
   "id": "start",
   "type": "core.trigger.manual",
   "typeVersion": "1.0.0",
+  "display": { "label": "Manual trigger" },
   "inputs": {
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
   },
@@ -310,6 +319,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
+      "display": { "label": "Manual trigger" },
       "inputs": {
         "entryPointId": "<uuid>"
       },
@@ -349,6 +359,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "id": "end",
       "type": "core.logic.terminate",
       "typeVersion": "1.0.0",
+      "display": { "label": "End" },
       "inputs": {}
     }
   ],
