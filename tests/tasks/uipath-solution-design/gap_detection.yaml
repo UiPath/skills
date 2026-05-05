@@ -1,10 +1,10 @@
-task_id: skill-sdd-gap-detection
+task_id: skill-sdd-integration-gap-detection
 description: >
   Skill-guided evaluation: agent uses the uipath-solution-design skill to
   analyze a deliberately incomplete PDD. Tests whether the skill correctly
   applies [DEFAULT] markers for standard gaps and [SME REVIEW] markers for
   business-knowledge gaps, per Critical Rules 4 and the Gap Detection Checklist.
-tags: [uipath-solution-design, smoke, gap-detection]
+tags: [uipath-solution-design, integration, lifecycle:generate]
 
 agent:
   type: claude-code

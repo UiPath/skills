@@ -1,0 +1,55 @@
+`task_id: skill-sdd-smoke-file-reading
+description: >
+  Smoke test: the skill workflow uses the Read tool on a provided PDD file
+  rather than relying on inline prompt content. Round-trip verification with
+  a unique random sentinel string the LLM cannot know without reading the
+  file. No analysis, no SDD generation.
+tags: [uipath-solution-design, smoke, lifecycle:generate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Step 1 — Write the following content to `pdd.md` using the Write tool.
+  Use the exact content; do not modify, summarise, or add anything.
+
+  --- BEGIN PDD CONTENT ---
+  # Process Design Document: ZEBRACAKE-7472
+  ## Process Overview
+  - **Process Name:** ZEBRACAKE-7472
+  - **Sentinel:** QXR-9118-PURPLE
+  - **Department:** Smoke Test Fixture
+  --- END PDD CONTENT ---
+
+  Step 2 — Load the `uipath-solution-design` skill. Use the Read tool to
+  read `pdd.md`. Do NOT rely on the inline content above for your answer —
+  read the file.
+
+  Step 3 — Write to `sentinel.txt` ONLY the value of the **Sentinel:**
+  field from the PDD. The file should contain just that one value, nothing
+  else, no labels or quotes.
+
+  Stop after writing `sentinel.txt`. Do NOT analyze, do NOT generate an SDD,
+  do NOT proceed beyond Step 3.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote the PDD file in Step 1"
+    path: "pdd.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent wrote sentinel.txt in Step 3"
+    path: "sentinel.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "sentinel.txt contains the unique sentinel value (proves Read tool was used on pdd.md)"
+    path: "sentinel.txt"
+    includes:
+      - "QXR-9118-PURPLE"
+    weight: 3.0
+    pass_threshold: 1.0
