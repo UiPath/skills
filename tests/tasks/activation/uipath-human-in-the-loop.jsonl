@@ -2,7 +2,7 @@
 {"id": "uipath-human-in-the-loop-002", "prompt": "Insert an approval step before the SAP write-back in my .flow"}
 {"id": "uipath-human-in-the-loop-003", "prompt": "I need a human to review the AI-generated RCA before it gets posted to ServiceNow"}
 {"id": "uipath-human-in-the-loop-004", "prompt": "Add a quick form approval after the invoice extraction node"}
-{"id": "uipath-human-in-the-loop-005", "prompt": "Build a flow that reads support tickets, has an agent draft an RCA, and updates ServiceNow"}
+{"id": "uipath-human-in-the-loop-005", "prompt": "Add a human review checkpoint after the agent drafts the RCA but before the ServiceNow ticket update"}
 {"id": "uipath-human-in-the-loop-006", "prompt": "Wire up an Action Center task in my flow with Approve/Reject buttons"}
 {"id": "uipath-human-in-the-loop-007", "prompt": "I want a human checkpoint where the reviewer fills in missing customer fields the agent couldn't extract"}
 {"id": "uipath-human-in-the-loop-008", "prompt": "Add a four-eyes approval step for any payment over $10k"}
@@ -17,7 +17,7 @@
 {"id": "uipath-human-in-the-loop-017", "prompt": "Use uip maestro flow hitl add to insert an approval node into my flow file"}
 {"id": "uipath-human-in-the-loop-018", "prompt": "Add a coded action app for the review step — scaffold a new React app inside my solution"}
 {"id": "uipath-human-in-the-loop-019", "prompt": "Add a price override approval — only managers can approve discounts over 15%"}
-{"id": "uipath-human-in-the-loop-020", "prompt": "Build a flow that processes refund requests and sends each to a CSR for approval before issuing the refund via Stripe"}
+{"id": "uipath-human-in-the-loop-020", "prompt": "Insert a CSR approval gate before the Stripe refund node in my refund flow"}
 {"id": "uipath-human-in-the-loop-021", "prompt": "I want the agent's draft email reviewed by a human before it goes out to the customer"}
 {"id": "uipath-human-in-the-loop-022", "prompt": "Add a fraud-alert review checkpoint — show the transaction details and let the analyst mark as fraud or legit"}
 {"id": "uipath-human-in-the-loop-023", "prompt": "Insert an access-provisioning approval gate after the JIRA ticket is parsed"}
@@ -32,7 +32,7 @@
 {"id": "uipath-human-in-the-loop-032", "prompt": "Add a quickform with a number input for approved amount and a free-text justification"}
 {"id": "uipath-human-in-the-loop-033", "prompt": "Make the agent pause after drafting the comms and wait for a human to greenlight"}
 {"id": "uipath-human-in-the-loop-034", "prompt": "Reference an existing deployed app called LoanApprovalApp in my HITL node"}
-{"id": "uipath-human-in-the-loop-035", "prompt": "Build a Maestro flow with an Outlook trigger, an inline agent that drafts a reply, then a HITL approval before sending"}
+{"id": "uipath-human-in-the-loop-035", "prompt": "Add a HITL approval node between the reply-drafting agent and the email send node in my flow"}
 {"id": "uipath-human-in-the-loop-036", "prompt": "Plug in an Action Center task right before the SAP posting"}
 {"id": "uipath-human-in-the-loop-037", "prompt": "Add an exception escalation: if the validator returns invalid, route to a human; otherwise continue"}
 {"id": "uipath-human-in-the-loop-038", "prompt": "Add a HITL where the reviewer can approve, reject, or send back for clarification"}

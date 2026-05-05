@@ -14,7 +14,7 @@
 {"id": "uipath-planner-014", "prompt": "Walk me through automating our quarterly close — multiple systems involved"}
 {"id": "uipath-planner-015", "prompt": "I want UiPath to handle expense reports end-to-end. Where do I start?"}
 {"id": "uipath-planner-016", "prompt": "Build a UiPath automation that reads invoices, calls an LLM to classify them, then files them in SAP — and deploy it"}
-{"id": "uipath-planner-017", "prompt": "Build a workflow against our HR app and verify it actually works on the live UI"}
+{"id": "uipath-planner-017", "prompt": "Help me set up a full UiPath solution that handles new-hire provisioning across HR, IT, and finance systems"}
 {"id": "uipath-planner-018", "prompt": "I have an SDD here, generate the implementation plan and start building"}
 {"id": "uipath-planner-019", "prompt": "I'm not sure if I need an agent, a flow, or just a workflow — help me decide"}
 {"id": "uipath-planner-020", "prompt": "Plan and execute a full automation for processing purchase orders from email"}
@@ -29,12 +29,12 @@
 {"id": "uipath-planner-029", "prompt": "Help me automate document processing for legal contracts — design the whole pipeline"}
 {"id": "uipath-planner-030", "prompt": "I want an AI agent that can call our existing UiPath RPA processes — set the whole thing up"}
 {"id": "uipath-planner-031", "prompt": "Plan the implementation for this PDD: docs/process-design.docx"}
-{"id": "uipath-planner-032", "prompt": "Create a UiPath automation for IT helpdesk ticket triage and routing"}
+{"id": "uipath-planner-032", "prompt": "I want to automate IT helpdesk ticket triage in UiPath — not sure if I need an LLM-powered agent or just an RPA workflow, help me decide and plan it out"}
 {"id": "uipath-planner-033", "prompt": "Help me figure out the right architecture for automating our accounts payable process in UiPath"}
 {"id": "uipath-planner-034", "prompt": "Build a Citrix-based automation against our legacy ERP and deploy to Orchestrator"}
 {"id": "uipath-planner-035", "prompt": "I want to automate something across SAP, Excel, and email — what's the best way to structure this in UiPath?"}
 {"id": "uipath-planner-036", "prompt": "Plan an automation that integrates a coded app with a flow that calls an agent"}
-{"id": "uipath-planner-037", "prompt": "Build a UI automation for our internal portal and verify it on the running app"}
+{"id": "uipath-planner-037", "prompt": "Plan an automation that orchestrates an existing RPA process and a new agent through a Maestro flow, then deploys it"}
 {"id": "uipath-planner-038", "prompt": "Need to automate KYC verification — help me plan and build this in UiPath"}
 {"id": "uipath-planner-039", "prompt": "Set up a complete UiPath process for handling vendor onboarding requests"}
 {"id": "uipath-planner-040", "prompt": "I want to migrate this manual process to UiPath — guide me through the whole thing"}

@@ -12,7 +12,7 @@
 {"id": "uipath-tasks-012", "prompt": "List eligible users for action assignment in this folder"}
 {"id": "uipath-tasks-013", "prompt": "Complete the FormTask 5512 with the approve outcome and submit the form data"}
 {"id": "uipath-tasks-014", "prompt": "Show me all tasks assigned to me right now"}
-{"id": "uipath-tasks-015", "prompt": "Bulk-assign all unassigned validation tasks in folder 7 to bob@uipath.com"}
+{"id": "uipath-tasks-015", "prompt": "Bulk-assign all unassigned form tasks in folder 7 to bob@uipath.com"}
 {"id": "uipath-tasks-016", "prompt": "Get task with type hint AppTask in folder 12"}
 {"id": "uipath-tasks-017", "prompt": "List action center tasks as admin"}
 {"id": "uipath-tasks-018", "prompt": "Filter tasks by status pending"}

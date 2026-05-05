@@ -23,11 +23,11 @@
 {"id": "uipath-interact-023", "prompt": "Verify the checkbox is checked and the Submit button is enabled before I run the rest"}
 {"id": "uipath-interact-024", "prompt": "Walk me through the live app step by step: capture each screen and tell me what controls are there"}
 {"id": "uipath-interact-025", "prompt": "Click the Refresh icon in the ServiceNow tab that's open and read the new ticket count"}
-{"id": "uipath-interact-026", "prompt": "Screenshot the entire desktop and then zoom into the warning banner"}
+{"id": "uipath-interact-026", "prompt": "Screenshot the warning banner showing in the running app window"}
 {"id": "uipath-interact-027", "prompt": "Fill out the multi-step wizard with these values and screenshot each page after I confirm"}
 {"id": "uipath-interact-028", "prompt": "Read whatever's in the clipboard preview field and tell me"}
 {"id": "uipath-interact-029", "prompt": "Use uip rpa uia to discover the running applications and list them"}
-{"id": "uipath-interact-030", "prompt": "Open the running SAP Logon, double-click the Production system, and log in with my credentials from the password manager"}
+{"id": "uipath-interact-030", "prompt": "In the running SAP Logon window, double-click the Production system entry and screenshot the login dialog that opens"}
 {"id": "uipath-interact-031", "prompt": "Click through the cookie banner and the survey popup so the page is usable"}
 {"id": "uipath-interact-032", "prompt": "Inspect the UI of the running app and tell me which fields are required"}
 {"id": "uipath-interact-033", "prompt": "Drive the live app to filter the orders table by status=Pending and tell me how many rows are returned"}

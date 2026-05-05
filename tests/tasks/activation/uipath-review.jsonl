@@ -31,7 +31,7 @@
 {"id": "uipath-review-031", "prompt": "Performance review: are there bulk APIs I should be using instead of loops with single calls?"}
 {"id": "uipath-review-032", "prompt": "Check if my coded workflows mix Modern and Classic activities in a way that will cause problems"}
 {"id": "uipath-review-033", "prompt": "Evaluate test coverage and test maturity for this RPA project"}
-{"id": "uipath-review-034", "prompt": "Is my .flow's HITL wired up correctly? Action Center task schema, escalation, write-back"}
+{"id": "uipath-review-034", "prompt": "Audit the HITL setup in my .flow — review the Action Center task schema, escalation paths, and write-back, don't change anything"}
 {"id": "uipath-review-035", "prompt": "Code review on my agent's prompt — too long? hidden instructions? PII leakage risk?"}
 {"id": "uipath-review-036", "prompt": "Find dead code and unused variables across this project"}
 {"id": "uipath-review-037", "prompt": "Is this project deploy-ready? Validation, config, secrets, dependencies"}

@@ -25,9 +25,9 @@
 {"id": "uipath-rpa-legacy-025", "prompt": "Fix the 'Cannot create unknown type' error in my Windows-Legacy XAML"}
 {"id": "uipath-rpa-legacy-026", "prompt": "Add Orchestrator queue Add Queue Item / Get Transaction Item activities to the dispatcher and performer"}
 {"id": "uipath-rpa-legacy-027", "prompt": "Build a workflow that uses Excel Application Scope to read Config.xlsx and load assets"}
-{"id": "uipath-rpa-legacy-028", "prompt": "Create a Selector for a button in Notepad and add a Click activity"}
+{"id": "uipath-rpa-legacy-028", "prompt": "In my Windows-Legacy project, create a full selector for a button in Notepad and add a classic Click activity"}
 {"id": "uipath-rpa-legacy-029", "prompt": "My XAML uses System.Private.CoreLib, switch the assembly references back to mscorlib"}
-{"id": "uipath-rpa-legacy-030", "prompt": "Add a TryCatch around the entire Main sequence and log the exception"}
+{"id": "uipath-rpa-legacy-030", "prompt": "In my Windows-Legacy XAML, add a TryCatch around the entire Main sequence and log the exception"}
 {"id": "uipath-rpa-legacy-031", "prompt": "I have a Windows-Legacy project, add Send Outlook Mail Message at the end of Main.xaml"}
 {"id": "uipath-rpa-legacy-032", "prompt": "ViewState is missing on my Flowchart nodes — Studio is stacking them at 0,0. Fix it."}
 {"id": "uipath-rpa-legacy-033", "prompt": "Find activities for HTTP Request in my legacy project and add one to call our API"}
@@ -35,17 +35,17 @@
 {"id": "uipath-rpa-legacy-035", "prompt": "Add an Assign with a LINQ query that filters rows where Status = \"Open\""}
 {"id": "uipath-rpa-legacy-036", "prompt": "Help me read a PDF with the classic Read PDF Text activity"}
 {"id": "uipath-rpa-legacy-037", "prompt": "Set the project's expressionLanguage to C# and update Main.xaml to use C# expressions"}
-{"id": "uipath-rpa-legacy-038", "prompt": "Add a While loop with a counter that retries the API call up to 3 times"}
-{"id": "uipath-rpa-legacy-039", "prompt": "I need a Switch activity with cases for each transaction type"}
+{"id": "uipath-rpa-legacy-038", "prompt": "In my legacy XAML, add a While loop with a counter that retries the HTTP Request activity up to 3 times"}
+{"id": "uipath-rpa-legacy-039", "prompt": "In my Windows-Legacy REFramework project, add a Switch activity in Process.xaml with cases for each transaction type"}
 {"id": "uipath-rpa-legacy-040", "prompt": "Build the dispatcher that adds queue items from an Excel sheet"}
 {"id": "uipath-rpa-legacy-041", "prompt": "Generate a Document Understanding pipeline XAML for a legacy project"}
-{"id": "uipath-rpa-legacy-042", "prompt": "Add an in_FilePath argument to Main.xaml and wire it through to the Excel scope"}
+{"id": "uipath-rpa-legacy-042", "prompt": "Add an in_FilePath argument to Main.xaml in my Windows-Legacy project and wire it through to the Excel Application Scope"}
 {"id": "uipath-rpa-legacy-043", "prompt": "Validate the whole project and tell me what errors come up"}
 {"id": "uipath-rpa-legacy-044", "prompt": "Open project in Studio Desktop, write a workflow that scrapes a table from a web page using classic UI Automation"}
-{"id": "uipath-rpa-legacy-045", "prompt": "Add ContinueOnError to a non-critical block of activities so the workflow doesn't fail"}
+{"id": "uipath-rpa-legacy-045", "prompt": "Set ContinueOnError=True on a non-critical classic activity in my legacy XAML so the workflow doesn't fail"}
 {"id": "uipath-rpa-legacy-046", "prompt": "Create test data — an Excel file and a JSON config — for testing my legacy workflow"}
 {"id": "uipath-rpa-legacy-047", "prompt": "Refactor this monolithic Main.xaml into smaller InvokeWorkflowFile blocks"}
 {"id": "uipath-rpa-legacy-048", "prompt": "Add Get Asset and Get Credential activities to read Orchestrator assets"}
 {"id": "uipath-rpa-legacy-049", "prompt": "Fix the dependencies in project.json so packages resolve for a Windows-Legacy target"}
 {"id": "uipath-rpa-legacy-050", "prompt": "I want to add a Persistence (Wait For) pattern in my legacy workflow — is that possible? show how"}
-{"id": "uipath-rpa-legacy-051", "prompt": "Build a UiPath Studio Desktop project"}
+{"id": "uipath-rpa-legacy-051", "prompt": "Build a UiPath Studio Desktop project targeting .NET Framework 4.6.1 with a Main.xaml that prints Hello"}

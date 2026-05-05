@@ -19,7 +19,7 @@
 {"id": "uipath-gov-aops-policy-019", "prompt": "Hide the developer panel in StudioX for all citizen devs"}
 {"id": "uipath-gov-aops-policy-020", "prompt": "Stop citizen developers from saving projects locally"}
 {"id": "uipath-gov-aops-policy-021", "prompt": "I need a guardrail that prevents publishing without release notes"}
-{"id": "uipath-gov-aops-policy-022", "prompt": "Set up a rule that blocks the Build Custom Connector option in Integration Service for everyone except admins"}
+{"id": "uipath-gov-aops-policy-022", "prompt": "Restrict the Studio package feed to our internal Artifactory only — block public NuGet"}
 {"id": "uipath-gov-aops-policy-023", "prompt": "How do I govern what Robot can run at the tenant level?"}
 {"id": "uipath-gov-aops-policy-024", "prompt": "Restrict Agent Builder so only the AI team can use it"}
 {"id": "uipath-gov-aops-policy-025", "prompt": "Apply this AITL policy as the tenant-wide default"}

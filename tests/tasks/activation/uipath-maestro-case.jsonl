@@ -4,9 +4,9 @@
 {"id": "uipath-maestro-case-004", "prompt": "Build a case management project for a freedom of information request workflow"}
 {"id": "uipath-maestro-case-005", "prompt": "I don't have an sdd.md yet — can you interview me and generate one for a loan application case?"}
 {"id": "uipath-maestro-case-006", "prompt": "Convert this spec into a Case Management plan with stages and tasks"}
-{"id": "uipath-maestro-case-007", "prompt": "Add a secondary stage called Pending Evidence Completion that runs when more documents are needed"}
+{"id": "uipath-maestro-case-007", "prompt": "Add a stage called Pending Evidence between Intake and Review for when more documents are needed"}
 {"id": "uipath-maestro-case-008", "prompt": "Add an exception stage to my case for handling escalations"}
-{"id": "uipath-maestro-case-009", "prompt": "Add a terminal stage that closes the case once all approvals are complete"}
+{"id": "uipath-maestro-case-009", "prompt": "Add a final Closure stage and wire a case-exit condition so the case ends once all approvals are complete"}
 {"id": "uipath-maestro-case-010", "prompt": "Add an entry condition to the Review stage that only runs when claim_amount > 10000"}
 {"id": "uipath-maestro-case-011", "prompt": "Add an exit condition to the Validation stage when status equals approved or rejected"}
 {"id": "uipath-maestro-case-012", "prompt": "Wire an HITL approval task into my Maker Review stage"}
@@ -18,7 +18,7 @@
 {"id": "uipath-maestro-case-018", "prompt": "Add an execute-connector-activity task that creates a ticket in ServiceNow"}
 {"id": "uipath-maestro-case-019", "prompt": "Set up an event trigger so the case starts when a new row is added to a Data Fabric entity"}
 {"id": "uipath-maestro-case-020", "prompt": "Add an Outlook trigger that creates a case when an email arrives in the claims inbox"}
-{"id": "uipath-maestro-case-021", "prompt": "Use a manual trigger so a user can start the case from Action Center"}
+{"id": "uipath-maestro-case-021", "prompt": "Use a manual trigger so a user can start the case on demand"}
 {"id": "uipath-maestro-case-022", "prompt": "Add a scheduled timer trigger that starts the case every Monday at 9am"}
 {"id": "uipath-maestro-case-023", "prompt": "Define case-level input arguments so I can pass data from Maestro into the case"}
 {"id": "uipath-maestro-case-024", "prompt": "Add global variables for CaseId, CustomerName, and ProducerAmount"}
@@ -27,10 +27,10 @@
 {"id": "uipath-maestro-case-027", "prompt": "Add a stage SLA with email notification when the threshold is reached"}
 {"id": "uipath-maestro-case-028", "prompt": "Set a task SLA of 4 hours and escalate to the manager group on breach"}
 {"id": "uipath-maestro-case-029", "prompt": "Add a conditional SLA rule that uses 14 days for retail customers and 7 days for premium"}
-{"id": "uipath-maestro-case-030", "prompt": "Configure ad-hoc mode on my case so a Case Manager agent decides which tasks to run"}
-{"id": "uipath-maestro-case-031", "prompt": "Add an optional ad-hoc task in the floating stage for follow-up calls"}
-{"id": "uipath-maestro-case-032", "prompt": "Add a re-entry loop on the Document Ingestion stage so it can rework when validation fails"}
-{"id": "uipath-maestro-case-033", "prompt": "Toggle runs-on-re-entry for the tasks in this stage"}
+{"id": "uipath-maestro-case-030", "prompt": "Add a stage-entry condition on the Manager Approval stage so it only runs for amounts over 50000"}
+{"id": "uipath-maestro-case-031", "prompt": "Add a task-entry condition on the Send Notification action so it only runs when notify_customer is true"}
+{"id": "uipath-maestro-case-032", "prompt": "Add an edge from the Validation stage back to Document Ingestion so it reworks when documents are rejected"}
+{"id": "uipath-maestro-case-033", "prompt": "Place the Send Email and Update Record tasks in separate lanes inside the Notification stage"}
 {"id": "uipath-maestro-case-034", "prompt": "Add a case-exit condition that completes the case when status is closed"}
 {"id": "uipath-maestro-case-035", "prompt": "Run uip maestro case registry pull and resolve the connector activities I need"}
 {"id": "uipath-maestro-case-036", "prompt": "Validate my caseplan.json"}
@@ -42,8 +42,8 @@
 {"id": "uipath-maestro-case-042", "prompt": "I want to build a case for an insurance claim — intake, validation, eligibility check, manager approval, payment, and close. Walk me through it"}
 {"id": "uipath-maestro-case-043", "prompt": "Build a case management project that handles employee onboarding with stages for offer, background check, equipment provisioning, and day-1 setup"}
 {"id": "uipath-maestro-case-044", "prompt": "I need a complaint handling case with a triage stage, an investigation stage with parallel agent and HITL tasks, and a resolution stage with SLA escalation"}
-{"id": "uipath-maestro-case-045", "prompt": "My stage is moving to the next stage without running its tasks — can you check the caseplan?"}
-{"id": "uipath-maestro-case-046", "prompt": "Add description fields to my case, stages, and tasks so the Case Manager agent can route correctly"}
+{"id": "uipath-maestro-case-045", "prompt": "My stage is skipping its tasks because the stage-exit condition fires too early — fix the caseplan"}
+{"id": "uipath-maestro-case-046", "prompt": "Add displayName and description fields to every stage and task in my caseplan"}
 {"id": "uipath-maestro-case-047", "prompt": "Resolve the ServiceNow connector for this connector-activity task and fill in the typeId"}
 {"id": "uipath-maestro-case-048", "prompt": "Add a skeleton task for the credit-check process — I'll resolve the resource later"}
 {"id": "uipath-maestro-case-049", "prompt": "List the stages and tasks in my caseplan.json"}

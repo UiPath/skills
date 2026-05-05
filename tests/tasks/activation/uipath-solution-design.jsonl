@@ -14,7 +14,7 @@
 {"id": "uipath-solution-design-014", "prompt": "Create an SDD that breaks the PDD into projects, workflows, and packages"}
 {"id": "uipath-solution-design-015", "prompt": "Turn the attached process documentation into an SDD with a Project Structure section"}
 {"id": "uipath-solution-design-016", "prompt": "I have a PDD describing email ingestion + extraction + reporting — design the multi-project Solution"}
-{"id": "uipath-solution-design-017", "prompt": "Write the solution design document for the COE-11860 maturity assessment PDD"}
+{"id": "uipath-solution-design-017", "prompt": "Write the solution design document for this purchase order processing PDD"}
 {"id": "uipath-solution-design-018", "prompt": "Generate sdd.md from pdd.md using REFramework where appropriate"}
 {"id": "uipath-solution-design-019", "prompt": "I need PDD-to-SDD analysis for a mortgage origination automation"}
 {"id": "uipath-solution-design-020", "prompt": "Pick scope and produce an SDD for this customer's process design document"}

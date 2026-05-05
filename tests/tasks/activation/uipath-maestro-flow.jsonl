@@ -1,12 +1,12 @@
 {"id": "uipath-maestro-flow-001", "prompt": "Create a new UiPath Flow project called OrderProcessing"}
 {"id": "uipath-maestro-flow-002", "prompt": "Validate my .flow file"}
 {"id": "uipath-maestro-flow-003", "prompt": "Add a node to my flow"}
-{"id": "uipath-maestro-flow-004", "prompt": "Add a subflow to reusable logic"}
+{"id": "uipath-maestro-flow-004", "prompt": "Extract a chunk of my .flow into a subflow so I can reuse it"}
 {"id": "uipath-maestro-flow-005", "prompt": "Add a scheduled trigger to my flow"}
 {"id": "uipath-maestro-flow-006", "prompt": "Build a UiPath Flow that reads Salesforce opportunities, filters closed-won deals, posts to Slack, and writes to an agent for summarization"}
 {"id": "uipath-maestro-flow-007", "prompt": "I have an existing .flow file with a manual trigger; replace it with a connector trigger bound to a Salesforce connection and re-wire the downstream nodes"}
 {"id": "uipath-maestro-flow-008", "prompt": "I want to orchestrate multiple UiPath automations together"}
-{"id": "uipath-maestro-flow-009", "prompt": "Create a Maestro flow project from scratch"}
+{"id": "uipath-maestro-flow-009", "prompt": "Run uip maestro flow tidy on my project to fix the layout before I publish"}
 {"id": "uipath-maestro-flow-010", "prompt": "Replace a mock node with a real RPA process node in my .flow"}
 {"id": "uipath-maestro-flow-011", "prompt": "Build a .flow that listens to a Gmail connector trigger for new emails, parses with a script node, branches on sender domain, posts matching ones to Teams, and writes a queue record"}
 {"id": "uipath-maestro-flow-012", "prompt": "Convert my Maestro flow from manual trigger to scheduled every 4 hours with Europe/Berlin timezone, and add a decision node that skips on weekends"}
@@ -25,12 +25,12 @@
 {"id": "uipath-maestro-flow-025", "prompt": "Create a Maestro flow: receive order via HTTP trigger, validate inventory with a script node, charge via Stripe connector, update Salesforce opportunity, notify via SendGrid, write audit record to queue"}
 {"id": "uipath-maestro-flow-026", "prompt": "Split my monolithic .flow into three subflows (ingestion, transformation, delivery) wired under a main flow with appropriate I/O variables"}
 {"id": "uipath-maestro-flow-027", "prompt": "Implement a saga pattern in my .flow with compensating transactions — on failure of step N, invoke the compensation subflow for steps 1..N-1, wired via decisions and error ports"}
-{"id": "uipath-maestro-flow-028", "prompt": "Make my automation skip steps when a condition is false"}
+{"id": "uipath-maestro-flow-028", "prompt": "In my Maestro flow, make the Slack-notify branch only run when the order total is above $1000"}
 {"id": "uipath-maestro-flow-029", "prompt": "My UiPath thing should trigger when a new row is added to Google Sheets"}
 {"id": "uipath-maestro-flow-030", "prompt": "I want a reusable chunk of UiPath logic I can call from multiple places"}
 {"id": "uipath-maestro-flow-031", "prompt": "Add a webhook that starts my UiPath job"}
-{"id": "uipath-maestro-flow-032", "prompt": "I need something visual in UiPath that shows my automation steps"}
-{"id": "uipath-maestro-flow-033", "prompt": "Pass data between UiPath steps"}
+{"id": "uipath-maestro-flow-032", "prompt": "Open my .flow file and tell me what each node does end-to-end"}
+{"id": "uipath-maestro-flow-033", "prompt": "Wire the Salesforce node's account ID output into the next HTTP node's input in my .flow"}
 {"id": "uipath-maestro-flow-034", "prompt": "Invoke a child UiPath automation and wait for its result"}
 {"id": "uipath-maestro-flow-035", "prompt": "I want an automation that fires whenever I get an Outlook email with an attachment, pulls the attachment, and hands it to a coded agent for extraction."}
 {"id": "uipath-maestro-flow-036", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?"}

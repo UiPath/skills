@@ -1,15 +1,15 @@
-{"id": "negative-001", "prompt": "Chain my RPA process with an AI agent call"}
-{"id": "negative-002", "prompt": "Add a decision branch to my workflow"}
+{"id": "negative-001", "prompt": "Compare LangChain and LlamaIndex for a RAG prototype"}
+{"id": "negative-002", "prompt": "Add a switch-case statement in my Java code"}
 {"id": "negative-003", "prompt": "Create a flowchart for my architecture doc"}
 {"id": "negative-004", "prompt": "Add a node to my graph"}
-{"id": "negative-005", "prompt": "Help me wire together multiple UiPath resources"}
-{"id": "negative-006", "prompt": "My automation needs to run on a schedule"}
-{"id": "negative-007", "prompt": "Connect two UiPath workflows so one triggers the other"}
+{"id": "negative-005", "prompt": "Set up Terraform modules for my AWS infrastructure"}
+{"id": "negative-006", "prompt": "Schedule a cron job on my Linux server every weekday at 8am"}
+{"id": "negative-007", "prompt": "Wire two AWS Lambdas together using EventBridge"}
 {"id": "negative-008", "prompt": "Write a Python Flask app"}
 {"id": "negative-009", "prompt": "Fix my TypeScript compilation error"}
 {"id": "negative-010", "prompt": "Set up a GitHub Actions workflow"}
-{"id": "negative-011", "prompt": "Migrate my RPA project from Studio Desktop to Studio Web using ReFramework patterns"}
-{"id": "negative-012", "prompt": "I need to execute a process on a schedule"}
+{"id": "negative-011", "prompt": "Convert my Selenium tests from Java to Playwright in TypeScript"}
+{"id": "negative-012", "prompt": "Set up an Airflow DAG that runs nightly"}
 {"id": "negative-013", "prompt": "Show me a DAG for my Airflow jobs"}
 {"id": "negative-014", "prompt": "Orchestrate my Temporal workflows"}
 {"id": "negative-015", "prompt": "Create a Step Functions state machine in AWS"}
@@ -18,7 +18,7 @@
 {"id": "negative-018", "prompt": "Create a connector in Power Automate"}
 {"id": "negative-019", "prompt": "Wire up a Node-RED flow with MQTT nodes"}
 {"id": "negative-020", "prompt": "I need to handle different cases based on a value"}
-{"id": "negative-021", "prompt": "Add a date-based pause until tomorrow at noon"}
+{"id": "negative-021", "prompt": "What's the best Python library to parse ISO 8601 timestamps?"}
 {"id": "negative-022", "prompt": "Group records by a key and count them"}
 {"id": "negative-023", "prompt": "What's the recipe for chocolate chip cookies?"}
 {"id": "negative-024", "prompt": "Translate this French text to English"}
@@ -29,15 +29,15 @@
 {"id": "negative-029", "prompt": "Write a Dockerfile for a Node app"}
 {"id": "negative-030", "prompt": "Configure Nginx reverse proxy"}
 {"id": "negative-031", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process"}
-{"id": "negative-032", "prompt": "Build a Test Suite in UiPath for automated regression testing of my XAML workflows"}
+{"id": "negative-032", "prompt": "Set up Cypress for end-to-end testing of my React app"}
 {"id": "negative-033", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus"}
-{"id": "negative-034", "prompt": "Upgrade my Orchestrator from 2022.10 to 2024.10 with minimal downtime and robot compatibility testing"}
-{"id": "negative-035", "prompt": "How do I automate my daily tasks?"}
-{"id": "negative-036", "prompt": "Build me an agent that answers questions"}
+{"id": "negative-034", "prompt": "Plan the rollout of an SAP S/4HANA upgrade across our regional offices"}
+{"id": "negative-035", "prompt": "Recommend a good ergonomic keyboard for long coding sessions"}
+{"id": "negative-036", "prompt": "What is the capital of Australia?"}
 {"id": "negative-037", "prompt": "Automate the hiring pipeline"}
-{"id": "negative-038", "prompt": "Make my bot talk to Slack"}
+{"id": "negative-038", "prompt": "Send a Slack notification from my Python script using the slack-sdk library"}
 {"id": "negative-039", "prompt": "Extract data from PDFs"}
-{"id": "negative-040", "prompt": "Build me a chatbot"}
+{"id": "negative-040", "prompt": "Compare ChatGPT, Gemini, and Claude for general writing tasks"}
 {"id": "negative-041", "prompt": "Orchestrate containers with Docker Swarm"}
 {"id": "negative-042", "prompt": "Create a Camunda BPMN process"}
 {"id": "negative-043", "prompt": "Design a Process Maker workflow"}

@@ -24,7 +24,7 @@
 {"id": "uipath-gov-access-policy-024", "prompt": "Add an actor identity rule so only user jane.doe@uipath.com can use the Approval agent as a tool"}
 {"id": "uipath-gov-access-policy-025", "prompt": "Restrict the InvoiceProcessing case management workflow to only the BackOffice flow"}
 {"id": "uipath-gov-access-policy-026", "prompt": "policy: when AgenticProcess invokes any RPAWorkflow tagged 'critical', only allow if actor is in admins group"}
-{"id": "uipath-gov-access-policy-027", "prompt": "delete policies abc-123 and def-456"}
+{"id": "uipath-gov-access-policy-027", "prompt": "delete access policies abc-123 and def-456 in one call"}
 {"id": "uipath-gov-access-policy-028", "prompt": "I need a tool-use policy that limits agent X to calling only specific sub-agents"}
 {"id": "uipath-gov-access-policy-029", "prompt": "Show me a sample access policy I can adapt"}
 {"id": "uipath-gov-access-policy-030", "prompt": "set up governance: production agents may only be invoked by production maestros"}

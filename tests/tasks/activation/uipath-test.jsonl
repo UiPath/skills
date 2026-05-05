@@ -37,13 +37,13 @@
 {"id": "uipath-test-037", "prompt": "Download the attachments from execution 12345"}
 {"id": "uipath-test-038", "prompt": "What's our regression pass rate over the last 5 runs of NightlyRegression?"}
 {"id": "uipath-test-039", "prompt": "Which test cases have been failing most often in project INV?"}
-{"id": "uipath-test-040", "prompt": "Tell me the test coverage for project INV"}
+{"id": "uipath-test-040", "prompt": "How many test cases in project INV are still unlinked to an automation?"}
 {"id": "uipath-test-041", "prompt": "Kick off my smoke test set and wait for results, then summarize failures"}
 {"id": "uipath-test-042", "prompt": "Publish my package and link it to the LoginRegression test case in Test Manager"}
 {"id": "uipath-test-043", "prompt": "Set up a new Test Manager project for the Billing release with a default folder and three empty test sets"}
 {"id": "uipath-test-044", "prompt": "Trigger the nightly regression test set, wait for it to finish, and produce a developer-focused failure report"}
 {"id": "uipath-test-045", "prompt": "Pull the assertions for every failed test case in execution 12345 so I can triage"}
-{"id": "uipath-test-046", "prompt": "Use uip tm to list my test manager projects"}
+{"id": "uipath-test-046", "prompt": "Filter Test Manager projects whose name or key contains 'Billing'"}
 {"id": "uipath-test-047", "prompt": "Show me test execution logs from Test Manager"}
 {"id": "uipath-test-048", "prompt": "I need to manage test sets and executions in UiPath"}
 {"id": "uipath-test-049", "prompt": "Bulk-add 20 test cases from project INV into the new ReleaseCandidate test set"}

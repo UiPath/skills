@@ -33,7 +33,7 @@
 {"id": "uipath-data-fabric-033", "prompt": "Replace the file on the Document field of record r-001 in Contract with a newer version"}
 {"id": "uipath-data-fabric-034", "prompt": "How do I delete the entity I just created? It's empty and I want to start over"}
 {"id": "uipath-data-fabric-035", "prompt": "Drop the LegacyNotes field from my Customer entity"}
-{"id": "uipath-data-fabric-036", "prompt": "Run a CEQL-style filter on the Account entity for Active = true AND Region = 'AMER'"}
+{"id": "uipath-data-fabric-036", "prompt": "Filter records in the Account entity where Active = true AND Region = 'AMER'"}
 {"id": "uipath-data-fabric-037", "prompt": "Pull all records from the Stores entity into a JSON file on disk"}
 {"id": "uipath-data-fabric-038", "prompt": "Create a new field called Priority on Ticket as INTEGER and rename the existing Severity field's display label to 'Severity (1-5)'"}
 {"id": "uipath-data-fabric-039", "prompt": "I want to import a 5000-row CSV but my tenant errors out, can we batch it?"}

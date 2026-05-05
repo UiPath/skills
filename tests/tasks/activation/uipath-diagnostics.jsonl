@@ -27,7 +27,7 @@
 {"id": "uipath-diagnostics-027", "prompt": "What's causing `Serverless.PythonCodedAgent.PrepareEnvironmentError - Failed to prepare environment`?"}
 {"id": "uipath-diagnostics-028", "prompt": "Action Center page reloads with \"You don't have permission to view this page\" for one customer. Debug."}
 {"id": "uipath-diagnostics-029", "prompt": "I'm using a PW connection in package requirements for a process deployed in a non-PW folder and getting `no permission or missing connection`. Is this an unsupported case or a config bug?"}
-{"id": "uipath-diagnostics-030", "prompt": "Cluster is failing health checks. Look into it."}
+{"id": "uipath-diagnostics-030", "prompt": "Storage Bucket activity returns \"BlobStorage.UnauthorizedAccess\" at runtime but the same bucket works in Studio. Diagnose."}
 {"id": "uipath-diagnostics-031", "prompt": "My process throws System.NullReferenceException at the Read Range activity randomly. Help me find the root cause."}
 {"id": "uipath-diagnostics-032", "prompt": "Robot can't connect to Orchestrator: \"Could not connect to UiPath Robot Service\". Triage this."}
 {"id": "uipath-diagnostics-033", "prompt": "Get Queue Item activity hangs for 25 minutes. Even retries don't help. Why?"}
