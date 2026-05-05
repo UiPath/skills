@@ -1,0 +1,81 @@
+task_id: skill-platform-traces-e2e
+description: >
+  E2E test: agent uses the uipath-platform skill to start a pre-published
+  traces-smoke-agent job, wait for completion, fetch LLM trace spans, and
+  confirm at least one span is returned. Unlike traces_fetch.yaml (smoke),
+  this exercises the full round-trip against a real job and real traces.
+tags: [uipath-platform, e2e, lifecycle:discover]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Use the uipath-platform skill.
+
+  1. Verify login: run `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active.
+
+  2. Start the pre-published traces-smoke-agent and wait for completion:
+     `uip or jobs start $TRACES_SMOKE_PROCESS_KEY \
+       --folder-path "Shared/uipath-platform" \
+       --wait-for-completion --timeout 120 --output json`
+
+  3. Extract the job Key (GUID) from Data[0].Key in the response.
+
+  4. Fetch LLM trace spans for the completed job and save the raw output:
+     `uip traces spans get --job-key <job_key> --output json > spans.json`
+
+  Do NOT ask for approval or confirmation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before starting job"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started the job with --wait-for-completion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+start.*--wait-for-completion'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched spans using uip traces spans get with --job-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+traces\s+spans\s+get.*--job-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "spans.json (raw CLI output) was written to the sandbox root"
+    path: "spans.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "span_count >= 1 — the real gate the smoke test lacks"
+    command: "python3 $TASK_DIR/check_traces_e2e.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
