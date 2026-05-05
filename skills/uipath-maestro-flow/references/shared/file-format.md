@@ -243,7 +243,7 @@ uip maestro flow registry search <keyword>
 |-----------|------------------------|------------------------|
 | `core.trigger.manual` | `output` | — |
 | `core.action.script` | `success`, `error` | `input` |
-| `core.action.http` | `default`, `error`, `branch-{id}` (dynamic) | `input` |
+| `core.action.http.v2` | `default`, `error`, `branch-{id}` (dynamic) | `input` |
 | `core.action.transform` | `output`, `error` | `input` |
 | `core.logic.decision` | `true`, `false` | `input` |
 | `core.logic.switch` | `case-{id}` (dynamic), `default` | `input` |
