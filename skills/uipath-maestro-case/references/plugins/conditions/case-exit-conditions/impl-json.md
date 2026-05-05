@@ -4,7 +4,7 @@
 
 Write the case-exit condition directly into the schema-appropriate location in `caseplan.json`. No CLI command needed.
 
-> **Schema-dependent destination + field name.** Read `Schema:` header from `tasks.md` per Rule 17.
+> **Schema-dependent destination + field name.** Read `Schema:` header from `tasks.md` per Rule 18.
 > - **v19** → array key is `caseExitConditions`, lives under `root.caseExitConditions` (sibling of `data`, `description`, `caseIdentifier`).
 > - **v20** → array key is **`caseExitRules`** (renamed), lives under `metadata.caseExitRules` (top-level `metadata`).
 >

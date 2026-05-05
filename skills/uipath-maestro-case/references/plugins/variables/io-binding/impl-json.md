@@ -51,7 +51,7 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, the variables `inputOutputs[].id`, or the variables `inputs[].id`. Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 17).
+After all bindings, verify every bound input has a non-empty `value` and every `=vars.X` resolves to an existing ID in: any task `data.outputs[].var`, the variables `inputOutputs[].id`, or the variables `inputs[].id`. Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
 
 ## Connector Tasks
 

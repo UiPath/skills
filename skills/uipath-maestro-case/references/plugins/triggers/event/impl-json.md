@@ -4,7 +4,7 @@ Configure the case-level event trigger by writing directly into the trigger node
 
 For shared CLI calls, metadata construction, and anti-patterns, see [connector-trigger-common.md](../../../connector-trigger-common.md#implementation--shared-cli-calls). This doc covers only the **trigger-node-specific** parts.
 
-> **v20 layout-strip (Rule 18).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shape below shows v19 fields; v20 strips listed render fields and skips position math. Skeleton-fallback logic and `entry-points.json` shape are identical across schemas.
+> **v20 layout-strip (Rule 19).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shape below shows v19 fields; v20 strips listed render fields and skips position math. Skeleton-fallback logic and `entry-points.json` shape are identical across schemas.
 
 ## Prerequisites from Planning
 

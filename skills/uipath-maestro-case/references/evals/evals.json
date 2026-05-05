@@ -58,7 +58,7 @@
         {
             "id": 6,
             "prompt": "Generate the case from ./sdd.md using v20 schema",
-            "expected_output": "Skill triggers, detects v20 trigger phrase in activating message per Rule 17, writes Schema: v20 header into tasks.md, emits caseplan.json with v20 top-level shape (id: case-<10>, version: 20.0.0, metadata, top-level bindings/variables, layout: {}), softens Phase 4 validate to informational",
+            "expected_output": "Skill triggers, detects v20 trigger phrase in activating message per Rule 18, writes Schema: v20 header into tasks.md, emits caseplan.json with v20 top-level shape (id: case-<10>, version: 20.0.0, metadata, top-level bindings/variables, layout: {}), softens Phase 4 validate to informational",
             "expectations": [
                 "The case-management skill was triggered",
                 "Schema header in tasks.md reads exactly 'Schema: v20'",
@@ -69,7 +69,7 @@
                 "metadata.caseExitRules is used (NOT root.caseExitConditions) once case-exit conditions are written",
                 "metadata.slaRules is used for root-target SLA (NOT root.data.slaRules)",
                 "Top-level bindings and variables (NOT root.data.uipath.bindings or root.data.uipath.variables)",
-                "Stage and Trigger nodes have NO position, style, measured, width, height, zIndex (Rule 18)",
+                "Stage and Trigger nodes have NO position, style, measured, width, height, zIndex (Rule 19)",
                 "Top-level layout: {} present and empty",
                 "Phase 4 validate runs informational only — no 3-retry hard stop on CLI rejection",
                 "Phase 5/6 prompts include the v20 downstream-may-reject warning lines"
@@ -78,7 +78,7 @@
         {
             "id": 7,
             "prompt": "Build my case from ./sdd.md",
-            "expected_output": "Skill triggers, no v20 phrase in activating message, defaults to v19 emit per Rule 17",
+            "expected_output": "Skill triggers, no v20 phrase in activating message, defaults to v19 emit per Rule 18",
             "expectations": [
                 "The case-management skill was triggered",
                 "Schema header in tasks.md reads exactly 'Schema: v19'",

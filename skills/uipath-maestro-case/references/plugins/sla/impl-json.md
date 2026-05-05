@@ -151,7 +151,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes in [SKILL.md Rule #14](../../../SKILL.md) and the helpers in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). Common patterns: `=js:<javascript>` for arbitrary boolean, `=vars.<id> === "<literal>"` for variable comparison, `=metadata.<field>` for case metadata. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md rule #19.
+`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). Common patterns: `=js:<javascript>` for arbitrary boolean, `=vars.<id> === "<literal>"` for variable comparison, `=metadata.<field>` for case metadata. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
 
 ## Post-write validation
 
@@ -159,5 +159,5 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 - **v20:** confirm `metadata.slaRules` (top-level) or `node.data.slaRules` (stage) exists. Verify v20's root-target uses `metadata` — not `root.data` (which doesn't exist in v20).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
-- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target). In v20 mode, validate may reject due to CLI lag — capture output to build-issues.md, do not retry-loop (Rule 17).
+- Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target). In v20 mode, validate may reject due to CLI lag — capture output to build-issues.md, do not retry-loop (Rule 18).
 

@@ -1,6 +1,6 @@
 # Global Variables — Planning
 
-Case-level data lives in the variables block (v19: `root.data.uipath.variables`; v20: top-level `variables` — see Rule 17). The key distinction is **variables** vs **arguments**:
+Case-level data lives in the variables block (v19: `root.data.uipath.variables`; v20: top-level `variables` — see Rule 18). The key distinction is **variables** vs **arguments**:
 
 | Concept | Arrays | When |
 |---|---|---|

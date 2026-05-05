@@ -6,7 +6,7 @@ direct-json: supported
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **v20 layout-strip (Rule 18).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shapes below show v19 fields; in v20 mode strip the listed render fields and skip position math. `entry-points.json` shape is identical across schemas.
+> **v20 layout-strip (Rule 19).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shapes below show v19 fields; in v20 mode strip the listed render fields and skip position math. `entry-points.json` shape is identical across schemas.
 
 ## Purpose
 
@@ -131,7 +131,7 @@ After writing, confirm:
 - `nodes[].type === "case-management:Trigger"`.
 - `nodes[].data.label` matches the resolved `displayName`.
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
-- `nodes[].data.parentElement` always present. `style`, `measured` present in v19; absent in v20 (Rule 18).
+- `nodes[].data.parentElement` always present. `style`, `measured` present in v19; absent in v20 (Rule 19).
 - `nodes[].data.uipath` is **absent** (manual triggers have no `uipath` key).
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
