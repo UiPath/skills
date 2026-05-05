@@ -297,7 +297,9 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 
 ### How to build a filter tree from `filterFields`
 
-See [/uipath:uipath-platform — triggers.md > Building Filter Trees from filterFields](../../../../../../uipath-platform/references/integration-service/triggers.md#building-filter-trees-from-filterfields) for the canonical step-by-step, the mandatory-filter contract (connector-mandated values like Gmail folder go on `eventParameters`, never the freeform `filter` tree), and array-shaped field handling. In the maestro-flow context, source `filterFields.fields` from `flow registry get --connection-id` (Step 2 above) instead of `triggers describe`.
+1. Run `flow registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array. Each entry has a `name` (use as the leaf `id`), a `type` (drives operator selection), and an optional `description`.
+
+Then follow [/uipath:uipath-platform — triggers.md > Building Filter Trees from filterFields](../../../../../../uipath-platform/references/integration-service/triggers.md#building-filter-trees-from-filterfields) for the rest of the procedure (operator selection, leaf composition, value wrapping), the mandatory-filter contract (connector-mandated values like Gmail folder go on `eventParameters`, never the freeform `filter` tree), and array-shaped field handling.
 
 ### What NOT to generate
 
