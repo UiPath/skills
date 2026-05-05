@@ -101,9 +101,24 @@ initial_prompt: |
     "rationale": "<one sentence explaining why this path fits>"
   }
 
-  Before starting, load the uipath-human-in-the-loop skill and follow
-  its workflow. Do NOT confirm with the user mid-task — make the
-  decision based on the skill's path-selection table and proceed.
+  CRITICAL CONSTRAINTS — READ CAREFULLY:
+  - Use the uipath-human-in-the-loop skill ONLY. Do NOT trigger the
+    uipath-maestro-case skill's Phase 0/1/2/3 workflow. The
+    caseplan.json above is complete except for this one task.
+  - Do NOT scaffold a new project. Do NOT run `uip solution new`,
+    `uip maestro case init`, `uip solution project add`, or any
+    other project-scaffolding command. The seed file is already valid.
+  - The chosen path (QuickForm) does NOT need root-level bindings.
+    Leave `root.data.uipath.bindings` as an empty array `[]` — do
+    NOT add any entries with `"resource": "app"`. The form schema
+    lives inline in `data.schema`.
+  - Do NOT use any `=bindings.<id>` references in the action task.
+  - Edit caseplan.json using Read + Write/Edit only.
+
+  Before starting, load the uipath-human-in-the-loop skill (NOT
+  uipath-maestro-case) and follow its hitl-casetask-action.md path
+  table. Do NOT confirm with the user mid-task — make the decision
+  based on the skill's path-selection table and proceed directly.
 
 success_criteria:
   - type: file_exists
@@ -150,7 +165,7 @@ success_criteria:
 
   - type: run_command
     description: "QuickForm path must NOT mutate root.data.uipath.bindings (the App-based fingerprint)"
-    command: "grep -L 'actionCatalogName\\|=bindings\\.' caseplan.json"
+    command: "grep -L -E 'actionCatalogName|=bindings\\.' caseplan.json"
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
