@@ -15,54 +15,60 @@ For solution-internal agents (another project in the **same** solution), see [so
 
 ## Discovery
 
+Two `uip` calls — identity from `resource list`, full configuration from `resource get`.
+
 ### 1. Find the process
 
 ```bash
-uip solution resource list --kind Process --source remote --search "<TOOL_NAME>" --output json
+uip solution resource list --kind Process --source remote --search "<NAME>" --output json
 ```
 
-Each entry returns:
+Response wrapper: `{Result, Code: "ResourceList", Data: [...]}` — parse `.Data[]`.
+
+Per entry:
 
 | Field | Use as |
 |-------|--------|
-| `Key` | release Key (GUID) — used as `referenceKey` in the agent resource |
-| `Name` | process display name → agent resource `properties.processName` and binding `name` |
-| `Type` | maps 1:1 to the agent resource `type`: `"process"` / `"agent"` / `"api"` / `"processOrchestration"`. `"webApp"` entries are not runnable process tools — use the [escalation capability](../escalation/escalation.md) instead. |
-| `Folder` | fully-qualified folder path → agent resource `properties.folderPath` (literal, e.g. `"Shared/Sales"`) and binding `folderPath`. Refresh uses `(name, folderPath)` jointly to look up RCS, so pasting the exact `Folder` string here also disambiguates same-named processes deployed in different folders. |
-| `FolderKey` | folder GUID — use as `X-UIPATH-FolderKey` header in steps 2-3 |
+| `Key` | Release Key GUID. Used as `referenceKey` in the agent resource and as the argument to step 2. |
+| `Name` | Process display name → `properties.processName` and binding `name`. |
+| `Type` | Lowercase. Maps 1:1 to the agent resource `type`: `"process"` / `"agent"` / `"api"` / `"processOrchestration"`. |
+| `Folder` | Literal Orchestrator folder (e.g. `"Shared/Sales"`) → `properties.folderPath` and binding `folderPath`. Refresh resolves RCS by `(name, folderPath)`, so this disambiguates same-named processes in different folders. |
+| `FolderKey` | Folder GUID. You don't need to pass it yourself; refresh handles folder resolution. |
 
-### 2. Get ProcessKey + ProcessVersion + FeedId via Releases API
+When the same `Name` repeats in one folder, pick by `Key`.
 
-> **SECURITY:** Never read `~/.uipath/.auth` directly — keep the token inside the shell. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
-
-```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
-```
-
-Orchestrator's OData rejects `Key eq <guid>` (Edm.Guid mismatch); filter by the string `ProcessKey` or by `Name` instead. Use the `Key` value from `resource list` only as the `referenceKey` in the agent resource and `key` in the process declaration — not as an OData filter.
-
-Extract from response:
-- `ProcessKey` / `ProcessVersion` → build `"<ProcessKey>:<Version>"` package key for step 3
-- `FeedId` → required for `GetPackageEntryPointsV2` query (step 3)
-- `Arguments.Input` / `Arguments.Output` → raw .NET type arrays (only for RPA, `null` for others)
-
-For full extraction logic and field mapping, see [solution-files.md](solution-files.md) § How to Get the Values.
-
-### 3. Get argument schemas via `GetPackageEntryPointsV2`
+### 2. Get the resource configuration
 
 ```bash
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='\''<PROCESS_KEY>:<VERSION>'\'')?feedId=<FEED_ID>" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
+uip solution resource get <KEY> --output json
 ```
 
-JSON Schema `InputArguments`/`OutputArguments` work for all 4 types. Parse them for the agent-level `inputSchema`/`outputSchema`.
+Response wrapper: `{Result, Code: "ResourceConfiguration", Data: {...}}`. `Data` is the solution-level resource declaration.
 
-Extract from response (take first entry):
-- `InputArguments` → JSON Schema string → agent-level `inputSchema` (parse JSON)
-- `OutputArguments` → JSON Schema string → agent-level `outputSchema` (parse JSON)
+#### `Data.spec` — process declaration
+
+| Field | Use as |
+|-------|--------|
+| `name` | Display name. |
+| `type` | PascalCase here (`Process` / `Agent` / `Api` / `ProcessOrchestration`); lowercase it when copying into the agent-level `resource.json`. |
+| `package.name` / `package.key` | Package identity. Refresh writes the package decl from this. |
+| `entryPointUniqueId` / `entryPointName` | Entry point IDs. Refresh embeds these in the solution-level decl. |
+| `inputArgumentsSchemaV2` | JSON Schema string (Agent / API / Agentic). Parse → agent-level `inputSchema`. |
+| `outputArgumentsSchemaV2` | JSON Schema string. Parse → agent-level `outputSchema`. |
+| `inputArgumentsSchema` / `outputArgumentsSchema` | Raw .NET type arrays for RPA. Map .NET types to JSON Schema per [solution-files.md § How to Get the Values](solution-files.md#how-to-get-the-values). |
+| `entryPoints` | Already-serialized JSON array string. Refresh writes it verbatim. |
+| RPA-only spec: `jobPriority`, `jobRecording`, `duration`, `frequency`, `quality`, `remoteControlAccess`, `targetFrameworkValue` | Refresh copies into the RPA decl. |
+| Agent-only spec: `agentMemory`, `targetRuntime`, `environmentVariables` | Refresh copies into the agent decl. |
+
+If both V2 and raw schemas are absent, the deployed process truly has no arguments — leave the agent-level schemas as empty objects.
+
+#### Optional: `--include-dependencies`
+
+```bash
+uip solution resource get <KEY> --include-dependencies --output json
+```
+
+Wrapper changes to `Code: "ResourceConfigurations"` with `Data.resources[]` containing the process plus each dependency (the package, `kind: "package"`).
 
 ## Tool resource.json Shape
 
@@ -94,13 +100,13 @@ Extract from response (take first entry):
     "exampleCalls": []                // Required for external tools
   },
   "id": "<uuid>",              // Stable; generate once, never change
-  "referenceKey": "<release-key-guid>", // For external: the release Key (lowercase GUID from /odata/Releases API). For solution-internal: leave empty, validate resolves it.
+  "referenceKey": "<release-key-guid>", // For external: the `Key` from `uip solution resource list` (lowercase GUID). For solution-internal: leave empty, validate resolves it.
   "isEnabled": true,
   "argumentProperties": {}
 }
 ```
 
-Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings (Step 3).
+Set `inputSchema` / `outputSchema` from the parsed `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` strings returned by `uip solution resource get` (Step 2). For RPA processes that only expose raw .NET schemas, see the .NET → JSON Schema mapping in [solution-files.md § How to Get the Values](solution-files.md#how-to-get-the-values).
 
 ## Solution-Level Files
 
@@ -114,7 +120,7 @@ Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON 
 
 **Type-to-directory mapping for process declarations:**
 
-| `ProcessType` (from Releases API) | Agent resource `type` | `spec.type` | Process declaration directory |
+| `Data.spec.type` (from `resource get`) | Agent resource `type` | `spec.type` | Process declaration directory |
 |---|---|---|---|
 | `Process` | `process` | `Process` | `process/process/` |
 | `Agent` | `agent` | `Agent` | `process/agent/` |
@@ -129,69 +135,46 @@ Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON 
 # 1. Scaffold solution + agent per [project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
 
 # 2. Discover the process via the Resource Catalog Service
-uip solution resource list --kind Process --source remote --search "<TOOL_NAME>" --output json
-# Each entry returns:
-#   Key       → release Key (GUID) — used as referenceKey in the agent resource
-#   Name      → process display name → properties.processName + binding name
-#   Type      → maps 1:1 to the agent resource type:
-#                  "process" → RPA (XAML)
-#                  "agent" → low-code / coded agent
-#                  "api" → API workflow
-#                  "processOrchestration" → agentic process
-#                  "webApp" → skip; use the escalation capability (App kind)
-#   Folder    → literal folder path → properties.folderPath + binding folderPath.
-#               Refresh uses (name, folderPath) jointly to look up RCS, so the exact
-#               Folder string here disambiguates same-named processes in different folders.
-#   FolderKey → folder GUID — use as X-UIPATH-FolderKey header in steps 3-4
+uip solution resource list --kind Process --source remote --search "<NAME>" --output json
+# Parse .Data[]. Each entry: Key, Name, Type (lowercase), Folder, FolderKey.
+# Use Key as referenceKey, Name as processName, Type for the agent-level type,
+# Folder as properties.folderPath.
 
-# 3. Query Releases API for ProcessKey, ProcessVersion, FeedId, and raw .NET arg schemas (RPA only)
-# SECURITY: Never read ~/.uipath/.auth directly — keep the token inside the shell.
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases?\$filter=ProcessKey%20eq%20'\''<PROCESS_KEY>'\''&\$top=1&\$select=Key,Name,ProcessKey,ProcessVersion,ProcessType,FeedId,TargetRuntime,Description,Arguments,Id" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
-# Orchestrator's OData rejects `Key eq <guid>` (Edm.Guid mismatch); filter
-# by the string ProcessKey or by Name instead.
-# Extract from response:
-#   ProcessKey/ProcessVersion → build "<ProcessKey>:<Version>" key for step 4
-#   FeedId                    → needed for GetPackageEntryPointsV2 query (step 4)
-#   Arguments.Input/Output    → raw .NET type arrays (only for RPA, null for others)
-
-# 4. Query GetPackageEntryPointsV2 for JSON Schema arguments and entry point data
-bash -c 'source <(grep = ~/.uipath/.auth) && curl -s "${UIPATH_URL}/${UIPATH_ORGANIZATION_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.GetPackageEntryPointsV2(key='\''<PROCESS_KEY>:<VERSION>'\'')?feedId=<FEED_ID>" \
-  -H "Authorization: Bearer $UIPATH_ACCESS_TOKEN" \
-  -H "X-UIPATH-FolderKey: <FOLDER_KEY_GUID>"'
-# Extract from response (take first entry):
-#   InputArguments  → JSON Schema string → agent-level inputSchema (parse JSON)
-#   OutputArguments → JSON Schema string → agent-level outputSchema (parse JSON)
+# 3. Pull the full configuration
+uip solution resource get <KEY> --output json
+# Parse .Data.spec for:
+#   inputArgumentsSchemaV2 / outputArgumentsSchemaV2  → JSON Schema strings (Agent / API / Agentic)
+#   inputArgumentsSchema   / outputArgumentsSchema    → raw .NET arrays (RPA)
+#   package.name / package.key, entryPointUniqueId / entryPointName
 ```
 
 Then create the agent-level resource file:
 
 **Agent-level resource** — `<AGENT_NAME>/resources/<TOOL_NAME>/resource.json`
 
-Set `"location": "external"`, `"type"` directly from `resource list`'s `Type` field (`"process"`, `"agent"`, `"api"`, or `"processOrchestration"`), `"folderPath"` to the literal `Folder` string from `resource list` (e.g., `"Shared/Sales"`), `"referenceKey"` to the release Key. Set `inputSchema`/`outputSchema` from the parsed `GetPackageEntryPointsV2` JSON Schema strings. Include `"exampleCalls": []` in `properties`. See § Tool resource.json Shape above for the full template.
+Set `"location": "external"`, `"type"` to the lowercase `Type` from `resource list` (`"process"` / `"agent"` / `"api"` / `"processOrchestration"`), `"folderPath"` to the literal `Folder` (e.g., `"Shared/Sales"`), `"referenceKey"` to the `Key`. Set `inputSchema` / `outputSchema` from the parsed `Data.spec.inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` strings (or the .NET-mapped raw schemas for RPA). Include `"exampleCalls": []` in `properties`. See § Tool resource.json Shape above for the full template.
 
 ```bash
-# 5. Configure agent.json (system prompt, model, schemas)
+# 4. Configure agent.json (system prompt, model, schemas)
 
-# 6. Validate — generates bindings_v2.json in the agent project directory
+# 5. Validate — generates bindings_v2.json in the agent project directory
 uip agent validate "<AGENT_NAME>" --output json
 
-# 7. Refresh solution resources — resolves each Process binding against the
+# 6. Refresh solution resources — resolves each Process binding against the
 #    Resource Catalog Service and produces the full solution-level declaration
 #    per kind: `resources/solution_folder/process/<type>/<Name>.json`,
 #    `resources/solution_folder/package/<PackageName>.json`, and an entry in
 #    `userProfile/<userId>/debug_overwrites.json`. No hand-authoring needed.
 uip solution resource refresh --output json
 
-# 8. Bundle + upload
+# 7. Bundle + upload
 uip solution bundle . -d ./dist --output json
 uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 ```
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rules 11, 12, 13. Anti-pattern 7 (don't forget refresh) and Anti-pattern 8 (use Releases + GetPackageEntryPointsV2) apply directly.
+See [../../critical-rules.md](../../critical-rules.md) Critical Rules 11, 12, 13. Anti-pattern 7 (don't forget refresh) and Anti-pattern 8 (`resource list` is identity-only — use `resource get` for schemas) apply directly.
 
 ## References
 
