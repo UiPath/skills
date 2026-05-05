@@ -27,7 +27,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; informational validate run (expected to report unbound inputs / missing conditions / missing SLA) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), skeleton tasks for unresolved | `caseplan.json` emitted; skeleton-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
@@ -80,7 +80,7 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 Print before prompt:
 
 1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / skeleton tasks / unresolved resources.
-2. Validate result (informational): `<N> errors, <M> warnings` — call out that Phase 2 state is expected invalid (unbound inputs / missing conditions / missing SLA all filled in Phase 3). Surfacing counts is enough; do not dump full error list unless user asks.
+2. Validate result (skeleton-profile): `<N> errors, <M> warnings` — remaining errors are structural (dangling edge, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -151,7 +151,7 @@ Phase 3 produces a `caseplan.json` that should pass authoritative validation. No
 
 ## Phase 4 — Validate
 
-End of detail mutations. Run full-mode validate (no `--mode` flag; defaults to full):
+End of detail mutations. Run full-mode validate (omit `--skeleton`; defaults to full):
 
 ```bash
 uip maestro case validate "<caseplan.json path>" --output json
