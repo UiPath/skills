@@ -33,6 +33,22 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 ---
 
+## uip maestro case init
+
+Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
+
+```bash
+cd <SolutionDir> && uip maestro case init <ProjectName>
+```
+
+| Flag | Description |
+|------|-------------|
+| `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
+
+Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. Pair with `uip solution project add ./<ProjectName>` to register it in `.uipx`.
+
+---
+
 ## uip solution project add
 
 Register a project with an existing solution.

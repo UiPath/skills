@@ -90,6 +90,24 @@ Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` t
 }
 ```
 
+**Key fields:**
+- **`runtimeOptions.isConversational`** - Set `true` for conversational/chat agents
+- **`packOptions`** - Control which files are included when packaging for deployment
+- **`functions`** - Entrypoint mappings (format: `"file_path:function_name"`)
+
+### `packOptions.directoriesExcluded` for solution context
+
+When the agent project is registered in a solution and uploaded via `uip solution upload`, the agent directory is bundled into the solution archive. Set `directoriesExcluded` to keep Python build artifacts out of the archive:
+
+```json
+"packOptions": {
+  "directoriesExcluded": [".venv", "__pycache__"],
+  "includeUvLock": true
+}
+```
+
+`.venv/` is hundreds of MB of installed wheels and breaks uploads. `__pycache__/` is ephemeral bytecode. Both regenerate from `pyproject.toml` + `uv.lock` on the target side. Without these exclusions, `uip solution upload` produces an oversized archive that can be rejected by Studio Web.
+
 - `isConversational: true` for chat-style agents.
 - `packOptions` controls `.nupkg` contents at deploy time.
 
