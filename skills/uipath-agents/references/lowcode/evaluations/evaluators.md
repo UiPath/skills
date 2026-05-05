@@ -24,16 +24,18 @@ The CLI exposes only `semantic-similarity` and `trajectory` via `--type`. `Equal
 
 The eval worker's discriminator (`uipath/eval/evaluators/evaluator.py` § `legacy_evaluator_discriminator`) accepts two more `type` values that have no `--type` flag. To use them, hand-write the evaluator JSON in `evals/evaluators/<filename>.json`:
 
+For hand-written files, the filename can be any descriptive name (e.g. `legacy-equality.json`) — the runtime keys off `id` / `evaluatorRefs`, not the filename. The CLI-generated `evaluator-<uuid8>.json` pattern only applies to evaluators created via `uip agent eval evaluator add`.
+
 ### `Equals` (type 1, category 0 — Deterministic)
 
 Exact-match comparison; no LLM. Equivalent of coded `uipath-exact-match`.
 
 ```json
 {
-  "fileName": "evaluator-equals.json",
+  "fileName": "legacy-equality.json",
   "id": "<generate-uuid>",
-  "name": "exact-match",
-  "description": "Exact-match evaluator",
+  "name": "Equality Evaluator",
+  "description": "An evaluator that judges the agent based on expected output.",
   "category": 0,
   "type": 1,
   "targetOutputKey": "*",
@@ -50,10 +52,10 @@ Tree-based JSON comparison; no LLM. Equivalent of coded `uipath-json-similarity`
 
 ```json
 {
-  "fileName": "evaluator-json-sim.json",
+  "fileName": "legacy-json-similarity.json",
   "id": "<generate-uuid>",
-  "name": "json-similarity",
-  "description": "JSON similarity evaluator",
+  "name": "JSON Similarity Evaluator",
+  "description": "An evaluator that compares JSON structures with tolerance for numeric and string differences.",
   "category": 0,
   "type": 6,
   "targetOutputKey": "*",
@@ -62,7 +64,45 @@ Tree-based JSON comparison; no LLM. Equivalent of coded `uipath-json-similarity`
 }
 ```
 
-After hand-writing, run `uip agent validate --output json` to confirm the file passes schema migration. Then reference the new evaluator's `id` from your eval set's `evaluatorRefs`. Watch for: `id` collisions with existing evaluators, missing required fields, and ISO-8601 formatting on the timestamps.
+### `LlmAsAJudge` semantic-similarity (type 5, category 1) — explicit shape
+
+If you want to hand-write a semantic-similarity evaluator instead of using `evaluator add` (e.g. to pin a specific model and prompt), the full shape is:
+
+```json
+{
+  "fileName": "legacy-llm-as-a-judge.json",
+  "id": "<generate-uuid>",
+  "name": "LLM As A Judge Evaluator",
+  "description": "An evaluator that uses an LLM to judge the similarity of the actual output to the expected output",
+  "category": 1,
+  "type": 5,
+  "prompt": "As an expert evaluator, analyze the semantic similarity of these outputs to determine a score from 0-100.\n----\nExpectedOutput:\n{{ExpectedOutput}}\n----\nActualOutput:\n{{ActualOutput}}\n",
+  "targetOutputKey": "*",
+  "model": "gpt-4.1-2025-04-14",
+  "createdAt": "<iso-timestamp>",
+  "updatedAt": "<iso-timestamp>"
+}
+```
+
+### `Trajectory` (type 7, category 3) — explicit shape
+
+```json
+{
+  "fileName": "legacy-trajectory.json",
+  "id": "<generate-uuid>",
+  "name": "Trajectory Evaluator",
+  "description": "An evaluator that analyzes the execution trajectory and decision sequence taken by the agent.",
+  "category": 3,
+  "type": 7,
+  "prompt": "Evaluate the agent's execution trajectory based on the expected behavior.\n\nExpected Agent Behavior: {{ExpectedAgentBehavior}}\nAgent Run History: {{AgentRunHistory}}\n\nProvide a score from 0-100 based on how well the agent followed the expected trajectory.",
+  "model": "gpt-4.1-2025-04-14",
+  "targetOutputKey": "*",
+  "createdAt": "<iso-timestamp>",
+  "updatedAt": "<iso-timestamp>"
+}
+```
+
+After hand-writing any evaluator, run `uip agent validate --output json` to confirm the file passes schema migration. Then reference the new evaluator's `id` from your eval set's `evaluatorRefs`. Watch for: `id` collisions with existing evaluators, missing required fields, and ISO-8601 formatting on the timestamps.
 
 ## Coded-only evaluators (NOT available on low-code)
 
