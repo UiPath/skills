@@ -179,7 +179,7 @@ For skills with **no tests**: overall = 0%.
 
 ## Phase 5 — Write reports
 
-Create `tests/reports/` if needed. Write one report per skill at `tests/reports/<skill-name>.md` (e.g., `tests/reports/uipath-maestro-flow.md`). When more than one skill is analyzed, also write `tests/reports/summary.md` with the roll-up table comparing all skills. If the user specified a custom output path, use that instead. Overwrite any existing report at the same path.
+Create `tests/reports/` if needed. Write one report per skill at `tests/reports/<skill-name>.md` (e.g., `tests/reports/uipath-maestro-flow.md`). When more than one skill is analyzed, also write `tests/reports/SUMMARY.md` with the roll-up table comparing all skills. If the user specified a custom output path, use that instead. Overwrite any existing report at the same path.
 
 Choose the per-skill template by state:
 
