@@ -1,0 +1,132 @@
+task_id: skill-case-multi-exception-stage
+description: >
+  Build a Case Management definition with a regular Process stage plus
+  TWO exception (secondary) stages — Issues and Critical. Issues is
+  reached via an interrupting stage-entry condition (rule-type
+  selected-stage-exited), contains its own wait-for-timer task that
+  uses the timeDate branch (wait until a specific datetime, not a
+  duration) with a current-stage-entered task-entry condition, exits
+  via a return-to-origin condition, and carries a stage-level default
+  SLA (2 hours) with a sla-breached escalation that notifies a
+  UserGroup. Critical is reached via an interrupting wait-for-connector
+  entry on a fault event and exits via return-to-origin. Both exception
+  stages have no edges. Exercises: ExceptionStage type (×2 —
+  multi-exception flow), no-edges wiring rule, interrupting entry
+  (selected-stage-exited + wait-for-connector), return-to-origin exit,
+  ExceptionStage SLA, sla-breached escalation, UserGroup recipient
+  scope, a task embedded inside an ExceptionStage, and the
+  wait-for-timer plugin's timeDate branch.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:exception-stage, feature:multi-exception, feature:conditions, feature:sla, feature:escalation, feature:wait-for-timer]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ExceptionStage" containing
+  a project also named "ExceptionStage" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # ExceptionStage
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Process (regular stage) — main processing stage.
+
+  ## Exception Stages
+  - Issues (exception stage / secondary stage) — handles errors that occur
+    while Process is active. Has no inbound or outbound edges; reached via
+    an interrupting stage-entry condition only.
+  - Critical (exception stage / secondary stage) — handles a hard fault
+    event from the connector. Has no inbound or outbound edges; reached
+    via an interrupting wait-for-connector entry condition only.
+
+  ## Flow
+  - Manual trigger → Process
+  - (Issues and Critical have no edges — exception stages are detached
+    from the edge graph.)
+
+  ## Tasks
+  - Acknowledge Issue (wait-for-timer) — placed in the "Issues"
+    exception stage.
+    - Component type: TIMER (built-in).
+    - Trigger style: SPECIFIC DATETIME (`at`, not `every`). Wait until
+      2026-05-01T09:00:00.000Z. The plugin should write
+      `data.timerType = "timeDate"` and
+      `data.timeDate = "2026-05-01T09:00:00.000+00:00"` (ISO 8601
+      datetime with timezone offset and milliseconds, per the
+      wait-for-timer impl-json contract). This exercises the
+      timeDate branch of the timer plugin that no other multi_stages_tasks
+      test covers.
+
+  ## Task Entry Conditions
+  - Acknowledge Issue — task entry condition (display-name: "On Issues
+    entered", rule-type: current-stage-entered).
+
+  ## Stage Entry Conditions
+  - Issues — interrupting entry condition (display-name: "On Process exit",
+    rule-type: selected-stage-exited, selected-stage: "Process",
+    is-interrupting: true). Fires when Process exits and interrupts the
+    active stage.
+  - Critical — interrupting entry condition (display-name: "On fault
+    event", rule-type: wait-for-connector,
+    condition-expression: "event.type == 'critical_fault'",
+    is-interrupting: true). Fires when the connector reports a critical
+    fault event and interrupts the active stage.
+
+  ## Stage Exit Conditions
+  - Issues — return-to-origin exit (display-name: "Resume after handling",
+    type: return-to-origin, marks-stage-complete: true,
+    rule-type: wait-for-connector,
+    condition-expression: "issue.resolved == true"). Routes the case back
+    to the originating stage once the issue is resolved.
+  - Critical — return-to-origin exit (display-name: "Resume after
+    fault cleared", type: return-to-origin,
+    marks-stage-complete: true, rule-type: wait-for-connector,
+    condition-expression: "fault.cleared == true"). Routes the case
+    back to the originating stage once the fault clears.
+
+  ## SLA
+  - Default SLA on stage "Issues": 2 hours.
+  - Escalation on stage "Issues" (attached to the default SLA):
+    - trigger-type: sla-breached
+    - recipient-scope: UserGroup
+    - recipient-value: "Issue Resolution Team"  (UUID not provided —
+      leave as UNRESOLVED per the skill rules; do NOT fabricate a UUID).
+    - display-name: "Notify Resolution Team"
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ExceptionStage/ExceptionStage/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two ExceptionStage nodes (Issues + Critical) both with no edges; Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries interrupting wait-for-connector entry + return-to-origin exit"
+    command: "python3 $TASK_DIR/check_exception_stage.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

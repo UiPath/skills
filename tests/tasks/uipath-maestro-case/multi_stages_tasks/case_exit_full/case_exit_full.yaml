@@ -1,0 +1,100 @@
+task_id: skill-case-multi-case-exit-full
+description: >
+  Build a Case Management definition that exercises every case-exit
+  rule-type plus a wait-for-connector stage-entry in a single linear flow.
+  Three regular stages with mixed isRequired (Intake true, Audit false,
+  Archive true). Audit is gated by a wait-for-connector stage-entry. Root
+  carries four case-exit conditions covering all four rule-types and both
+  marks-case-complete shapes: required-stages-completed (true) +
+  wait-for-connector (true) + selected-stage-exited on Audit (false) +
+  selected-stage-completed on Archive (false). Closes the case-exit
+  rule-type matrix and exercises wait-for-connector at stage-entry scope.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:case-exit, feature:conditions, feature:stages, feature:wait-for-connector]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "CaseExitFull" containing
+  a project also named "CaseExitFull" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # CaseExitFull
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Intake (regular stage, isRequired: true) — must complete for case
+    completion.
+  - Audit (regular stage, isRequired: false) — optional follow-up; gated
+    by an external submission event.
+  - Archive (regular stage, isRequired: true) — terminal stage of the
+    linear flow.
+
+  ## Flow
+  - Manual trigger → Intake
+  - Intake → Audit
+  - Audit → Archive
+
+  ## Stage Entry Conditions
+  - Audit — stage entry condition (display-name: "On submission event",
+    rule-type: wait-for-connector,
+    condition-expression: "event.type == 'submission_received'",
+    is-interrupting: false).
+
+  ## Case Exit Conditions
+  - Case-exit condition (display-name: "All required stages done",
+    marks-case-complete: true,
+    rule-type: required-stages-completed). Default completion path —
+    fires when every isRequired:true stage has completed.
+  - Case-exit condition (display-name: "Cancel signal received",
+    marks-case-complete: true,
+    rule-type: wait-for-connector,
+    condition-expression: "event.type == 'case_cancel'"). External
+    cancel/close event.
+  - Case-exit condition (display-name: "Audit aborted",
+    marks-case-complete: false,
+    rule-type: selected-stage-exited,
+    selected-stage: "Audit"). Non-completing exit when Audit exits
+    without completing.
+  - Case-exit condition (display-name: "Archive observed",
+    marks-case-complete: false,
+    rule-type: selected-stage-completed,
+    selected-stage: "Archive"). Non-completing observability hook fired
+    when Archive completes (does NOT close the case).
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate CaseExitFull/CaseExitFull/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; root has 4 case-exits covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
+    command: "python3 $TASK_DIR/check_case_exit_full.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

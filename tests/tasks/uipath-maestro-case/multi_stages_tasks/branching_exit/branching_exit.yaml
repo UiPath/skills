@@ -1,0 +1,111 @@
+task_id: skill-case-multi-branching-exit
+description: >
+  Build a Case Management definition where a Triage stage WIDE fan-outs
+  to THREE downstream stages via three stage-exit conditions — the
+  widest fan-out (1→3) covered in multi_stages_tasks. The Approved branch uses
+  a wait-for-user exit; Approved Path declares a user-selected-stage
+  entry condition. The Rejected branch uses exit-only with
+  wait-for-connector and marks-stage-complete:false AND custom edge
+  handle overrides (sourceHandle=bottom / targetHandle=top). The
+  Pending branch uses exit-only with wait-for-connector and
+  marks-stage-complete:TRUE — closing the only remaining cell in the
+  stage-exit type×rule×marks matrix. Exercises both stage-exit types
+  (wait-for-user + exit-only), the user-selected-stage entry rule,
+  branching edge labels, routing via exitToStageId, the edge handle
+  override path, wide fan-out, AND the exit-only + wait-for-connector
+  + marks-stage-complete:true cell.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:edges, feature:edge-handles, feature:wait-for-user, feature:wide-fanout]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "BranchingExit" containing
+  a project also named "BranchingExit" from the sdd.md below. Write the
+  sdd.md to disk first, then build from it.
+
+  ```
+  # BranchingExit
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Triage (regular stage) — initial stage that decides routing
+    between THREE downstream branches.
+  - Approved Path (regular stage) — receives approved cases.
+  - Rejected Path (regular stage) — receives rejected cases.
+  - Pending Path (regular stage) — receives cases pending external
+    confirmation; entered when Triage's stage exits as COMPLETE on the
+    pending event.
+
+  ## Flow
+  - Manual trigger → Triage
+  - Triage → Approved Path  (label: "Approved",
+    source-handle: "right", target-handle: "left" — default horizontal
+    routing).
+  - Triage → Rejected Path  (label: "Rejected",
+    source-handle: "bottom", target-handle: "top" — explicit vertical
+    routing for the rejected branch so the Rejected edge drops down
+    instead of using the default right→left layout).
+  - Triage → Pending Path   (label: "Pending"). Default handles.
+
+  ## Stage Exit Conditions
+  - Triage — stage exit condition (display-name: "Approved",
+    type: wait-for-user, exit-to-stage: "Approved Path",
+    marks-stage-complete: false, rule-type: wait-for-connector,
+    condition-expression: "decision == 'approved'"). Reviewer manually
+    confirms the routing decision before the case advances.
+  - Triage — stage exit condition (display-name: "Rejected",
+    type: exit-only, exit-to-stage: "Rejected Path",
+    marks-stage-complete: false, rule-type: wait-for-connector,
+    condition-expression: "decision == 'rejected'").
+  - Triage — stage exit condition (display-name: "Pending",
+    type: exit-only, exit-to-stage: "Pending Path",
+    marks-stage-complete: TRUE, rule-type: wait-for-connector,
+    condition-expression: "decision == 'pending'"). Note the
+    marks-stage-complete: TRUE — Triage exits AS COMPLETE on this
+    branch (the Pending event closes Triage), distinct from the other
+    two branches which are non-completing routes. This is the
+    exit-only + wait-for-connector + marks-stage-complete:true matrix
+    cell.
+
+  ## Stage Entry Conditions
+  - Approved Path — stage entry condition (display-name: "User selected",
+    rule-type: user-selected-stage, is-interrupting: false). Required so
+    Approved Path is offered in the picker when Triage exits via the
+    wait-for-user route.
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate BranchingExit/BranchingExit/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Triage WIDE fan-outs to 3 branches; exits cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-complete:TRUE on Pending — wait-for-connector cell); Approved Path has user-selected-stage entry; Approved/Rejected/Pending labels present; Triage→Rejected edge carries non-default handles (sourceHandle=bottom, targetHandle=top)"
+    command: "python3 $TASK_DIR/check_branching_exit.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

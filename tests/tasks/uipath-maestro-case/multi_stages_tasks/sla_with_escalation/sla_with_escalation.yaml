@@ -1,0 +1,114 @@
+task_id: skill-case-multi-sla-with-escalation
+description: >
+  Build a Case Management definition that exercises root-level SLA,
+  TWO conditional overrides, and a regular-stage SLA — covering four
+  of the five SLA units in one test (min/d/w/m). Root: default 3
+  weeks (unit=w) + conditional 30 minutes (unit=min) for Urgent
+  priority + conditional 5 days (unit=d) for Standard priority,
+  inserted in priority order. Resolve (regular stage) carries its own
+  default SLA of 1 month (unit=m) — the regular-stage SLA path that
+  no other multi_stages_tasks test covers (exception_stage uses h on an
+  ExceptionStage). The root default rule carries an at-risk 80%
+  MULTI-RECIPIENT escalation (User manager@corp.com + UserGroup
+  "Operations Leadership" both notified at 80% risk); the Urgent
+  conditional rule carries an sla-breached escalation to a single
+  UserGroup. Exercises: multiple slaRules in priority order (≥2
+  conditional + 1 default), conditional-rule expression-driven SLA,
+  escalation attached to a conditional rule (not just the default),
+  both escalation trigger types (at-risk + sla-breached), both
+  recipient scopes (User + UserGroup), MULTI-RECIPIENT escalation
+  (≥2 recipients on one notification), regular-Stage data.slaRules,
+  and the d + w + m + min duration units. Recipient UUIDs are
+  unresolved and stay as UNRESOLVED skeletons per the skill rules.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conditional-sla, feature:stage-sla]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "SlaWithEscalation"
+  containing a project also named "SlaWithEscalation" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SlaWithEscalation
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Resolve (regular stage) — receives the case after the manual trigger.
+    Description: "Active resolution stage; carries its own monthly SLA."
+
+  ## Flow
+  - Manual trigger → Resolve
+
+  ## SLA
+  - Default SLA on root case: 3 weeks (unit: w).
+  - Default SLA on stage "Resolve": 1 month (unit: m). Stage-level SLA
+    on a regular Stage — overrides the root default while Resolve is
+    active.
+  - Conditional SLA rule on root case (root-only): when the case priority
+    is "Urgent", override the default SLA to 30 minutes (unit: min).
+    Describe the condition in natural language ("priority is Urgent")
+    — the execution phase translates the expression.
+  - Conditional SLA rule on root case (root-only): when the case
+    priority is "Standard", override the default SLA to 5 days (unit:
+    d). Describe the condition in natural language ("priority is
+    Standard"). Insertion order: AFTER the Urgent rule (Urgent is
+    higher priority and must win when both expressions are truthy).
+    Together with the Urgent (min), root default (w), Resolve default
+    (m), and the Issues-stage SLA in the exception_stage test (h),
+    this covers the full SLA unit set min/h/d/w/m.
+  - Escalation rule on root case (attached to the **default** SLA) —
+    MULTI-RECIPIENT (≥2 recipients on a single notification):
+    - trigger-type: at-risk
+    - at-risk-percentage: 80
+    - recipients:
+      - User: manager@corp.com  (UUID not provided — leave as
+        UNRESOLVED per the skill rules; do NOT fabricate a UUID).
+      - UserGroup: "Operations Leadership"  (UUID not provided —
+        leave as UNRESOLVED per the skill rules; do NOT fabricate a
+        UUID). Both recipients receive the same at-risk notification.
+    - display-name: "Notify Manager + Ops Leadership"
+  - Escalation rule on root case (attached to the **conditional Urgent
+    rule** above, not the default):
+    - trigger-type: sla-breached
+    - recipient-scope: UserGroup
+    - recipient-value: "Incident Response Team"  (UUID not provided —
+      leave as UNRESOLVED per the skill rules).
+    - display-name: "Notify Incident Response"
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate SlaWithEscalation/SlaWithEscalation/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "root.data.slaRules has 2 conditional rules in priority order — Urgent (30min, sla-breached UserGroup escalation) then Standard (5d) — followed by default 3w with MULTI-RECIPIENT at-risk escalation (User + UserGroup on one notification); Resolve stage carries its own data.slaRules with default 1m (unit=m) AND data.description set; together SLA units min/d/w/m all exercised"
+    command: "python3 $TASK_DIR/check_sla_with_escalation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
