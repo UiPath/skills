@@ -1,0 +1,260 @@
+{"id": "r001", "source": "synthetic", "prompt": "Create a new UiPath Flow project called OrderProcessing", "should_trigger": "yes"}
+{"id": "r002", "source": "synthetic", "prompt": "Validate my .flow file", "should_trigger": "yes"}
+{"id": "r003", "source": "synthetic", "prompt": "Add a node to my flow", "should_trigger": "yes"}
+{"id": "r004", "source": "synthetic", "prompt": "Debug a UiPath flow in the cloud", "should_trigger": "yes"}
+{"id": "r005", "source": "synthetic", "prompt": "Add a subflow to reusable logic", "should_trigger": "yes"}
+{"id": "r006", "source": "synthetic", "prompt": "Add a scheduled trigger to my flow", "should_trigger": "yes"}
+{"id": "r007", "source": "synthetic", "prompt": "Edit the variables section of my .flow file", "should_trigger": "yes"}
+{"id": "r008", "source": "synthetic", "prompt": "Build a UiPath Flow that reads Salesforce opportunities, filters closed-won deals, posts to Slack, and writes to an agent for summarization", "should_trigger": "yes"}
+{"id": "r009", "source": "synthetic", "prompt": "Design a .flow project with a scheduled trigger hitting an HTTP endpoint, a decision branch on the response status, and two End nodes with different output variables", "should_trigger": "yes"}
+{"id": "r010", "source": "synthetic", "prompt": "I have an existing .flow file with a manual trigger; replace it with a connector trigger bound to a Salesforce connection and re-wire the downstream nodes", "should_trigger": "yes"}
+{"id": "r011", "source": "synthetic", "prompt": "Create a Maestro flow that orchestrates an RPA process, an inline agent, and a HITL app in sequence", "should_trigger": "yes"}
+{"id": "r012", "source": "synthetic", "prompt": "I want to orchestrate multiple UiPath automations together", "should_trigger": "yes", "curation_note": "relabeled no->yes: orchestrating multiple automations is the core flow use case"}
+{"id": "r013", "source": "synthetic", "prompt": "Chain my RPA process with an AI agent call", "should_trigger": "no"}
+{"id": "r014", "source": "synthetic", "prompt": "Add a decision branch to my workflow", "should_trigger": "no"}
+{"id": "r015", "source": "synthetic", "prompt": "How do I add variables to my UiPath automation?", "should_trigger": "no"}
+{"id": "r016", "source": "synthetic", "prompt": "Help me create a subflow", "should_trigger": "yes"}
+{"id": "r017", "source": "synthetic", "prompt": "Add a queue item creation step to my flow", "should_trigger": "yes"}
+{"id": "r018", "source": "synthetic", "prompt": "Embed an autonomous agent inside my project", "should_trigger": "no"}
+{"id": "r019", "source": "synthetic", "prompt": "Write Jint JavaScript logic for a script node", "should_trigger": "no"}
+{"id": "r020", "source": "synthetic", "prompt": "Add a data transform that filters and group-by", "should_trigger": "no"}
+{"id": "r021", "source": "synthetic", "prompt": "Create a mermaid diagram of my flow topology", "should_trigger": "yes"}
+{"id": "r022", "source": "synthetic", "prompt": "I need an API workflow as a resource node", "should_trigger": "yes"}
+{"id": "r023", "source": "synthetic", "prompt": "Create a new C# coded workflow", "should_trigger": "yes"}
+{"id": "r024", "source": "synthetic", "prompt": "Edit my Main.xaml file", "should_trigger": "no"}
+{"id": "r025", "source": "synthetic", "prompt": "Build a UiPath Studio Desktop project", "should_trigger": "no"}
+{"id": "r026", "source": "synthetic", "prompt": "Help me with a pandas dataframe", "should_trigger": "no"}
+{"id": "r027", "source": "synthetic", "prompt": "Explain closures in JavaScript", "should_trigger": "no"}
+{"id": "r028", "source": "synthetic", "prompt": "Set up OAuth authentication with the UiPath Orchestrator API", "should_trigger": "no"}
+{"id": "r029", "source": "synthetic", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates", "should_trigger": "no"}
+{"id": "r030", "source": "synthetic", "prompt": "Refactor my XAML activities library to reduce duplication across Main.xaml, Login.xaml, and Logout.xaml", "should_trigger": "no"}
+{"id": "r031", "source": "synthetic", "prompt": "Write a coded workflow in C# that calls a REST API and parses JSON", "should_trigger": "no"}
+{"id": "r032", "source": "synthetic", "prompt": "I want to automate a business process", "should_trigger": "no", "curation_note": "relabeled yes->no: too generic — could be any UiPath product"}
+{"id": "r033", "source": "synthetic", "prompt": "Publish my automation to Orchestrator", "should_trigger": "no"}
+{"id": "r034", "source": "synthetic", "prompt": "How do I trigger my robot on a schedule?", "should_trigger": "no"}
+{"id": "r035", "source": "synthetic", "prompt": "Create a flowchart for my architecture doc", "should_trigger": "no"}
+{"id": "r036", "source": "synthetic", "prompt": "Show me how to use selectors in UI automation", "should_trigger": "no"}
+{"id": "r038", "source": "synthetic", "prompt": "Design a data flow diagram for our ETL pipeline", "should_trigger": "no"}
+{"id": "r039", "source": "synthetic", "prompt": "I want to build an orchestration layer for my microservices", "should_trigger": "no"}
+{"id": "r040", "source": "synthetic", "prompt": "Help me with a Mermaid diagram", "should_trigger": "no"}
+{"id": "r041", "source": "synthetic", "prompt": "Add a node to my graph", "should_trigger": "no"}
+{"id": "r042", "source": "synthetic", "prompt": "Validate my JSON schema", "should_trigger": "no"}
+{"id": "r043", "source": "synthetic", "prompt": "Open my ProjectName.flow file and add an HTTP node", "should_trigger": "yes"}
+{"id": "r044", "source": "synthetic", "prompt": "Show me how to run uip maestro flow validate", "should_trigger": "yes"}
+{"id": "r045", "source": "synthetic", "prompt": "I need to edit the nodes in my flow", "should_trigger": "yes"}
+{"id": "r046", "source": "synthetic", "prompt": "Create a Maestro flow project from scratch", "should_trigger": "yes"}
+{"id": "r047", "source": "synthetic", "prompt": "What does uip maestro flow registry search do?", "should_trigger": "yes"}
+{"id": "r048", "source": "synthetic", "prompt": "Add an end node with output mapping to my flow", "should_trigger": "yes"}
+{"id": "r049", "source": "synthetic", "prompt": "Replace a mock node with a real RPA process node in my .flow", "should_trigger": "yes"}
+{"id": "r050", "source": "synthetic", "prompt": "Build a .flow that listens to a Gmail connector trigger for new emails, parses with a script node, branches on sender domain, posts matching ones to Teams, and writes a queue record", "should_trigger": "yes"}
+{"id": "r051", "source": "synthetic", "prompt": "I have a .flow with a switch node with 5 cases; add error handlers on each branch, a merge node before End, and an inout state variable tracking which branch was taken", "should_trigger": "yes"}
+{"id": "r052", "source": "synthetic", "prompt": "Take my orchestration .flow and extract the email-processing nodes into a subflow with its own inputs/outputs, then replace inline nodes with the subflow reference", "should_trigger": "yes"}
+{"id": "r053", "source": "synthetic", "prompt": "Convert my Maestro flow from manual trigger to scheduled every 4 hours with Europe/Berlin timezone, and add a decision node that skips on weekends", "should_trigger": "yes"}
+{"id": "r054", "source": "synthetic", "prompt": "Create a flow with an inline autonomous agent calling three tools: a Salesforce connector, an HTTP endpoint, and a custom script node", "should_trigger": "yes"}
+{"id": "r055", "source": "synthetic", "prompt": "Wire a parallel loop node over customer IDs, call an RPA process for each, merge the results, and output aggregated data to End", "should_trigger": "yes"}
+{"id": "r056", "source": "synthetic", "prompt": "Build a .flow that orchestrates a HITL app, an agentic-process, and an api-workflow with a delay between HITL and analysis", "should_trigger": "yes"}
+{"id": "r057", "source": "synthetic", "prompt": "I want to add conditional logic to my UiPath process", "should_trigger": "no"}
+{"id": "r058", "source": "synthetic", "prompt": "Help me wire together multiple UiPath resources", "should_trigger": "no"}
+{"id": "r059", "source": "synthetic", "prompt": "My automation needs to run on a schedule", "should_trigger": "no"}
+{"id": "r060", "source": "synthetic", "prompt": "Add an HTTP call to my UiPath project", "should_trigger": "no"}
+{"id": "r061", "source": "synthetic", "prompt": "Group my automation steps into a reusable block", "should_trigger": "no"}
+{"id": "r062", "source": "synthetic", "prompt": "I want to call a REST API from my UiPath flow", "should_trigger": "yes"}
+{"id": "r063", "source": "synthetic", "prompt": "Connect two UiPath workflows so one triggers the other", "should_trigger": "no"}
+{"id": "r064", "source": "synthetic", "prompt": "Pause my flow for 10 minutes before continuing", "should_trigger": "yes"}
+{"id": "r065", "source": "synthetic", "prompt": "Loop over an array and call an API for each item", "should_trigger": "no"}
+{"id": "r066", "source": "synthetic", "prompt": "My flow has two parallel branches — how do I wait for both?", "should_trigger": "yes"}
+{"id": "r067", "source": "synthetic", "prompt": "Terminate the flow immediately if an error occurs", "should_trigger": "yes"}
+{"id": "r068", "source": "synthetic", "prompt": "Add a switch node with 4 cases", "should_trigger": "yes"}
+{"id": "r069", "source": "synthetic", "prompt": "Create a flow input variable of type string and an output variable of type object", "should_trigger": "yes"}
+{"id": "r070", "source": "synthetic", "prompt": "Bind my flow to an existing connection I already created", "should_trigger": "yes"}
+{"id": "r071", "source": "synthetic", "prompt": "Create a new VB.NET project", "should_trigger": "no"}
+{"id": "r072", "source": "synthetic", "prompt": "Build a Kubernetes deployment manifest", "should_trigger": "no"}
+{"id": "r073", "source": "synthetic", "prompt": "Write a Python Flask app", "should_trigger": "no"}
+{"id": "r074", "source": "synthetic", "prompt": "Fix my TypeScript compilation error", "should_trigger": "no"}
+{"id": "r075", "source": "synthetic", "prompt": "Generate a regex for email validation", "should_trigger": "no"}
+{"id": "r076", "source": "synthetic", "prompt": "Set up a GitHub Actions workflow", "should_trigger": "no"}
+{"id": "r077", "source": "synthetic", "prompt": "Install .NET 8 on my machine", "should_trigger": "no"}
+{"id": "r078", "source": "synthetic", "prompt": "Design a CI/CD pipeline that builds my UiPath project, runs tests, and deploys to three environments", "should_trigger": "no"}
+{"id": "r079", "source": "synthetic", "prompt": "Create a queue in Orchestrator, set up transaction items, and configure queue triggers for robots", "should_trigger": "no"}
+{"id": "r080", "source": "synthetic", "prompt": "Build a case management solution with custom entities, forms, and approval workflows", "should_trigger": "no"}
+{"id": "r081", "source": "synthetic", "prompt": "Migrate my RPA project from Studio Desktop to Studio Web using ReFramework patterns", "should_trigger": "no"}
+{"id": "r082", "source": "synthetic", "prompt": "Configure machine templates, robot roles, and tenant-level permissions in Orchestrator", "should_trigger": "no"}
+{"id": "r083", "source": "synthetic", "prompt": "Help me write an automation", "should_trigger": "no", "curation_note": "relabeled yes->no: too generic — could be any UiPath product"}
+{"id": "r084", "source": "synthetic", "prompt": "I need to execute a process on a schedule", "should_trigger": "no", "curation_note": "relabeled yes->no: scheduling alone is Orchestrator, not flow-specific"}
+{"id": "r085", "source": "synthetic", "prompt": "What is the best way to handle errors in UiPath?", "should_trigger": "no"}
+{"id": "r086", "source": "synthetic", "prompt": "Show me how to pass arguments between workflows", "should_trigger": "no"}
+{"id": "r087", "source": "synthetic", "prompt": "My process needs to wait for a queue item", "should_trigger": "no"}
+{"id": "r088", "source": "synthetic", "prompt": "How do I publish my UiPath package?", "should_trigger": "no"}
+{"id": "r089", "source": "synthetic", "prompt": "Connect my UiPath project to a database", "should_trigger": "no"}
+{"id": "r090", "source": "synthetic", "prompt": "Show me a DAG for my Airflow jobs", "should_trigger": "no"}
+{"id": "r091", "source": "synthetic", "prompt": "Orchestrate my Temporal workflows", "should_trigger": "no"}
+{"id": "r092", "source": "synthetic", "prompt": "Create a Step Functions state machine in AWS", "should_trigger": "no"}
+{"id": "r093", "source": "synthetic", "prompt": "I need to design a BPMN diagram for our process", "should_trigger": "no"}
+{"id": "r094", "source": "synthetic", "prompt": "Schedule a cron job on my Linux server", "should_trigger": "no"}
+{"id": "r095", "source": "synthetic", "prompt": "Add a webhook trigger to my Zapier flow", "should_trigger": "no"}
+{"id": "r096", "source": "synthetic", "prompt": "Create a connector in Power Automate", "should_trigger": "no"}
+{"id": "r097", "source": "synthetic", "prompt": "Wire up a Node-RED flow with MQTT nodes", "should_trigger": "no"}
+{"id": "r098", "source": "synthetic", "prompt": "Delete a node from my .flow file", "should_trigger": "yes"}
+{"id": "r099", "source": "synthetic", "prompt": "Add an edge between two nodes in my flow", "should_trigger": "yes"}
+{"id": "r100", "source": "synthetic", "prompt": "What's the syntax for the .flow JSON format?", "should_trigger": "yes"}
+{"id": "r101", "source": "synthetic", "prompt": "Show me how to add an input variable to my flow", "should_trigger": "yes"}
+{"id": "r102", "source": "synthetic", "prompt": "Run uip maestro flow debug on my project", "should_trigger": "yes"}
+{"id": "r103", "source": "synthetic", "prompt": "How do I use uip maestro flow registry list?", "should_trigger": "yes"}
+{"id": "r104", "source": "synthetic", "prompt": "Add a decision node to branch my flow", "should_trigger": "yes"}
+{"id": "r105", "source": "synthetic", "prompt": "Rename a node in my .flow file", "should_trigger": "yes"}
+{"id": "r106", "source": "synthetic", "prompt": "Configure the ports on a flow node", "should_trigger": "yes"}
+{"id": "r107", "source": "synthetic", "prompt": "My .flow file is invalid — can you help me fix it?", "should_trigger": "yes"}
+{"id": "r108", "source": "synthetic", "prompt": "What node types does UiPath Flow support?", "should_trigger": "yes"}
+{"id": "r109", "source": "synthetic", "prompt": "Add a script node that returns an object", "should_trigger": "yes"}
+{"id": "r110", "source": "synthetic", "prompt": "Set up bindings_v2.json for my flow connectors", "should_trigger": "yes"}
+{"id": "r111", "source": "synthetic", "prompt": "Help me with the .flow file format", "should_trigger": "yes"}
+{"id": "r112", "source": "synthetic", "prompt": "How do I declare an inout variable in a flow?", "should_trigger": "yes"}
+{"id": "r113", "source": "synthetic", "prompt": "Add a targetPort to every edge in my flow", "should_trigger": "yes"}
+{"id": "r114", "source": "synthetic", "prompt": "What is the difference between uip maestro flow validate and uip maestro flow debug?", "should_trigger": "yes"}
+{"id": "r115", "source": "synthetic", "prompt": "I'm new to UiPath Flow — how do I create my first project?", "should_trigger": "yes"}
+{"id": "r116", "source": "synthetic", "prompt": "Scaffold a new .flow project in my current directory", "should_trigger": "yes"}
+{"id": "r117", "source": "synthetic", "prompt": "Build a .flow that reads rows from a SharePoint list, validates each address via an HTTP node, routes invalid rows to a Google Sheet via decision, valid rows into a Salesforce create-contact connector, and emails a summary via Outlook at End", "should_trigger": "yes"}
+{"id": "r118", "source": "synthetic", "prompt": "Refactor my existing .flow to move error-logging nodes into a subflow with a string input for error context and invoke that subflow from each branch", "should_trigger": "yes"}
+{"id": "r119", "source": "synthetic", "prompt": "Add retry logic to my HTTP node in the .flow using a loop with exponential backoff script and a max-attempts inout variable", "should_trigger": "yes"}
+{"id": "r120", "source": "synthetic", "prompt": "Create a flow that triggers on a new JIRA issue, routes high-priority to ServiceNow, medium to Slack, low to Teams, using a switch node", "should_trigger": "yes"}
+{"id": "r121", "source": "synthetic", "prompt": "Build a flow with two parallel branches via loop in parallel mode, each calling a different agentic-process, merge the results, write to an Orchestrator queue item with custom metadata", "should_trigger": "yes"}
+{"id": "r122", "source": "synthetic", "prompt": "In my .flow project, add a HITL approval step wired into a decision that routes approved to an RPA process and rejected to a terminate node with an error message", "should_trigger": "yes"}
+{"id": "r123", "source": "synthetic", "prompt": "Design a .flow that debounces incoming webhook events via a delay node, deduplicates via a script keyed on event ID, then dispatches to the correct downstream connector based on event type", "should_trigger": "yes"}
+{"id": "r124", "source": "synthetic", "prompt": "Create a Maestro flow: receive order via HTTP trigger, validate inventory with a script node, charge via Stripe connector, update Salesforce opportunity, notify via SendGrid, write audit record to queue", "should_trigger": "yes"}
+{"id": "r125", "source": "synthetic", "prompt": "Take my .flow with an inline agent and add three tool nodes (HTTP, script, Salesforce create-record) plus a memory variable that persists across agent iterations", "should_trigger": "yes"}
+{"id": "r126", "source": "synthetic", "prompt": "Split my monolithic .flow into three subflows (ingestion, transformation, delivery) wired under a main flow with appropriate I/O variables", "should_trigger": "yes"}
+{"id": "r127", "source": "synthetic", "prompt": "Build an orchestration flow that waits for three parallel RPA processes via merge, runs a decision checking success of all three, terminates or completes accordingly", "should_trigger": "yes"}
+{"id": "r128", "source": "synthetic", "prompt": "Add error handling to every connector node in my .flow — route error ports to a common error-logging subflow that writes to a queue and notifies Teams", "should_trigger": "yes"}
+{"id": "r129", "source": "synthetic", "prompt": "Create a .flow that loops over invoices, for each calls an api-workflow, collects results into an array, and at End maps the array as an output variable", "should_trigger": "yes"}
+{"id": "r130", "source": "synthetic", "prompt": "Modify my .flow so the scheduled trigger runs every weekday at 9am NY time and skips holidays via a decision node with a script lookup", "should_trigger": "yes"}
+{"id": "r131", "source": "synthetic", "prompt": "Design a .flow orchestrating a Copilot-style agent loop: inline agent calls tools per iteration, checks termination condition, writes conversation to Data Service via connector", "should_trigger": "yes"}
+{"id": "r132", "source": "synthetic", "prompt": "Replace my core.logic.mock RPA step with a real uipath.core.rpa.{key} node, update input/output mapping and bindings_v2.json", "should_trigger": "no"}
+{"id": "r133", "source": "synthetic", "prompt": "Build a .flow that ingests a CSV from SharePoint, transforms via group-by, filters with a transform node, writes grouped results to BigQuery via connector", "should_trigger": "yes"}
+{"id": "r134", "source": "synthetic", "prompt": "Create a multi-branch flow: after validation, split via switch into 4 region paths (EU/US/APAC/LATAM) with region-specific connectors, merge at End with consolidated output", "should_trigger": "yes"}
+{"id": "r135", "source": "synthetic", "prompt": "Implement a saga pattern in my .flow with compensating transactions — on failure of step N, invoke the compensation subflow for steps 1..N-1, wired via decisions and error ports", "should_trigger": "yes"}
+{"id": "r136", "source": "synthetic", "prompt": "I need to handle different cases based on a value", "should_trigger": "no"}
+{"id": "r137", "source": "synthetic", "prompt": "Make my automation skip steps when a condition is false", "should_trigger": "yes"}
+{"id": "r138", "source": "synthetic", "prompt": "Call a Salesforce API from my UiPath project", "should_trigger": "no"}
+{"id": "r139", "source": "synthetic", "prompt": "My UiPath thing should trigger when a new row is added to Google Sheets", "should_trigger": "yes"}
+{"id": "r140", "source": "synthetic", "prompt": "I want a scheduled task in UiPath", "should_trigger": "no", "curation_note": "relabeled yes->no: scheduled task in UiPath = Orchestrator, not flow-specific"}
+{"id": "r141", "source": "synthetic", "prompt": "Let my UiPath job wait 5 minutes between steps", "should_trigger": "yes"}
+{"id": "r142", "source": "synthetic", "prompt": "I want to combine outputs of two parallel UiPath actions", "should_trigger": "yes"}
+{"id": "r143", "source": "synthetic", "prompt": "Fail the run if validation fails", "should_trigger": "no"}
+{"id": "r144", "source": "synthetic", "prompt": "I need to loop through items and do something for each in UiPath", "should_trigger": "yes"}
+{"id": "r145", "source": "synthetic", "prompt": "Break down my big UiPath automation into smaller pieces", "should_trigger": "no", "curation_note": "relabeled yes->no: RPA library refactor is also valid interpretation"}
+{"id": "r146", "source": "synthetic", "prompt": "I want a reusable chunk of UiPath logic I can call from multiple places", "should_trigger": "yes"}
+{"id": "r147", "source": "synthetic", "prompt": "Share variables across different UiPath components", "should_trigger": "yes"}
+{"id": "r148", "source": "synthetic", "prompt": "Add a webhook that starts my UiPath job", "should_trigger": "yes"}
+{"id": "r149", "source": "synthetic", "prompt": "I need something visual in UiPath that shows my automation steps", "should_trigger": "yes"}
+{"id": "r150", "source": "synthetic", "prompt": "Which trigger types does UiPath support?", "should_trigger": "yes"}
+{"id": "r151", "source": "synthetic", "prompt": "Stop my UiPath process gracefully at the end", "should_trigger": "no"}
+{"id": "r152", "source": "synthetic", "prompt": "Pass data between UiPath steps", "should_trigger": "yes"}
+{"id": "r153", "source": "synthetic", "prompt": "I want to add a waiting period to my UiPath logic", "should_trigger": "yes"}
+{"id": "r154", "source": "synthetic", "prompt": "Invoke a child UiPath automation and wait for its result", "should_trigger": "yes"}
+{"id": "r155", "source": "synthetic", "prompt": "Use group-by on my records", "should_trigger": "no"}
+{"id": "r156", "source": "synthetic", "prompt": "Filter items in my collection", "should_trigger": "no"}
+{"id": "r157", "source": "synthetic", "prompt": "Map fields between my source and target", "should_trigger": "no"}
+{"id": "r158", "source": "synthetic", "prompt": "My flow needs exponential backoff on errors", "should_trigger": "yes"}
+{"id": "r159", "source": "synthetic", "prompt": "How do I reference a parent variable inside a nested scope?", "should_trigger": "yes"}
+{"id": "r160", "source": "synthetic", "prompt": "Add a date-based pause until tomorrow at noon", "should_trigger": "no"}
+{"id": "r161", "source": "synthetic", "prompt": "Check if a value is null before using it in my flow", "should_trigger": "yes"}
+{"id": "r162", "source": "synthetic", "prompt": "Handle empty arrays in my flow", "should_trigger": "yes"}
+{"id": "r163", "source": "synthetic", "prompt": "I want to log debug info during flow execution", "should_trigger": "yes"}
+{"id": "r164", "source": "synthetic", "prompt": "Run one branch only if a previous step produced output", "should_trigger": "no"}
+{"id": "r165", "source": "synthetic", "prompt": "Throttle my API calls in the flow", "should_trigger": "yes"}
+{"id": "r166", "source": "synthetic", "prompt": "How do I expose my flow as an endpoint?", "should_trigger": "yes"}
+{"id": "r167", "source": "synthetic", "prompt": "Can I pass secrets into my flow securely?", "should_trigger": "yes"}
+{"id": "r168", "source": "synthetic", "prompt": "Read from the flow's execution context at runtime", "should_trigger": "yes"}
+{"id": "r169", "source": "synthetic", "prompt": "Iterate in parallel over a large dataset in my flow", "should_trigger": "yes"}
+{"id": "r170", "source": "synthetic", "prompt": "Stop the flow if a specific field is missing", "should_trigger": "yes"}
+{"id": "r171", "source": "synthetic", "prompt": "Group records by a key and count them", "should_trigger": "no"}
+{"id": "r172", "source": "synthetic", "prompt": "Use regex to extract a value in my flow", "should_trigger": "yes"}
+{"id": "r173", "source": "synthetic", "prompt": "Add a long-running pause in my flow for 24 hours", "should_trigger": "yes"}
+{"id": "r174", "source": "synthetic", "prompt": "What's the recipe for chocolate chip cookies?", "should_trigger": "no"}
+{"id": "r175", "source": "synthetic", "prompt": "Translate this French text to English", "should_trigger": "no"}
+{"id": "r176", "source": "synthetic", "prompt": "Write a haiku about spring", "should_trigger": "no"}
+{"id": "r177", "source": "synthetic", "prompt": "Convert 50 miles to kilometers", "should_trigger": "no"}
+{"id": "r178", "source": "synthetic", "prompt": "Summarize this PDF", "should_trigger": "no"}
+{"id": "r179", "source": "synthetic", "prompt": "What's the capital of Brazil?", "should_trigger": "no"}
+{"id": "r180", "source": "synthetic", "prompt": "Help me write a cover letter", "should_trigger": "no"}
+{"id": "r181", "source": "synthetic", "prompt": "Fix the indentation in this Python file", "should_trigger": "no"}
+{"id": "r182", "source": "synthetic", "prompt": "Rename this Git branch", "should_trigger": "no"}
+{"id": "r183", "source": "synthetic", "prompt": "Run npm install", "should_trigger": "no"}
+{"id": "r184", "source": "synthetic", "prompt": "Set up ESLint", "should_trigger": "no"}
+{"id": "r185", "source": "synthetic", "prompt": "Compile this Rust program", "should_trigger": "no"}
+{"id": "r186", "source": "synthetic", "prompt": "Create a new PostgreSQL table", "should_trigger": "no"}
+{"id": "r187", "source": "synthetic", "prompt": "Write a Dockerfile for a Node app", "should_trigger": "no"}
+{"id": "r188", "source": "synthetic", "prompt": "Start a new Next.js project", "should_trigger": "no"}
+{"id": "r189", "source": "synthetic", "prompt": "Add a Terraform module for S3", "should_trigger": "no"}
+{"id": "r190", "source": "synthetic", "prompt": "Deploy to Heroku", "should_trigger": "no"}
+{"id": "r191", "source": "synthetic", "prompt": "Configure Nginx reverse proxy", "should_trigger": "no"}
+{"id": "r192", "source": "synthetic", "prompt": "Set up Redis caching", "should_trigger": "no"}
+{"id": "r193", "source": "synthetic", "prompt": "Design a microservices architecture with event sourcing, CQRS, and saga orchestration using Temporal", "should_trigger": "no"}
+{"id": "r194", "source": "synthetic", "prompt": "Migrate my MongoDB cluster from replica set to sharded deployment with zero downtime", "should_trigger": "no"}
+{"id": "r195", "source": "synthetic", "prompt": "Build a React app with Redux Toolkit, React Router v6, and SSR via Next.js for an e-commerce storefront", "should_trigger": "no"}
+{"id": "r196", "source": "synthetic", "prompt": "Refactor my UiPath XAML library that has 200+ activities and duplicate selectors across 30 projects", "should_trigger": "no"}
+{"id": "r197", "source": "synthetic", "prompt": "Build a BI dashboard in UiPath Insights with custom metrics and scheduled alerts", "should_trigger": "no"}
+{"id": "r198", "source": "synthetic", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process", "should_trigger": "no"}
+{"id": "r199", "source": "synthetic", "prompt": "Configure UiPath AI Center to host a custom ML model with versioning and rollback", "should_trigger": "no"}
+{"id": "r200", "source": "synthetic", "prompt": "Build a Test Suite in UiPath for automated regression testing of my XAML workflows", "should_trigger": "no"}
+{"id": "r201", "source": "synthetic", "prompt": "Plan the rollout of UiPath Automation Cloud across 12 regional tenants with consistent governance", "should_trigger": "no"}
+{"id": "r202", "source": "synthetic", "prompt": "Design a solution accelerator in UiPath Studio for insurance claims using ReFramework", "should_trigger": "no"}
+{"id": "r203", "source": "synthetic", "prompt": "Build a Kubernetes-based deployment pipeline with Argo CD and GitOps principles", "should_trigger": "no"}
+{"id": "r204", "source": "synthetic", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus", "should_trigger": "no"}
+{"id": "r205", "source": "synthetic", "prompt": "Implement OAuth 2.0 with PKCE for a mobile app integrating with UiPath APIs", "should_trigger": "no"}
+{"id": "r206", "source": "synthetic", "prompt": "Design a data lake architecture using Databricks, Delta Lake, and Unity Catalog", "should_trigger": "no"}
+{"id": "r207", "source": "synthetic", "prompt": "Build a CDC pipeline from Postgres to Snowflake using Debezium and Kafka Connect", "should_trigger": "no"}
+{"id": "r208", "source": "synthetic", "prompt": "Create an AD federation trust between two Azure AD tenants with conditional access policies", "should_trigger": "no"}
+{"id": "r209", "source": "synthetic", "prompt": "Design an incident response runbook for a multi-region UiPath Orchestrator outage", "should_trigger": "no"}
+{"id": "r210", "source": "synthetic", "prompt": "Upgrade my Orchestrator from 2022.10 to 2024.10 with minimal downtime and robot compatibility testing", "should_trigger": "no"}
+{"id": "r211", "source": "synthetic", "prompt": "Model a commercial licensing audit across five UiPath Orchestrator instances", "should_trigger": "no"}
+{"id": "r213", "source": "synthetic", "prompt": "How do I automate my daily tasks?", "should_trigger": "no", "curation_note": "relabeled yes->no: too generic — could be any product"}
+{"id": "r214", "source": "synthetic", "prompt": "Build me an agent that answers questions", "should_trigger": "no"}
+{"id": "r216", "source": "synthetic", "prompt": "Automate the hiring pipeline", "should_trigger": "no", "curation_note": "relabeled yes->no: could be RPA / agents / case mgmt"}
+{"id": "r217", "source": "synthetic", "prompt": "Set up alerts for failures", "should_trigger": "no"}
+{"id": "r218", "source": "synthetic", "prompt": "Make my bot talk to Slack", "should_trigger": "no", "curation_note": "relabeled yes->no: 'bot' suggests coded agents, not flow"}
+{"id": "r219", "source": "synthetic", "prompt": "Extract data from PDFs", "should_trigger": "no", "curation_note": "relabeled yes->no: PDF extraction is IxP / Document Understanding domain"}
+{"id": "r220", "source": "synthetic", "prompt": "Parse invoices automatically", "should_trigger": "no", "curation_note": "relabeled yes->no: invoice parsing is IxP / Document Understanding domain"}
+{"id": "r221", "source": "synthetic", "prompt": "Build me a chatbot", "should_trigger": "no"}
+{"id": "r222", "source": "synthetic", "prompt": "Run scheduled jobs in the cloud", "should_trigger": "no"}
+{"id": "r223", "source": "synthetic", "prompt": "Create reusable code blocks", "should_trigger": "no"}
+{"id": "r224", "source": "synthetic", "prompt": "Wire services together", "should_trigger": "no"}
+{"id": "r225", "source": "synthetic", "prompt": "Schedule a meeting", "should_trigger": "no"}
+{"id": "r226", "source": "synthetic", "prompt": "Send an email from UiPath", "should_trigger": "yes"}
+{"id": "r227", "source": "synthetic", "prompt": "Trigger an action when a file is uploaded", "should_trigger": "no", "curation_note": "relabeled yes->no: could be Integration Service, not flow-specific"}
+{"id": "r228", "source": "synthetic", "prompt": "Put approval in my workflow", "should_trigger": "no", "curation_note": "relabeled yes->no: approval can live in HITL / case mgmt, not flow-specific"}
+{"id": "r229", "source": "synthetic", "prompt": "Manage my automation lifecycle", "should_trigger": "no", "curation_note": "relabeled yes->no: lifecycle management = Orchestrator + solution"}
+{"id": "r230", "source": "synthetic", "prompt": "Build an Apache NiFi flow with processors", "should_trigger": "no"}
+{"id": "r231", "source": "synthetic", "prompt": "Create a Dagster asset graph", "should_trigger": "no"}
+{"id": "r232", "source": "synthetic", "prompt": "Wire up Prefect tasks", "should_trigger": "no"}
+{"id": "r233", "source": "synthetic", "prompt": "Design a Luigi pipeline", "should_trigger": "no"}
+{"id": "r234", "source": "synthetic", "prompt": "Orchestrate containers with Docker Swarm", "should_trigger": "no"}
+{"id": "r235", "source": "synthetic", "prompt": "Build a Ray workflow for distributed ML", "should_trigger": "no"}
+{"id": "r236", "source": "synthetic", "prompt": "Create a TektonCD pipeline", "should_trigger": "no"}
+{"id": "r237", "source": "synthetic", "prompt": "Design a Concourse CI pipeline", "should_trigger": "no"}
+{"id": "r238", "source": "synthetic", "prompt": "Model a DBT DAG", "should_trigger": "no"}
+{"id": "r239", "source": "synthetic", "prompt": "Write Nextflow workflows for bioinformatics", "should_trigger": "no"}
+{"id": "r240", "source": "synthetic", "prompt": "Build a Snakemake pipeline", "should_trigger": "no"}
+{"id": "r241", "source": "synthetic", "prompt": "Create a Celery canvas with chords and groups", "should_trigger": "no"}
+{"id": "r242", "source": "synthetic", "prompt": "Set up an Argo Workflows DAG", "should_trigger": "no"}
+{"id": "r243", "source": "synthetic", "prompt": "Design a Kedro pipeline", "should_trigger": "no"}
+{"id": "r244", "source": "synthetic", "prompt": "Build an Apache Beam pipeline", "should_trigger": "no"}
+{"id": "r245", "source": "synthetic", "prompt": "Create a Camunda BPMN process", "should_trigger": "no"}
+{"id": "r246", "source": "synthetic", "prompt": "Write a Drools decision table", "should_trigger": "no"}
+{"id": "r247", "source": "synthetic", "prompt": "Design a Process Maker workflow", "should_trigger": "no"}
+{"id": "intent-01", "source": "human-curated", "prompt": "I want an automation that fires whenever I get an Outlook email with an attachment, pulls the attachment, and hands it to a coded agent for extraction.", "should_trigger": "yes"}
+{"id": "intent-02", "source": "human-curated", "prompt": "How do I build a workflow where a human has to approve something before the next step runs?", "should_trigger": "yes"}
+{"id": "intent-03", "source": "human-curated", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?", "should_trigger": "yes"}
+{"id": "trouble-01", "source": "human-curated", "prompt": "My flow stopped running at a decision step. The trace shows a bunch of completed steps and then nothing — can you figure out why?", "should_trigger": "yes"}
+{"id": "trouble-02", "source": "human-curated", "prompt": "The tools in my inline agent don't have access to the parent flow's variables. Is that intentional, or did I mis-wire something? Take a look at the flow.", "should_trigger": "yes"}
+{"id": "trouble-03", "source": "human-curated", "prompt": "Debug keeps failing at the Provisioning Resources stage with a timeout. The flow is pretty simple — what's going wrong?", "should_trigger": "yes"}
+{"id": "trouble-04", "source": "human-curated", "prompt": "I opened my flow today and the canvas is broken — branches are gone, the agent is gone, and it says the agent was removed from the solution. Can you recover it?", "should_trigger": "yes"}
+{"id": "trouble-05", "source": "human-curated", "prompt": "Coded agent outputs aren't showing up in the debug console, and the next node doesn't seem to receive them. Low-code agents work fine. Check the flow?", "should_trigger": "yes"}
+{"id": "trouble-06", "source": "human-curated", "prompt": "I published this to orchestrator and now jobs start, go to Running, and sit there forever. Runs fine locally from studio web. What's different?", "should_trigger": "yes"}
+{"id": "howto-01", "source": "human-curated", "prompt": "How does Human in the Loop work in Flow? I used Action Center forms in Maestro — can I reuse those, or do I need to build something new with HITL?", "should_trigger": "yes"}
+{"id": "howto-02", "source": "human-curated", "prompt": "What's the equivalent of Create Action App Task in Flow?", "should_trigger": "yes"}
+{"id": "howto-03", "source": "human-curated", "prompt": "Is there a native Teams trigger? I want the flow to fire when a Teams message contains a customer name.", "should_trigger": "yes"}
+{"id": "author-01", "source": "human-curated", "prompt": "Build a flow that pulls the last 3 months of Salesforce tickets for a customer when a Teams message arrives with their name.", "should_trigger": "yes"}
+{"id": "author-02", "source": "human-curated", "prompt": "Add a decision node after the risk-check step — if risk > 0.8, route to HITL; otherwise continue to the Slack send.", "should_trigger": "yes"}
+{"id": "author-03", "source": "human-curated", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution.", "should_trigger": "yes"}
+{"id": "author-04", "source": "human-curated", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON.", "should_trigger": "yes"}
