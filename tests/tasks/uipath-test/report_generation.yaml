@@ -1,0 +1,96 @@
+task_id: skill-test-report-generation-qa
+description: >
+  Integration test: agent uses the uipath-test skill to generate a QA Engineer
+  test report from Test Manager data. Asserts that the agent (a) runs
+  `uip login status` at least once, (b) lists executions for the target test
+  set with `--test-set-id`, (c) uses `--output json` on at least two `uip tm`
+  commands per Critical Rule #2, (d) writes the report to
+  `test-report-<persona>-<YYYY-MM-DD>.md` per the skill's filename convention,
+  and (e) the report body contains the QA-persona structural sections taught
+  by references/test-result-report-guide.md (regression analysis + a
+  pass/fail/none breakdown) plus the target test-set key. The skill — not
+  the prompt — must teach the filename convention, the persona-specific
+  sections, and the `--output json` flag. Note: when the target test set
+  has no executions, the skill correctly stops early (Critical Rule #4), so
+  the downstream `list-testcaselogs` step is not asserted by this task; the
+  report is expected to render the empty-data sections honestly.
+tags: [uipath-test, integration, report, qa]
+
+agent:
+  type: claude-code
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  Generate a **QA Engineer** test report for the UiPath Test Manager test set
+  with key "INV:10" in project "INV". Save the report file in the current
+  working directory using the default filename convention from the skill.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed executions for the test set (`uip tm execution list --test-set-id`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+execution\s+list\s+.*--test-set-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `--output json` on uip tm commands (Critical Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Report file written using QA persona filename convention (test-report-qa-YYYY-MM-DD.md)"
+    command: "ls test-report-qa-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md >/dev/null 2>&1"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "QA persona report contains skill-taught structural sections (regression + pass/fail breakdown) and the target test-set key"
+    command: |
+      python3 -c "
+      import glob, re, sys
+      paths = sorted(glob.glob('test-report-qa-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md'))
+      if not paths:
+          sys.exit(2)
+      body = open(paths[-1], encoding='utf-8', errors='replace').read()
+      lower = body.lower()
+      checks = {
+          'markdown header anchor': re.search(r'(?m)^#{1,3}\s+\S', body) is not None,
+          'regression section taught by skill': re.search(r'(?im)^#{1,4}.*regression', body) is not None,
+          'pass/fail terms (per the skill\'s common metrics)': all(t in lower for t in ['passed', 'failed']),
+          'target test-set key INV:10 referenced': 'inv:10' in lower,
+      }
+      missing = [k for k, ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10))
+          sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
