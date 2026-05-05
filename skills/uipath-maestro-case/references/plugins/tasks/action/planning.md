@@ -2,6 +2,8 @@
 
 A human-in-the-loop (HITL) action task. Assigns a task to a user or group for manual review, approval, or data entry via the Actions app.
 
+> **Use the `uipath-human-in-the-loop` skill for HITL tasks.** It handles schema design, field type selection, assignee configuration, and the full JSON + CLI implementation for Case action tasks. Full reference: [hitl-casetask-action.md](../../../../../uipath-human-in-the-loop/references/hitl-casetask-action.md). The notes below cover Case-specific planning only.
+
 ## When to Use
 
 Pick this plugin when the sdd.md describes a `HITL` task, or any task requiring manual user interaction: approval, review, sign-off, correction, classification by a person.

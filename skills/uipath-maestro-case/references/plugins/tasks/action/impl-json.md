@@ -1,5 +1,7 @@
 # action task — Implementation (Direct JSON Write)
 
+> **Use the `uipath-human-in-the-loop` skill for HITL action tasks.** It owns the full implementation reference for Case HITL — JSON shape, field schema design, CLI opt-in (`uip case hitl add`), and downstream output access. See [hitl-casetask-action.md](../../../../../uipath-human-in-the-loop/references/hitl-casetask-action.md). The guide below covers the raw JSON shape for direct writes.
+
 > **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
 ## Task JSON Shape
