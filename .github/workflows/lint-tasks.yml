@@ -52,9 +52,12 @@ jobs:
             ## Step 1 — Read the rubric
 
             Read `.claude/commands/lint-task.md` end-to-end. That file is the
-            source of truth for the scoring rubric (axes A–F) and the four
+            source of truth for the six scoring axes (Self-report anti-pattern,
+            Prompt over-specification, Meaningful coverage, Could pass for the
+            wrong reason, Near-duplicate, Validate-only flow tests) and the four
             severity levels (Critical / High / Medium / Low). Apply the same
-            rubric here. Do NOT restate the rubric in the PR comment — link to it.
+            rubric here. Refer to axes by their human-readable titles, never by
+            letter labels. Do NOT restate the rubric in the PR comment — link to it.
 
             ## Step 2 — Identify changed task YAMLs
 
@@ -101,8 +104,8 @@ jobs:
 
             For each file, follow the rubric in `.claude/commands/lint-task.md`:
               - Read up to 5 nearest sibling tasks (same folder, then same skill
-                if folder is sparse) for axis E (near-duplicate).
-              - Evaluate axes A–F and produce a list of severity-tagged issues.
+                if folder is sparse) for the "Near-duplicate" axis.
+              - Evaluate all six axes and produce a list of severity-tagged issues.
               - Compose a short, concrete list of suggested fixes per issue.
 
             ## Step 5 — Within-PR duplicate check
@@ -113,8 +116,8 @@ jobs:
                 surface-level naming differences)?
               - If yes, flag a "Within-PR duplicates" cluster in the comment with
                 the cluster members and a one-line justification.
-              - This is in addition to the per-file axis E check (which compares
-                to existing siblings on main).
+              - This is in addition to the per-file Near-duplicate check (which
+                compares to existing siblings on main).
               - If multiple files are interchangeable, raise the cluster as
                 **High** severity. If they overlap substantially but each adds
                 some marginal coverage, raise as **Medium**.
@@ -144,10 +147,10 @@ jobs:
             #### `tests/tasks/<skill>/<file>.yaml` — verdict: <OK | Low | Medium | High | Critical>
 
             **Issues:**
-            - [Critical] axis A: <one-line description with line refs>
-            - [High] axis B: <one-line description with line refs>
-            - [Medium] axis E: <description, neighbor: foo.yaml>
-            - [Low] axis C: <description>
+            - [Critical] Self-report anti-pattern: <one-line description with line refs>
+            - [High] Prompt over-specification: <one-line description with line refs>
+            - [Medium] Near-duplicate: <description, neighbor: foo.yaml>
+            - [Low] Meaningful coverage: <description>
 
             **Suggested fixes:**
             - <concrete change>

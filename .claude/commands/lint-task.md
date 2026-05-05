@@ -48,9 +48,9 @@ For each target task file:
 
 ## Phase 3 — Apply the Rubric
 
-Evaluate the task against six axes. Each axis can produce zero or more issues, each tagged with a severity.
+Evaluate the task against six axes. Each axis can produce zero or more issues, each tagged with a severity. When raising an issue, refer to the axis by its human-readable title (e.g. "Self-report anti-pattern", "Prompt over-specification") — do not use letter labels.
 
-### A. Self-report anti-pattern
+### Self-report anti-pattern
 
 **Raise a Critical issue if both are true:**
 
@@ -59,7 +59,7 @@ Evaluate the task against six axes. Each axis can produce zero or more issues, e
 
 **Why it's broken:** the test should check what the agent *did* (commands run, artifacts produced) using deterministic criteria, not what the agent *claims* it did in a self-written summary. The agent grades its own homework, the result is hallucination-prone, and the deterministic criteria coder-eval was built for are bypassed.
 
-### B. Prompt over-specification
+### Prompt over-specification
 
 Evaluate how much `initial_prompt` leaks the procedure that the skill should be teaching.
 
@@ -81,7 +81,7 @@ Severity:
 - **Medium** — prompt prescribes 2+ procedure steps or non-trivial flags
 - **Low** — prompt leaks one minor detail (e.g. a single flag, a file path that wasn't necessary to specify) that is *not* covered by either carve-out above
 
-### C. Meaningful coverage
+### Meaningful coverage
 
 Evaluate whether `success_criteria` actually validate skill correctness, vs. trivial existence checks.
 
@@ -104,14 +104,14 @@ Severity:
 - **Medium** — at least one correctness check exists but key outputs go unvalidated
 - **Low** — minor coverage gap (e.g. one expected file isn't content-checked)
 
-### D. Could pass for the wrong reason
+### Could pass for the wrong reason
 
 Evaluate whether a trivial / dummy / hard-coded implementation could satisfy the criteria without exercising the skill.
 
 Specifically ask: if the agent skipped the skill entirely and wrote `{"status": "ok"}` to the expected file, or echoed the expected stdout, would the test pass? If yes, the test is gameable.
 
 Penalize:
-- Self-report files (already raised under axis A — do not double-count, but reference here)
+- Self-report files (already raised under "Self-report anti-pattern" — do not double-count, but reference here)
 - `file_contains` with strings the agent could trivially write without invoking the skill (e.g. expecting `"success"` in the output)
 - `command_executed` patterns so loose that any usage of the CLI passes
 - Tests where the criteria can be satisfied without actually invoking the underlying CLI/SDK that the skill teaches
@@ -122,12 +122,12 @@ Reward:
 - Cross-checks (agent ran command X **and** file Y contains the output of X)
 
 Severity:
-- **Critical** — a dummy implementation passes; the skill is not exercised at all (typically co-occurs with axis A)
+- **Critical** — a dummy implementation passes; the skill is not exercised at all (typically co-occurs with "Self-report anti-pattern")
 - **High** — a lazy agent passes by writing expected strings to disk without using the skill
 - **Medium** — a careful agent could game the criteria but the prompt nudges the right way
 - **Low** — minor gameability, e.g. one weak criterion among several strong ones
 
-### E. Near-duplicate of nearby files
+### Near-duplicate of nearby files
 
 For each of the 5 nearest files, compare:
 - Same skill features tested?
@@ -146,7 +146,7 @@ Severity:
 
 When raising Medium or High, **name the most-similar neighbor** in the issue description.
 
-### F. Validate-only flow tests miss correctness
+### Validate-only flow tests miss correctness
 
 **Applies only if** the task's `tags` include a flow-building skill (e.g. `uipath-maestro-flow`) AND the task's tier is `e2e` or `integration` (smoke is exempt — smoke tests legitimately stop at validate).
 
@@ -165,15 +165,15 @@ For each task, print:
 ```
 ─── tests/tasks/<skill>/<file>.yaml ───────────────────────────
 
-verdict: <OK | Low | Medium | High | Critical>
+Verdict: <OK | Low | Medium | High | Critical>
 
-issues:
-  - [Critical] axis A: <one-line description with line refs>
-  - [High]     axis B: <one-line description with line refs>
-  - [Medium]   axis E: <description, neighbor: foo.yaml>
-  - [Low]      axis C: <description>
+Issues:
+  - [Critical] Self-report anti-pattern: <one-line description with line refs>
+  - [High]     Prompt over-specification: <one-line description with line refs>
+  - [Medium]   Near-duplicate: <description, neighbor: foo.yaml>
+  - [Low]      Meaningful coverage: <description>
 
-suggested fixes:
+Suggested fixes:
   - <concrete change to make>
   - ...
 ```
@@ -183,7 +183,7 @@ If a task has no issues, print:
 ```
 ─── tests/tasks/<skill>/<file>.yaml ───────────────────────────
 
-verdict: OK
+Verdict: OK
 ```
 
 After all tasks, print one summary line:
@@ -192,19 +192,19 @@ After all tasks, print one summary line:
 ═══ <N> tasks linted: <C> Critical, <H> High, <M> Medium, <L> Low, <O> OK ═══
 ```
 
-If multiple tasks share the same root cause (e.g. 4 tasks share the same self-report anti-pattern), call that out once at the bottom under `themes:` rather than repeating the issue per-task. Number themes (Theme 1, Theme 2, …) so per-task lines can reference them.
+If multiple tasks share the same root cause (e.g. 4 tasks share the same self-report anti-pattern), call that out once at the bottom under `Themes:` rather than repeating the issue per-task. Number themes (Theme 1, Theme 2, …) so per-task lines can reference them.
 
 **Theme-aware downgrade.** When a per-task issue is fully captured by a theme:
 
 - **Downgrade the affected task's overall verdict by one level** (Critical → High, High → Medium, Medium → Low, Low → OK). The systemic finding stays visible at theme severity; per-task lines show membership without amplifying noise.
 - The theme entry itself retains the original severity and full description.
 
-**Suppress the issue list when fully theme-captured.** If *every* issue on a task is captured by a theme (i.e. the task adds no unique findings beyond cluster membership), drop the `issues:` and `suggested fixes:` blocks entirely and emit a one-line verdict instead:
+**Suppress the issue list when fully theme-captured.** If *every* issue on a task is captured by a theme (i.e. the task adds no unique findings beyond cluster membership), drop the `Issues:` and `Suggested fixes:` blocks entirely and emit a one-line verdict instead:
 
 ```
 ─── tests/tasks/<skill>/<file>.yaml ───────────────────────────
 
-verdict: <Low | Medium | …> (theme-captured; see Theme 1, 3)
+Verdict: <Low | Medium | …> (theme-captured; see Theme 1, 3)
 ```
 
 If a task has *some* unique issues plus *some* theme-captured ones, keep the issues block but list only the unique issues (drop the `see Theme N` lines). The theme list at the top of the report makes membership visible across tasks; repeating "see Theme N" per task is pure clutter.
