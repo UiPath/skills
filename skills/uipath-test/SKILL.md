@@ -178,8 +178,13 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 | I want to... | Start here |
 |---|---|
 | **Generate a shareable test report** (tester or release manager view) | [references/test-result-report-guide.md](references/test-result-report-guide.md) |
+| **Publish a project and link it to a Test Manager test case** | [references/publish-and-link-guide.md](references/publish-and-link-guide.md) |
 
 
 ## Anti-patterns
 
 - **Do NOT proceed if authentication fails** — all Test Manager API calls require a valid bearer token. Fail fast rather than surfacing confusing 401 errors later.
+- **Do NOT guess command names — verb-noun composites are required.** The CLI uses explicit verb-noun forms; bare verbs do not exist. Always run `uip tm <resource> --help` to confirm. Common landmines:
+  - `uip tm testcase link` ❌ → `uip tm testcase link-automation` ✓
+  - `uip tm testcase unlink` ❌ → `uip tm testcase unlink-automation` ✓
+  - `uip tm execution wait` ❌ → `uip tm wait` ✓ (top-level under `tm`, not `execution`)
