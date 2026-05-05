@@ -6,15 +6,16 @@ Phase 0 generates `sdd.md` interactively when none is provided. Output is approv
 
 ## When Phase 0 runs
 
-Strict binary trigger. **Any `sdd.md` present at the resolved path → no interview.** Phase 1 trusts the file as written (Rule 2).
-
+Strict binary trigger. **Any `.md` candidate (basename contains `sdd`, case-insensitive) present at the resolved path → no interview; if basename ≠ `sdd.md`, copy contents to `./sdd.md` (preserve original) so Round 4 / Phase 1 / output-contract artifacts stay canonical** (Phase 1 trusts the file as written, Rule 2).
 ```
 Step 1. Skill invoked.
-Step 2. If user did not pass an sdd.md path: ask path. Default proposed = ./sdd.md.
+Step 2. Determine SDD candidate path:
+        Step 2a. If user prompt names a `.md` path or filename whose basename contains `sdd` (case-insensitive), treat it as the candidate. Examples that count: `sdd.md`, `loan-sdd.md`, `case_demo_sdd.md`, `./specs/onboarding-sdd.md`. Resolve relative paths against cwd. Plain `.md` references without `sdd` in the name are ignored — they are not SDD candidates.
+        Step 2b. If no qualifying `.md` reference in prompt, default candidate = `./sdd.md`. Ask user to confirm or supply different path before proceeding.
 Step 3. Resolve path. Stat the file.
-Step 4. File exists → exit Phase 0. Hand to Phase 1.
+Step 4. File exists → if basename ≠ `sdd.md`, copy contents to `./sdd.md` (preserve the original file at its path; do not move/rename). Exit Phase 0. Hand to Phase 1, which reads `./sdd.md`.
 Step 5. File absent →
-        Step 5a. Check for sdd.draft.md at same path. If present → resume prompt (§Resumption).
+        Step 5a. Check for `sdd.draft.md` at cwd. If present → resume prompt (§Resumption).
         Step 5b. No draft → entry prompt (§Entry).
 ```
 
