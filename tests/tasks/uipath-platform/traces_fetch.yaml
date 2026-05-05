@@ -11,25 +11,13 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Use the uipath-platform skill.
+  Use the `uipath-platform` skill.
 
-  1. Verify login: run `uip login status --output json`. Do NOT re-login —
-     use whatever tenant is currently active.
+  I want to inspect the LLM trace spans for a completed job. The job key is `11111111-2222-3333-4444-555566667777`. Fetch them.
 
-  2. Fetch LLM trace spans for job key `11111111-2222-3333-4444-555566667777`:
-     `uip traces spans get --job-key 11111111-2222-3333-4444-555566667777 --output json`
-
-  Do NOT ask for approval or confirmation. Complete end-to-end in a single pass.
+  Use `--output json` on all uip commands.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent verified login status before fetching"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent fetched spans using uip traces spans get with --job-key flag"
     tool_name: "Bash"

@@ -16,32 +16,13 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Use the uipath-platform skill.
+  Use the `uipath-platform` skill.
 
-  1. Verify login: run `uip login status --output json`. Do NOT re-login —
-     use whatever tenant is currently active.
+  I want to verify that a published agent produces LLM trace spans. Start the agent at process key `$TRACES_SMOKE_PROCESS_KEY`, wait for it to complete, then fetch the trace spans and save them to spans.json.
 
-  2. Start the pre-published traces-smoke-agent and wait for completion:
-     `uip or jobs start $TRACES_SMOKE_PROCESS_KEY \
-       --folder-path "Shared/uipath-platform" \
-       --wait-for-completion --timeout 120 --output json`
-
-  3. Extract the job Key (GUID) from Data[0].Key in the response.
-
-  4. Fetch LLM trace spans for the completed job and save the raw output:
-     `uip traces spans get --job-key <job_key> --output json > spans.json`
-
-  Do NOT ask for approval or confirmation. Complete end-to-end in a single pass.
+  Use `--output json` on all uip commands.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent verified login status before starting job"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Agent started the job with --wait-for-completion"
     tool_name: "Bash"
