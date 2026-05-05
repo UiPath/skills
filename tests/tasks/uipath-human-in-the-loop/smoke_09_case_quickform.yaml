@@ -1,0 +1,161 @@
+task_id: skill-hitl-smoke-case-quickform
+description: >
+  Smoke test (Case surface): agent adds a QuickForm action task to an
+  existing caseplan.json. Verifies the QuickForm path — data.formType =
+  "quick", inline data.schema.{fields,outcomes}, no actionCatalogName,
+  no root-level bindings mutation. First case-surface eval test for the
+  HITL skill.
+tags: [uipath-human-in-the-loop, smoke, lifecycle:edit, node:hitl, feature:approval-gate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath case management project with a caseplan.json that has
+  one stage. I need to add a Human-in-the-Loop action task to that stage
+  using the QuickForm path (inline schema — no deployed Action Center
+  app needed).
+
+  First, create the starting caseplan.json at ./caseplan.json:
+
+  {
+    "root": {
+      "id": "root",
+      "name": "Invoice Review Case",
+      "type": "case-management:root",
+      "caseIdentifier": "INV",
+      "caseAppEnabled": false,
+      "caseIdentifierType": "constant",
+      "version": "v19",
+      "publishVersion": 2,
+      "data": {
+        "intsvcActivityConfig": "v2",
+        "uipath": {
+          "variables": {
+            "inputs": [
+              { "id": "var_invoiceId", "name": "invoiceId", "type": "string" },
+              { "id": "var_amount", "name": "amount", "type": "number" }
+            ],
+            "outputs": [],
+            "inputOutputs": []
+          },
+          "bindings": []
+        }
+      },
+      "description": "Invoice review case"
+    },
+    "nodes": [
+      {
+        "id": "trigger_xY2mNp",
+        "type": "case-management:Trigger",
+        "position": { "x": 200, "y": 0 },
+        "data": { "label": "Start" }
+      },
+      {
+        "id": "Stage_aB3kL9",
+        "type": "case-management:Stage",
+        "position": { "x": 100, "y": 200 },
+        "style": { "width": 304, "opacity": 0.8 },
+        "measured": { "width": 304, "height": 128 },
+        "width": 304,
+        "zIndex": 1001,
+        "data": {
+          "label": "Review",
+          "parentElement": { "id": "root", "type": "case-management:root" },
+          "isInvalidDropTarget": false,
+          "isPendingParent": false,
+          "tasks": []
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge_Qz7hVr",
+        "type": "case-management:TriggerEdge",
+        "source": "trigger_xY2mNp",
+        "target": "Stage_aB3kL9",
+        "sourceHandle": "trigger_xY2mNp____source____right",
+        "targetHandle": "Stage_aB3kL9____target____left",
+        "data": {}
+      }
+    ]
+  }
+
+  Now add a QuickForm action task to Stage_aB3kL9:
+  - Reviewer sees: invoiceId (text, bound to vars.var_invoiceId) and
+    amount (number, bound to vars.var_amount)
+  - Reviewer fills in: decision (text, required) and notes (text, optional)
+  - Outcomes: Approve (primary, Continue) and Reject (Negative, End)
+  - Assignee: approver@company.com (specific user)
+  - Priority: Medium
+  - Task title: "Please review this invoice"
+
+  Use the QuickForm path from the uipath-human-in-the-loop skill's
+  hitl-casetask-action.md. Do NOT use a deployed Action Center app.
+  Do NOT add any root-level bindings (QuickForm doesn't need them).
+
+  Before starting, load the uipath-human-in-the-loop skill and follow
+  its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json exists"
+    path: "caseplan.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Action task uses QuickForm path (formType: quick)"
+    path: "caseplan.json"
+    includes:
+      - '"type": "action"'
+      - '"formType": "quick"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Inline schema has both input fields with correct binding form"
+    path: "caseplan.json"
+    includes:
+      - '"direction": "input"'
+      - "=vars.var_invoiceId"
+      - "=vars.var_amount"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Inline schema has both output fields"
+    path: "caseplan.json"
+    includes:
+      - '"direction": "output"'
+      - "decision"
+      - "notes"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Outcomes include Approve (primary) and Reject"
+    path: "caseplan.json"
+    includes:
+      - "Approve"
+      - "Reject"
+      - '"isPrimary": true'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Recipient is the requested user email"
+    path: "caseplan.json"
+    includes:
+      - "approver@company.com"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "QuickForm path must NOT use App-based fields (actionCatalogName / =bindings.)"
+    command: "grep -L 'actionCatalogName\\|=bindings\\.' caseplan.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

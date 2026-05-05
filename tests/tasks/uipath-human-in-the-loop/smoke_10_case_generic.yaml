@@ -1,0 +1,116 @@
+task_id: skill-hitl-smoke-case-generic
+description: >
+  Smoke test (Case surface): agent picks the Generic action task path
+  for a simple approve/reject use case with no structured form fields.
+  Verifies no formType, no schema block, no actionCatalogName, no
+  root-level bindings — only data.taskTitle + recipient + priority.
+tags: [uipath-human-in-the-loop, smoke, lifecycle:edit, node:hitl, feature:approval-gate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath case management project with a caseplan.json that has
+  one stage. I need a simple approval HITL — no form fields, no deployed
+  app — just Approve/Reject in Action Center.
+
+  First, create the starting caseplan.json at ./caseplan.json:
+
+  {
+    "root": {
+      "id": "root",
+      "name": "Expense Approval Case",
+      "type": "case-management:root",
+      "caseIdentifier": "EXP",
+      "caseAppEnabled": false,
+      "caseIdentifierType": "constant",
+      "version": "v19",
+      "publishVersion": 2,
+      "data": {
+        "intsvcActivityConfig": "v2",
+        "uipath": {
+          "variables": { "inputs": [], "outputs": [], "inputOutputs": [] },
+          "bindings": []
+        }
+      },
+      "description": "Expense approval case"
+    },
+    "nodes": [
+      {
+        "id": "trigger_xY2mNp",
+        "type": "case-management:Trigger",
+        "position": { "x": 200, "y": 0 },
+        "data": { "label": "Start" }
+      },
+      {
+        "id": "Stage_aB3kL9",
+        "type": "case-management:Stage",
+        "position": { "x": 100, "y": 200 },
+        "style": { "width": 304, "opacity": 0.8 },
+        "measured": { "width": 304, "height": 128 },
+        "width": 304,
+        "zIndex": 1001,
+        "data": {
+          "label": "Approve",
+          "parentElement": { "id": "root", "type": "case-management:root" },
+          "isInvalidDropTarget": false,
+          "isPendingParent": false,
+          "tasks": []
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge_Qz7hVr",
+        "type": "case-management:TriggerEdge",
+        "source": "trigger_xY2mNp",
+        "target": "Stage_aB3kL9",
+        "sourceHandle": "trigger_xY2mNp____source____right",
+        "targetHandle": "Stage_aB3kL9____target____left",
+        "data": {}
+      }
+    ]
+  }
+
+  Now add a Generic HITL action task to Stage_aB3kL9. The finance team
+  reviews and approves this expense — group assignee, priority Medium.
+  Task title: "Review and approve this expense claim".
+
+  No structured form fields are needed. Use the Generic action task path
+  from the uipath-human-in-the-loop skill's hitl-casetask-action.md.
+
+  Before starting, load the uipath-human-in-the-loop skill and follow
+  its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json exists"
+    path: "caseplan.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Action task with required taskTitle is present"
+    path: "caseplan.json"
+    includes:
+      - '"type": "action"'
+      - "Review and approve this expense claim"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generic path must NOT contain formType, schema, or actionCatalogName"
+    command: "grep -L 'formType\\|\"schema\"\\|actionCatalogName' caseplan.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generic path must NOT add root-level bindings"
+    command: "grep -c '\"bindings\": \\[\\]' caseplan.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

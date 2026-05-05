@@ -1,0 +1,157 @@
+task_id: skill-hitl-quality-case-path-selection
+description: >
+  Quality test (Case surface): agent picks the right path for a
+  data-enrichment scenario where the human fills in missing fields.
+  Should pick QuickForm (inline schema with output-direction fields),
+  not Generic (no fields) and not App-based (no deployed app exists).
+  Verifies the agent reads the path-selection table correctly.
+tags: [uipath-human-in-the-loop, integration, lifecycle:edit, node:hitl, feature:approval-gate]
+
+agent:
+  type: claude-code
+  max_turns: 50
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath case management project. Our agent extracts vendor
+  data from invoices but sometimes can't read the vendor name or the
+  cost center. When that happens, a human in finance needs to fill in
+  the missing fields and submit. I do NOT have a deployed Action Center
+  app for this — please use whatever approach works without one.
+
+  First, create the starting caseplan.json at ./caseplan.json:
+
+  {
+    "root": {
+      "id": "root",
+      "name": "Vendor Enrichment Case",
+      "type": "case-management:root",
+      "caseIdentifier": "VEN",
+      "caseAppEnabled": false,
+      "caseIdentifierType": "constant",
+      "version": "v19",
+      "publishVersion": 2,
+      "data": {
+        "intsvcActivityConfig": "v2",
+        "uipath": {
+          "variables": {
+            "inputs": [
+              { "id": "var_rawExtract", "name": "rawExtract", "type": "string" }
+            ],
+            "outputs": [],
+            "inputOutputs": []
+          },
+          "bindings": []
+        }
+      },
+      "description": "Vendor data enrichment case"
+    },
+    "nodes": [
+      {
+        "id": "trigger_xY2mNp",
+        "type": "case-management:Trigger",
+        "position": { "x": 200, "y": 0 },
+        "data": { "label": "Start" }
+      },
+      {
+        "id": "Stage_aB3kL9",
+        "type": "case-management:Stage",
+        "position": { "x": 100, "y": 200 },
+        "style": { "width": 304, "opacity": 0.8 },
+        "measured": { "width": 304, "height": 128 },
+        "width": 304,
+        "zIndex": 1001,
+        "data": {
+          "label": "Enrich",
+          "parentElement": { "id": "root", "type": "case-management:root" },
+          "isInvalidDropTarget": false,
+          "isPendingParent": false,
+          "tasks": []
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge_Qz7hVr",
+        "type": "case-management:TriggerEdge",
+        "source": "trigger_xY2mNp",
+        "target": "Stage_aB3kL9",
+        "sourceHandle": "trigger_xY2mNp____source____right",
+        "targetHandle": "Stage_aB3kL9____target____left",
+        "data": {}
+      }
+    ]
+  }
+
+  Add a HITL action task to Stage_aB3kL9. The reviewer:
+    - sees the raw extract from the agent (read-only, bound to vars.var_rawExtract)
+    - fills in vendorName (text, required) and costCenter (text, required)
+    - clicks Submit
+
+  Pick the right path for this scenario based on the skill's guidance.
+  Assignee: data-enrichment-team (group). Priority: Medium.
+
+  Save your path choice and rationale to choice.json:
+  {
+    "path": "<QuickForm | Generic | App-based>",
+    "rationale": "<one sentence explaining why this path fits>"
+  }
+
+  Before starting, load the uipath-human-in-the-loop skill and follow
+  its workflow. Do NOT confirm with the user mid-task — make the
+  decision based on the skill's path-selection table and proceed.
+
+success_criteria:
+  - type: file_exists
+    description: "choice.json exists"
+    path: "choice.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent picked the QuickForm path (matches skill's path-selection table for data enrichment without deployed app)"
+    path: "choice.json"
+    assertions:
+      - expression: "path"
+        operator: contains
+        expected: "QuickForm"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "caseplan.json action task uses formType: quick"
+    path: "caseplan.json"
+    includes:
+      - '"formType": "quick"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Output-direction fields for vendorName and costCenter are present"
+    path: "caseplan.json"
+    includes:
+      - '"direction": "output"'
+      - "vendorName"
+      - "costCenter"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Required flag is set on the output fields"
+    path: "caseplan.json"
+    includes:
+      - '"required": true'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "QuickForm path must NOT mutate root.data.uipath.bindings (the App-based fingerprint)"
+    command: "grep -L 'actionCatalogName\\|=bindings\\.' caseplan.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
