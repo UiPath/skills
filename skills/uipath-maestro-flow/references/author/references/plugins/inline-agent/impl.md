@@ -96,12 +96,18 @@ uip maestro flow edge add <FlowName>.flow <agentNodeId> <toolNodeId> \
   --source-port tool --target-port input --output json
 ```
 
-The CLI auto-generates `bindings[]` entries and rewrites `bindings_v2.json`.
+The CLI auto-generates `bindings[]` entries in the `.flow` file when nodes are added via `node add`.
 
 After adding the flow node, you must also:
 - Hand-write the per-tool `resource.json` at `<FlowProjectDir>/<inlineAgentProjectId>/resources/<RES_UUID>/resource.json` — **use the exact format from the `uipath-agents` skill: `lowcode/capabilities/inline-in-flow/inline-in-flow.md` § Inline-in-Flow Process Tool resource.json.** The inline-in-flow convention differs from standalone agents: `location: "solution"`, `properties.folderPath: ""`, `referenceKey: ""`. Getting these wrong causes silent runtime failures.
 - Set prompts in `agent.json` (system + user messages with `contentTokens` of `type: "simpleText"`)
-- Run `uip agent validate --inline-in-flow` to regenerate `.agent-builder/`
+- Run `uip agent validate --inline-in-flow` with `--bindings-target` pointing to the flow project's `bindings_v2.json` to regenerate `.agent-builder/` **and** propagate tool bindings to the flow project level:
+  ```bash
+  uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+    --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+  ```
+  **Without `--bindings-target`, the inline agent's tool bindings stay in `.agent-builder/bindings.json` only — `uip solution resource refresh` will NOT discover them** because it only reads project-level `bindings_v2.json` files.
+- **Patch `folderPath` in `bindings_v2.json`** after `agent validate` — the CLI propagates the inline agent's `resource.json` values, which use `folderPath: ""` per the inline-in-flow convention. But `uip solution resource refresh` needs a non-empty `folderPath` to look up the process in Orchestrator. Use `Edit` to set each process tool resource's `folderPath.defaultValue` in `bindings_v2.json` to the actual Orchestrator folder path. The correct value comes from the `.flow` file's top-level `bindings[]` array: find the entry with `propertyAttribute: "folderPath"` and matching `resourceSubType: "Process"`, and copy its `default` field (e.g., `"Shared/TestRPA"`). Without this patch, `solution resource refresh` warns "process not found in Orchestrator" and creates a solution-level resource with `"package": ""`, causing **"Sequence contains no matching element"** during debug resource provisioning.
 - Run `uip solution resource refresh` before upload
 
 For agent.json prompt configuration and solution resource mechanics, see the `uipath-agents` skill (`lowcode/capabilities/inline-in-flow/inline-in-flow.md`).
@@ -145,10 +151,21 @@ return { classification: response };
 
 ## Validate
 
-Validate the inline agent definition, then the flow:
+Validate the inline agent definition, patch `bindings_v2.json`, then validate the flow:
 
 ```bash
-uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
+# 1. Validate and propagate tool bindings
+uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+
+# 2. Patch folderPath in bindings_v2.json — the CLI writes folderPath: ""
+#    from the inline-in-flow resource.json convention, but solution resource
+#    refresh needs the real Orchestrator folder to resolve the process.
+#    Use Edit to set each process resource's folderPath.defaultValue to the
+#    value from the .flow file's bindings[] (propertyAttribute: "folderPath",
+#    resourceSubType: "Process" → copy its "default" field).
+
+# 3. Validate the flow
 uip maestro flow validate <FlowName>.flow --output json
 ```
 
@@ -163,8 +180,9 @@ uip maestro flow validate <FlowName>.flow --output json
 | Flow runs a different agent than expected | `inputs.source` points to a stale/leftover inline agent dir | Check subdirectory names — only one inline agent dir should correspond to each agent node |
 | `Orchestrator.StartAgentJob` error at runtime | Stale `model` block on the instance overrides the inherited definition | Re-add the node with the current CLI (`node add` drops the model block automatically) |
 | Studio Web reports "System prompt is required" | Inline agent's `agent.json.messages[]` has empty `content`, OR `.agent-builder/agent.json` is stale | Set prompts in `agent.json`, re-run `uip agent validate --inline-in-flow` — see `uipath-agents` skill |
-| Studio Web debug: "Could not find process for tool" | `uip solution resource refresh` not run before upload | Run `uip solution resource refresh <SolutionRoot>` — see `uipath-agents` skill (`lowcode/solution-resources.md`) |
-| `bindings_v2.json` is empty after `node add` of an agent-tool process | CLI did not auto-generate bindings | Re-add the agent-tool node via `node add` (which auto-regenerates the file) |
+| Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resource refresh` never created the solution-level resource | Re-run `uip agent validate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json`, then `uip solution resource refresh`, then re-upload |
+| `bindings_v2.json` is empty or missing tool bindings | `uip agent validate --inline-in-flow` was run without `--bindings-target`, so bindings were only written to `.agent-builder/bindings.json` (not the flow project level) | Re-run with `--bindings-target <FlowProjectDir>/bindings_v2.json` |
+| Debug fails: "Sequence contains no matching element" during resource provisioning | `bindings_v2.json` has `folderPath.defaultValue: ""` — `solution resource refresh` could not find the process in Orchestrator and created a resource with `"package": ""` | Use `Edit` to set `folderPath.defaultValue` in `bindings_v2.json` to the real Orchestrator folder (from the `.flow` file's `bindings[]` entry with `propertyAttribute: "folderPath"`), then re-run `solution resource refresh` and re-upload |
 
 ## What NOT to Do
 
