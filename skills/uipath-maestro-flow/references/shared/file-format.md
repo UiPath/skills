@@ -218,7 +218,7 @@ Copy the object at `Data.Node` into your `definitions` array. Do not write defin
 | `core.trigger.manual` | Entry point | `entryPointId` |
 | `core.trigger.scheduled` | Recurring schedule trigger | `entryPointId`, `timerType`, `timerPreset` |
 | `core.action.script` | Run JavaScript | `script` |
-| `core.action.http` | HTTP request | `method`, `url`, `headers`, `body` |
+| `core.action.http.v2` | HTTP request | `method`, `url`, `headers`, `body` |
 | `core.action.transform` | Map/filter/group data | `collection`, `operations` |
 | `core.logic.decision` | If/else branch | `expression` |
 | `core.logic.switch` | Multi-way branch | `cases` |
