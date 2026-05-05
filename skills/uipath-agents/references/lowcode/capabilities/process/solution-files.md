@@ -1,8 +1,8 @@
 # Solution-Level Files for External Process Tools — Hand-Authoring Reference
 
-When `uip solution resource refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [external.md](external.md).
+When `uip solution resource refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [process.md](process.md).
 
-It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding extraction path — used when `uip solution resource get` is unavailable (older `uip` builds, RCS unreachable, custom deployments). For the standard CLI-driven extraction, see [external.md § Discovery](external.md#discovery).
+It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding extraction path — used when `uip solution resource get` is unavailable (older `uip` builds, RCS unreachable, custom deployments). For the standard CLI-driven extraction, see [process.md § Discovery](process.md#discovery).
 
 > **`folders[].fullyQualifiedName` carries the literal `Folder`** (e.g., `"Shared"`, `"Shared/Sales"`) returned by `uip solution resource list` — the same value the agent-level `resource.json` writes into `properties.folderPath` and that `bindings_v2.json` propagates. Templates show `<Folder>` as the placeholder; examples show `"Shared"` as a concrete value. Auto-generated declarations for **solution-internal projects** (created by `uip solution project add`) keep `"solution_folder"` instead — they have no fixed Orchestrator folder until deploy. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
 
@@ -15,7 +15,7 @@ It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding ex
 │   ├── agent.json
 │   └── resources/
 │       └── <ToolName>/
-│           └── resource.json            # Agent-level resource (see external.md)
+│           └── resource.json            # Agent-level resource (see process.md)
 ├── resources/
 │   └── solution_folder/
 │       ├── package/
@@ -464,7 +464,7 @@ For the generic debug_overwrites shape (capability-agnostic), see [../../solutio
 
 ## How to Get the Values
 
-> **Fallback path.** When `uip solution resource get` is available, use it instead — see [external.md § Discovery](external.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
+> **Fallback path.** When `uip solution resource get` is available, use it instead — see [process.md § Discovery](process.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
 
 > **SECURITY: Never read `~/.uipath/.auth` directly** — the access token must not appear in Claude's context. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
 
@@ -544,6 +544,5 @@ Decode the JWT access token payload (base64) and read the `sub` claim. This is t
 
 ## References
 
-- [external.md](external.md) — happy-path walkthrough using refresh
-- [process.md](process.md) — capability overview
+- [process.md](process.md) — capability overview + happy-path walkthrough using refresh
 - [../../solution-resources.md](../../solution-resources.md) § Refresh Mechanics, § Debug Overwrites

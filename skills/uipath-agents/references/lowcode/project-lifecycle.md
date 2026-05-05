@@ -81,7 +81,7 @@ uip agent validate [path] --output json
 4. Applies all pending migrations **in memory** — stops and returns errors on failure without touching disk.
 5. Post-migration: validates `agent.json` against the latest schema (v50), validates eval-sets and evaluators (category/type constraints), counts resources.
 6. Writes migrated files back to disk only if all checks pass (atomic — either all files update or none).
-7. Generates `.agent-builder/` files (agent.json with inlined resources, entry-points.json, bindings.json). Resolves `referenceKey` for solution-internal tool resources by matching against `resources/solution_folder/process/agent/` definitions.
+7. Generates `.agent-builder/` files (agent.json with inlined resources, entry-points.json, bindings.json) from each `resources/{ResourceName}/resource.json` — including the `referenceKey` GUID set by the author from `uip solution resource list`.
 
 **With `--inline-in-flow`:** Steps 2, 3, and 7 are skipped. Inline agents have no `entry-points.json`, `project.uiproj`, or `.agent-builder/` directory.
 
@@ -175,18 +175,22 @@ uip solution bundle . -d ./dist --output json
 
 `uip solution resource list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
 
+Two supported invocations:
+
 ```bash
-uip solution resource list [solutionPath] \
-  --kind <kind> \
-  --source <all|local|remote> \
-  --search <term> \
-  --output json
+# Local (in-solution): --kind and --search not allowed.
+uip solution resource list [solutionPath] --source local --output json
+
+# Remote (Orchestrator / RCS): --kind and --search supported.
+uip solution resource list [solutionPath] --source remote [--kind <kind>] [--search <term>] --output json
 ```
 
 **Flags:**
-- `--kind <kind>` — filter by resource kind. Supported: `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`.
-- `--source <all|local|remote>` — default `all`. Use `remote` to query only Orchestrator / RCS (what you typically need for discovery).
-- `--search <term>` — substring match on the resource name (case-insensitive).
+- `--source <all|local|remote>` — default `all`. `local` lists resources already in the solution; `remote` queries Orchestrator / RCS.
+- `--kind <kind>` — filter by resource kind. Supported: `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`. **Only valid with `--source remote`.**
+- `--search <term>` — substring match on the resource name (case-insensitive). **Only valid with `--source remote`.**
+
+> **`--kind` and `--search` only work with `--source remote`.** With `--source local` or `--source all` (default), both flags must be omitted — list everything and filter `.Data[]` client-side by `Kind` and `Name`.
 
 **Output row:**
 

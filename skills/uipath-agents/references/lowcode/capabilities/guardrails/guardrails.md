@@ -970,8 +970,7 @@ uip agent tool list --output json
 For each tool name you plan to put in `matchNames`:
 - **Found in `Data`** — proceed.
 - **Not found** — **STOP.** Do not add the guardrail yet. Add the tool first, then return here:
-  - External Orchestrator process (RPA / agent / API / agentic): [../process/external.md](../process/external.md)
-  - Solution-internal agent: [../process/solution-agent.md](../process/solution-agent.md)
+  - Process tool — RPA / agent / API / agentic, local or external: [../process/process.md](../process/process.md)
   - Integration Service tool: [../integration-service/integration-service.md](../integration-service/integration-service.md)
 
 > `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
