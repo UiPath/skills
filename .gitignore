@@ -85,3 +85,6 @@ tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
 
 # macOS Finder metadata
 **/.DS_Store
+
+# Git worktrees
+.worktrees/

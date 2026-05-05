@@ -40,6 +40,54 @@ Before editing the `.flow` file, ensure each of the following is handled. These 
 
 ---
 
+## Edit Tooling
+
+Direct JSON edits use four mechanics. Pick by operation class — same pattern, different tool. The CLI has no `node update` command (see [editing-operations-cli.md § Update node inputs](editing-operations-cli.md#update-node-inputs-expression-script-body-label-etc)), so structural mutations of node `inputs`, definition swaps, and array splices are all done with the tools below.
+
+| Operation class | Mechanic | When to use |
+|----|----|----|
+| Surgical leaf-value change (single string/number/bool) | `Edit` | One unique substring in the file. Whitespace-sensitive — re-`Read` first if the file was just rewritten. |
+| New node, new edge, new definition entry, new variable | `Read` whole file → reconstruct in chat → `Write` whole file | Adding self-contained sub-objects. Preserves field order; risks dropping fields on files >1000 lines. |
+| Replace nested object in array; insert nested fields; idempotent splice | `python3` heredoc with `json.load` / `json.dump` | Surgical structural mutation. Robust against whitespace; safe to re-run. **Default for the structural-edit class.** |
+| One-shot extraction or single-field mutation from CLI JSON output | `jq` | Reading `--output json` results. Faster than spawning Python for read-only paths. |
+
+### Canonical heredoc recipe
+
+Use this shape for any structural mutation. Substitute the node-type guard, the field path, and the new value:
+
+```bash
+python3 - <<'PY'
+import json
+flow = json.load(open("<FILE>.flow"))
+# Mutate flow here — splice arrays, set nested fields, replace objects.
+# Example: insert/overwrite a field on every node of a given type
+for node in flow["nodes"]:
+    if node.get("type") == "<NODE_TYPE>":
+        node.setdefault("inputs", {})["<FIELD>"] = "<VALUE>"
+json.dump(flow, open("<FILE>.flow", "w"), indent=2)
+PY
+uip maestro flow validate <FILE>.flow --output json
+```
+
+`json.dump(..., indent=2)` matches the file's existing 2-space indent — `flow tidy` normalizes layout but does not re-indent unrelated structure, so preserve the canonical 2-space indent on writes.
+
+### `jq` for extracting CLI JSON
+
+Read-only extractions on `--output json` results — no Python needed:
+
+```bash
+uip solution upload --output json | jq -r '.Data.Url'
+uip maestro flow registry get <NODE_TYPE> --output json | jq '.Data.Node'
+```
+
+### Why these mechanics, not direct hand-editing
+
+- `Edit` on nested JSON is fragile. Indented sibling fields, trailing commas, and quote styles all break the exact-match constraint. One byte of drift, no edit applied.
+- Whole-file `Write` is safe but lossy — every field has to round-trip through chat, and large `.flow` files (>500 lines once layout, definitions, and bindings settle) blow the read budget. Use `Write` only for new flows or full reshapes.
+- `python3 -c` / heredoc is **not** an external-tooling escape hatch. It is the sanctioned mechanic for the structural-edit class because (1) the CLI has no `node update` command, (2) `Edit` is too brittle on this file shape, and (3) `json.load` / `json.dump` round-trip preserves field order, encoding, and indentation deterministically. Treat it as a first-class authoring tool, not a workaround.
+
+---
+
 ## Primitive Operations
 
 ### Add a node
