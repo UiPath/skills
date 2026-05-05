@@ -20,7 +20,7 @@ Distinguish from:
 
 ## Resolution Pipeline
 
-Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both event triggers and in-stage connector-trigger tasks.
+Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both event triggers and in-stage connector-trigger tasks.
 
 ## tasks.md Entry Format
 

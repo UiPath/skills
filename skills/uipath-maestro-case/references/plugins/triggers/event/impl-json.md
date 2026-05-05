@@ -1,8 +1,8 @@
 # event trigger — Implementation (Direct JSON Write)
 
-Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md).
+Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
 
-For shared CLI calls, metadata construction, and anti-patterns, see [connector-trigger-common.md](../../../connector-trigger-common.md#implementation--shared-cli-calls). This doc covers only the **trigger-node-specific** parts.
+For shared CLI invocation, placeholder substitution, and anti-patterns, see [connector-trigger-common.md](../../../connector-trigger-common.md). This doc covers only the **trigger-node-specific** parts.
 
 > **v20 layout-strip (Rule 18).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shape below shows v19 fields; v20 strips listed render fields and skips position math. Skeleton-fallback logic and `entry-points.json` shape are identical across schemas.
 
@@ -10,57 +10,68 @@ For shared CLI calls, metadata construction, and anti-patterns, see [connector-t
 
 The `tasks.md` entry provides: `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, `event-mode`, `input-values`, `filter`.
 
-## Steps 1-2 — Shared CLI calls
+## Step 1 — Build `--input-details` JSON from tasks.md
 
-Follow [connector-trigger-common.md § Implementation — Shared CLI Calls](../../../connector-trigger-common.md#implementation--shared-cli-calls): `get-connection` (Step 1) + `tasks describe` (Step 2).
+Construct the input-details object literally from `tasks.md`:
 
-## Step 3 — Build trigger node and write to caseplan.json
+```jsonc
+{
+    "eventParameters": "<input-values.eventParameters or omit>",
+    "filter": "<filter from tasks.md or omit>"
+}
+```
 
-### 3a. Identify or create the trigger node
+Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
+
+## Step 2 — Run `case spec` with input-details
+
+Single CLI call replaces the legacy `get-connection` + `case tasks describe --type connector-trigger` two-call pattern. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-common.md#step-2--run-case-spec-with-input-details) for the command and response handling.
+
+## Step 3 — Mint binding IDs and trigger registration key
+
+Per [common § Step 3](../../../connector-trigger-common.md#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key). For event triggers, `<eventTriggerKey>` uses `<connection-id>_<startNode.id>` where `startNode.id` is the trigger node's own id (since the event trigger IS the start node for its case-entry path) — matches FE convention at `PackagingUtil.ts:227`.
+
+## Step 4 — Substitute placeholders in `caseShape.context`
+
+Per [common § Step 4](../../../connector-trigger-common.md#step-4--substitute-placeholders-in-caseshapecontext).
+
+## Step 5 — Mint `var` / `id` on outputs (no `elementId` on inputs)
+
+For each entry in `caseShape.inputs[]`:
+- `var` = `v` + 8 alphanumeric chars
+- `id` = same as `var`
+- **No `elementId`** on trigger inputs (different from in-stage task inputs).
+
+For each entry in `caseShape.outputs[]`: same fields plus `elementId = <triggerNodeId>`. Apply the dedup rule per [common § Step 5](../../../connector-trigger-common.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
+
+> **Trigger output simplification.** Unlike in-stage `wait-for-connector` task outputs, event-trigger outputs are simplified for the trigger node: strip `body`, `target`, set `_jsonSchema: null`. Keep `name`, `displayName`, `type`, `source`, plus the minted `var` / `id` / `value` / `elementId`. The full `body` schema flows into the variables `inputOutputs[]` array (Step 7) so consumer tasks can resolve the schema. Mirrors FE event-trigger packaging.
+
+## Step 6 — Build trigger node and write to caseplan.json
+
+### 6a. Identify or create the trigger node
 
 For a **single-trigger case**, configure the existing `trigger_1` node. For **multi-trigger cases**, create a new node:
 - ID: `trigger_` + 6 alphanumeric chars
-- Position: `{ x: -100, y: 620 }` (auto-stack below existing triggers)
+- Position: `{ x: -100, y: 620 }` (auto-stack below existing triggers; v19 only)
 
 Set the trigger's display name from `tasks.md`.
 
-### 3b. `data` structure
+### 6b. `data` structure
 
 ```json
 {
   "label": "<display-name>",
   "uipath": {
     "serviceType": "Intsvc.EventTrigger",
-    "context": [],
-    "inputs": [],
-    "outputs": [],
+    "context": "<caseShape.context — placeholders substituted in Step 4>",
+    "inputs":  "<caseShape.inputs  — var/id minted in Step 5; NO elementId>",
+    "outputs": "<caseShape.outputs — simplified per Step 5; var/id/elementId minted, dedup applied>",
     "bindings": []
   }
 }
 ```
 
-### 3c. Populate `data.uipath`
-
-- **Root bindings** — per [common §Root-level bindings](../../../connector-trigger-common.md#root-level-bindings). Deduplicate against existing root bindings.
-- **`context[]`** — per [common §Context array](../../../connector-trigger-common.md#context-array)
-- **`context[].metadata`** — per [common §Metadata body](../../../connector-trigger-common.md#metadata-body) + [common §essentialConfiguration](../../../connector-trigger-common.md#essentialconfiguration)
-- **`inputs[]`** — per [common §Input body](../../../connector-trigger-common.md#input-body-from-tasksmd-values). **No `elementId`** on trigger inputs (unlike task inputs).
-- **`outputs[]`** — **simplified** from `tasks describe`. Strip `body`, `id`, `target`, `elementId`. Set `_jsonSchema: null`:
-
-```json
-[
-  { "name": "response", "displayName": "Email Received", "type": "jsonSchema",
-    "source": "=response", "_jsonSchema": null, "var": "response", "value": "response" },
-  { "name": "Error", "displayName": "Error", "type": "jsonSchema",
-    "source": "=Error", "_jsonSchema": null, "var": "error", "value": "error" }
-]
-```
-
-> For `Error` output, `var` and `value` are always `"error"`.
-
-- **`bindings[]`** — empty array `[]`
-
-### 3d. Register trigger outputs as root inputOutputs
+## Step 7 — Register trigger outputs as root inputOutputs
 
 Add each trigger output to the variables `inputOutputs[]` array (v19: `root.data.uipath.variables.inputOutputs[]`; v20: top-level `variables.inputOutputs[]`):
 
@@ -70,25 +81,33 @@ Add each trigger output to the variables `inputOutputs[]` array (v19: `root.data
   "name": "<output.name>",
   "type": "<output.type>",
   "elementId": "<triggerId>",
-  "body": "<output.body from tasks describe — full schema>"
+  "body": "<output.body from caseShape.outputs BEFORE simplification — full schema>"
 }
 ```
 
-### 3e. In-arg trigger output mapping (entry 3) ownership
+Use the **original** `body` from `caseShape.outputs` (before Step 5 simplification stripped it from the trigger node). The `elementId` is the trigger node's ID.
+
+### 7a. In-arg trigger output mapping (entry 3) ownership
 
 In-argument variables that point at this trigger get their full 3-entry shape (inputs[], inputOutputs[], and the trigger node's outputs[]) written by the variables plugin in Step 6.2 — see [`plugins/variables/global-vars/impl-json.md` § In Argument](../../variables/global-vars/impl-json.md). The trigger plugin captures the trigger's `trigger_xxxxxx` ID in the name → ID map; the variables plugin reads that map when writing entry 3 onto this trigger node. No additional work is required here.
 
-Use **original** outputs from `tasks describe` (before simplification) for `body`. The `elementId` is the trigger node's ID.
+## Step 8 — Append root-level bindings
+
+Per [common § Root-level bindings](../../../connector-trigger-common.md#root-level-bindings). Two entries (ConnectionId, FolderKey), `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
+
+## Step 9 — Sync IS connection cache
+
+After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `case spec` failed.
 
 ## Skeleton fallback (unresolved connector / connection)
 
-When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 1-2 and 3c-3d, and write a skeleton node instead. Mirrors the connector-task skeleton pattern in [skeleton-tasks.md](../../../skeleton-tasks.md) — structure preserved, runtime config deferred.
+When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key`, skip Steps 2-9 and write a skeleton node instead. Mirrors the connector-task skeleton pattern in [skeleton-tasks.md](../../../skeleton-tasks.md) — structure preserved, runtime config deferred.
 
 ```json
 {
   "id": "<trigger_xxxxxx>",
   "type": "case-management:Trigger",
-  "position": { "x": -100, "y": <stateful per §3a> },
+  "position": { "x": -100, "y": <stateful per §6a> },
   "style": { "width": 96, "height": 96 },
   "measured": { "width": 96, "height": 96 },
   "data": {
@@ -110,18 +129,21 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 
 ## Graceful degradation (resolved planning, runtime CLI failure)
 
-If Steps 1-2 fail at runtime despite a resolved T-entry (connection deleted between planning and execution; transient `is describe` error):
+If `case spec` fails at runtime despite a resolved T-entry (connection deleted between planning and execution; transient API error):
 
 | Step failed | What happens | Log |
 |---|---|---|
-| get-connection | Fall back to skeleton above | `[SKIPPED] get-connection failed — event trigger downgraded to skeleton` |
-| tasks describe | Context populated, no outputs | `[SKIPPED] tasks describe failed — trigger outputs omitted` |
+| `case spec` | Fall back to skeleton above | `[SKIPPED] case spec failed — event trigger downgraded to skeleton` |
+| Required-event-param gate fails | Skeleton per Rule 8 OR re-prompt | `[SKIPPED] required event parameter <name> missing — event trigger downgraded to skeleton` |
 
 All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 
 ## Post-Write Verification
 
 1. `data.uipath.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
-2. **Fully configured:** `context[]`, `metadata`, `inputs[]`, `outputs[]`, `bindings[]` all populated per §3c-3d (`outputs[]` simplified — no body/id/target/elementId, `_jsonSchema: null`; `inputs[]` has no `elementId`); the variables `inputOutputs[]` array (v19: `root.data.uipath.variables.inputOutputs[]`; v20: top-level `variables.inputOutputs[]`) has entries for each trigger output. **Skeleton:** all five `data.uipath` fields **absent** (not empty arrays); no root bindings or inputOutputs entries from this trigger; `[SKELETON]` log entry present.
-3. Trigger node wired as `--source` in an edge to the first stage.
-4. `entry-points.json` has a matching entry referencing the trigger node ID.
+2. **Fully configured:** `context[]`, `inputs[]` (no `elementId`), `outputs[]` (simplified — no `body`, no `target`, `_jsonSchema: null`), and `bindings[] = []` all present per §6b. The variables `inputOutputs[]` array (v19: `root.data.uipath.variables.inputOutputs[]`; v20: top-level `variables.inputOutputs[]`) has entries for each trigger output with the full `body` schema.
+3. **Skeleton:** all four `data.uipath` fields beyond `serviceType` **absent** (not empty arrays); no root bindings or inputOutputs entries from this trigger; `[SKELETON]` log entry present.
+4. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
+5. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
+6. Trigger node wired as `--source` in an edge to the first stage.
+7. `entry-points.json` has a matching entry referencing the trigger node ID.

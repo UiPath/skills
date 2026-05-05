@@ -2,7 +2,7 @@
 
 A connector-based trigger **inside a stage** — waits for an external event before continuing.
 
-The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full 7-step resolution pipeline.
+The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).
 
 ## When to Use
 
@@ -20,7 +20,7 @@ Distinguish from:
 
 ## Resolution Pipeline
 
-Follow the 7-step pipeline in [connector-trigger-common.md](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
+Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
 
 ## tasks.md Entry Format
 
