@@ -1,0 +1,94 @@
+task_id: skill-admin-identity-human-onboarding
+description: >
+  End-to-end test: agent performs a full human user onboarding flow.
+  Invites a user by email, waits for acceptance, then assigns the user
+  to a group. Validates the agent follows the multi-step onboarding
+  workflow from the skill.
+tags: [uipath-admin, e2e, lifecycle:generate, identity, onboarding]
+max_iterations: 2
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 40
+  turn_timeout: 600
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Onboard a new human user to the UiPath platform:
+
+  1. Invite the user: john.doe@example.com (first name: John, last name: Doe)
+  2. List available groups in the organization
+  3. Once the user appears in the user list, add them to the
+     "Automation Developer" group
+
+  Use --output json on all commands.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  # Step 0: Auth check
+  - type: command_executed
+    description: "Agent checked login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Step 1: Invite user
+  - type: command_executed
+    description: "Agent invited user by email"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+invite\s+.*--email'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included the correct email address"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+invite\s+.*john\.doe@example\.com'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Step 2: Discover groups
+  - type: command_executed
+    description: "Agent listed groups"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Step 3: Resolve user ID and add to group
+  - type: command_executed
+    description: "Agent searched for user to resolve their ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added user to group with --user-ids"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+add\s+.*--user-ids'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Cross-cutting: --output json usage
+  - type: command_executed
+    description: "Agent consistently used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
