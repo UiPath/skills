@@ -216,7 +216,7 @@ uip solution resource list [solutionPath] \
 | `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
 | `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
 
-**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` resources, follow up with `uip solution resource get <KEY> --output json`. For other kinds (`App`, `Index`, `Connection`, `Bucket`), see the kind-specific capability files. `resource list` is the identification step — it tells you *that* a resource exists and *where*.
+**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resource get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resource list` is the identification step — it tells you *that* a resource exists and *where*.
 
 ## End-to-End Example — New Standalone Agent
 
