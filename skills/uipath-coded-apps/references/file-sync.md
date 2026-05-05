@@ -151,10 +151,8 @@ uip codedapp pull --overwrite
 | Variable | Description |
 |----------|-------------|
 | `UIPATH_PROJECT_ID` | Studio Web project ID (auto-saved on first push) |
-| `UIPATH_ACCESS_TOKEN` | Authentication token |
-| `UIPATH_URL` | UiPath Cloud base URL |
-| `UIPATH_ORGANIZATION_ID` | Organization ID |
-| `UIPATH_TENANT_ID` | Tenant ID |
+
+Authentication is handled by `uip login` and the coded app CLI. Do not read, print, source, or manually set cached access-token environment variables.
 
 ## Troubleshooting
 
