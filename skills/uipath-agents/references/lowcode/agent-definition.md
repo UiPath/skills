@@ -243,20 +243,20 @@ Agent/
 
 The `validate` command reads these files, resolves `referenceKey` for solution tools, and generates `.agent-builder/agent.json` which inlines all resources. The root `agent.json` should not contain a `resources` field.
 
-### `folderPath` semantics by `location`
+### `folderPath` semantics
 
-`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries a different value depending on whether the resource is solution-internal or external:
+`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries the literal `Folder` field returned by `uip solution resource list` — the same rule for both local (`Source: "Local"`) and external (`Source: "Remote"`) resources:
 
 | `location` | `folderPath` value | Source |
 |---|---|---|
-| `"solution"` | `"solution_folder"` | Placeholder; resolved at deploy time |
+| `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resource list` |
 | `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resource list` |
 
-The author writes the value into `resource.json` (or into the guardrail action under `agent.json`); `uip agent validate` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
+The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent validate` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
 
 For each resource type's full schema, see the relevant capability file:
 
-- Tool resources (`$resourceType: "tool"`) — [capabilities/process/external.md](capabilities/process/external.md), [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
+- Tool resources (`$resourceType: "tool"`) — [capabilities/process/process.md](capabilities/process/process.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
 
