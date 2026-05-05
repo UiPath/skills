@@ -50,6 +50,8 @@ uip maestro case registry pull
 
 If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uipcli/case-resources/` so subsequent searches are local disk lookups.
 
+**Capture `Data.UIPATH_URL` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
+
 ## Step 2 — Locate and parse the design document
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
@@ -61,6 +63,22 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
 ### Step 2.1 — Detect schema version (Rule 17)
+
+Resolution order (first match wins):
+
+#### 2.1.a — Tenant override (alpha environment)
+
+Read the `Data.UIPATH_URL` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
+
+```
+> Schema: v20 (alpha tenant override — UIPATH_URL=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
+```
+
+Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
+
+If `Data.UIPATH_URL` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
+
+#### 2.1.b — User-prompt phrase
 
 Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
 
@@ -80,7 +98,7 @@ Scan **only the user message that activated the skill** (the prompt that matched
   ```
 - **No match** → schema is `v19` (default). No confirmation line.
 
-**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6).
+**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
 
 ### Step 2.2 — Persist schema choice in tasks.md header
 
