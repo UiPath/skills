@@ -39,7 +39,15 @@ uip is connections list "<target-connector-key>" --output json
 uip is connections ping "<connection-id>" --output json
 ```
 
+If the list is empty, retry once with `--refresh` to bypass the CLI cache:
+
+```bash
+uip is connections list "<target-connector-key>" --refresh --output json
+```
+
 Record the `Id` and `FolderKey` from the connection.
+
+> **A healthy connection is required for connector mode.** If `uip is connections list` returns empty, retry once with `--refresh`. If still empty, **STOP** — the node cannot be configured without a real connection ID. Use `AskUserQuestion` to present the path forward: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth themselves, then re-run `uip is connections list` to pick up the new connection) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See [/uipath:uipath-platform — connections.md — For Native Connectors](../../../../../../uipath-platform/references/integration-service/connections.md#for-native-connectors) and the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
 
 ### Step 3 — Configure the node
 
@@ -71,6 +79,7 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
 ```
 
 **What the CLI handles automatically:**
+
 - Builds the full `inputs.detail` structure (connector, connectionId, bodyParameters, essentialConfiguration)
 - For connector mode: generates `bindings_v2.json` and creates a connection resource file under `resources/solution_folder/connection/`
 - For manual mode: uses `ImplicitConnection` (no bindings needed)

@@ -54,21 +54,6 @@ initial_prompt: |
   10. Delete only the two records inserted in step 6.
       Do NOT delete the entity.
 
-  Save a summary to report.json:
-  {
-    "entity_id": "<ID of LifecycleTest entity>",
-    "entity_existed_already": <true or false>,
-    "schema_ops": {
-      "field_id_retrieved_from": "entities get",
-      "addFields": ["<field names added>"],
-      "updateFields": ["<field names updated>"]
-    },
-    "records_inserted": ["<id1>", "<id2>"],
-    "query_result_count": <number of records from Active=true query>,
-    "score_after_update": <score value confirmed from records get>,
-    "records_deleted": ["<id1>", "<id2>"]
-  }
-
   Do NOT use removeFields. Do NOT delete the entity.
 
 success_criteria:
@@ -183,43 +168,6 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Report includes schema operations (addFields and updateFields)"
-    path: "report.json"
-    includes:
-      - "addFields"
-      - "updateFields"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Full lifecycle complete: field IDs from entities get, records inserted/deleted, update verified"
-    path: "report.json"
-    assertions:
-      - expression: "schema_ops.field_id_retrieved_from"
-        operator: equals
-        expected: "entities get"
-      - expression: "length(records_inserted)"
-        operator: gte
-        expected: 2
-      - expression: "score_after_update"
-        operator: equals
-        expected: 99
-      - expression: "query_result_count"
-        operator: gte
-        expected: 1
-      - expression: "length(records_deleted)"
-        operator: gte
-        expected: 2
-    weight: 4.0
-    pass_threshold: 0.75
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"

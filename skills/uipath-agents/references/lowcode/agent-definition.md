@@ -243,6 +243,17 @@ Agent/
 
 The `validate` command reads these files, resolves `referenceKey` for solution tools, and generates `.agent-builder/agent.json` which inlines all resources. The root `agent.json` should not contain a `resources` field.
 
+### `folderPath` semantics by `location`
+
+`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries a different value depending on whether the resource is solution-internal or external:
+
+| `location` | `folderPath` value | Source |
+|---|---|---|
+| `"solution"` | `"solution_folder"` | Placeholder; resolved at deploy time |
+| `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resource list` |
+
+The author writes the value into `resource.json` (or into the guardrail action under `agent.json`); `uip agent validate` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
+
 For each resource type's full schema, see the relevant capability file:
 
 - Tool resources (`$resourceType: "tool"`) — [capabilities/process/external.md](capabilities/process/external.md), [capabilities/process/solution-agent.md](capabilities/process/solution-agent.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)

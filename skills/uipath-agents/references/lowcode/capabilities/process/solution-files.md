@@ -4,6 +4,8 @@ When `uip solution resource refresh` cannot produce solution-level files (offlin
 
 This is also the canonical location for the "How to get the values" extraction logic — Releases API, GetPackageEntryPointsV2, and JWT decoding.
 
+> **`folders[].fullyQualifiedName` carries the literal `Folder`** (e.g., `"Shared"`, `"Shared/Sales"`) returned by `uip solution resource list` — the same value the agent-level `resource.json` writes into `properties.folderPath` and that `bindings_v2.json` propagates. Templates show `<Folder>` as the placeholder; examples show `"Shared"` as a concrete value. Auto-generated declarations for **solution-internal projects** (created by `uip solution project add`) keep `"solution_folder"` instead — they have no fixed Orchestrator folder until deploy. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
+
 ## Directory Structure
 
 ```
@@ -74,7 +76,7 @@ Uses `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET type arrays from `
     "runtimeDependencies": [],
     "files": [],
     "folders": [
-      { "fullyQualifiedName": "solution_folder" }
+      { "fullyQualifiedName": "<Folder>" }
     ],
     "spec": {
       "type": "Process",
@@ -141,7 +143,7 @@ Uses `inputArgumentsSchema`/`outputArgumentsSchema` (raw .NET type arrays from `
     "runtimeDependencies": [],
     "files": [],
     "folders": [
-      { "fullyQualifiedName": "solution_folder" }
+      { "fullyQualifiedName": "Shared" }
     ],
     "spec": {
       "type": "Process",
@@ -210,7 +212,7 @@ Uses `inputArgumentsSchemaV2`/`outputArgumentsSchemaV2` (JSON Schema strings fro
     "runtimeDependencies": [],
     "files": [],
     "folders": [
-      { "fullyQualifiedName": "solution_folder" }
+      { "fullyQualifiedName": "<Folder>" }
     ],
     "spec": {
       "type": "<Type>",                     // "Agent", "Api", or "ProcessOrchestration" (PascalCase)
@@ -295,7 +297,7 @@ Construct a JSON array, then serialize it as a string. Use data from `GetPackage
     "runtimeDependencies": [],
     "files": [],
     "folders": [
-      { "fullyQualifiedName": "solution_folder" }
+      { "fullyQualifiedName": "Shared" }
     ],
     "spec": {
       "type": "Agent",
@@ -367,7 +369,7 @@ Declares the package for the external process. The `<PackageName>` is the `Proce
     ],
     "folders": [
       {
-        "fullyQualifiedName": "solution_folder"
+        "fullyQualifiedName": "<Folder>"
       }
     ],
     "spec": {
@@ -410,7 +412,7 @@ Declares the package for the external process. The `<PackageName>` is the `Proce
       }
     ],
     "folders": [
-      { "fullyQualifiedName": "solution_folder" }
+      { "fullyQualifiedName": "Shared" }
     ],
     "spec": {
       "fileName": "TestRPA.process.TestRPA.1.0.0.nupkg",
@@ -478,7 +480,7 @@ Returns, for each match:
   - `api` → `process/api/`
   - `processOrchestration` → `process/processOrchestration/`
   - `webApp` → not a runnable process tool; use `--kind App` for escalations instead.
-- `Folder` — fully-qualified folder name; record for debug_overwrites.
+- `Folder` — literal Orchestrator folder path (e.g., `"Shared/Sales"`). Use as: agent-level `resource.json` `properties.folderPath`, solution-level `folders[].fullyQualifiedName` (in both process and package declarations), and `folderFullyQualifiedName` in `debug_overwrites.json`.
 - `FolderKey` — folder GUID. Use as `X-UIPATH-FolderKey` header in Steps 2-3 and as `folderKey` in `debug_overwrites.json`.
 
 ### Step 2: Query `/odata/Releases` for ProcessKey, ProcessVersion, FeedId, and raw .NET schemas (RPA)

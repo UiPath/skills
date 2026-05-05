@@ -63,6 +63,7 @@
 
 # Diagnostics
 /skills/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/tests/tasks/uipath-diagnostics/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # AOps Governance skill
 /skills/uipath-gov-aops-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2

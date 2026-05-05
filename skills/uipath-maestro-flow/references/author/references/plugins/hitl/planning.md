@@ -41,9 +41,9 @@ Available: always — no `uip login` or registry pull required.
 
 ### Output Variables
 
-- `$vars.{nodeId}.result` — object containing all output and inOut fields the human filled in
-- `$vars.{nodeId}.result.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — `"completed"`
+- `$vars.{nodeId}.output` — object containing all output and inOut fields the human filled in
+- `$vars.{nodeId}.output.{fieldName}` — individual field value
+- `$vars.{nodeId}.status` — selected outcome's action value (`"Continue"` or `"End"`)
 
 ### Schema Design
 

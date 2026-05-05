@@ -4,6 +4,7 @@ SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
 CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
 TASKS := $(shell find tasks -name '*.yaml' -type f)
+TASK_PARALLELISM ?= 1
 
 help:  ## Show available commands
 	@grep -E '^[a-zA-Z0-9_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -24,16 +25,16 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDE
 	@echo "See https://github.com/UiPath/coder_eval for environment setup (.env, API keys, etc.)"
 
 all:  ## Run all tests (smoke + integration + e2e) in a single run
-	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml -j 1 -v
+	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml -j $(TASK_PARALLELISM) -v
 
 smoke:  ## Run all smoke tests
-	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags smoke -j 1 -v
+	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags smoke -j $(TASK_PARALLELISM) -v
 
 integration:  ## Run all integration tests
-	$(CODER_EVAL) run $(TASKS) -e experiments/integration.yaml --tags integration -j 1 -v
+	$(CODER_EVAL) run $(TASKS) -e experiments/integration.yaml --tags integration -j $(TASK_PARALLELISM) -v
 
 e2e:  ## Run all end-to-end tests
-	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml --tags e2e -j 1 -v
+	$(CODER_EVAL) run $(TASKS) -e experiments/e2e.yaml --tags e2e -j $(TASK_PARALLELISM) -v
 
 tags:  ## Run tests matching one or more tags: make tags TAGS="integration connector-feature" [EXPERIMENT=experiments/integration.yaml]
 	@if [ -z "$(TAGS)" ]; then echo "Usage: make tags TAGS=\"tag1 tag2\" [EXPERIMENT=experiments/<file>.yaml]"; exit 2; fi
@@ -45,10 +46,10 @@ matches=[]; \
 print(f"Matched {len(matches)} task(s) for tags: {sorted(wanted)}"); \
 [print(f"  - {m}") for m in matches]; \
 sys.exit(0 if matches else 3)'
-	$(CODER_EVAL) run $(TASKS) -e $(or $(EXPERIMENT),experiments/default.yaml) $(foreach t,$(TAGS),--tags $(t)) -j 1 -v
+	$(CODER_EVAL) run $(TASKS) -e $(or $(EXPERIMENT),experiments/default.yaml) $(foreach t,$(TAGS),--tags $(t)) -j $(TASK_PARALLELISM) -v
 
 # Run all tests for a specific skill: make test-uipath-maestro-flow
 test-%:  ## Run all tests for a specific skill
-	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml -j 1 -v
+	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
 
 .DEFAULT_GOAL := help

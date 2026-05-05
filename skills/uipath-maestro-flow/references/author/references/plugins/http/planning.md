@@ -99,7 +99,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 ## Prerequisites
 
 - `uip login` required (for both modes — node type comes from registry)
-- For connector mode: a healthy IS connection for the **target connector**
+- For connector mode: a healthy IS connection must exist for the **target connector**. **If none exists, STOP** — surface in **Open Questions**. See [impl.md Step 2](impl.md#step-2--identify-target-connector-and-connection-connector-mode-only) for connection recovery.
 - `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation

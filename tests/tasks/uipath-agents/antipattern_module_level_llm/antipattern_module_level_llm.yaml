@@ -1,0 +1,97 @@
+task_id: skill-agent-coded-antipattern-module-level-llm
+description: >
+  Negative test for Coded Critical Rule C4 — LLM clients must be
+  instantiated lazily, never at module level. The prompt seeds a
+  LangGraph `main.py` with `llm = UiPathChat(...)` at column zero,
+  and the skill must drive the agent to refactor the construction
+  inside a node body before `uip codedagent init` is run.
+tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I'm porting an existing LangGraph agent into UiPath. Recreate the
+  project under `legacy-classifier` exactly as below, then review
+  for any UiPath coded-agent anti-patterns and fix them in place.
+
+  **legacy-classifier/pyproject.toml**:
+  ```toml
+  [project]
+  name = "legacy-classifier"
+  version = "0.0.1"
+  description = "Ported classifier"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath", "uipath-langchain"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **legacy-classifier/main.py**:
+  ```python
+  from langgraph.graph import StateGraph, START, END
+  from langgraph.types import Command
+  from uipath_langchain.chat.models import UiPathChat
+  from pydantic import BaseModel
+  from typing import TypedDict
+
+  llm = UiPathChat(model="gpt-4o-mini-2024-07-18", temperature=0)
+
+  class GraphInput(BaseModel):
+      text: str
+
+  class GraphOutput(BaseModel):
+      category: str
+      text: str
+
+  class GraphState(TypedDict):
+      text: str
+      category: str | None
+
+  async def classify(state):
+      result = await llm.ainvoke(f"Classify: {state['text']}")
+      return Command(update={"category": str(result), "text": state["text"]})
+
+  builder = StateGraph(GraphState, input=GraphInput, output=GraphOutput)
+  builder.add_node("classify", classify)
+  builder.add_edge(START, "classify")
+  builder.add_edge("classify", END)
+  graph = builder.compile()
+  ```
+
+  **legacy-classifier/langgraph.json**:
+  ```json
+  {"graphs": {"agent": "./main.py:graph"}}
+  ```
+
+  After recreating those files, review for anti-patterns and fix
+  them in place. The graph must still compile and `graph` must
+  remain exported.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "main.py exists under legacy-classifier/"
+    path: "legacy-classifier/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No module-level UiPath* construction; graph still exports `graph`"
+    command: "python3 $TASK_DIR/check_antipattern_module_level_llm.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

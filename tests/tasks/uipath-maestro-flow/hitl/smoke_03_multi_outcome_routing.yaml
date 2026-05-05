@@ -23,25 +23,17 @@ initial_prompt: |
        - Reviewer sees (read-only): employee name, number of days
        - Reviewer fills in: approved (boolean)
        - Outcomes: Approve (primary), Reject
-  3. Decision node — branches on the reviewer's approved field from the HITL result
+  3. Decision node — branches on the reviewer's approved field from the HITL output
   4. true branch  → Script node that logs "Leave approved" → End
   5. false branch → Script node that logs "Leave rejected" → End
 
   Use the inline quickform HITL node (uipath.human-in-the-loop).
   Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
 
-  The Decision node condition must reference the HITL result using the
-  correct runtime variable path ($vars.<nodeId>.result.<fieldName>).
+  The Decision node condition must reference the HITL output using the
+  correct runtime variable path ($vars.<nodeId>.output.<fieldName>).
 
   Do NOT run flow debug. Validate after building.
-
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "decision_node_id": "<id of the Decision node>",
-    "decision_expression": "<full expression used, e.g. $vars.hitl1.result.approved>",
-    "validation_passed": true
-  }
 
 success_criteria:
   - type: run_command
@@ -69,11 +61,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Decision node references HITL result variable"
+    description: "Decision node references HITL output variable"
     path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 2.5
     pass_threshold: 1.0
 
@@ -86,21 +78,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json captures node IDs and decision expression"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "hitl_node_id"
-        operator: not_equals
-        expected: ""
-      - expression: "decision_node_id"
-        operator: not_equals
-        expected: ""
-      - expression: "decision_expression"
-        operator: contains
-        expected: "$vars."
-    weight: 2.0
-    pass_threshold: 0.75

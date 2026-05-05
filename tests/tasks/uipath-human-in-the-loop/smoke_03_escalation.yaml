@@ -10,20 +10,37 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  My UiPath Flow has an AI agent that classifies customer complaints. When
-  the agent confidence is below 70%, a human needs to step in and make the
-  final call before the complaint is routed.
+  My UiPath Flow has an AI agent that classifies customer complaints.
+  Most classifications are confident and route automatically, but a
+  fraction land below the 70% confidence threshold. Those are edge
+  cases the agent cannot resolve autonomously — they need to escalate
+  to a human supervisor who makes the final routing call.
 
-  Write a recommendation.json file with:
+  Recommend whether HITL is needed and identify which canonical HITL
+  pattern from the `uipath-human-in-the-loop` skill applies. The skill's
+  `references/hitl-patterns.md` enumerates six canonical patterns; pick
+  exactly one and emit its machine name verbatim.
+
+  Write a `recommendation.json` file with this exact shape:
   {
     "hitl_needed": <true or false>,
-    "pattern": "<which business pattern applies>",
-    "insertion_point": "<where in the flow the HITL node should go>",
+    "pattern": "<one of the canonical pattern names listed below>",
+    "insertion_point": "<short phrase describing where in the flow>",
     "proposed_schema": {
       "inputs": ["<field names>"],
       "outcomes": ["<button names>"]
     }
   }
+
+  Use EXACTLY one of these machine names for `pattern` (lowercase,
+  hyphenated, no extra adjectives or prefixes — names mirror the
+  section titles in `references/hitl-patterns.md`):
+    - approval-gate
+    - exception-escalation
+    - data-enrichment
+    - compliance-checkpoint
+    - write-back-validation
+    - agentic-output-review
 
 success_criteria:
   - type: file_exists
@@ -41,21 +58,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent identified an escalation pattern"
+    description: >
+      Agent picked a canonical HITL pattern that fits a low-confidence-AI
+      scenario. Either Exception escalation (conditional escalate-when-stuck)
+      or Agentic output review (always-verify-AI) is documented in
+      `references/hitl-patterns.md` as applicable here; both are accepted.
     path: "recommendation.json"
     assertions:
       - expression: "pattern"
-        operator: contains
-        expected: "scalat"
+        operator: regex
+        expected: "^(exception-escalation|agentic-output-review)$"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent proposed an insertion point after the AI classifier (case-tolerant)"
+    description: "Agent proposed an insertion point that references the AI classifier, the confidence threshold, or the routing branch"
     path: "recommendation.json"
     assertions:
       - expression: "insertion_point"
-        operator: contains
-        expected: "lassif"
+        operator: regex
+        expected: "(?i)(classif|confidence|routing|low.{0,10}confidence|after.{0,30}\\bAI\\b)"
     weight: 1.0
     pass_threshold: 1.0

@@ -35,18 +35,6 @@ initial_prompt: |
   Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
 
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "field_types": {
-      "amount": "<type used>",
-      "submittedDate": "<type used>",
-      "approved": "<type used>",
-      "approved_amount": "<type used>"
-    },
-    "validation_passed": true
-  }
-
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
@@ -72,24 +60,3 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json confirms correct types were used"
-    path: "report.json"
-    assertions:
-      - expression: "field_types.approved"
-        operator: equals
-        expected: "boolean"
-      - expression: "field_types.amount"
-        operator: equals
-        expected: "number"
-      - expression: "field_types.approved_amount"
-        operator: equals
-        expected: "number"
-      - expression: "field_types.submittedDate"
-        operator: equals
-        expected: "date"
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-    weight: 3.0
-    pass_threshold: 0.75

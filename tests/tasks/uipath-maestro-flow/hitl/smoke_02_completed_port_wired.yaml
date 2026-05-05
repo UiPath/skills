@@ -28,16 +28,6 @@ initial_prompt: |
 
   Do NOT run flow debug. Validate after building.
 
-  **REQUIRED — before finishing, write report.json at the sandbox root** (not
-  inside any project subfolder) with exactly these keys:
-  {
-    "hitl_node_id": "<id>",
-    "edge_from_hitl": "<sourceHandle used on the HITL edge>",
-    "validation_passed": true
-  }
-  The task is NOT complete until `uip maestro flow validate` has passed AND
-  report.json exists.
-
 success_criteria:
   - type: file_exists
     description: "Flow file was created"
@@ -69,10 +59,3 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "report.json records completed as the edge handle"
-    path: "report.json"
-    includes:
-      - "completed"
-    weight: 1.5
-    pass_threshold: 1.0

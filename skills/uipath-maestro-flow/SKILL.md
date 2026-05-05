@@ -1,7 +1,7 @@
 ---
 name: uipath-maestro-flow
-description: "UiPath Maestro Flow (.flow) — read, edit, author, debug. `uip` CLI: nodes, edges, subflows, scripts, variables, triggers, End nodes, registry. For C#/XAML→uipath-rpa. For agents→uipath-agents."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+description: "UiPath Maestro Flow (.flow) — build, edit, run, debug, fix. Create, connect nodes; connector, approval, script, subflow; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. `uip maestro flow` CLI. For C#/XAML→uipath-rpa. For agents→uipath-agents."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # UiPath Flow Skill
@@ -42,7 +42,7 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, an
 | Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
 | Publish, deploy, debug, or manage a flow's lifecycle         | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md)                             |
 | Diagnose a failed or misbehaving flow run                    | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md)                           |
-| Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                                   |
+| Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                           |
 | Look up CLI conventions (`--output json`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md)                     |
 | Understand the `.flow` JSON format                           | [references/shared/file-format.md](references/shared/file-format.md)                             |
 | Understand variables and `=js:` expressions                  | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) |

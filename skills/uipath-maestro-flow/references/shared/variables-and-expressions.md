@@ -279,6 +279,7 @@ Workflow output variables (`direction: "out"`) must be mapped on End nodes. The 
   "id": "end1",
   "type": "core.control.end",
   "typeVersion": "1.0.0",
+  "display": { "label": "End" },
   "inputs": {},
   "outputs": {
     "totalAmount": {
@@ -605,6 +606,7 @@ A flow with input, state, and output variables:
       "id": "start",
       "type": "core.trigger.manual",
       "typeVersion": "1.0.0",
+      "display": { "label": "Manual trigger" },
       "inputs": {
         "entryPointId": "<uuid>"
       },
@@ -643,6 +645,7 @@ A flow with input, state, and output variables:
       "id": "end1",
       "type": "core.control.end",
       "typeVersion": "1.0.0",
+      "display": { "label": "End" },
       "inputs": {},
       "outputs": {
         "result": {

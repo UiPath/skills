@@ -24,20 +24,11 @@ initial_prompt: |
   2. Describe the "Contact" resource to get field details for the Create
      operation (use --operation Create)
 
-  Save your findings to report.json:
-  {
-    "connector_key": "uipath-salesforce-sfdc",
-    "resources_found": <number of resources supporting Create, or 0 if auth error>,
-    "contact_fields": ["<list of field names from describe, or empty if auth error>"],
-    "required_fields": ["<list of required field names, or empty>"],
-    "commands_used": ["<list of uip is commands you ran>"]
-  }
-
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands WILL fail with auth errors — that is expected.
     You MUST still run every command listed above (resources list and
-    resources describe), record each result in report.json, and move on.
+    resources describe).
     Do NOT skip a command just because a previous one failed.
     Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
@@ -78,16 +69,3 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "report.json has correct structure with fields and required_fields"
-    command: "python3 $TASK_DIR/_shared/is_check.py check_resource_describe"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0

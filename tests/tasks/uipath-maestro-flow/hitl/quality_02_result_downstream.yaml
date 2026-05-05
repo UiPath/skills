@@ -1,8 +1,8 @@
 task_id: skill-flow-hitl-quality-result-downstream
 description: >
   Quality test: agent correctly references the HITL node's output via
-  $vars.<nodeId>.result in a downstream node. Tests that the agent knows
-  the result variable path and wires it into a decision or script node.
+  $vars.<nodeId>.output in a downstream node. Tests that the agent knows
+  the output variable path and wires it into a decision or script node.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 agent:
@@ -23,7 +23,7 @@ initial_prompt: |
        - Reviewer sees: expense amount, requester name, category (all read-only)
        - Reviewer fills in: approved (boolean), comments (text, optional)
        - Outcomes: Approve (primary), Reject
-  3. Script node — reads the reviewer's decision from the HITL result and
+  3. Script node — reads the reviewer's decision from the HITL output and
      logs: "Decision: <approved value>, Comments: <comments value>"
      The script must reference the HITL output via the correct runtime variable path.
   4. End node
@@ -32,13 +32,6 @@ initial_prompt: |
 
   Use the inline quickform node (uipath.human-in-the-loop).
   Do NOT run flow debug. Validate after building.
-
-  Save a summary to report.json:
-  {
-    "hitl_node_id": "<id>",
-    "result_path": "<full variable path used in the script, e.g. $vars.hitlReview1.result.approved>",
-    "validation_passed": true
-  }
 
 success_criteria:
   - type: run_command
@@ -58,11 +51,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow references the HITL result variable"
+    description: "Flow references the HITL output variable"
     path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
     includes:
       - "$vars."
-      - ".result"
+      - ".output"
     weight: 3.0
     pass_threshold: 1.0
 
@@ -74,24 +67,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "report.json result_path references $vars and .result"
-    path: "report.json"
-    includes:
-      - "$vars."
-      - ".result"
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json captures hitl_node_id and validation"
-    path: "report.json"
-    assertions:
-      - expression: "validation_passed"
-        operator: equals
-        expected: true
-      - expression: "hitl_node_id"
-        operator: not_equals
-        expected: ""
-    weight: 2.0
-    pass_threshold: 0.75

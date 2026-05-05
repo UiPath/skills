@@ -38,7 +38,7 @@ The `selector` field controls where the guardrail applies.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
-| `matchNames` | string[] | No | Target specific tools by name. |
+| `matchNames` | string[] | Yes (when `Tool` in scopes) | Target tools by name. Required when `"Tool"` is in `scopes` — always list tool names explicitly. |
 
 ### Scope Definitions
 
@@ -47,6 +47,39 @@ The `selector` field controls where the guardrail applies.
 | `Agent` | Agent-level input/output | Yes | Yes |
 | `Llm` | LLM request/response | Yes | Yes |
 | `Tool` | Individual tool calls | Yes | Yes |
+
+> **Custom guardrails only support `Tool` scope with exactly one tool in `matchNames`.** `Agent` and `Llm` scopes are valid only for `builtInValidator` guardrails. Custom guardrail rules (word/number/boolean/always) depend on the specific tool's input/output schema, so `matchNames` must contain exactly one tool name. To apply the same custom rule to multiple tools, create a separate custom guardrail per tool.
+
+### Combining Multiple Scopes
+
+When a guardrail applies to more than one scope (e.g., both `Agent` and `Tool`), combine them into a **single guardrail** with multiple values in the `scopes` array — do NOT create separate guardrails per scope.
+
+```json
+"selector": { "scopes": ["Agent", "Tool"], "matchNames": ["MyTool"] }
+```
+
+### matchNames — Supported Tool Types
+
+`matchNames` targets tools by their resource name in agent.json. Only the following tool types support guardrails:
+
+| Tool type | Description |
+|-----------|-------------|
+| `agent` | Low-code or coded agent |
+| `process` | RPA (XAML workflow) |
+| `activity` | Activity-based tool |
+| `builtInTool` | Built-in platform tool |
+| `ixpTool` | IXP tool |
+| Integration Service connector | IS connector tool |
+
+Do not generate guardrails targeting tool types not in this list.
+
+### matchNames — "All Tools" Behavior
+
+When targeting all tools, `matchNames` must **explicitly list every tool resource name** from the agent's `resources/` directory. Do not omit `matchNames` to imply "all tools."
+
+1. Read the agent's `resources/` directory to discover all tool resource names.
+2. If the agent has **no tool resources**, do not add the guardrail — inform the user: *"No tool resources found in this agent. Cannot add a tool-scoped guardrail."*
+3. Populate `matchNames` with every discovered tool name.
 
 ### Built-in Validator Scope Support
 
@@ -131,7 +164,7 @@ Creates a task in an Action Center app for human review.
     "id": "<Key from uip solution resource list --kind App>",
     "name": "<app Name>",
     "version": "0",
-    "folderName": "solution_folder"
+    "folderName": "<Folder from uip solution resource list --kind App>"
   },
   "recipient": {
     "type": 3,
@@ -146,8 +179,8 @@ Creates a task in an Action Center app for human review.
 | `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
 | `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
 | `app.version` | string | Yes | Always `"0"` for solution-embedded apps |
-| `app.folderId` | string | No | Omit — not needed when `folderName` is `"solution_folder"` |
-| `app.folderName` | string | Yes | Always `"solution_folder"` — the app is embedded in the solution package, not referenced remotely |
+| `app.folderId` | string | No | Omit — not used by validate |
+| `app.folderName` | string | Yes | Literal Orchestrator folder — the `Folder` field from `uip solution resource list --kind App` (e.g., `"Shared"`, `"Shared/Approvals"`). `uip agent validate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
 | `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
 | `recipient.type` | integer | Yes | Recipient kind — see shapes below: 1=UserId, 2=GroupId, 3=UserEmail, 4=AssetUserEmail, 5=GroupName, 6=AssetGroupName, 7=ArgumentEmail, 8=ArgumentGroupName |
 | `recipient.*` | — | — | Remaining fields depend on `type` — see recipient shapes below |
@@ -212,14 +245,15 @@ Confirm the target validator is listed. Record the exact parameter `id` values a
 uip solution resource list --kind App --source remote --search "<app-name>" --output json
 ```
 
-Filter results for `"Type": "Workflow Action"`. Use only these two fields from the result:
+Filter results for `"Type": "Workflow Action"`. Use these three fields from the result:
 
 | Resource list field | Maps to `app.*` field |
 |---------------------|----------------------|
 | `Key` | `app.id` |
 | `Name` | `app.name` |
+| `Folder` | `app.folderName` (literal, e.g., `"Shared"`) |
 
-`app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — do not use the `Folder` or `FolderKey` values from this command for those fields.
+`app.version` is always `"0"` — that's a fixed value, not derived from the `resource list` row. `app.folderName` carries the literal `Folder` and `uip agent validate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do not use `FolderKey` for any `app.*` field.
 
 If multiple entries share the same name in different folders, ask the user which deployment to use.
 
@@ -287,13 +321,13 @@ Validation is **name-only** — types, `required` flags, and `isList` are not ch
     "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
     "name": "Tool.Guardrail.Escalation.Action.App",
     "version": "0",
-    "folderName": "solution_folder"
+    "folderName": "Shared"
   },
   "recipient": { "type": 3, "value": "reviewer@example.com" }
 }
 ```
 
-`app.id` and `app.name` come from Step 1. `app.version` is always `"0"` and `app.folderName` is always `"solution_folder"` — these are fixed values for solution-embedded apps.
+`app.id`, `app.name`, and `app.folderName` come from Step 1 (`Key`, `Name`, `Folder` respectively). `app.version` is always `"0"` — fixed value for solution-embedded apps.
 
 **Step 4 — Generate solution resource files**
 
@@ -304,8 +338,8 @@ uip agent validate <AgentName> --output json
 uip solution resource refresh --output json
 ```
 
-- `validate` generates `bindings_v2.json` with a `resource: "app"` binding for the escalation app.
-- `refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service by name, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
+- `validate` generates `bindings_v2.json` with a `resource: "app"` binding for the escalation app. The binding carries both `name` (from `app.name`) and `folderPath` (translated from `app.folderName`).
+- `refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service using the joint `(name, folderPath)` key, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
 
 **Step 5 — Upload:**
 
@@ -326,7 +360,7 @@ Custom guardrails use deterministic rules you define. They have a `rules` array 
   "name": "Block forbidden terms",
   "description": "Prevents agent from using blacklisted words",
   "enabledForEvals": true,
-  "selector": { "scopes": ["Agent", "Llm"] },
+  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
   "action": { "$actionType": "block", "reason": "Forbidden term detected" },
   "rules": [
     {
@@ -443,9 +477,10 @@ uip agent guardrails list --output json
 
 Before adding any built-in validator, check the `Data` array for the requested `Validator` value:
 
-1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail.
+1. **Validator not found in list** — the validator does not exist on this tenant. Inform user: *"The built-in validator `<name>` is not available on your tenant. Check the validator name or contact your UiPath administrator."* Do not add the guardrail. Do NOT generate a custom guardrail as a fallback — inform the user and stop.
 2. **`Status: "Available"`** — validator is licensed and ready. Proceed with configuration.
 3. **`Status: "Unauthorised"`** — validator exists but the user is not entitled to use guardrails. Inform user: *"You are not entitled to use the `<name>` guardrail. You can view the configuration but cannot apply it to agents. Contact your UiPath administrator to enable guardrail entitlements."* Do not add the guardrail.
+4. **Validator does not support the requested scope** — if the user requests a scope (e.g., `Agent`, `Llm`) not listed in `AllowedScopes` for that validator, inform the user which scopes are supported. Do NOT auto-generate a custom guardrail as a workaround. You may suggest a custom guardrail as an alternative, but only if the user explicitly confirms — and only for `Tool` scope (custom guardrails do not support `Agent` or `Llm` scopes).
 
 Only configure guardrails for validators with `Status: "Available"`.
 
@@ -462,7 +497,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
   "name": "PII Detection",
   "description": "Detects PII in tool outputs",
   "enabledForEvals": true,
-  "selector": { "scopes": ["Tool"] },
+  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
   "action": { "$actionType": "block", "reason": "PII detected" },
   "validatorType": "pii_detection",
   "validatorParameters": [
@@ -541,7 +576,8 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Tool"]
+    "scopes": ["Agent", "Tool"],
+    "matchNames": ["MyToolName"]
   }
 }
 ```
@@ -698,7 +734,7 @@ PostExecution only — no content exists to check before the LLM generates outpu
 }
 ```
 
-### Example 7: Custom Word Rule — Log on All Fields
+### Example 7: Custom Word Rule — Log on All Tool Fields
 
 ```json
 {
@@ -722,14 +758,15 @@ PostExecution only — no content exists to check before the LLM generates outpu
   },
   "enabledForEvals": true,
   "selector": {
-    "scopes": ["Agent", "Llm"]
+    "scopes": ["Tool"],
+    "matchNames": ["MyToolName"]
   }
 }
 ```
 
 ### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
 
-Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id` and `app.name` come from `uip solution resource list --kind App`. `app.version` and `app.folderName` are fixed values.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id`, `app.name`, and `app.folderName` come from `uip solution resource list --kind App`.
 
 ```json
 {
@@ -759,7 +796,7 @@ Escalates to an Action Center app when email or credit card PII is detected at t
       "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
       "name": "Tool.Guardrail.Escalation.Action.App",
       "version": "0",
-      "folderName": "solution_folder"
+      "folderName": "Shared"
     },
     "recipient": {
       "type": 3,
@@ -773,7 +810,7 @@ Escalates to an Action Center app when email or credit card PII is detected at t
 }
 ```
 
-All `app.*` values sourced from Step 1 (resource list).
+`app.id`, `app.name`, and `app.folderName` are sourced from Step 1 (`resource list` → `Key`, `Name`, `Folder`). `app.version` is always `"0"`.
 
 ### Example 9: Custom Word Rule — Specific Fields with Titles on a Named Tool
 
@@ -892,16 +929,21 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 3. **Do not add `user_prompt_attacks` to Tool or Agent scope** — Llm only, PreExecution only.
 4. **Do not add `intellectual_property` to Tool scope** — only `"Llm"` and `"Agent"` scopes are supported.
 5. **Do not add `intellectual_property` to PreExecution stage** — PostExecution only.
-6. **Do not forget `matchNames` when targeting a specific tool** — without it, the guardrail applies to all tools in the scope.
+6. **Do not omit `matchNames` when `Tool` is in `scopes`** — always explicitly list the target tool names. See [matchNames — "All Tools" Behavior](#matchnames--all-tools-behavior).
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
 10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resource list --kind App` results by this type.
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
-12. **Do not use the remote `Folder`/`FolderKey` values from `resource list` as `app.folderName`/`app.folderId` in agent.json** — those point to the remote Shared deployment folder and break UI resolution. The correct agent.json values are `"folderName": "solution_folder"` and `"version": "0"`. Note: `FolderKey` from `resource list` IS correct to use in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
+12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent validate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
 13. **Do not use `source <(grep = ~/.uipath/.auth)` for Apps API calls in guardrail setup** — it fails to export variables to the surrounding shell in some environments. Use `set -a; source ~/.uipath/.auth; set +a` instead.
 14. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
 15. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
+16. **Do not use `Agent` or `Llm` scopes on custom guardrails** — custom guardrails (`$guardrailType: "custom"`) only support `"Tool"` scope with exactly one tool in `matchNames`. Custom rules depend on the tool's input/output schema, so they cannot target multiple tools. Create a separate custom guardrail per tool.
+17. **Do not auto-generate a custom guardrail as fallback** — when a built-in validator is unavailable, unsupported for the requested scope, or unauthorized, inform the user and stop. Do not silently generate a custom guardrail as a workaround. You may suggest a custom guardrail alternative (for `Tool` scope only), but only generate it after explicit user confirmation.
+18. **Do not create separate guardrails per scope** — when a guardrail applies to multiple scopes (e.g., `Agent` and `Tool`), combine them into a single guardrail with `"scopes": ["Agent", "Tool"]`. Do not create two separate guardrail objects with identical configuration differing only in scope.
+19. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
+20. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
 
 ## Walkthrough
 
@@ -942,9 +984,10 @@ uip agent guardrails list --output json
 
 Before adding any built-in validator, check the `Data` array for the requested validator:
 
-1. **Not found in list** — validator does not exist on this tenant. Inform user and stop.
+1. **Not found in list** — validator does not exist on this tenant. Inform user and stop. Do NOT generate a custom guardrail as a fallback.
 2. **`Status: "Available"`** — proceed with configuration.
 3. **`Status: "Unauthorised"`** — user is not entitled to use guardrails. Inform user they can view the configuration but cannot apply it to agents. Stop.
+4. **Scope not supported** — if the requested scope is not in `AllowedScopes`, inform the user which scopes are valid. Do NOT auto-generate a custom guardrail as a workaround (custom guardrails only support `Tool` scope). You may suggest a custom guardrail alternative, but only generate it after explicit user confirmation.
 
 Only add guardrails for validators with `Status: "Available"`. Use the output to determine `validatorType` values, allowed scopes, stages, and required parameters. Do not hardcode assumptions.
 

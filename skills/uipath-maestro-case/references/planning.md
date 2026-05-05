@@ -1,6 +1,6 @@
 # Phase 1 — Planning: sdd.md → tasks.md
 
-Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
+Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Debug → Phase 6 Publish) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
@@ -125,12 +125,28 @@ Also write `registry-resolved.json` — full detail per task: search query, all 
 
 Every declaration in `sdd.md` must become a T-task in `tasks.md`. Mapping is 1-to-1:
 
-- **Never filter** declarations on the grounds that the default rule-type, default field value, or "implicit behavior" would cover them. If `sdd.md` lists a task, stage, edge, trigger, condition, or SLA row, `tasks.md` emits a T-task for it — regardless of rule-type (`current-stage-entered`, `case-entered`, `exit-only`, `required-tasks-completed`, etc.).
+- **Never filter** declarations on the grounds that the default rule-type, default field value, or "implicit behavior" would cover them. If `sdd.md` lists a task, stage, edge, trigger, condition, SLA row, **variable, or argument**, `tasks.md` emits a T-task for it — regardless of rule-type (`current-stage-entered`, `case-entered`, `exit-only`, `required-tasks-completed`, etc.).
 - **Never merge** two sdd.md items into one T-task "because they're similar."
 - **Never drop** defaults-looking items (e.g., `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). The explicit declaration is the signal — honor it.
 - **When in doubt, emit.** It is always correct to create a T-task that mirrors an sdd.md row. It is never correct to silently omit one.
+- **When format is ambiguous or unrecognized, ASK — do not skip.** If a row exists but you cannot determine the right plugin, category, or T-entry shape (e.g., trigger "Initial Variable Mapping" uses an aggregate phrase instead of explicit per-field mappings; a variable's category — In / Out / Variable — is unclear; a task type does not match the closed enum), invoke **AskUserQuestion** with the row content + the specific ambiguity + bounded options. Silent omission is a defect. This obligation applies to every sdd.md declaration class above, including variables and arguments.
 
-Before presenting `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / edge / task / trigger / condition / SLA row in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before approval.
+Before presenting `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / edge / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before approval.
+
+**Cross-check inventory.** Before approval, count and report each class:
+
+| Class | Source in sdd.md | T-entry section |
+|---|---|---|
+| Case file | Case Metadata | §4.2 (T01) |
+| Triggers | Case Triggers | §4.3 (T02+) |
+| Variables / arguments | Case Variables | §4.2.1 (after last trigger) |
+| Stages | Section 2 stage headings | §4.4 |
+| Edges | Stage Entry Conditions / Stage Exit Conditions referencing other stages | §4.5 |
+| Tasks | Per-stage Tasks tables | §4.6 |
+| Conditions | Stage Entry / Stage Exit / Task Entry / Case Exit tables | §4.7 |
+| SLA | Case-Level SLA + per-stage Stage SLA + per-action Task SLA | §4.8 |
+
+Counts that don't match the sdd.md → fix before Step 5 hard stop.
 
 ### 4.1 Task ordering
 

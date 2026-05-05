@@ -71,8 +71,10 @@ Adds the project to `.uipx.Projects[]`. Run after the case plugin has scaffolded
 Re-scan all projects in the solution and sync resource declarations from `bindings_v2.json`. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 ```
+
+> `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
 
 **Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
 
@@ -85,7 +87,7 @@ uip solution resource refresh <SolutionDir> --output json
 Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json
 ```
 
@@ -136,7 +138,7 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 uip maestro case debug <projectDirectory> --log-level debug --output json
 ```
 
