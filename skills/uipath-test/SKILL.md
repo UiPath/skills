@@ -29,7 +29,7 @@ UiPath Testmanager is a web application that manages the testing lifecycle of pr
 - **Testcaselogs** — Logs of a tescase in a execution.
 - **Testcaselog assertions** — Assertion steps of a testcaselog in a execution.
 
-CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <command> <option> --help` to discover all commands and options. **Always use `--output json`** when calling commands programmatically.
+CLI tool for UiPath Test Manager (`uip tm`). Use `uip tm --help` and `uip tm <command> <option> --help` to discover all commands and options. **Always pass `--output json`** on every `uip` command (see Critical Rule #2).
 Common `uip tm` (Test Manager) commands organized by resource type:
 
 ### Project Commands
@@ -115,7 +115,7 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 ## Critical Rules
 
 1. **Always check login first** — run `uip login status --output json` before any Test Manager operation. Use `uip login`.
-2. **Always use `--output json`** on every `uip` command whose output is parsed programmatically.
+2. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user.
 3. **Cap retries at 3** for any failing API call. After 3 failures, stop and report the error to the user.
 4. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key.
 5. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command.

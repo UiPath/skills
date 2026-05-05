@@ -1,0 +1,59 @@
+task_id: skill-test-testset-hierarchy-discovery
+description: >
+  Smoke test: agent uses the uipath-test skill to traverse the Test Manager
+  discovery chain — project → testset → testcases. Validates Critical Rule #7
+  ("discover before assuming"), the correct `uip tm` list commands for project,
+  testset, and testset list-testcases, and Critical Rule #2 (use `--output
+  json`). The skill — not the prompt — must teach the chain and the flags.
+tags: [uipath-test, smoke, testset, discovery]
+
+agent:
+  type: claude-code
+  max_turns: 30
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node:
+    env_packages:
+      - "@uipath/cli"
+      - "@uipath/test-manager-tool"
+
+initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
+  I have a UiPath Test Manager project called "InvoiceAutomation". Show me the
+  test sets in it, and for the first test set, show me the test cases inside.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent looked up the project with `uip tm project list`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test sets scoped to a project (`uip tm testset list --project-key`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testset\s+list\s+.*--project-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed test cases in a test set (`uip tm testset list-testcases --test-set-key`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testset\s+list-testcases\s+.*--test-set-key'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `--output json` on uip tm commands (Critical Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
