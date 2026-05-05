@@ -117,13 +117,15 @@ After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json
 
 End of Phase 2. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Phase 2 hard stop](phased-execution.md#phase-2-hard-stop). This section is a bridge — do NOT duplicate contract here.
 
-1. Run informational validate (regular, no `--mode` flag):
+1. Run skeleton-profile validate:
 
    ```bash
-   uip maestro case validate "<caseplan.json path>" --output json
+   uip maestro case validate "<caseplan.json path>" --skeleton --output json
    ```
 
-   **Do NOT halt on errors or warnings.** Phase 2 output is expected invalid (unbound inputs, missing conditions, missing SLA — all filled in Phase 3). Capture error + warning counts for summary; do not classify "expected" vs "unexpected" errors.
+   `--skeleton` skips tasks, SLAs, escalations, and entry/exit rules — those are filled in Phase 3. Structural checks (nodes, edges, identity, types, topology) still run.
+
+   **Do NOT halt on errors or warnings.** Capture error + warning counts for summary; remaining errors are structural and surfaced to user via the hard-stop prompt.
 
 2. Print hard-stop summary, including captured validate counts ([phased-execution.md § Summary content](phased-execution.md#summary-content)).
 

@@ -61,17 +61,15 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 ### Phase 2 informational validate
 
-End of Phase 2 mutations, run regular validate:
+End of Phase 2 mutations, run skeleton-profile validate:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --output json
+uip maestro case validate "<caseplan.json path>" --skeleton --output json
 ```
 
-**Informational only — do NOT halt on errors or warnings.** Phase 2 state is expected invalid: unbound required input values, missing condition rules, missing terminal exit, missing secondary-stage exit conditions, missing SLA. All resolved in Phase 3.
+`--skeleton` runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules — all unbound at this gate, filled in Phase 3.
 
-Capture error and warning counts (and optionally first few messages); include in hard-stop summary. User decides whether skeleton is worth publishing/continuing, or whether something looks off and they want to `Abort` for inspection.
-
-**Do not parse validate output for "expected" vs "unexpected" errors.** Skill does not classify validation errors at this boundary — if user sees something that looks like a true structural bug (dangling edge, missing trigger, duplicate names), they choose `Abort` and fix before re-running. Simpler, no false negatives from misclassification.
+**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (dangling edge, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
 
 ### Phase 2 hard stop
 
@@ -262,4 +260,3 @@ No artifact deletion. No rollback. User owns partial state.
 
 - **Re-ingesting Studio Web edits.** If user edits published skeleton in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 6 re-publish overwrites Studio Web with completed local build.
 - **Resuming aborted session.** Re-running skill regenerates `tasks.md` from scratch (Rule 6) and re-executes Phase 2 onwards.
-- **Dedicated skeleton validation mode.** Skill does not depend on `--mode skeleton` CLI flag. Regular `uip maestro case validate` runs at end of Phase 2 for informational output only; expected Phase 2 errors are not filtered or classified here.
