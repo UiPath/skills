@@ -59,7 +59,11 @@ Common `uip tm` (Test Manager) commands organized by resource type:
 | `uip tm testcase unlink-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Unlink the automation from a test case. |
 | `uip tm testcase list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
 | `uip tm testcase list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
+| `uip tm testcase list-steps --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** |
 | `uip tm testcase list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List testcase log result history for a specific test case. |
+| `uip tm testcase execute --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID> --execution-type <TYPE>` | Start an execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple), not `--test-case-key`.** |
+
+> Get a test case UUID with `uip tm testcase list --project-key <PROJECT_KEY> --output json` and read the `Id` field. The `--test-case-id` flag requires a UUID; the `--test-case-key` flag (used by `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`) requires the `PROJECT_KEY:NUMBER` form (e.g., `DEMO:1`). Do not interchange them.
 
 ### TestSet Commands
 
@@ -150,7 +154,7 @@ Common `uip tm` (Test Manager) commands organized by resource type:
   uip tm testset list-testcases --test-set-key <TEST_SET_KEY> --output json
 
   # Get testexecution
-  uip tm execution list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> -top 100 --output json
+  uip tm execution list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --top 100 --output json
 
   # Get testcaselogs in a testexecution
   uip tm execution list-testcaselogs --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json
