@@ -19,7 +19,7 @@ uip admin groups list --output json
 uip admin groups get <GROUP_ID> --output json
 
 # List group members
-uip admin groups get-members <GROUP_ID> --output json
+uip admin groups members list <GROUP_ID> --output json
 ```
 
 ## Workflow: Create a Group
@@ -53,26 +53,26 @@ Group membership commands use **user IDs** (UUIDs), not usernames. Always resolv
 
 2. Add users to the group:
    ```bash
-   uip admin groups add-members <GROUP_ID> \
+   uip admin groups members add <GROUP_ID> \
      --user-ids "<USER_ID_1>,<USER_ID_2>" \
      --output json
    ```
 
 3. Verify membership:
    ```bash
-   uip admin groups get-members <GROUP_ID> --output json
+   uip admin groups members list <GROUP_ID> --output json
    ```
 
 ### Remove Members
 
 1. List current members to get IDs:
    ```bash
-   uip admin groups get-members <GROUP_ID> --output json
+   uip admin groups members list <GROUP_ID> --output json
    ```
 
 2. Remove specific users:
    ```bash
-   uip admin groups remove-members <GROUP_ID> \
+   uip admin groups members revoke <GROUP_ID> \
      --user-ids "<USER_ID>" \
      --output json
    ```
@@ -104,11 +104,11 @@ uip admin groups update <GROUP_ID> \
 
 ```bash
 # First page
-uip admin groups get-members <GROUP_ID> \
+uip admin groups members list <GROUP_ID> \
   --limit 50 --offset 0 --output json
 
 # Next page
-uip admin groups get-members <GROUP_ID> \
+uip admin groups members list <GROUP_ID> \
   --limit 50 --offset 50 --output json
 ```
 

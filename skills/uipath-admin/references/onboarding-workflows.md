@@ -46,7 +46,7 @@ Add the robot account to appropriate groups for role assignment.
 uip admin groups list --output json
 
 # Add the robot account to the desired group(s)
-uip admin groups add-members <GROUP_ID> \
+uip admin groups members add <GROUP_ID> \
   --user-ids "<ROBOT_ACCOUNT_ID>" \
   --output json
 ```
@@ -134,7 +134,7 @@ uip admin users list \
 uip admin groups list --output json
 
 # Add user to role group(s)
-uip admin groups add-members <GROUP_ID> \
+uip admin groups members add <GROUP_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
@@ -194,7 +194,7 @@ uip admin users list \
 Once users appear in the list, collect their IDs and add them to the target group:
 
 ```bash
-uip admin groups add-members <GROUP_ID> \
+uip admin groups members add <GROUP_ID> \
   --user-ids "<USER_ID_1>,<USER_ID_2>,<USER_ID_3>" \
   --output json
 ```

@@ -119,7 +119,7 @@ Always include `--name` and `--surname` when the user's full name is known. Invi
 
 ## Groups — `uip admin groups`
 
-> **Group ID is a positional argument, not a flag.** Write `groups get <GROUP_ID>`, NOT `groups get --group-id <GROUP_ID>`. Same for `add-members`, `remove-members`, `get-members`, `update`, `delete`.
+> **Group ID is a positional argument, not a flag.** Write `groups get <GROUP_ID>`, NOT `groups get --group-id <GROUP_ID>`. Same for `members add`, `members revoke`, `members list`, `update`, `delete`.
 
 ### `groups list`
 
@@ -182,12 +182,12 @@ uip admin groups delete <GROUP_ID> --output json
 
 **Output code:** `GroupDeleted`
 
-### `groups get-members`
+### `groups members list`
 
 List members of a group.
 
 ```bash
-uip admin groups get-members <GROUP_ID> --output json
+uip admin groups members list <GROUP_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
@@ -198,12 +198,12 @@ uip admin groups get-members <GROUP_ID> --output json
 
 **Output code:** `GroupMembers`
 
-### `groups add-members`
+### `groups members add`
 
 Add users to a group. User IDs are required — resolve them via `users list` first.
 
 ```bash
-uip admin groups add-members <GROUP_ID> \
+uip admin groups members add <GROUP_ID> \
   --user-ids "<USER_ID_1>,<USER_ID_2>" \
   --output json
 ```
@@ -215,17 +215,17 @@ uip admin groups add-members <GROUP_ID> \
 
 **Output code:** `GroupMembersAdded`
 
-### `groups remove-members`
+### `groups members revoke`
 
 Remove users from a group.
 
 ```bash
-uip admin groups remove-members <GROUP_ID> \
+uip admin groups members revoke <GROUP_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
 
-**Output code:** `GroupMembersRemoved`
+**Output code:** `GroupMembersRevoked`
 
 ---
 

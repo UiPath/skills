@@ -83,7 +83,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added robot to a group"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+add-members'
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+add'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
