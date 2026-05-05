@@ -1,0 +1,47 @@
+{"id": "uipath-maestro-flow-001", "prompt": "Create a new UiPath Flow project called OrderProcessing"}
+{"id": "uipath-maestro-flow-002", "prompt": "Validate my .flow file"}
+{"id": "uipath-maestro-flow-003", "prompt": "Add a node to my flow"}
+{"id": "uipath-maestro-flow-004", "prompt": "Add a subflow to reusable logic"}
+{"id": "uipath-maestro-flow-005", "prompt": "Add a scheduled trigger to my flow"}
+{"id": "uipath-maestro-flow-006", "prompt": "Build a UiPath Flow that reads Salesforce opportunities, filters closed-won deals, posts to Slack, and writes to an agent for summarization"}
+{"id": "uipath-maestro-flow-007", "prompt": "I have an existing .flow file with a manual trigger; replace it with a connector trigger bound to a Salesforce connection and re-wire the downstream nodes"}
+{"id": "uipath-maestro-flow-008", "prompt": "I want to orchestrate multiple UiPath automations together"}
+{"id": "uipath-maestro-flow-009", "prompt": "Create a Maestro flow project from scratch"}
+{"id": "uipath-maestro-flow-010", "prompt": "Replace a mock node with a real RPA process node in my .flow"}
+{"id": "uipath-maestro-flow-011", "prompt": "Build a .flow that listens to a Gmail connector trigger for new emails, parses with a script node, branches on sender domain, posts matching ones to Teams, and writes a queue record"}
+{"id": "uipath-maestro-flow-012", "prompt": "Convert my Maestro flow from manual trigger to scheduled every 4 hours with Europe/Berlin timezone, and add a decision node that skips on weekends"}
+{"id": "uipath-maestro-flow-013", "prompt": "Build a .flow that orchestrates a HITL app, an agentic-process, and an api-workflow with a delay between HITL and analysis"}
+{"id": "uipath-maestro-flow-014", "prompt": "Add a switch node with 4 cases"}
+{"id": "uipath-maestro-flow-015", "prompt": "Create a flow input variable of type string and an output variable of type object"}
+{"id": "uipath-maestro-flow-016", "prompt": "Bind my flow to an existing connection I already created"}
+{"id": "uipath-maestro-flow-017", "prompt": "What's the syntax for the .flow JSON format?"}
+{"id": "uipath-maestro-flow-018", "prompt": "Run uip maestro flow debug on my project"}
+{"id": "uipath-maestro-flow-019", "prompt": "Add a decision node to branch my flow"}
+{"id": "uipath-maestro-flow-020", "prompt": "What node types does UiPath Flow support?"}
+{"id": "uipath-maestro-flow-021", "prompt": "How do I declare an inout variable in a flow?"}
+{"id": "uipath-maestro-flow-022", "prompt": "What is the difference between uip maestro flow validate and uip maestro flow debug?"}
+{"id": "uipath-maestro-flow-023", "prompt": "Scaffold a new .flow project in my current directory"}
+{"id": "uipath-maestro-flow-024", "prompt": "Build a .flow that reads rows from a SharePoint list, validates each address via an HTTP node, routes invalid rows to a Google Sheet via decision, valid rows into a Salesforce create-contact connector, and emails a summary via Outlook at End"}
+{"id": "uipath-maestro-flow-025", "prompt": "Create a Maestro flow: receive order via HTTP trigger, validate inventory with a script node, charge via Stripe connector, update Salesforce opportunity, notify via SendGrid, write audit record to queue"}
+{"id": "uipath-maestro-flow-026", "prompt": "Split my monolithic .flow into three subflows (ingestion, transformation, delivery) wired under a main flow with appropriate I/O variables"}
+{"id": "uipath-maestro-flow-027", "prompt": "Implement a saga pattern in my .flow with compensating transactions — on failure of step N, invoke the compensation subflow for steps 1..N-1, wired via decisions and error ports"}
+{"id": "uipath-maestro-flow-028", "prompt": "Make my automation skip steps when a condition is false"}
+{"id": "uipath-maestro-flow-029", "prompt": "My UiPath thing should trigger when a new row is added to Google Sheets"}
+{"id": "uipath-maestro-flow-030", "prompt": "I want a reusable chunk of UiPath logic I can call from multiple places"}
+{"id": "uipath-maestro-flow-031", "prompt": "Add a webhook that starts my UiPath job"}
+{"id": "uipath-maestro-flow-032", "prompt": "I need something visual in UiPath that shows my automation steps"}
+{"id": "uipath-maestro-flow-033", "prompt": "Pass data between UiPath steps"}
+{"id": "uipath-maestro-flow-034", "prompt": "Invoke a child UiPath automation and wait for its result"}
+{"id": "uipath-maestro-flow-035", "prompt": "I want an automation that fires whenever I get an Outlook email with an attachment, pulls the attachment, and hands it to a coded agent for extraction."}
+{"id": "uipath-maestro-flow-036", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?"}
+{"id": "uipath-maestro-flow-037", "prompt": "My flow stopped running at a decision step. The trace shows a bunch of completed steps and then nothing — can you figure out why?"}
+{"id": "uipath-maestro-flow-038", "prompt": "The tools in my inline agent don't have access to the parent flow's variables. Is that intentional, or did I mis-wire something? Take a look at the flow."}
+{"id": "uipath-maestro-flow-039", "prompt": "Debug keeps failing at the Provisioning Resources stage with a timeout. The flow is pretty simple — what's going wrong?"}
+{"id": "uipath-maestro-flow-040", "prompt": "I opened my flow today and the canvas is broken — branches are gone, the agent is gone, and it says the agent was removed from the solution. Can you recover it?"}
+{"id": "uipath-maestro-flow-041", "prompt": "Coded agent outputs aren't showing up in the debug console, and the next node doesn't seem to receive them. Low-code agents work fine. Check the flow?"}
+{"id": "uipath-maestro-flow-042", "prompt": "Is there a native Teams trigger? I want the flow to fire when a Teams message contains a customer name."}
+{"id": "uipath-maestro-flow-043", "prompt": "Build a flow that pulls the last 3 months of Salesforce tickets for a customer when a Teams message arrives with their name."}
+{"id": "uipath-maestro-flow-044", "prompt": "Add a decision node after the risk-check step — if risk > 0.8, route to HITL; otherwise continue to the Slack send."}
+{"id": "uipath-maestro-flow-045", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution."}
+{"id": "uipath-maestro-flow-046", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON."}
+{"id": "uipath-maestro-flow-047", "prompt": "Write Jint JavaScript logic for a script node"}

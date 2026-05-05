@@ -1,0 +1,54 @@
+{"id": "uipath-human-in-the-loop-001", "prompt": "Add a HITL node to my flow"}
+{"id": "uipath-human-in-the-loop-002", "prompt": "Insert an approval step before the SAP write-back in my .flow"}
+{"id": "uipath-human-in-the-loop-003", "prompt": "I need a human to review the AI-generated RCA before it gets posted to ServiceNow"}
+{"id": "uipath-human-in-the-loop-004", "prompt": "Add a quick form approval after the invoice extraction node"}
+{"id": "uipath-human-in-the-loop-005", "prompt": "Build a flow that reads support tickets, has an agent draft an RCA, and updates ServiceNow"}
+{"id": "uipath-human-in-the-loop-006", "prompt": "Wire up an Action Center task in my flow with Approve/Reject buttons"}
+{"id": "uipath-human-in-the-loop-007", "prompt": "I want a human checkpoint where the reviewer fills in missing customer fields the agent couldn't extract"}
+{"id": "uipath-human-in-the-loop-008", "prompt": "Add a four-eyes approval step for any payment over $10k"}
+{"id": "uipath-human-in-the-loop-009", "prompt": "Add an offer letter review step before sending — assign to hr-leads@example.com"}
+{"id": "uipath-human-in-the-loop-010", "prompt": "Create a Human Task node referencing my deployed action app called InvoiceApprover"}
+{"id": "uipath-human-in-the-loop-011", "prompt": "Add a HITL node with fields amount, vendor, glCode and outcomes Approve and Reject"}
+{"id": "uipath-human-in-the-loop-012", "prompt": "If the agent's confidence is below 0.7, route to a human for review"}
+{"id": "uipath-human-in-the-loop-013", "prompt": "Add a CAB approval gate before the runbook execution step"}
+{"id": "uipath-human-in-the-loop-014", "prompt": "Stick a manual approval node in here so a person can approve/decline before the next step runs"}
+{"id": "uipath-human-in-the-loop-015", "prompt": "Add a quickform with a comment textarea, a date picker for due date, and approve/reject outcomes"}
+{"id": "uipath-human-in-the-loop-016", "prompt": "Create a HITL step that shows the extracted PO data and lets the reviewer edit any field before submission"}
+{"id": "uipath-human-in-the-loop-017", "prompt": "Use uip maestro flow hitl add to insert an approval node into my flow file"}
+{"id": "uipath-human-in-the-loop-018", "prompt": "Add a coded action app for the review step — scaffold a new React app inside my solution"}
+{"id": "uipath-human-in-the-loop-019", "prompt": "Add a price override approval — only managers can approve discounts over 15%"}
+{"id": "uipath-human-in-the-loop-020", "prompt": "Build a flow that processes refund requests and sends each to a CSR for approval before issuing the refund via Stripe"}
+{"id": "uipath-human-in-the-loop-021", "prompt": "I want the agent's draft email reviewed by a human before it goes out to the customer"}
+{"id": "uipath-human-in-the-loop-022", "prompt": "Add a fraud-alert review checkpoint — show the transaction details and let the analyst mark as fraud or legit"}
+{"id": "uipath-human-in-the-loop-023", "prompt": "Insert an access-provisioning approval gate after the JIRA ticket is parsed"}
+{"id": "uipath-human-in-the-loop-024", "prompt": "Wire the HITL completed handle to my downstream Slack node"}
+{"id": "uipath-human-in-the-loop-025", "prompt": "Add a contract review step where legal can edit the redlined fields before sending"}
+{"id": "uipath-human-in-the-loop-026", "prompt": "Add a regulatory sign-off node — high priority, 4 hour timeout, assign to compliance group"}
+{"id": "uipath-human-in-the-loop-027", "prompt": "Insert a document validation step where the reviewer confirms the extracted line items"}
+{"id": "uipath-human-in-the-loop-028", "prompt": "Add a HITL node that shows the agent's classification and lets a human override the label"}
+{"id": "uipath-human-in-the-loop-029", "prompt": "Add a manager review step with a 24h timeout and Medium priority"}
+{"id": "uipath-human-in-the-loop-030", "prompt": "I want to gate the credit-limit increase on a credit officer's approval"}
+{"id": "uipath-human-in-the-loop-031", "prompt": "Add a human approval node before the Salesforce update so the AE can sanity-check the deal data"}
+{"id": "uipath-human-in-the-loop-032", "prompt": "Add a quickform with a number input for approved amount and a free-text justification"}
+{"id": "uipath-human-in-the-loop-033", "prompt": "Make the agent pause after drafting the comms and wait for a human to greenlight"}
+{"id": "uipath-human-in-the-loop-034", "prompt": "Reference an existing deployed app called LoanApprovalApp in my HITL node"}
+{"id": "uipath-human-in-the-loop-035", "prompt": "Build a Maestro flow with an Outlook trigger, an inline agent that drafts a reply, then a HITL approval before sending"}
+{"id": "uipath-human-in-the-loop-036", "prompt": "Plug in an Action Center task right before the SAP posting"}
+{"id": "uipath-human-in-the-loop-037", "prompt": "Add an exception escalation: if the validator returns invalid, route to a human; otherwise continue"}
+{"id": "uipath-human-in-the-loop-038", "prompt": "Add a HITL where the reviewer can approve, reject, or send back for clarification"}
+{"id": "uipath-human-in-the-loop-039", "prompt": "I want the user to be able to attach a PDF when completing the action"}
+{"id": "uipath-human-in-the-loop-040", "prompt": "Add an approval node assigned to the finance group, label it Invoice Review"}
+{"id": "uipath-human-in-the-loop-041", "prompt": "After the document understanding step, have a person validate the extracted data before pushing to SAP"}
+{"id": "uipath-human-in-the-loop-042", "prompt": "Add a sequential two-step approval — first the line manager, then finance"}
+{"id": "uipath-human-in-the-loop-043", "prompt": "How do I design the schema for an inline approval form with three text fields and one boolean?"}
+{"id": "uipath-human-in-the-loop-044", "prompt": "Add a termination sign-off step to my offboarding flow"}
+{"id": "uipath-human-in-the-loop-045", "prompt": "Insert a human checkpoint after the agent's web search so an analyst can verify the cited sources"}
+{"id": "uipath-human-in-the-loop-046", "prompt": "Build an automation that reads new Workday hires and pauses for HR to confirm before creating the AD account"}
+{"id": "uipath-human-in-the-loop-047", "prompt": "Add a quickform that shows the customer's lifetime value and lets the rep choose retention offer A, B, or C"}
+{"id": "uipath-human-in-the-loop-048", "prompt": "Insert a price approval node after the quoting agent and route the response back into the quote update node"}
+{"id": "uipath-human-in-the-loop-049", "prompt": "Make the agent wait for human input before posting anything to the public Slack channel"}
+{"id": "uipath-human-in-the-loop-050", "prompt": "Add a low-confidence review step — if extraction confidence < 0.85, send to a human; otherwise auto-process"}
+{"id": "uipath-human-in-the-loop-051", "prompt": "How do I build a workflow where a human has to approve something before the next step runs?"}
+{"id": "uipath-human-in-the-loop-052", "prompt": "How does Human in the Loop work in Flow? I used Action Center forms in Maestro — can I reuse those, or do I need to build something new with HITL?"}
+{"id": "uipath-human-in-the-loop-053", "prompt": "What's the equivalent of Create Action App Task in Flow?"}
+{"id": "uipath-human-in-the-loop-054", "prompt": "Put approval in my workflow"}

@@ -1,0 +1,51 @@
+{"id": "uipath-platform-001", "prompt": "Log me in to UiPath Cloud"}
+{"id": "uipath-platform-002", "prompt": "uip login against staging"}
+{"id": "uipath-platform-003", "prompt": "Log into the alpha tenant non-interactively with a client ID and secret"}
+{"id": "uipath-platform-004", "prompt": "Check whether I'm currently authenticated and which tenant I'm on"}
+{"id": "uipath-platform-005", "prompt": "Switch my active tenant to DefaultTenant"}
+{"id": "uipath-platform-006", "prompt": "List the tenants I have access to"}
+{"id": "uipath-platform-007", "prompt": "Where does the CLI store the access token after login?"}
+{"id": "uipath-platform-008", "prompt": "Log me out of UiPath"}
+{"id": "uipath-platform-009", "prompt": "List all Orchestrator folders in my current tenant"}
+{"id": "uipath-platform-010", "prompt": "Create a new Orchestrator folder called Invoices under Shared"}
+{"id": "uipath-platform-011", "prompt": "Move a folder under a different parent in Orchestrator"}
+{"id": "uipath-platform-012", "prompt": "Delete the CoolDemo folder from Orchestrator"}
+{"id": "uipath-platform-013", "prompt": "Create a credential asset called SAP_Login in the Finance folder"}
+{"id": "uipath-platform-014", "prompt": "Update an existing text asset value"}
+{"id": "uipath-platform-015", "prompt": "List all assets in my Shared folder"}
+{"id": "uipath-platform-016", "prompt": "Create a new queue called InvoiceQueue with auto retries enabled"}
+{"id": "uipath-platform-017", "prompt": "Add a queue item to InvoiceQueue with reference INV-2026-001 and a JSON payload"}
+{"id": "uipath-platform-018", "prompt": "List failed queue items in the last 24 hours"}
+{"id": "uipath-platform-019", "prompt": "Create a storage bucket for archived invoices and upload a sample PDF to it"}
+{"id": "uipath-platform-020", "prompt": "Download a file from a storage bucket"}
+{"id": "uipath-platform-021", "prompt": "List all storage buckets in this folder"}
+{"id": "uipath-platform-022", "prompt": "Pack my solution into a deployable zip"}
+{"id": "uipath-platform-023", "prompt": "uip solution publish .output/myapp_1.0.4.zip"}
+{"id": "uipath-platform-024", "prompt": "Deploy the latest version of my solution to the Invoices folder"}
+{"id": "uipath-platform-025", "prompt": "Why is my deploy failing with 'Package version for deployment is not ready'?"}
+{"id": "uipath-platform-026", "prompt": "Create a new solution project, add my flow to it, then pack publish and deploy"}
+{"id": "uipath-platform-027", "prompt": "Walk me through the full uip CLI publish-and-deploy flow for a coded agent"}
+{"id": "uipath-platform-028", "prompt": "Set up a CI/CD pipeline that uses uip CLI with client credentials to publish my UiPath solution"}
+{"id": "uipath-platform-029", "prompt": "Activate the deployment I just published"}
+{"id": "uipath-platform-030", "prompt": "Uninstall the old solution from my dev tenant"}
+{"id": "uipath-platform-031", "prompt": "Upgrade my solution to the latest published version in the Shared folder"}
+{"id": "uipath-platform-032", "prompt": "List all processes/releases under the Finance folder"}
+{"id": "uipath-platform-033", "prompt": "Start a job for the InvoiceProcessing process on an Unattended runtime"}
+{"id": "uipath-platform-034", "prompt": "I'm getting error 2818 'no runtimes configured' when starting a job — how do I fix it?"}
+{"id": "uipath-platform-035", "prompt": "Upload a .nupkg package directly via the Orchestrator REST API"}
+{"id": "uipath-platform-036", "prompt": "How do I make a raw Orchestrator REST call using the token in ~/.uipath/.auth?"}
+{"id": "uipath-platform-037", "prompt": "List Integration Service connectors available in my tenant"}
+{"id": "uipath-platform-038", "prompt": "Create a Salesforce connection in Integration Service"}
+{"id": "uipath-platform-039", "prompt": "List all Integration Service connections I currently have"}
+{"id": "uipath-platform-040", "prompt": "Why can't my customer create a connection in Integration Services from the US region?"}
+{"id": "uipath-platform-041", "prompt": "What machines and robots are configured in this folder?"}
+{"id": "uipath-platform-042", "prompt": "Create an unattended robot for the new VM"}
+{"id": "uipath-platform-043", "prompt": "What's the difference between an Attended and Unattended robot?"}
+{"id": "uipath-platform-044", "prompt": "Explain the UiPath Organization → Tenant → Folder hierarchy"}
+{"id": "uipath-platform-045", "prompt": "What types of Orchestrator assets exist (Text, Bool, Credential, etc.)?"}
+{"id": "uipath-platform-046", "prompt": "Search and install a uip CLI tool extension"}
+{"id": "uipath-platform-047", "prompt": "Install the latest uip CLI and verify the version"}
+{"id": "uipath-platform-048", "prompt": "I want to create Orchestrator resources from scratch — folder, queue, bucket, and a few assets — for a new project"}
+{"id": "uipath-platform-049", "prompt": "List solution packages in the tenant feed and filter by name"}
+{"id": "uipath-platform-050", "prompt": "Set up a brand new dev environment: log in, pick a tenant, create a folder, and provision a queue and a credential asset"}
+{"id": "uipath-platform-051", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates"}

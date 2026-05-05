@@ -1,0 +1,50 @@
+{"id": "uipath-agents-001", "prompt": "Create a new UiPath coded agent project"}
+{"id": "uipath-agents-002", "prompt": "Scaffold a LangGraph agent with uipath new and uipath init"}
+{"id": "uipath-agents-003", "prompt": "Build a UiPath agent that classifies incoming support tickets and posts the category to Slack"}
+{"id": "uipath-agents-004", "prompt": "I want to build a coded agent in Python — should I pick LangGraph, LlamaIndex, or OpenAI Agents?"}
+{"id": "uipath-agents-005", "prompt": "Help me decide between low-code and coded agent for my use case"}
+{"id": "uipath-agents-006", "prompt": "Create a low-code agent.json from scratch with a system prompt and one Orchestrator process tool"}
+{"id": "uipath-agents-007", "prompt": "Authenticate the uipath CLI to my tenant"}
+{"id": "uipath-agents-008", "prompt": "uipath auth keeps failing with invalid_client when I pass client-id and client-secret in a GitHub Action — what am I missing?"}
+{"id": "uipath-agents-009", "prompt": "Run my coded agent locally with uv run uipath run"}
+{"id": "uipath-agents-010", "prompt": "Pack and publish my coded agent to my Personal Workspace feed"}
+{"id": "uipath-agents-011", "prompt": "Deploy this LangGraph agent to Orchestrator"}
+{"id": "uipath-agents-012", "prompt": "uipath publish is failing with no error message, just spins. Take a look at my project."}
+{"id": "uipath-agents-013", "prompt": "Push my coded agent to Studio Web and confirm it shows up there"}
+{"id": "uipath-agents-014", "prompt": "I edited my evaluation set in Studio Web — pull the changes back to my local repo"}
+{"id": "uipath-agents-015", "prompt": "Set up an evaluation set for my coded agent with a few sample inputs and expected outputs"}
+{"id": "uipath-agents-016", "prompt": "Add an LLM-as-a-judge evaluator to my agent's eval set"}
+{"id": "uipath-agents-017", "prompt": "Run uipath eval against my evaluation set and show me the pass/fail per row"}
+{"id": "uipath-agents-018", "prompt": "Add a trajectory evaluator so I can grade the tool call sequence, not just the final answer"}
+{"id": "uipath-agents-019", "prompt": "Convert my low-code conversational agent to a coded agent (clone-as-coded)"}
+{"id": "uipath-agents-020", "prompt": "My agent runs fine locally but fails in Orchestrator with /bin/bash: line 1: uipath: command not found"}
+{"id": "uipath-agents-021", "prompt": "Add a Human-in-the-Loop interrupt to my LangGraph agent that creates an Action Center task and resumes on completion"}
+{"id": "uipath-agents-022", "prompt": "Add context grounding (RAG) to my coded agent using a UiPath ECS index in folder Carpenter"}
+{"id": "uipath-agents-023", "prompt": "Wire up an Orchestrator process as a tool in my LangGraph agent so the LLM can invoke it"}
+{"id": "uipath-agents-024", "prompt": "Build a LlamaIndex coded agent that summarizes PDFs from a SharePoint folder"}
+{"id": "uipath-agents-025", "prompt": "Create an OpenAI Agents project that drafts replies to inbound emails and routes high-risk ones to HITL"}
+{"id": "uipath-agents-026", "prompt": "Populate my bindings.json so connections, assets, and processes can be overridden at deploy time"}
+{"id": "uipath-agents-027", "prompt": "My bindings.json is an empty list even though I'm using an Outlook connection in code — fix it"}
+{"id": "uipath-agents-028", "prompt": "Define inputs and outputs for my agent in entry-points.json"}
+{"id": "uipath-agents-029", "prompt": "Add a new package dependency to my pyproject.toml and rebuild"}
+{"id": "uipath-agents-030", "prompt": "Switch the LLM model my coded agent uses from gpt-4.1 to claude sonnet via the UiPath LLM Gateway"}
+{"id": "uipath-agents-031", "prompt": "I want my coded agent to call another UiPath agent as a tool — how do I do that?"}
+{"id": "uipath-agents-032", "prompt": "Add tracing to my coded agent so I can see tool calls and LLM hops in the trace viewer"}
+{"id": "uipath-agents-033", "prompt": "Add a guardrail to my low-code agent that blocks PII in the response and escalates to an Action Center app on violation"}
+{"id": "uipath-agents-034", "prompt": "Add an Action Center escalation step to my low-code agent for low-confidence outputs"}
+{"id": "uipath-agents-035", "prompt": "Add a Data Fabric entity-set context to my low-code agent"}
+{"id": "uipath-agents-036", "prompt": "Add an Integration Service tool (Salesforce get-records) to my agent.json"}
+{"id": "uipath-agents-037", "prompt": "Embed my low-code agent inline as a node inside a Maestro flow"}
+{"id": "uipath-agents-038", "prompt": "Validate, pack, and publish my low-code agent solution"}
+{"id": "uipath-agents-039", "prompt": "uipath init is failing with 'No python files found in the current directory' — what's the right setup?"}
+{"id": "uipath-agents-040", "prompt": "After upgrading uipath-langchain my agent gets 403 Forbidden from the LLM Gateway. Diagnose."}
+{"id": "uipath-agents-041", "prompt": "uipath eval errors with 'Could not find the following evaluators: exact-match' — fix my evaluation set"}
+{"id": "uipath-agents-042", "prompt": "Build a coded agent that searches the web on a given topic, generates a PDF, produces a voice note, and emails the results"}
+{"id": "uipath-agents-043", "prompt": "Add a durable_interrupt to my agent so it pauses for a document validation task and resumes when the human submits"}
+{"id": "uipath-agents-044", "prompt": "Show me how to run my LangGraph agent against an MCP server hosted on UiPath"}
+{"id": "uipath-agents-045", "prompt": "Set up a CI pipeline that runs uipath eval on PRs and fails the build if pass rate drops"}
+{"id": "uipath-agents-046", "prompt": "I have multiple Python files in my LangGraph project — how do I structure them so uipath init and publish work?"}
+{"id": "uipath-agents-047", "prompt": "Coded agent outputs aren't showing up in Maestro debug — the next node sees nothing. Look at my project."}
+{"id": "uipath-agents-048", "prompt": "Job stuck in Running forever in Orchestrator after publish, but works locally. What's different about the serverless runtime?"}
+{"id": "uipath-agents-049", "prompt": "I want to build a Python agent that reads invoices from a queue, extracts fields, asks a human for low-confidence ones, and writes results back"}
+{"id": "uipath-agents-050", "prompt": "Add a multi-classification evaluator to my eval set and threshold the suite at 0.85 macro-F1"}

@@ -1,0 +1,52 @@
+{"id": "uipath-rpa-001", "prompt": "Create a new UiPath RPA project called InvoiceProcessor"}
+{"id": "uipath-rpa-002", "prompt": "Build a UiPath XAML workflow in this project that opens https://connect.capefearvalley.com/userportal/signin in Chrome incognito mode, types TEST into the username field, types TEST into the password field, and clicks the Sign In button. Keep the browser open after the workflow finishes."}
+{"id": "uipath-rpa-003", "prompt": "build a sample workflow which opens Chrome with an empty page"}
+{"id": "uipath-rpa-004", "prompt": "let's build an RPA workflow which searches the site libris.ro for puzzles"}
+{"id": "uipath-rpa-005", "prompt": "Create a validated XAML workflow named DownloadSampleInvoiceAndPrintCsv.xaml that attaches to the currently open Chrome tab on https://rpachallengeocr.azurewebsites.net/, clicks Download example CSV, waits for the download, reads the newest example*.csv from Downloads, and logs each non-empty line."}
+{"id": "uipath-rpa-006", "prompt": "use the uia-configure-target skill to detect the submit button from rpachallenge.com. Enable semantic selector"}
+{"id": "uipath-rpa-007", "prompt": "Build the automation to solve rpachallenge.com end to end"}
+{"id": "uipath-rpa-008", "prompt": "Add a Try Catch around the InvokeWorkflow call in Main.xaml so business exceptions are logged and the transaction is set to Failed"}
+{"id": "uipath-rpa-009", "prompt": "Generate a coded workflow that reads Config.xlsx and returns a Dictionary<string,object> for the dispatcher"}
+{"id": "uipath-rpa-010", "prompt": "Create a coded test case that asserts InvoiceParser returns the right total for sample.pdf"}
+{"id": "uipath-rpa-011", "prompt": "Create a new RPA project based on the REFramework template called BankStatementReconciliation"}
+{"id": "uipath-rpa-012", "prompt": "scaffold a Performer.xaml that pulls a queue item, parses the invoice, and posts the result to the GL system via HTTP"}
+{"id": "uipath-rpa-013", "prompt": "fix this XAML error: Cannot implicitly convert type 'object' to 'bool'"}
+{"id": "uipath-rpa-014", "prompt": "Add the UiPath.Excel.Activities package to my project and replace the InvokeCode block with a Read Range Workbook activity"}
+{"id": "uipath-rpa-015", "prompt": "Generate the log in flows for multiple applications in UiPath with fallback on ScreenPlay. Some apps are web, some desktop, some require Citrix. Web app: https://uibank.uipath.com/welcome ; also need login for Microsoft Store desktop app."}
+{"id": "uipath-rpa-016", "prompt": "Build a Workday reporting API workflow that searches workers, validates results, and loops through returned employees making calls for direct reports, organization, and peers, then combines responses into a clean report object."}
+{"id": "uipath-rpa-017", "prompt": "Create an RPA workflow that downloads attachments from the latest Outlook email matching subject 'Invoice' and saves them to ./inbox/"}
+{"id": "uipath-rpa-018", "prompt": "Add a coded workflow that calls the Salesforce IS connector to upsert an Opportunity from a CSV row"}
+{"id": "uipath-rpa-019", "prompt": "Write a Coded Source File with a helper class for parsing the invoice number out of a free-text email body"}
+{"id": "uipath-rpa-020", "prompt": "automate this dialog: open the Citrix banking app, click Customer > Search, type the customer ID, hit Enter, and screenshot the result page"}
+{"id": "uipath-rpa-021", "prompt": "Run the Main workflow and tail the output until it finishes"}
+{"id": "uipath-rpa-022", "prompt": "build the project and tell me what's failing"}
+{"id": "uipath-rpa-023", "prompt": "Convert the existing Invoke Code activity in Main.xaml into a proper coded workflow file so we can unit test it"}
+{"id": "uipath-rpa-024", "prompt": "Add a queue trigger consumer workflow that calls Get Transaction Item, processes, and Set Transaction Status"}
+{"id": "uipath-rpa-025", "prompt": "scaffold a test project with a Given-When-Then XAML test case that validates the Calculate Discount workflow"}
+{"id": "uipath-rpa-026", "prompt": "indicate the username and password fields on https://uibank.uipath.com/welcome and configure targets for both"}
+{"id": "uipath-rpa-027", "prompt": "I want a XAML that pulls all open Jira tickets assigned to me using the Atlassian Jira IS connector and writes them to a sheet"}
+{"id": "uipath-rpa-028", "prompt": "Refactor Main.xaml to use Multiple Assign instead of stacking 10 separate Assign activities"}
+{"id": "uipath-rpa-029", "prompt": "create a workflow"}
+{"id": "uipath-rpa-030", "prompt": "Add a HITL approval step before the Submit Order activity using an Action Center task"}
+{"id": "uipath-rpa-031", "prompt": "validate this project and fix any analyzer warnings"}
+{"id": "uipath-rpa-032", "prompt": "Add the Mail activities package and create a workflow that reads unread emails from a shared mailbox, extracts attachments, and moves the email to a Processed folder."}
+{"id": "uipath-rpa-033", "prompt": "Build a coded workflow that uses the Excel service to open Report.xlsx, sum column D, and write the total to cell F1"}
+{"id": "uipath-rpa-034", "prompt": "create a workflow that scrapes product names and prices from libris.ro and exports them to products.csv"}
+{"id": "uipath-rpa-035", "prompt": "set up a data-driven test case that runs my LoginWorkflow against every row of test_data.xlsx"}
+{"id": "uipath-rpa-036", "prompt": "Add a config.xlsx scaffold with Settings, Constants, and Assets sheets and update Main to read it on startup"}
+{"id": "uipath-rpa-037", "prompt": "the workflow fails at Click 'Submit' with selector not found - help me recover the selector"}
+{"id": "uipath-rpa-038", "prompt": "use Object Repository to capture the New Customer form on the SAP screen and generate a coded workflow that fills it out"}
+{"id": "uipath-rpa-039", "prompt": "add a State Machine workflow with Init, Process, EndProcess states for the dispatcher"}
+{"id": "uipath-rpa-040", "prompt": "Run a debug execution of TransactionProcess.xaml with input arguments transactionId=42 and amount=1000"}
+{"id": "uipath-rpa-041", "prompt": "Generate a Library project with a public ParseDate activity wrapping a coded workflow"}
+{"id": "uipath-rpa-042", "prompt": "Add a Long Running Workflow that waits for a form task before continuing"}
+{"id": "uipath-rpa-043", "prompt": "Write me a coded workflow using the IS connector to send a Slack message to #ops when the dispatcher finishes"}
+{"id": "uipath-rpa-044", "prompt": "There's a ST-USG-009 unused-variable error in PerformerWF.xaml - clean it up"}
+{"id": "uipath-rpa-045", "prompt": "Create a workflow that opens Notepad, types Hello World, and saves the file as out.txt"}
+{"id": "uipath-rpa-046", "prompt": "Add a Retry Scope around the API call so it retries 3 times on HTTP 5xx"}
+{"id": "uipath-rpa-047", "prompt": "I have a PDD for an AP invoice process - generate the RPA project skeleton with dispatcher and performer workflows"}
+{"id": "uipath-rpa-048", "prompt": "make the workflow cross-platform (Portable target framework) and remove the Windows-only activities"}
+{"id": "uipath-rpa-049", "prompt": "Build a coded test that mocks the Salesforce service and asserts the dispatcher writes the right queue item"}
+{"id": "uipath-rpa-050", "prompt": "Add a Get Asset activity to pull the OrchestratorUrl asset and use it in the HTTP Request"}
+{"id": "uipath-rpa-051", "prompt": "Edit my Main.xaml file"}
+{"id": "uipath-rpa-052", "prompt": "Write a coded workflow in C# that calls a REST API and parses JSON"}

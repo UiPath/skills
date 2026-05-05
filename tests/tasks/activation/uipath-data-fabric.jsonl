@@ -1,0 +1,50 @@
+{"id": "uipath-data-fabric-001", "prompt": "List all Data Fabric entities in my tenant"}
+{"id": "uipath-data-fabric-002", "prompt": "Create a Data Fabric entity called Invoice with fields InvoiceNumber, VendorName, TotalAmount, DueDate, and Status"}
+{"id": "uipath-data-fabric-003", "prompt": "Insert a record into the Customers entity"}
+{"id": "uipath-data-fabric-004", "prompt": "Show me the schema for my Loan entity"}
+{"id": "uipath-data-fabric-005", "prompt": "Query records from the Expense entity where Status = 'Pending' and Amount >= 500"}
+{"id": "uipath-data-fabric-006", "prompt": "Bulk import 200 rows from chocolate-sales.csv into the Stores entity"}
+{"id": "uipath-data-fabric-007", "prompt": "Add a new field called ApprovedBy of type STRING to the Expense entity"}
+{"id": "uipath-data-fabric-008", "prompt": "Update the Status field on record 91019BC6-F707-F111-8330-6045BD93B1D3 in Invoice to 'Approved'"}
+{"id": "uipath-data-fabric-009", "prompt": "Delete records with IDs abc-123 and def-456 from the SystemUser entity"}
+{"id": "uipath-data-fabric-010", "prompt": "Upload signed-contract.pdf to the Contract field of record xyz-789 in the Loan entity"}
+{"id": "uipath-data-fabric-011", "prompt": "Download the attachment from the Receipt field of record 42a-bbb in Expense to ./out/"}
+{"id": "uipath-data-fabric-012", "prompt": "Seed 50 test rows into the Order entity so I can test my flow"}
+{"id": "uipath-data-fabric-013", "prompt": "List only native entities (skip federated ones)"}
+{"id": "uipath-data-fabric-014", "prompt": "Get the first 100 records from the Vendor entity"}
+{"id": "uipath-data-fabric-015", "prompt": "Page through all records in the Transaction entity using the cursor"}
+{"id": "uipath-data-fabric-016", "prompt": "Find all Loan records where VendorId is not null and Status in ('Pending','Review'), sorted by CreateTime descending"}
+{"id": "uipath-data-fabric-017", "prompt": "I have a CSV with sales data, set up a Data Fabric entity for it and load all the rows"}
+{"id": "uipath-data-fabric-018", "prompt": "Mark the displayName of the Status field as 'Application Status' and make it required"}
+{"id": "uipath-data-fabric-019", "prompt": "Batch update 25 invoice records to set Status='Paid' and PaidDate to today"}
+{"id": "uipath-data-fabric-020", "prompt": "Delete the file attached to the Avatar field of user record uuu-111"}
+{"id": "uipath-data-fabric-021", "prompt": "uip df entities list isn't recognized, what do I install?"}
+{"id": "uipath-data-fabric-022", "prompt": "Find the entity ID for the entity called CaseEntity"}
+{"id": "uipath-data-fabric-023", "prompt": "Search records in my Product entity where Name contains 'widget' and Price < 100"}
+{"id": "uipath-data-fabric-024", "prompt": "Bulk insert these three customer records: [{\"Name\":\"Alice\",\"Email\":\"a@x.com\"},{\"Name\":\"Bob\",\"Email\":\"b@x.com\"},{\"Name\":\"Carol\",\"Email\":\"c@x.com\"}]"}
+{"id": "uipath-data-fabric-025", "prompt": "Add two boolean fields IsActive and IsArchived plus a DATETIME field LastSyncedAt to my Account entity"}
+{"id": "uipath-data-fabric-026", "prompt": "Verify my freshly inserted record actually landed in Data Fabric"}
+{"id": "uipath-data-fabric-027", "prompt": "Get record by ID 27ad2c17-4adb-4a24-a8a7-48948d04e65a from the Loan entity"}
+{"id": "uipath-data-fabric-028", "prompt": "Export the field names of my Invoice entity so I can build a matching CSV header"}
+{"id": "uipath-data-fabric-029", "prompt": "Create an entity called LoanApplication with these fields: ApplicantName (STRING), Amount (DECIMAL), SubmittedAt (DATETIME), Approved (BOOLEAN), and a FILE field called SupportingDoc"}
+{"id": "uipath-data-fabric-030", "prompt": "Query Customers and only return Name, Email, and TotalSpent columns"}
+{"id": "uipath-data-fabric-031", "prompt": "I get 'Record must include Id' when updating, what's wrong?"}
+{"id": "uipath-data-fabric-032", "prompt": "Discover what entities exist in this tenant before I start writing my flow"}
+{"id": "uipath-data-fabric-033", "prompt": "Replace the file on the Document field of record r-001 in Contract with a newer version"}
+{"id": "uipath-data-fabric-034", "prompt": "How do I delete the entity I just created? It's empty and I want to start over"}
+{"id": "uipath-data-fabric-035", "prompt": "Drop the LegacyNotes field from my Customer entity"}
+{"id": "uipath-data-fabric-036", "prompt": "Run a CEQL-style filter on the Account entity for Active = true AND Region = 'AMER'"}
+{"id": "uipath-data-fabric-037", "prompt": "Pull all records from the Stores entity into a JSON file on disk"}
+{"id": "uipath-data-fabric-038", "prompt": "Create a new field called Priority on Ticket as INTEGER and rename the existing Severity field's display label to 'Severity (1-5)'"}
+{"id": "uipath-data-fabric-039", "prompt": "I want to import a 5000-row CSV but my tenant errors out, can we batch it?"}
+{"id": "uipath-data-fabric-040", "prompt": "Insert a record into the LoanApplication entity with a PDF attachment in one go"}
+{"id": "uipath-data-fabric-041", "prompt": "Reset the Description field to empty for every Invoice with Status='Cancelled'"}
+{"id": "uipath-data-fabric-042", "prompt": "Show records from Order entity created after 2026-01-01 and sort by TotalAmount desc"}
+{"id": "uipath-data-fabric-043", "prompt": "I'm logged in but uip df records list returns 401 - help"}
+{"id": "uipath-data-fabric-044", "prompt": "Build a small dataset in Data Fabric for my Maestro flow demo: a Customers entity with 10 sample customers and an Orders entity with 30 orders linked by CustomerId"}
+{"id": "uipath-data-fabric-045", "prompt": "Update the entity description on Invoice to 'AP invoice tracking - sourced from Coupa'"}
+{"id": "uipath-data-fabric-046", "prompt": "Tell me what fields the Vendor entity exposes and which are required"}
+{"id": "uipath-data-fabric-047", "prompt": "My CSV import fails with header errors - check my CSV columns against the Stores entity schema"}
+{"id": "uipath-data-fabric-048", "prompt": "Insert this loan application record from loan.json"}
+{"id": "uipath-data-fabric-049", "prompt": "Find all SystemUser records where Email endswith '@uipath.com'"}
+{"id": "uipath-data-fabric-050", "prompt": "Wipe all test records from my Sandbox entity (query then bulk delete)"}

@@ -1,0 +1,50 @@
+{"id": "uipath-interact-001", "prompt": "Click the Submit button in the open Notepad window"}
+{"id": "uipath-interact-002", "prompt": "Read the current value of the order total field on the SAP screen that's open"}
+{"id": "uipath-interact-003", "prompt": "Take a screenshot of the dialog that just popped up"}
+{"id": "uipath-interact-004", "prompt": "Walk through the running Salesforce app and tell me what tabs are available in the navbar"}
+{"id": "uipath-interact-005", "prompt": "Fill out the new customer form in the running CRM with name Acme Corp, email contact@acme.com, and click Save"}
+{"id": "uipath-interact-006", "prompt": "Extract the table from the invoice list view in the open browser tab"}
+{"id": "uipath-interact-007", "prompt": "Verify that the success toast actually appears after I click Save in the app"}
+{"id": "uipath-interact-008", "prompt": "Inspect the UI tree of the currently focused window so I can see what selectors are available"}
+{"id": "uipath-interact-009", "prompt": "Drive the running Calculator app to compute 23 * 47 and read the result"}
+{"id": "uipath-interact-010", "prompt": "Type my email into the login field and click Sign In on the open page"}
+{"id": "uipath-interact-011", "prompt": "Capture the values shown in the customer details panel right now"}
+{"id": "uipath-interact-012", "prompt": "Open the File menu in Excel and click Save As"}
+{"id": "uipath-interact-013", "prompt": "Probe the running app and list all the buttons visible on the current screen"}
+{"id": "uipath-interact-014", "prompt": "Click the third row in the orders grid and read what's in the detail pane"}
+{"id": "uipath-interact-015", "prompt": "Navigate to the Settings menu in the open application and toggle dark mode on"}
+{"id": "uipath-interact-016", "prompt": "Verify the UI shows status = Approved after the workflow finished"}
+{"id": "uipath-interact-017", "prompt": "Use uia to click Continue, wait for the next screen, then screenshot it"}
+{"id": "uipath-interact-018", "prompt": "Read the error message text from the dialog that just appeared"}
+{"id": "uipath-interact-019", "prompt": "Drive Outlook to compose a new email to bob@example.com with subject 'Status update'"}
+{"id": "uipath-interact-020", "prompt": "Inspect the running browser tab and find the search input element"}
+{"id": "uipath-interact-021", "prompt": "Pull all rows out of the data grid showing in the running ERP screen"}
+{"id": "uipath-interact-022", "prompt": "Click into the Description textarea and type the order notes I just dictated"}
+{"id": "uipath-interact-023", "prompt": "Verify the checkbox is checked and the Submit button is enabled before I run the rest"}
+{"id": "uipath-interact-024", "prompt": "Walk me through the live app step by step: capture each screen and tell me what controls are there"}
+{"id": "uipath-interact-025", "prompt": "Click the Refresh icon in the ServiceNow tab that's open and read the new ticket count"}
+{"id": "uipath-interact-026", "prompt": "Screenshot the entire desktop and then zoom into the warning banner"}
+{"id": "uipath-interact-027", "prompt": "Fill out the multi-step wizard with these values and screenshot each page after I confirm"}
+{"id": "uipath-interact-028", "prompt": "Read whatever's in the clipboard preview field and tell me"}
+{"id": "uipath-interact-029", "prompt": "Use uip rpa uia to discover the running applications and list them"}
+{"id": "uipath-interact-030", "prompt": "Open the running SAP Logon, double-click the Production system, and log in with my credentials from the password manager"}
+{"id": "uipath-interact-031", "prompt": "Click through the cookie banner and the survey popup so the page is usable"}
+{"id": "uipath-interact-032", "prompt": "Inspect the UI of the running app and tell me which fields are required"}
+{"id": "uipath-interact-033", "prompt": "Drive the live app to filter the orders table by status=Pending and tell me how many rows are returned"}
+{"id": "uipath-interact-034", "prompt": "Read the value of the 'Total Due' label in the open invoice"}
+{"id": "uipath-interact-035", "prompt": "Click the hamburger menu, then Reports, then Monthly Summary, and screenshot the chart"}
+{"id": "uipath-interact-036", "prompt": "Verify the modal closed and the underlying form is back to enabled"}
+{"id": "uipath-interact-037", "prompt": "Check the running browser to confirm the file actually uploaded — I see a spinner but want to be sure"}
+{"id": "uipath-interact-038", "prompt": "Type 'Hello world' in the chat input and send it"}
+{"id": "uipath-interact-039", "prompt": "Capture the table of test results from the running test runner UI"}
+{"id": "uipath-interact-040", "prompt": "Click into each tab on the form and screenshot it so we have a record"}
+{"id": "uipath-interact-041", "prompt": "Read the current selection in the dropdown for Country in the open form"}
+{"id": "uipath-interact-042", "prompt": "Drive the running app to add three line items: pencil x10, paper x5, stapler x2 — then screenshot the cart"}
+{"id": "uipath-interact-043", "prompt": "Inspect the calendar widget in the live app and pick May 15 2026"}
+{"id": "uipath-interact-044", "prompt": "Click the export button and verify a CSV download started"}
+{"id": "uipath-interact-045", "prompt": "Read every visible label and value on the customer profile page open in Chrome"}
+{"id": "uipath-interact-046", "prompt": "Walk through the wizard and confirm each step shows a green checkmark before moving on"}
+{"id": "uipath-interact-047", "prompt": "Take a screenshot of the running app right now so I can attach it to a bug report"}
+{"id": "uipath-interact-048", "prompt": "Drive the open browser to navigate to the Reports page, expand the date filter, and set last 30 days"}
+{"id": "uipath-interact-049", "prompt": "Probe the UI tree under the Orders grid and show me the cell references for the Customer column"}
+{"id": "uipath-interact-050", "prompt": "Click OK on the confirmation dialog, wait for the next screen to load, and tell me what's there"}
