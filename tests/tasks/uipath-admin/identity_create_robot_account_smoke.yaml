@@ -20,7 +20,7 @@ initial_prompt: |
   at minimum:
     {
       "robot_name": "invoice-bot",
-      "create_command": "<the exact uip admin identity robot-accounts create command>",
+      "create_command": "<the exact uip admin robot-accounts create command>",
       "listed_first": true or false,
       "commands_attempted": ["<list of all uip commands you attempted>"]
     }
@@ -30,7 +30,7 @@ initial_prompt: |
     in this environment. Commands will fail with auth errors — that
     is expected. Run each command once, record the result in
     report.json, and move on. Do NOT retry or attempt to login.
-  - Use --output json on every uip admin identity command.
+  - Use --output json on every uip admin command.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -45,7 +45,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed robot accounts first (discover before create)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+list'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -53,7 +53,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran robot-accounts create"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+create'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -61,7 +61,7 @@ success_criteria:
   - type: command_executed
     description: "Agent included --display-name flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+robot-accounts\s+create\s+.*--display-name'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+create\s+.*--display-name'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

@@ -1,6 +1,6 @@
 # User Management
 
-Workflows for managing Identity Server users via `uip admin identity users`.
+Workflows for managing Identity Server users via `uip admin users`.
 
 ## Workflow: Discover Existing Users
 
@@ -8,13 +8,13 @@ Before creating or modifying users, list what exists.
 
 ```bash
 # List all users in the organization
-uip admin identity users list --output json
+uip admin users list --output json
 
 # Search for a specific user
-uip admin identity users list --search "john" --output json
+uip admin users list --search "john" --output json
 
 # Get full details for a specific user
-uip admin identity users get <USER_ID> --output json
+uip admin users get <USER_ID> --output json
 ```
 
 ## Workflow: Invite Users by Email (Preferred)
@@ -22,7 +22,7 @@ uip admin identity users get <USER_ID> --output json
 > **`users invite` is the preferred method for adding users.** It sends an invitation email, letting the user set up their own credentials and accept the org invitation. Use `users create` only when direct account provisioning is required (e.g., service accounts, migration scripts). If the user asks to "add" or "create" a user, default to `invite` and confirm before using `create` instead.
 
 ```bash
-uip admin identity users invite \
+uip admin users invite \
   --email "user@example.com" \
   --name "John" \
   --surname "Doe" \
@@ -39,12 +39,12 @@ uip admin identity users invite \
 
 1. List existing users to avoid duplicates:
    ```bash
-   uip admin identity users list --search "<USERNAME>" --output json
+   uip admin users list --search "<USERNAME>" --output json
    ```
 
 2. If the user does not exist, create them:
    ```bash
-   uip admin identity users create "<USERNAME>" \
+   uip admin users create "<USERNAME>" \
      --email "<EMAIL>" \
      --name "<FIRST_NAME>" \
      --surname "<LAST_NAME>" \
@@ -53,19 +53,19 @@ uip admin identity users invite \
 
 3. Verify creation:
    ```bash
-   uip admin identity users list --search "<USERNAME>" --output json
+   uip admin users list --search "<USERNAME>" --output json
    ```
 
 ## Workflow: Update a User
 
 1. Get current user details:
    ```bash
-   uip admin identity users get <USER_ID> --output json
+   uip admin users get <USER_ID> --output json
    ```
 
 2. Update the desired fields (at least one is required):
    ```bash
-   uip admin identity users update <USER_ID> \
+   uip admin users update <USER_ID> \
      --email "<NEW_EMAIL>" \
      --name "<NEW_NAME>" \
      --surname "<NEW_SURNAME>" \
@@ -76,14 +76,14 @@ uip admin identity users invite \
 
 1. Confirm the user ID:
    ```bash
-   uip admin identity users get <USER_ID> --output json
+   uip admin users get <USER_ID> --output json
    ```
 
 2. Confirm with the user before proceeding.
 
 3. Delete:
    ```bash
-   uip admin identity users delete <USER_ID> --output json
+   uip admin users delete <USER_ID> --output json
    ```
 
 ## Pagination
@@ -92,10 +92,10 @@ For large user lists, use `--limit` and `--offset`:
 
 ```bash
 # First page (20 users)
-uip admin identity users list --limit 20 --offset 0 --output json
+uip admin users list --limit 20 --offset 0 --output json
 
 # Second page
-uip admin identity users list --limit 20 --offset 20 --output json
+uip admin users list --limit 20 --offset 20 --output json
 ```
 
 ## Sorting
@@ -103,7 +103,7 @@ uip admin identity users list --limit 20 --offset 20 --output json
 Sort results by field and direction:
 
 ```bash
-uip admin identity users list \
+uip admin users list \
   --order-by "UserName" \
   --order-direction "asc" \
   --output json

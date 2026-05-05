@@ -26,11 +26,11 @@ Create the robot identity in Identity Server.
 
 ```bash
 # Check for existing robot accounts with the same name
-uip admin identity robot-accounts list \
+uip admin robot-accounts list \
   --search "<ROBOT_NAME>" --output json
 
 # Create the robot account
-uip admin identity robot-accounts create "<ROBOT_NAME>" \
+uip admin robot-accounts create "<ROBOT_NAME>" \
   --display-name "<ROBOT_DISPLAY_NAME>" \
   --output json
 ```
@@ -43,10 +43,10 @@ Add the robot account to appropriate groups for role assignment.
 
 ```bash
 # List available groups to find the right role group
-uip admin identity groups list --output json
+uip admin groups list --output json
 
 # Add the robot account to the desired group(s)
-uip admin identity groups add-members <GROUP_ID> \
+uip admin groups add-members <GROUP_ID> \
   --user-ids "<ROBOT_ACCOUNT_ID>" \
   --output json
 ```
@@ -97,7 +97,7 @@ On the target machine, install UiPath Robot and connect it using Modern Auth. Ro
 After completing all steps, verify the robot account:
 
 ```bash
-uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
+uip admin robot-accounts get <ROBOT_ACCOUNT_ID> \
   --output json
 
 uip or folders list --output json
@@ -112,7 +112,7 @@ Onboard a human user to the UiPath Automation Cloud platform.
 ### Step 1 — Invite the User
 
 ```bash
-uip admin identity users invite \
+uip admin users invite \
   --email "<USER_EMAIL>" \
   --name "<FIRST_NAME>" \
   --surname "<LAST_NAME>" \
@@ -127,14 +127,14 @@ After the user accepts the invitation, add them to role groups.
 
 ```bash
 # List the user to get their ID
-uip admin identity users list \
+uip admin users list \
   --search "<USER_EMAIL>" --output json
 
 # List available groups
-uip admin identity groups list --output json
+uip admin groups list --output json
 
 # Add user to role group(s)
-uip admin identity groups add-members <GROUP_ID> \
+uip admin groups add-members <GROUP_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
@@ -175,9 +175,9 @@ Invite multiple users and assign them to the same group.
 Invite one at a time — `--name`/`--surname` apply to the entire request:
 
 ```bash
-uip admin identity users invite --email "user1@example.com" --name "Alice" --surname "Smith" --output json
-uip admin identity users invite --email "user2@example.com" --name "Bob" --surname "Jones" --output json
-uip admin identity users invite --email "user3@example.com" --name "Carol" --surname "Lee" --output json
+uip admin users invite --email "user1@example.com" --name "Alice" --surname "Smith" --output json
+uip admin users invite --email "user2@example.com" --name "Bob" --surname "Jones" --output json
+uip admin users invite --email "user3@example.com" --name "Carol" --surname "Lee" --output json
 ```
 
 ### Step 2 — Wait for Acceptance
@@ -185,7 +185,7 @@ uip admin identity users invite --email "user3@example.com" --name "Carol" --sur
 Users must accept their invitations before they appear in the user list. Check periodically:
 
 ```bash
-uip admin identity users list \
+uip admin users list \
   --search "example.com" --output json
 ```
 
@@ -194,7 +194,7 @@ uip admin identity users list \
 Once users appear in the list, collect their IDs and add them to the target group:
 
 ```bash
-uip admin identity groups add-members <GROUP_ID> \
+uip admin groups add-members <GROUP_ID> \
   --user-ids "<USER_ID_1>,<USER_ID_2>,<USER_ID_3>" \
   --output json
 ```

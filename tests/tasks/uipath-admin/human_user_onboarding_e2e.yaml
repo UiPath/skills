@@ -45,7 +45,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invited user by email"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+users\s+invite\s+.*--email'
+    command_pattern: 'uip\s+admin\s+users\s+invite\s+.*--email'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -53,7 +53,7 @@ success_criteria:
   - type: command_executed
     description: "Agent included the correct email address"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+users\s+invite\s+.*john\.doe@example\.com'
+    command_pattern: 'uip\s+admin\s+users\s+invite\s+.*john\.doe@example\.com'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -62,7 +62,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed groups"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+groups\s+list'
+    command_pattern: 'uip\s+admin\s+groups\s+list'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -71,7 +71,7 @@ success_criteria:
   - type: command_executed
     description: "Agent searched for user to resolve their ID"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+users\s+list'
+    command_pattern: 'uip\s+admin\s+users\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -79,7 +79,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added user to group with --user-ids"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+groups\s+add-members\s+.*--user-ids'
+    command_pattern: 'uip\s+admin\s+groups\s+add-members\s+.*--user-ids'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -88,7 +88,7 @@ success_criteria:
   - type: command_executed
     description: "Agent consistently used --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0

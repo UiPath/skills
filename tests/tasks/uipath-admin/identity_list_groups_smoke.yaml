@@ -18,7 +18,7 @@ initial_prompt: |
   Save a summary to report.json in the current working directory with
   at minimum:
     {
-      "command_used": "<the exact uip admin identity groups command you ran>",
+      "command_used": "<the exact uip admin groups command you ran>",
       "commands_attempted": ["<list of all uip commands you attempted>"]
     }
 
@@ -27,7 +27,7 @@ initial_prompt: |
     in this environment. Commands will fail with auth errors — that
     is expected. Run each command once, record the result in
     report.json, and move on. Do NOT retry or attempt to login.
-  - Use --output json on every uip admin identity command.
+  - Use --output json on every uip admin command.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -42,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran groups list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+groups\s+list'
+    command_pattern: 'uip\s+admin\s+groups\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -50,7 +50,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+identity\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -65,6 +65,6 @@ success_criteria:
     description: "report.json references correct CLI namespace"
     path: "report.json"
     includes:
-      - "uip admin identity"
+      - "uip admin"
     weight: 1.5
     pass_threshold: 1.0

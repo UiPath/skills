@@ -1,6 +1,6 @@
 # External App Management
 
-Workflows for managing OAuth2 external clients and their secrets via `uip admin identity external-apps`.
+Workflows for managing OAuth2 external clients and their secrets via `uip admin external-apps`.
 
 External apps provide Client ID + Secret credentials for API integrations, CI/CD pipelines, and external systems to authenticate with the UiPath platform.
 
@@ -30,10 +30,10 @@ External apps provide Client ID + Secret credentials for API integrations, CI/CD
 
 ```bash
 # List all external apps
-uip admin identity external-apps list --output json
+uip admin external-apps list --output json
 
 # Get details including scopes and resources
-uip admin identity external-apps get <CLIENT_ID> \
+uip admin external-apps get <CLIENT_ID> \
   --output json
 ```
 
@@ -41,12 +41,12 @@ uip admin identity external-apps get <CLIENT_ID> \
 
 1. Check for existing apps:
    ```bash
-   uip admin identity external-apps list --output json
+   uip admin external-apps list --output json
    ```
 
 2. Create with required scopes:
    ```bash
-   uip admin identity external-apps create "<APP_NAME>" \
+   uip admin external-apps create "<APP_NAME>" \
      --scope "OR.Folders,OR.Assets,OR.Jobs" \
      --output json
    ```
@@ -62,7 +62,7 @@ uip admin identity external-apps get <CLIENT_ID> \
 Use this when the original secret is lost or needs rotation.
 
 ```bash
-uip admin identity external-apps generate-secret <CLIENT_ID> \
+uip admin external-apps generate-secret <CLIENT_ID> \
   --description "Rotated secret for production" \
   --expiration "2027-06-01" \
   --output json
@@ -76,13 +76,13 @@ uip admin identity external-apps generate-secret <CLIENT_ID> \
 
 1. Get the app details to find secret IDs:
    ```bash
-   uip admin identity external-apps get <CLIENT_ID> \
+   uip admin external-apps get <CLIENT_ID> \
      --output json
    ```
 
 2. Delete the specific secret (only secret ID needed — no client ID):
    ```bash
-   uip admin identity external-apps delete-secret <SECRET_ID> --output json
+   uip admin external-apps delete-secret <SECRET_ID> --output json
    ```
 
 ## Workflow: Update an External App
@@ -90,7 +90,7 @@ uip admin identity external-apps generate-secret <CLIENT_ID> \
 Update name, scopes, or redirect URI. At least one field is required.
 
 ```bash
-uip admin identity external-apps update <CLIENT_ID> \
+uip admin external-apps update <CLIENT_ID> \
   --name "<NEW_NAME>" \
   --scope "OR.Folders,OR.Jobs,OR.Queues" \
   --output json
@@ -104,7 +104,7 @@ uip admin identity external-apps update <CLIENT_ID> \
 
 2. Delete:
    ```bash
-   uip admin identity external-apps delete <CLIENT_ID> \
+   uip admin external-apps delete <CLIENT_ID> \
      --output json
    ```
 

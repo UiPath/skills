@@ -1,6 +1,6 @@
 ---
 name: uipath-admin
-description: "UiPath Admin — Identity Server management via uip admin identity. Users, groups, robot accounts, external apps (OAuth2), credential generation (Client ID/Secret). Onboarding workflows for human users and unattended robots. For Orchestrator folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
+description: "UiPath Admin — Identity Server management via uip admin. Users, groups, robot accounts, external apps (OAuth2), credential generation (Client ID/Secret). Onboarding workflows for human users and unattended robots. For Orchestrator folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 > **Preview** — Under active development. Command coverage will expand.
 
-Identity Server management via `uip admin identity`. Users, groups, robot accounts, external OAuth2 apps.
+Identity Server management via `uip admin`. Users, groups, robot accounts, external OAuth2 apps.
 
 ## When to Use This Skill
 
@@ -57,7 +57,7 @@ If not logged in: `uip login`. The CLI reads org ID from the active session auto
 ### Step 1 — Invite a user
 
 ```bash
-uip admin identity users invite \
+uip admin users invite \
   --email "<USER_EMAIL>" \
   --name "<FIRST_NAME>" \
   --surname "<LAST_NAME>" \
@@ -67,15 +67,15 @@ uip admin identity users invite \
 ### Step 2 — Find the user once they accept
 
 ```bash
-uip admin identity users list \
+uip admin users list \
   --search "<USER_EMAIL>" --output json
 ```
 
 ### Step 3 — Assign to a group
 
 ```bash
-uip admin identity groups list --output json
-uip admin identity groups add-members <GROUP_ID> \
+uip admin groups list --output json
+uip admin groups add-members <GROUP_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
@@ -99,9 +99,9 @@ These are separate concepts — do not conflate them.
 
 | Concept | Purpose | Managed By |
 |---------|---------|------------|
-| **Robot account** | Identity — who the robot is | Identity Server (`uip admin identity`) |
+| **Robot account** | Identity — who the robot is | Identity Server (`uip admin`) |
 | **Robot credentials** | Per-robot Client ID + Secret for machine auth | Orchestrator (machine connection) |
-| **External app** | OAuth2 client for API integrations, CI/CD | Identity Server (`uip admin identity`) |
+| **External app** | OAuth2 client for API integrations, CI/CD | Identity Server (`uip admin`) |
 
 Robot credentials are provisioned automatically by Orchestrator when connecting a robot to a machine — not by creating external apps.
 
@@ -130,7 +130,7 @@ After any mutation (create, update, delete, invite, add-members, remove-members,
 
 ## References
 
-- **[identity-commands.md](references/identity-commands.md)** — Complete CLI reference for all `uip admin identity` commands with flags, arguments, and output codes
+- **[identity-commands.md](references/identity-commands.md)** — Complete CLI reference for all `uip admin` commands with flags, arguments, and output codes
 - **[user-management.md](references/user-management.md)** — User lifecycle workflows: discover, create, invite, update, delete, pagination, sorting
 - **[group-management.md](references/group-management.md)** — Group CRUD, membership management (add/remove members), built-in vs custom groups
 - **[robot-account-management.md](references/robot-account-management.md)** — Robot account lifecycle, relationship to external apps

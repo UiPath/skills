@@ -1,6 +1,6 @@
 # Identity CLI Command Reference
 
-Complete reference for all `uip admin identity` commands. Every command supports `--output json` and `--login-validity <minutes>`. Organization ID is resolved automatically from the active login session.
+Complete reference for all `uip admin` commands. Every command supports `--output json` and `--login-validity <minutes>`. Organization ID is resolved automatically from the active login session.
 
 ## Prerequisites
 
@@ -11,14 +11,14 @@ uip login status --output json
 
 ---
 
-## Users — `uip admin identity users`
+## Users — `uip admin users`
 
 ### `users list`
 
 List users in a partition.
 
 ```bash
-uip admin identity users list --output json
+uip admin users list --output json
 ```
 
 | Flag | Required | Description |
@@ -36,7 +36,7 @@ uip admin identity users list --output json
 Get user details by ID.
 
 ```bash
-uip admin identity users get <USER_ID> --output json
+uip admin users get <USER_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
@@ -50,7 +50,7 @@ uip admin identity users get <USER_ID> --output json
 Create a new user.
 
 ```bash
-uip admin identity users create <USERNAME> \
+uip admin users create <USERNAME> \
   --email <EMAIL> \
   --output json
 ```
@@ -69,7 +69,7 @@ uip admin identity users create <USERNAME> \
 Update an existing user. At least one field flag is required.
 
 ```bash
-uip admin identity users update <USER_ID> \
+uip admin users update <USER_ID> \
   --email <NEW_EMAIL> \
   --output json
 ```
@@ -88,7 +88,7 @@ uip admin identity users update <USER_ID> \
 Delete a user by ID.
 
 ```bash
-uip admin identity users delete <USER_ID> --output json
+uip admin users delete <USER_ID> --output json
 ```
 
 **Output code:** `UserDeleted`
@@ -98,7 +98,7 @@ uip admin identity users delete <USER_ID> --output json
 Invite users by email. Sends an invitation to join the organization.
 
 ```bash
-uip admin identity users invite \
+uip admin users invite \
   --email "user@example.com" \
   --name "John" \
   --surname "Doe" \
@@ -117,7 +117,7 @@ Always include `--name` and `--surname` when the user's full name is known. Invi
 
 ---
 
-## Groups — `uip admin identity groups`
+## Groups — `uip admin groups`
 
 > **Group ID is a positional argument, not a flag.** Write `groups get <GROUP_ID>`, NOT `groups get --group-id <GROUP_ID>`. Same for `add-members`, `remove-members`, `get-members`, `update`, `delete`.
 
@@ -126,7 +126,7 @@ Always include `--name` and `--surname` when the user's full name is known. Invi
 List all groups in a partition.
 
 ```bash
-uip admin identity groups list --output json
+uip admin groups list --output json
 ```
 
 **Output code:** `GroupList`
@@ -136,7 +136,7 @@ uip admin identity groups list --output json
 Get group details by ID.
 
 ```bash
-uip admin identity groups get <GROUP_ID> --output json
+uip admin groups get <GROUP_ID> --output json
 ```
 
 **Output code:** `GroupDetails`
@@ -146,7 +146,7 @@ uip admin identity groups get <GROUP_ID> --output json
 Create a new group. Group names must be unique within a partition.
 
 ```bash
-uip admin identity groups create "<GROUP_NAME>" --output json
+uip admin groups create "<GROUP_NAME>" --output json
 ```
 
 | Argument/Flag | Required | Description |
@@ -160,7 +160,7 @@ uip admin identity groups create "<GROUP_NAME>" --output json
 Rename a group.
 
 ```bash
-uip admin identity groups update <GROUP_ID> \
+uip admin groups update <GROUP_ID> \
   --name "<NEW_NAME>" \
   --output json
 ```
@@ -177,7 +177,7 @@ uip admin identity groups update <GROUP_ID> \
 Delete a group. Only custom groups can be deleted — built-in groups cannot.
 
 ```bash
-uip admin identity groups delete <GROUP_ID> --output json
+uip admin groups delete <GROUP_ID> --output json
 ```
 
 **Output code:** `GroupDeleted`
@@ -187,7 +187,7 @@ uip admin identity groups delete <GROUP_ID> --output json
 List members of a group.
 
 ```bash
-uip admin identity groups get-members <GROUP_ID> --output json
+uip admin groups get-members <GROUP_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
@@ -203,7 +203,7 @@ uip admin identity groups get-members <GROUP_ID> --output json
 Add users to a group. User IDs are required — resolve them via `users list` first.
 
 ```bash
-uip admin identity groups add-members <GROUP_ID> \
+uip admin groups add-members <GROUP_ID> \
   --user-ids "<USER_ID_1>,<USER_ID_2>" \
   --output json
 ```
@@ -220,7 +220,7 @@ uip admin identity groups add-members <GROUP_ID> \
 Remove users from a group.
 
 ```bash
-uip admin identity groups remove-members <GROUP_ID> \
+uip admin groups remove-members <GROUP_ID> \
   --user-ids "<USER_ID>" \
   --output json
 ```
@@ -229,7 +229,7 @@ uip admin identity groups remove-members <GROUP_ID> \
 
 ---
 
-## Robot Accounts — `uip admin identity robot-accounts`
+## Robot Accounts — `uip admin robot-accounts`
 
 > **IDs and names are positional arguments, not flags.** Write `robot-accounts get <ID>`, NOT `robot-accounts get --id <ID>`. Same for `create <NAME>`, `update <ID>`, `delete <ID>`.
 
@@ -238,7 +238,7 @@ uip admin identity groups remove-members <GROUP_ID> \
 List robot accounts in a partition.
 
 ```bash
-uip admin identity robot-accounts list --output json
+uip admin robot-accounts list --output json
 ```
 
 | Flag | Required | Description |
@@ -256,7 +256,7 @@ uip admin identity robot-accounts list --output json
 Get robot account details.
 
 ```bash
-uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> --output json
+uip admin robot-accounts get <ROBOT_ACCOUNT_ID> --output json
 ```
 
 **Output code:** `RobotAccountDetails`
@@ -266,7 +266,7 @@ uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> --output json
 Create a new robot account. Names must be unique within a partition.
 
 ```bash
-uip admin identity robot-accounts create "<NAME>" \
+uip admin robot-accounts create "<NAME>" \
   --display-name "<DISPLAY_NAME>" \
   --output json
 ```
@@ -283,7 +283,7 @@ uip admin identity robot-accounts create "<NAME>" \
 Update a robot account's display name.
 
 ```bash
-uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
+uip admin robot-accounts update <ROBOT_ACCOUNT_ID> \
   --display-name "<NEW_DISPLAY_NAME>" \
   --output json
 ```
@@ -295,14 +295,14 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 Delete a robot account.
 
 ```bash
-uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> --output json
+uip admin robot-accounts delete <ROBOT_ACCOUNT_ID> --output json
 ```
 
 **Output code:** `RobotAccountDeleted`
 
 ---
 
-## External Apps — `uip admin identity external-apps`
+## External Apps — `uip admin external-apps`
 
 > **IDs and names are positional arguments, not flags.** Write `external-apps get <CLIENT_ID>`, NOT `external-apps get --client-id <CLIENT_ID>`. Same for `create <NAME>`, `update <ID>`, `delete <ID>`, `generate-secret <ID>`, `delete-secret <ID>`.
 
@@ -311,7 +311,7 @@ uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> --output json
 List external OAuth2 apps in a partition.
 
 ```bash
-uip admin identity external-apps list --output json
+uip admin external-apps list --output json
 ```
 
 **Output code:** `ExternalClientList`
@@ -321,7 +321,7 @@ uip admin identity external-apps list --output json
 Get external app details including resources and scopes.
 
 ```bash
-uip admin identity external-apps get <CLIENT_ID> --output json
+uip admin external-apps get <CLIENT_ID> --output json
 ```
 
 **Output code:** `ExternalClientDetails`
@@ -331,7 +331,7 @@ uip admin identity external-apps get <CLIENT_ID> --output json
 Create a confidential external app. A client secret is auto-generated and returned once.
 
 ```bash
-uip admin identity external-apps create "<APP_NAME>" \
+uip admin external-apps create "<APP_NAME>" \
   --scope "OR.Folders,OR.Assets,OR.Queues" \
   --output json
 ```
@@ -351,7 +351,7 @@ Common scopes: `OR.Folders`, `OR.Assets`, `OR.Queues`, `OR.Jobs`, `OR.Machines`,
 Update an external app. At least one field flag is required.
 
 ```bash
-uip admin identity external-apps update <CLIENT_ID> \
+uip admin external-apps update <CLIENT_ID> \
   --name "<NEW_NAME>" \
   --scope "OR.Folders,OR.Jobs" \
   --output json
@@ -371,7 +371,7 @@ uip admin identity external-apps update <CLIENT_ID> \
 Delete an external app.
 
 ```bash
-uip admin identity external-apps delete <CLIENT_ID> --output json
+uip admin external-apps delete <CLIENT_ID> --output json
 ```
 
 **Output code:** `ExternalClientDeleted`
@@ -381,7 +381,7 @@ uip admin identity external-apps delete <CLIENT_ID> --output json
 Generate a new secret for an external app. The secret value is returned only once.
 
 ```bash
-uip admin identity external-apps generate-secret <CLIENT_ID> --output json
+uip admin external-apps generate-secret <CLIENT_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |
@@ -397,7 +397,7 @@ uip admin identity external-apps generate-secret <CLIENT_ID> --output json
 Delete a specific secret. Takes only the secret ID — no client ID needed.
 
 ```bash
-uip admin identity external-apps delete-secret <SECRET_ID> --output json
+uip admin external-apps delete-secret <SECRET_ID> --output json
 ```
 
 | Argument/Flag | Required | Description |

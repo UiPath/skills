@@ -1,6 +1,6 @@
 # Group Management
 
-Workflows for managing Identity Server groups and group membership via `uip admin identity groups`.
+Workflows for managing Identity Server groups and group membership via `uip admin groups`.
 
 ## Group Types
 
@@ -13,31 +13,31 @@ Workflows for managing Identity Server groups and group membership via `uip admi
 
 ```bash
 # List all groups
-uip admin identity groups list --output json
+uip admin groups list --output json
 
 # Get group details
-uip admin identity groups get <GROUP_ID> --output json
+uip admin groups get <GROUP_ID> --output json
 
 # List group members
-uip admin identity groups get-members <GROUP_ID> --output json
+uip admin groups get-members <GROUP_ID> --output json
 ```
 
 ## Workflow: Create a Group
 
 1. List existing groups to avoid duplicates:
    ```bash
-   uip admin identity groups list --output json
+   uip admin groups list --output json
    ```
 
 2. Create the group:
    ```bash
-   uip admin identity groups create "<GROUP_NAME>" \
+   uip admin groups create "<GROUP_NAME>" \
      --output json
    ```
 
 3. Verify creation:
    ```bash
-   uip admin identity groups list --output json
+   uip admin groups list --output json
    ```
 
 ## Workflow: Manage Group Membership
@@ -48,31 +48,31 @@ Group membership commands use **user IDs** (UUIDs), not usernames. Always resolv
 
 1. Resolve user IDs:
    ```bash
-   uip admin identity users list --search "<USER_NAME>" --output json
+   uip admin users list --search "<USER_NAME>" --output json
    ```
 
 2. Add users to the group:
    ```bash
-   uip admin identity groups add-members <GROUP_ID> \
+   uip admin groups add-members <GROUP_ID> \
      --user-ids "<USER_ID_1>,<USER_ID_2>" \
      --output json
    ```
 
 3. Verify membership:
    ```bash
-   uip admin identity groups get-members <GROUP_ID> --output json
+   uip admin groups get-members <GROUP_ID> --output json
    ```
 
 ### Remove Members
 
 1. List current members to get IDs:
    ```bash
-   uip admin identity groups get-members <GROUP_ID> --output json
+   uip admin groups get-members <GROUP_ID> --output json
    ```
 
 2. Remove specific users:
    ```bash
-   uip admin identity groups remove-members <GROUP_ID> \
+   uip admin groups remove-members <GROUP_ID> \
      --user-ids "<USER_ID>" \
      --output json
    ```
@@ -80,7 +80,7 @@ Group membership commands use **user IDs** (UUIDs), not usernames. Always resolv
 ## Workflow: Rename a Group
 
 ```bash
-uip admin identity groups update <GROUP_ID> \
+uip admin groups update <GROUP_ID> \
   --name "<NEW_NAME>" \
   --output json
 ```
@@ -89,7 +89,7 @@ uip admin identity groups update <GROUP_ID> \
 
 1. Verify it is a custom group (not built-in):
    ```bash
-   uip admin identity groups get <GROUP_ID> --output json
+   uip admin groups get <GROUP_ID> --output json
    ```
    Check that `type` is `Custom`. Built-in groups cannot be deleted.
 
@@ -97,18 +97,18 @@ uip admin identity groups update <GROUP_ID> \
 
 3. Delete:
    ```bash
-   uip admin identity groups delete <GROUP_ID> --output json
+   uip admin groups delete <GROUP_ID> --output json
    ```
 
 ## Pagination for Members
 
 ```bash
 # First page
-uip admin identity groups get-members <GROUP_ID> \
+uip admin groups get-members <GROUP_ID> \
   --limit 50 --offset 0 --output json
 
 # Next page
-uip admin identity groups get-members <GROUP_ID> \
+uip admin groups get-members <GROUP_ID> \
   --limit 50 --offset 50 --output json
 ```
 

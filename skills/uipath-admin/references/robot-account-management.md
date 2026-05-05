@@ -1,6 +1,6 @@
 # Robot Account Management
 
-Workflows for managing Identity Server robot accounts via `uip admin identity robot-accounts`.
+Workflows for managing Identity Server robot accounts via `uip admin robot-accounts`.
 
 Robot accounts represent unattended automation identities that run processes without human interaction.
 
@@ -10,9 +10,9 @@ Robot accounts use a dedicated credential mechanism managed by Orchestrator — 
 
 | Concept | Purpose | Managed By |
 |---------|---------|------------|
-| **Robot account** | Identity — who the robot is | Identity Server (`uip admin identity`) |
+| **Robot account** | Identity — who the robot is | Identity Server (`uip admin`) |
 | **Robot credentials** | Per-robot Client ID + Secret for machine auth | Orchestrator (machine connection) |
-| **External app** | OAuth2 client for API integrations, CI/CD pipelines | Identity Server (`uip admin identity`) |
+| **External app** | OAuth2 client for API integrations, CI/CD pipelines | Identity Server (`uip admin`) |
 
 > **Do not create external apps as robot credentials.** External apps are for third-party integrations and CI/CD — not for connecting robots to machines. Robot credentials are provisioned automatically when configuring a machine connection in Orchestrator.
 
@@ -20,13 +20,13 @@ Robot accounts use a dedicated credential mechanism managed by Orchestrator — 
 
 ```bash
 # List all robot accounts
-uip admin identity robot-accounts list --output json
+uip admin robot-accounts list --output json
 
 # Search for a specific robot account
-uip admin identity robot-accounts list --search "bot-name" --output json
+uip admin robot-accounts list --search "bot-name" --output json
 
 # Get full details
-uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
+uip admin robot-accounts get <ROBOT_ACCOUNT_ID> \
   --output json
 ```
 
@@ -34,20 +34,20 @@ uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
 
 1. Check for existing robot accounts to avoid name collisions:
    ```bash
-   uip admin identity robot-accounts list \
+   uip admin robot-accounts list \
      --search "<NAME>" --output json
    ```
 
 2. Create the robot account:
    ```bash
-   uip admin identity robot-accounts create "<NAME>" \
+   uip admin robot-accounts create "<NAME>" \
      --display-name "<DISPLAY_NAME>" \
      --output json
    ```
 
 3. Verify creation:
    ```bash
-   uip admin identity robot-accounts list \
+   uip admin robot-accounts list \
      --search "<NAME>" --output json
    ```
 
@@ -56,7 +56,7 @@ uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
 ## Workflow: Update a Robot Account
 
 ```bash
-uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
+uip admin robot-accounts update <ROBOT_ACCOUNT_ID> \
   --display-name "<NEW_DISPLAY_NAME>" \
   --output json
 ```
@@ -65,7 +65,7 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 
 1. Confirm the robot account exists:
    ```bash
-   uip admin identity robot-accounts get <ROBOT_ACCOUNT_ID> \
+   uip admin robot-accounts get <ROBOT_ACCOUNT_ID> \
      --output json
    ```
 
@@ -73,7 +73,7 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 
 3. Delete:
    ```bash
-   uip admin identity robot-accounts delete <ROBOT_ACCOUNT_ID> \
+   uip admin robot-accounts delete <ROBOT_ACCOUNT_ID> \
      --output json
    ```
 
@@ -81,11 +81,11 @@ uip admin identity robot-accounts update <ROBOT_ACCOUNT_ID> \
 
 ```bash
 # Paginated list
-uip admin identity robot-accounts list \
+uip admin robot-accounts list \
   --limit 10 --offset 0 --output json
 
 # Sorted by name
-uip admin identity robot-accounts list \
+uip admin robot-accounts list \
   --order-by "Name" --order-direction "asc" --output json
 ```
 
