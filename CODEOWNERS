@@ -81,3 +81,7 @@
 
 # Access Policy Governance skill (CLI-based ToolUsePolicy management)
 /skills/uipath-gov-access-policy/ @UiPath/AuthZ @sriramva-uipath @bansal-anushree @jianjunwang2
+
+# IXP skill
+/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath
+/tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath

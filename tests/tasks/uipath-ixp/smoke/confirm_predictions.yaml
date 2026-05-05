@@ -1,0 +1,122 @@
+task_id: skill-ixp-confirm-predictions-smoke
+description: >
+  Skill-guided evaluation: agent reviews IXP model predictions against an
+  inline document excerpt and records its verdict via `uip ixp labellings
+  confirm`. Exercises all three branches of Critical Rule #8:
+  cleanly-correct fields are confirmed via `--fields`; OCR-mangled fields
+  (right region, wrong text) are corrected via `--corrections`; and
+  wrong-field predictions (model picked the wrong value entirely) are
+  left unannotated. Also tests Rule #11 (agent reviews predictions,
+  never extracts values manually).
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip ixp` commands that hit the service will fail with an auth error.
+  That is acceptable — what matters is that the agent invokes the correct
+  command shape with the correct flags.
+tags: [uipath-ixp, smoke, lifecycle:execute]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Review the IXP model's predictions for document `doc-abc-123` on
+  project `my_invoices-f1afa9ef-ixp` and record your verdict in the
+  labelling system.
+
+  Document content (verbatim from the invoice header):
+
+      Invoice Number: INV-2025-0042
+      Invoice Date:   2025-01-15
+      Vendor:         Beta Industries Inc.
+      Total:          $12,000.00
+
+  IXP model predictions:
+  - Invoice Number (field id `f-001`): `INV-2025-0042`
+  - Invoice Date (field id `f-002`): `2025-01-15`
+  - Total Amount (field id `f-003`): `$1,200.00`
+    (the model located the Total line but the OCR mis-read the digits)
+  - Vendor Name (field id `f-004`): `Acme Corp`
+
+  Compare each prediction to the document and record your verdict.
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "project_name": "my_invoices-f1afa9ef-ixp",
+      "document_id": "doc-abc-123",
+      "confirm_command": "<exact uip ixp labellings confirm command you ran>",
+      "confirmed_field_ids": ["<field IDs confirmed via --fields>"],
+      "corrected_field_ids": ["<field IDs corrected via --corrections>"],
+      "skipped_field_ids": ["<field IDs left unannotated>"],
+      "commands_used": ["<list of uip commands you attempted>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once, record the result (success or error)
+    in report.json, and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+["'']?doc-abc-123["'']?\s+.*--fields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --corrections with the OCR-mangled field's corrected value"
+    tool_name: "Bash"
+    command_pattern: '--corrections\s+.*f-003.*\$?12,?000\.00'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Confirm command confirms cleanly-correct fields and corrects the OCR-mangled one"
+    path: "report.json"
+    includes:
+      - "f-001"
+      - "f-002"
+      - "f-003"
+      - "12,000.00"
+      - "--corrections"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent assigned each field to its correct disposition"
+    path: "report.json"
+    assertions:
+      - expression: "confirmed_field_ids"
+        operator: contains
+        expected: "f-001"
+      - expression: "confirmed_field_ids"
+        operator: contains
+        expected: "f-002"
+      - expression: "corrected_field_ids"
+        operator: contains
+        expected: "f-003"
+      - expression: "skipped_field_ids"
+        operator: contains
+        expected: "f-004"
+    weight: 2.5
+    pass_threshold: 1.0

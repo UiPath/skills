@@ -1,0 +1,85 @@
+task_id: skill-ixp-update-prompts-heredoc-smoke
+description: >
+  Skill-guided evaluation: agent improves a per-field instruction on an
+  IXP project. Tests Critical Rule #5 (use heredoc for `--fields`/
+  `--groups` JSON arguments, then pass via `"$(cat <file>)"`) and Rule #4
+  (working directory under `/tmp/ixp/<project-name>/prompts/`). Inlining
+  the JSON directly on the command line breaks shell quoting on
+  non-trivial payloads — the heredoc pattern is the documented workaround.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip ixp` commands that hit the service will fail with an auth error.
+  That is acceptable — what matters is that the agent constructs the
+  command in the documented heredoc shape.
+tags: [uipath-ixp, smoke, lifecycle:edit]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  The InvoiceNumber field on IXP project `my_invoices-f1afa9ef-ixp` is
+  scoring poorly. Validation shows the model is confusing the Purchase
+  Order (PO) number with the Invoice Number. Update the field instruction
+  to clarify:
+
+    "Extract the unique invoice identifier from the document header.
+    Do NOT use the Purchase Order (PO) number, even if it is the most
+    visually prominent number on the page."
+
+  Save a summary to report.json in the current working directory with at
+  minimum:
+    {
+      "project_name": "my_invoices-f1afa9ef-ixp",
+      "field_name": "InvoiceNumber",
+      "payload_path": "<path to the JSON payload file you created>",
+      "update_command": "<exact uip ixp projects update-prompts command you ran>",
+      "commands_used": ["<list of bash commands you ran in order>"]
+    }
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once, record the result (success or error)
+    in report.json, and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent wrote the --fields payload to a file under /tmp/ixp/<project>/prompts/ via heredoc"
+    tool_name: "Bash"
+    command_pattern: 'cat\s*>\s*/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/[^\s]+\.json\s*<<\s*[''"]?EOF[''"]?'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `uip ixp projects update-prompts <project> --fields` reading the heredoc file via $(cat ...)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+update-prompts\s+["'']?my_invoices-f1afa9ef-ixp["'']?\s+.*--fields\s+["'']?\$\(cat\s+/tmp/ixp/'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references the heredoc payload path under /tmp/ixp/"
+    path: "report.json"
+    includes:
+      - "/tmp/ixp/my_invoices-f1afa9ef-ixp/prompts/"
+      - "InvoiceNumber"
+    weight: 1.5
+    pass_threshold: 1.0
