@@ -123,11 +123,13 @@ Validate a case management JSON file against case management rules.
 
 ```bash
 uip maestro case validate <file> --output json
+uip maestro case validate <file> --skeleton --output json
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
+| `--skeleton` | Skeleton profile — runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules. Use during skeleton-phase authoring before tasks/conditions/SLA are wired. |
 
 Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported inline.
 
