@@ -177,7 +177,7 @@ All errors include the offending field path and a remediation hint, formatted as
 | `filter` not an object | `filter must be a JSON object (FilterTree)` |
 | Activity has no FilterBuilder param but `filter` was provided | `Activity "<type>" does not declare a FilterBuilder parameter — server-side filtering is not supported by this operation. Drop "filter" from --input-details.` |
 | Synthetic HTTP request activity + `bodyParameters` | `bodyParameters is not supported for synthetic HTTP request activities. Pass body via --input-details.queryParameters or omit.` |
-| `--input-details` + `--sections` excluding `caseShape` | `--input-details requires --sections to include 'caseShape' (or omit --sections for full output).` |
+| `--input-details` + `--skip-case-shape` together | `--input-details has no effect when --skip-case-shape is set; remove one of the two flags.` |
 | Malformed JSON in `--input-details` | `Invalid --input-details JSON: <parse error>` |
 
 ---
@@ -289,7 +289,7 @@ uip maestro case spec \
 
 ## Discovery — what fields can a skill fill in?
 
-Before constructing `--input-details`, run `case spec` once WITHOUT it (or with `--sections identity,operation,connection,inputs,outputs,filter,webhook,references` — the skill's PLANNING_SECTIONS bundle — for a leaner response that omits `caseShape`) and read:
+Before constructing `--input-details`, run `case spec` once WITHOUT it (use `--skip-case-shape` for a leaner response that omits `caseShape`) and read:
 
 | Looking for | Read |
 |---|---|

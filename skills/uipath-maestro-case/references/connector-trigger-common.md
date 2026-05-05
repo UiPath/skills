@@ -6,7 +6,7 @@ Shared planning and implementation logic for connector-based triggers. Used by b
 
 Both use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task vs trigger node), `serviceType`, and a few node-shape details differ — see each plugin's own docs for those specifics.
 
-> Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--sections` + `--input-details`); `--type trigger` swaps in trigger-shaped inputs/outputs and the trigger-specific `metadata.body.bindings[Property]` registration entry.
+> Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and the trigger-specific `metadata.body.bindings[Property]` registration entry.
 
 ---
 
@@ -44,13 +44,11 @@ One CLI call replaces the legacy `case tasks describe` + `is triggers describe` 
 uip maestro case spec --type trigger \
   --activity-type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
-  --sections identity,operation,connection,inputs,outputs,filter,webhook,references \
+  --skip-case-shape \
   --output json
 ```
 
-The `--sections` value above is the **PLANNING_SECTIONS** bundle — drops `caseShape`, `essentialConfiguration`, and `diagnostics` for a leaner response sized for planning. Phase 3 runs the same command with the **IMPLEMENTATION_SECTIONS** bundle (`identity,connection,caseShape`) plus `--input-details` to mint the populated `caseShape`. See [`case-spec-input-details.md`](case-spec-input-details.md) for the full `--input-details` JSON contract.
-
-> **Diagnostics opt-in.** Append `,diagnostics` to `--sections` when you need the per-endpoint `fetched` / `fallbacks` audit trail (e.g. surfacing fallbacks to the user). Omitted from PLANNING_SECTIONS by default to keep the payload small.
+`--skip-case-shape` returns a leaner response (no `caseShape`) — the right size for planning. Phase 3 re-runs the same command without the flag, plus `--input-details`, to mint the populated `caseShape`. See [`case-spec-input-details.md`](case-spec-input-details.md) for the full `--input-details` JSON contract.
 
 > **Entity-typed Curated triggers.** Add `--object-name "<picked entity>"` when the typecache `object-name` is a placeholder (Step 2).
 
@@ -64,7 +62,7 @@ The response carries everything the planning phase needs:
 | `webhook` | Present (with `url` etc.) when the trigger has a visible webhook URL after configuration; absent otherwise. Surface for webhook-mode triggers when applicable |
 | `filter` | `undefined` when the trigger does NOT support server-side filtering. Present when it does, with `builder: "jmes"` and `fields[]` listing every searchable field |
 | `references[]` | Cross-references for any event params with lookups. Each entry carries a pre-built `discoverCommand` runnable string |
-| `diagnostics.fetched` / `fallbacks` | Surface fallbacks to the user when meaningful (only when you appended `,diagnostics` to `--sections`) |
+| `diagnostics.fetched` / `fallbacks` | Surface fallbacks to the user when meaningful |
 
 ### 4. Resolve reference fields in event parameters
 
@@ -156,12 +154,11 @@ Full input-details contract: [`case-spec-input-details.md`](case-spec-input-deta
 uip maestro case spec --type trigger \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
-  --sections identity,connection,caseShape \
   --input-details "<json from Step 1>" \
   --output json
 ```
 
-The `--sections` value above is the **IMPLEMENTATION_SECTIONS** bundle — emits only `identity`, `connection`, `caseShape` (plus `specVersion`). `--input-details` requires `caseShape` to be in the requested sections. Append `,diagnostics` when you need to surface fallbacks to `build-issues.md`. Add `--object-name "<picked entity>"` for entity-typed Curated triggers (Step 2).
+The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`). The CLI returns the full `caseShape` populated with values from `--input-details`. Add `--object-name "<picked entity>"` for entity-typed Curated triggers (Step 2).
 
 Save the response. The interesting parts:
 
@@ -173,7 +170,7 @@ Save the response. The interesting parts:
 | `spec.caseShape.inputs[]` | `.Data.caseShape.inputs` — single `body` entry. Body holds `parameters` (from eventParameters) and/or `filters.expression` (compiled JMESPath) when authored |
 | `spec.caseShape.outputs[]` | `.Data.caseShape.outputs` — `response` (with displayName like "Email Received") + `Error` |
 | `spec.caseShape.context[]` | `.Data.caseShape.context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
-| `spec.diagnostics.fallbacks[]` | `.Data.diagnostics.fallbacks` — surface to `build-issues.md` when non-empty. Only present when `--sections` includes `diagnostics` (opt-in) |
+| `spec.diagnostics.fallbacks[]` | `.Data.diagnostics.fallbacks` — surface to `build-issues.md` when non-empty |
 
 ### Step 3 — Mint binding IDs and (when applicable) trigger registration key
 

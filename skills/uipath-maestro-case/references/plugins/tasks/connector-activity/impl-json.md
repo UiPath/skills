@@ -50,12 +50,11 @@ Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-i
 uip maestro case spec --type activity \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
-  --sections identity,connection,caseShape \
   --input-details "<json from Step 1>" \
   --output json
 ```
 
-The `--sections` value above is the **IMPLEMENTATION_SECTIONS** bundle — emits only `identity`, `connection`, `caseShape` (plus `specVersion`). `--input-details` requires `caseShape` to be in the requested sections, so the implementation bundle is the minimum viable set. Append `,diagnostics` when you need to surface fallbacks to `build-issues.md`.
+The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` — see [§ Mutual exclusion with --skip-case-shape](#mutual-exclusion-with---skip-case-shape) in [case-spec-input-details.md](../../../case-spec-input-details.md)). The CLI returns the full `caseShape` populated with values from `--input-details`.
 
 Save the response. The interesting parts:
 
@@ -66,7 +65,7 @@ Save the response. The interesting parts:
 | `spec.caseShape.inputs[]` | `.Data.caseShape.inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
 | `spec.caseShape.outputs[]` | `.Data.caseShape.outputs` — response (JSON Schema body) / curated / Error |
 | `spec.caseShape.context[]` | `.Data.caseShape.context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
-| `spec.diagnostics.fallbacks[]` | `.Data.diagnostics.fallbacks` — surface to `build-issues.md` when non-empty. Only present when `--sections` includes `diagnostics` (opt-in). |
+| `spec.diagnostics.fallbacks[]` | `.Data.diagnostics.fallbacks` — surface to `build-issues.md` when non-empty. |
 
 > **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.
 
@@ -74,7 +73,7 @@ Save the response. The interesting parts:
 
 This is a hard gate — do NOT proceed to write the task until every required field has a non-empty value in the `caseShape.inputs[].body`.
 
-1. From the lean planning-phase spec (run with the **PLANNING_SECTIONS** bundle in [planning](planning.md) Step 5 — `--sections identity,operation,connection,inputs,outputs,filter,webhook,references`), collect `inputs.*[?required]`.
+1. From the lean planning-phase spec (run with `--skip-case-shape` in [planning](planning.md) Step 3), collect `inputs.*[?required]`.
 2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[].body` and verify every required field has a value.
 3. If any required field is missing, **AskUserQuestion** — list the missing fields with their `displayName` and what kind of value is expected. Free-form input is appropriate when the value space is open-ended (channel names, message bodies, IDs); when a finite set of sensible values exists (e.g. an `enum`), present them via AskUserQuestion per the dropdown rule in [SKILL.md](../../../../SKILL.md).
 4. Re-run Step 2 after collecting the missing values, OR fall back to skeleton task per Rule 8 if user declines to provide a value.

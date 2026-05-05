@@ -46,13 +46,11 @@ One CLI call replaces the legacy `case tasks describe` + `is resources describe`
 uip maestro case spec --type activity \
   --activity-type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
-  --sections identity,operation,connection,inputs,outputs,filter,webhook,references \
+  --skip-case-shape \
   --output json
 ```
 
-The `--sections` value above is the **PLANNING_SECTIONS** bundle — drops `caseShape`, `essentialConfiguration`, and `diagnostics` for a leaner response sized for planning. Phase 3 calls the same command with the **IMPLEMENTATION_SECTIONS** bundle (`identity,connection,caseShape`) plus `--input-details` to mint the populated `caseShape`. See [`case-spec-input-details.md`](../../../case-spec-input-details.md) for the full `--input-details` JSON contract.
-
-> **Diagnostics opt-in.** Append `,diagnostics` to `--sections` when you need the per-endpoint `fetched` / `fallbacks` audit trail (e.g. surfacing fallbacks to the user). It's omitted from PLANNING_SECTIONS by default to keep the payload small.
+`--skip-case-shape` returns a leaner response (no `caseShape`) — the right size for planning. Phase 3 re-runs the same command without the flag, plus `--input-details`, to mint the populated `caseShape`. See [`case-spec-input-details.md`](../../../case-spec-input-details.md) for the full `--input-details` JSON contract.
 
 > **Synthetic HTTP request branch.** When `spec.identity.objectName` is `"httpRequest"` or `"http-request"`, the activity is the synthetic generic-HTTP path — `bodyParameters` is rejected (no curated body schema). Pass HTTP body via `queryParameters` instead, or omit. Spec output reflects this in `inputs.bodyFields = []`.
 

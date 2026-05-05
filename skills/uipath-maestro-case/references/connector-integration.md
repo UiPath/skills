@@ -59,18 +59,16 @@ Output: `{ Entry, Config, Connections }` where:
 One CLI call replaces the legacy `case tasks describe` + `is resources describe` dance:
 
 ```bash
-# Planning phase — PLANNING_SECTIONS bundle (no caseShape, no diagnostics, no essentialConfiguration)
+# Planning phase — lean response (no caseShape payload)
 uip maestro case spec --type <activity|trigger> \
   --activity-type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
-  --sections identity,operation,connection,inputs,outputs,filter,webhook,references \
-  --output json
+  --skip-case-shape --output json
 
-# Phase 3 (implementation) — IMPLEMENTATION_SECTIONS bundle, populated caseShape from --input-details
+# Phase 3 (implementation) — populated caseShape from --input-details
 uip maestro case spec --type <activity|trigger> \
   --activity-type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
-  --sections identity,connection,caseShape \
   --input-details "<json>" --output json
 ```
 
@@ -86,8 +84,8 @@ Spec output carries the full operation contract:
 | `outputs.pagination` | `null` for non-list; `{ maxPageSize: N }` for list ops |
 | `filter` | `undefined` when server-side filtering is not supported. Present when supported, with `builder: "ceql"` (activity) / `"jmes"` (trigger) and `fields[]` listing every searchable field |
 | `references[]` | Cross-references with pre-built `discoverCommand` runnable strings |
-| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `caseShape` ∈ `--sections` (or `--sections` omitted) |
-| `diagnostics` | Per-endpoint `fetched` / `fallbacks`. Opt-in only — appended via `--sections ...,diagnostics` when an audit trail is needed |
+| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
+| `diagnostics` | Per-endpoint `fetched` / `fallbacks` |
 
 Full input-details contract (the `--input-details` JSON shape): [`case-spec-input-details.md`](case-spec-input-details.md).
 
