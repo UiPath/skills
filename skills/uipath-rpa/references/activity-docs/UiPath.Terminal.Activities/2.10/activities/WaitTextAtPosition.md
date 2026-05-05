@@ -39,9 +39,11 @@ Waits until a specific row and column position on the terminal screen contains t
 ## XAML Example
 
 ```xml
-<ta:TerminalWaitTextAtPosition DisplayName="Wait Text at Position"
+<uit:TerminalWaitTextAtPosition DisplayName="Wait Text at Position"
                                 Row="[24]"
                                 Column="[1]"
                                 Text="[&quot;READY&quot;]"
-                                TimeoutMS="[30000]" />
+                                TimeoutMS="[30000]"
+                                WaitType="READY"
+                                DelayMS="300" />
 ```

@@ -71,6 +71,8 @@ Sends a single control key (such as Tab, Enter/Transmit, F1–F24, arrow keys, o
 ## XAML Example
 
 ```xml
-<t:TerminalSendControlKey DisplayName="Send Control Key"
-                           Key="Transmit" />
+<uit:TerminalSendControlKey DisplayName="Send Control Key"
+                           Key="Transmit"
+                           WaitType="READY"
+                           DelayMS="1000" />
 ```

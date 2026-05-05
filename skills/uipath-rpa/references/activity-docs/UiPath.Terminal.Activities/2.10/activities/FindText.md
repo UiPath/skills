@@ -47,9 +47,11 @@ Searches the terminal screen for a text string, starting from an optional positi
 ## XAML Example
 
 ```xml
-<ta:TerminalFindTextInScreen DisplayName="Find Text"
+<uit:TerminalFindTextInScreen DisplayName="Find Text"
                               Text="[&quot;ERROR&quot;]"
                               IgnoreCase="True"
                               Row="[foundRow]"
-                              Column="[foundCol]" />
+                              Column="[foundCol]"
+                              WaitType="READY"
+                              DelayMS="300" />
 ```

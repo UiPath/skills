@@ -36,7 +36,9 @@ Waits until a specified text string appears anywhere on the terminal screen. Use
 ## XAML Example
 
 ```xml
-<t:TerminalWaitScreenText DisplayName="Wait Screen Text"
+<uit:TerminalWaitScreenText DisplayName="Wait Screen Text"
                            Text="[&quot;READY&quot;]"
-                           TimeoutMS="[30000]" />
+                           TimeoutMS="[30000]"
+                           WaitType="READY"
+                           DelayMS="300" />
 ```

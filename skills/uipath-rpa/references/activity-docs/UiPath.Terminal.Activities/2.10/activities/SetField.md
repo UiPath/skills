@@ -47,7 +47,9 @@ At least one of `LabeledBy` or `FollowedBy` must be provided. Both can be specif
 ## XAML Example
 
 ```xml
-<t:TerminalSetField DisplayName="Set Field"
+<uit:TerminalSetField DisplayName="Set Field"
                     LabeledBy="[&quot;Username:&quot;]"
-                    Text="[username]" />
+                    Text="[username]"
+                    WaitType="READY"
+                    DelayMS="300" />
 ```

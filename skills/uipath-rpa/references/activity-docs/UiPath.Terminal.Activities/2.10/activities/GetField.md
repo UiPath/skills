@@ -49,17 +49,21 @@ At least one of `LabeledBy` or `FollowedBy` must be provided. Both can be specif
 **By preceding label:**
 
 ```xml
-<t:TerminalGetField DisplayName="Get Field"
+<uit:TerminalGetField DisplayName="Get Field"
                     LabeledBy="[&quot;Username:&quot;]"
-                    Text="[usernameValue]" />
+                    Text="[usernameValue]"
+                    WaitType="READY"
+                    DelayMS="300" />
 ```
 
 **By both labels with index to disambiguate:**
 
 ```xml
-<t:TerminalGetField DisplayName="Get Field"
+<uit:TerminalGetField DisplayName="Get Field"
                     LabeledBy="[&quot;Amount:&quot;]"
                     FollowedBy="[&quot;USD&quot;]"
                     Index="[1]"
-                    Text="[fieldValue]" />
+                    Text="[fieldValue]"
+                    WaitType="READY"
+                    DelayMS="300" />
 ```

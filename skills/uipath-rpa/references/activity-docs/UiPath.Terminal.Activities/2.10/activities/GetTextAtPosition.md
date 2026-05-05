@@ -39,9 +39,11 @@ Reads text starting at a specific row and column position on the terminal screen
 ## XAML Example
 
 ```xml
-<ta:TerminalGetTextAtPosition DisplayName="Get Text at Position"
+<uit:TerminalGetTextAtPosition DisplayName="Get Text at Position"
                                Row="[5]"
                                Column="[10]"
                                Length="[20]"
-                               Text="[fieldText]" />
+                               Text="[fieldText]"
+                               WaitType="READY"
+                               DelayMS="300" />
 ```
