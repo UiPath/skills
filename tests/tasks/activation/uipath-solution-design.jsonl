@@ -1,0 +1,50 @@
+{"id": "uipath-solution-design-001", "prompt": "Analyze this PDD and generate an SDD"}
+{"id": "uipath-solution-design-002", "prompt": "I have a Process Design Document — turn it into a Solution Design Document"}
+{"id": "uipath-solution-design-003", "prompt": "Read the attached PDD.pdf and produce an implementation-ready SDD"}
+{"id": "uipath-solution-design-004", "prompt": "Convert pdd.md into sdd.md so a coding agent can build from it"}
+{"id": "uipath-solution-design-005", "prompt": "Generate a UiPath solution design document from this requirements doc"}
+{"id": "uipath-solution-design-006", "prompt": "Take this PDD docx and recommend whether it should be RPA, Flow, Case Management, or Agents, then write the SDD"}
+{"id": "uipath-solution-design-007", "prompt": "I need an SDD for the bank statement reconciliation PDD — pick the right product and design it"}
+{"id": "uipath-solution-design-008", "prompt": "Design a UiPath solution from this invoice processing PDD"}
+{"id": "uipath-solution-design-009", "prompt": "Help me architect a UiPath solution for this AP automation requirement document"}
+{"id": "uipath-solution-design-010", "prompt": "Read PDD.pdf in this folder and propose the project structure"}
+{"id": "uipath-solution-design-011", "prompt": "Given this PDD, decide if we need a multi-project Solution or a single project, then write the SDD"}
+{"id": "uipath-solution-design-012", "prompt": "I want to build from a PDD — start by writing the solution design"}
+{"id": "uipath-solution-design-013", "prompt": "Review this PDD and tell me which UiPath product fits best, then generate the design doc"}
+{"id": "uipath-solution-design-014", "prompt": "Create an SDD that breaks the PDD into projects, workflows, and packages"}
+{"id": "uipath-solution-design-015", "prompt": "Turn the attached process documentation into an SDD with a Project Structure section"}
+{"id": "uipath-solution-design-016", "prompt": "I have a PDD describing email ingestion + extraction + reporting — design the multi-project Solution"}
+{"id": "uipath-solution-design-017", "prompt": "Write the solution design document for the COE-11860 maturity assessment PDD"}
+{"id": "uipath-solution-design-018", "prompt": "Generate sdd.md from pdd.md using REFramework where appropriate"}
+{"id": "uipath-solution-design-019", "prompt": "I need PDD-to-SDD analysis for a mortgage origination automation"}
+{"id": "uipath-solution-design-020", "prompt": "Pick scope and produce an SDD for this customer's process design document"}
+{"id": "uipath-solution-design-021", "prompt": "Plan a UiPath Solution from scratch given this PDD — RPA libraries, Flow, the works"}
+{"id": "uipath-solution-design-022", "prompt": "Read the requirements PDF and architect the implementation"}
+{"id": "uipath-solution-design-023", "prompt": "Design an end-to-end UiPath automation from this business requirements doc"}
+{"id": "uipath-solution-design-024", "prompt": "Take this SOP and produce an SDD I can hand to a coding agent"}
+{"id": "uipath-solution-design-025", "prompt": "PDD says Finance wants invoice extraction with HITL approval — design it"}
+{"id": "uipath-solution-design-026", "prompt": "Read pdd.md and write a kebab-cased sdd.md in the cwd"}
+{"id": "uipath-solution-design-027", "prompt": "Walk me through scope selection for this PDD — single product or Solution?"}
+{"id": "uipath-solution-design-028", "prompt": "Design a Case Management solution from this stages-and-SLAs PDD"}
+{"id": "uipath-solution-design-029", "prompt": "Generate the implementation plan and SDD from this PDD so we can scaffold it"}
+{"id": "uipath-solution-design-030", "prompt": "Decompose this PDD into Orchestrator-queue-connected sub-projects"}
+{"id": "uipath-solution-design-031", "prompt": "Create a solution design doc covering Apps + RPA + entities for this PDD"}
+{"id": "uipath-solution-design-032", "prompt": "I'd like the recommended scope and project list before we start coding — analyze the PDD"}
+{"id": "uipath-solution-design-033", "prompt": "Build me an SDD from this Confluence PDD link"}
+{"id": "uipath-solution-design-034", "prompt": "PDD has AI reasoning steps — should this be Agents? Generate the SDD accordingly"}
+{"id": "uipath-solution-design-035", "prompt": "Read the PDD, identify SME review gaps, and write the SDD"}
+{"id": "uipath-solution-design-036", "prompt": "Translate this PDD into an SDD with workflow inventory and NuGet packages"}
+{"id": "uipath-solution-design-037", "prompt": "I want a full UiPath solution architecture for the PepsiCo scenario PDD"}
+{"id": "uipath-solution-design-038", "prompt": "Recommend the product mix (RPA, Flow, Apps, Agents) for this PDD and write the design"}
+{"id": "uipath-solution-design-039", "prompt": "Scaffold a project from this PDD — start with the SDD, then the tasks plan"}
+{"id": "uipath-solution-design-040", "prompt": "Produce a solution-level SDD plus per-project SDDs for this multi-product automation"}
+{"id": "uipath-solution-design-041", "prompt": "Help me design a UiPath automation: I'll share the PDD, you write the SDD"}
+{"id": "uipath-solution-design-042", "prompt": "From this process spec, decide RPA sub-type (Process vs Library vs Test Auto) and design it"}
+{"id": "uipath-solution-design-043", "prompt": "Architect a Maestro Flow solution from this PDD with referenced RPA and agent projects"}
+{"id": "uipath-solution-design-044", "prompt": "I need an SDD with C# record data definitions for this coded RPA PDD"}
+{"id": "uipath-solution-design-045", "prompt": "Read the PDD and generate the SDD plus the implementation task breakdown"}
+{"id": "uipath-solution-design-046", "prompt": "Solution design please — PDD attached, target is Coded Apps + API Workflows"}
+{"id": "uipath-solution-design-047", "prompt": "Analyze this denials management PDD and design the agentic solution"}
+{"id": "uipath-solution-design-048", "prompt": "Write the architecture doc for this automation before we implement anything"}
+{"id": "uipath-solution-design-049", "prompt": "Given this PDF process design, propose project decomposition and write the SDD"}
+{"id": "uipath-solution-design-050", "prompt": "Prepare a UiPath solution design from the PDD so a coding agent can build the projects next"}

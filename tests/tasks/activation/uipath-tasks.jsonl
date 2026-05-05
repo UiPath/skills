@@ -1,0 +1,34 @@
+{"id": "uipath-tasks-001", "prompt": "List my pending Action Center tasks"}
+{"id": "uipath-tasks-002", "prompt": "Show all unassigned tasks across folders"}
+{"id": "uipath-tasks-003", "prompt": "Get details for task 2970"}
+{"id": "uipath-tasks-004", "prompt": "Assign action task 12345 to alice@company.com"}
+{"id": "uipath-tasks-005", "prompt": "Reassign this task to someone else"}
+{"id": "uipath-tasks-006", "prompt": "Unassign task 4421"}
+{"id": "uipath-tasks-007", "prompt": "Approve the pending action item in Action Center"}
+{"id": "uipath-tasks-008", "prompt": "Complete the form task with Approve action"}
+{"id": "uipath-tasks-009", "prompt": "Mark this approval task as completed"}
+{"id": "uipath-tasks-010", "prompt": "Reject task 887 in Action Center"}
+{"id": "uipath-tasks-011", "prompt": "Who can I assign tasks to in folder 2?"}
+{"id": "uipath-tasks-012", "prompt": "List eligible users for action assignment in this folder"}
+{"id": "uipath-tasks-013", "prompt": "Complete the FormTask 5512 with the approve outcome and submit the form data"}
+{"id": "uipath-tasks-014", "prompt": "Show me all tasks assigned to me right now"}
+{"id": "uipath-tasks-015", "prompt": "Bulk-assign all unassigned validation tasks in folder 7 to bob@uipath.com"}
+{"id": "uipath-tasks-016", "prompt": "Get task with type hint AppTask in folder 12"}
+{"id": "uipath-tasks-017", "prompt": "List action center tasks as admin"}
+{"id": "uipath-tasks-018", "prompt": "Filter tasks by status pending"}
+{"id": "uipath-tasks-019", "prompt": "Complete external task 9001 in folder 3"}
+{"id": "uipath-tasks-020", "prompt": "I need to review action items waiting for me"}
+{"id": "uipath-tasks-021", "prompt": "Reassign task 778 from John to Mary"}
+{"id": "uipath-tasks-022", "prompt": "Take ownership of task 2200 (assign to myself)"}
+{"id": "uipath-tasks-023", "prompt": "Find which folder a given task belongs to"}
+{"id": "uipath-tasks-024", "prompt": "List high priority pending tasks"}
+{"id": "uipath-tasks-025", "prompt": "Complete task 4040 with action Reject and a comment explaining why"}
+{"id": "uipath-tasks-026", "prompt": "Show me all completed tasks from this week"}
+{"id": "uipath-tasks-027", "prompt": "Approve task 555 with payload {\"amount\": 1000, \"approved\": true}"}
+{"id": "uipath-tasks-028", "prompt": "Why is my task still showing as Unassigned even though it was assigned?"}
+{"id": "uipath-tasks-029", "prompt": "Reassign all my pending tasks to the on-call user"}
+{"id": "uipath-tasks-030", "prompt": "Walk me through the full lifecycle of completing a form task via uip CLI"}
+{"id": "uipath-tasks-031", "prompt": "Check the type of task 8800 before completing it"}
+{"id": "uipath-tasks-032", "prompt": "Programmatically reject a pending action task"}
+{"id": "uipath-tasks-033", "prompt": "List action center tasks in folder Finance"}
+{"id": "uipath-tasks-034", "prompt": "Complete the AppTask using uip tasks complete"}

@@ -1,0 +1,50 @@
+{"id": "uipath-diagnostics-001", "prompt": "Why did my job fail?"}
+{"id": "uipath-diagnostics-002", "prompt": "My queue item is faulted, can you figure out why?"}
+{"id": "uipath-diagnostics-003", "prompt": "Diagnose this publish error from Studio"}
+{"id": "uipath-diagnostics-004", "prompt": "I keep getting selector failures on this UiAutomation activity — investigate"}
+{"id": "uipath-diagnostics-005", "prompt": "The healing agent isn't kicking in when my selector breaks. What's wrong?"}
+{"id": "uipath-diagnostics-006", "prompt": "Permission error when I try to open the folder after solution deploy: \"Folder does not exist or the user does not have access to the folder.\" Help me triage this."}
+{"id": "uipath-diagnostics-007", "prompt": "Triage job 6f3a-... it's been Running for 3 hours and shouldn't be"}
+{"id": "uipath-diagnostics-008", "prompt": "What's wrong with my automation? It worked yesterday and now every run faults at the Excel scope"}
+{"id": "uipath-diagnostics-009", "prompt": "I published this to orchestrator and now jobs start, go to Running, and sit there forever. Runs fine locally. What's different?"}
+{"id": "uipath-diagnostics-010", "prompt": "Investigate why my trigger got auto-disabled — audit log says 100 consecutive failures in 1 day, but the trigger only runs every 15 min so that's mathematically impossible"}
+{"id": "uipath-diagnostics-011", "prompt": "Coded agent works locally with `uipath run` but fails with 400 in prod. Error mentions folder access. Find the cause."}
+{"id": "uipath-diagnostics-012", "prompt": "debug this: \"Another interactive job is running for this user. A user can run a single interactive job at a time\""}
+{"id": "uipath-diagnostics-013", "prompt": "Why is `uipath dev` failing locally when `uipath run` works fine for the same project?"}
+{"id": "uipath-diagnostics-014", "prompt": "13k jobs failed a month ago but Orchestrator still shows them as running. What happened?"}
+{"id": "uipath-diagnostics-015", "prompt": "My queue items remain InProgress past the 24-hour threshold and the bot throws \"object reference\" when the user finishes validating. Investigate."}
+{"id": "uipath-diagnostics-016", "prompt": "Studio publish fails with: Response status code does not indicate success: 405 (Method Not Allowed). Diagnose"}
+{"id": "uipath-diagnostics-017", "prompt": "Library publish fails with \"Package cannot be published to the shared feed\" even though the user is admin. Why?"}
+{"id": "uipath-diagnostics-018", "prompt": "Got 409 from /Solution/.../Publish-Requests when debugging from Studio Web. What does this mean?"}
+{"id": "uipath-diagnostics-019", "prompt": "\"Limit of 1 published process(es) in personal workspace reached\" — but I have an enterprise license. Investigate."}
+{"id": "uipath-diagnostics-020", "prompt": "My Maestro flow is stuck in pending forever, never picks up. There's a serverless template in the folder. Why isn't it running?"}
+{"id": "uipath-diagnostics-021", "prompt": "Flow execution stops at a node — canvas still animated, OR shows Running, but the next node never starts. Find the cause."}
+{"id": "uipath-diagnostics-022", "prompt": "Debug fails at Provisioning Resources stage with timeout. Flow is simple. What's wrong?"}
+{"id": "uipath-diagnostics-023", "prompt": "When I add an agent to my flow and debug, I get \"Failure to start the Orchestrator RPA job — The job's associated process could not be found\". Same flow used to work. Triage."}
+{"id": "uipath-diagnostics-024", "prompt": "Inline agent shows a Job Argument and user prompt that don't match the config. It's stuck on `{{$input.document_excerpt}}` which doesn't exist. Find why."}
+{"id": "uipath-diagnostics-025", "prompt": "Coded agent debug in Studio Web errors: \"Failed to execute 'json' on 'Response': Unexpected end of JSON input\" and \"Failed to update project configuration: 404\". Local run works. Why?"}
+{"id": "uipath-diagnostics-026", "prompt": "PIMS is always returning pending for element executions but the OR Flow job shows running, and no agent job is ever triggered. Investigate."}
+{"id": "uipath-diagnostics-027", "prompt": "What's causing `Serverless.PythonCodedAgent.PrepareEnvironmentError - Failed to prepare environment`?"}
+{"id": "uipath-diagnostics-028", "prompt": "Action Center page reloads with \"You don't have permission to view this page\" for one customer. Debug."}
+{"id": "uipath-diagnostics-029", "prompt": "I'm using a PW connection in package requirements for a process deployed in a non-PW folder and getting `no permission or missing connection`. Is this an unsupported case or a config bug?"}
+{"id": "uipath-diagnostics-030", "prompt": "Cluster is failing health checks. Look into it."}
+{"id": "uipath-diagnostics-031", "prompt": "My process throws System.NullReferenceException at the Read Range activity randomly. Help me find the root cause."}
+{"id": "uipath-diagnostics-032", "prompt": "Robot can't connect to Orchestrator: \"Could not connect to UiPath Robot Service\". Triage this."}
+{"id": "uipath-diagnostics-033", "prompt": "Get Queue Item activity hangs for 25 minutes. Even retries don't help. Why?"}
+{"id": "uipath-diagnostics-034", "prompt": "AS RKE2 24.10 offline — running Provision-IdentityClient.ps1 works but fetching robot version list returns \"You are not authorized!\". Diagnose."}
+{"id": "uipath-diagnostics-035", "prompt": "Asset value is null at runtime even though it's set in Orchestrator. What broke?"}
+{"id": "uipath-diagnostics-036", "prompt": "Why is my package showing version mismatch on the unattended robot?"}
+{"id": "uipath-diagnostics-037", "prompt": "The browser activity throws \"The element you are trying to access is not visible\" intermittently. Find the cause."}
+{"id": "uipath-diagnostics-038", "prompt": "Investigate why our integration service connector keeps returning 401 even after re-auth"}
+{"id": "uipath-diagnostics-039", "prompt": "Document Understanding extractor returns empty fields for 30% of invoices today. Yesterday all worked. What changed?"}
+{"id": "uipath-diagnostics-040", "prompt": "Connection works in Studio Web but fails when the same flow runs unattended. Why?"}
+{"id": "uipath-diagnostics-041", "prompt": "uip publish fails with \"Error while copying content to a stream\" on a 4 MB library. Same error on a brand-new empty library. Investigate."}
+{"id": "uipath-diagnostics-042", "prompt": "Job ID 7f12c-..., investigate the fault"}
+{"id": "uipath-diagnostics-043", "prompt": "Look at the trace for instance 68aca7c3-1fae-438e-9e5c-a4640877cc5b — loop visually stops at iteration 18 but slack messages continue. Why?"}
+{"id": "uipath-diagnostics-044", "prompt": "Coded agent outputs aren't reaching the next node — low-code agents work fine. Find why."}
+{"id": "uipath-diagnostics-045", "prompt": "Pylint passes locally but our CI/CD package upload to Cloud Orchestrator is silently rejected with no error. HAR shows server-side block. Triage."}
+{"id": "uipath-diagnostics-046", "prompt": "Why does my Studio Desktop publish to a Custom URL fail with 404 (Not Found) on every variation of the nuget feed URL I try?"}
+{"id": "uipath-diagnostics-047", "prompt": "GetAllQueueItems failing for 25 minutes across multiple bots in our tenant. Was there an Orchestrator outage? Investigate."}
+{"id": "uipath-diagnostics-048", "prompt": "Help me figure out what's wrong — the agent runs, loops, but the second tool call always returns an empty result"}
+{"id": "uipath-diagnostics-049", "prompt": "Process keeps faulting on Type Into with \"Cannot find UI element corresponding to this selector\" — was working last week. Why?"}
+{"id": "uipath-diagnostics-050", "prompt": "Why did the trigger fire but no job got created? Logs show the trigger but Orchestrator has no record of any job."}

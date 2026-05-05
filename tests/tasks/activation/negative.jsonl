@@ -1,50 +1,50 @@
 {"id": "negative-001", "prompt": "Chain my RPA process with an AI agent call"}
 {"id": "negative-002", "prompt": "Add a decision branch to my workflow"}
-{"id": "negative-003", "prompt": "Write Jint JavaScript logic for a script node"}
-{"id": "negative-004", "prompt": "Edit my Main.xaml file"}
-{"id": "negative-005", "prompt": "Build a UiPath Studio Desktop project"}
-{"id": "negative-006", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates"}
-{"id": "negative-007", "prompt": "Write a coded workflow in C# that calls a REST API and parses JSON"}
-{"id": "negative-008", "prompt": "Create a flowchart for my architecture doc"}
-{"id": "negative-009", "prompt": "Add a node to my graph"}
-{"id": "negative-010", "prompt": "Help me wire together multiple UiPath resources"}
-{"id": "negative-011", "prompt": "My automation needs to run on a schedule"}
-{"id": "negative-012", "prompt": "Connect two UiPath workflows so one triggers the other"}
-{"id": "negative-013", "prompt": "Write a Python Flask app"}
-{"id": "negative-014", "prompt": "Fix my TypeScript compilation error"}
-{"id": "negative-015", "prompt": "Set up a GitHub Actions workflow"}
-{"id": "negative-016", "prompt": "Migrate my RPA project from Studio Desktop to Studio Web using ReFramework patterns"}
-{"id": "negative-017", "prompt": "Help me write an automation"}
-{"id": "negative-018", "prompt": "I need to execute a process on a schedule"}
-{"id": "negative-019", "prompt": "Show me a DAG for my Airflow jobs"}
-{"id": "negative-020", "prompt": "Orchestrate my Temporal workflows"}
-{"id": "negative-021", "prompt": "Create a Step Functions state machine in AWS"}
-{"id": "negative-022", "prompt": "I need to design a BPMN diagram for our process"}
-{"id": "negative-023", "prompt": "Add a webhook trigger to my Zapier flow"}
-{"id": "negative-024", "prompt": "Create a connector in Power Automate"}
-{"id": "negative-025", "prompt": "Wire up a Node-RED flow with MQTT nodes"}
-{"id": "negative-026", "prompt": "I need to handle different cases based on a value"}
-{"id": "negative-027", "prompt": "Add a date-based pause until tomorrow at noon"}
-{"id": "negative-028", "prompt": "Group records by a key and count them"}
-{"id": "negative-029", "prompt": "What's the recipe for chocolate chip cookies?"}
-{"id": "negative-030", "prompt": "Translate this French text to English"}
-{"id": "negative-031", "prompt": "Convert 50 miles to kilometers"}
-{"id": "negative-032", "prompt": "Summarize this PDF"}
-{"id": "negative-033", "prompt": "Run npm install"}
-{"id": "negative-034", "prompt": "Create a new PostgreSQL table"}
-{"id": "negative-035", "prompt": "Write a Dockerfile for a Node app"}
-{"id": "negative-036", "prompt": "Configure Nginx reverse proxy"}
-{"id": "negative-037", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process"}
-{"id": "negative-038", "prompt": "Build a Test Suite in UiPath for automated regression testing of my XAML workflows"}
-{"id": "negative-039", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus"}
-{"id": "negative-040", "prompt": "Upgrade my Orchestrator from 2022.10 to 2024.10 with minimal downtime and robot compatibility testing"}
-{"id": "negative-041", "prompt": "How do I automate my daily tasks?"}
-{"id": "negative-042", "prompt": "Build me an agent that answers questions"}
-{"id": "negative-043", "prompt": "Automate the hiring pipeline"}
-{"id": "negative-044", "prompt": "Make my bot talk to Slack"}
-{"id": "negative-045", "prompt": "Extract data from PDFs"}
-{"id": "negative-046", "prompt": "Build me a chatbot"}
-{"id": "negative-047", "prompt": "Put approval in my workflow"}
-{"id": "negative-048", "prompt": "Orchestrate containers with Docker Swarm"}
-{"id": "negative-049", "prompt": "Create a Camunda BPMN process"}
-{"id": "negative-050", "prompt": "Design a Process Maker workflow"}
+{"id": "negative-003", "prompt": "Create a flowchart for my architecture doc"}
+{"id": "negative-004", "prompt": "Add a node to my graph"}
+{"id": "negative-005", "prompt": "Help me wire together multiple UiPath resources"}
+{"id": "negative-006", "prompt": "My automation needs to run on a schedule"}
+{"id": "negative-007", "prompt": "Connect two UiPath workflows so one triggers the other"}
+{"id": "negative-008", "prompt": "Write a Python Flask app"}
+{"id": "negative-009", "prompt": "Fix my TypeScript compilation error"}
+{"id": "negative-010", "prompt": "Set up a GitHub Actions workflow"}
+{"id": "negative-011", "prompt": "Migrate my RPA project from Studio Desktop to Studio Web using ReFramework patterns"}
+{"id": "negative-012", "prompt": "I need to execute a process on a schedule"}
+{"id": "negative-013", "prompt": "Show me a DAG for my Airflow jobs"}
+{"id": "negative-014", "prompt": "Orchestrate my Temporal workflows"}
+{"id": "negative-015", "prompt": "Create a Step Functions state machine in AWS"}
+{"id": "negative-016", "prompt": "I need to design a BPMN diagram for our process"}
+{"id": "negative-017", "prompt": "Add a webhook trigger to my Zapier flow"}
+{"id": "negative-018", "prompt": "Create a connector in Power Automate"}
+{"id": "negative-019", "prompt": "Wire up a Node-RED flow with MQTT nodes"}
+{"id": "negative-020", "prompt": "I need to handle different cases based on a value"}
+{"id": "negative-021", "prompt": "Add a date-based pause until tomorrow at noon"}
+{"id": "negative-022", "prompt": "Group records by a key and count them"}
+{"id": "negative-023", "prompt": "What's the recipe for chocolate chip cookies?"}
+{"id": "negative-024", "prompt": "Translate this French text to English"}
+{"id": "negative-025", "prompt": "Convert 50 miles to kilometers"}
+{"id": "negative-026", "prompt": "Summarize this PDF"}
+{"id": "negative-027", "prompt": "Run npm install"}
+{"id": "negative-028", "prompt": "Create a new PostgreSQL table"}
+{"id": "negative-029", "prompt": "Write a Dockerfile for a Node app"}
+{"id": "negative-030", "prompt": "Configure Nginx reverse proxy"}
+{"id": "negative-031", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process"}
+{"id": "negative-032", "prompt": "Build a Test Suite in UiPath for automated regression testing of my XAML workflows"}
+{"id": "negative-033", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus"}
+{"id": "negative-034", "prompt": "Upgrade my Orchestrator from 2022.10 to 2024.10 with minimal downtime and robot compatibility testing"}
+{"id": "negative-035", "prompt": "How do I automate my daily tasks?"}
+{"id": "negative-036", "prompt": "Build me an agent that answers questions"}
+{"id": "negative-037", "prompt": "Automate the hiring pipeline"}
+{"id": "negative-038", "prompt": "Make my bot talk to Slack"}
+{"id": "negative-039", "prompt": "Extract data from PDFs"}
+{"id": "negative-040", "prompt": "Build me a chatbot"}
+{"id": "negative-041", "prompt": "Orchestrate containers with Docker Swarm"}
+{"id": "negative-042", "prompt": "Create a Camunda BPMN process"}
+{"id": "negative-043", "prompt": "Design a Process Maker workflow"}
+{"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model"}
+{"id": "negative-045", "prompt": "Configure UiPath Document Understanding to extract invoice line items from scanned PDFs"}
+{"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter"}
+{"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment"}
+{"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection"}
+{"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset"}
+{"id": "negative-050", "prompt": "Set up Kubernetes ingress with cert-manager and Let's Encrypt"}

@@ -1,0 +1,50 @@
+{"id": "uipath-coded-apps-001", "prompt": "Scaffold a new UiPath Coded Web App in React"}
+{"id": "uipath-coded-apps-002", "prompt": "Create a Coded Action App for an Action Center approval form"}
+{"id": "uipath-coded-apps-003", "prompt": "Run uip codedapp pack dist on my project"}
+{"id": "uipath-coded-apps-004", "prompt": "Build and deploy my coded app end-to-end"}
+{"id": "uipath-coded-apps-005", "prompt": "Bump the version and republish my coded app — current one says 'version already exists'"}
+{"id": "uipath-coded-apps-006", "prompt": "Help me publish a coded action app — uip codedapp publish keeps failing without -t Action"}
+{"id": "uipath-coded-apps-007", "prompt": "I get 'coded action apps feature is not enabled' when publishing — what do I need to enable in the org?"}
+{"id": "uipath-coded-apps-008", "prompt": "My coded app deploy succeeds but the live URL returns 404 — can you debug it?"}
+{"id": "uipath-coded-apps-009", "prompt": "uip codedapp pack says 'Invalid dist directory' — what am I doing wrong?"}
+{"id": "uipath-coded-apps-010", "prompt": "Set up the @uipath/uipath-typescript SDK in my React app to call Orchestrator"}
+{"id": "uipath-coded-apps-011", "prompt": "How do I use the TypeScript SDK to query Maestro process incidents from a coded app?"}
+{"id": "uipath-coded-apps-012", "prompt": "I'm getting CORS errors calling processes.start() from my coded app — base URL is set to cloud.uipath.com. Fix it."}
+{"id": "uipath-coded-apps-013", "prompt": "Configure the OAuth external app and redirect URI for my coded web app"}
+{"id": "uipath-coded-apps-014", "prompt": "Sign in with UiPath button does nothing locally — debug the OAuth flow"}
+{"id": "uipath-coded-apps-015", "prompt": "Add OR.Tasks and OR.Tasks.Read scopes to my external app so the coded app can list action tasks"}
+{"id": "uipath-coded-apps-016", "prompt": "Wire my coded action app's Approve/Reject buttons to completeTask() so the task closes correctly in Action Center"}
+{"id": "uipath-coded-apps-017", "prompt": "Define the action-schema.json for a referral review form — inputs, outputs, outcomes"}
+{"id": "uipath-coded-apps-018", "prompt": "Push my local coded app source to Studio Web with uip codedapp push"}
+{"id": "uipath-coded-apps-019", "prompt": "Pull the latest coded app source from Studio Web to my local project"}
+{"id": "uipath-coded-apps-020", "prompt": "I want to build a custom React frontend hosted by UiPath that shows queue items and lets users start a process"}
+{"id": "uipath-coded-apps-021", "prompt": "Run the full pipeline: build, pack, publish, deploy this coded app to staging"}
+{"id": "uipath-coded-apps-022", "prompt": "Deploy my coded app to a specific Orchestrator folder — set UIPATH_FOLDER_KEY"}
+{"id": "uipath-coded-apps-023", "prompt": "Publish failing with 'Access denied' even though I'm org admin in staging — figure it out"}
+{"id": "uipath-coded-apps-024", "prompt": "Set up a coded app that uploads files to a Storage Bucket using the TypeScript SDK"}
+{"id": "uipath-coded-apps-025", "prompt": "Use buckets.getAll() in my coded app — pass folderId so the value comes back"}
+{"id": "uipath-coded-apps-026", "prompt": "Build a coded app that queries Data Fabric entities and displays them in a table"}
+{"id": "uipath-coded-apps-027", "prompt": "How do I list and complete Action Center tasks from a coded app using the TS SDK?"}
+{"id": "uipath-coded-apps-028", "prompt": "What's the right base URL? I'm seeing 401s — should I use api.uipath.com or cloud.uipath.com?"}
+{"id": "uipath-coded-apps-029", "prompt": "vite.config.ts — what should base be set to for a coded app?"}
+{"id": "uipath-coded-apps-030", "prompt": "Use getAppBase() for the React Router basename in my coded app"}
+{"id": "uipath-coded-apps-031", "prompt": "Set up env vars VITE_UIPATH_CLIENT_ID, VITE_UIPATH_SCOPE, VITE_UIPATH_ORG_NAME, VITE_UIPATH_TENANT_NAME for the SDK"}
+{"id": "uipath-coded-apps-032", "prompt": "How do I deploy a coded app so it isn't a public app?"}
+{"id": "uipath-coded-apps-033", "prompt": "I'm getting 'Folder key required' on uip codedapp deploy — what do I pass?"}
+{"id": "uipath-coded-apps-034", "prompt": "Switch my coded app from cloud to staging — uip login --authority https://staging.uipath.com and rebuild"}
+{"id": "uipath-coded-apps-035", "prompt": "Install the UiPath CLI and the codedapp tool from scratch on this machine"}
+{"id": "uipath-coded-apps-036", "prompt": "Iframe a coded action app inside a coded process app for Action Center rendering"}
+{"id": "uipath-coded-apps-037", "prompt": "Write a deploy.js script that handles versioning, build, asset path fixes, pack, and publish"}
+{"id": "uipath-coded-apps-038", "prompt": "Publish a coded action app to alpha — running uip codedapp publish -t Action -n osu-referral-review-action"}
+{"id": "uipath-coded-apps-039", "prompt": "Set up non-interactive deployment of a coded app for CI/CD with --orgId, --tenantId, --accessToken"}
+{"id": "uipath-coded-apps-040", "prompt": "What's the difference between a Coded Web App and a Coded Action App?"}
+{"id": "uipath-coded-apps-041", "prompt": "Add Jobs.getById to my coded app to look up a specific Orchestrator job"}
+{"id": "uipath-coded-apps-042", "prompt": "Migrate my coded app from sdk.entities.getAll() dot-chain to constructor DI new Entities(sdk)"}
+{"id": "uipath-coded-apps-043", "prompt": "Fix imports — switch from package-root imports to subpath like @uipath/uipath-typescript/assets"}
+{"id": "uipath-coded-apps-044", "prompt": "Bind my coded action app to a HITL node in a Maestro flow so it renders during human task review"}
+{"id": "uipath-coded-apps-045", "prompt": "401 from ProcessInstances.getAll() — my PAT has PIMS scope. What's missing?"}
+{"id": "uipath-coded-apps-046", "prompt": "Coded app deploy hangs on the spinner forever in Orchestrator UI — any idea why?"}
+{"id": "uipath-coded-apps-047", "prompt": "Build a coded web app with a multi-step wizard, OAuth login, charts, and a print/PDF report"}
+{"id": "uipath-coded-apps-048", "prompt": "How do I pass folderId vs folderKey in SDK calls? Maestro vs Orchestrator services use different params"}
+{"id": "uipath-coded-apps-049", "prompt": "Add the redirect URI to my external app — invalid_redirect_uri error after deploy"}
+{"id": "uipath-coded-apps-050", "prompt": "Render a coded action app inside Action Center — what URL/routing setup do I need?"}

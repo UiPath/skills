@@ -1,0 +1,51 @@
+{"id": "uipath-rpa-legacy-001", "prompt": "Create a new Windows-Legacy UiPath project called InvoiceProcessing"}
+{"id": "uipath-rpa-legacy-002", "prompt": "Build a legacy XAML workflow that reads an Excel file and logs each row"}
+{"id": "uipath-rpa-legacy-003", "prompt": "My project.json has targetFramework Legacy, can you add a try-catch around the Outlook activities in Main.xaml?"}
+{"id": "uipath-rpa-legacy-004", "prompt": "Validate this Studio Desktop project with uip rpa-legacy"}
+{"id": "uipath-rpa-legacy-005", "prompt": "Add a Read Range classic activity to GetInvoices.xaml"}
+{"id": "uipath-rpa-legacy-006", "prompt": "Generate a REFramework-based legacy project for queue processing"}
+{"id": "uipath-rpa-legacy-007", "prompt": "Fix the validation errors in this .NET Framework 4.6.1 project"}
+{"id": "uipath-rpa-legacy-008", "prompt": "Convert these VB.NET expressions in my legacy XAML to use the right bracket syntax"}
+{"id": "uipath-rpa-legacy-009", "prompt": "Add a Flowchart with three decision branches to Process.xaml in my Windows-Legacy project"}
+{"id": "uipath-rpa-legacy-010", "prompt": "Set up a Dispatcher/Performer pair in a legacy UiPath project"}
+{"id": "uipath-rpa-legacy-011", "prompt": "Open Main.xaml and add a LogMessage at the start, project is Windows - Legacy"}
+{"id": "uipath-rpa-legacy-012", "prompt": "uip rpa-legacy validate is returning errors about missing namespace imports, please fix them"}
+{"id": "uipath-rpa-legacy-013", "prompt": "Create a XAML using classic UI Automation Click and Type Into activities"}
+{"id": "uipath-rpa-legacy-014", "prompt": "Build me a legacy library project with three reusable workflows"}
+{"id": "uipath-rpa-legacy-015", "prompt": "Add a Retry Scope around the SAP login sequence in my legacy workflow"}
+{"id": "uipath-rpa-legacy-016", "prompt": "I'm on Studio Desktop 24.10, build a XAML that downloads attachments from Outlook"}
+{"id": "uipath-rpa-legacy-017", "prompt": "Generate a StateMachine XAML with Init / Process / End states for my legacy project"}
+{"id": "uipath-rpa-legacy-018", "prompt": "Add an Invoke Code activity in VB.NET that parses a JSON string"}
+{"id": "uipath-rpa-legacy-019", "prompt": "Debug this legacy XAML, it crashes with NullReferenceException at runtime"}
+{"id": "uipath-rpa-legacy-020", "prompt": "Run the workflow with uip rpa-legacy debug and show me the output arguments"}
+{"id": "uipath-rpa-legacy-021", "prompt": "Add a Get Outlook Mail Messages activity (classic) and filter by subject"}
+{"id": "uipath-rpa-legacy-022", "prompt": "Package my Studio Desktop project into a .nupkg"}
+{"id": "uipath-rpa-legacy-023", "prompt": "Make a legacy Test Automation project with two test cases for the login flow"}
+{"id": "uipath-rpa-legacy-024", "prompt": "Add a For Each Row over dt_Invoices that writes each row to SAP"}
+{"id": "uipath-rpa-legacy-025", "prompt": "Fix the 'Cannot create unknown type' error in my Windows-Legacy XAML"}
+{"id": "uipath-rpa-legacy-026", "prompt": "Add Orchestrator queue Add Queue Item / Get Transaction Item activities to the dispatcher and performer"}
+{"id": "uipath-rpa-legacy-027", "prompt": "Build a workflow that uses Excel Application Scope to read Config.xlsx and load assets"}
+{"id": "uipath-rpa-legacy-028", "prompt": "Create a Selector for a button in Notepad and add a Click activity"}
+{"id": "uipath-rpa-legacy-029", "prompt": "My XAML uses System.Private.CoreLib, switch the assembly references back to mscorlib"}
+{"id": "uipath-rpa-legacy-030", "prompt": "Add a TryCatch around the entire Main sequence and log the exception"}
+{"id": "uipath-rpa-legacy-031", "prompt": "I have a Windows-Legacy project, add Send Outlook Mail Message at the end of Main.xaml"}
+{"id": "uipath-rpa-legacy-032", "prompt": "ViewState is missing on my Flowchart nodes — Studio is stacking them at 0,0. Fix it."}
+{"id": "uipath-rpa-legacy-033", "prompt": "Find activities for HTTP Request in my legacy project and add one to call our API"}
+{"id": "uipath-rpa-legacy-034", "prompt": "Create a new XAML library that wraps our login flow as an InvokeWorkflow target"}
+{"id": "uipath-rpa-legacy-035", "prompt": "Add an Assign with a LINQ query that filters rows where Status = \"Open\""}
+{"id": "uipath-rpa-legacy-036", "prompt": "Help me read a PDF with the classic Read PDF Text activity"}
+{"id": "uipath-rpa-legacy-037", "prompt": "Set the project's expressionLanguage to C# and update Main.xaml to use C# expressions"}
+{"id": "uipath-rpa-legacy-038", "prompt": "Add a While loop with a counter that retries the API call up to 3 times"}
+{"id": "uipath-rpa-legacy-039", "prompt": "I need a Switch activity with cases for each transaction type"}
+{"id": "uipath-rpa-legacy-040", "prompt": "Build the dispatcher that adds queue items from an Excel sheet"}
+{"id": "uipath-rpa-legacy-041", "prompt": "Generate a Document Understanding pipeline XAML for a legacy project"}
+{"id": "uipath-rpa-legacy-042", "prompt": "Add an in_FilePath argument to Main.xaml and wire it through to the Excel scope"}
+{"id": "uipath-rpa-legacy-043", "prompt": "Validate the whole project and tell me what errors come up"}
+{"id": "uipath-rpa-legacy-044", "prompt": "Open project in Studio Desktop, write a workflow that scrapes a table from a web page using classic UI Automation"}
+{"id": "uipath-rpa-legacy-045", "prompt": "Add ContinueOnError to a non-critical block of activities so the workflow doesn't fail"}
+{"id": "uipath-rpa-legacy-046", "prompt": "Create test data — an Excel file and a JSON config — for testing my legacy workflow"}
+{"id": "uipath-rpa-legacy-047", "prompt": "Refactor this monolithic Main.xaml into smaller InvokeWorkflowFile blocks"}
+{"id": "uipath-rpa-legacy-048", "prompt": "Add Get Asset and Get Credential activities to read Orchestrator assets"}
+{"id": "uipath-rpa-legacy-049", "prompt": "Fix the dependencies in project.json so packages resolve for a Windows-Legacy target"}
+{"id": "uipath-rpa-legacy-050", "prompt": "I want to add a Persistence (Wait For) pattern in my legacy workflow — is that possible? show how"}
+{"id": "uipath-rpa-legacy-051", "prompt": "Build a UiPath Studio Desktop project"}

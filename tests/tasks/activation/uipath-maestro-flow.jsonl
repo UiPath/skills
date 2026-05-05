@@ -33,18 +33,15 @@
 {"id": "uipath-maestro-flow-033", "prompt": "Pass data between UiPath steps"}
 {"id": "uipath-maestro-flow-034", "prompt": "Invoke a child UiPath automation and wait for its result"}
 {"id": "uipath-maestro-flow-035", "prompt": "I want an automation that fires whenever I get an Outlook email with an attachment, pulls the attachment, and hands it to a coded agent for extraction."}
-{"id": "uipath-maestro-flow-036", "prompt": "How do I build a workflow where a human has to approve something before the next step runs?"}
-{"id": "uipath-maestro-flow-037", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?"}
-{"id": "uipath-maestro-flow-038", "prompt": "My flow stopped running at a decision step. The trace shows a bunch of completed steps and then nothing — can you figure out why?"}
-{"id": "uipath-maestro-flow-039", "prompt": "The tools in my inline agent don't have access to the parent flow's variables. Is that intentional, or did I mis-wire something? Take a look at the flow."}
-{"id": "uipath-maestro-flow-040", "prompt": "Debug keeps failing at the Provisioning Resources stage with a timeout. The flow is pretty simple — what's going wrong?"}
-{"id": "uipath-maestro-flow-041", "prompt": "I opened my flow today and the canvas is broken — branches are gone, the agent is gone, and it says the agent was removed from the solution. Can you recover it?"}
-{"id": "uipath-maestro-flow-042", "prompt": "Coded agent outputs aren't showing up in the debug console, and the next node doesn't seem to receive them. Low-code agents work fine. Check the flow?"}
-{"id": "uipath-maestro-flow-043", "prompt": "I published this to orchestrator and now jobs start, go to Running, and sit there forever. Runs fine locally from studio web. What's different?"}
-{"id": "uipath-maestro-flow-044", "prompt": "How does Human in the Loop work in Flow? I used Action Center forms in Maestro — can I reuse those, or do I need to build something new with HITL?"}
-{"id": "uipath-maestro-flow-045", "prompt": "What's the equivalent of Create Action App Task in Flow?"}
-{"id": "uipath-maestro-flow-046", "prompt": "Is there a native Teams trigger? I want the flow to fire when a Teams message contains a customer name."}
-{"id": "uipath-maestro-flow-047", "prompt": "Build a flow that pulls the last 3 months of Salesforce tickets for a customer when a Teams message arrives with their name."}
-{"id": "uipath-maestro-flow-048", "prompt": "Add a decision node after the risk-check step — if risk > 0.8, route to HITL; otherwise continue to the Slack send."}
-{"id": "uipath-maestro-flow-049", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution."}
-{"id": "uipath-maestro-flow-050", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON."}
+{"id": "uipath-maestro-flow-036", "prompt": "Can you build something that loops through Salesforce opportunities and updates each one based on what a Python agent returns?"}
+{"id": "uipath-maestro-flow-037", "prompt": "My flow stopped running at a decision step. The trace shows a bunch of completed steps and then nothing — can you figure out why?"}
+{"id": "uipath-maestro-flow-038", "prompt": "The tools in my inline agent don't have access to the parent flow's variables. Is that intentional, or did I mis-wire something? Take a look at the flow."}
+{"id": "uipath-maestro-flow-039", "prompt": "Debug keeps failing at the Provisioning Resources stage with a timeout. The flow is pretty simple — what's going wrong?"}
+{"id": "uipath-maestro-flow-040", "prompt": "I opened my flow today and the canvas is broken — branches are gone, the agent is gone, and it says the agent was removed from the solution. Can you recover it?"}
+{"id": "uipath-maestro-flow-041", "prompt": "Coded agent outputs aren't showing up in the debug console, and the next node doesn't seem to receive them. Low-code agents work fine. Check the flow?"}
+{"id": "uipath-maestro-flow-042", "prompt": "Is there a native Teams trigger? I want the flow to fire when a Teams message contains a customer name."}
+{"id": "uipath-maestro-flow-043", "prompt": "Build a flow that pulls the last 3 months of Salesforce tickets for a customer when a Teams message arrives with their name."}
+{"id": "uipath-maestro-flow-044", "prompt": "Add a decision node after the risk-check step — if risk > 0.8, route to HITL; otherwise continue to the Slack send."}
+{"id": "uipath-maestro-flow-045", "prompt": "I have a `.flow` file I generated locally. Import it into my existing Studio Web solution."}
+{"id": "uipath-maestro-flow-046", "prompt": "Add a script node after the loop that logs the iteration inputs and outputs as JSON."}
+{"id": "uipath-maestro-flow-047", "prompt": "Write Jint JavaScript logic for a script node"}

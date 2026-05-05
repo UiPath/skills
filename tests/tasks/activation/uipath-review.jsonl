@@ -1,0 +1,50 @@
+{"id": "uipath-review-001", "prompt": "Review my UiPath project"}
+{"id": "uipath-review-002", "prompt": "Audit this solution before we ship it to production"}
+{"id": "uipath-review-003", "prompt": "Can you check the quality of this RPA project?"}
+{"id": "uipath-review-004", "prompt": "Is this solution any good?"}
+{"id": "uipath-review-005", "prompt": "What can be improved in this project?"}
+{"id": "uipath-review-006", "prompt": "I inherited this UiPath project from someone who left, can you tell me what state it's in?"}
+{"id": "uipath-review-007", "prompt": "Run a pre-deployment quality gate check on the .uipx in this repo"}
+{"id": "uipath-review-008", "prompt": "Evaluate this XAML workflow against UiPath best practices"}
+{"id": "uipath-review-009", "prompt": "Look at my .flow file and tell me if there are any issues — don't change anything yet"}
+{"id": "uipath-review-010", "prompt": "Audit my coded agent (Python/LangGraph) for structural problems and tool design"}
+{"id": "uipath-review-011", "prompt": "Review the agent.json in this folder for best practices"}
+{"id": "uipath-review-012", "prompt": "Run Workflow Analyzer on this project and summarize the violations by severity"}
+{"id": "uipath-review-013", "prompt": "Check this solution for hardcoded credentials, missing assets, and other security smells"}
+{"id": "uipath-review-014", "prompt": "Evaluate the architecture of this multi-project solution — dispatcher/performer, library reuse, cross-project deps"}
+{"id": "uipath-review-015", "prompt": "Are my variable and argument names following UiPath naming conventions?"}
+{"id": "uipath-review-016", "prompt": "Quality review on this coded app before we publish"}
+{"id": "uipath-review-017", "prompt": "Check selector robustness in my XAML workflows"}
+{"id": "uipath-review-018", "prompt": "I want a structural review of my .flow — node count, depth, gateways, anything weird"}
+{"id": "uipath-review-019", "prompt": "Is my transaction granularity right? I'm worried one queue item is doing too much"}
+{"id": "uipath-review-020", "prompt": "Read-only audit of this UiPath solution please — I just want findings, not fixes"}
+{"id": "uipath-review-021", "prompt": "Score this RPA project's maintainability"}
+{"id": "uipath-review-022", "prompt": "Run uip rpa get-errors and uip rpa analyze on every entry point and give me a report"}
+{"id": "uipath-review-023", "prompt": "PDD-aligned review: here's the design doc, check whether the implementation matches"}
+{"id": "uipath-review-024", "prompt": "Does my agent's tool design follow best practices? Tool names, descriptions, granularity"}
+{"id": "uipath-review-025", "prompt": "Look at the error handling in this workflow — are TryCatch blocks empty? Are Business Exceptions used right?"}
+{"id": "uipath-review-026", "prompt": "Check whether this project should be using queues — it processes ~500 invoices a day right now in a loop"}
+{"id": "uipath-review-027", "prompt": "Review this Document Understanding project — taxonomy, classifier setup, validation station"}
+{"id": "uipath-review-028", "prompt": "Audit my long-running orchestration process: Suspend/Resume usage, persistence boundaries, form tasks"}
+{"id": "uipath-review-029", "prompt": "Quick sanity check on this .flow — anything obviously wrong before I demo it Friday?"}
+{"id": "uipath-review-030", "prompt": "Cross-project dependency review on my .uipx solution — version mismatches, circular deps, orphans"}
+{"id": "uipath-review-031", "prompt": "Performance review: are there bulk APIs I should be using instead of loops with single calls?"}
+{"id": "uipath-review-032", "prompt": "Check if my coded workflows mix Modern and Classic activities in a way that will cause problems"}
+{"id": "uipath-review-033", "prompt": "Evaluate test coverage and test maturity for this RPA project"}
+{"id": "uipath-review-034", "prompt": "Is my .flow's HITL wired up correctly? Action Center task schema, escalation, write-back"}
+{"id": "uipath-review-035", "prompt": "Code review on my agent's prompt — too long? hidden instructions? PII leakage risk?"}
+{"id": "uipath-review-036", "prompt": "Find dead code and unused variables across this project"}
+{"id": "uipath-review-037", "prompt": "Is this project deploy-ready? Validation, config, secrets, dependencies"}
+{"id": "uipath-review-038", "prompt": "Security audit on this solution — SecureString usage, hardcoded URLs, asset references"}
+{"id": "uipath-review-039", "prompt": "Walk me through this inherited automation and tell me what it does and how good it is"}
+{"id": "uipath-review-040", "prompt": "Give me a severity-ranked list of issues in my XAML — Critical / Warning / Info"}
+{"id": "uipath-review-041", "prompt": "Check whether retries and idempotency are handled properly in this workflow"}
+{"id": "uipath-review-042", "prompt": "Audit my Studio Web project before I sync it to a customer org"}
+{"id": "uipath-review-043", "prompt": "Review my coded app's action-schema.json and entry-point setup"}
+{"id": "uipath-review-044", "prompt": "Look at the structure of this multi-project repo — are the projects organized sensibly?"}
+{"id": "uipath-review-045", "prompt": "Health check on this UiPath solution — don't fix anything, just report"}
+{"id": "uipath-review-046", "prompt": "Are there any DevOps / source-control hygiene issues in this project? .gitignore, lib commits, build config"}
+{"id": "uipath-review-047", "prompt": "Compare what my flow actually does to what the requirements doc says it should do"}
+{"id": "uipath-review-048", "prompt": "Review my UiPath project against the SDD I attached"}
+{"id": "uipath-review-049", "prompt": "Is my XAML doing too much in Main? Should I split into sub-workflows?"}
+{"id": "uipath-review-050", "prompt": "Run the full review checklist on this folder — RPA, agent, flow, whichever applies"}

@@ -1,0 +1,50 @@
+{"id": "uipath-maestro-case-001", "prompt": "Create a new UiPath Case Management project from this sdd.md"}
+{"id": "uipath-maestro-case-002", "prompt": "I have an sdd.md for a personal injury claim — build the caseplan.json"}
+{"id": "uipath-maestro-case-003", "prompt": "Generate tasks.md from my sdd.md"}
+{"id": "uipath-maestro-case-004", "prompt": "Build a case management project for a freedom of information request workflow"}
+{"id": "uipath-maestro-case-005", "prompt": "I don't have an sdd.md yet — can you interview me and generate one for a loan application case?"}
+{"id": "uipath-maestro-case-006", "prompt": "Convert this spec into a Case Management plan with stages and tasks"}
+{"id": "uipath-maestro-case-007", "prompt": "Add a secondary stage called Pending Evidence Completion that runs when more documents are needed"}
+{"id": "uipath-maestro-case-008", "prompt": "Add an exception stage to my case for handling escalations"}
+{"id": "uipath-maestro-case-009", "prompt": "Add a terminal stage that closes the case once all approvals are complete"}
+{"id": "uipath-maestro-case-010", "prompt": "Add an entry condition to the Review stage that only runs when claim_amount > 10000"}
+{"id": "uipath-maestro-case-011", "prompt": "Add an exit condition to the Validation stage when status equals approved or rejected"}
+{"id": "uipath-maestro-case-012", "prompt": "Wire an HITL approval task into my Maker Review stage"}
+{"id": "uipath-maestro-case-013", "prompt": "Add an RPA task to my Document Ingestion stage that pulls attachments from email"}
+{"id": "uipath-maestro-case-014", "prompt": "Add an agent task to the Eligibility Determination stage that classifies the request"}
+{"id": "uipath-maestro-case-015", "prompt": "Add an api-workflow task to my case for posting a payment confirmation"}
+{"id": "uipath-maestro-case-016", "prompt": "Add a wait-for-timer task that waits 24 hours before the next stage"}
+{"id": "uipath-maestro-case-017", "prompt": "Add a wait-for-connector task that pauses until a Salesforce record is updated"}
+{"id": "uipath-maestro-case-018", "prompt": "Add an execute-connector-activity task that creates a ticket in ServiceNow"}
+{"id": "uipath-maestro-case-019", "prompt": "Set up an event trigger so the case starts when a new row is added to a Data Fabric entity"}
+{"id": "uipath-maestro-case-020", "prompt": "Add an Outlook trigger that creates a case when an email arrives in the claims inbox"}
+{"id": "uipath-maestro-case-021", "prompt": "Use a manual trigger so a user can start the case from Action Center"}
+{"id": "uipath-maestro-case-022", "prompt": "Add a scheduled timer trigger that starts the case every Monday at 9am"}
+{"id": "uipath-maestro-case-023", "prompt": "Define case-level input arguments so I can pass data from Maestro into the case"}
+{"id": "uipath-maestro-case-024", "prompt": "Add global variables for CaseId, CustomerName, and ProducerAmount"}
+{"id": "uipath-maestro-case-025", "prompt": "Wire the output of the Intake task into the input of the Approval task"}
+{"id": "uipath-maestro-case-026", "prompt": "Set a case-level SLA of 30 days with escalation at 50%, 80%, and on breach"}
+{"id": "uipath-maestro-case-027", "prompt": "Add a stage SLA with email notification when the threshold is reached"}
+{"id": "uipath-maestro-case-028", "prompt": "Set a task SLA of 4 hours and escalate to the manager group on breach"}
+{"id": "uipath-maestro-case-029", "prompt": "Add a conditional SLA rule that uses 14 days for retail customers and 7 days for premium"}
+{"id": "uipath-maestro-case-030", "prompt": "Configure ad-hoc mode on my case so a Case Manager agent decides which tasks to run"}
+{"id": "uipath-maestro-case-031", "prompt": "Add an optional ad-hoc task in the floating stage for follow-up calls"}
+{"id": "uipath-maestro-case-032", "prompt": "Add a re-entry loop on the Document Ingestion stage so it can rework when validation fails"}
+{"id": "uipath-maestro-case-033", "prompt": "Toggle runs-on-re-entry for the tasks in this stage"}
+{"id": "uipath-maestro-case-034", "prompt": "Add a case-exit condition that completes the case when status is closed"}
+{"id": "uipath-maestro-case-035", "prompt": "Run uip maestro case registry pull and resolve the connector activities I need"}
+{"id": "uipath-maestro-case-036", "prompt": "Validate my caseplan.json"}
+{"id": "uipath-maestro-case-037", "prompt": "Run uip maestro case debug on this case"}
+{"id": "uipath-maestro-case-038", "prompt": "Publish my case management solution to Studio Web"}
+{"id": "uipath-maestro-case-039", "prompt": "What's the schema for caseplan.json?"}
+{"id": "uipath-maestro-case-040", "prompt": "What's the difference between v19 and v20 case schema, and which one should I use?"}
+{"id": "uipath-maestro-case-041", "prompt": "Generate the caseplan with v20 schema"}
+{"id": "uipath-maestro-case-042", "prompt": "I want to build a case for an insurance claim — intake, validation, eligibility check, manager approval, payment, and close. Walk me through it"}
+{"id": "uipath-maestro-case-043", "prompt": "Build a case management project that handles employee onboarding with stages for offer, background check, equipment provisioning, and day-1 setup"}
+{"id": "uipath-maestro-case-044", "prompt": "I need a complaint handling case with a triage stage, an investigation stage with parallel agent and HITL tasks, and a resolution stage with SLA escalation"}
+{"id": "uipath-maestro-case-045", "prompt": "My stage is moving to the next stage without running its tasks — can you check the caseplan?"}
+{"id": "uipath-maestro-case-046", "prompt": "Add description fields to my case, stages, and tasks so the Case Manager agent can route correctly"}
+{"id": "uipath-maestro-case-047", "prompt": "Resolve the ServiceNow connector for this connector-activity task and fill in the typeId"}
+{"id": "uipath-maestro-case-048", "prompt": "Add a skeleton task for the credit-check process — I'll resolve the resource later"}
+{"id": "uipath-maestro-case-049", "prompt": "List the stages and tasks in my caseplan.json"}
+{"id": "uipath-maestro-case-050", "prompt": "Refresh the bindings_v2.json before I upload the solution"}

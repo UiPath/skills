@@ -1,0 +1,48 @@
+{"id": "uipath-gov-aops-policy-001", "prompt": "Create a new AOps governance policy for Studio"}
+{"id": "uipath-gov-aops-policy-002", "prompt": "List all AOps policies in my tenant"}
+{"id": "uipath-gov-aops-policy-003", "prompt": "Update the AITrustLayer policy to block Gemini and Claude"}
+{"id": "uipath-gov-aops-policy-004", "prompt": "Delete the old Studio governance policy"}
+{"id": "uipath-gov-aops-policy-005", "prompt": "Deploy this policy to the Administrators group"}
+{"id": "uipath-gov-aops-policy-006", "prompt": "What policy is currently deployed to the prod tenant?"}
+{"id": "uipath-gov-aops-policy-007", "prompt": "Block users from using ChatGPT in their agents"}
+{"id": "uipath-gov-aops-policy-008", "prompt": "Restrict which LLMs agents can call to only the approved list"}
+{"id": "uipath-gov-aops-policy-009", "prompt": "I want to disable Studio feedback and telemetry for my team"}
+{"id": "uipath-gov-aops-policy-010", "prompt": "Require everyone to run Workflow Analyzer before publishing"}
+{"id": "uipath-gov-aops-policy-011", "prompt": "Enforce that all our custom analyzer package rules run before publish"}
+{"id": "uipath-gov-aops-policy-012", "prompt": "Whitelist only our internal GitHub repos for Studio package sources"}
+{"id": "uipath-gov-aops-policy-013", "prompt": "Stop the Assistant from auto-launching at user login"}
+{"id": "uipath-gov-aops-policy-014", "prompt": "Disable the Marketplace widget in Assistant"}
+{"id": "uipath-gov-aops-policy-015", "prompt": "Only allow robots to automate outlook.exe and excel.exe — block everything else"}
+{"id": "uipath-gov-aops-policy-016", "prompt": "Block regedit.exe and cmd.exe from being automated by any robot"}
+{"id": "uipath-gov-aops-policy-017", "prompt": "Whitelist internal corp URLs for UI Automation"}
+{"id": "uipath-gov-aops-policy-018", "prompt": "Block emails sent to gmail.com and yahoo.com from any unattended robot"}
+{"id": "uipath-gov-aops-policy-019", "prompt": "Hide the developer panel in StudioX for all citizen devs"}
+{"id": "uipath-gov-aops-policy-020", "prompt": "Stop citizen developers from saving projects locally"}
+{"id": "uipath-gov-aops-policy-021", "prompt": "I need a guardrail that prevents publishing without release notes"}
+{"id": "uipath-gov-aops-policy-022", "prompt": "Set up a rule that blocks the Build Custom Connector option in Integration Service for everyone except admins"}
+{"id": "uipath-gov-aops-policy-023", "prompt": "How do I govern what Robot can run at the tenant level?"}
+{"id": "uipath-gov-aops-policy-024", "prompt": "Restrict Agent Builder so only the AI team can use it"}
+{"id": "uipath-gov-aops-policy-025", "prompt": "Apply this AITL policy as the tenant-wide default"}
+{"id": "uipath-gov-aops-policy-026", "prompt": "Create an exception policy for the AI team that overrides the tenant default"}
+{"id": "uipath-gov-aops-policy-027", "prompt": "Get the deployed policy for tenant prod and product Development"}
+{"id": "uipath-gov-aops-policy-028", "prompt": "What rules effectively apply to me right now?"}
+{"id": "uipath-gov-aops-policy-029", "prompt": "Show me the priority ordering for all Studio policies"}
+{"id": "uipath-gov-aops-policy-030", "prompt": "Lower the priority of the Restrict policy so the Allow one wins for admins"}
+{"id": "uipath-gov-aops-policy-031", "prompt": "Bump up the priority on this policy so it outranks the Everyone group policy"}
+{"id": "uipath-gov-aops-policy-032", "prompt": "Remove the Assistant policy assignment from the staging tenant"}
+{"id": "uipath-gov-aops-policy-033", "prompt": "Delete all policy assignments for user jane.doe@acme.com"}
+{"id": "uipath-gov-aops-policy-034", "prompt": "How do I use uip gov aops-policy create?"}
+{"id": "uipath-gov-aops-policy-035", "prompt": "The customer wants to fully disable Autopilot for all process types in Studio Web — not just RPA. How do I configure that policy?"}
+{"id": "uipath-gov-aops-policy-036", "prompt": "Set a min Workflow Analyzer score of 90 before users can publish from Studio Web"}
+{"id": "uipath-gov-aops-policy-037", "prompt": "Disable Gen AI connector for everyone in tenant but enable it for the AI team via a higher-priority policy"}
+{"id": "uipath-gov-aops-policy-038", "prompt": "Re-enable the Windows Legacy framework option for one specific tenant via Automation Ops"}
+{"id": "uipath-gov-aops-policy-039", "prompt": "Configure an AOps policy that blocks publishing of agents with score below threshold"}
+{"id": "uipath-gov-aops-policy-040", "prompt": "I want to forbid developers from building agents in Agent Builder for the dev tenant"}
+{"id": "uipath-gov-aops-policy-041", "prompt": "Set up a tenant policy that disallows external AI model providers"}
+{"id": "uipath-gov-aops-policy-042", "prompt": "Mandate the CoE Workflow Analyzer ruleset for everyone"}
+{"id": "uipath-gov-aops-policy-043", "prompt": "Create a product policy for AITrustLayer scoped to the Finance group"}
+{"id": "uipath-gov-aops-policy-044", "prompt": "Apply our Assistant lockdown to the entire production tenant"}
+{"id": "uipath-gov-aops-policy-045", "prompt": "Verify the policy actually got deployed to user bob@acme.com"}
+{"id": "uipath-gov-aops-policy-046", "prompt": "Get policy GUID 7c2f-... and show me what's in it"}
+{"id": "uipath-gov-aops-policy-047", "prompt": "Update the existing Robot runtime policy to add cmd.exe to the blocklist"}
+{"id": "uipath-gov-aops-policy-048", "prompt": "Bootstrap every product schema so I can pick the right one for my rule"}

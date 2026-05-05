@@ -1,0 +1,41 @@
+{"id": "uipath-planner-001", "prompt": "Help me automate this — not sure where to start"}
+{"id": "uipath-planner-002", "prompt": "What's the right approach for automating our invoice approval pipeline in UiPath?"}
+{"id": "uipath-planner-003", "prompt": "I want to build something with UiPath but I'm not sure what kind of project to use"}
+{"id": "uipath-planner-004", "prompt": "Set up a UiPath process from scratch for onboarding new employees"}
+{"id": "uipath-planner-005", "prompt": "Build a UiPath solution for monthly bank reconciliation end to end"}
+{"id": "uipath-planner-006", "prompt": "I have a PDD at docs/orders-pdd.pdf — plan the full UiPath implementation for me"}
+{"id": "uipath-planner-007", "prompt": "Plan an automation that scrapes a vendor portal, uploads results to Orchestrator, and triggers an agent to summarize"}
+{"id": "uipath-planner-008", "prompt": "What can I build with UiPath? Walk me through the options"}
+{"id": "uipath-planner-009", "prompt": "Help me put together an automation that pulls Salesforce opportunities and routes them through approval — not sure if it's a flow, an agent, or RPA"}
+{"id": "uipath-planner-010", "prompt": "Build and deploy a UiPath workflow that processes claims and pushes results to Orchestrator"}
+{"id": "uipath-planner-011", "prompt": "Create an agent that uses our existing RPA processes as tools and deploy the whole thing"}
+{"id": "uipath-planner-012", "prompt": "I need to automate Workday onboarding — figure out the right project type and plan the work"}
+{"id": "uipath-planner-013", "prompt": "Plan a Maestro flow that calls an RPA process we still need to build"}
+{"id": "uipath-planner-014", "prompt": "Walk me through automating our quarterly close — multiple systems involved"}
+{"id": "uipath-planner-015", "prompt": "I want UiPath to handle expense reports end-to-end. Where do I start?"}
+{"id": "uipath-planner-016", "prompt": "Build a UiPath automation that reads invoices, calls an LLM to classify them, then files them in SAP — and deploy it"}
+{"id": "uipath-planner-017", "prompt": "Build a workflow against our HR app and verify it actually works on the live UI"}
+{"id": "uipath-planner-018", "prompt": "I have an SDD here, generate the implementation plan and start building"}
+{"id": "uipath-planner-019", "prompt": "I'm not sure if I need an agent, a flow, or just a workflow — help me decide"}
+{"id": "uipath-planner-020", "prompt": "Plan and execute a full automation for processing purchase orders from email"}
+{"id": "uipath-planner-021", "prompt": "Set up everything for automating our customer onboarding — auth, project, deploy, the works"}
+{"id": "uipath-planner-022", "prompt": "Help me design and build an automation that integrates ServiceNow tickets with our internal portal"}
+{"id": "uipath-planner-023", "prompt": "Build an end-to-end UiPath solution that processes loan applications across three systems"}
+{"id": "uipath-planner-024", "prompt": "What's the best UiPath approach for automating monthly financial reporting?"}
+{"id": "uipath-planner-025", "prompt": "Create a process that downloads reports from a portal, transforms them, and emails results — deploy when done"}
+{"id": "uipath-planner-026", "prompt": "I want to build a UiPath solution but I have no idea what kind of project I need"}
+{"id": "uipath-planner-027", "prompt": "Plan a multi-skill UiPath project for our procurement team"}
+{"id": "uipath-planner-028", "prompt": "Build a Maestro flow plus the RPA processes it needs and publish everything"}
+{"id": "uipath-planner-029", "prompt": "Help me automate document processing for legal contracts — design the whole pipeline"}
+{"id": "uipath-planner-030", "prompt": "I want an AI agent that can call our existing UiPath RPA processes — set the whole thing up"}
+{"id": "uipath-planner-031", "prompt": "Plan the implementation for this PDD: docs/process-design.docx"}
+{"id": "uipath-planner-032", "prompt": "Create a UiPath automation for IT helpdesk ticket triage and routing"}
+{"id": "uipath-planner-033", "prompt": "Help me figure out the right architecture for automating our accounts payable process in UiPath"}
+{"id": "uipath-planner-034", "prompt": "Build a Citrix-based automation against our legacy ERP and deploy to Orchestrator"}
+{"id": "uipath-planner-035", "prompt": "I want to automate something across SAP, Excel, and email — what's the best way to structure this in UiPath?"}
+{"id": "uipath-planner-036", "prompt": "Plan an automation that integrates a coded app with a flow that calls an agent"}
+{"id": "uipath-planner-037", "prompt": "Build a UI automation for our internal portal and verify it on the running app"}
+{"id": "uipath-planner-038", "prompt": "Need to automate KYC verification — help me plan and build this in UiPath"}
+{"id": "uipath-planner-039", "prompt": "Set up a complete UiPath process for handling vendor onboarding requests"}
+{"id": "uipath-planner-040", "prompt": "I want to migrate this manual process to UiPath — guide me through the whole thing"}
+{"id": "uipath-planner-041", "prompt": "Help me write an automation"}

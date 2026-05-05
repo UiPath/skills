@@ -1,0 +1,48 @@
+{"id": "uipath-gov-access-policy-001", "prompt": "Create a UiPath access policy"}
+{"id": "uipath-gov-access-policy-002", "prompt": "uip gov access-policy create help"}
+{"id": "uipath-gov-access-policy-003", "prompt": "List all my ToolUsePolicy access policies"}
+{"id": "uipath-gov-access-policy-004", "prompt": "Get the access policy with ID 1c9d3b2a-8f7e-4a6b-9c0d-1e2f3a4b5c6d"}
+{"id": "uipath-gov-access-policy-005", "prompt": "Delete this access policy"}
+{"id": "uipath-gov-access-policy-006", "prompt": "Update an existing tool-use policy"}
+{"id": "uipath-gov-access-policy-007", "prompt": "Evaluate this access policy against a request"}
+{"id": "uipath-gov-access-policy-008", "prompt": "When my Maestro process calls the SalesforceAgent, allow it"}
+{"id": "uipath-gov-access-policy-009", "prompt": "Only the Production Maestro should be able to invoke the Production Agent"}
+{"id": "uipath-gov-access-policy-010", "prompt": "Block the Marketing flow from calling the InternalDB RPA workflow"}
+{"id": "uipath-gov-access-policy-011", "prompt": "Restrict tool use so only Production-tagged agents can be invoked"}
+{"id": "uipath-gov-access-policy-012", "prompt": "Only admins can trigger the Refund Agent as a tool"}
+{"id": "uipath-gov-access-policy-013", "prompt": "Let the OrderRouting flow use any agent tagged customer-service"}
+{"id": "uipath-gov-access-policy-014", "prompt": "Set up a policy so RPA workflow X can only be called by agent Y"}
+{"id": "uipath-gov-access-policy-015", "prompt": "I want to govern which agents can call my API workflows"}
+{"id": "uipath-gov-access-policy-016", "prompt": "When robot user FinanceBot triggers the Reconciliation flow, allow that tool use"}
+{"id": "uipath-gov-access-policy-017", "prompt": "Exclude any resource tagged sandbox from the Production Maestro"}
+{"id": "uipath-gov-access-policy-018", "prompt": "Only members of the FinanceAdmins group should be able to invoke the Payments agent"}
+{"id": "uipath-gov-access-policy-019", "prompt": "deny everything except Production-tagged agents from being invoked by my flows"}
+{"id": "uipath-gov-access-policy-020", "prompt": "create an access policy in simulated mode first so i can preview"}
+{"id": "uipath-gov-access-policy-021", "prompt": "activate the access policy I just created"}
+{"id": "uipath-gov-access-policy-022", "prompt": "Which executables are allowed to call this resource? Show me the policy"}
+{"id": "uipath-gov-access-policy-023", "prompt": "any caller type except Agent should be able to invoke the InternalAPI workflow"}
+{"id": "uipath-gov-access-policy-024", "prompt": "Add an actor identity rule so only user jane.doe@uipath.com can use the Approval agent as a tool"}
+{"id": "uipath-gov-access-policy-025", "prompt": "Restrict the InvoiceProcessing case management workflow to only the BackOffice flow"}
+{"id": "uipath-gov-access-policy-026", "prompt": "policy: when AgenticProcess invokes any RPAWorkflow tagged 'critical', only allow if actor is in admins group"}
+{"id": "uipath-gov-access-policy-027", "prompt": "delete policies abc-123 and def-456"}
+{"id": "uipath-gov-access-policy-028", "prompt": "I need a tool-use policy that limits agent X to calling only specific sub-agents"}
+{"id": "uipath-gov-access-policy-029", "prompt": "Show me a sample access policy I can adapt"}
+{"id": "uipath-gov-access-policy-030", "prompt": "set up governance: production agents may only be invoked by production maestros"}
+{"id": "uipath-gov-access-policy-031", "prompt": "Author a ToolUsePolicy that excludes sandbox-tagged agents from being callable"}
+{"id": "uipath-gov-access-policy-032", "prompt": "I want to control which tools my agent can use at runtime"}
+{"id": "uipath-gov-access-policy-033", "prompt": "Create an Allow policy for the HR group to invoke the OnboardingFlow"}
+{"id": "uipath-gov-access-policy-034", "prompt": "uip gov access-policy list --output json — what does this return?"}
+{"id": "uipath-gov-access-policy-035", "prompt": "switch this policy from active to simulated"}
+{"id": "uipath-gov-access-policy-036", "prompt": "The PDP is denying my tool call — help me check the access policies"}
+{"id": "uipath-gov-access-policy-037", "prompt": "Make a policy so any Flow can call the SharedUtilsAgent except the Test flow"}
+{"id": "uipath-gov-access-policy-038", "prompt": "Allow only on-behalf-of user finance.lead@example.com when the Reporting Maestro calls the LedgerAgent"}
+{"id": "uipath-gov-access-policy-039", "prompt": "Govern resource access by tag — only 'approved' tagged tools can be invoked by anything"}
+{"id": "uipath-gov-access-policy-040", "prompt": "evaluate access policy with these UUIDs to see if the call would be allowed"}
+{"id": "uipath-gov-access-policy-041", "prompt": "I have a list of resource UUIDs — make a policy that allows only those to be called by my OrchestratorFlow"}
+{"id": "uipath-gov-access-policy-042", "prompt": "Need to stop one specific agent from being invoked by anything in the tenant"}
+{"id": "uipath-gov-access-policy-043", "prompt": "Create access policy: caller must be a Maestro tagged 'prod', target must be an Agent tagged 'prod', actor must be in group prod-operators"}
+{"id": "uipath-gov-access-policy-044", "prompt": "remove an access policy by name"}
+{"id": "uipath-gov-access-policy-045", "prompt": "review the JSON of policy 7f8e — show me what's in selectors and executableRule"}
+{"id": "uipath-gov-access-policy-046", "prompt": "I want a guardrail: only admin users can trigger any case management workflow as a tool"}
+{"id": "uipath-gov-access-policy-047", "prompt": "Help — my agent can't call its sub-agent, I think a tool-use policy is blocking it"}
+{"id": "uipath-gov-access-policy-048", "prompt": "Author a policy for tool-use governance at the actor process to resource boundary"}

@@ -1,0 +1,50 @@
+{"id": "uipath-test-001", "prompt": "Create a new Test Manager project called RegressionSuite with key REG"}
+{"id": "uipath-test-002", "prompt": "List all my Test Manager projects"}
+{"id": "uipath-test-003", "prompt": "Find the Test Manager project named Invoicing"}
+{"id": "uipath-test-004", "prompt": "Rename Test Manager project DEMO to DemoQ4"}
+{"id": "uipath-test-005", "prompt": "Delete the Test Manager project with key OLDPROJ"}
+{"id": "uipath-test-006", "prompt": "Set the default Orchestrator folder for project REG to my QA folder"}
+{"id": "uipath-test-007", "prompt": "Clear the default folder on Test Manager project REG"}
+{"id": "uipath-test-008", "prompt": "Create a test case called Login_HappyPath in project REG"}
+{"id": "uipath-test-009", "prompt": "List all test cases in project INV"}
+{"id": "uipath-test-010", "prompt": "Update the description of test case INV:42 to say 'covers EU VAT edge cases'"}
+{"id": "uipath-test-011", "prompt": "Delete test case INV:88"}
+{"id": "uipath-test-012", "prompt": "Link the InvoiceParser package automation to test case INV:42"}
+{"id": "uipath-test-013", "prompt": "Unlink the automation from test case INV:42"}
+{"id": "uipath-test-014", "prompt": "Show me the available automations in my QA folder I can link to a test case"}
+{"id": "uipath-test-015", "prompt": "Which test sets contain test case INV:42?"}
+{"id": "uipath-test-016", "prompt": "List the steps for test case INV:42"}
+{"id": "uipath-test-017", "prompt": "Show the result history for test case INV:42"}
+{"id": "uipath-test-018", "prompt": "Run test cases INV:42 and INV:43 unattended"}
+{"id": "uipath-test-019", "prompt": "Create a test set called SmokeSuite in project REG"}
+{"id": "uipath-test-020", "prompt": "List test sets in project INV"}
+{"id": "uipath-test-021", "prompt": "Add test cases INV:42, INV:43, INV:44 to test set INV:7"}
+{"id": "uipath-test-022", "prompt": "Remove INV:44 from test set INV:7"}
+{"id": "uipath-test-023", "prompt": "Show me which test cases are in test set INV:7"}
+{"id": "uipath-test-024", "prompt": "Execute test set INV:7"}
+{"id": "uipath-test-025", "prompt": "Rename test set INV:7 to NightlyRegression"}
+{"id": "uipath-test-026", "prompt": "Delete test set INV:99"}
+{"id": "uipath-test-027", "prompt": "Retry only the failed test cases from execution 12345"}
+{"id": "uipath-test-028", "prompt": "List the latest 50 executions for test set INV:7"}
+{"id": "uipath-test-029", "prompt": "Show me the test case logs for execution 12345"}
+{"id": "uipath-test-030", "prompt": "List the assertions for test case log abc-123"}
+{"id": "uipath-test-031", "prompt": "Wait for execution 12345 to finish"}
+{"id": "uipath-test-032", "prompt": "Generate a shareable test report for execution 12345 for the QA engineer"}
+{"id": "uipath-test-033", "prompt": "Build a release manager view report from last night's regression run"}
+{"id": "uipath-test-034", "prompt": "I need a go/no-go summary of the last execution to send to my release manager"}
+{"id": "uipath-test-035", "prompt": "Get the summary report for execution 12345"}
+{"id": "uipath-test-036", "prompt": "Download the JUnit XML results for execution 12345"}
+{"id": "uipath-test-037", "prompt": "Download the attachments from execution 12345"}
+{"id": "uipath-test-038", "prompt": "What's our regression pass rate over the last 5 runs of NightlyRegression?"}
+{"id": "uipath-test-039", "prompt": "Which test cases have been failing most often in project INV?"}
+{"id": "uipath-test-040", "prompt": "Tell me the test coverage for project INV"}
+{"id": "uipath-test-041", "prompt": "Kick off my smoke test set and wait for results, then summarize failures"}
+{"id": "uipath-test-042", "prompt": "Publish my package and link it to the LoginRegression test case in Test Manager"}
+{"id": "uipath-test-043", "prompt": "Set up a new Test Manager project for the Billing release with a default folder and three empty test sets"}
+{"id": "uipath-test-044", "prompt": "Trigger the nightly regression test set, wait for it to finish, and produce a developer-focused failure report"}
+{"id": "uipath-test-045", "prompt": "Pull the assertions for every failed test case in execution 12345 so I can triage"}
+{"id": "uipath-test-046", "prompt": "Use uip tm to list my test manager projects"}
+{"id": "uipath-test-047", "prompt": "Show me test execution logs from Test Manager"}
+{"id": "uipath-test-048", "prompt": "I need to manage test sets and executions in UiPath"}
+{"id": "uipath-test-049", "prompt": "Bulk-add 20 test cases from project INV into the new ReleaseCandidate test set"}
+{"id": "uipath-test-050", "prompt": "After my test set finishes, download the JUnit results and attachments and write a markdown report"}
