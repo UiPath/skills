@@ -1,0 +1,85 @@
+{
+  "Result": "Success",
+  "Code": "InstanceElementExecutions",
+  "Data": {
+    "creationUserKey": "67a356f2-1b63-4f9d-8ada-a1cd385f838b",
+    "folderKey": "36c6d42a-9294-4807-ac48-46781c45fb96",
+    "instanceDisplayName": "Agentic Process-42792329",
+    "instanceId": "0fbda085-5c96-4dab-a4b3-012c1914845a",
+    "organizationId": "27c4be1d-a3fd-4be3-b063-682b88ebee86",
+    "packageId": "Solution.5.Agentic.Agentic-Process",
+    "packageKey": "Solution.5.Agentic.Agentic-Process:1.0.0",
+    "packageVersion": "1.0.0",
+    "processKey": "f9b2ddf0-f912-4c67-b634-b64f7c3ea3a8",
+    "source": "Manual",
+    "tenantId": "6a0f9306-c553-4c37-9d86-7ab06a158774",
+    "status": "Faulted",
+    "startedTimeUtc": "2025-09-23T09:46:00.5418245Z",
+    "completedTimeUtc": null,
+    "elementExecutions": [
+      {
+        "completedTimeUtc": "2025-09-23T09:46:01.8397458Z",
+        "elementId": "Event_start",
+        "elementType": "StartEvent",
+        "elementExtensionType": null,
+        "parentRunId": null,
+        "parentElementId": null,
+        "parentElementRunId": null,
+        "runId": "",
+        "startedTimeUtc": "2025-09-23T09:46:01.3338154Z",
+        "status": "Completed",
+        "externalLink": "",
+        "maestroLink": null,
+        "elementRuns": [
+          {
+            "status": "Completed",
+            "startedTimeUtc": "2025-09-23T09:46:01.3338154Z",
+            "completedTimeUtc": "2025-09-23T09:46:01.8397458Z",
+            "incomingFlowId": null,
+            "incomingFlowIds": [],
+            "elementRunId": "3149376d-cb6c-4c9b-8b50-6e4a41a3d494",
+            "markerItemIndex": null,
+            "workflowId": "0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow",
+            "temporalExecutionId": "0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow/Event_start/3149376d-cb6c-4c9b-8b50-6e4a41a3d494",
+            "version": 2,
+            "parentElementRunId": null
+          }
+        ],
+        "jobKey": null
+      },
+      {
+        "completedTimeUtc": null,
+        "elementId": "Activity_EW6HNH",
+        "elementType": "ServiceTask",
+        "elementExtensionType": "Orchestrator.StartJob",
+        "parentRunId": null,
+        "parentElementId": null,
+        "parentElementRunId": null,
+        "runId": "",
+        "startedTimeUtc": "2025-09-23T09:46:04.3956408Z",
+        "status": "Failed",
+        "externalLink": "",
+        "maestroLink": null,
+        "elementRuns": [
+          {
+            "status": "Failed",
+            "startedTimeUtc": "2025-09-23T09:46:04.3956408Z",
+            "completedTimeUtc": "2025-09-23T09:47:16.5310458Z",
+            "incomingFlowId": "edge_E5vh5n",
+            "incomingFlowIds": [
+              "edge_E5vh5n"
+            ],
+            "elementRunId": "cddd4d8d-3821-441a-8e1c-eda84d570e49",
+            "markerItemIndex": null,
+            "workflowId": "0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow",
+            "temporalExecutionId": "0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow/Activity_EW6HNH/cddd4d8d-3821-441a-8e1c-eda84d570e49",
+            "version": 2,
+            "parentElementRunId": null
+          }
+        ],
+        "jobKey": null
+      }
+    ],
+    "traceId": "c5a19942-1985-418e-9f71-675018e80449"
+  }
+}

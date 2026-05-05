@@ -1,0 +1,35 @@
+{
+  "Result": "Success",
+  "Code": "InstanceIncidents",
+  "Data": [
+    {
+      "id": "f32ae7e9-fdd4-4978-80a9-101e1496df82",
+      "tenantId": "6a0f9306-c553-4c37-9d86-7ab06a158774",
+      "organizationId": "27c4be1d-a3fd-4be3-b063-682b88ebee86",
+      "instanceId": "0fbda085-5c96-4dab-a4b3-012c1914845a",
+      "runId": "f3a0d71f-663d-4d52-b55b-4c54c7d8eee9",
+      "elementId": "Activity_EW6HNH",
+      "elementRunId": "cddd4d8d-3821-441a-8e1c-eda84d570e49",
+      "folderKey": "36c6d42a-9294-4807-ac48-46781c45fb96",
+      "processKey": "f9b2ddf0-f912-4c67-b634-b64f7c3ea3a8",
+      "packageVersion": null,
+      "incidentId": "cddd4d8d-3821-441a-8e1c-eda84d570e49",
+      "incidentStatus": "Open",
+      "incidentType": "System",
+      "errorCode": "170002",
+      "errorMessage": "Failure in the Orchestrator Job",
+      "errorTimeUtc": "2025-09-23T09:47:17.154153Z",
+      "errorDetails": "{\"Code\":\"Robot\",\"Title\":\"Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n •  If needed, re-indicate the element as its properties might have changed\\r\\n •  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n •  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl id='drawerHeader_0' tag='DIV' aaname='set' />\\n\\r\\nThe closest selector matches found are:\\r\\n[75%] <webctrl aaname='Apps' id='drawerHeader_10' tag='DIV'/>\\n[74%] <webctrl aaname='Sales &amp; Marketing' id='drawerHeader_2' tag='DIV'/>\\n[73%] <webctrl aaname='UiPath Tools' id='drawerHeader_4' tag='DIV'/>\\n[72%] <webctrl aaname='Employees Tools' id='drawerHeader_6' tag='DIV'/>\\n[71%] <webctrl aaname='Collaboration' id='drawerHeader_0' tag='DIV'/>\\n[70%] <webctrl aaname='Product Development' id='drawerHeader_8' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_1' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_3' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_5' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_7' tag='DIV'/>)\",\"Detail\":\"in Main.xaml\\r\\n    at NClick \\\"Click 'Collaboration'\\\"\\r\\n    at Sequence \\\"Do\\\"\\r\\n    at NApplicationCard \\\"Edge My Apps\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.UIAutomationNext.Exceptions.NodeNotFoundException: Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n •  If needed, re-indicate the element as its properties might have changed\\r\\n •  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n •  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl id='drawerHeader_0' tag='DIV' aaname='set' />\\n\\r\\nThe closest selector matches found are:\\r\\n[75%] <webctrl aaname='Apps' id='drawerHeader_10' tag='DIV'/>\\n[74%] <webctrl aaname='Sales &amp; Marketing' id='drawerHeader_2' tag='DIV'/>\\n[73%] <webctrl aaname='UiPath Tools' id='drawerHeader_4' tag='DIV'/>\\n[72%] <webctrl aaname='Employees Tools' id='drawerHeader_6' tag='DIV'/>\\n[71%] <webctrl aaname='Collaboration' id='drawerHeader_0' tag='DIV'/>\\n[70%] <webctrl aaname='Product Development' id='drawerHeader_8' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_1' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_3' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_5' tag='DIV'/>\\n[54%] <webctrl aaname='' id='drawerBody_7' tag='DIV'/>)\\r\\n   at UiPath.UIAutomationNext.Activities.Services.RuntimeActivityMonitorService.ActivityFaultedAsync(String activityInstanceId, Exception ex, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\"Category\":null,\"Status\":null,\"Timestamp\":null,\"AdditionalProperties\":{}}",
+      "comment": null,
+      "userUpdated": null,
+      "debugMode": "None",
+      "incidentUpdateTimeUtc": null,
+      "traceId": null,
+      "dependentFaultCode": "Robot",
+      "incidentSeverity": "Error",
+      "aiSummary": null,
+      "aiRecommendations": null,
+      "processType": null
+    }
+  ]
+}

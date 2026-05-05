@@ -1,6 +1,6 @@
 # Phase 1 — Planning: sdd.md → tasks.md
 
-Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
+Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Debug → Phase 6 Publish) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file.
 >
@@ -50,6 +50,8 @@ uip maestro case registry pull
 
 If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
+**Capture `Data.UIPATH_URL` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
+
 ## Step 2 — Locate and parse the design document
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
@@ -59,6 +61,62 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 `sdd.md` is the **sole input**. It describes stages, tasks, edges, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
+
+### Step 2.1 — Detect schema version (Rule 17)
+
+Resolution order (first match wins):
+
+#### 2.1.a — Tenant override (alpha environment)
+
+Read the `Data.UIPATH_URL` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
+
+```
+> Schema: v20 (alpha tenant override — UIPATH_URL=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
+```
+
+Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
+
+If `Data.UIPATH_URL` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
+
+#### 2.1.b — User-prompt phrase
+
+Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
+
+| Phrase (any one matches) |
+|---|
+| `v20 schema` |
+| `schema v20` |
+| `use v20` |
+| `emit v20` |
+| `generate v20` |
+| `unified schema` |
+| `schema 20.0.0` |
+
+- **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
+  ```
+  > Schema: v20 (skill-emit-only mode — Phase 4 informational; CLI validate / upload / debug may reject downstream)
+  ```
+- **No match** → schema is `v19` (default). No confirmation line.
+
+**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
+
+### Step 2.2 — Persist schema choice in tasks.md header
+
+When `tasks.md` is written at Step 4, the **first non-comment line** is the schema header:
+
+```markdown
+Schema: v19
+```
+
+or
+
+```markdown
+Schema: v20
+```
+
+Place this line above all `T<n>` headings. Re-entry protocol (Phase 2 Step 9.6, Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
+
+If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
 
 ## Step 3 — Resolve resources
 
@@ -115,7 +173,7 @@ At execution time, unresolved tasks become **skeleton tasks** in `caseplan.json`
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
-Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
+Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. The **first non-comment line is the schema header** (`Schema: v19` or `Schema: v20` per Step 2.1–2.2). Each subsequent section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 

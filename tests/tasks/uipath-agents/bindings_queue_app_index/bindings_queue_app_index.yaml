@@ -1,0 +1,106 @@
+task_id: skill-agents-bindings-queue-app-index
+description: >
+  Bindings sync covering five resource types in one project —
+  queue, app, index, connection, mcpServer. The agent runs the
+  bindings-sync workflow over a hand-authored project; the check
+  verifies one binding entry per resource with the right key
+  construction (`<name>.<folder_path>` for most, bare
+  `<connection_key>` for connections) and metadata fields.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Hand-author a UiPath coded agent project — do NOT scaffold via
+  the CLI. Inside the working directory create:
+
+  **pyproject.toml**:
+  ```toml
+  [project]
+  name = "five-bindings"
+  version = "0.0.1"
+  description = "Five binding types in one project"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **uipath.json**:
+  ```json
+  {"projectType": "CodedAgent", "functions": {"main": "main.py:main"}}
+  ```
+
+  **entry-points.json**:
+  ```json
+  {
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+      {
+        "filePath": "main",
+        "uniqueId": "bb111111-2222-3333-4444-555566667777",
+        "type": "agent",
+        "input": {"type": "object", "properties": {}, "required": []},
+        "output": {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
+      }
+    ]
+  }
+  ```
+
+  **main.py**:
+  ```python
+  from uipath.platform import UiPath
+
+  async def main(input):
+      sdk = UiPath()
+      # queue
+      await sdk.queues.create_item_async(item={"Name": "OrderQueue", "SpecificContent": {"id": "1"}})
+      # app (Action Center)
+      await sdk.tasks.create_async(title="Review", data={"id": "1"}, app_name="ReviewApp", app_folder_path="Ops")
+      # index (Context Grounding)
+      await sdk.context_grounding.retrieve_async(name="kb_index", folder_path="Shared")
+      # connection (Integration Service)
+      await sdk.connections.retrieve_async("salesforce-prod-conn")
+      # mcpServer
+      await sdk.mcp.retrieve_async(slug="weather-mcp", folder_path="Tools")
+      return {"ok": True}
+  ```
+
+  **bindings.json** (start empty):
+  ```json
+  {"version": "2.0", "resources": []}
+  ```
+
+  Then sync `bindings.json` so it reflects all five resource calls.
+  Each resource must produce one binding entry: queue, app, index,
+  connection, mcpServer.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All five bindings present with correct keys, value blocks, and metadata"
+    command: "python3 $TASK_DIR/check_bindings_queue_app_index.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

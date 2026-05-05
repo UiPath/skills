@@ -1,0 +1,43 @@
+{
+  "Result": "Success",
+  "Code": "InstanceGet",
+  "Data": {
+    "organizationId": "27c4be1d-a3fd-4be3-b063-682b88ebee86",
+    "tenantId": "6a0f9306-c553-4c37-9d86-7ab06a158774",
+    "instanceId": "0fbda085-5c96-4dab-a4b3-012c1914845a",
+    "packageKey": "Solution.5.Agentic.Agentic-Process:1.0.0",
+    "packageId": "Solution.5.Agentic.Agentic-Process",
+    "packageVersion": "1.0.0",
+    "latestRunId": "f3a0d71f-663d-4d52-b55b-4c54c7d8eee9",
+    "latestRunStatus": "Faulted",
+    "processKey": "f9b2ddf0-f912-4c67-b634-b64f7c3ea3a8",
+    "folderKey": "36c6d42a-9294-4807-ac48-46781c45fb96",
+    "userId": 606790,
+    "instanceDisplayName": "Agentic Process-42792329",
+    "source": "Manual",
+    "startedByUser": "Unknown",
+    "creatorUserKey": "67a356f2-1b63-4f9d-8ada-a1cd385f838b",
+    "createdTimeUtc": "2025-09-23T09:45:56.8639217Z",
+    "startedTimeUtc": "2025-09-23T09:46:00.5418245Z",
+    "completedTimeUtc": null,
+    "instanceRuns": [
+      {
+        "runId": "f3a0d71f-663d-4d52-b55b-4c54c7d8eee9",
+        "status": "Faulted",
+        "startedTimeUtc": "2025-09-23T09:46:00.5418245Z",
+        "completedTimeUtc": "0001-01-01T00:00:00",
+        "properties": {}
+      }
+    ],
+    "incidents": null,
+    "cursors": {
+      "elementIds": [
+        "Activity_EW6HNH"
+      ]
+    },
+    "externalId": "42792329",
+    "feedId": "432637b3-71e8-413e-92db-74f74011eda4",
+    "processType": "ProcessOrchestration",
+    "licensingContext": null
+  }
+}

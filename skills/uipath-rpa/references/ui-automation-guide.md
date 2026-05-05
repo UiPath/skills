@@ -14,7 +14,7 @@ See [uia-prerequisites.md](uia-prerequisites.md).
 
 ## Pre-flight: Window Baseline
 
-Before configuring any target or writing any UIA workflow, list top-level windows **once** via the `uia snapshot inspect` CLI to check whether the target app is open. Two outcomes:
+Before configuring any target or writing any UIA workflow, list top-level windows **once** via `uip rpa uia snapshot inspect` to check whether the target app is open. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Two outcomes:
 
 - **Target window present** → proceed directly to `uia-configure-target`; it will attach.
 - **Target window absent** → launch the app yourself, then proceed directly to `uia-configure-target`; the skill picks up the new window as part of its own capture.
@@ -25,13 +25,27 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
+## Capturing from Manual Test Steps
+
+When the source is a Test Manager test case, a PDD, or any written list of "Click X / Enter Y / Select Z / Verify W" steps, treat each interaction step as a capture target before writing any workflow code.
+
+1. **Inventory.** Read every step. Each interaction (`Click`, `Enter`, `Type`, `Select`, `Choose`, `Verify visible`, `Read`) maps to **one** Object Repository element. Note: assertions ("Verify text contains X") still need an OR element to read from.
+2. **Group by screen state.** Sort steps into screen batches — every step before an action that advances the UI (submit, navigate, dialog confirm) belongs to the current screen; the next batch starts after the advance.
+3. **Build the checklist** — three columns per row: `manual step → element name → screen`. Lock the count before opening the app. If the user later adds requirements, capture deltas, do not re-inventory the whole thing.
+4. **Capture screen by screen.** Pre-flight Window Baseline (above) → run `uia-configure-target` for the current screen's batch → register each element in the OR before advancing → use the UIA interact CLI to advance → repeat. The "Complete-then-advance" rule from [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) is mandatory; never advance with elements still un-registered.
+5. **Then code.** With every checklist row registered in the OR, write the `.cs` / `.xaml` workflow that calls them in step order. Authoring-phase prerequisites (analyzer rules, project context discovery) run NOW, not earlier.
+
+> Coverage check: after capture, every checklist row must have a matching `Descriptors.<App>.<Screen>.<Element>` path (coded) or OR reference (XAML). Rows without a match indicate a missed capture or an obsolete manual step — reconcile before writing code.
+
+---
+
 ## Terminology — what "screen" means
 
 "Screen" appears across UIA docs in three distinct senses. Know which one a passage uses before acting on it.
 
 | Sense | Used in | What it is | Boundary / identity |
 |-------|---------|------------|---------------------|
-| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
+| **Capture screen** | XAML Multi-Screen Authoring (below), [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) | A distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced (via the `uip rpa uia interact` CLI) between captures. | Bounded by app advancement — everything captured before the next advance is one capture screen. |
 | **OR screen** | Object Repository CLI, `.objects/` layout, `Descriptors.<App>.<Screen>.<Element>`, [uia-configure-target-workflows.md](uia-configure-target-workflows.md) | A data-model entity in the Object Repository, registered via `create-screen` / matched via `get-screens`. | Identified by its window selector. |
 | **Screen handle** (coded only) | "Screen Handle Affinity" under § For Coded Workflows | A runtime `UiTargetApp` returned by `uiAutomation.Open` / `Attach`, bound to one OR screen. | Element descriptors are valid only on the handle for their own OR screen. |
 
@@ -49,7 +63,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 2. **NEVER guess selector attributes** from HTML/DOM structure, element tag names, or CSS classes. Selectors are generated from the live application tree by probing elements — not from source code inspection.
 3. **ALWAYS follow the target configuration steps** from [uia-configure-target-workflows.md](uia-configure-target-workflows.md). Use the returned XAML/references exactly as provided. Do not modify selectors, content hashes, or reference IDs.
 4. **NEVER substitute external browser automation for UIA.** Do not use PowerShell, Selenium, Playwright, Chrome DevTools Protocol, raw DOM JavaScript, HTTP form posts, or `InvokeCode` to drive a browser/app when the user asked for a UiPath RPA automation. Use those tools only for non-UI setup, diagnostics, or data preparation; the visible application interaction must remain in UiPath UIA activities or coded `uiAutomation` calls backed by Object Repository descriptors.
-5. **Use UiPath UIA for exploration.** App/window discovery, UI probing, selector discovery, and target capture must use the UI Automation skills and CLI flows (`uia snapshot inspect`, `uia-configure-target`, `uia interact`, Object Repository capture). Do not use Playwright, Selenium, DOM inspection, process lists, or ad hoc scripts to decide what UI targets/selectors to author.
+5. **Use UiPath UIA for exploration.** App/window discovery, UI probing, selector discovery, and target capture must use the UI Automation skills and `uip rpa uia` CLI flows (`uip rpa uia snapshot inspect`, `uia-configure-target`, `uip rpa uia interact`, Object Repository capture). Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Do not use Playwright, Selenium, DOM inspection, process lists, or ad hoc scripts to decide what UI targets/selectors to author.
 
 > This gate applies regardless of how simple the target seems. Even a `<webctrl tag='BODY' />` selector will fail validation without proper attributes. The cost of running target configuration is always lower than debugging hand-written selectors.
 
@@ -63,6 +77,7 @@ Before writing ANY target — whether C# (`uiAutomation.Open(...)`, `Descriptors
 - **Using `InjectJsScript` instead of standard activities** — do NOT use `InjectJsScript` when standard UI activities (GetText, Click, TypeInto, ExtractTableData, etc.) with configured targets would work. `InjectJsScript` is a last resort — it's hard to debug, fragile to page changes, and bypasses the Object Repository.
 - **Hallucinated keyboard shortcuts instead of UIA targets** — do NOT send keyboard shortcuts (`Ctrl+S`, `Alt+F4`, `Tab` navigation, menu mnemonics, etc.) as a substitute for clicking or typing into a real UI element. `Click` and `TypeInto` against configured targets are deterministic, survive layout changes, and are observable in logs; guessed shortcuts depend on focus, locale, and version. Reserve keyboard shortcuts for genuinely hotkey-only operations (commands with no clickable surface) and confirm the shortcut exists in the live app — never infer from OS convention or muscle memory.
 - **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient.
+- **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Available input-method values: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
 
 ---
 
@@ -141,7 +156,14 @@ Each method on `UiTargetApp` accepts targets in multiple forms:
 
 #### Step 1 — Check the project's Object Repository
 
-Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file is auto-generated by Studio and contains a `Descriptors` class with the hierarchy `Descriptors.<App>.<Screen>.<Element>`.
+Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file contains a `Descriptors` class with the hierarchy `Descriptors.<App>.<Screen>.<Element>`.
+
+> **Generation requires Studio Desktop.** `ObjectRepository.cs` is regenerated only when Studio Desktop detects a coded workflow file (`.cs` with `[Workflow]` / `[TestCase]`) and reconciles it against the OR — `uip rpa build` alone does NOT regenerate it. If the file is missing or stale after registering elements:
+> 1. Confirm Studio Desktop is running against the project (start it with `uip rpa start-studio --project-dir "<PROJECT_DIR>"` if needed).
+> 2. Ensure at least one `.cs` coded workflow exists in the project — Studio only triggers regeneration when it sees a coded surface that needs descriptors.
+> 3. Save / re-open the project in Studio Desktop to force a regen pass.
+>
+> A pure-CLI flow with no Studio Desktop attached will not produce `ObjectRepository.cs`. Plan for a Studio Desktop step in any workflow that depends on `Descriptors.*`.
 
 **Important:** Add the ObjectRepository using statement:
 ```csharp
@@ -180,7 +202,7 @@ For XAML-specific activity details: `.local/docs/packages/UiPath.UIAutomation.Ac
 
 ### Multi-Screen Authoring
 
-> "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
+> "Screen" in this section means the **capture-screen** sense (see § Terminology) — a distinct UI state that requires its own `uia-configure-target` pass because the app has to be advanced between captures. It is NOT the OR-screen sense. A workflow that ends up with one OR screen entry can still be multi-screen here — what matters is the number of capture passes separated by `uip rpa uia interact` CLI advances, not the number of `.objects/` screen entries that get created.
 
 For workflows spanning multiple capture screens, add each screen's activities to the workflow as its targets are registered in the OR. All UI activities belong inside the `NApplicationCard` scope. Validate with `get-errors` after each batch. See [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md#multi-step-ui-flows) for the capture loop and the Complete-then-advance rule.
 

@@ -1,0 +1,118 @@
+task_id: skill-agents-bindings-multi-entrypoint
+description: >
+  Bindings sync over a project with two entrypoints. Per the
+  bindings-reference Step 4, when `entry-points.json` has multiple
+  entrypoints the resolver must either ask which entrypoint each
+  resource binds to (`AskUserQuestion`) or leave the entrypoint
+  field off the binding. The check accepts any consistent outcome —
+  the load-bearing assertion is that no binding ends up with a
+  fabricated `EntryPointUniqueId` that doesn't match either real
+  entrypoint.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Hand-author a UiPath coded agent project — do NOT scaffold via
+  the CLI. Inside the working directory create:
+
+  **pyproject.toml**:
+  ```toml
+  [project]
+  name = "multi-ep"
+  version = "0.0.1"
+  description = "Project with two entrypoints"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **uipath.json**:
+  ```json
+  {"projectType": "CodedAgent"}
+  ```
+
+  **entry-points.json**:
+  ```json
+  {
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+      {
+        "filePath": "main",
+        "uniqueId": "11111111-aaaa-bbbb-cccc-222222222222",
+        "type": "agent",
+        "input": {"type": "object", "properties": {}, "required": []},
+        "output": {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
+      },
+      {
+        "filePath": "report",
+        "uniqueId": "33333333-aaaa-bbbb-cccc-444444444444",
+        "type": "agent",
+        "input": {"type": "object", "properties": {}, "required": []},
+        "output": {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
+      }
+    ]
+  }
+  ```
+
+  **main.py**:
+  ```python
+  from uipath.platform import UiPath
+
+  async def main(input):
+      sdk = UiPath()
+      bucket = await sdk.buckets.retrieve_async(name="reports-bucket", folder_path="Reports")
+      return {"ok": True, "bucket": str(bucket)}
+  ```
+
+  **report.py**:
+  ```python
+  from uipath.platform import UiPath
+
+  async def main(input):
+      sdk = UiPath()
+      asset = await sdk.assets.retrieve_async("report_email", folder_path="Reports")
+      return {"ok": True, "email": str(asset)}
+  ```
+
+  **bindings.json** (start empty):
+  ```json
+  {"version": "2.0", "resources": []}
+  ```
+
+  Then sync `bindings.json`. Two entrypoints exist; the bindings
+  reference allows either binding each resource to a chosen
+  entrypoint or leaving the entrypoint field off the resource
+  entirely. Whatever you choose, every entrypoint id you write must
+  match one of the two real entrypoints in `entry-points.json`.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "bindings.json exists"
+    path: "bindings.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two bindings; any EntryPointUniqueId references a real entrypoint"
+    command: "python3 $TASK_DIR/check_bindings_multi_entrypoint.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

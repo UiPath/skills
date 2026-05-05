@@ -57,6 +57,19 @@ SKILLS_REPO_PATH=$(cd .. && pwd) \
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
 
+### Parallelism
+
+All `make` targets run tasks serially by default (`-j 1`). Override with `TASK_PARALLELISM`:
+
+```bash
+# Run smoke tests with 4 tasks in parallel
+TASK_PARALLELISM=4 make smoke
+
+# Or export once for the shell session
+export TASK_PARALLELISM=4
+make all
+```
+
 ## Evaluation Framework
 
 Tests are organized into three types, distinguished by **tags** (not directories). All tests for a skill live together in `tests/tasks/<skill-name>/`.

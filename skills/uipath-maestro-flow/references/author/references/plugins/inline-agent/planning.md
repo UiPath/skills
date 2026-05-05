@@ -2,6 +2,8 @@
 
 Inline agent nodes embed an autonomous AI agent **inside** the flow project. The agent definition lives as a subdirectory of the flow project and is published together with the flow — no separate agent project, no tenant publishing step. Unlike [published agents](../agent/planning.md), the node type is fixed and the agent is bound to the flow via a local `projectId` rather than a registry-resolved resource key.
 
+For agent configuration, prompts, resource files, and solution-resource mechanics, see the `uipath-agents` skill — specifically `lowcode/capabilities/inline-in-flow/inline-in-flow.md`.
+
 ## Node Type
 
 `uipath.agent.autonomous`
@@ -58,13 +60,34 @@ Unlike published agents, inline agents are **not** discovered through the regist
 uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 ```
 
-This creates a `<FlowProjectDir>/<projectId-uuid>/` directory containing `agent.json`, `flow-layout.json`, and empty `evals/`, `features/`, `resources/` subdirectories. Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
+Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
 
-No `uip login` or registry refresh is required for this workflow.
+For agent.json configuration (prompts, model, schemas) and resource file authoring (tools, contexts, escalations), see the `uipath-agents` skill (`lowcode/agent-definition.md` and `lowcode/capabilities/`).
+
+## Tools — Flow Registry Discovery
+
+The autonomous agent's `tool` artifact port accepts inline tool resource nodes. **External RPA process tools** are the primary supported case. Discovery uses the flow registry:
+
+```bash
+uip maestro flow registry search "uipath.agent.resource.tool.process" --output json
+```
+
+Filter rows where `NodeType` starts with `uipath.agent.resource.tool.process.` and `DisplayName` matches. The `Description` field disambiguates same-named processes by folder. Fetch the full manifest:
+
+```bash
+uip maestro flow registry get "<NodeType>" --output json
+```
+
+For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). Note the inline-in-flow convention: `location: "solution"` (not `"external"`), `properties.folderPath: ""`.
+
+### Anti-pattern
+
+Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resource refresh` materialize the solution-level files.
 
 ## Planning Annotation
 
 In the architectural plan:
 
 - `inline-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow` runs
+- `inline-agent-tool: <ToolName> (rpa, external) → <process-name> in <folder-path>` — one line per tool
 - If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) annotation instead

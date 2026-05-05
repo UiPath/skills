@@ -118,6 +118,7 @@ Connector nodes call external services via Integration Service. They are **not**
 | When to Select | Plugin |
 | --- | --- |
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
+| The flow needs to read/write UiPath Data Fabric entities (Query / Create / Update / Delete / Get by ID) | [connector/data-fabric](plugins/connector/data-fabric/planning.md) |
 
 **In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
 
