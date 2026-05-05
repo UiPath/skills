@@ -2,9 +2,13 @@
 
 > **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the case-exit condition directly into the `root` object's `caseExitConditions[]` array in `caseplan.json`. No CLI command needed.
+Write the case-exit condition directly into the schema-appropriate location in `caseplan.json`. No CLI command needed.
 
-> **Nesting matters.** `caseExitConditions` MUST be a property of the `root` object — a sibling of `data`, `description`, `caseIdentifier`. Do NOT place it at the JSON top level (sibling of `root`, `nodes`, `edges`). The validator silently passes but Studio Web cannot render the case.
+> **Schema-dependent destination + field name.** Read `Schema:` header from `tasks.md` per Rule 17.
+> - **v19** → array key is `caseExitConditions`, lives under `root.caseExitConditions` (sibling of `data`, `description`, `caseIdentifier`).
+> - **v20** → array key is **`caseExitRules`** (renamed), lives under `metadata.caseExitRules` (top-level `metadata`).
+>
+> Plugin folder name `case-exit-conditions` follows the *concept* (case exit conditions), unchanged across schemas. Only the on-disk path and field name change. Do NOT place at the JSON top level under either schema.
 
 ## Condition JSON Shape
 
@@ -29,9 +33,13 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 1. Generate condition ID: `Condition_` + 6 alphanumeric chars
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
-3. Read `caseplan.json`. Locate the `root` object. Initialize `root.caseExitConditions = []` if absent — this array lives INSIDE `root`, not at the JSON top level
+3. Read `caseplan.json`. Read `Schema:` header from `tasks.md`.
+   - **v19** → locate the `root` object. Initialize `root.caseExitConditions = []` if absent.
+   - **v20** → locate top-level `metadata` object (initialize `metadata: {}` if missing — should already exist from T01). Initialize `metadata.caseExitRules = []` if absent.
 4. Read `rule-type` and `marks-case-complete` from tasks.md; pick the recipe below
-5. Append the condition object to `root.caseExitConditions[]`
+5. Append the condition object to the schema-appropriate array:
+   - **v19** → `root.caseExitConditions[]`
+   - **v20** → `metadata.caseExitRules[]`
 
 ## Rule Types
 
@@ -85,4 +93,8 @@ Valid for both `marksCaseComplete: true` and `false`.
 
 ## Post-Write Verification
 
-Confirm `root.caseExitConditions[]` contains the new object with `id`, `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
+Confirm the schema-appropriate array contains the new object with `id`, `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field:
+- **v19** → `root.caseExitConditions[]`
+- **v20** → `metadata.caseExitRules[]`
+
+Verify NO leakage: in v19 mode there is no `metadata.caseExitRules`; in v20 mode there is no `root` key at all.

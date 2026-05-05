@@ -139,12 +139,23 @@ If any check fails, halt and report.
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
 2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule #8, so a collision here means a genuine re-run and overwriting is correct.
 
+## Schema branch — v19 vs v20 (Rule 17)
+
+Read the `Schema:` header from `tasks.md` (first non-comment line, written at planning Step 2.2). One of:
+
+- `Schema: v19` → use § Recipe (v19) below — DEFAULT.
+- `Schema: v20` → use § Recipe (v20) below.
+
+If header missing or malformed, halt with explicit error — never default silently.
+
 ## ID generation
+
+### v19
 
 - `root.id` is the literal string `"root"` — **not** a generated shortId. Divergent from every other plugin.
 - **No trigger ID emitted at T01.** The triggers plugin owns primary-trigger creation at T02.
 
-Record in `id-map.json` for downstream cross-reference:
+Record in `id-map.json`:
 
 ```json
 {
@@ -152,7 +163,23 @@ Record in `id-map.json` for downstream cross-reference:
 }
 ```
 
-## Recipe — Skeleton (no trigger)
+### v20
+
+- Top-level `id` is generated: prefix `case-` + 10 chars from `[A-Za-z0-9]` (per `case-editing-operations.md` § ID Generation algorithm). Example: `case-aBcDeFgHiJ`.
+- No `"root"` literal anywhere on disk in v20.
+- **No trigger ID emitted at T01.** Same as v19.
+
+Record in `id-map.json`:
+
+```json
+{
+  "T01": { "kind": "case", "id": "case-aBcDeFgHiJ" }
+}
+```
+
+The `id` value mirrors the actual top-level `id` written into `caseplan.json` — debug breadcrumb of reality.
+
+## Recipe (v19) — Skeleton (no trigger)
 
 Pure skeleton: `root` definition, empty `nodes: []`, empty `edges: []`. The primary trigger is the triggers plugin's responsibility at T02.
 
@@ -218,17 +245,81 @@ Same as above with `description` value populated from sdd.md:
 }
 ```
 
+## Recipe (v20) — Skeleton (no trigger)
+
+Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empty `variables` + empty `nodes: []` + empty `edges: []` + empty `layout: {}`. Primary trigger is the triggers plugin's responsibility at T02.
+
+### Minimal variant (no description)
+
+```json
+{
+    "id": "case-aBcDeFgHiJ",
+    "version": "20.0.0",
+    "name": "<name>",
+    "metadata": {
+        "caseIdentifier": "<case-identifier — defaults to <name>>",
+        "caseIdentifierType": "<constant|external — defaults to constant>",
+        "caseAppEnabled": <true|false — defaults to false>,
+        "publishVersion": 2,
+        "caseUnifiedSchemaEnabled": true
+    },
+    "bindings": [],
+    "variables": {
+        "inputs": [],
+        "outputs": [],
+        "inputOutputs": []
+    },
+    "nodes": [],
+    "edges": [],
+    "layout": {}
+}
+```
+
+### With description
+
+Adds top-level `description` field (NOT inside `metadata`):
+
+```json
+{
+    "id": "case-aBcDeFgHiJ",
+    "version": "20.0.0",
+    "name": "<name>",
+    "description": "<description>",
+    "metadata": {
+        "caseIdentifier": "<case-identifier>",
+        "caseIdentifierType": "<constant|external>",
+        "caseAppEnabled": <true|false>,
+        "publishVersion": 2,
+        "caseUnifiedSchemaEnabled": true
+    },
+    "bindings": [],
+    "variables": {
+        "inputs": [],
+        "outputs": [],
+        "inputOutputs": []
+    },
+    "nodes": [],
+    "edges": [],
+    "layout": {}
+}
+```
+
+> **`intsvcActivityConfig` dropped in v20** — not present in `CaseManagementMetadataSchema`. Do not emit it under `metadata` or anywhere else.
+
 ## Formatting
 
 - Indent: 4 spaces.
-- Key order (root): `id, name, type, caseIdentifier, caseAppEnabled, caseIdentifierType, version, publishVersion, data, description`.
 - Trailing newline: single `\n` at end of file.
+- Key order (v19 root): `id, name, type, caseIdentifier, caseAppEnabled, caseIdentifierType, version, publishVersion, data, description`.
+- Key order (v20 top-level): `id, version, name, description, metadata, bindings, variables, nodes, edges, layout`.
 
 Use the Write tool. File did not exist before — Edit does not apply.
 
 ## Post-write validation
 
 Cheap sanity checks only — full validation runs after all plugins are done, per SKILL.md Anti-patterns ("Do NOT validate after each command").
+
+### v19
 
 1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
 2. **Root shape.**
@@ -243,7 +334,26 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
    - `nodes` is an array of length 0
    - `edges` is an array of length 0
 
+### v20
+
+1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
+2. **Top-level shape.**
+   - `id` matches `^case-[A-Za-z0-9]{10}$`
+   - `version === "20.0.0"`
+   - `metadata.caseUnifiedSchemaEnabled === true`
+   - `metadata.publishVersion === 2`
+   - `bindings` is an array of length 0
+   - `variables.inputs`, `variables.outputs`, `variables.inputOutputs` are all arrays of length 0
+3. **Empty node/edge arrays + layout.**
+   - `nodes` is an array of length 0
+   - `edges` is an array of length 0
+   - `layout` is an object (may be `{}`)
+4. **No v19 leakage.**
+   - No `root` key at top level
+   - No `version === "v19"` anywhere
+   - No `data.intsvcActivityConfig`
+
 If any check fails, halt and report — do not proceed to downstream plugins.
 
-**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command").
+**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). In v20 mode, even the post-build validate may reject (Rule 17 softening) — Pre-build validate is informational only.
 

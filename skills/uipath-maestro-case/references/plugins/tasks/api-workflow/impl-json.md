@@ -36,7 +36,7 @@ Fallback: planning-captured schema from tasks.md. If unavailable, skeleton per [
 
 **Step 1 — Root-level bindings:**
 
-Create 2 entries in `root.data.uipath.bindings[]` per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
+Create 2 entries in the bindings array per [bindings/impl-json.md](../../variables/bindings/impl-json.md):
 
 | `propertyAttribute` | `resource` | `resourceSubType` | `default` |
 |---|---|---|---|
@@ -58,6 +58,6 @@ Both share `resourceKey` = `<folderPath>.<name>`. ID: `b` + 8 chars. Deduplicate
 
 - `type: "api-workflow"`
 - `data.name` and `data.folderPath` start with `=bindings.`
-- `root.data.uipath.bindings[]` has 2 entries: `resource: "process"`, `resourceSubType: "Api"`, `propertyAttribute` = `name` / `folderPath`
+- the bindings array has 2 entries: `resource: "process"`, `resourceSubType: "Api"`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless skeleton)
 - `id` captured in `id-map.json`

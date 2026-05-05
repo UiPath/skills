@@ -4,6 +4,8 @@ Configure the case-level event trigger by writing directly into the trigger node
 
 For shared CLI calls, metadata construction, and anti-patterns, see [connector-trigger-common.md](../../../connector-trigger-common.md#implementation--shared-cli-calls). This doc covers only the **trigger-node-specific** parts.
 
+> **v20 layout-strip (Rule 18).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shape below shows v19 fields; v20 strips listed render fields and skips position math. Skeleton-fallback logic and `entry-points.json` shape are identical across schemas.
+
 ## Prerequisites from Planning
 
 The `tasks.md` entry provides: `type-id`, `connection-id`, `connector-key`, `object-name`, `event-operation`, `event-mode`, `input-values`, `filter`.
@@ -60,7 +62,7 @@ Set the trigger's display name from `tasks.md`.
 
 ### 3d. Register trigger outputs as root inputOutputs
 
-Add each trigger output to `root.data.uipath.variables.inputOutputs[]`:
+Add each trigger output to the variables `inputOutputs[]` array (v19: `root.data.uipath.variables.inputOutputs[]`; v20: top-level `variables.inputOutputs[]`):
 
 ```json
 {
@@ -120,6 +122,6 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 ## Post-Write Verification
 
 1. `data.uipath.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
-2. **Fully configured:** `context[]`, `metadata`, `inputs[]`, `outputs[]`, `bindings[]` all populated per §3c-3d (`outputs[]` simplified — no body/id/target/elementId, `_jsonSchema: null`; `inputs[]` has no `elementId`); `root.data.uipath.variables.inputOutputs[]` has entries for each trigger output. **Skeleton:** all five `data.uipath` fields **absent** (not empty arrays); no root bindings or inputOutputs entries from this trigger; `[SKELETON]` log entry present.
+2. **Fully configured:** `context[]`, `metadata`, `inputs[]`, `outputs[]`, `bindings[]` all populated per §3c-3d (`outputs[]` simplified — no body/id/target/elementId, `_jsonSchema: null`; `inputs[]` has no `elementId`); the variables `inputOutputs[]` array (v19: `root.data.uipath.variables.inputOutputs[]`; v20: top-level `variables.inputOutputs[]`) has entries for each trigger output. **Skeleton:** all five `data.uipath` fields **absent** (not empty arrays); no root bindings or inputOutputs entries from this trigger; `[SKELETON]` log entry present.
 3. Trigger node wired as `--source` in an edge to the first stage.
 4. `entry-points.json` has a matching entry referencing the trigger node ID.
