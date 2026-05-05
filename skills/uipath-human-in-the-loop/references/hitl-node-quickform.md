@@ -62,6 +62,11 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 **Supported field types:** `text` (maps from `string`), `number`, `boolean`, `date`
 
+**Date field notes:**
+- Bound values must be ISO 8601 date strings: `"YYYY-MM-DD"` (e.g. `"2026-04-01"`). Non-ISO formats will not parse.
+- **"Invalid time value" at design time** is a known rendering limitation. When `binding` is a JS expression (e.g. `=js:$vars.script1.output.submittedDate`), the form preview cannot evaluate the expression statically and displays "Invalid time value". This is display-only — at runtime the date picker pre-populates correctly if the upstream value is a valid `YYYY-MM-DD` string.
+- Avoid JavaScript `Date` objects or epoch integers in the bound value; always coerce to `YYYY-MM-DD` string in the upstream script node before binding.
+
 **Design rules:**
 - Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`
 - Output fields: only what downstream nodes actually use; set `required: true` for mandatory outputs
