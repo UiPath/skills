@@ -2,7 +2,7 @@
 
 Tools that call a runnable process — RPA workflows, agents, API workflows, or agentic processes (process orchestration). All process tools share the `$resourceType: "tool"` envelope; the `type` field selects the subtype.
 
-For Integration Service connector tools (separate capability), see [../integration-service/integration-service.md](../integration-service/integration-service.md).
+For Integration Service connector tools (separate capability), see [../integration-service/integration-service.md](../integration-service/integration-service.md). For built-in tools that ship pre-built (e.g. `analyze-attachments`), see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) — those use `type: "internal"` and need no solution-level files.
 
 ## When to Use
 

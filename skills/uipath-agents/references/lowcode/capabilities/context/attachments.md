@@ -1,8 +1,10 @@
 # Attachments Context
 
-Walkthrough for adding a context resource that takes runtime files passed to the agent. No backing index — files are uploaded with each agent invocation.
+Walkthrough for adding a **context resource** (`$resourceType: "context"`, `contextType: "attachments"`) that takes runtime files passed to the agent. No backing index — files are uploaded with each agent invocation.
 
 For other context variants, see [context.md](context.md).
+
+> **Not what you want?** To accept a file as a plain agent input field and read its contents via a built-in tool, see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) and [../../agent-definition.md](../../agent-definition.md) § File Attachments. That pattern uses `$resourceType: "tool"` (not context) and pairs a `job-attachment` input with `analyze-attachments`.
 
 ## When to Use
 
