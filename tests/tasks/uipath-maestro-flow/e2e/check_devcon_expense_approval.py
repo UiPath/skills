@@ -85,6 +85,15 @@ def main() -> None:
     if not (has_boolean_decision or has_approval_outcomes):
         fail("HITL must capture the manager decision as a boolean output or approve/reject outcomes")
 
+    reason_keywords = ("reason", "comment", "explanation", "justification", "note")
+    if not any(
+        f.get("direction") in {"output", "inOut"}
+        and f.get("type") in {"text", "string", "textarea"}
+        and any(kw in field_text(f, "id") or kw in field_text(f, "label") for kw in reason_keywords)
+        for f in fields
+    ):
+        fail("HITL must expose a text output field for the rejection reason (e.g., reason, comment)")
+
     input_bindings = [
         f.get("binding", "")
         for f in fields
@@ -107,7 +116,7 @@ def main() -> None:
     if not any(expected_output_path in script for script in scripts):
         fail(f"Downstream script must read HITL output via {expected_output_path}")
 
-    print(f"OK: HITL node {hitl_id} uses v1.0 schema, captures approval, wires completed, and uses .output paths")
+    print(f"OK: HITL node {hitl_id} uses v1.0 schema, captures approval + reason, wires completed, and uses .output paths")
 
 
 if __name__ == "__main__":
