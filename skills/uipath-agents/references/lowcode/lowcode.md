@@ -46,7 +46,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | External tools / IS tools / index contexts / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
-| Running evaluations, adding test cases, managing evaluators | [evaluation/evaluate.md](evaluation/evaluate.md) |
+| Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
 ### Capability Registry
 
@@ -69,7 +69,6 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add an Action Center escalation (HITL) | [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md) | |
 | Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | |
 | Embed an agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
-| Evaluate agent (add test cases, run evals, view results) | [evaluation/evaluate.md](evaluation/evaluate.md) | `evaluation/evaluators.md`, `evaluation/evaluation-sets.md`, `evaluation/running-evaluations.md` |
 | Set up Orchestrator resources | Tell the user to use the `uipath-platform` skill | |
 | Wire agent into a flow | Tell the user to use the `uipath-maestro-flow` skill | |
 
