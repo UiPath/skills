@@ -36,9 +36,16 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Treat the generated plan as pre-approved for this smoke test — do not
-    block on the HARD STOP / AskUserQuestion approval step.
-  - Do not run `uip maestro case debug` — just validate locally.
+  - Treat ALL Phase hard stops (Phase 1 planning approval, Phase 2
+    publish-for-review, Phase 5 publish) as pre-approved for this smoke
+    test. At each hard stop, choose the "continue" / "skip publish"
+    branch and proceed. Do NOT call AskUserQuestion — it is not available
+    in this harness.
+  - If `uip maestro case registry pull` reports unauthenticated or empty
+    cache, record the state and proceed without registry data. This is a
+    smoke test — the agent does not need real type IDs.
+  - Skip Phase 6 entirely. Do not run `uip maestro case debug` — just
+    validate locally.
 
 success_criteria:
   - type: command_executed
