@@ -297,21 +297,7 @@ A no-op filter — used when the user wants all events to fire the trigger — i
 
 ### How to build a filter tree from `filterFields`
 
-1. Run `registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array.
-2. For each user-intent condition, pick a matching field `name` from that array — using an unknown field name will be rejected by the CLI at configure time.
-3. Choose an operator based on the user's intent and the field type (see operator table).
-4. Build one leaf per condition; place multiple conditions under the same `groupOperator` (0 for AND, 1 for OR).
-5. If you need mixed AND/OR logic, use nested `groups`.
-6. **Wrap string values in a `value` object** with `value`, `rawString`, `isLiteral: true` — passing a bare string will fail validation.
-7. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filter` entirely.
-
-### Array-shaped fields
-
-When `filterFields[].name` contains a `[*]` segment (e.g. `tags[*]`, `ParentFolders[*].ID`), the CLI emits filter-projection JMESPath instead of scalar comparison: `(tags[?@=='urgent'])`, `(ParentFolders[?ID=='INBOX'])`. Reference the field by its full schema name in the leaf `id` — the projection syntax is generated, not authored.
-
-### Mandatory filters (auto-emitted)
-
-Some triggers carry **mandatory event-parameter filters** the connector requires for subscription (e.g. Gmail Email Received always filters by folder; Slack message triggers filter by channel). These are **not** authored as freeform `filter` leaves. Set the value through `eventParameters` and the CLI runs it through the same mandatory-filter pipeline Studio Web uses, persisting the result on `essentialConfiguration.mandatoryFilterExpression`. The runtime `filterExpression` written to the `.flow` is the AND-join of the user's freeform tree and the mandatory clause; the SW translator's `combinedFilterExpression` getter reads it directly.
+See [/uipath:uipath-platform — triggers.md > Building Filter Trees from filterFields](../../../../../../uipath-platform/references/integration-service/triggers.md#building-filter-trees-from-filterfields) for the canonical step-by-step, the mandatory-filter contract (connector-mandated values like Gmail folder go on `eventParameters`, never the freeform `filter` tree), and array-shaped field handling. In the maestro-flow context, source `filterFields.fields` from `flow registry get --connection-id` (Step 2 above) instead of `triggers describe`.
 
 ### What NOT to generate
 

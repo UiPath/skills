@@ -13,6 +13,7 @@ Triggers are event-based activities that fire when something happens in an exter
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
+- [Building Filter Trees from filterFields](#building-filter-trees-from-filterfields)
 - [Webhook URL Retrieval](#webhook-url-retrieval)
 - [Happy-Path Example](#happy-path-example)
 
@@ -118,6 +119,32 @@ Additional fields:
 | `eventMode` | `"webhooks"` or `"polling"` |
 | `byoaConnection` | `true` if this trigger requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown |
+
+---
+
+## Building Filter Trees from filterFields
+
+Trigger filters narrow which events fire the trigger (e.g. only emails from a specific sender). They are authored as a **structured tree**, not a JMESPath string — the CLI compiles the tree into the runtime `filterExpression` using the same logic Studio Web does, and writes both forms into the workflow so the trigger round-trips cleanly when re-opened in SW. **Do not pass `filterExpression` directly** — the validator rejects it.
+
+### Steps
+
+1. Run `triggers describe` (or `flow registry get` from the maestro-flow skill) with `--connection-id` and read the `filterFields.fields` array. Each entry has a `name` (use as the leaf `id`), a `type` (drives operator selection), and an optional `description`.
+2. For each user-intent condition, pick a matching `name` from that array — using an unknown field name will be rejected by the CLI at configure time.
+3. Choose an operator based on the user's intent and the field type (see the operator table in the consuming skill — e.g. [uipath-maestro-flow > connector-trigger](../../../uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md#supported-operators)).
+4. Build one leaf per condition; place multiple conditions under the same `groupOperator` (`0` for AND, `1` for OR).
+5. If you need mixed AND/OR logic, use nested `groups` (same shape as the root tree).
+6. **Wrap string values in a `value` object** with `value`, `rawString` (verbatim user-entered text including quotes for strings), and `isLiteral: true` — passing a bare string fails validation. Expression values (`isLiteral: false`) are not yet supported by the CLI port.
+7. If `filterFields` is empty or absent, the trigger does not support filtering — omit `filter` entirely. Do not invent an "empty" expression.
+
+### Mandatory filter parameters
+
+Some triggers carry **mandatory event-parameter filters** the connector requires for subscription (e.g. Gmail Email Received always filters by folder; Slack message triggers filter by channel). These are **not** authored as freeform `filter` leaves. Set the value through `eventParameters` instead — the CLI runs it through the same mandatory-filter pipeline Studio Web uses (`buildMandatoryFilterExpression`) and persists the result on `essentialConfiguration.mandatoryFilterExpression`. The runtime `filterExpression` is the AND-join of the user's freeform tree and the mandatory clause; SW's translator reads it through `combinedFilterExpression`.
+
+Duplicating a mandatory clause in the freeform tree double-applies the constraint at runtime. Always set connector-mandated values via `eventParameters`, not `filter`.
+
+### Array-shaped fields
+
+When `filterFields[].name` contains a `[*]` segment (e.g. `tags[*]`, `ParentFolders[*].ID`), the CLI emits filter-projection JMESPath instead of scalar comparison: `(tags[?@=='urgent'])`, `(ParentFolders[?ID=='INBOX'])`. Reference the field by its full schema name in the leaf `id` — the projection syntax is generated, not authored.
 
 ---
 
