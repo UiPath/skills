@@ -1,50 +1,50 @@
-{"id": "negative-001", "prompt": "Compare LangChain and LlamaIndex for a RAG prototype"}
-{"id": "negative-002", "prompt": "Add a switch-case statement in my Java code"}
-{"id": "negative-003", "prompt": "Create a flowchart for my architecture doc"}
-{"id": "negative-004", "prompt": "Add a node to my graph"}
-{"id": "negative-005", "prompt": "Set up Terraform modules for my AWS infrastructure"}
-{"id": "negative-006", "prompt": "Schedule a cron job on my Linux server every weekday at 8am"}
-{"id": "negative-007", "prompt": "Wire two AWS Lambdas together using EventBridge"}
-{"id": "negative-008", "prompt": "Write a Python Flask app"}
-{"id": "negative-009", "prompt": "Fix my TypeScript compilation error"}
-{"id": "negative-010", "prompt": "Set up a GitHub Actions workflow"}
-{"id": "negative-011", "prompt": "Convert my Selenium tests from Java to Playwright in TypeScript"}
-{"id": "negative-012", "prompt": "Set up an Airflow DAG that runs nightly"}
-{"id": "negative-013", "prompt": "Show me a DAG for my Airflow jobs"}
-{"id": "negative-014", "prompt": "Orchestrate my Temporal workflows"}
-{"id": "negative-015", "prompt": "Create a Step Functions state machine in AWS"}
-{"id": "negative-016", "prompt": "I need to design a BPMN diagram for our process"}
-{"id": "negative-017", "prompt": "Add a webhook trigger to my Zapier flow"}
-{"id": "negative-018", "prompt": "Create a connector in Power Automate"}
-{"id": "negative-019", "prompt": "Wire up a Node-RED flow with MQTT nodes"}
-{"id": "negative-020", "prompt": "I need to handle different cases based on a value"}
-{"id": "negative-021", "prompt": "What's the best Python library to parse ISO 8601 timestamps?"}
-{"id": "negative-022", "prompt": "Group records by a key and count them"}
-{"id": "negative-023", "prompt": "What's the recipe for chocolate chip cookies?"}
-{"id": "negative-024", "prompt": "Translate this French text to English"}
-{"id": "negative-025", "prompt": "Convert 50 miles to kilometers"}
-{"id": "negative-026", "prompt": "Summarize this PDF"}
-{"id": "negative-027", "prompt": "Run npm install"}
-{"id": "negative-028", "prompt": "Create a new PostgreSQL table"}
-{"id": "negative-029", "prompt": "Write a Dockerfile for a Node app"}
-{"id": "negative-030", "prompt": "Configure Nginx reverse proxy"}
-{"id": "negative-031", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process"}
-{"id": "negative-032", "prompt": "Set up Cypress for end-to-end testing of my React app"}
-{"id": "negative-033", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus"}
-{"id": "negative-034", "prompt": "Plan the rollout of an SAP S/4HANA upgrade across our regional offices"}
-{"id": "negative-035", "prompt": "Recommend a good ergonomic keyboard for long coding sessions"}
-{"id": "negative-036", "prompt": "What is the capital of Australia?"}
-{"id": "negative-037", "prompt": "Automate the hiring pipeline"}
-{"id": "negative-038", "prompt": "Send a Slack notification from my Python script using the slack-sdk library"}
-{"id": "negative-039", "prompt": "Extract data from PDFs"}
-{"id": "negative-040", "prompt": "Compare ChatGPT, Gemini, and Claude for general writing tasks"}
-{"id": "negative-041", "prompt": "Orchestrate containers with Docker Swarm"}
-{"id": "negative-042", "prompt": "Create a Camunda BPMN process"}
-{"id": "negative-043", "prompt": "Design a Process Maker workflow"}
-{"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model"}
-{"id": "negative-045", "prompt": "Configure UiPath Document Understanding to extract invoice line items from scanned PDFs"}
-{"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter"}
-{"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment"}
-{"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection"}
-{"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset"}
-{"id": "negative-050", "prompt": "Set up Kubernetes ingress with cert-manager and Let's Encrypt"}
+{"id": "negative-001", "prompt": "Compare LangChain and LlamaIndex for a RAG prototype", "expected_skill": ""}
+{"id": "negative-002", "prompt": "Add a switch-case statement in my Java code", "expected_skill": ""}
+{"id": "negative-003", "prompt": "Create a flowchart for my architecture doc", "expected_skill": ""}
+{"id": "negative-004", "prompt": "Add a node to my graph", "expected_skill": ""}
+{"id": "negative-005", "prompt": "Set up Terraform modules for my AWS infrastructure", "expected_skill": ""}
+{"id": "negative-006", "prompt": "Schedule a cron job on my Linux server every weekday at 8am", "expected_skill": ""}
+{"id": "negative-007", "prompt": "Wire two AWS Lambdas together using EventBridge", "expected_skill": ""}
+{"id": "negative-008", "prompt": "Write a Python Flask app", "expected_skill": ""}
+{"id": "negative-009", "prompt": "Fix my TypeScript compilation error", "expected_skill": ""}
+{"id": "negative-010", "prompt": "Set up a GitHub Actions workflow", "expected_skill": ""}
+{"id": "negative-011", "prompt": "Convert my Selenium tests from Java to Playwright in TypeScript", "expected_skill": ""}
+{"id": "negative-012", "prompt": "Set up an Airflow DAG that runs nightly", "expected_skill": ""}
+{"id": "negative-013", "prompt": "Show me a DAG for my Airflow jobs", "expected_skill": ""}
+{"id": "negative-014", "prompt": "Orchestrate my Temporal workflows", "expected_skill": ""}
+{"id": "negative-015", "prompt": "Create a Step Functions state machine in AWS", "expected_skill": ""}
+{"id": "negative-016", "prompt": "I need to design a BPMN diagram for our process", "expected_skill": ""}
+{"id": "negative-017", "prompt": "Add a webhook trigger to my Zapier flow", "expected_skill": ""}
+{"id": "negative-018", "prompt": "Create a connector in Power Automate", "expected_skill": ""}
+{"id": "negative-019", "prompt": "Wire up a Node-RED flow with MQTT nodes", "expected_skill": ""}
+{"id": "negative-020", "prompt": "I need to handle different cases based on a value", "expected_skill": ""}
+{"id": "negative-021", "prompt": "What's the best Python library to parse ISO 8601 timestamps?", "expected_skill": ""}
+{"id": "negative-022", "prompt": "Group records by a key and count them", "expected_skill": ""}
+{"id": "negative-023", "prompt": "What's the recipe for chocolate chip cookies?", "expected_skill": ""}
+{"id": "negative-024", "prompt": "Translate this French text to English", "expected_skill": ""}
+{"id": "negative-025", "prompt": "Convert 50 miles to kilometers", "expected_skill": ""}
+{"id": "negative-026", "prompt": "Summarize this PDF", "expected_skill": ""}
+{"id": "negative-027", "prompt": "Run npm install", "expected_skill": ""}
+{"id": "negative-028", "prompt": "Create a new PostgreSQL table", "expected_skill": ""}
+{"id": "negative-029", "prompt": "Write a Dockerfile for a Node app", "expected_skill": ""}
+{"id": "negative-030", "prompt": "Configure Nginx reverse proxy", "expected_skill": ""}
+{"id": "negative-031", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process", "expected_skill": ""}
+{"id": "negative-032", "prompt": "Set up Cypress for end-to-end testing of my React app", "expected_skill": ""}
+{"id": "negative-033", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus", "expected_skill": ""}
+{"id": "negative-034", "prompt": "Plan the rollout of an SAP S/4HANA upgrade across our regional offices", "expected_skill": ""}
+{"id": "negative-035", "prompt": "Recommend a good ergonomic keyboard for long coding sessions", "expected_skill": ""}
+{"id": "negative-036", "prompt": "What is the capital of Australia?", "expected_skill": ""}
+{"id": "negative-037", "prompt": "Automate the hiring pipeline", "expected_skill": ""}
+{"id": "negative-038", "prompt": "Send a Slack notification from my Python script using the slack-sdk library", "expected_skill": ""}
+{"id": "negative-039", "prompt": "Extract data from PDFs", "expected_skill": ""}
+{"id": "negative-040", "prompt": "Compare ChatGPT, Gemini, and Claude for general writing tasks", "expected_skill": ""}
+{"id": "negative-041", "prompt": "Orchestrate containers with Docker Swarm", "expected_skill": ""}
+{"id": "negative-042", "prompt": "Create a Camunda BPMN process", "expected_skill": ""}
+{"id": "negative-043", "prompt": "Design a Process Maker workflow", "expected_skill": ""}
+{"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model", "expected_skill": ""}
+{"id": "negative-045", "prompt": "Configure UiPath Document Understanding to extract invoice line items from scanned PDFs", "expected_skill": ""}
+{"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter", "expected_skill": ""}
+{"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment", "expected_skill": ""}
+{"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection", "expected_skill": ""}
+{"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset", "expected_skill": ""}
+{"id": "negative-050", "prompt": "Set up Kubernetes ingress with cert-manager and Let's Encrypt", "expected_skill": ""}

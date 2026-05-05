@@ -10,50 +10,28 @@ sandbox:
   driver: tempdir
   python: {}
 
-# Each path injects expected_skill (the row's true label) into every row.
-# negative.jsonl rows get expected_skill="" (negative for all 19 skills).
 dataset:
   paths:
-    - path: uipath-agents.jsonl
-      fields: {expected_skill: uipath-agents}
-    - path: uipath-coded-apps.jsonl
-      fields: {expected_skill: uipath-coded-apps}
-    - path: uipath-data-fabric.jsonl
-      fields: {expected_skill: uipath-data-fabric}
-    - path: uipath-diagnostics.jsonl
-      fields: {expected_skill: uipath-diagnostics}
-    - path: uipath-feedback.jsonl
-      fields: {expected_skill: uipath-feedback}
-    - path: uipath-gov-access-policy.jsonl
-      fields: {expected_skill: uipath-gov-access-policy}
-    - path: uipath-gov-aops-policy.jsonl
-      fields: {expected_skill: uipath-gov-aops-policy}
-    - path: uipath-human-in-the-loop.jsonl
-      fields: {expected_skill: uipath-human-in-the-loop}
-    - path: uipath-interact.jsonl
-      fields: {expected_skill: uipath-interact}
-    - path: uipath-maestro-case.jsonl
-      fields: {expected_skill: uipath-maestro-case}
-    - path: uipath-maestro-flow.jsonl
-      fields: {expected_skill: uipath-maestro-flow}
-    - path: uipath-planner.jsonl
-      fields: {expected_skill: uipath-planner}
-    - path: uipath-platform.jsonl
-      fields: {expected_skill: uipath-platform}
-    - path: uipath-review.jsonl
-      fields: {expected_skill: uipath-review}
-    - path: uipath-rpa.jsonl
-      fields: {expected_skill: uipath-rpa}
-    - path: uipath-rpa-legacy.jsonl
-      fields: {expected_skill: uipath-rpa-legacy}
-    - path: uipath-solution-design.jsonl
-      fields: {expected_skill: uipath-solution-design}
-    - path: uipath-tasks.jsonl
-      fields: {expected_skill: uipath-tasks}
-    - path: uipath-test.jsonl
-      fields: {expected_skill: uipath-test}
-    - path: negative.jsonl
-      fields: {expected_skill: ""}
+    - uipath-agents.jsonl
+    - uipath-coded-apps.jsonl
+    - uipath-data-fabric.jsonl
+    - uipath-diagnostics.jsonl
+    - uipath-feedback.jsonl
+    - uipath-gov-access-policy.jsonl
+    - uipath-gov-aops-policy.jsonl
+    - uipath-human-in-the-loop.jsonl
+    - uipath-interact.jsonl
+    - uipath-maestro-case.jsonl
+    - uipath-maestro-flow.jsonl
+    - uipath-planner.jsonl
+    - uipath-platform.jsonl
+    - uipath-review.jsonl
+    - uipath-rpa.jsonl
+    - uipath-rpa-legacy.jsonl
+    - uipath-solution-design.jsonl
+    - uipath-tasks.jsonl
+    - uipath-test.jsonl
+    - negative.jsonl
 
 initial_prompt: "${row.prompt}"
 
