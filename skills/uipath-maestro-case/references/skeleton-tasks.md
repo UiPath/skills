@@ -34,7 +34,7 @@ The user reviews structure first, then attaches real resources once they exist.
 
 During **execution** (Phase 2, Step 9), for any `tasks.md` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
 
-1. Skip the schema fetch (`uip maestro case tasks describe` / `is resources describe`).
+1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
 3. Skip the `io-binding` plugin entirely for that task (see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md) — skeleton tasks log a `SKIPPED` severity entry and move on, because there is no `data.inputs[]` schema to write into).
 4. Generate and capture the `TaskId` normally — task-entry conditions and stage-exit rules still reference it.
@@ -129,7 +129,7 @@ Read the relevant cache file directly per [registry-discovery.md](registry-disco
 
 ### 3. Fetch the schema
 
-Run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` to get the per-resource input/output schema. For connector tasks, run `is resources describe` (activity) or `is triggers describe` (trigger) instead, and run `uip maestro case registry get-connection` to obtain the `connectionId`.
+For non-connector tasks, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` to get the per-resource input/output schema. For connector tasks, run `uip maestro case registry get-connection` to obtain the `connectionId`, then `uip maestro case spec --type <activity|trigger> --activity-type-id <typeId> --connection-id <connId>` to get the unified spec output (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` when `--input-details` is supplied).
 
 ### 4. Edit the skeleton in place
 

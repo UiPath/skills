@@ -89,7 +89,7 @@ For each task entry in `tasks.md §4.6`, open matching plugin's `impl-json.md`. 
 | Task class | Phase 2 `data` content |
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from `uip maestro case tasks describe --type <type> --id <entityKey>`. Each input's `value` is `""`. Outputs populated per plugin. |
-| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `is resources describe` / `is triggers describe` in Phase 2** — schema discovery happens in Phase 3. |
+| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
 | Unresolved (any class) | Skeleton task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
@@ -150,9 +150,10 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
-1. Run `get-connection` (each task runs its own — never reuse) + `is resources describe` (activity) or `is triggers describe` (trigger) per the plugin's `impl-json.md`.
-2. Write root bindings, `data.context[]`, `data.inputs[]` / `data.outputs[]` schema into the existing task in `caseplan.json`.
-3. Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md).
+1. Run `get-connection` (each task runs its own — never reuse), then `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>'` per the plugin's `impl-json.md`.
+2. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
+3. Write `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the root-level Connection + FolderKey bindings into the existing task in `caseplan.json`.
+4. Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md).
 
 Skip connector tasks that are skeletons (unresolved `typeId` / `connectionId`) — they stay bare.
 
