@@ -2,7 +2,7 @@
 
 A connector activity task inside a stage. Calls an external service (Jira, Slack, Salesforce, Gmail, etc.) via UiPath Integration Service.
 
-This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered via IS CLI commands, not baked into this plugin.
+This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered from the `case spec` CLI's normalized output, not baked into this plugin.
 
 ## When to Use
 
@@ -23,7 +23,7 @@ Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on 
 ### 2. Resolve the connection
 
 ```bash
-uip case registry get-connection \
+uip maestro case registry get-connection \
   --type typecache-activities \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
@@ -36,67 +36,105 @@ Returns `Entry`, `Config`, and `Connections`.
 
 Record `connection-id`, `connector-key`, `object-name` from the response.
 
-### 3. Describe the resource — discover fields and references
+Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
+
+### 3. Discover the operation contract via `case spec`
+
+One CLI call replaces the legacy `case tasks describe` + `is resources describe` dance:
 
 ```bash
-uip is resources describe "<connector-key>" "<object-name>" \
-  --connection-id "<connection-id>" --operation Create --output json
+uip maestro case spec --type activity \
+  --activity-type-id "<uiPathActivityTypeId>" \
+  --connection-id "<connection-id>" \
+  --sections identity,operation,connection,inputs,outputs,filter,webhook,references \
+  --output json
 ```
 
-> **Operation mapping for `--operation`:** Use `Create` for POST, `Retrieve` for GET, `Update` for PATCH/PUT, `Delete` for DELETE. If unsure, omit `--operation`.
+The `--sections` value above is the **PLANNING_SECTIONS** bundle — drops `caseShape`, `essentialConfiguration`, and `diagnostics` for a leaner response sized for planning. Phase 3 calls the same command with the **IMPLEMENTATION_SECTIONS** bundle (`identity,connection,caseShape`) plus `--input-details` to mint the populated `caseShape`. See [`case-spec-input-details.md`](../../../case-spec-input-details.md) for the full `--input-details` JSON contract.
 
-Returns:
-- **`requestFields`** — body fields with `type`, `required`, `description`, and `reference` objects
-- **`parameters`** — query and path parameters (may include required params not in `requestFields`)
+> **Diagnostics opt-in.** Append `,diagnostics` to `--sections` when you need the per-endpoint `fetched` / `fallbacks` audit trail (e.g. surfacing fallbacks to the user). It's omitted from PLANNING_SECTIONS by default to keep the payload small.
 
-**This step is mandatory** — not optional. Without it, the agent cannot:
-- Know which fields are required (causes runtime errors if missing)
-- Discover reference fields that need ID resolution (display names fail at runtime)
-- Build correct `input-values` for the tasks.md entry
+> **Synthetic HTTP request branch.** When `spec.identity.objectName` is `"httpRequest"` or `"http-request"`, the activity is the synthetic generic-HTTP path — `bodyParameters` is rejected (no curated body schema). Pass HTTP body via `queryParameters` instead, or omit. Spec output reflects this in `inputs.bodyFields = []`.
+
+The response carries everything the planning phase needs:
+
+| Spec output | What it tells you |
+|---|---|
+| `inputs.bodyFields[]` | Body request fields with `name` (dotted), `dataType`, `required`, `description`, optional `defaultValue` / `enum` / `reference` |
+| `inputs.pathParameters[]`, `inputs.queryParameters[]` | URL-template substitutions and query-string params with the same per-field shape |
+| `inputs.multipart` | `null` for non-multipart; otherwise `{ bodyFieldName, parameters[] }` — multipart upload contract |
+| `outputs.responseFields[]` | Response shape; `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
+| `outputs.pagination` | `null` for non-list, `{ maxPageSize: N }` for list operations |
+| `filter` | `undefined` when the activity does NOT support server-side filtering. Present when it does, with `builder: "ceql"` and `fields[]` listing every searchable field |
+| `references[]` | Cross-references (lookups). Each entry includes a pre-built `discoverCommand` runnable string |
+| `diagnostics.fetched` / `fallbacks` | What endpoints succeeded / fell back; surface `fallbacks` to the user when meaningful |
 
 ### 4. Resolve reference fields
 
-Check `requestFields` for fields with a `reference` object. For each, resolve display names from sdd.md to IDs:
+Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a `reference` object. Each carries a pre-built `discoverCommand`:
 
-```bash
-uip is resources execute list "<connector-key>" "<reference.objectName>" \
-  --connection-id "<connection-id>" --output json
+```jsonc
+"reference": {
+    "objectName": "MailFolder",
+    "lookupValue": "id",
+    "lookupNames": ["displayName"],
+    "discoverCommand": "uip is resources execute list uipath-microsoft-outlook365 MailFolder --connection-id <id>"
+}
 ```
 
-Match the sdd.md value to `displayName` in the results. Use the resolved `id` in `input-values`.
+Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Paginate when looking up by name.** If `Pagination.HasMore` is `true`, re-run with `--query "nextPage=<NextPageToken>"` until found.
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
-If a reference cannot be resolved, **AskUserQuestion** with the available options. Do not guess.
+> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
-### 5. Validate required fields
+If a reference cannot be resolved, **AskUserQuestion** with the candidates (dropdown when finite set, plus "Something else"). Do not guess.
 
-For each `requestFields` and `parameters` entry with `required: true`:
-1. Check if sdd.md provides a value (literal, variable reference, or cross-task output)
-2. If missing and no `defaultValue`, **AskUserQuestion** — list the missing field with its `displayName` and description
-3. Only after all required fields have values, proceed to writing the tasks.md entry
+### 5. Validate required fields (HARD GATE)
+
+This is a hard gate — do NOT proceed to writing tasks.md until every required field has a value.
+
+1. Collect every `inputs.*[?required]` entry from the spec output (across `bodyFields`, `pathParameters`, `queryParameters`).
+2. For each, check whether sdd.md names a value (literal, variable reference, or cross-task output).
+3. If missing and no `defaultValue`, **AskUserQuestion** — list the missing fields with their `displayName` and what kind of value is expected.
+4. Free-form input is appropriate when the value space is open-ended (channel names, message bodies, IDs); when a finite set of sensible values exists (e.g. an `enum`), present them via AskUserQuestion per the dropdown rule in [SKILL.md](../../../../SKILL.md).
+5. Only after all required fields have values, proceed to step 6.
+
+> **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
 
 ### 6. Map SDD inputs to connector fields
 
-SDD input names don't match connector field names. Match each SDD input to a `requestFields` or `parameters` entry by comparing the SDD field name against the `displayName` (or `name`) from Step 3.
+SDD input names rarely match connector field names exactly. Match each SDD input to a `bodyFields`/`pathParameters`/`queryParameters` entry by comparing the SDD field name against the `displayName` (or `name`) from Step 3.
 
-For each **required** field in `requestFields`/`parameters`, there must be a matching SDD input. If a required field has no match in the SDD, **AskUserQuestion** — do not leave required fields unmapped.
+For each required field in spec.inputs.*, there must be a matching SDD input. If a required field has no match, **AskUserQuestion** — never leave required fields unmapped.
 
 Values can be:
-- **Static literals** — `"Payment__c"`, `"Text"`
+- **Static literals** — `"Payment__c"`, `"Text"`, `42`
 - **Resolved reference IDs** — from Step 4
 - **Case variable references** — `=vars.X` for runtime values
 - **Expressions** — `=js:()` only when operators are needed
 
-### 7. Build input-values
+### 7. Optional — author a server-side filter
 
-Using the mapped fields from Step 6, build the `input-values` JSON with dot-path field names from `requestFields`:
+If `spec.filter` is present (i.e. the operation declares a `FilterBuilder` parameter and supports CEQL), the user can author a filter tree. If `spec.filter` is `undefined`, server-side filtering is not supported on this operation — filter downstream (post-execution) instead.
+
+Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
+
+The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
+
+### 8. Build input-values
+
+Using the mapped fields from Step 6, build the `input-values` JSON with dot-path field names from `inputs.bodyFields[].name`:
 
 ```json
-{"body":{"message":{"toRecipients":"=vars.managerEmail","subject":"=vars.caseId","body":{"content":"=vars.description","contentType":"Text"}}}}
+{
+    "bodyParameters": {"message.toRecipients": "=vars.managerEmail", "message.subject": "=vars.caseId", "message.body.content": "=vars.description", "message.body.contentType": "Text"},
+    "queryParameters": {"limit": 50},
+    "pathParameters":  {"id": "AAMkAGI..."}
+}
 ```
 
-`queryParameters` and `pathParameters` go as separate top-level keys if the connector uses them.
+Dotted keys (`message.body.content`) get nested into structured objects via `nestDottedKeys` at Phase 3 mint time — the planner just records the dotted form. Array values are leaves; pass them as the final shape, not via `key[0]` syntax.
 
 ## tasks.md Entry Format
 
@@ -106,13 +144,16 @@ Using the mapped fields from Step 6, build the `input-values` JSON with dot-path
 - connection-id: <connection-uuid>
 - connector-key: <connectorKey>
 - object-name: <objectName>
-- input-values: {"body":{"field":"value"},"queryParameters":{"key":"val"}}
+- input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
+- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
 - isRequired: true
 - runOnlyOnce: false
 - order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct inputs
 ```
+
+`filter:` is optional and present only when the operation supports CEQL (i.e. `spec.filter` was non-null in step 7).
 
 ## Unresolved Fallback
 

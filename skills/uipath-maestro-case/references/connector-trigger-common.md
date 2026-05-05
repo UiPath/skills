@@ -82,77 +82,9 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 {"parentFolderId": "AAMkADNm..."}
 ```
 
-**filter** — translate SDD filter criteria using `filterFields` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI converts the tree to a JMESPath expression automatically.
+**filter** — translate SDD filter criteria using `filterFields` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI converts the tree to a JMESPath expression automatically. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `filterFields[].name` (Step 3) supplies the valid `id` values.
 
-#### Filter tree shape
-
-```json
-{
-  "groupOperator": 0,
-  "index": 0,
-  "filters": [
-    {
-      "id": "<fieldName from filterFields>",
-      "operator": "<PascalCase operator>",
-      "value": { "value": "<literal>", "rawString": "\"<literal>\"", "isLiteral": true }
-    }
-  ],
-  "groups": []
-}
-```
-
-- `groupOperator`: `0` (And) or `1` (Or) — combines sibling filters and groups
-- `filters[]`: leaf conditions. `id` must be a field name from `filterFields` (Step 3)
-- `groups[]`: nested sub-trees for mixed AND/OR logic (empty for simple cases)
-
-#### Operators
-
-| Pattern | Operator |
-|---|---|
-| Exact match | `"Equals"` |
-| Not equal | `"NotEquals"` |
-| Substring match | `"Contains"` |
-| Does not contain | `"NotContains"` |
-| Starts with | `"StartsWith"` |
-| Greater than | `"GreaterThan"` |
-| Less than | `"LessThan"` |
-| Is empty | `"IsEmpty"` |
-| Is not empty | `"IsNotEmpty"` |
-| One of (multi-value) | `"In"` |
-| Not one of | `"NotIn"` |
-| Is null | `"IsNull"` |
-| Is not null | `"IsNotNull"` |
-
-> See the IS SDK `FilterOperator` enum for the complete list (includes `Like`, `NotLike`, datetime operators, etc.).
-
-#### Examples
-
-Single filter (AND with one leaf):
-```json
-{ "groupOperator": 0, "index": 0, "filters": [
-    { "id": "subject", "operator": "Contains", "value": { "value": "urgent", "rawString": "\"urgent\"", "isLiteral": true } }
-], "groups": [] }
-```
-
-Multiple conditions (AND):
-```json
-{ "groupOperator": 0, "index": 0, "filters": [
-    { "id": "project", "operator": "Equals", "value": { "value": "PROJ", "rawString": "\"PROJ\"", "isLiteral": true } },
-    { "id": "issuetype", "operator": "Equals", "value": { "value": "Bug", "rawString": "\"Bug\"", "isLiteral": true } }
-], "groups": [] }
-```
-
-Nested AND/OR (e.g., "status is Open AND (priority > 3 OR assignee is null)"):
-```json
-{ "groupOperator": 0, "index": 0, "filters": [
-    { "id": "status", "operator": "Equals", "value": { "value": "Open", "rawString": "\"Open\"", "isLiteral": true } }
-], "groups": [
-    { "groupOperator": 1, "index": 1, "filters": [
-        { "id": "priority", "operator": "GreaterThan", "value": { "value": 3, "rawString": "\"3\"", "isLiteral": true } },
-        { "id": "assignee", "operator": "IsNull", "value": null }
-    ], "groups": [] }
-] }
-```
+`groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
 
 No filter (trigger fires on all events): omit `filter` from the tasks.md entry entirely.
 

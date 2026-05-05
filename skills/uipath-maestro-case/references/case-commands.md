@@ -154,9 +154,42 @@ uip maestro case debug <projectDirectory> --log-level debug --output json
 
 ---
 
+## uip maestro case spec
+
+Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.json`).
+
+```bash
+# Planning phase — PLANNING_SECTIONS bundle (no caseShape, no diagnostics, no essentialConfiguration)
+uip maestro case spec --type <activity|trigger> \
+  --activity-type-id <uiPathActivityTypeId> \
+  --connection-id <uuid> \
+  --sections identity,operation,connection,inputs,outputs,filter,webhook,references \
+  --output json
+
+# Phase 3 (implementation) — IMPLEMENTATION_SECTIONS bundle, populated caseShape from --input-details
+uip maestro case spec --type <activity|trigger> \
+  --activity-type-id <uiPathActivityTypeId> \
+  --connection-id <uuid> \
+  --sections identity,connection,caseShape \
+  --input-details '<json>' --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--type <activity\|trigger>` | **(required)** Whether the typeId is an activity or trigger TypeCache entry. |
+| `--activity-type-id <uuid>` | **(required)** Studio Web `uiPathActivityTypeId` from the relevant TypeCache index. |
+| `--connection-id <uuid>` | **(required)** IS connection UUID. Pick from `case registry get-connection` first. |
+| `--object-name <name>` | Override the typecache `objectName` — required for entity-typed Curated triggers whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`). |
+| `--sections <csv>` | Comma-separated list of top-level sections to emit. Omit for full output. Valid: `identity, operation, connection, inputs, outputs, filter, webhook, essentialConfiguration, references, caseShape, diagnostics`. Skill bundles: **PLANNING_SECTIONS** = `identity,operation,connection,inputs,outputs,filter,webhook,references`; **IMPLEMENTATION_SECTIONS** = `identity,connection,caseShape`. `diagnostics` is opt-in only — append it explicitly when you need the audit trail. Requires `caseShape` when combined with `--input-details`. |
+| `--input-details <json>` | Pre-fill values into the generated `caseShape`. Activity accepts `{bodyParameters?, queryParameters?, pathParameters?, filter?}`; trigger accepts `{eventParameters?, filter?}`. Connection identity is NOT in input — derived from `--connection-id` and TypeCache. Requires `caseShape` in `--sections` (or omit `--sections` for full output). Full contract: [`case-spec-input-details.md`](case-spec-input-details.md). |
+
+Returns a `ConnectorTaskSpec` projected to the requested `--sections` (always includes `specVersion`). Full output (no `--sections`) yields `identity`, `operation`, `connection`, `inputs`, `outputs`, optional `filter`, optional `webhook`, `essentialConfiguration`, `references[]` (with pre-built `discoverCommand` strings), `diagnostics`, and `caseShape` with FE-canonical inputs/outputs/context arrays. Filter trees inside `--input-details.filter` compile to CEQL (activity) or JMESPath (trigger) per [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+
+---
+
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution to discover the per-resource schema.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
@@ -171,7 +204,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
-Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`.
+Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
 
 ---
 
