@@ -1,0 +1,9 @@
+{
+  "name": "SlackMessageReader",
+  "version": "1.0.0",
+  "description": "Reads the latest message from a Slack channel using the UiPath Integration Services Slack connector.",
+  "entryPoints": ["SlackMessageReader.flow"],
+  "dependencies": {
+    "uipath-salesforce-slack": "*"
+  }
+}
