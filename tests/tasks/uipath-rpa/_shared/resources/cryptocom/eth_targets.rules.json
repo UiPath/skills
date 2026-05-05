@@ -1,0 +1,28 @@
+{
+  "_comment": "Attribute-quality rules for the cryptocom ETH price + market-cap test. Consumed by check_xaml_targets.py via --rules.",
+  "target_count": 2,
+  "forbidden_patterns": [
+    {
+      "name": "css-selector",
+      "regex": "css-selector",
+      "scope": "FullSelectorArgument"
+    },
+    {
+      "name": "tableRow attribute",
+      "regex": "tableRow\\s*=",
+      "scope": "FullSelectorArgument"
+    }
+  ],
+  "required_patterns": [
+    {
+      "name": "colName attribute",
+      "regex": "colName\\s*=\\s*'[^']+'",
+      "scope": "FullSelectorArgument"
+    },
+    {
+      "name": "ETH row anchor (visibleinnertext contains 'ETH', case-insensitive)",
+      "regex": "(?i)visibleinnertext\\s*=\\s*'[^']*ETH[^']*'",
+      "scope": "FullSelectorArgument"
+    }
+  ]
+}
