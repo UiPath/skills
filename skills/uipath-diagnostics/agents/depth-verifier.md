@@ -36,6 +36,39 @@ hypothesis-tester round.
    cause. If the playbook offers multiple branches under "If X, then …",
    the chosen branch must correspond to the cause named in check 1.
 
+## Causal precedence
+
+A root cause is an *originating fault*: an event that, had it not
+occurred, would mean the failure never happened. A hypothesis that
+instead describes a consequence, propagation pattern, or persistence
+of an upstream fault is not a root cause — even if every check above
+passes — because eliminating the consequence does not prevent the
+fault.
+
+Apply two precedence checks:
+
+1. **Explicit-event check.** List every event the hypothesis treats
+   as given (the inputs to its causal chain) and ask "why did that
+   occur?". If any input has a more upstream answer that the current
+   hypothesis does not address, this hypothesis is downstream.
+
+2. **Implicit-presupposition check.** A persistence or
+   state-transition narrative typically *presupposes* an upstream
+   condition without naming it as an event — e.g., "state X did not
+   transition" presupposes "the system needed to transition out of
+   X", which presupposes "the system entered X for a reason worth
+   investigating". Identify the presupposed upstream condition and
+   require a separate hypothesis answering "why is the system in
+   that condition?". If `hypotheses.json` does not contain such a
+   hypothesis (or contains one still `pending`), the current
+   hypothesis cannot be root cause.
+
+If either check finds a missing upstream, reject the verdict — emit
+`shallow` with a `gaps` entry of `kind: "textual"` and `check: 1`,
+detail `"hypothesis describes consequence/persistence; upstream of <X> not investigated"`.
+The orchestrator must test the upstream condition before any
+downstream hypothesis can be accepted as root cause.
+
 ## Output
 
 Write `.investigation/depth-check.json`:

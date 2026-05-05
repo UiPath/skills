@@ -20,7 +20,9 @@ Write or update: `.investigation/hypotheses.json` — see `schemas/hypotheses.sc
 2. **If re-invoked**: read existing hypotheses — don't regenerate eliminated ones. Check `generation_context` for trigger (deepening a symptom? scope adjustment?) and read `generation_context.eliminated_ids` to know which hypotheses to skip.
 3. **Read matched playbooks** from `state.json.matched_playbooks`. If empty, skip to step 4. Otherwise, follow the confidence-level behavior table in shared.md to decide how many hypotheses to generate and from which playbooks.
 4. **Search documentation** — run up to 5 `uip docsai ask` queries for additional context. If after playbooks + 5 queries you still lack context: generate from what you have. If you truly cannot generate any hypothesis, write `needs_input.json` (see shared.md).
-5. **Generate hypotheses**, each with:
+5. **Inspect for explicit fault signals first.** Before drafting any hypothesis, scan triage evidence for explicit fault data — exception stacks, error codes, faulted-state details, error-level logs, incidents, element/activity errorDetails. If any fault signal is present, the **originating-fault hypothesis** (what caused the fault to occur) MUST be drafted first and assigned the highest confidence. Persistence, propagation, cleanup, recovery-gap, or state-transition hypotheses go *after* it. Never lead the hypothesis set with a pattern that explains how a fault was handled or how its consequences propagated when an explicit fault stack is on hand.
+
+6. **Generate hypotheses**, each with:
    - Description, scope level, confidence, reasoning
    - **Source citation** — which reference doc, search result, or playbook informed it
    - `to_confirm` and `to_eliminate` evidence requirements

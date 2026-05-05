@@ -34,9 +34,17 @@ Organization (cloud.uipath.com)
 
 ## Connection Resource File
 
-Projects and solutions store connection references as JSON files in the `connection/` folder (or `resources/solution_folder/connection/` for solutions). Each subfolder is named by connector key, and contains one JSON file per connection.
+Projects and solutions store connection references as JSON files. The location depends on whether the project is standalone or part of a solution — **always check both layouts**:
 
-Path pattern: `connection/<connector-key>/<owner>.json`
+| Layout | Path pattern |
+|--------|--------------|
+| Standalone project | `<project-root>/connection/<connector-key>/<owner>.json` |
+| Solution (single folder) | `<project-root>/resources/solution_folder/connection/<connector-key>/<owner>.json` |
+| Solution (multi-folder) | `<project-root>/resources/<folder-name>/connection/<connector-key>/<owner>.json` |
+
+Each `<connector-key>` subfolder contains one JSON file per connection, named after the connection's `resource.name` (typically the owner's email or username).
+
+**When investigating, glob `**/connection/<connector-key>/*.json` from the project root** — that catches all three layouts in one read. Do NOT assume the standalone path; solutions are common and the resource file may be several directories deep under `resources/`.
 
 Key fields:
 

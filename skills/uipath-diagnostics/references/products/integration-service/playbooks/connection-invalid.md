@@ -26,9 +26,23 @@ What to look for:
 
 ## Investigation
 
-1. **Read the connection resource file** — if source code is available, find and read the connection JSON (see "Connection Resource File" in [overview.md](../overview.md) for path pattern and field reference). Use `spec.connectorName` as the exact display name in all findings — do NOT guess from the activity package name.
-2. `uip is connections list <connector-key> --folder-key <folder-key>` — check if a connection for that connector exists in the runner's folder
+> **Hard precondition for steps 2–4:** before running any CLI command or drawing any conclusion, you MUST complete step 1 — either read the connection resource file or explicitly record that no project source is available. CLI evidence (`ping` returning 404, empty `connections list`) is **not sufficient** to distinguish "deleted connection" from "cross-workspace ownership"; only the resource file disambiguates them. Skipping step 1 makes any conclusion at step 2/3 ambiguous and forces the depth-verifier to reject the hypothesis.
+
+1. **Read the connection resource file** — if source code is available, glob `**/connection/<connector-key>/*.json` from the project root to handle all project layouts (standalone, single-folder solution, multi-folder solution — see "Connection Resource File" in [overview.md](../overview.md)). If multiple files match, pick the one whose `resource.key` matches the connection ID in the error. From the file, extract every one of:
+   - `spec.connectorName` — the exact display name to use in findings (do NOT guess from the activity package name)
+   - `spec.connectorKey` — for CLI queries
+   - `resource.name` — the **connection owner**. If this is an email, the connection lives in that user's personal workspace; if it differs from the runner's identity, the connection is cross-workspace.
+   - `resource.folders[*].fullyQualifiedName` — the **folder binding**. Compare against the runner's job folder; if they differ, the connection is in a different folder than where the process runs.
+   - `resource.key` — the connection ID (UUID). Cross-check against the connection ID in the runtime error and in the workflow source (XAML/code).
+   - `spec.authenticationType` — `"AuthenticateAfterDeployment"` means the user must authenticate after creating the connection.
+
+   Record these six values in evidence. If the glob returns zero results AND the project source path is confirmed accessible, only then mark the resource file as "absent" and proceed; the conclusion at the end MUST acknowledge ownership could not be determined and recommend the user provide the resource file.
+
+2. `uip is connections list <connector-key> --folder-key <folder-key>` — check if a connection for that connector exists in the runner's folder. **Only meaningful after step 1**: combined with the resource file's `resource.folders` and `resource.name`, this confirms whether the offending connection lives in a different folder/user than the runner.
+
 3. If found: `uip is connections ping <connection-id>` — verify it is active and enabled
+
+4. **Cross-reference workflow binding** — if the workflow source is available, confirm the connection ID in the activity (`ConnectionId`/`ConnectionKey` attributes in XAML, or equivalent in coded workflows) matches `resource.key` from step 1. A mismatch means the runtime error connection ID is hard-bound elsewhere.
 
 ## Resolution
 

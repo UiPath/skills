@@ -77,8 +77,17 @@ Test every hypothesis sequentially (highest confidence first). For each, spawn h
 **Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker. Otherwise skip.
 
 **Classify and act:**
+
+Before classifying as **explains-WHY**, run the *upstream-cause gate*:
+
+> For each event-noun in the hypothesis's narrative, ask "why did that happen?". Then identify any upstream condition the narrative *presupposes without naming* (a persistence narrative presupposes the system is in an unwanted state for a reason; a propagation narrative presupposes an upstream signal worth propagating). If `hypotheses.json` has a `pending` or `supported` hypothesis answering any of those questions — explicit or presupposed — or if the only answer the current hypothesis offers is a missing mitigation, retry, recovery, or escalation path rather than an originating fault — classify as **describes-WHAT** regardless of evidence strength.
+
+A hypothesis that explains *why a failure persisted* is not a root cause. The cause is the originating fault; the missing mitigation only amplifies its effect. Only after every upstream "why" — explicit or presupposed — has been tested and either eliminated or reduced to data-gap can a downstream hypothesis be declared root cause.
+
+**Sibling-precedence backstop:** if the candidate root cause is a persistence, propagation, cleanup, or state-transition pattern AND any sibling hypothesis is `pending` AND that sibling questions whether the underlying state has its own originating fault, the sibling MUST be tested before the candidate can be classified as **explains-WHY**. Stopping at the first confirmed hypothesis is incorrect when that hypothesis is downstream.
+
 - **Eliminated / Inconclusive** → record, test next hypothesis
-- **Confirmed — explains WHY** → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
+- **Confirmed — explains WHY** (and passes upstream-cause gate) → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
 - **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
 
