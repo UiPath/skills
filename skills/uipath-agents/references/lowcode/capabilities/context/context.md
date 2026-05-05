@@ -22,6 +22,8 @@ Contexts feed retrievable information into an agent at runtime. Three variants e
 - **Files attached at runtime by the caller (uploaded with each request)** → `attachments` ([attachments.md](attachments.md))
 - **Queries against DataFabric entity sets** → `datafabricentityset` ([datafabric.md](datafabric.md))
 
+> **File-as-input ≠ attachments context.** If the agent should accept a file as a plain input field and read its contents via a built-in tool (no semantic retrieval), use `job-attachment` + `analyze-attachments` instead — see [../built-in-tools/built-in-tools.md](../built-in-tools/built-in-tools.md) and [../../agent-definition.md](../../agent-definition.md) § File Attachments.
+
 ## Casing Rule
 
 `contextType` and `retrievalMode` values are lowercase. See [../../critical-rules.md](../../critical-rules.md) § What NOT to Do — Anti-pattern 12.
