@@ -68,7 +68,7 @@ Field types: `string` · `number` · `integer` · `boolean` · `array` (add `"it
 Without SDK services:
 
 ```typescript
-import { CodedActionAppsService } from '@uipath/uipath-ts-coded-action-apps';
+import { CodedActionAppsService } from '@uipath/coded-action-app';
 
 export const codedActionAppsService = new CodedActionAppsService();
 ```
@@ -78,7 +78,7 @@ With SDK services (add only what the app uses):
 ```typescript
 import { UiPath } from '@uipath/uipath-typescript/core';
 // import { Entities } from '@uipath/uipath-typescript/entities';
-import { CodedActionAppsService } from '@uipath/uipath-ts-coded-action-apps';
+import { CodedActionAppsService } from '@uipath/coded-action-app';
 
 const sdk = new UiPath();
 export const codedActionAppsService = new CodedActionAppsService();
@@ -119,7 +119,7 @@ Replace `{{...}}` placeholders with fields from `action-schema.json`. Remove sec
 
 ```typescript
 import { useState, useEffect, ChangeEvent } from 'react';
-import { Theme } from '@uipath/uipath-ts-coded-action-apps';
+import { Theme } from '@uipath/coded-action-app';
 import { codedActionAppsService } from '../uipath';
 import './Form.css';
 
