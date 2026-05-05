@@ -52,14 +52,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent used uip maestro flow hitl add to add the HITL node"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+hitl\s+add'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Flow file exists at correct double-nested path"
     command: "test -f ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
@@ -68,62 +60,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "HITL node is present with correct type"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "HITL node uses v1.0 schema (typeVersion 1.0)"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"typeVersion": "1.0"'
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Amount field uses number type (not text)"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"number"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Decision/approval field uses boolean type"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"boolean"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Completed handle is wired"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"completed"'
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Input fields are bound to upstream script output using correct v1.0 .output path"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - '"binding": "=js:$vars.'
-      - '.output.'
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "Downstream script accesses HITL output via $vars.<nodeId>.output path"
-    path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    includes:
-      - "$vars."
-      - ".output."
-    weight: 2.0
+  - type: run_command
+    description: "Flow has semantically correct inline HITL schema, decision capture, completed wiring, and .output access paths"
+    command: "python3 $TASK_DIR/check_devcon_expense_approval.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 16.5
     pass_threshold: 1.0
 
   - type: command_executed

@@ -277,7 +277,7 @@ If no `input-values` and no `filter`: empty body `{}`.
 
 ### Root-level bindings
 
-Create 2 entries in `root.data.uipath.bindings[]`:
+Create 2 entries in the bindings array — destination path per [bindings/impl-json.md § Schema-dependent destination](plugins/variables/bindings/impl-json.md) (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`):
 
 | Binding | `propertyAttribute` | `default` |
 |---|---|---|

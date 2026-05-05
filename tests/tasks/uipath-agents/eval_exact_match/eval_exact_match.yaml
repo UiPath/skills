@@ -1,0 +1,66 @@
+task_id: skill-agent-coded-eval-exact-match
+description: >
+  Coded-agent eval lifecycle, deterministic path. Verifies the skill
+  guides the agent to author an evaluator config under
+  `evaluations/evaluators/`, an evaluation set under
+  `evaluations/eval-sets/` whose `evaluatorRefs` match the evaluator
+  `id`, and run `uip codedagent eval --no-report` against a
+  deterministic Simple Function agent. All test cases must score 1.0
+  and report PASSED in the output file.
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a Simple Function UiPath coded agent named `adder` whose
+  `main(input)` returns the sum of two integers. No LLM — purely
+  deterministic.
+
+  Input fields: `a` (int), `b` (int). Output field: `result` (int).
+
+  Take the agent through scaffold → init → run, then add an
+  evaluation harness using the **ExactMatch evaluator** with three
+  test cases (e.g. 2+3=5, 0+0=0, 7+1=8). Run the eval set locally
+  (no Studio Web reporting) and save the output to
+  `eval-results.json` in the project root.
+
+  Every test case must score 1.0 — deterministic agent +
+  deterministic evaluator means anything below 1.0 is a regression.
+
+  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
+  pause between planning and implementation. Complete end-to-end in
+  a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Evaluator + eval-set + results shape, all test cases PASSED"
+    command: "python3 $TASK_DIR/check_eval_exact_match.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

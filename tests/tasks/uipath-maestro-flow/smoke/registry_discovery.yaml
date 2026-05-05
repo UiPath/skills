@@ -20,6 +20,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
+  - Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.
   - Use `--output json` on all uip commands.
   - Do not build the flow — just explore.
 

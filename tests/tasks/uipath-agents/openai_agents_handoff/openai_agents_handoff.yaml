@@ -1,0 +1,85 @@
+task_id: skill-agent-coded-openai-agents-handoff
+description: >
+  OpenAI Agents coded agent zero-to-running with a multi-agent
+  handoff. Verifies the agent scaffolds an OpenAI Agents project
+  (`uip codedagent new` → `openai_agents.json` + `main.py`
+  exporting an `Agent` factory function), uses the factory
+  function pattern (`def main() -> Agent`) so `UiPathChatOpenAI`
+  and `_openai_shared.set_default_openai_client` are deferred
+  (Critical Rule C4 — module-level setup breaks
+  `uip codedagent init`), and runs the triage agent end-to-end.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build an OpenAI Agents UiPath coded agent named `triage-bot` with
+  three agents:
+
+  - A `triage` agent (the top-level entrypoint) that reads the
+    customer's message and decides whether to hand off.
+  - A `billing` agent for invoice / payment questions.
+  - A `technical` agent for product / feature questions.
+
+  The triage agent must accept a typed customer context. Define
+  this context as a Pydantic model named `CustomerInput` with a
+  single `customer_id: str` field, and pass it as the typed context
+  on the triage `Agent[...]` so the entry-points schema picks it
+  up. Configure handoffs from triage to billing and technical.
+
+  Register the triage factory in `openai_agents.json` under the
+  entrypoint key `agent` (i.e. `{"agents": {"agent":
+  "main.py:main"}}`).
+
+  Take the agent end-to-end through scaffold → init → run. Run
+  with `uip codedagent run agent
+  '{"messages": "I think I was charged twice last month, can you check?", "customer_id": "C-101"}'`.
+
+  After the run succeeds, write `RAN_OK` to `run_marker.txt` in the
+  project root so the test harness can verify the run completed
+  cleanly.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the agent locally with uip codedagent run agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+agent'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OpenAI Agents project shape, factory pattern, handoff wiring"
+    command: "python3 $TASK_DIR/check_openai_agents_handoff.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

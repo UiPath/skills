@@ -15,18 +15,18 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 
 | Sub-op | Purpose |
 |--------|---------|
-| **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into `data.slaRules[]` with `expression: "=js:true"`. |
-| **Conditional SLA rules** | Expression-driven SLA overrides. Root-only. Prepended to `root.data.slaRules[]` ahead of the default. |
+| **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into the SLA rules array with `expression: "=js:true"`. Path schema-dependent — see [impl-json.md § Target resolution](impl-json.md). |
+| **Conditional SLA rules** | Expression-driven SLA overrides. Root-only. Prepended to the root SLA rules array ahead of the default. |
 | **Escalation rules** | Notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`. |
 
 ## Applying SLA at Root vs Stage
 
-- **Root** — the default SLA for the whole case. Target `"root"`; written to `root.data.slaRules[]`.
-- **Stage** — stage-specific SLA. Target `"<stage-name>"`; written to the stage node's `data.slaRules[]`. Overrides the root default while the stage is active.
+- **Root** — the default SLA for the whole case. Target `"root"`; written to the root SLA rules array (v19: `root.data.slaRules[]`; v20: `metadata.slaRules[]` — see Rule 17).
+- **Stage** — stage-specific SLA. Target `"<stage-name>"`; written to the stage node's `data.slaRules[]` (unchanged across schemas). Overrides the root default while the stage is active.
 
 Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage > root.
 
-> **Conditional SLA rules are root-only.** They live in `root.data.slaRules[]`; per-stage conditional SLA is not supported. If the sdd.md describes one, flag to the user.
+> **Conditional SLA rules are root-only.** They live in the root SLA rules array (v19: `root.data.slaRules[]`; v20: `metadata.slaRules[]`); per-stage conditional SLA is not supported. If the sdd.md describes one, flag to the user.
 
 > **ExceptionStage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:ExceptionStage` node. See [`impl-json.md`](impl-json.md).
 
@@ -119,5 +119,5 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ## Anti-Patterns
 
 - **Do not fabricate expression syntax.** Describe conditional SLA rules in natural language during planning; the execution phase handles the exact syntax.
-- **Do not put conditional SLA rules on stages.** Conditional SLA rules live in `root.data.slaRules[]` only. Flag to the user if the sdd.md describes a per-stage conditional SLA.
+- **Do not put conditional SLA rules on stages.** Conditional SLA rules live in the root SLA rules array only (v19: `root.data.slaRules[]`; v20: `metadata.slaRules[]`). Flag to the user if the sdd.md describes a per-stage conditional SLA.
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.

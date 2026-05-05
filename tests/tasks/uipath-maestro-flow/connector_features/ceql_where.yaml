@@ -1,8 +1,12 @@
 task_id: skill-flow-ipe-ceql-where
 description: >
-  Tests the CEQL where query IS feature — configures a Microsoft Entra (Azure
-  AD) "List groups" connector node with a CEQL filter on displayName = "active",
-  persisted as a structured filter tree (Studio Web contract).
+  Tests the CEQL where query IS feature — agent plans a structured filter
+  tree for the Microsoft Entra (Azure AD) connector's "List groups"
+  operation with a `displayName = "active"` filter, following the canonical
+  shape documented in the Filter Trees (CEQL) section of the
+  uipath-platform skill. The flow must reference the registered connector
+  key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate
+  for routing, and pass `uip maestro flow validate`.
 tags: [uipath-maestro-flow, smoke, connector, ceql, filter]
 
 task_timeout: 1500
@@ -21,30 +25,49 @@ sandbox:
       - "@uipath/cli"
 initial_prompt: |
   Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
-  or any command that requires a live connection — this sandbox has no UiPath
-  tenant. Instead, plan the exact `--detail` JSON you would pass to
-  `uip flow node configure` for the where.
-  Write the planned filter `--detail` JSON to `where_detail.json`. It must
-  contain, at minimum:
-    - connectionId, folderKey, eventMode (placeholder values are fine)
-    - a `filter` object (the structured filter tree)
+  or any command that requires a live connection — this sandbox has no
+  UiPath tenant. Instead, plan the exact `--detail` JSON you would pass to
+  `uip flow node configure` and emit it to `where_detail.json`.
 
-  Also save a short summary to report.json 
+  Read the canonical filter-tree shape before writing:
+  `skills/uipath-platform/references/integration-service/activities.md`,
+  section "Filter Trees (CEQL)". The Maestro Flow connector plugin's
+  Step 6a (`skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md`)
+  cross-references that section.
+
+  `where_detail.json` must contain, at minimum:
+    - `connectionId`, `folderKey`, `eventMode` (placeholder values are fine)
+    - a top-level `filter` object using the CANONICAL shape from the doc:
+        `{"groupOperator": <0|1>, "index": 0, "filters": [...], "groups": []}`
+      Each leaf filter must use:
+        - `id`: the field name (e.g. `"displayName"`)
+        - `operator`: PascalCase (`"Equals"`, `"Contains"`, ...)
+        - `value`: a `WorkflowValue` object
+            `{"value": <typed>, "rawString": <verbatim>, "isLiteral": true}`
+
+  Save a short summary to `report.json`:
     {
       "scenario": "ceql-where-filter-tree",
       "uses_filter_tree": true,
       "used_filter_expression_string": false,
       "notes": "<one sentence explaining why the tree is the correct input>"
     }
+
   Create a flow called "CeqlWhereTest" with a manual trigger that uses the
-  Microsoft Entra (Azure AD) connector to list all groups whose `displayName`
-  equals "active". The CEQL where filter must be persisted as a structured
-  filter tree (the same shape Studio Web reads to render the filter builder),
-  not just as a raw expression string.
+  Microsoft Entra (Azure AD) connector's "List groups" operation, filtering
+  on `displayName = "active"`.
+
+  Connector key: use `uipath-microsoft-azureactivedirectory` exactly. That
+  is the registered key for the Microsoft Entra ID connector in this
+  tenant — display names like "Microsoft Entra" or "Microsoft Entra ID"
+  are NOT registry keys. Confirm the key with
+  `uip maestro flow registry search "azureactivedirectory"` before adding
+  the node.
+
   Add a Decision node to check whether the call succeeded.
   Route failure to a Terminate node with error message "CeqlWhere test failed".
   Route success to a final action that logs "CeqlWhere test passed".
-  Validate the final flow file.
+  Validate the final flow file with `uip maestro flow validate`.
 
 success_criteria:
   - type: file_exists
@@ -54,10 +77,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow targets uipath-microsoft-azureactivedirectory List Groups with displayName=active filter tree, plus Decision + Terminate nodes"
+    description: "where_detail.json has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Decision + Terminate nodes"
     command: "python3 $TASK_DIR/check_ceql_where_flow.py"
     timeout: 60
-    expected_exit_code: 0 
+    expected_exit_code: 0
     weight: 8.0
     pass_threshold: 1.0
 

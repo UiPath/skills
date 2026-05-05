@@ -14,12 +14,29 @@ Analyze what a skill teaches vs what its tests verify. Produce a gap analysis wi
 
 ## Phase 1 — Discovery
 
-1. Resolve target skill(s). Single name → `skills/<name>/`. Empty/all → glob `skills/uipath-*/`.
-2. For each skill, check for `tests/tasks/<skill-name>/`.
+1. Resolve target skill(s):
+   - Single name → `skills/<name>/`. If `skills/<name>/` does NOT exist but `<name>` is in the **Planned Skills Registry** below, treat it as a planned skill (use the planned-skill template in Phase 5).
+   - Empty/all → union of (a) glob `skills/uipath-*/` and (b) every entry in the **Planned Skills Registry** below whose folder does not yet exist. Planned-but-missing skills MUST appear in the per-skill report set and the summary roll-up so they remain visible at 0% until they ship.
+2. For each existing skill, check for `tests/tasks/<skill-name>/`.
 3. Find `*.yaml` test files recursively under each test directory. Exclude `_shared/`.
 4. Find `check_*.py` scripts recursively. Exclude `_shared/test_*.py` (unit tests for shared helpers).
 
-For multi-skill runs, use parallel Explore agents — one per skill — to read skill + test content simultaneously.
+For multi-skill runs, use parallel Explore agents — one per skill — to read skill + test content simultaneously. Skip Phase 2 entirely for planned-but-missing skills (no SKILL.md to read).
+
+### Planned Skills Registry
+
+These skills are expected to ship but have no folder under `skills/` yet. Treat them as 0% coverage and surface them in every `all`-mode run so the gap stays visible. When a folder appears under `skills/<name>/`, normal Phase 2 extraction takes over automatically — do not remove entries from this list when that happens; the existence check in step 1 handles the transition. Remove an entry only when the skill is intentionally cancelled.
+
+| Planned skill | Domain (one-line hint for the stub report) |
+|---|---|
+| `uipath-automation-suite` | On-prem Automation Suite platform operations |
+| `uipath-communications-mining` | Communications Mining (email/text intent + sentiment) |
+| `uipath-document-understanding` | Document Understanding (extraction, classification, validation) |
+| `uipath-governance` | Tenant governance, policies, audit (umbrella over `uipath-gov-*`) |
+| `uipath-insights` | Insights dashboards, KPIs, scheduled reports |
+| `uipath-marketplace` | UiPath Marketplace component publish/consume |
+| `uipath-process-mining` | Process Mining (event logs, conformance, dashboards) |
+| `uipath-task-mining` | Task Mining (recordings, task analysis) |
 
 ## Phase 2 — Extract the skill's capability inventory
 
@@ -249,10 +266,19 @@ Create `tests/reports/` if needed.
 | Invocation | Files written |
 |---|---|
 | Single skill (e.g. `uipath-maestro-flow`) | `tests/reports/<skill-name>.md` only. |
-| `all` (or empty) | One per-skill report **and** the roll-up: `tests/reports/<skill-name>.md` for every skill plus `tests/reports/SUMMARY.md`. |
+| Single planned skill (folder missing, name in registry) | `tests/reports/<skill-name>.md` using the **planned-skill template** below. |
+| `all` (or empty) | One per-skill report **and** the roll-up: `tests/reports/<skill-name>.md` for every existing skill, `tests/reports/<skill-name>.md` for every planned-but-missing skill (planned template), plus `tests/reports/SUMMARY.md`. |
 | User-specified custom path | Use that path instead. |
 
 Overwrite any existing report at the same path. The summary file name is `SUMMARY.md` (uppercase), matching the directory structure documented in `tests/README.md`.
+
+Choose the per-skill template by state:
+
+| Skill state | Template |
+|---|---|
+| Folder exists, has ≥1 test | **Per-Skill (with tests)** |
+| Folder exists, zero tests | **Per-Skill (no tests)** |
+| Folder does NOT exist, name in Planned Skills Registry | **Per-Skill (planned, not yet created)** |
 
 ---
 
@@ -466,6 +492,39 @@ Recommend 2 smoke tests and 2 e2e tests to establish baseline coverage (per CONT
 
 ---
 
+## Report Template: Per-Skill (planned, not yet created)
+
+Use this stub when the skill is in the **Planned Skills Registry** but `skills/<name>/` does not exist yet. Do not attempt component/rule/step extraction — there is no source. Keep the file short; its job is to keep the gap visible in the summary.
+
+```markdown
+# Test Coverage Report: <skill-name>
+
+*Generated: YYYY-MM-DD*
+
+> **Status:** Planned — skill folder `skills/<skill-name>/` does not exist yet. Coverage is 0% by definition. This report will be regenerated automatically once the folder lands and tests are added; no manual cleanup needed.
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Total test tasks | 0 |
+| Components inventoried | — (skill not yet authored) |
+| Workflow steps | — |
+| Critical rules | — |
+| Anti-patterns | — |
+| **Estimated overall coverage** | **0%** |
+
+**Domain hint:** <one-line hint from the Planned Skills Registry — e.g., "Document Understanding (extraction, classification, validation)">
+
+## Next Steps
+
+1. Author `skills/<skill-name>/SKILL.md` per the repo's skill-structure rules.
+2. Add `tests/tasks/<skill-name>/` with at minimum 1 smoke + 1 e2e test (the repo's minimum bar).
+3. Re-run `/test-coverage <skill-name>` (or `/test-coverage all`) — this stub is overwritten with a full report once the folder exists.
+```
+
+---
+
 ## Report Template: Summary Roll-Up
 
 Produce this whenever more than one skill is analyzed (including `all` mode).
@@ -482,10 +541,19 @@ Produce this whenever more than one skill is analyzed (including `all` mode).
 | uipath-maestro-flow | 49 | 6/24 (25%) | 6/9 (67%) | 1/16 (6%) | 1/2 (50%) | 33% | 2 | Requires cloud auth |
 | uipath-rpa | 2 | 0/39 (0%) | 0/8 (0%) | 0/21 (0%) | 1/2 (50%) | 8% | 0 | Requires Windows + Studio |
 | uipath-platform | 5 | 2/12 (17%) | N/A | N/A | N/A | 17% | 0 | Requires cloud auth |
+| uipath-document-understanding | 0 | — / — (0%) | — | — | — | **0%** (planned) | — | Skill folder not yet created |
 
-Overall is weighted and renormalized across applicable dimensions (see Phase 4e). N/A cells mean the skill is missing that dimension (e.g. no Critical Rules section, single-path skill, catalog skill with no workflow steps) — weights redistribute proportionally.
+Overall is weighted and renormalized across applicable dimensions (see Phase 4e). N/A cells mean the skill is missing that dimension (e.g. no Critical Rules section, single-path skill, catalog skill with no workflow steps) — weights redistribute proportionally. Planned-but-missing skills (no `skills/<name>/` folder yet) are scored at 0% and tagged "(planned)" in the Overall column; they appear in the same table — do not split them out, so the gap is impossible to overlook.
 
-**Totals:** N tests across M skills. X components inventoried, Y directly tested (Z%). A workflow steps, B covered. C critical rules, D directly tested. E multi-path skills, F with full path coverage. Anti-patterns are inventoried per skill but intentionally excluded from the overall score.
+**Totals:** N tests across M skills (P planned, not yet authored). X components inventoried, Y directly tested (Z%). A workflow steps, B covered. C critical rules, D directly tested. E multi-path skills, F with full path coverage. Anti-patterns are inventoried per skill but intentionally excluded from the overall score.
+
+## Planned Skills (folder not yet created)
+
+List every entry from the Planned Skills Registry whose folder is still missing. Once a folder lands, it falls out of this section and into the regular roll-up rows automatically.
+
+| Skill | Domain hint | Stub report |
+|---|---|---|
+| uipath-document-understanding | Document Understanding (extraction, classification, validation) | [uipath-document-understanding.md](uipath-document-understanding.md) |
 
 ## Skills Without Tests
 
@@ -548,3 +616,4 @@ Across all skills, prioritized by coverage impact. Prefer tests that are feasibl
 10. **Flag infrastructure requirements.** Every report should note what environment the skill needs for testing. The summary should include an Infra column so readers can quickly see which skills are CI-testable vs platform-gated.
 11. **Tag every recommendation.** Suggested tests in the Gaps and Recommendations sections must carry the proposed tag list (tier, lifecycle, scenario, features) from the Tag Taxonomy. These recommendations feed `/generate-tasks` — the validated tag set must travel with them so no inference is required downstream.
 12. **Minimum bar lives in the summary.** The smoke+e2e minimum-bar check lives in the summary's Minimum Bar Check section and nowhere else. Per-skill reports may note the status but must not restate the rule — link back to the summary instead.
+13. **Planned skills count as 0%.** Every entry in the Planned Skills Registry (Phase 1) whose folder is missing produces a stub report via the planned-skill template AND a row in the summary roll-up at 0% coverage. Do not silently drop them just because there is no SKILL.md to extract from — that is the entire point of the registry. Once `skills/<name>/` exists, the existence check in Phase 1 step 1 routes the skill into the normal templates automatically, with no edit to this command file required. Only edit the registry to add a new planned skill or remove a cancelled one.

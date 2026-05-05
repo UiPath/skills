@@ -1,0 +1,65 @@
+task_id: skill-agent-coded-deploy-my-workspace
+description: >
+  Coded-agent deploy lifecycle. Verifies the skill guides the agent
+  through `uip codedagent pack` → `uip codedagent publish
+  --my-workspace` (or the combined `uip codedagent deploy
+  --my-workspace`), then `uip codedagent invoke` to start a cloud
+  job and surface the monitoring URL. Exercises the entire production
+  packaging path the existing test suite never reaches.
+tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a minimal Simple Function UiPath coded agent named
+  `deploy-smoke` whose `main(input)` returns `{"echoed":
+  input.message}`. No LLM. The point is the deployment lifecycle,
+  not the agent logic.
+
+  Take the agent through scaffold → init → run, then deploy it to
+  the user's personal workspace and invoke the published version
+  with `{"message": "deployed"}`.
+
+  After invoke succeeds, write its full stdout (which includes the
+  monitoring URL) to `deploy-smoke/invoke-output.txt` (inside the
+  scaffolded project directory, alongside `pyproject.toml`) so the
+  test harness can verify the URL was surfaced.
+
+  The test harness has UiPath auth pre-configured.
+
+  Do NOT pause between planning and implementation. Complete
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent packed and published to my-workspace (deploy or pack+publish)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--my-workspace'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked the published agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+invoke\s+main'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Deploy artifacts present and pyproject.toml is well-formed for packaging"
+    command: "python3 $TASK_DIR/check_deploy_my_workspace.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

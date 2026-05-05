@@ -351,6 +351,40 @@ uip solution upload . --output json
 
 Custom guardrails use deterministic rules you define. They have a `rules` array containing one or more rule objects.
 
+> **Rule combination logic is AND.** Multiple rules in a single guardrail are evaluated with AND — all rules must match for the guardrail to trigger. Multiple fields selected within a single rule (via `$selectorType: "specific"` with multiple `fields` entries) are also AND — every listed field must satisfy the operator.
+>
+> Example with two rules and multi-field selector:
+> ```json
+> "rules": [
+>   {
+>     "$ruleType": "word",
+>     "fieldSelector": {
+>       "$selectorType": "specific",
+>       "fields": [
+>         { "path": "editPermissions[*].project.archivedBy.applicationRoles.items[*].groups[*]", "source": "output", "title": "Edit permissions project archived by application roles items groups" },
+>         { "path": "editPermissions[*].project.archivedBy.applicationRoles.items[*].key", "source": "output", "title": "Edit permissions project archived by application roles items key" }
+>       ]
+>     },
+>     "operator": "doesNotStartWith",
+>     "value": "AL"
+>   },
+>   {
+>     "$ruleType": "word",
+>     "fieldSelector": {
+>       "$selectorType": "specific",
+>       "fields": [
+>         { "path": "description", "source": "output", "title": "Description" }
+>       ]
+>     },
+>     "operator": "isNotEmpty",
+>     "value": ""
+>   }
+> ]
+> ```
+> Evaluation: `(groups doesNotStartWith "AL" AND key doesNotStartWith "AL") AND (description isNotEmpty)` — all three conditions must be true for the guardrail to trigger.
+>
+> **OR logic is not supported.** To achieve OR behavior, create separate guardrails — one per condition branch. Each guardrail triggers independently.
+
 > **Critical discriminator fields:** Every rule needs `$ruleType`. Every field selector needs `$selectorType`. Every action needs `$actionType`. Missing any of these causes validation failure.
 
 ```json
@@ -942,8 +976,9 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 16. **Do not use `Agent` or `Llm` scopes on custom guardrails** — custom guardrails (`$guardrailType: "custom"`) only support `"Tool"` scope with exactly one tool in `matchNames`. Custom rules depend on the tool's input/output schema, so they cannot target multiple tools. Create a separate custom guardrail per tool.
 17. **Do not auto-generate a custom guardrail as fallback** — when a built-in validator is unavailable, unsupported for the requested scope, or unauthorized, inform the user and stop. Do not silently generate a custom guardrail as a workaround. You may suggest a custom guardrail alternative (for `Tool` scope only), but only generate it after explicit user confirmation.
 18. **Do not create separate guardrails per scope** — when a guardrail applies to multiple scopes (e.g., `Agent` and `Tool`), combine them into a single guardrail with `"scopes": ["Agent", "Tool"]`. Do not create two separate guardrail objects with identical configuration differing only in scope.
-19. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
-20. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
+19. **Do not attempt OR logic within a single guardrail** — all rules and all fields within a guardrail are combined with AND. OR is not supported. To achieve OR behavior, create separate guardrails — one per condition branch.
+20. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
+21. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
 
 ## Walkthrough
 

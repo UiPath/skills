@@ -1,0 +1,77 @@
+task_id: skill-agent-coded-antipattern-wrong-sdk-import
+description: >
+  Negative test for Coded Critical Rule C4 (correct SDK import path)
+  — `from uipath import UiPath` is wrong and raises `ImportError`
+  at module-import time. The correct path is `from uipath.platform
+  import UiPath`. The skill must drive the agent to fix the import.
+tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have an existing UiPath coded agent that I'm trying to run.
+  Recreate the project under `bad-import` exactly as below, then
+  review for any UiPath coded-agent anti-patterns and fix them in
+  place.
+
+  **bad-import/pyproject.toml**:
+  ```toml
+  [project]
+  name = "bad-import"
+  version = "0.0.1"
+  description = "Has the wrong SDK import path"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **bad-import/main.py**:
+  ```python
+  from uipath import UiPath  # this import path does not exist
+  from pydantic import BaseModel
+
+  class Input(BaseModel):
+      asset_name: str
+
+  class Output(BaseModel):
+      value: str
+
+  async def main(input: Input) -> Output:
+      sdk = UiPath()
+      asset = await sdk.assets.retrieve_async(input.asset_name, folder_path="Shared")
+      return Output(value=str(asset))
+  ```
+
+  After recreating those files, review for anti-patterns and fix
+  them in place. The agent should still call `sdk.assets.retrieve_
+  async` with the same arguments.
+
+  Do NOT publish, upload, or deploy. Do NOT pause between planning
+  and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "main.py exists under bad-import/"
+    path: "bad-import/main.py"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "main.py imports UiPath from uipath.platform; no `from uipath import UiPath`"
+    command: "python3 $TASK_DIR/check_antipattern_wrong_sdk_import.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

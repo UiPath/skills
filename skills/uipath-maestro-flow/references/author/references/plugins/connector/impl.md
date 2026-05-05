@@ -10,7 +10,7 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
 2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
 3. **`inputs.detail` object** — connector nodes store operation-specific configuration in `inputs.detail`, populated by `uip maestro flow node configure`:
    - `connectionId` — the bound IS connection UUID
-   - `folderKey` — the Orchestrator folder key
+   - `connectionFolderKey` — the Orchestrator folder key in the authored `.flow` file. `node configure --detail` accepts `folderKey` as input and writes it back as `connectionFolderKey`.
    - `method` — HTTP method from `registry get` → `connectorMethodInfo.method` (e.g., `POST`)
    - `endpoint` — API path. Read `connectorMethodInfo.path` (from `registry get`) or `availableOperations[].path` (from `is resources describe`).
    - `bodyParameters` — field-value pairs for the request body. Read field names from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
@@ -22,6 +22,19 @@ For generic node/edge add, delete, and wiring procedures, see [editing-operation
 ## Critical: Connector Definition Must Include `form`
 
 > When writing a connector definition in the `definitions` array, you **must** include the `form` field from the `registry get` output. The `form` contains a `connectorDetail.configuration` JSON string that `uip maestro flow node configure` reads to build the runtime configuration. Without it, `node configure` fails with `No instanceParameters found in definition`. Copy the full `form` object from `uip maestro flow registry get <nodeType> --output json` → `Data.Node.form` into your definition.
+
+## No-Live-Tenant / Planned Configuration Mode
+
+If the sandbox has no tenant connection, the prompt forbids `node configure`, or the user only asks you to plan the connector detail JSON, **still use the real registered connector node**:
+
+1. Run `registry search` / `registry get` to confirm the connector operation exists.
+2. Add the real node type with `uip maestro flow node add <file> uipath.connector.<connector-key>.<operation> --output json`.
+3. Leave the connector node's `inputs` empty if you cannot run live configuration.
+4. Write the planned `--detail` payload to the requested artifact (for example, `where_detail.json`) and list any missing connection/folder values as placeholders or open questions.
+
+Do **not** replace a registered connector operation with `core.logic.mock` just because connection binding or `node configure` cannot run. Mocks are only for genuinely unknown, unpublished, or not-yet-built non-connector resources. A real connector node with empty `inputs` validates locally and preserves the registered connector key that Studio Web, reviewers, and downstream tooling need.
+
+When piping `--output json` into `python`, `jq`, or another parser, do not merge stderr into stdout. The CLI may emit diagnostic lines such as "Tool factory already registered..." before the JSON on stderr; use `2>/dev/null` for parse-only probes or capture stderr separately.
 
 ## Configuration Workflow
 
@@ -90,7 +103,7 @@ uip is resources execute list "uipath-salesforce-slack" "curated_channels?types=
 # -> { "id": "C1234567890", "name": "test-slack" }
 ```
 
-The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `execute list` call — in the flow's node `inputs`. Present options to the user when multiple matches exist.
+The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `execute list` call — in the flow's node `inputs`. When multiple matches exist, present them via `AskUserQuestion` with one option per match plus **"Something else"** as the last option (see the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md)).
 
 > **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items) and surfaces `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. If the target isn't on the first page, re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit as soon as the target name matches — don't pull every page.
 
@@ -102,7 +115,7 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 1. Collect all required fields from the metadata (`requestFields` + `parameters`)
 2. For each required field, check if the user's prompt contains a value
-3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected
+3. If any required field is missing and has no `defaultValue`, **ask the user** before proceeding — list the missing fields with their `displayName` and what kind of value is expected. Free-form input is appropriate when the value space is open-ended (channel names, message bodies, IDs); when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
 4. Only after all required fields are accounted for, proceed to building
 
 > **Do NOT guess or skip missing required fields.** A missing required field will cause a runtime error. It is always better to ask than to assume.
@@ -165,6 +178,8 @@ uip maestro flow node configure <file> <nodeId> \
 Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (`registry get`) or `requestFields[].name` (`is resources describe`).
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
+
+If you are inspecting or hand-authoring the resulting `.flow`, the folder field is named `connectionFolderKey` in `inputs.detail`. The CLI `--detail` input accepts `folderKey` for convenience, then serializes the `.flow` field expected by validation.
 
 > **Do not use `filterExpression`** — that field is the trigger / JMESPath path. See [connector-trigger/impl.md](../connector-trigger/impl.md#filter-trees).
 
