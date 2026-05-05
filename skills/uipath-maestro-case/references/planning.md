@@ -62,7 +62,7 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
-### Step 2.1 — Detect schema version (Rule 17)
+### Step 2.1 — Detect schema version (Rule 18)
 
 Resolution order (first match wins):
 

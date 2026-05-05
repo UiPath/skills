@@ -4,7 +4,7 @@ Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes 
 
 ## Schema-dependent source path
 
-Read `Schema:` header from `tasks.md` per Rule 17.
+Read `Schema:` header from `tasks.md` per Rule 18.
 
 | Schema | Source path in `caseplan.json` |
 |---|---|

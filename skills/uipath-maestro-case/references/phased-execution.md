@@ -4,7 +4,7 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
-## v20 mode (Rule 17 softening)
+## v20 mode (Rule 18 softening)
 
 When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
 
@@ -15,7 +15,7 @@ When `Schema: v20` is set in `tasks.md`, the following phase modifications apply
 | 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
 | 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
 
-Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 17).
+Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 18).
 
 ## Why phased
 
@@ -39,7 +39,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 - Solution + project scaffolding (`uip solution new`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
 - Root case — `caseplan.json` with `root` block populated (name, caseIdentifier, empty `nodes[]`, empty `edges[]`, empty `caseExitConditions[]`).
-- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 17).
+- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 18).
 - Stages — all StageIds generated and captured.
 - Edges — all edges written; sources and targets resolve.
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
@@ -163,7 +163,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-> **v20 mode override.** When `tasks.md` carries `Schema: v20`, Phase 4 runs **informational** — capture errors and warnings to `build-issues.md`, do NOT retry, do NOT hard-stop on counter exhaustion. Proceed to Phase 5 regardless. Reason: CLI may not yet accept v20 top-level shape; failure does not invalidate the caseplan.json that the skill emitted (Rule 17). v19 retry policy below applies only when `Schema: v19`.
+> **v20 mode override.** When `tasks.md` carries `Schema: v20`, Phase 4 runs **informational** — capture errors and warnings to `build-issues.md`, do NOT retry, do NOT hard-stop on counter exhaustion. Proceed to Phase 5 regardless. Reason: CLI may not yet accept v20 top-level shape; failure does not invalidate the caseplan.json that the skill emitted (Rule 18). v19 retry policy below applies only when `Schema: v19`.
 
 **v19 retry policy.** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 

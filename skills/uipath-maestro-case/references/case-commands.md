@@ -181,7 +181,7 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
-> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 30-min cache, is network-heavy, and may be slow.
+> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow.
 
 ```bash
 # Refresh cache from all resource types
@@ -209,7 +209,7 @@ Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManageme
 Options for `pull`:
 | Flag | Description |
 |------|-------------|
-| `-f, --force` | Force refresh, ignore 30-min cache TTL |
+| `-f, --force` | Force refresh, ignore 24-hour cache TTL |
 | `-s, --solution-id <id>` | Include the registry of the specified solution |
 
 Options for `search`:
@@ -230,7 +230,7 @@ Options for `get`:
 
 Output: `{ MatchCount, Resources: [{ ResourceType, Resource }] }`.
 
-Cache lives at `~/.uip/case-resources/` and expires after 30 minutes.
+Cache lives at `~/.uip/case-resources/` and expires after 24 hours.
 
 ### uip maestro case registry get-connector
 

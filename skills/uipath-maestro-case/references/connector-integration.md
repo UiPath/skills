@@ -16,9 +16,9 @@ Consult this reference when planning or implementing any of:
 2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
 3. A healthy Integration Service connection must exist for the connector. If `Connections` is empty after `get-connection`, the user must create one in IS before proceeding.
 
-## Three-Step Resolution Pipeline
+## Resolution Pipeline
 
-For every connector task or event trigger, run these three CLI metadata fetches in order. Each call feeds required inputs into the next. The values they return are written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
+For every connector task or event trigger, run these CLI metadata fetches in order — three required (Steps 1-3) plus one optional (Step 4). Each call feeds required inputs into the next. The values they return are written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
 
 ### Step 1 — Find the activity-type-id
 
