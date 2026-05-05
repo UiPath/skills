@@ -36,9 +36,9 @@ Some UI elements only become visible after interacting with earlier elements (e.
 
 After registering an element in the Object Repository, interact with it (or a sibling element) to reveal the next screen via the `uia interact` CLI. See the skill at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-interact/SKILL.md`.
 
-**Reuse refs from the current `uia-configure-target` capture — do not re-inspect.** The `uia interact` CLI resolves element refs against the most recent snapshot in memory regardless of which CLI wrote it (the two write to different folders, but the snapshot is shared). Pass the same e-refs (`e28`, `e35`, etc.) directly to interact actions. Re-running discovery just to re-mint refs for an unchanged UI is wasted work — the refs you have are still live.
+**Reuse refs from the current `uia-configure-target` capture — do not re-inspect.** The `uip rpa uia interact` CLI resolves element refs against the most recent snapshot in memory regardless of which CLI wrote it (the two write to different folders, but the snapshot is shared). Pass the same e-refs (`e28`, `e35`, etc.) directly to `uip rpa uia interact click`/`type`/`select`. Running `uip rpa uia snapshot inspect` just to re-mint refs for an unchanged UI is wasted work — the refs you have are still live.
 
-Re-run discovery only when the UI has actually advanced since the last capture; refs from a pre-advance snapshot will not resolve against the new state. See `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` for the exact CLI surface.
+Re-inspect (or re-run `uip rpa uia snapshot capture`) only when the UI has actually advanced since the last capture; refs from a pre-advance snapshot will not resolve against the new state. Full flag reference: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
 
 ### Capture Loop
 
