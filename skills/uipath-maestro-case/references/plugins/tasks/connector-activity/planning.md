@@ -18,6 +18,8 @@ Run these steps during planning. Each step feeds into the `tasks.md` entry.
 
 ### 1. Find the connector in TypeCache
 
+If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still missing after pull, the tenant has no connector activities — emit skeleton per § Unresolved Fallback below.
+
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
 ### 2. Resolve the connection
@@ -115,6 +117,8 @@ Using the mapped fields from Step 6, build the `input-values` JSON with dot-path
 ```
 
 ## Unresolved Fallback
+
+> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to skeleton.
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
